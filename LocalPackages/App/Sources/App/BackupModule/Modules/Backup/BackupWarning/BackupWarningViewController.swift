@@ -58,7 +58,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
       lineBreakMode: .byWordWrapping
     )
     stackView.addArrangedSubview(captionLabel)
-    stackView.setCustomSpacing(16, after: captionLabel)
+    stackView.setCustomSpacing(32, after: captionLabel)
     
     listView.items = [
       TKLocales.Backup.Warning.List.item1,
@@ -67,7 +67,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
     ]
     
     stackView.addArrangedSubview(listView)
-    stackView.setCustomSpacing(16, after: listView)
+    stackView.setCustomSpacing(32, after: listView)
     
     let continueButton = TKButton()
     var continueButtonConfiguration: TKButton.Configuration = .actionButtonConfiguration(

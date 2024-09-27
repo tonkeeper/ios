@@ -10,9 +10,6 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
   private let titleVerticalStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
-//    stackView.isLayoutMarginsRelativeArrangement = true
-//    stackView.directionalLayoutMargins.top = 10
-//    stackView.directionalLayoutMargins.bottom = 10
     return stackView
   }()
   private let titleHoriontalStackView: UIStackView = {

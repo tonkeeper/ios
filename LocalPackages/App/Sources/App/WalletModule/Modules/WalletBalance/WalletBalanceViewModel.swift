@@ -649,25 +649,22 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     
     let balanceColor: UIColor
     let backup: BalanceHeaderAmountView.Model.Backup
-    let isNeedToWarnBackup = state.wallet.isBackupAvailable && !state.wallet.hasBackup
-    let tonAmount = state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
-    if isNeedToWarnBackup {
-      switch tonAmount {
-      case _ where tonAmount >= .tonAmountError:
-        balanceColor = .Accent.red
-        backup = .backup(color: .Accent.red, closure: { [weak self] in
-          self?.didTapBackup?(state.wallet)
-        })
-      case _ where tonAmount > .tonAmountWarning:
-        balanceColor = .Accent.orange
-        backup = .backup(color: .Accent.orange, closure: { [weak self] in
-          self?.didTapBackup?(state.wallet)
-        })
-      default:
-        balanceColor = .Text.primary
-        backup = .none
-      }
-    } else {
+    let backupWarningState = BalanceBackupWarningCheck().check(
+      wallet: state.wallet,
+      tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
+    )
+    switch backupWarningState {
+    case .error:
+      balanceColor = .Accent.red
+      backup = .backup(color: .Accent.red, closure: { [weak self] in
+        self?.didTapBackup?(state.wallet)
+      })
+    case .warning:
+      balanceColor = .Accent.orange
+      backup = .backup(color: .Accent.orange, closure: { [weak self] in
+        self?.didTapBackup?(state.wallet)
+      })
+    case .none:
       balanceColor = .Text.primary
       backup = .none
     }
@@ -841,11 +838,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
 private extension String {
   static let balanceItemsSectionFooterIdentifier = "BalanceItemsSectionFooterIdentifier"
   static let setupSectionHeaderIdentifier = "SetupSectionHeaderIdentifier"
-}
-
-private extension UInt64 {
-  static let tonAmountWarning: UInt64 = 2000000000
-  static let tonAmountError: UInt64 = 20000000000
 }
 
 private extension Array where Element == WalletBalanceBalanceModel.Item {

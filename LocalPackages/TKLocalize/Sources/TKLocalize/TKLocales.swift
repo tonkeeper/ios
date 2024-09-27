@@ -141,6 +141,12 @@ public enum TKLocales {
   public enum Backup {
     /// Backup
     public static let title = TKLocales.tr("Localizable", "backup.title", fallback: "Backup")
+    public enum Balance {
+      /// Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.
+      public static func warning(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "backup.balance.warning", String(describing: p1), fallback: "Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.")
+      }
+    }
     public enum Check {
       /// Write down these words with their numbers and store them in a safe place.
       public static let caption = TKLocales.tr("Localizable", "backup.check.caption", fallback: "Write down these words with their numbers and store them in a safe place.")

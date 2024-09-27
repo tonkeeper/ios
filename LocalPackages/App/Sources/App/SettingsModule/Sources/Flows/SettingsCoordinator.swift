@@ -162,7 +162,9 @@ private extension SettingsCoordinator {
     let configuration = SettingsListBackupConfigurator(
       wallet: wallet,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+      processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
     )
     
     configuration.didTapBackupManually = { [weak self] in
