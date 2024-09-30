@@ -12,10 +12,11 @@ struct HistoryListAssembly {
     let viewModel = HistoryListViewModelImplementation(
       wallet: wallet,
       paginationLoader: paginationLoader,
-      cacheProvider: cacheProvider,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
-      accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
+      cacheProvider: cacheProvider,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+      accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
       historyEventMapper: historyEventMapper
     )
     let viewController = HistoryListViewController(viewModel: viewModel)

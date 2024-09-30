@@ -81,7 +81,8 @@ public final class LoadersAssembly {
                                loader: HistoryListLoader) -> HistoryPaginationLoader {
     HistoryPaginationLoader(
       wallet: wallet,
-      loader: loader
+      loader: loader,
+      nftService: servicesAssembly.nftService()
     )
   }
   

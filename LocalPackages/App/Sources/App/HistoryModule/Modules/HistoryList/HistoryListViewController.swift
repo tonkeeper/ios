@@ -62,15 +62,18 @@ private extension HistoryListViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateSnapshot = { [weak self] snapshot in
+    viewModel.eventHandler = { [weak self] event in
       guard let self else { return }
-      let contentOffset = self.customView.collectionView.contentOffset
-      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+      switch event {
+      case .snapshotUpdate(let snapshot):
+        let contentOffset = self.customView.collectionView.contentOffset
+        self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+          self.customView.collectionView.layoutIfNeeded()
+          self.customView.collectionView.contentOffset = contentOffset
+        })
         self.customView.collectionView.layoutIfNeeded()
         self.customView.collectionView.contentOffset = contentOffset
-      })
-      self.customView.collectionView.layoutIfNeeded()
-      self.customView.collectionView.contentOffset = contentOffset
+      }
     }
   }
   
@@ -109,7 +112,7 @@ private extension HistoryListViewController {
   func setupDataSource() -> DataSource {
     let eventCellConfiguration = EventCellConfiguration {
       [weak viewModel] cell, indexPath, itemIdentifier in
-      guard let model = viewModel?.getEventCellModel(identifier: itemIdentifier) else { return }
+      guard let model = viewModel?.getEventCellConfiguration(identifier: itemIdentifier) else { return }
       cell.configure(model: model)
     }
     
@@ -136,7 +139,7 @@ private extension HistoryListViewController {
         return collectionView.dequeueConfiguredReusableCell(
           using: paginationCellConfiguration,
           for: indexPath,
-          item: viewModel.getPaginationCellModel())
+          item: viewModel.getPaginationCellConfiguration())
       case .shimmer:
         return collectionView.dequeueConfiguredReusableCell(
           using: shimmerCellConfiguration,
@@ -150,7 +153,7 @@ private extension HistoryListViewController {
     }
     
     let eventSectionHeaderConfiguration = EventSectionHeaderConfiguration(elementKind: .eventSectionHeaderElementKind) {
-      [weak dataSource] supplementaryView, elementKind, indexPath in
+      [weak dataSource, weak viewModel] supplementaryView, elementKind, indexPath in
       guard let dataSource else { return }
       let snapshot = dataSource.snapshot()
       let section = snapshot.sectionIdentifiers[indexPath.section]
@@ -158,7 +161,7 @@ private extension HistoryListViewController {
       case .events(let eventsSection):
         supplementaryView.configure(
           model: TKListTitleView.Model(
-            title: eventsSection.title,
+            title: viewModel?.getSectionHeader(date: eventsSection.date),
             textStyle: .h3
           )
         )
@@ -167,7 +170,7 @@ private extension HistoryListViewController {
       }
     }
     
-    dataSource.supplementaryViewProvider = {collectionView, kind, indexPath -> UICollectionReusableView? in
+    dataSource.supplementaryViewProvider = { collectionView, kind, indexPath -> UICollectionReusableView? in
       switch kind {
       case .headerElementKind:
         return collectionView.dequeueConfiguredReusableSupplementary(using: containerViewConfiguration, for: indexPath)
@@ -293,7 +296,6 @@ extension HistoryListViewController: UICollectionViewDataSourcePrefetching {
     }
   }
 }
-
 
 private extension String {
   static let headerElementKind = "HeaderElementKind"

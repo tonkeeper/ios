@@ -14,6 +14,7 @@ struct HistoryEventMapper {
   }
   
   func mapEvent(_ event: AccountEventModel,
+                isSecureMode: Bool,
                 nftAction: @escaping (Address) -> Void,
                 encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void,
                 tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Model {
@@ -21,6 +22,7 @@ struct HistoryEventMapper {
       id: event.eventId,
       historyContentConfiguration: mapEventContentConfiguration(
         event,
+        isSecureMode: isSecureMode,
         nftAction: nftAction,
         encryptedCommentAction: encryptedCommentAction,
         tapAction: tapAction
@@ -29,14 +31,16 @@ struct HistoryEventMapper {
   }
   
   func mapEventContentConfiguration(_ event: AccountEventModel,
+                                    isSecureMode: Bool,
                                     nftAction: @escaping (Address) -> Void,
                                     encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void,
                                     tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Model {
     let actions = event.actions.enumerated().map { index, action in
       HistoryCellContentView.Model.Action(
         configuration: mapAction(
-          action, 
+          action,
           isInProgress: event.accountEvent.isInProgress,
+          isSecureMode: isSecureMode,
           nftAction: nftAction,
           encryptedCommentAction: encryptedCommentAction),
         action: {
@@ -49,6 +53,7 @@ struct HistoryEventMapper {
 
   func mapAction(_ action: AccountEventModel.Action,
                  isInProgress: Bool,
+                 isSecureMode: Bool,
                  nftAction: @escaping (Address) -> Void,
                  encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void) -> HistoryCellActionView.Model {
     let imageModel = TKUIListItemImageIconView.Configuration(
@@ -86,7 +91,7 @@ struct HistoryEventMapper {
     let valueResult = NSMutableAttributedString()
     if let amount = action.amount {
       valueResult.append(
-        amount.withTextStyle(
+        (isSecureMode ? String.secureModeValue : amount).withTextStyle(
           valueTextStyle,
           color: action.eventType.amountColor,
           alignment: .right,
@@ -96,7 +101,7 @@ struct HistoryEventMapper {
       if let subamount = action.subamount {
         valueResult.append(NSAttributedString(string: "\n"))
         valueResult.append(
-          subamount.withTextStyle(
+          (isSecureMode ? String.secureModeValue : subamount).withTextStyle(
             valueTextStyle,
             color: action.eventType.subamountColor,
             alignment: .right,
