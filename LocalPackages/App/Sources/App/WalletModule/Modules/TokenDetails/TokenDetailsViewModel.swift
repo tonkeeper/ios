@@ -69,6 +69,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
+  private let appSettingsStore: AppSettingsV3Store
   private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
@@ -76,10 +77,12 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
+       appSettingsStore: AppSettingsV3Store,
        configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.wallet = wallet
     self.balanceStore = balanceStore
+    self.appSettingsStore = appSettingsStore
     self.configurator = configurator
     self.chartViewControllerProvider = chartViewControllerProvider
   }
@@ -89,7 +92,7 @@ private extension TokenDetailsViewModelImplementation {
   func setInitialState() {
     syncQueue.sync {
       let balance = balanceStore.getState()[wallet]?.balance
-      let model = configurator.getTokenModel(balance: balance)
+      let model = configurator.getTokenModel(balance: balance, isSecureMode: appSettingsStore.getState().isSecureMode)
       DispatchQueue.main.async {
         self.didUpdateModel(model)
       }
@@ -103,7 +106,7 @@ private extension TokenDetailsViewModelImplementation {
         guard wallet == observer.wallet else { return }
         observer.syncQueue.async {
           let balance = observer.balanceStore.getState()[wallet]?.balance
-          let model = observer.configurator.getTokenModel(balance: balance)
+          let model = observer.configurator.getTokenModel(balance: balance, isSecureMode: observer.appSettingsStore.getState().isSecureMode)
           DispatchQueue.main.async {
             self.didUpdateModel(model)
           }

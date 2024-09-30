@@ -7,6 +7,7 @@ struct TokenDetailsAssembly {
   static func module(
     wallet: Wallet,
     balanceStore: ConvertedBalanceStore,
+    appSettingsStore: AppSettingsV3Store,
     configurator: TokenDetailsConfigurator,
     tokenDetailsListContentViewController: TokenDetailsListContentViewController,
     chartViewControllerProvider: (() -> UIViewController?)?,
@@ -15,6 +16,7 @@ struct TokenDetailsAssembly {
     let viewModel = TokenDetailsViewModelImplementation(
       wallet: wallet,
       balanceStore: balanceStore,
+      appSettingsStore: appSettingsStore,
       configurator: configurator,
       chartViewControllerProvider: chartViewControllerProvider
     )

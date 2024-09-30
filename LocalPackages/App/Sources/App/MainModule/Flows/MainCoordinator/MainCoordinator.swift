@@ -621,6 +621,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       configurator: TonTokenDetailsConfigurator(
         wallet: wallet,
         mapper: TokenDetailsMapper(
@@ -673,6 +674,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       configurator: JettonTokenDetailsConfigurator(wallet: wallet,
                                                    jettonItem: jettonItem,
                                                    mapper: TokenDetailsMapper(

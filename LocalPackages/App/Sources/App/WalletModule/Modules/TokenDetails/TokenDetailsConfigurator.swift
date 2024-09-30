@@ -4,7 +4,7 @@ import TKLocalize
 import KeeperCore
 
 protocol TokenDetailsConfigurator {
-  func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel
+  func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel
   func getDetailsURL() -> URL?
 }
 
@@ -18,7 +18,7 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
     self.mapper = mapper
   }
   
-  func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel {
+  func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
     guard let balance else {
       return TokenDetailsModel(
         title: TonInfo.name,
@@ -29,13 +29,24 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
         buttons: [.send(.ton), .receive(.ton), .buySell]
       )
     }
-    let amount = mapper.mapTonBalance(tonBalance: balance.tonBalance, currency: balance.currency)
+    
+    let tokenAmount: String
+    let convertedAmount: String?
+    if isSecureMode {
+      tokenAmount = .secureModeValue
+      convertedAmount = .secureModeValue
+    } else {
+      let amount = mapper.mapTonBalance(tonBalance: balance.tonBalance, currency: balance.currency)
+      tokenAmount = amount.tokenAmount
+      convertedAmount = amount.convertedAmount
+    }
+
     return TokenDetailsModel(
       title: TonInfo.name,
       isVerified: true,
       image: .ton,
-      tokenAmount: amount.tokenAmount,
-      convertedAmount: amount.convertedAmount,
+      tokenAmount: tokenAmount,
+      convertedAmount: convertedAmount,
       buttons: [.send(.ton), .receive(.ton), .buySell]
     )
   }
@@ -61,7 +72,7 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
     self.mapper = mapper
   }
   
-  func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel {
+  func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
     let isVerified: Bool
     switch jettonItem.jettonInfo.verification {
     case .whitelist:
@@ -75,8 +86,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
         title: jettonItem.jettonInfo.name,
         isVerified: isVerified,
         image: .url(jettonItem.jettonInfo.imageURL),
-        tokenAmount: "0",
-        convertedAmount: "0",
+        tokenAmount: isSecureMode ? .secureModeValue : "0",
+        convertedAmount: isSecureMode ? .secureModeValue : "0",
         buttons: [.send(.jetton(jettonItem), enabled: false),
                   .receive(.jetton(jettonItem))]
       )
@@ -84,7 +95,10 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
     
     let tokenAmount: String
     var convertedAmount: String?
-    if let jettonBalance = balance.jettonsBalance.first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo }) {
+    if isSecureMode {
+      tokenAmount = .secureModeValue
+      convertedAmount = .secureModeValue
+    } else if let jettonBalance = balance.jettonsBalance.first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo }) {
       (tokenAmount, convertedAmount) = mapper.mapJettonBalance(jettonBalance: jettonBalance, currency: balance.currency)
     } else {
       tokenAmount = "0"
