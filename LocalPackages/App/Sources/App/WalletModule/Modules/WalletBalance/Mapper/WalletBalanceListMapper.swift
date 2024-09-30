@@ -84,7 +84,7 @@ struct WalletBalanceListMapper {
     if item.info.pendingDeposit > 0 {
       let amount: String = {
         if isSecure {
-          return .secureModeValue
+          return .secureModeValueShort
         } else {
           return amountFormatter.formatAmount(
             BigUInt(item.info.pendingDeposit),
@@ -99,7 +99,7 @@ struct WalletBalanceListMapper {
     if item.info.pendingWithdraw > 0 {
       let amount: String = {
         if isSecure {
-          return .secureModeValue
+          return .secureModeValueShort
         } else {
           return amountFormatter.formatAmount(
             BigUInt(item.info.pendingWithdraw),
@@ -114,7 +114,7 @@ struct WalletBalanceListMapper {
     if item.info.readyWithdraw > 0 {
       let amount: String = {
         if isSecure {
-          return .secureModeValue
+          return .secureModeValueShort
         } else {
           return amountFormatter.formatAmount(
             BigUInt(item.info.readyWithdraw),
@@ -243,7 +243,8 @@ private extension CGFloat {
 }
 
 extension String {
-  static let secureModeValue = "* * *"
+  static let secureModeValueShort = "* * *"
+  static let secureModeValueLong = "* * * *"
   static let faceID = TKLocales.SettingsListSecurityConfigurator.faceId
   static let touchID = TKLocales.SettingsListSecurityConfigurator.touchId
 }

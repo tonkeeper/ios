@@ -33,8 +33,8 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
     let tokenAmount: String
     let convertedAmount: String?
     if isSecureMode {
-      tokenAmount = .secureModeValue
-      convertedAmount = .secureModeValue
+      tokenAmount = .secureModeValueShort
+      convertedAmount = .secureModeValueShort
     } else {
       let amount = mapper.mapTonBalance(tonBalance: balance.tonBalance, currency: balance.currency)
       tokenAmount = amount.tokenAmount
@@ -86,8 +86,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
         title: jettonItem.jettonInfo.name,
         isVerified: isVerified,
         image: .url(jettonItem.jettonInfo.imageURL),
-        tokenAmount: isSecureMode ? .secureModeValue : "0",
-        convertedAmount: isSecureMode ? .secureModeValue : "0",
+        tokenAmount: isSecureMode ? .secureModeValueShort : "0",
+        convertedAmount: isSecureMode ? .secureModeValueShort : "0",
         buttons: [.send(.jetton(jettonItem), enabled: false),
                   .receive(.jetton(jettonItem))]
       )
@@ -96,8 +96,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
     let tokenAmount: String
     var convertedAmount: String?
     if isSecureMode {
-      tokenAmount = .secureModeValue
-      convertedAmount = .secureModeValue
+      tokenAmount = .secureModeValueShort
+      convertedAmount = .secureModeValueShort
     } else if let jettonBalance = balance.jettonsBalance.first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo }) {
       (tokenAmount, convertedAmount) = mapper.mapJettonBalance(jettonBalance: jettonBalance, currency: balance.currency)
     } else {

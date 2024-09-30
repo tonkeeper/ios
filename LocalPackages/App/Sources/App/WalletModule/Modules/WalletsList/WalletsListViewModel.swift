@@ -187,7 +187,7 @@ private extension WalletsListViewModelImplementation {
     
     let caption: String
     if isSecure {
-      caption = .secureModeValue
+      caption = .secureModeValueShort
     } else if let totalBalance = totalBalanceState?.totalBalance {
      caption = decimalAmountFormatter.format(
         amount: totalBalance.amount,

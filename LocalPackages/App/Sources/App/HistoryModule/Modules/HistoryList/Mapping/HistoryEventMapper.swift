@@ -91,7 +91,7 @@ struct HistoryEventMapper {
     let valueResult = NSMutableAttributedString()
     if let amount = action.amount {
       valueResult.append(
-        (isSecureMode ? String.secureModeValue : amount).withTextStyle(
+        (isSecureMode ? String.secureModeValueShort : amount).withTextStyle(
           valueTextStyle,
           color: action.eventType.amountColor,
           alignment: .right,
@@ -101,7 +101,7 @@ struct HistoryEventMapper {
       if let subamount = action.subamount {
         valueResult.append(NSAttributedString(string: "\n"))
         valueResult.append(
-          (isSecureMode ? String.secureModeValue : subamount).withTextStyle(
+          (isSecureMode ? String.secureModeValueShort : subamount).withTextStyle(
             valueTextStyle,
             color: action.eventType.subamountColor,
             alignment: .right,

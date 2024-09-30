@@ -27,7 +27,7 @@ struct CollectiblesListMapper {
     case .whitelist, .graylist:
       let string: String? = {
         if isSecureMode {
-          return .secureModeValue
+          return .secureModeValueShort
         }
         if let collection = nft.collection {
           return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamedCollection : collection.name

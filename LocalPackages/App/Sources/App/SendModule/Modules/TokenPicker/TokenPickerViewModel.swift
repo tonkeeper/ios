@@ -77,7 +77,7 @@ private extension TokenPickerViewModelImplementation {
         let title = TonInfo.name
         let caption: String = {
           if isSecureMode {
-            return .secureModeValue
+            return .secureModeValueShort
           } else {
             return self.amountFormatter.formatAmount(
               BigUInt(state.tonBalance.tonBalance.amount),
@@ -117,7 +117,7 @@ private extension TokenPickerViewModelImplementation {
           let title = jettonBalance.jettonBalance.item.jettonInfo.symbol ?? jettonBalance.jettonBalance.item.jettonInfo.name
           let caption: String = {
             if isSecureMode {
-              return .secureModeValue
+              return .secureModeValueShort
             } else {
               return self.amountFormatter.formatAmount(
                 jettonBalance.jettonBalance.quantity,

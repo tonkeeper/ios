@@ -104,9 +104,7 @@ public final class RNAsyncStorage {
   }
   
   private func setup() {
-    print("setup called")
     guard !didSetup else { return }
-    print("setup performs")
     print(getStorageFolderPath())
     if !FileManager.default.fileExists(atPath: getStorageFolderPath().path) {
       try? createStorageDirectory()

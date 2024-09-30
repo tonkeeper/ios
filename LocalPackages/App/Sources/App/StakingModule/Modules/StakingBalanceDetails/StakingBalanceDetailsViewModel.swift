@@ -176,7 +176,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     
     let tokenAmount: String = {
       if isSecureMode {
-        return .secureModeValue
+        return .secureModeValueShort
       } else {
         return amountFormatter.formatAmount(
           BigUInt(UInt64(balanceItem.info.amount)),
@@ -189,7 +189,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     
     let convertedAmount: String = {
       if isSecureMode {
-        return .secureModeValue
+        return .secureModeValueShort
       } else {
         return decimalFormatter.format(
           amount: balanceItem.amountConverted,
@@ -319,7 +319,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     
     let amountFormatted: String = {
       if isSecureMode {
-        return .secureModeValue
+        return .secureModeValueShort
       } else {
         return amountFormatter.formatAmount(
           BigUInt(UInt64(amount)),
@@ -332,7 +332,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     
     let convertedFormatted: String = {
       if isSecureMode {
-        return .secureModeValue
+        return .secureModeValueShort
       } else {
         return decimalFormatter.format(
           amount: converted,
