@@ -6,28 +6,31 @@ import TKLocalize
 struct CollectiblesListMapper {
   let imageLoader = ImageLoader()
 
-  func map(nfts: [NFT]) -> [CollectibleCollectionViewCell.Model] {
+  func map(nfts: [NFT], isSecureMode: Bool) -> [CollectibleCollectionViewCell.Model] {
     nfts.map { nft in
-      map(nft: nft)
+      map(nft: nft, isSecureMode: isSecureMode)
     }
   }
   
-  func map(nft: NFT) -> CollectibleCollectionViewCell.Model {
-    let title = nft.name ?? nft.address.toString(bounceable: true)
+  func map(nft: NFT, isSecureMode: Bool) -> CollectibleCollectionViewCell.Model {
+    let title: String = isSecureMode ? .secureModeValue : nft.name ?? nft.address.toString(bounceable: true)
     
     let subtitle: NSAttributedString?
     switch nft.trust {
     case .none, .blacklist, .unknown:
-      subtitle = TKLocales.Purchases.unverified.withTextStyle(
+      subtitle = (isSecureMode ? String.secureModeValue : TKLocales.Purchases.unverified).withTextStyle(
         .body3,
         color: .Accent.orange,
         alignment: .left,
         lineBreakMode: .byTruncatingTail
       )
     case .whitelist, .graylist:
-      let string = {
+      let string: String? = {
+        if isSecureMode {
+          return .secureModeValue
+        }
         if let collection = nft.collection {
-            return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamedCollection : collection.name
+          return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamedCollection : collection.name
         } else {
           return TKLocales.Purchases.unnamedCollection
         }
@@ -47,7 +50,8 @@ struct CollectiblesListMapper {
       }),
       title: title,
       subtitle: subtitle,
-      isOnSale: nft.sale != nil
+      isOnSale: nft.sale != nil,
+      isBlurVisible: isSecureMode
     )
   }
 }

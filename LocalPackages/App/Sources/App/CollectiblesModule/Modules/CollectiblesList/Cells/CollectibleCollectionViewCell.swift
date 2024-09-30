@@ -14,6 +14,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   }()
   private let titleLabel = UILabel()
   private let subtitleLabel = UILabel()
+  private let blurView = TKSecureBlurView()
   
   private var imageDownloadTask: ImageDownloadTask?
   
@@ -37,12 +38,14 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     let title: NSAttributedString?
     let subtitle: NSAttributedString?
     let isOnSale: Bool
+    let isBlurVisible: Bool
     
     init(identifier: String,
          imageDownloadTask: ImageDownloadTask?,
          title: String?,
          subtitle: NSAttributedString?,
-         isOnSale: Bool = false) {
+         isOnSale: Bool = false,
+         isBlurVisible: Bool) {
       self.identifier = identifier
       self.imageDownloadTask = imageDownloadTask
       self.title = title?.withTextStyle(
@@ -53,6 +56,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
       )
       self.subtitle = subtitle
       self.isOnSale = isOnSale
+      self.isBlurVisible = isBlurVisible
     }
     
     func hash(into hasher: inout Hasher) {
@@ -70,6 +74,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     titleLabel.attributedText = model.title
     subtitleLabel.attributedText = model.subtitle
     saleImageView.isHidden = !model.isOnSale
+    blurView.isHidden = !model.isBlurVisible
   }
   
   override func layoutSubviews() {
@@ -110,6 +115,7 @@ private extension CollectibleCollectionViewCell {
     contentView.addSubview(highlightView)
     contentView.addSubview(labelContainer)
     contentView.addSubview(imageView)
+    contentView.addSubview(blurView)
     contentView.addSubview(saleImageView)
     
     highlightView.snp.makeConstraints { make in
@@ -119,6 +125,10 @@ private extension CollectibleCollectionViewCell {
     imageView.snp.makeConstraints { make in
       make.top.left.right.equalTo(contentView)
       make.height.equalTo(imageView.snp.width)
+    }
+    
+    blurView.snp.makeConstraints { make in
+      make.edges.equalTo(imageView)
     }
     
     labelContainer.snp.makeConstraints { make in
