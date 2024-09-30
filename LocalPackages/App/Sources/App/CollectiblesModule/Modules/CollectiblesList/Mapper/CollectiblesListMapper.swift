@@ -13,12 +13,12 @@ struct CollectiblesListMapper {
   }
   
   func map(nft: NFT, isSecureMode: Bool) -> CollectibleCollectionViewCell.Model {
-    let title: String = isSecureMode ? .secureModeValue : nft.name ?? nft.address.toString(bounceable: true)
+    let title: String = isSecureMode ? "* * * *" : nft.name ?? nft.address.toString(bounceable: true)
     
     let subtitle: NSAttributedString?
     switch nft.trust {
     case .none, .blacklist, .unknown:
-      subtitle = (isSecureMode ? String.secureModeValue : TKLocales.Purchases.unverified).withTextStyle(
+      subtitle = TKLocales.Purchases.unverified.withTextStyle(
         .body3,
         color: .Accent.orange,
         alignment: .left,

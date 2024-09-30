@@ -180,6 +180,7 @@
 "send.title" = "Send";
 "send.recepient.placeholder" = "Address or name";
 "send.amount.placeholder" = "Amount";
+"send.remaining" = "Remaining";
 
 "send.comment.placeholder" = "Comment";
 "send.comment.description" = "Will be visible to everyone.";

@@ -106,7 +106,7 @@ private extension SendV3ViewController {
         customView.amountInputView.balanceView.remainingView.isHidden = false
         customView.amountInputView.balanceView.insufficientLabel.isHidden = true
         
-        customView.amountInputView.balanceView.remainingView.remaining = value
+        customView.amountInputView.balanceView.remainingView.remaining = "\(TKLocales.Send.remaining) \(value)"
       }
       customView.amountInputView.balanceView.convertedValue = model.balance.converted
     

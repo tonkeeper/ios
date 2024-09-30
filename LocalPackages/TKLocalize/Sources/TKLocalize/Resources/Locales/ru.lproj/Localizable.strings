@@ -181,6 +181,7 @@
 "send.title" = "Отправить";
 "send.recepient.placeholder" = "Адрес или имя";
 "send.amount.placeholder" = "Сумма";
+"send.remaining" = "Доступно";
 
 "send.comment.placeholder" = "Комментарий";
 "send.comment.description" = "Будет виден всем.";

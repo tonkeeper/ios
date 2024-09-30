@@ -13,7 +13,9 @@ public final class TKSecureBlurView: UIView {
   
   public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
     super.traitCollectionDidChange(previousTraitCollection)
-    setupBlurView()
+    if previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle {
+      setupBlurView()
+    }
   }
   
   private func setupBlurView() {
@@ -23,17 +25,18 @@ public final class TKSecureBlurView: UIView {
     blurView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
+    self.blurView = blurView
   }
   
   private func createBlurView() -> UIVisualEffectView {
     let style: UIBlurEffect.Style
     switch traitCollection.userInterfaceStyle {
     case .light:
-      style = .systemUltraThinMaterialLight
+      style = .light
     case .dark:
-      style = .systemUltraThinMaterialDark
+      style = .light
     default:
-      style = .systemUltraThinMaterialDark
+      style = .light
     }
     let blurEffect = UIBlurEffect(style: style)
     let blurView = UIVisualEffectView(effect: blurEffect)

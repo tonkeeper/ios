@@ -672,6 +672,8 @@ public enum TKLocales {
     public static let useBiometryDescription = TKLocales.tr("Localizable", "security.use_biometry_description", fallback: "You can always unlock your wallet with a passcode.")
   }
   public enum Send {
+    /// Remaining
+    public static let remaining = TKLocales.tr("Localizable", "send.remaining", fallback: "Remaining")
     /// Send
     public static let title = TKLocales.tr("Localizable", "send.title", fallback: "Send")
     public enum Amount {

@@ -92,6 +92,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   
   override func prepareForReuse() {
     super.prepareForReuse()
+    blurView.isHidden = true
     imageView.image = nil
     imageDownloadTask?.cancel()
     imageDownloadTask = nil
@@ -105,6 +106,8 @@ private extension CollectibleCollectionViewCell {
     
     contentView.backgroundColor = .Background.contentTint
     
+    blurView.isHidden = true
+    
     titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
@@ -115,7 +118,7 @@ private extension CollectibleCollectionViewCell {
     contentView.addSubview(highlightView)
     contentView.addSubview(labelContainer)
     contentView.addSubview(imageView)
-    contentView.addSubview(blurView)
+    imageView.addSubview(blurView)
     contentView.addSubview(saleImageView)
     
     highlightView.snp.makeConstraints { make in
