@@ -6,4 +6,3 @@ strings:
             publicAccess: true
             enumName: TKLocales
       output: ../Sources/TKLocalize/TKLocales.swift
-

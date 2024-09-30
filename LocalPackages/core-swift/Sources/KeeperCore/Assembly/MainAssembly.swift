@@ -206,6 +206,7 @@ public final class MainAssembly {
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       confirmTransactionMapper: ConfirmTransactionMapper(
+        nftService: servicesAssembly.nftService(),
         accountEventMapper: AccountEventMapper(
           dateFormatter: formattersAssembly.dateFormatter,
           amountFormatter: formattersAssembly.amountFormatter,

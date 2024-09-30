@@ -19,7 +19,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = TKLocales.Tabs.purchases
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.collectibles
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
   }
   

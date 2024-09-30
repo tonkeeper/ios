@@ -22,12 +22,15 @@
 "tabs.history" = "History";
 "tabs.browser" = "Browser";
 "tabs.purchases" = "Purchases";
+"tabs.collectibles" = "Collectibles";
 
 "list.show_all" = "Show all";
 "list.hide" = "Hide";
 
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
 "camera_permission.button" = "Open Settings";
+
+"collectibles.title" = "Collectibles";
 
 "purchases.title" = "Purchases";
 "purchases.empty_placeholder" = "Your collectibles\nwill be shown here";
@@ -196,6 +199,7 @@
 "confirm_send.recipient.title" = "Recipient";
 "confirm_send.recipient.address" = "Recipient address";
 "confirm_send.confirm_button" = "Confirm and send";
+"confirm_send.confirm" = "Confirm";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

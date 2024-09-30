@@ -43,6 +43,7 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
 }
 
 private extension HistoryEventDetailsViewModelImplementation {
+
   func configureDetails() {
     Task {
       let model = await self.historyEventDetailsController.model
@@ -51,27 +52,12 @@ private extension HistoryEventDetailsViewModelImplementation {
 
         headerItems.append(contentsOf: composeHeaderImageItems(with: model))
 
-        if let nftName = model.nftName {
+        if let nftModel = model.nftModel {
           headerItems.append(
-            .text(
-              .init(
-                text: nftName.withTextStyle(.h2, color: .Text.primary, alignment: .center, lineBreakMode: .byWordWrapping),
-                numberOfLines: 1
-              ),
-              bottomSpacing: 0
-            )
+            contentsOf: configureNftItem(nftModel)
           )
-          if let nftCollectionName = model.nftCollectionName {
-            headerItems.append(
-              .text(
-                .init(text: nftCollectionName.withTextStyle(.body1, color: .Text.secondary, alignment: .center, lineBreakMode: .byWordWrapping), numberOfLines: 1),
-                bottomSpacing: 0
-              )
-            )
-          }
-          headerItems.append(.customView(TKSpacingView(verticalSpacing: .constant(16)), bottomSpacing: 0))
         }
-        
+
         if let aboveTitle = model.aboveTitle {
           headerItems.append(
             .text(.init(text: aboveTitle.withTextStyle(.h2, color: .Text.tertiary, alignment: .center, lineBreakMode: .byWordWrapping), numberOfLines: 1), bottomSpacing: 4)
@@ -157,6 +143,67 @@ private extension HistoryEventDetailsViewModelImplementation {
     }
 
     return headerItems
+  }
+
+  func configureNftItem(_ model: HistoryEventDetailsController.Model.NFT) ->  [TKModalCardViewController.Configuration.Item] {
+    var items =  [TKModalCardViewController.Configuration.Item]()
+    guard let nftName = model.name else {
+      return []
+    }
+    items.append(
+      .text(
+        .init(
+          text: nftName.withTextStyle(.h2, color: .Text.primary, alignment: .center, lineBreakMode: .byWordWrapping),
+          numberOfLines: 1
+        ),
+        bottomSpacing: 0
+      )
+    )
+    if let nftCollectionName = model.collectionName {
+      let text = nftCollectionName
+        .withTextStyle(
+          .body1,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byTruncatingTail
+        )
+
+      let label = UILabel()
+      label.attributedText = text
+
+      let stackView: UIStackView = {
+        let stackView = UIStackView(arrangedSubviews: [label])
+        stackView.alignment = .center
+        stackView.spacing = 4
+        stackView.distribution = .fill
+        return stackView
+      }()
+      let verificationImageView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.contentMode = .center
+        imageView.image = .TKUIKit.Icons.Size16.verification
+        imageView.tintColor = .Icon.secondary
+        return imageView
+      }()
+
+      if model.isVerified == true {
+        stackView.addArrangedSubview(verificationImageView)
+      }
+
+      let view = UIView()
+      view.addSubview(stackView)
+      stackView.snp.makeConstraints { make in
+        make.top.bottom.equalToSuperview()
+        make.center.equalToSuperview()
+        make.width.lessThanOrEqualTo(view)
+      }
+
+      items.append(
+        .customView(view, bottomSpacing: 0)
+      )
+    }
+    items.append(.customView(TKSpacingView(verticalSpacing: .constant(16)), bottomSpacing: 0))
+    return items
   }
 }
 

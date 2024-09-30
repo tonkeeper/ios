@@ -117,7 +117,7 @@ private extension WalletsListViewModelImplementation {
     
     let footerConfiguration = TKListCollectionViewButtonFooterView.Configuration(
       identifier: .walletsFooterIdentifier,
-      content: TKButton.Configuration.Content(title: .plainString("Add wallet")),
+      content: TKButton.Configuration.Content(title: .plainString(TKLocales.AddWallet.title)),
       action: { [weak self] in
         self?.addButtonEvent?()
       }

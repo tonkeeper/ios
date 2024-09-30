@@ -22,12 +22,15 @@
 "tabs.history" = "История";
 "tabs.browser" = "Браузер";
 "tabs.purchases" = "Покупки";
+"tabs.collectibles" = "Коллекции";
 
 "list.show_all" = "Показать все";
 "list.hide" = "Скрыть";
 
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
+
+"collectibles.title" = "Коллекции";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
@@ -197,6 +200,7 @@
 "confirm_send.recipient.title" = "Получатель";
 "confirm_send.recipient.address" = "Адрес получателя";
 "confirm_send.confirm_button" = "Подтвердить и отправить";
+"confirm_send.confirm" = "Подтвердить";
 
 "customize_wallet.title" = "Кастомизируйте свой кошелёк";
 "customize_wallet.description" = "Имя и иконка кошелька хранятся локально на вашем устройстве.";

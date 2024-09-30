@@ -29,8 +29,8 @@ final class CollectiblesViewController: ContentListEmptyViewController {
 
 private extension CollectiblesViewController {
   func setup() {
-    customView.navigationBarView.title = TKLocales.Purchases.title
-    
+    customView.navigationBarView.title = TKLocales.Collectibles.title
+
     emptyViewController.configure(model: TKEmptyViewController.Model(
       title: TKLocales.Purchases.emptyPlaceholder,
       caption: nil,
