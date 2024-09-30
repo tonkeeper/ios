@@ -69,6 +69,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   private let model: WalletsListModel
   private let totalBalancesStore: TotalBalanceStore
+  private let appSettingsStore: AppSettingsV3Store
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -76,10 +77,12 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   init(model: WalletsListModel,
        totalBalancesStore: TotalBalanceStore,
+       appSettingsStore: AppSettingsV3Store,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
     self.totalBalancesStore = totalBalancesStore
+    self.appSettingsStore = appSettingsStore
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountFormatter = amountFormatter
   }
@@ -89,7 +92,8 @@ private extension WalletsListViewModelImplementation {
   func setupInitialState() {
     let state = model.getState()
     let totalBalanceState = totalBalancesStore.getState()
-    let (snapshot, cellConfigurations) = updateList(wallets: state.wallets, totalBalanceState: totalBalanceState)
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    let (snapshot, cellConfigurations) = updateList(wallets: state.wallets, totalBalanceState: totalBalanceState, isSecureMode: isSecureMode)
     self.walletCellsConfigurations = cellConfigurations
     self.selectedWalletIndex = state.selectedWallet
     self.didUpdateSnapshot?(snapshot)
@@ -104,13 +108,15 @@ private extension WalletsListViewModelImplementation {
     }
   }
   
-  private func updateList(wallets: [Wallet], totalBalanceState: TotalBalanceStore.State) -> (WalletsListViewController.Snapshot, [String: TKListItemCell.Configuration]) {
+  private func updateList(wallets: [Wallet],
+                          totalBalanceState: TotalBalanceStore.State,
+                          isSecureMode: Bool) -> (WalletsListViewController.Snapshot, [String: TKListItemCell.Configuration]) {
     var snapshot = WalletsListViewController.Snapshot()
     
     var cellConfigurations = [String: TKListItemCell.Configuration]()
     var items = [WalletsListItem]()
     for wallet in wallets {
-      let cellConfiguration = createWalletCellConfiguration(wallet: wallet, totalBalanceState: totalBalanceState[wallet])
+      let cellConfiguration = createWalletCellConfiguration(wallet: wallet, totalBalanceState: totalBalanceState[wallet], isSecure: isSecureMode)
       cellConfigurations[wallet.id] = cellConfiguration
       items.append(createItem(wallet: wallet))
     }
@@ -173,22 +179,28 @@ private extension WalletsListViewModelImplementation {
       }
   }
   
-  private func createWalletCellConfiguration(wallet: Wallet, totalBalanceState: TotalBalanceState?) -> TKListItemCell.Configuration {
+  private func createWalletCellConfiguration(wallet: Wallet, totalBalanceState: TotalBalanceState?, isSecure: Bool) -> TKListItemCell.Configuration {
     let titleViewConfiguration = TKListItemTitleView.Configuration(
       title: wallet.label,
       tagConfiguration: wallet.listTagConfiguration()
     )
     
-    var captionViewsConfigurations = [TKListItemTextView.Configuration]()
-    if let totalBalance = totalBalanceState?.totalBalance {
-      let caption = decimalAmountFormatter.format(
+    let caption: String
+    if isSecure {
+      caption = .secureModeValue
+    } else if let totalBalance = totalBalanceState?.totalBalance {
+     caption = decimalAmountFormatter.format(
         amount: totalBalance.amount,
         maximumFractionDigits: 2,
         currency: totalBalance.currency
       )
-      captionViewsConfigurations.append(TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2))
+    } else {
+      caption = "---"
     }
     
+    var captionViewsConfigurations = [TKListItemTextView.Configuration]()
+    captionViewsConfigurations.append(TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2))
+
     let iconContent: TKListItemIconView.Configuration.Content
     switch wallet.icon {
     case .emoji(let emoji):
@@ -217,7 +229,8 @@ private extension WalletsListViewModelImplementation {
   func didUpdateWalletsState(walletsState: WalletsListModelState) {
     syncQueue.async {
       let totalBalancesState = self.totalBalancesStore.getState()
-      let (snapshot, cellConfigurations) = self.updateList(wallets: walletsState.wallets, totalBalanceState: totalBalancesState)
+      let isSecureMode = self.appSettingsStore.getState().isSecureMode
+      let (snapshot, cellConfigurations) = self.updateList(wallets: walletsState.wallets, totalBalanceState: totalBalancesState, isSecureMode: isSecureMode)
       DispatchQueue.main.async {
         self.selectedWalletIndex = walletsState.selectedWallet
         self.walletCellsConfigurations = cellConfigurations
@@ -231,13 +244,30 @@ private extension WalletsListViewModelImplementation {
     case .didUpdateTotalBalance(_, let wallet):
       syncQueue.async {
         let totalBalanceState = self.totalBalancesStore.getState()[wallet]
-        self.didUpdateTotalBalancesState(state: totalBalanceState, wallet: wallet)
+        let isSecure = self.appSettingsStore.getState().isSecureMode
+        self.didUpdateTotalBalancesState(state: totalBalanceState, wallet: wallet, isSecure: isSecure)
       }
     }
   }
   
-  func didUpdateTotalBalancesState(state: TotalBalanceState?, wallet: Wallet) {
-    let cellConfiguration = createWalletCellConfiguration(wallet: wallet, totalBalanceState: state)
+  func didAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+    switch event {
+    case .didUpdateIsSecureMode:
+      syncQueue.async {
+        let wallets = self.model.getState().wallets
+        let totalBalanceState = self.totalBalancesStore.getState()
+        let isSecure = self.appSettingsStore.getState().isSecureMode
+        for wallet in wallets {
+          self.didUpdateTotalBalancesState(state: totalBalanceState[wallet], wallet: wallet, isSecure: isSecure)
+        }
+      }
+    case .didUpdateIsSetupFinished:
+      break
+    }
+  }
+  
+  func didUpdateTotalBalancesState(state: TotalBalanceState?, wallet: Wallet, isSecure: Bool) {
+    let cellConfiguration = createWalletCellConfiguration(wallet: wallet, totalBalanceState: state, isSecure: isSecure)
     let item = createItem(wallet: wallet)
     DispatchQueue.main.async {
       self.walletCellsConfigurations[wallet.id] = cellConfiguration

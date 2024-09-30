@@ -490,6 +490,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
