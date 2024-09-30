@@ -140,6 +140,7 @@
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";
 "backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
+"backup.balance.warning" = "Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.";
 "backup.done.title" = "Manual Backup On";
 "backup.done.subtitle" = "Last backup %@";
 
@@ -182,6 +183,7 @@
 "send.title" = "Send";
 "send.recepient.placeholder" = "Address or name";
 "send.amount.placeholder" = "Amount";
+"send.remaining" = "Remaining";
 
 "send.comment.placeholder" = "Comment";
 "send.comment.description" = "Will be visible to everyone.";

@@ -4,13 +4,18 @@ import TKUIKit
 final class NFTDetailsInformationView: UIView, ConfigurableView {
   
   struct Model {
-    let imageViewModel: TKImageView.Model
+    struct Image {
+      let imageViewModel: TKImageView.Model
+      let isBlurVisible: Bool
+    }
+    let image: Image
     let itemInformationViewModel: NFTDetailsItemInformationView.Model
     let collectionInformationViewModel: NFTDetailsCollectionInformationView.Model?
   }
   
   func configure(model: Model) {
-    imageView.configure(model: model.imageViewModel)
+    imageView.configure(model: model.image.imageViewModel)
+    imageBlurView.isHidden = !model.image.isBlurVisible
     itemInformationView.configure(model: model.itemInformationViewModel)
     if let collectionInformationViewModel = model.collectionInformationViewModel {
       separatorView.isHidden = false
@@ -24,6 +29,7 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
   
   private let containerView = UIView()
   private let imageView = TKImageView()
+  private let imageBlurView = TKSecureBlurView()
   private let itemInformationView = NFTDetailsItemInformationView()
   private let separatorView = TKSeparatorView()
   private let collectionInformationView = NFTDetailsCollectionInformationView()
@@ -49,12 +55,15 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
     containerView.layer.cornerRadius = 16
     containerView.layer.cornerCurve = .continuous
     
+    imageBlurView.isHidden = true
+    
     addSubview(containerView)
     containerView.addSubview(stackView)
     stackView.addArrangedSubview(imageView)
     stackView.addArrangedSubview(itemInformationView)
     stackView.addArrangedSubview(separatorView)
     stackView.addArrangedSubview(collectionInformationView)
+    imageView.addSubviews(imageBlurView)
     
     setupConstraints()
   }
@@ -72,6 +81,10 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
     
     imageView.snp.makeConstraints { make in
       make.height.equalTo(imageView.snp.width)
+    }
+    
+    imageBlurView.snp.makeConstraints { make in
+      make.edges.equalTo(imageView)
     }
   }
 }

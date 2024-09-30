@@ -12,7 +12,8 @@ struct NFTDetailsAssembly {
     let viewModel = NFTDetailsViewModelImplementation(
       nft: nft,
       wallet: wallet,
-      dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService()
+      dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService(),
+      appSetttingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
     )
     let viewController = NFTDetailsViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

@@ -55,7 +55,7 @@ struct WalletBalanceListMapper {
                       isPinned: Bool,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
     let commentConfiguration = { () -> TKCommentView.Model? in
-      guard let comment = mapStakingItemComment(item, stakingCollectHandler: stakingCollectHandler) else {
+      guard let comment = mapStakingItemComment(item, isSecure: isSecure, stakingCollectHandler: stakingCollectHandler) else {
         return nil
       }
       return TKCommentView.Model(comment: comment.text, tapClosure: comment.tapHandler)
@@ -70,6 +70,7 @@ struct WalletBalanceListMapper {
   }
   
   private func mapStakingItemComment(_ item: ProcessedBalanceStakingItem,
+                                     isSecure: Bool,
                                      stakingCollectHandler: (() -> Void)?) -> Comment? {
     
     let estimate: String = {
@@ -81,28 +82,46 @@ struct WalletBalanceListMapper {
     }()
     
     if item.info.pendingDeposit > 0 {
-      let amount = amountFormatter.formatAmount(
-        BigUInt(item.info.pendingDeposit),
-        fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2)
+      let amount: String = {
+        if isSecure {
+          return .secureModeValueShort
+        } else {
+          return amountFormatter.formatAmount(
+            BigUInt(item.info.pendingDeposit),
+            fractionDigits: TonInfo.fractionDigits,
+            maximumFractionDigits: 2)
+        }
+      }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.staked(amount))\(estimate)"
       return Comment(text: comment, tapHandler: nil)
     }
     
     if item.info.pendingWithdraw > 0 {
-      let amount = amountFormatter.formatAmount(
-        BigUInt(item.info.pendingWithdraw),
-        fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2)
+      let amount: String = {
+        if isSecure {
+          return .secureModeValueShort
+        } else {
+          return amountFormatter.formatAmount(
+            BigUInt(item.info.pendingWithdraw),
+            fractionDigits: TonInfo.fractionDigits,
+            maximumFractionDigits: 2)
+        }
+      }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.unstaked(amount))\(estimate)"
       return Comment(text: comment, tapHandler: nil)
     }
     
     if item.info.readyWithdraw > 0 {
-      let amount = amountFormatter.formatAmount(
-        BigUInt(item.info.readyWithdraw),
-        fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2)
+      let amount: String = {
+        if isSecure {
+          return .secureModeValueShort
+        } else {
+          return amountFormatter.formatAmount(
+            BigUInt(item.info.readyWithdraw),
+            fractionDigits: TonInfo.fractionDigits,
+            maximumFractionDigits: 2)
+        }
+      }()
       
       let comment = TKLocales.BalanceList.StakingItem.Comment.ready(amount)
       return Comment(text: comment, tapHandler: stakingCollectHandler)
@@ -224,7 +243,8 @@ private extension CGFloat {
 }
 
 extension String {
-  static let secureModeValue = "* * *"
+  static let secureModeValueShort = "* * *"
+  static let secureModeValueLong = "* * * *"
   static let faceID = TKLocales.SettingsListSecurityConfigurator.faceId
   static let touchID = TKLocales.SettingsListSecurityConfigurator.touchId
 }

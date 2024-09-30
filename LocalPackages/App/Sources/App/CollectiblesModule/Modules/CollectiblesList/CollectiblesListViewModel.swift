@@ -37,6 +37,16 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
       }
     }
     
+    appSettingsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateIsSecureMode:
+        DispatchQueue.main.async {
+          observer.update()
+        }
+      default: break
+      }
+    }
+    
     update()
   }
   
@@ -63,25 +73,29 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   private let wallet: Wallet
   private let walletNFTsManagedStore: WalletNFTsManagedStore
+  private let appSettingsStore: AppSettingsV3Store
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletNFTsManagedStore: WalletNFTsManagedStore) {
+       walletNFTsManagedStore: WalletNFTsManagedStore,
+       appSettingsStore: AppSettingsV3Store) {
     self.wallet = wallet
     self.walletNFTsManagedStore = walletNFTsManagedStore
+    self.appSettingsStore = appSettingsStore
   }
 }
 
 private extension CollectiblesListViewModelImplementation {
   func update() {
     let nfts = walletNFTsManagedStore.getState()
-    update(nfts: nfts)
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    update(nfts: nfts, isSecureMode: isSecureMode)
   }
   
-  func update(nfts: [NFT]) {
+  func update(nfts: [NFT], isSecureMode: Bool) {
     let snapshot = self.createSnapshot(state: nfts)
-    let models = self.createModels(state: nfts)
+    let models = self.createModels(state: nfts, isSecureMode: isSecureMode)
     self.nfts = nfts
     self.models = models
     self.didUpdateSnapshot?(snapshot)
@@ -91,13 +105,18 @@ private extension CollectiblesListViewModelImplementation {
     var snapshot = CollectiblesListViewController.Snapshot()
     snapshot.appendSections([.all])
     snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems(snapshot.itemIdentifiers)
+    } else {
+      snapshot.reloadItems(snapshot.itemIdentifiers)
+    }
 
     return snapshot
   }
   
-  func createModels(state: [NFT]) -> [String: CollectibleCollectionViewCell.Model] {
+  func createModels(state: [NFT], isSecureMode: Bool) -> [String: CollectibleCollectionViewCell.Model] {
     return state.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
-      let model = collectiblesListMapper.map(nft: item)
+      let model = collectiblesListMapper.map(nft: item, isSecureMode: isSecureMode)
       let identifier = item.address.toString()
       result[identifier] = model
     })

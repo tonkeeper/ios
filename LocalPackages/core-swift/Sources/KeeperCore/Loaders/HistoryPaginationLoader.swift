@@ -2,22 +2,21 @@ import Foundation
 import TonSwift
 
 public final class HistoryPaginationLoader {
-  
   public enum Event {
-    case loading
-    case loadingFailed
-    case loaded(AccountEvents, hasMore: Bool)
-    case loadedPage(AccountEvents, hasMore: Bool)
+    case initialLoading
+    case initialLoadingFailed
+    case initialLoaded(AccountEvents)
     case pageLoading
     case pageLoadingFailed
+    case pageLoaded(AccountEvents)
   }
   
-  enum State {
+  public var eventHandler: ((Event) -> Void)?
+  
+  private enum State {
     case idle
     case loading(Task<Void, Never>)
   }
-  
-  public var didGetEvent: ((Event) -> Void)?
   
   private let queue = DispatchQueue(label: "HistoryPaginationLoaderQueue")
   private var state: State = .idle
@@ -25,94 +24,109 @@ public final class HistoryPaginationLoader {
   
   private let wallet: Wallet
   private let loader: HistoryListLoader
+  private let nftService: NFTService
   
-  init(wallet: Wallet, loader: HistoryListLoader) {
+  init(wallet: Wallet,
+       loader: HistoryListLoader,
+       nftService: NFTService) {
     self.wallet = wallet
     self.loader = loader
+    self.nftService = nftService
   }
   
   public func reload() {
-    queue.async { [weak self] in
-      guard let self else { return }
+    queue.async {
       if case let .loading(task) = self.state {
         task.cancel()
       }
-      
-      let nextFrom = nextFrom
-      
-      self.didGetEvent?(.loading)
+      self.nextFrom = nil
+            
       let task = Task {
-        let loadEvent: Event
-        let newNextFrom: Int64?
         do {
-          let events = try await self.loadNextPage(nextFrom: nextFrom)
-          guard !Task.isCancelled else { return }
-          loadEvent = .loaded(events, hasMore: events.nextFrom != 0)
-          newNextFrom = events.nextFrom
+          let events = try await self.loadNextPage(nextFrom: nil)
+          try Task.checkCancellation()
+          self.queue.async {
+            self.nextFrom = events.nextFrom
+            self.eventHandler?(.initialLoaded(events))
+            self.state = .idle
+          }
         } catch {
-          loadEvent = .loadingFailed
-          newNextFrom = nextFrom
-        }
-        self.queue.async {
-          self.nextFrom = newNextFrom
-          self.didGetEvent?(loadEvent)
-          self.state = .idle
+          self.queue.async {
+            guard !error.isCancelledError else { return }
+            self.eventHandler?(.initialLoadingFailed)
+            self.state = .idle
+          }
         }
       }
       
+      self.eventHandler?(.initialLoading)
       self.state = .loading(task)
     }
   }
   
   public func loadNext() {
-    queue.async { [weak self] in
-      guard let self else { return }
+    queue.async {
       guard case .idle = self.state else {
         return
       }
+      guard self.nextFrom != 0 else { return }
       
-      guard nextFrom != 0 else { return }
-      
-      didGetEvent?(.pageLoading)
-      
-      let nextFrom = nextFrom
+      let nextFrom = self.nextFrom
       
       let task = Task {
-        let loadEvent: Event
-        let newNextFrom: Int64?
         do {
           let events = try await self.loadNextPage(nextFrom: nextFrom)
-          guard !Task.isCancelled else { return }
-          loadEvent = .loadedPage(events, hasMore: events.nextFrom != 0)
-          newNextFrom = events.nextFrom
+          try Task.checkCancellation()
+          self.queue.async {
+            self.nextFrom = events.nextFrom
+            self.eventHandler?(.pageLoaded(events))
+            self.state = .idle
+          }
         } catch {
-          loadEvent = .pageLoadingFailed
-          newNextFrom = nextFrom
-        }
-        self.queue.async {
-          self.nextFrom = newNextFrom
-          self.didGetEvent?(loadEvent)
-          self.state = .idle
+          self.queue.async {
+            guard !error.isCancelledError else { return }
+            self.eventHandler?(.pageLoadingFailed)
+            self.state = .idle
+          }
         }
       }
       
+      self.eventHandler?(.pageLoading)
       self.state = .loading(task)
     }
   }
   
-  public func loadNextPage(nextFrom: Int64?) async throws -> AccountEvents {
+  func loadNextPage(nextFrom: Int64?) async throws -> AccountEvents {
     let events = try await loader.loadEvents(
       wallet: wallet,
       beforeLt: nextFrom,
       limit: .limit
     )
+    try Task.checkCancellation()
+    await handleEventsWithNFTs(events: events.events)
     if events.events.isEmpty && events.nextFrom != 0 {
       return try await loadNextPage(nextFrom: events.nextFrom)
     }
     return events
   }
+  
+  func handleEventsWithNFTs(events: [AccountEvent]) async {
+      let actions = events.flatMap { $0.actions }
+      var nftAddressesToLoad = Set<Address>()
+      for action in actions {
+        switch action.type {
+        case .nftItemTransfer(let nftItemTransfer):
+          nftAddressesToLoad.insert(nftItemTransfer.nftAddress)
+        case .nftPurchase(let nftPurchase):
+          try? nftService.saveNFT(nft: nftPurchase.nft, isTestnet: wallet.isTestnet)
+        default: continue
+        }
+      }
+      guard !nftAddressesToLoad.isEmpty else { return }
+      _ = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet)
+    }
 }
 
 private extension Int {
-  static let limit: Int = 25
+  static let limit: Int = 50
 }

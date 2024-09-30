@@ -336,6 +336,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
   private let balanceStore: ConvertedBalanceStore
+  private let appSettingsStore: AppSettingsV3Store
   
   // MARK: - Init
   
@@ -344,13 +345,15 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
        recipient: Recipient?,
        comment: String?,
        sendController: SendV3Controller,
-       balanceStore: ConvertedBalanceStore) {
+       balanceStore: ConvertedBalanceStore,
+       appSettingsStore: AppSettingsV3Store) {
     self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient
     self.commentInput = comment ?? ""
     self.sendController = sendController
     self.balanceStore = balanceStore
+    self.appSettingsStore = appSettingsStore
     
     switch sendItem {
     case .token(let token, _):
@@ -511,7 +514,7 @@ private extension SendV3ViewModelImplementation {
       switch sendItem {
       case .nft: break
       case .token(let token, let amount):
-        let remaining = await sendController.calculateRemaining(token: token, tokenAmount: amount)
+        let remaining = await sendController.calculateRemaining(token: token, tokenAmount: amount, isSecure: appSettingsStore.getState().isSecureMode)
         await MainActor.run {
           self.remaining = remaining
           update()
@@ -522,7 +525,6 @@ private extension SendV3ViewModelImplementation {
   
   func updateConverted() {
     Task {
-      
       switch sendItem {
       case .nft: break
       case .token(let token, let amount):

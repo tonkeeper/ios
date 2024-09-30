@@ -14,6 +14,7 @@ struct TokenPickerAssembly {
         selectedToken: selectedToken,
         balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
       ),
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     let viewController = TokenPickerViewController(viewModel: viewModel)

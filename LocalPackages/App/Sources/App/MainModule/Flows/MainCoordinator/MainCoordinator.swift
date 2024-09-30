@@ -490,6 +490,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
@@ -620,6 +621,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       configurator: TonTokenDetailsConfigurator(
         wallet: wallet,
         mapper: TokenDetailsMapper(
@@ -672,6 +674,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       configurator: JettonTokenDetailsConfigurator(wallet: wallet,
                                                    jettonItem: jettonItem,
                                                    mapper: TokenDetailsMapper(
@@ -936,7 +939,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let configuration = SettingsListBackupConfigurator(
       wallet: wallet,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+      processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
     )
     
     configuration.didTapBackupManually = { [weak self] in

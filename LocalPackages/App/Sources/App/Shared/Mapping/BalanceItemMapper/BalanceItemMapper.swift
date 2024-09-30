@@ -120,13 +120,13 @@ struct BalanceItemMapper {
       )
     }
     
-    let value = (isSecure ? String.secureModeValue : formatAmount()).withTextStyle(
+    let value = (isSecure ? String.secureModeValueShort : formatAmount()).withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .right,
       lineBreakMode: .byTruncatingTail
     )
-    let valueCaption = (isSecure ? String.secureModeValue : formatConvertedAmount()).withTextStyle(
+    let valueCaption = (isSecure ? String.secureModeValueShort : formatConvertedAmount()).withTextStyle(
       .body2,
       color: .Text.secondary,
       alignment: .right,
@@ -162,13 +162,13 @@ struct BalanceItemMapper {
       )
     }
     
-    let value = (isSecure ? String.secureModeValue : formatAmount()).withTextStyle(
+    let value = (isSecure ? String.secureModeValueShort : formatAmount()).withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .right,
       lineBreakMode: .byTruncatingTail
     )
-    let valueSubtitle = (isSecure ? String.secureModeValue : formatConvertedAmount()).withTextStyle(
+    let valueSubtitle = (isSecure ? String.secureModeValueShort : formatConvertedAmount()).withTextStyle(
       .body2,
       color: .Text.secondary,
       alignment: .right,

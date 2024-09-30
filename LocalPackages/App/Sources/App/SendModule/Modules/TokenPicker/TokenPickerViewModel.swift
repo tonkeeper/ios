@@ -46,13 +46,16 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   // MARK: - Dependencies
   
   private let tokenPickerModel: TokenPickerModel
+  private let appSettingsStore: AppSettingsV3Store
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(tokenPickerModel: TokenPickerModel,
+       appSettingsStore: AppSettingsV3Store,
        amountFormatter: AmountFormatter) {
     self.tokenPickerModel = tokenPickerModel
+    self.appSettingsStore = appSettingsStore
     self.amountFormatter = amountFormatter
   }
 }
@@ -66,17 +69,25 @@ private extension TokenPickerViewModelImplementation {
         }
         return
       }
+      let isSecureMode = self.appSettingsStore.getState().isSecureMode
       
       var models = [TKUIListItemCell.Configuration]()
       
       let tonModel: TKUIListItemCell.Configuration = {
         let title = TonInfo.name
-        let caption = self.amountFormatter.formatAmount(
-          BigUInt(state.tonBalance.tonBalance.amount),
-          fractionDigits: TonInfo.fractionDigits,
-          maximumFractionDigits: 2,
-          symbol: TonInfo.symbol
-        )
+        let caption: String = {
+          if isSecureMode {
+            return .secureModeValueShort
+          } else {
+            return self.amountFormatter.formatAmount(
+              BigUInt(state.tonBalance.tonBalance.amount),
+              fractionDigits: TonInfo.fractionDigits,
+              maximumFractionDigits: 2,
+              symbol: TonInfo.symbol
+            )
+          }
+        }()
+        
         return self.createCellModel(
           id: TonInfo.name,
           image: .ton,
@@ -104,12 +115,18 @@ private extension TokenPickerViewModelImplementation {
       let jettonModels = sortedJettonBalances
         .map { jettonBalance in
           let title = jettonBalance.jettonBalance.item.jettonInfo.symbol ?? jettonBalance.jettonBalance.item.jettonInfo.name
-          let caption = self.amountFormatter.formatAmount(
-            jettonBalance.jettonBalance.quantity,
-            fractionDigits: jettonBalance.jettonBalance.item.jettonInfo.fractionDigits,
-            maximumFractionDigits: 2,
-            symbol: jettonBalance.jettonBalance.item.jettonInfo.symbol
-          )
+          let caption: String = {
+            if isSecureMode {
+              return .secureModeValueShort
+            } else {
+              return self.amountFormatter.formatAmount(
+                jettonBalance.jettonBalance.quantity,
+                fractionDigits: jettonBalance.jettonBalance.item.jettonInfo.fractionDigits,
+                maximumFractionDigits: 2,
+                symbol: jettonBalance.jettonBalance.item.jettonInfo.symbol
+              )
+            }
+          }()
           return self.createCellModel(
             id: jettonBalance.jettonBalance.item.jettonInfo.address.toRaw(),
             image: .url(jettonBalance.jettonBalance.item.jettonInfo.imageURL),

@@ -8,7 +8,6 @@ enum HistoryListSection: Hashable {
 
 struct HistoryListEventsSection: Hashable {
   let date: Date
-  let title: String?
 }
 
 enum HistoryListItem: Hashable {

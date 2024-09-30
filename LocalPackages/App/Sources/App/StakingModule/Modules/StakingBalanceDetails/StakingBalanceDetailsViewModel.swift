@@ -76,6 +76,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let balanceStore: ProcessedBalanceStore
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
+  private let appSettingsStore: AppSettingsV3Store
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -90,6 +91,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        balanceStore: ProcessedBalanceStore,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
+       appSettingsStore: AppSettingsV3Store,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
@@ -101,6 +103,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
     self.balanceStore = balanceStore
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
+    self.appSettingsStore = appSettingsStore
     self.decimalFormatter = decimalFormatter
     self.amountFormatter = amountFormatter
   }
@@ -169,18 +172,32 @@ private extension StakingBalanceDetailsViewModelImplementation {
       return
     }
     
-    let tokenAmount = amountFormatter.formatAmount(
-      BigUInt(UInt64(balanceItem.info.amount)),
-      fractionDigits: TonInfo.fractionDigits,
-      maximumFractionDigits: TonInfo.fractionDigits,
-      symbol: TonInfo.symbol
-    )
+    let isSecureMode = appSettingsStore.getState().isSecureMode
     
-    let convertedAmount = decimalFormatter.format(
-      amount: balanceItem.amountConverted,
-      maximumFractionDigits: 2,
-      currency: balanceItem.currency
-    )
+    let tokenAmount: String = {
+      if isSecureMode {
+        return .secureModeValueShort
+      } else {
+        return amountFormatter.formatAmount(
+          BigUInt(UInt64(balanceItem.info.amount)),
+          fractionDigits: TonInfo.fractionDigits,
+          maximumFractionDigits: TonInfo.fractionDigits,
+          symbol: TonInfo.symbol
+        )
+      }
+    }()
+    
+    let convertedAmount: String = {
+      if isSecureMode {
+        return .secureModeValueShort
+      } else {
+        return decimalFormatter.format(
+          amount: balanceItem.amountConverted,
+          maximumFractionDigits: 2,
+          currency: balanceItem.currency
+        )
+      }
+    }()
     
     let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolInfo.implementation.icon)
     let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
@@ -224,7 +241,9 @@ private extension StakingBalanceDetailsViewModelImplementation {
       return
     }
     
-    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem)
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    
+    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem, isSecure: isSecureMode)
     didUpdateJettonItemView?(
       TKListItemButton.Configuration(
         listItemConfiguration: configuration,
@@ -250,6 +269,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
       return
     }
     
+    let isSecureMode = appSettingsStore.getState().isSecureMode
     let currency = currencyStore.getState()
     
     func convert(amount: Int64) -> Decimal {
@@ -297,18 +317,30 @@ private extension StakingBalanceDetailsViewModelImplementation {
       return
     }
     
-    let amountFormatted = amountFormatter.formatAmount(
-      BigUInt(UInt64(amount)),
-      fractionDigits: TonInfo.fractionDigits,
-      maximumFractionDigits: 2,
-      symbol: TonInfo.symbol
-    )
+    let amountFormatted: String = {
+      if isSecureMode {
+        return .secureModeValueShort
+      } else {
+        return amountFormatter.formatAmount(
+          BigUInt(UInt64(amount)),
+          fractionDigits: TonInfo.fractionDigits,
+          maximumFractionDigits: 2,
+          symbol: TonInfo.symbol
+        )
+      }
+    }()
     
-    let convertedFormatted = decimalFormatter.format(
-      amount: converted,
-      maximumFractionDigits: 2,
-      currency: currency
-    )
+    let convertedFormatted: String = {
+      if isSecureMode {
+        return .secureModeValueShort
+      } else {
+        return decimalFormatter.format(
+          amount: converted,
+          maximumFractionDigits: 2,
+          currency: currency
+        )
+      }
+    }()
     
     let configuration = TKListItemButton.Configuration(
       listItemConfiguration: TKListItemContentView.Configuration(

@@ -16,7 +16,8 @@ struct SendV3Assembly {
       recipient: recipient,
       comment: comment,
       sendController: keeperCoreMainAssembly.sendV3Controller(wallet: wallet),
-      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
     )
     let viewController = SendV3ViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)
