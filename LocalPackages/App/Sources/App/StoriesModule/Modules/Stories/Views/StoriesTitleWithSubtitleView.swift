@@ -55,7 +55,7 @@ private extension StoriesTitleWithSubtitleView {
     subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      contentView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: .bottomSpacing),
+      contentView.bottomAnchor.constraint(equalTo: bottomAnchor),
       contentView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: .horizontalInset),
       contentView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -.horizontalInset),
       
@@ -74,5 +74,4 @@ private extension StoriesTitleWithSubtitleView {
 private extension CGFloat {
   static let subtitleTopInset: CGFloat = 8
   static let horizontalInset: CGFloat = 32
-  static let bottomSpacing: CGFloat = -28
 }

@@ -61,6 +61,7 @@
 "settings.items.delete_account" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 "settings.items.wallet_w5" = "Кошелёк W5";
+"settings.items.wallet_v4R2" = "Кошелёк v4R2";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";

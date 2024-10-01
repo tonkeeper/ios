@@ -4,19 +4,32 @@ import TKUIKit
 import TonSwift
 
 public final class StoriesController {
+    public struct StoryButton {
+      public let action: () -> Void
+      public let title: String
+      
+      public init(title: String,
+                  action: @escaping () -> Void
+      ) {
+        self.action = action
+        self.title = title
+      }
+    }
+  
+  
   public struct StoryPage {
     public let title: String
     public let description: String
-    public let buttonTitle: Optional<String>
+    public let button: Optional<StoryButton>
     public let backgroundImage: UIImage
     
     public init(title: String,
                 description: String,
-                buttonTitle: Optional<String>,
+                button: Optional<StoryButton>,
                 backgroundImage: UIImage) {
       self.title = title
       self.description = description
-      self.buttonTitle = buttonTitle
+      self.button = button
       self.backgroundImage = backgroundImage
     }
   }

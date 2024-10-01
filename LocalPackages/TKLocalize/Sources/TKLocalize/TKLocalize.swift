@@ -259,6 +259,10 @@ public enum TKLocales {
       public static var wallet_w5: String {
         localize("settings.items.wallet_w5")
       }
+      /// Wallet v4R2
+      public static var wallet_v4R2: String {
+        localize("settings.items.wallet_v4R2")
+      }
     }
     public enum Logout {
       /// Log out?

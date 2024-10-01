@@ -110,18 +110,42 @@ private extension SettingsCoordinator {
     router.present(navigationController)
   }
   
+  func didTapAddW5Wallet(wallet: Wallet) {
+    let coordinator = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+      )
+    ).createAddW5WalletCoordinator(
+      wallet: wallet,
+      router: ViewControllerRouter(rootViewController: router.rootViewController)
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
   func openW5Story(wallet: Wallet) {
+    func onTapCallback() {
+      self.didTapAddW5Wallet(wallet: wallet)
+    }
+    
+    // TODO: fix button on story page
+    return onTapCallback()
+    
     let module = StoriesModule(
       dependencies: StoriesModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
     ).storiesModule(pages: [
-      StoriesController.StoryPage(title: TKLocales.W5Stories.Gasless.title, description: TKLocales.W5Stories.Gasless.subtitle, buttonTitle: nil, backgroundImage: .TKUIKit.Images.storyGasless), StoriesController.StoryPage(title: TKLocales.W5Stories.Messages.title, description: TKLocales.W5Stories.Messages.subtitle, buttonTitle: nil, backgroundImage: .TKUIKit.Images.storyMessages), StoriesController.StoryPage(title: TKLocales.W5Stories.Phrase.title, description: TKLocales.W5Stories.Phrase.subtitle, buttonTitle: TKLocales.W5Stories.Phrase.button, backgroundImage: .TKUIKit.Images.storyPhrase)
+      StoriesController.StoryPage(title: TKLocales.W5Stories.Gasless.title, description: TKLocales.W5Stories.Gasless.subtitle, button: nil, backgroundImage: .TKUIKit.Images.storyGasless), StoriesController.StoryPage(title: TKLocales.W5Stories.Messages.title, description: TKLocales.W5Stories.Messages.subtitle, button: nil, backgroundImage: .TKUIKit.Images.storyMessages), StoriesController.StoryPage(title: TKLocales.W5Stories.Phrase.title, description: TKLocales.W5Stories.Phrase.subtitle, button: .init(title: TKLocales.W5Stories.Phrase.button, action: onTapCallback), backgroundImage: .TKUIKit.Images.storyPhrase)
     ])
-        
+    
     let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     router.present(navigationController)
   }

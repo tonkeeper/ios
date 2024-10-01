@@ -2,12 +2,19 @@ import UIKit
 import TKUIKit
 
 final class StoriesButtonView: UIView, ConfigurableView {
-  private var baseButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-    category: .overlay,
-    size: .medium
-  )
+  lazy var storiesButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .medium
+    )
+    configuration.backgroundColors = [
+      .normal: .white,
+      .highlighted: .white.withAlphaComponent(0.44)
+    ]
+    configuration.textColor = .black
+    return TKButton(configuration: configuration)
+  }()
   
-  lazy var storiesButton = TKButton(configuration: baseButtonConfiguration)
   let storiesButtonContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
     container.padding = .storiesButtonPadding
@@ -29,34 +36,49 @@ final class StoriesButtonView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    let buttonConfiguration = TKButton.Configuration(content: .init(title: TKButton.Configuration.Content.Title.plainString(model.title)), action: model.action)
-        
-    storiesButton.isHidden = false
-    storiesButton.configuration = buttonConfiguration
+    storiesButton.configuration.content = .init(title: .plainString(model.title))
+    storiesButton.configuration.action = { [weak self] in
+      model.action()
+    }
   }
   
   func hideButton() {
-    storiesButton.isHidden = true
+    super.isHidden = true
   }
   
   func showButton() {
-    storiesButton.isHidden = false
+    super.isHidden = false
   }
 }
 
 private extension StoriesButtonView {
   func setup() {
-    
-    storiesButtonContainer.addSubview(storiesButton)
     addSubview(storiesButtonContainer)
+    storiesButtonContainer.setViews([storiesButton])
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    storiesButtonContainer.translatesAutoresizingMaskIntoConstraints = false
+
+    NSLayoutConstraint.activate([
+      storiesButtonContainer.topAnchor.constraint(equalTo: topAnchor),
+      storiesButtonContainer.leftAnchor.constraint(equalTo: leftAnchor),
+      storiesButtonContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      storiesButtonContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: .bottomSpacing),
+    ])
   }
 }
 
 private extension UIEdgeInsets {
   static let storiesButtonPadding = UIEdgeInsets(
     top: 0,
-    left: 0,
-    bottom: 30,
-    right: 0
+    left: 32,
+    bottom: 0,
+    right: 32
   )
+}
+
+private extension CGFloat {
+  static let bottomSpacing: CGFloat = 4
 }

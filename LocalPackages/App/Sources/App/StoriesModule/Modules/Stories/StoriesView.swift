@@ -30,18 +30,15 @@ final class StoriesView: UIView, ConfigurableView {
     public let pages: [StoriesController.StoryPage]
   }
   
-  func test() {
-    print("Tap")
-  }
-  
   func configure(model: Model) {
     let currentPage = model.pages[model.currentPageIndex]
     titleWithSubtitleView.configure(model: .init(title: currentPage.title, subtitle: currentPage.description))
     
-    if (currentPage.buttonTitle != nil) {
-      storiesButtonView.configure(model: .init(action: test, title: currentPage.buttonTitle!))
+    if ((currentPage.button) != nil) {
+      storiesButtonView.showButton()
+      storiesButtonView.configure(model: .init(action: currentPage.button!.action, title: currentPage.button!.title))
     } else {
-      storiesButtonView.configure(model: nil)
+      storiesButtonView.hideButton()
     }
     
     imageBackgroundView.image = currentPage.backgroundImage
@@ -77,7 +74,11 @@ private extension StoriesView {
       contentStackView.topAnchor.constraint(equalTo: imageBackgroundView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: imageBackgroundView.leftAnchor),
       contentStackView.rightAnchor.constraint(equalTo: imageBackgroundView.rightAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: imageBackgroundView.bottomAnchor),
+      contentStackView.bottomAnchor.constraint(equalTo: imageBackgroundView.bottomAnchor, constant: .bottomSpacing),
     ])
   }
+}
+
+private extension CGFloat {
+  static let bottomSpacing: CGFloat = -28
 }

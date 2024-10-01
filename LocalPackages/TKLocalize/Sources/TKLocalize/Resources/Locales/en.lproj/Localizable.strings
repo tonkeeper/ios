@@ -61,6 +61,7 @@
 "settings.items.delete_account" = "Delete account";
 "settings.items.setup_wallet_description" = "Edit name and color";
 "settings.items.wallet_w5" = "Wallet W5";
+"settings.items.wallet_v4R2" = "Wallet v4R2";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
