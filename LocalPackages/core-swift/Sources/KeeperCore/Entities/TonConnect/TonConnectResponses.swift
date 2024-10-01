@@ -122,9 +122,9 @@ public extension TonConnect {
   }
 }
 
-extension TonConnect.TonProofItemReplySuccess {
+public extension TonConnect.TonProofItemReplySuccess {
 
-  public init(address: TonSwift.Address,
+  init(address: TonSwift.Address,
        domain: String,
        payload: String,
        privateKey: PrivateKey) {
