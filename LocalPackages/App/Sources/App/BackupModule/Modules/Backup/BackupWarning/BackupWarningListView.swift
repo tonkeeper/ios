@@ -39,7 +39,8 @@ final class BackupWarningListView: TKView {
   override func setupConstraints() {
     stackView.snp.makeConstraints { make in
       make.top.bottom.equalTo(self).inset(12)
-      make.left.right.equalTo(self).inset(12)
+      make.left.equalTo(self).inset(12)
+      make.right.equalTo(self).inset(16)
     }
   }
 }
@@ -69,7 +70,8 @@ private final class BackupWarningListItemView: TKView {
   override func setupConstraints() {
     dotLabel.snp.makeConstraints { make in
       make.top.equalTo(self).inset(8)
-      make.left.equalTo(self)
+      make.left.equalTo(self).inset(8)
+      make.width.equalTo(5)
     }
     label.snp.makeConstraints { make in
       make.top.bottom.equalTo(self).inset(8)

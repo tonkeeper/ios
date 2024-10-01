@@ -19,6 +19,9 @@ public final class CoreAssembly {
               isTonkeeperX: Bool = false) {
     self.analyticsProvider = analyticsProvider
     self.isTonkeeperX = isTonkeeperX
+    
+    print(sharedCacheURL)
+    print(cacheURL)
   }
   
   public var featureFlagsProvider: FeatureFlagsProvider {
@@ -32,7 +35,6 @@ public final class CoreAssembly {
   public var sharedCacheURL: URL {
     if let appGroupId: String = InfoProvider.appGroupName(),
        let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) {
-      print(containerURL)
       return containerURL
     } else {
       return documentsURL

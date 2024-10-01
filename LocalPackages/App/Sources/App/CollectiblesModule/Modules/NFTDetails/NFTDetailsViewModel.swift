@@ -57,15 +57,19 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private var nft: NFT
   private let wallet: Wallet
   private let dnsService: DNSService
+  private let appSetttingsStore: AppSettingsV3Store
+  
   private let mnemonicRepository: MnemonicsRepository
 
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
+       appSetttingsStore: AppSettingsV3Store,
        mnemonicRepository: MnemonicsRepository) {
     self.nft = nft
     self.wallet = wallet
     self.dnsService = dnsService
+    self.appSetttingsStore = appSetttingsStore
     self.mnemonicRepository = mnemonicRepository
   }
   
@@ -145,14 +149,15 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   // MARK: - Private
   
   private func update() {
-    didUpdateTitleView?(createTitleViewModel())
-    didUpdateInformationView?(createInformationViewModel())
+    let isSecureMode = appSetttingsStore.getState().isSecureMode
+    didUpdateTitleView?(createTitleViewModel(isSecureMode: isSecureMode))
+    didUpdateInformationView?(createInformationViewModel(isSecureMode: isSecureMode))
     didUpdateButtonsView?(createButtonsViewModel())
     didUpdateDetailsView?(createDetailsViewModel())
-    didUpdatePropertiesView?(createPropertiesViewModel())
+    didUpdatePropertiesView?(createPropertiesViewModel(isSecureMode: isSecureMode))
   }
   
-  private func createTitleViewModel() -> TKUINavigationBarTitleView.Model {
+  private func createTitleViewModel(isSecureMode: Bool) -> TKUINavigationBarTitleView.Model {
     let captionModel: TKPlainButton.Model? = {
       switch nft.trust {
       case .whitelist:
@@ -177,24 +182,31 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }()
     
     return TKUINavigationBarTitleView.Model(
-      title: nft.notNilName,
+      title: isSecureMode ? .secureModeValueShort : nft.notNilName,
       caption: captionModel
     )
   }
   
-  private func createInformationViewModel() -> NFTDetailsInformationView.Model {
+  private func createInformationViewModel(isSecureMode: Bool) -> NFTDetailsInformationView.Model {
     let imageViewModel: TKImageView.Model = {
       TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none)
     }()
+    
+    let image = NFTDetailsInformationView.Model.Image(
+      imageViewModel: imageViewModel,
+      isBlurVisible: isSecureMode
+    )
 
     let itemInformationViewModel: NFTDetailsItemInformationView.Model = {
-      let collectionName = nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft
+      let name: String = isSecureMode ? .secureModeValueLong : nft.notNilName
+      let collectionName: String = isSecureMode ? .secureModeValueShort : nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft
+      let nftDescription: String? = isSecureMode ? .secureModeValueShort : nft.description
       return NFTDetailsItemInformationView.Model(
-        name: nft.notNilName,
+        name: name,
         collectionName: collectionName,
         isCollectionVerified: nft.trust == .whitelist,
         itemDescriptionModel: NFTDetailsMoreTextView.Model(
-          text: nft.description,
+          text: nftDescription,
           readMoreText: TKLocales.Actions.more
         )
       )
@@ -205,14 +217,14 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       return NFTDetailsCollectionInformationView.Model(
         title: .aboutCollection,
         collectionDescriptionModel: NFTDetailsMoreTextView.Model(
-          text: collection.description,
+          text: isSecureMode ? .secureModeValueShort : collection.description,
           readMoreText: TKLocales.Actions.more
         )
       )
     }()
     
     return NFTDetailsInformationView.Model(
-      imageViewModel: imageViewModel,
+      image: image,
       itemInformationViewModel: itemInformationViewModel,
       collectionInformationViewModel: collectionInformationViewModel
     )
@@ -286,8 +298,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     )
   }
   
-  private func createPropertiesViewModel() -> NFTDetailsPropertiesView.Model? {
-    guard !nft.attributes.isEmpty else { return nil }
+  private func createPropertiesViewModel(isSecureMode: Bool) -> NFTDetailsPropertiesView.Model? {
+    guard !nft.attributes.isEmpty, !isSecureMode else { return nil }
     
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
       title: TKLocales.NftDetails.properties,

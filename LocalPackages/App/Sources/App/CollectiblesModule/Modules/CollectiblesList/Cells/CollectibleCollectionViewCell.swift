@@ -14,6 +14,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   }()
   private let titleLabel = UILabel()
   private let subtitleLabel = UILabel()
+  private let blurView = TKSecureBlurView()
   
   private var imageDownloadTask: ImageDownloadTask?
   
@@ -37,12 +38,14 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     let title: NSAttributedString?
     let subtitle: NSAttributedString?
     let isOnSale: Bool
+    let isBlurVisible: Bool
     
     init(identifier: String,
          imageDownloadTask: ImageDownloadTask?,
          title: String?,
          subtitle: NSAttributedString?,
-         isOnSale: Bool = false) {
+         isOnSale: Bool = false,
+         isBlurVisible: Bool) {
       self.identifier = identifier
       self.imageDownloadTask = imageDownloadTask
       self.title = title?.withTextStyle(
@@ -53,6 +56,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
       )
       self.subtitle = subtitle
       self.isOnSale = isOnSale
+      self.isBlurVisible = isBlurVisible
     }
     
     func hash(into hasher: inout Hasher) {
@@ -70,6 +74,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     titleLabel.attributedText = model.title
     subtitleLabel.attributedText = model.subtitle
     saleImageView.isHidden = !model.isOnSale
+    blurView.isHidden = !model.isBlurVisible
   }
   
   override func layoutSubviews() {
@@ -87,6 +92,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   
   override func prepareForReuse() {
     super.prepareForReuse()
+    blurView.isHidden = true
     imageView.image = nil
     imageDownloadTask?.cancel()
     imageDownloadTask = nil
@@ -100,6 +106,8 @@ private extension CollectibleCollectionViewCell {
     
     contentView.backgroundColor = .Background.contentTint
     
+    blurView.isHidden = true
+    
     titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
@@ -110,6 +118,7 @@ private extension CollectibleCollectionViewCell {
     contentView.addSubview(highlightView)
     contentView.addSubview(labelContainer)
     contentView.addSubview(imageView)
+    imageView.addSubview(blurView)
     contentView.addSubview(saleImageView)
     
     highlightView.snp.makeConstraints { make in
@@ -119,6 +128,10 @@ private extension CollectibleCollectionViewCell {
     imageView.snp.makeConstraints { make in
       make.top.left.right.equalTo(contentView)
       make.height.equalTo(imageView.snp.width)
+    }
+    
+    blurView.snp.makeConstraints { make in
+      make.edges.equalTo(imageView)
     }
     
     labelContainer.snp.makeConstraints { make in

@@ -22,12 +22,15 @@
 "tabs.history" = "История";
 "tabs.browser" = "Браузер";
 "tabs.purchases" = "Покупки";
+"tabs.collectibles" = "Коллекции";
 
 "list.show_all" = "Показать все";
 "list.hide" = "Скрыть";
 
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
+
+"collectibles.title" = "Коллекции";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
@@ -138,6 +141,7 @@
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";
 "backup.information.subtitle" = "Создайте резервную копию своего кошелька вручную, записав секретный ключ.";
+"backup.balance.warning" = "На вашем балансе %@ и он защищён только секретным ключом, который вы ещё не записали. Сделайте резервную копию ключа, чтобы не потерять средства в случае проблем с устройством.";
 "backup.manually.button" = "Сделать копию вручную";
 "backup.show_phrase.title" = "Показать секретный ключ";
 "backup.done.title" = "Резервная копия сделана";
@@ -180,6 +184,7 @@
 "send.title" = "Отправить";
 "send.recepient.placeholder" = "Адрес или имя";
 "send.amount.placeholder" = "Сумма";
+"send.remaining" = "Доступно";
 
 "send.comment.placeholder" = "Комментарий";
 "send.comment.description" = "Будет виден всем.";

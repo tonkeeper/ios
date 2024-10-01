@@ -141,6 +141,12 @@ public enum TKLocales {
   public enum Backup {
     /// Backup
     public static let title = TKLocales.tr("Localizable", "backup.title", fallback: "Backup")
+    public enum Balance {
+      /// Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.
+      public static func warning(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "backup.balance.warning", String(describing: p1), fallback: "Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.")
+      }
+    }
     public enum Check {
       /// Write down these words with their numbers and store them in a safe place.
       public static let caption = TKLocales.tr("Localizable", "backup.check.caption", fallback: "Write down these words with their numbers and store them in a safe place.")
@@ -312,6 +318,10 @@ public enum TKLocales {
     public static let title = TKLocales.tr("Localizable", "choose_wallets.title", fallback: "Choose Wallets")
     /// tokens
     public static let tokens = TKLocales.tr("Localizable", "choose_wallets.tokens", fallback: "tokens")
+  }
+  public enum Collectibles {
+    /// Collectibles
+    public static let title = TKLocales.tr("Localizable", "collectibles.title", fallback: "Collectibles")
   }
   public enum ConfirmSend {
     /// Amount
@@ -666,6 +676,8 @@ public enum TKLocales {
     public static let useBiometryDescription = TKLocales.tr("Localizable", "security.use_biometry_description", fallback: "You can always unlock your wallet with a passcode.")
   }
   public enum Send {
+    /// Remaining
+    public static let remaining = TKLocales.tr("Localizable", "send.remaining", fallback: "Remaining")
     /// Send
     public static let title = TKLocales.tr("Localizable", "send.title", fallback: "Send")
     public enum Amount {
@@ -969,6 +981,8 @@ public enum TKLocales {
   public enum Tabs {
     /// Browser
     public static let browser = TKLocales.tr("Localizable", "tabs.browser", fallback: "Browser")
+    /// Collectibles
+    public static let collectibles = TKLocales.tr("Localizable", "tabs.collectibles", fallback: "Collectibles")
     /// History
     public static let history = TKLocales.tr("Localizable", "tabs.history", fallback: "History")
     /// Purchases

@@ -119,7 +119,7 @@ public final class SendV3Controller {
     case insufficient
     case remaining(String)
   }
-  public func calculateRemaining(token: Token, tokenAmount: BigUInt) async -> Remaining {
+  public func calculateRemaining(token: Token, tokenAmount: BigUInt, isSecure: Bool) async -> Remaining {
     guard let balance = await balanceStore.getState()[wallet]?.balance else {
       return .insufficient
     }
@@ -140,14 +140,21 @@ public final class SendV3Controller {
     }
     
     if amount >= tokenAmount {
-      let remainingAmount = amount - tokenAmount
-      let formatted = amountFormatter.formatAmount(
-        remainingAmount,
-        fractionDigits: fractionalDigits,
-        maximumFractionDigits: fractionalDigits,
-        symbol: tokenSymbol
-      )
-      return .remaining(formatted)
+      let value: String = {
+        if isSecure {
+          return .secureModeValue
+        } else {
+          let remainingAmount = amount - tokenAmount
+          return amountFormatter.formatAmount(
+            remainingAmount,
+            fractionDigits: fractionalDigits,
+            maximumFractionDigits: fractionalDigits,
+            symbol: tokenSymbol
+          )
+        }
+      }()
+      
+      return .remaining(value)
     } else {
       return .insufficient
     }
@@ -197,4 +204,8 @@ private extension String {
       return false
     }
   }
+}
+
+extension String {
+  static let secureModeValue = "* * *"
 }
