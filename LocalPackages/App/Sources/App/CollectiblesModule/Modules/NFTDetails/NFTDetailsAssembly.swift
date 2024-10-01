@@ -8,13 +8,14 @@ struct NFTDetailsAssembly {
     wallet: Wallet,
     nft: NFT,
     keeperCoreMainAssembly: KeeperCore.MainAssembly
-  ) -> MVVMModule<NFTDetailsViewController, NFTDetailsModuleOutput, Void> {
+  ) -> MVVMModule<NFTDetailsViewController, NFTDetailsModuleOutput, NFTDetailsModuleInput> {
     let viewModel = NFTDetailsViewModelImplementation(
       nft: nft,
       wallet: wallet,
-      dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService()
+      dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService(),
+      mnemonicRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
     )
     let viewController = NFTDetailsViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: Void())
+    return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }

@@ -123,7 +123,8 @@ public extension TonConnect {
 }
 
 extension TonConnect.TonProofItemReplySuccess {
-  init(address: TonSwift.Address,
+
+  public init(address: TonSwift.Address,
        domain: String,
        payload: String,
        privateKey: PrivateKey) {
@@ -145,7 +146,8 @@ extension TonConnect.TonProofItemReplySuccess {
   }
 }
 
-extension TonConnect.TonProofItemReplySuccess.Domain {
+
+public extension TonConnect.TonProofItemReplySuccess.Domain {
   init(domain: String) {
     let domainLength = UInt32(domain.utf8.count)
     self.value = domain

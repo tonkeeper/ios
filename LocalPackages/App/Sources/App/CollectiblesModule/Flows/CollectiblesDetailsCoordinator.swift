@@ -5,6 +5,7 @@ import TKCore
 import KeeperCore
 import TonSwift
 import TKLocalize
+import TKScreenKit
 
 public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -55,6 +56,7 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
 }
 
 private extension CollectiblesDetailsCoordinator {
+
   func openDetails() {
     let module = NFTDetailsAssembly.module(
       wallet: wallet,
@@ -81,7 +83,31 @@ private extension CollectiblesDetailsCoordinator {
     module.output.didTapRenewDomain = { [weak self] wallet, nft in
       self?.openRenewDomain(wallet: wallet, nft: nft)
     }
-    
+
+    module.output.didRequestPasscodeForHandling = { [weak self] url in
+      guard let self = self else {
+        return
+      }
+
+      PasscodeInputCoordinator.present(
+        parentCoordinator: self,
+        parentRouter: self.router,
+        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+        onCancel: { },
+        onInput: { passcode in
+          module.input.composeNftProgrammaticLink(with: url, passcode: passcode)
+        })
+    }
+
+    module.output.didComposeProgrammaticButtonLink = { [weak self] url in
+      let webViewController = TKWebViewController(url: url)
+      let navigationController = UINavigationController(rootViewController: webViewController)
+      navigationController.modalPresentationStyle = .fullScreen
+      navigationController.configureTransparentAppearance()
+      self?.router.present(navigationController)
+    }
+
     router.push(viewController: module.view)
   }
   
