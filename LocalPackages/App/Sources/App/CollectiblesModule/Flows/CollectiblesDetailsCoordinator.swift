@@ -101,16 +101,36 @@ private extension CollectiblesDetailsCoordinator {
     }
 
     module.output.didComposeProgrammaticButtonLink = { [weak self] url in
-      let webViewController = TKWebViewController(url: url)
-      let navigationController = UINavigationController(rootViewController: webViewController)
-      navigationController.modalPresentationStyle = .fullScreen
-      navigationController.configureTransparentAppearance()
-      self?.router.present(navigationController)
+      guard let self = self else {
+        return
+      }
+
+      let dapp = Dapp(
+        name: "",
+        description: "",
+        icon: nil,
+        poster: nil,
+        url: url,
+        textColor: nil,
+        excludeCountries: nil,
+        includeCountries: nil
+      )
+
+      let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
+      let coordinator = DappCoordinator(
+        router: controllerRouter,
+        dapp: dapp,
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+
+      addChild(coordinator)
+      coordinator.start()
     }
 
     router.push(viewController: module.view)
   }
-  
+
   func openTransfer(nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
