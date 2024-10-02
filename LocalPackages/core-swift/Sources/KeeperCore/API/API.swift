@@ -94,7 +94,8 @@ extension API {
       await prepareAPIForRequest()
       return AccountsAPI.getAccountJettonsBalancesWithRequestBuilder(
         accountId: address.toRaw(),
-        currencies: currencies.map { $0.code }
+        currencies: currencies.map { $0.code },
+        supportedExtensions: ["custom_payload"]
       )
     }
     let response = try await request.execute().body
