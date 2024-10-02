@@ -14,7 +14,7 @@ extension HistoryCellActionView {
     let textLabel: UILabel = {
       let label = UILabel()
       label.backgroundColor = .Bubble.background
-      label.numberOfLines = 0
+      label.numberOfLines = 1
       return label
     }()
     
