@@ -147,4 +147,8 @@ public final class ServicesAssembly {
     PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
                                      popularAppsRepository: repositoriesAssembly.popularAppsRepository())
   }
+  
+  public func encryptedCommentService() -> EncryptedCommentService {
+    EncryptedCommentServiceImplementation(mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+  }
 }

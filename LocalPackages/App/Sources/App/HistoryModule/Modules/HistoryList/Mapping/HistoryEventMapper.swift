@@ -144,13 +144,20 @@ struct HistoryEventMapper {
     }
     
     var encryptedCommentConfiguration: HistoryCellActionView.EncyptedCommentView.Model?
-    if let encryptedCommentPayload = action.encryptedCommentPayload {
-      encryptedCommentConfiguration = HistoryCellActionView.EncyptedCommentView.Model(
-        encryptedText: encryptedCommentPayload.encryptedComment.cipherText,
-        action: {
-          encryptedCommentAction(encryptedCommentPayload)
-        }
-      )
+    if let encryptedComment = action.encryptedComment {
+      switch encryptedComment {
+      case .encrypted(let payload):
+        encryptedCommentConfiguration = HistoryCellActionView.EncyptedCommentView.Model(
+          encryptedText: payload.encryptedComment.cipherText,
+          action: {
+            encryptedCommentAction(payload)
+          }
+        )
+      case .decrypted(let decrypted):
+        encryptedCommentConfiguration = HistoryCellActionView.EncyptedCommentView.Model(
+          decryptedText: decrypted
+        )
+      }
     }
     
     var descriptionConfiguration: HistoryCellActionView.CommentView.Configuration?

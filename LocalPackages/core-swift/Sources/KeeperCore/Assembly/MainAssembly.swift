@@ -224,6 +224,13 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService()
     )
   }
+  
+  public func decryptCommentController() -> DecryptCommentController {
+    DecryptCommentController(
+      encryptedCommentService: servicesAssembly.encryptedCommentService(),
+      decryptedCommentStore: storesAssembly.decryptedCommentStore
+    )
+  }
 }
 
 private extension MainAssembly {

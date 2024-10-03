@@ -203,6 +203,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     historyCoordinator.didOpenEventDetails = { [weak self] event, isTestnet in
       self?.openHistoryEventDetails(event: event, isTestnet: isTestnet)
     }
+    historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
+      self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
+    }
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
@@ -1023,6 +1026,31 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
+  }
+  
+  private func decryptComment(wallet: Wallet,
+                              payload: EncryptedCommentPayload,
+                              eventId: String) {
+    let controller = keeperCoreMainAssembly.decryptCommentController()
+    Task {
+      guard let passcode = await getPasscode() else { return }
+      do {
+        try await controller.decryptComment(payload, wallet: wallet, eventId: eventId, passcode: passcode)
+      } catch {
+        await MainActor.run {
+          ToastPresenter.showToast(configuration: .failed)
+        }
+      }
+    }
+  }
+  
+  private func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
   }
 }
 

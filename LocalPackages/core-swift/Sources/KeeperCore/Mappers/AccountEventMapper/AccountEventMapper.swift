@@ -20,7 +20,8 @@ public struct AccountEventMapper {
                        eventDate: Date,
                        accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
                        isTestnet: Bool,
-                       nftProvider: (Address) -> NFT?) -> AccountEventModel {
+                       nftProvider: (Address) -> NFT?,
+                       decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel {
     var accountEventRightTopDescriptionProvider = accountEventRightTopDescriptionProvider
     let actions = event.actions.compactMap { action in
       let rightTopDescription = accountEventRightTopDescriptionProvider.rightTopDescription(
@@ -32,7 +33,8 @@ public struct AccountEventMapper {
         accountEvent: event,
         rightTopDescription: rightTopDescription,
         isTestnet: isTestnet,
-        nftProvider: nftProvider
+        nftProvider: nftProvider,
+        decryptedCommentProvider: decryptedCommentProvider
       )
     }
     return AccountEventModel(
@@ -49,7 +51,8 @@ private extension AccountEventMapper {
                  accountEvent: AccountEvent,
                  rightTopDescription: String?,
                  isTestnet: Bool,
-                 nftProvider: (Address) -> NFT?) -> AccountEventModel.Action? {
+                 nftProvider: (Address) -> NFT?,
+                 decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action? {
     
     switch action.type {
     case .tonTransfer(let tonTransfer):
@@ -58,14 +61,16 @@ private extension AccountEventMapper {
                                   preview: action.preview,
                                   rightTopDescription: rightTopDescription,
                                   status: action.status.rawValue,
-                                  isTestnet: isTestnet)
+                                  isTestnet: isTestnet,
+                                  decryptedCommentProvider: decryptedCommentProvider)
     case .jettonTransfer(let jettonTransfer):
       return mapJettonTransferAction(jettonTransfer,
                                      accountEvent: accountEvent,
                                      preview: action.preview,
                                      rightTopDescription: rightTopDescription,
                                      status: action.status.rawValue,
-                                     isTestnet: isTestnet)
+                                     isTestnet: isTestnet,
+                                     decryptedCommentProvider: decryptedCommentProvider)
     case .jettonMint(let jettonMint):
       return mapJettonMintAction(jettonMint,
                                  accountEvent: accountEvent,
@@ -113,7 +118,8 @@ private extension AccountEventMapper {
                                    rightTopDescription: rightTopDescription,
                                    status: action.status.rawValue,
                                    isTestnet: isTestnet,
-                                   nftProvider: nftProvider)
+                                   nftProvider: nftProvider,
+                                   decryptedCommentProvider: decryptedCommentProvider)
     case .depositStake(let depositStake):
       return mapDepositStakeAction(depositStake,
                                    accountEvent: accountEvent,
@@ -158,7 +164,8 @@ private extension AccountEventMapper {
                             preview: AccountEventAction.SimplePreview,
                             rightTopDescription: String?,
                             status: String?,
-                            isTestnet: Bool) -> AccountEventModel.Action {
+                            isTestnet: Bool,
+                            decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String
     let amountType: AccountEventActionAmountMapperActionType
@@ -185,14 +192,19 @@ private extension AccountEventMapper {
         type: amountType,
         currency: .TON)
     
-    var encryptedCommentPayload: EncryptedCommentPayload?
-    if let encryptedComment = action.encryptedComment {
-      encryptedCommentPayload = EncryptedCommentPayload(
-        encryptedComment: encryptedComment,
+    var encryptedComment: AccountEventModel.Action.EncryptedComment?
+    if let actionEncryptedComment = action.encryptedComment {
+      let payload = EncryptedCommentPayload(
+        encryptedComment: actionEncryptedComment,
         senderAddress: action.sender.address
       )
+      if let decrypted = decryptedCommentProvider(payload) {
+        encryptedComment = .decrypted(decrypted)
+      } else {
+        encryptedComment = .encrypted(payload)
+      }
     }
-    
+
     return AccountEventModel.Action(eventType: eventType,
                                     amount: amount,
                                     subamount: nil,
@@ -201,7 +213,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
-                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    encryptedComment: encryptedComment,
                                     nft: nil)
   }
   
@@ -210,7 +222,8 @@ private extension AccountEventMapper {
                                preview: AccountEventAction.SimplePreview,
                                rightTopDescription: String?,
                                status: String?,
-                               isTestnet: Bool) -> AccountEventModel.Action {
+                               isTestnet: Bool,
+                               decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String?
     let amountType: AccountEventActionAmountMapperActionType
@@ -236,12 +249,17 @@ private extension AccountEventMapper {
         type: amountType,
         symbol: action.jettonInfo.symbol)
     
-    var encryptedCommentPayload: EncryptedCommentPayload?
-    if let encryptedComment = action.encryptedComment {
-      encryptedCommentPayload = EncryptedCommentPayload(
-        encryptedComment: encryptedComment,
+    var encryptedComment: AccountEventModel.Action.EncryptedComment?
+    if let actionEncryptedComment = action.encryptedComment {
+      let payload = EncryptedCommentPayload(
+        encryptedComment: actionEncryptedComment,
         senderAddress: action.senderAddress
       )
+      if let decrypted = decryptedCommentProvider(payload) {
+        encryptedComment = .decrypted(decrypted)
+      } else {
+        encryptedComment = .encrypted(payload)
+      }
     }
     
     return AccountEventModel.Action(eventType: eventType,
@@ -252,7 +270,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
-                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    encryptedComment: encryptedComment,
                                     nft: nil)
   }
   
@@ -492,7 +510,8 @@ private extension AccountEventMapper {
                              rightTopDescription: String?,
                              status: String?,
                              isTestnet: Bool,
-                             nftProvider: (Address) -> NFT?) -> AccountEventModel.Action {
+                             nftProvider: (Address) -> NFT?,
+                             decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     var leftTopDescription: String?
     if let previewAccount = preview.accounts.first {
@@ -520,13 +539,18 @@ private extension AccountEventMapper {
     } else {
       actionNFT = .empty(action.nftAddress)
     }
-    
-    var encryptedCommentPayload: EncryptedCommentPayload?
-    if let encryptedComment = action.encryptedComment, let sender = action.sender {
-      encryptedCommentPayload = EncryptedCommentPayload(
-        encryptedComment: encryptedComment,
+
+    var encryptedComment: AccountEventModel.Action.EncryptedComment?
+    if let actionEncryptedComment = action.encryptedComment, let sender = action.sender {
+      let payload = EncryptedCommentPayload(
+        encryptedComment: actionEncryptedComment,
         senderAddress: sender.address
       )
+      if let decrypted = decryptedCommentProvider(payload) {
+        encryptedComment = .decrypted(decrypted)
+      } else {
+        encryptedComment = .encrypted(payload)
+      }
     }
     
     return AccountEventModel.Action(eventType: eventType,
@@ -537,7 +561,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
-                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    encryptedComment: encryptedComment,
                                     nft: actionNFT)
   }
   

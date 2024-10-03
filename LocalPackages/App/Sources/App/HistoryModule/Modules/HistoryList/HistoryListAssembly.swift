@@ -13,6 +13,7 @@ struct HistoryListAssembly {
       wallet: wallet,
       paginationLoader: paginationLoader,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      decryptedCommentStore: keeperCoreMainAssembly.storesAssembly.decryptedCommentStore,
       nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
       cacheProvider: cacheProvider,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
