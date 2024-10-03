@@ -10,12 +10,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
-  var didRequestPasscodeForHandling: ((_ url: URL) -> Void)? { get set }
-  var didComposeProgrammaticButtonLink: ((_ url: URL) -> Void)? { get set }
-}
-
-protocol NFTDetailsModuleInput: AnyObject {
-  func composeNftProgrammaticLink(with url: URL, passcode: String)
+  var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
 }
 
 protocol NFTDetailsViewModel: AnyObject {
@@ -29,7 +24,7 @@ protocol NFTDetailsViewModel: AnyObject {
   func didTapClose()
 }
 
-final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsModuleInput, NFTDetailsModuleOutput {
+final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsModuleOutput {
 
   private struct DNSResolveData {
     let linkedAddressResult: Result<FriendlyAddress, Swift.Error>
@@ -80,7 +75,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
-  var didRequestPasscodeForHandling: ((_ url: URL) -> Void)?
+  var didTapProgrammaticButton: ((_ url: URL) -> Void)?
   var didComposeProgrammaticButtonLink: ((_ url: URL) -> Void)?
 
   // MARK: - NFTDetailsViewModel
@@ -98,52 +93,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   
   func didTapClose() {
     didClose?()
-  }
-
-  func composeNftProgrammaticLink(with url: URL, passcode: String) {
-    Task {
-      guard let host = url.host, let walletAddress = try? wallet.address else {
-        return
-      }
-      let mnemonic = try await self.mnemonicRepository.getMnemonic(wallet: self.wallet, password: passcode)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-
-      let walletFriendlyAddress = walletAddress.toFriendly(bounceable: true).toString()
-      let nftFriendlyAddress = self.nft.address.toFriendly(bounceable: true).toString()
-
-      let item = TonConnect.TonProofItemReplySuccess(
-        address: walletAddress,
-        domain: host,
-        payload: nftFriendlyAddress,
-        privateKey: privateKey
-      )
-      let proof = item.proof
-      let signature = proof.signature
-      let timestamp = signature.timestamp
-
-      guard let encodedProof = try? JSONEncoder().encode(proof) else {
-        return
-      }
-
-      var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false)
-      var queryItems = [URLQueryItem]()
-      queryItems.append(URLQueryItem(name: "wallet", value: walletFriendlyAddress))
-      queryItems.append(URLQueryItem(name: "publicKey", value: keyPair.publicKey.hexString))
-      queryItems.append(URLQueryItem(name: "nftAddress", value: nftFriendlyAddress))
-      queryItems.append(URLQueryItem(name: "timestamp", value: "\(timestamp)"))
-      queryItems.append(URLQueryItem(name: "proof", value: "\(encodedProof.hexString())"))
-      queryItems.append(URLQueryItem(name: "signature", value: "\(signature.data().hexString())"))
-      urlComponents?.queryItems = queryItems
-
-      guard let resultURL = urlComponents?.url else {
-        return
-      }
-
-      await MainActor.run {
-        self.didComposeProgrammaticButtonLink?(resultURL)
-      }
-    }
   }
 
   // MARK: - Private
@@ -406,7 +355,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
           return
         }
 
-        self?.didRequestPasscodeForHandling?(url)
+        self?.didTapProgrammaticButton?(url)
       }
       return .init(buttonConfiguration: configuration, description: nil)
     }

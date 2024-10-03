@@ -84,7 +84,7 @@ private extension CollectiblesDetailsCoordinator {
       self?.openRenewDomain(wallet: wallet, nft: nft)
     }
 
-    module.output.didRequestPasscodeForHandling = { [weak self] url in
+    module.output.didTapProgrammaticButton = { [weak self] url in
       guard let self = self else {
         return
       }
@@ -96,39 +96,48 @@ private extension CollectiblesDetailsCoordinator {
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         onCancel: { },
         onInput: { passcode in
-          module.input.composeNftProgrammaticLink(with: url, passcode: passcode)
+          Task {
+            let proofProvider = TonConnectNFTProofProvider(
+              wallet: self.wallet,
+              nft: self.nft,
+              mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+            )
+            guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
+              return
+            }
+
+            await MainActor.run {
+              self.openDapp(with: composedURL)
+            }
+          }
         })
     }
 
-    module.output.didComposeProgrammaticButtonLink = { [weak self] url in
-      guard let self = self else {
-        return
-      }
-
-      let dapp = Dapp(
-        name: "",
-        description: "",
-        icon: nil,
-        poster: nil,
-        url: url,
-        textColor: nil,
-        excludeCountries: nil,
-        includeCountries: nil
-      )
-
-      let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
-      let coordinator = DappCoordinator(
-        router: controllerRouter,
-        dapp: dapp,
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-
-      addChild(coordinator)
-      coordinator.start()
-    }
-
     router.push(viewController: module.view)
+  }
+
+  func openDapp(with url: URL) {
+    let dapp = Dapp(
+      name: "",
+      description: "",
+      icon: nil,
+      poster: nil,
+      url: url,
+      textColor: nil,
+      excludeCountries: nil,
+      includeCountries: nil
+    )
+
+    let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
+    let coordinator = DappCoordinator(
+      router: controllerRouter,
+      dapp: dapp,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+
+    addChild(coordinator)
+    coordinator.start()
   }
 
   func openTransfer(nft: NFT) {
