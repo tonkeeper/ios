@@ -72,7 +72,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
-  var didComposeProgrammaticButtonLink: ((_ url: URL) -> Void)?
 
   // MARK: - NFTDetailsViewModel
   
