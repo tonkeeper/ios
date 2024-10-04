@@ -88,6 +88,10 @@ private extension SettingsCoordinator {
       self?.openNotifications(wallet: wallet)
     }
     
+    configurator.didTapW5Wallet = { [weak self] wallet in
+      self?.openW5Story(wallet: wallet)
+    }
+    
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets

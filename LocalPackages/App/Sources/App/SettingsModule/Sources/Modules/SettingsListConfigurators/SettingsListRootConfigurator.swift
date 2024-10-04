@@ -22,6 +22,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didDeleteWallet: (() -> Void)?
   var didTapPurchases: ((Wallet) -> Void)?
   var didTapNotifications: ((Wallet) -> Void)?
+  var didTapW5Wallet: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -157,6 +158,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
     items.append(createNotificationsItem())
     items.append(createCurrencyItem())
+    if let w5Item = createW5Item() {
+      items.append(w5Item)
+    }
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
       SettingsListItemsSection(
@@ -303,6 +307,34 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       onSelection: {
         [weak self] _ in
         self?.didTapCurrencySettings?()
+      }
+    )
+  }
+  
+  private func createW5Item() -> SettingsListItem? {
+    guard !wallet.isW5 else { return nil }
+    let isW5Added: Bool = { [walletsStore] in
+      let wallets = walletsStore.wallets.filter { $0.kind == .regular || $0.kind == .signer }
+      do {
+        return try wallets.contains(where: { try $0.publicKey == wallet.publicKey && $0.isW5 })
+      } catch {
+        return false
+      }
+    }()
+    guard !isW5Added else { return nil }
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.walletW5)
+        )))
+    return SettingsListItem(
+      id: .walletW5ItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.wallet, tintColor: .Accent.blue)),
+      onSelection: {
+        [weak self] _ in
+        guard let self else { return }
+        didTapW5Wallet?(wallet)
       }
     )
   }
@@ -675,6 +707,7 @@ private extension String {
   static let securityItemIdentifier = "SecurityItem"
   static let backupItemIdentifier = "BackupItem"
   static let currencyItemIdentifier = "CurrencyItem"
+  static let walletW5ItemIdentifier = "walletW5ItemIdentifier"
   static let themeItemIdentifier = "ThemeItem"
   static let FAQItemIdentifier = "FAQItem"
   static let supportItemIdentifier = "SupportItem"
