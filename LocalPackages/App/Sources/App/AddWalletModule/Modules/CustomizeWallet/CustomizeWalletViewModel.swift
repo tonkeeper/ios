@@ -100,8 +100,8 @@ private extension CustomizeWalletViewModelImplementation {
       bottomDescription: TKLocales.CustomizeWallet.description
     )
     
-    let walletNameTextFieldPlaceholder = TKLocales.CustomizeWallet.input_placeholder
-    
+    let walletNameTextFieldPlaceholder = TKLocales.CustomizeWallet.inputPlaceholder
+
     let colorPickerModel = createColorPickerModel()
     let iconPickerModel = WalletIconPickerView.Model(items: items)
     
@@ -194,5 +194,5 @@ private extension WalletIcon {
 }
 
 private extension String {
-  static let defaultWalletName = TKLocales.CustomizeWallet.default_wallet_name
+  static let defaultWalletName = TKLocales.CustomizeWallet.defaultWalletName
 }

@@ -5,6 +5,7 @@ public final class TKUIScrollView: UIScrollView {
     super.init(frame: frame)
     canCancelContentTouches = true
     showsVerticalScrollIndicator = false
+    alwaysBounceVertical = true
   }
   
   required init?(coder: NSCoder) {

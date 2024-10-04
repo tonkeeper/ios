@@ -76,9 +76,13 @@ private extension PasscodeInputCoordinator {
     passcodeModule.output.didTapBiometry = { [weak self] in
       guard let self else { return }
       Task {
-        let passcode = try self.mnemonicsRepository.getPassword()
-        await MainActor.run {
-          passcodeInputModule.input.didSetInput(passcode)
+        do {
+          let passcode = try self.mnemonicsRepository.getPassword()
+          await MainActor.run {
+            passcodeInputModule.input.didSetInput(passcode)
+          }
+        } catch {
+          print("dsd")
         }
       }
     }

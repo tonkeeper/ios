@@ -5,19 +5,14 @@ import KeeperCore
 
 protocol WalletContainerModuleOutput: AnyObject {
   var walletButtonHandler: (() -> Void)? { get set }
-  var didTapSettingsButton: (() -> Void)? { get set }
+  var didTapSettingsButton: ((Wallet) -> Void)? { get set }
 }
 
 protocol WalletContainerViewModel: AnyObject {
   var didUpdateModel: ((WalletContainerView.Model) -> Void)? { get set }
-  var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapWalletButton()
-}
-
-protocol WalletContainerViewModelChildModuleProvider {
-  func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController
 }
 
 final class WalletContainerViewModelImplementation: WalletContainerViewModel, WalletContainerModuleOutput {
@@ -25,20 +20,33 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   // MARK: - WalletContainerModuleOutput
   
   var walletButtonHandler: (() -> Void)?
-  var didTapSettingsButton: (() -> Void)?
+  var didTapSettingsButton: ((Wallet) -> Void)?
   
   // MARK: - WalletContainerViewModel
   
   var didUpdateModel: ((WalletContainerView.Model) -> Void)?
-  var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    Task {
-      await walletMainController.start(didUpdateActiveWallet: { _ in
-        
-      }, didUpdateWalletMetaData: { [weak self] wallet in
-        self?.didUpdateActiveWalletMetaData(wallet: wallet)
-      })
+    walletsStore.addObserver(self) { observer, event in
+      DispatchQueue.main.async {
+        switch event {
+        case .didChangeActiveWallet, 
+            .didUpdateWalletMetaData, 
+            .didUpdateWalletSetupSettings:
+          self.wallet = try? observer.walletsStore.getActiveWallet()
+        default: break
+        }
+      }
+    }
+    setInitialState()
+  }
+  
+  // MARK: - State
+  
+  private var wallet: Wallet? {
+    didSet {
+      guard let wallet else { return }
+      didUpdateModel?(createModel(wallet: wallet))
     }
   }
   
@@ -48,23 +56,21 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
   // MARK: - Dependencies
   
-  private let walletBalanceModuleInput: WalletBalanceModuleInput
-  private let walletMainController: WalletMainController
+  private let walletsStore: WalletsStore
   
-  init(walletBalanceModuleInput: WalletBalanceModuleInput,
-       walletMainController: WalletMainController) {
-    self.walletBalanceModuleInput = walletBalanceModuleInput
-    self.walletMainController = walletMainController
+  // MARK: - Init
+  
+  init(walletsStore: WalletsStore) {
+    self.walletsStore = walletsStore
+  }
+  
+  private func setInitialState() {
+    guard let wallet = try? walletsStore.getActiveWallet() else { return }
+    self.wallet = wallet
   }
 }
 
 private extension WalletContainerViewModelImplementation {
-  func didUpdateActiveWalletMetaData(wallet: Wallet) {
-    Task { @MainActor in
-      didUpdateModel?(createModel(wallet: wallet))
-    }
-  }
-  
   func createModel(wallet: Wallet) -> WalletContainerView.Model {
     let icon: WalletContainerWalletButton.Model.Icon
     switch wallet.icon {
@@ -91,7 +97,7 @@ private extension WalletContainerViewModelImplementation {
     settingsButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.gearOutline
     settingsButtonConfiguration.iconTintColor = .Icon.secondary
     settingsButtonConfiguration.action = { [weak self] in
-      self?.didTapSettingsButton?()
+      self?.didTapSettingsButton?(wallet)
     }
 
     let topBarViewModel = WalletContainerTopBarView.Model(

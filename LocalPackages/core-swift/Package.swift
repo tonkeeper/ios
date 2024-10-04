@@ -5,18 +5,17 @@ import PackageDescription
 let package = Package(
   name: "WalletCore",
   platforms: [
-    .macOS(.v12), .iOS(.v14)
+    .iOS(.v14)
   ],
   products: [
-    .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"]),
-    .library(name: "SignerCore", type: .dynamic, targets: ["SignerCore"]),
+    .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"])
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
     .package(path: "../TKCryptoSwift"),
     .package(path: "../Ledger"),
     .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.13"),
-    .package(url: "https://github.com/tonkeeper/ton-api-swift", from: "0.1.1"),
+    .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
@@ -36,8 +35,6 @@ let package = Package(
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
-              .product(name: "StreamURLSessionTransport", package: "ton-api-swift"),
-              .product(name: "EventSource", package: "ton-api-swift"),
               .target(name: "TonConnectAPI"),
               .target(name: "CoreComponents")
             ],
@@ -59,12 +56,6 @@ let package = Package(
             ],
             path: "Packages/TonConnectAPI",
             sources: ["Sources"]
-           ),
-    .target(name: "SignerCore",
-            dependencies: [
-              .product(name: "TonSwift", package: "ton-swift"),
-              .target(name: "CoreComponents")
-            ],
-            path: "Sources/SignerCore"),
+           )
   ]
 )

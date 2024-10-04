@@ -2,165 +2,74 @@ import Foundation
 import TonSwift
 
 public final class MainController {
-  
-  actor State {
-    var nftsUpdateTask: Task<(), Never>?
-    
-    func setNftsUpdateTask(_ task: Task<(), Never>?) {
-      self.nftsUpdateTask = task
-    }
-  }
-  
-  public var didUpdateNftsAvailability: ((Bool) -> Void)?
-  public var didUpdateBrowserAvailability: ((Bool) -> Void)?
+
   public var didReceiveTonConnectRequest: ((TonConnect.AppRequest, Wallet, TonConnectApp) -> Void)?
   
   private var walletsStoreObservationToken: ObservationToken?
   private var backgroundUpdateStoreObservationToken: ObservationToken?
+  private var updatesStarted = false
   
-  private let walletsStore: WalletsStore
-  private let accountNFTService: AccountNFTService
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
-  private let knownAccountsStore: KnownAccountsStore
-  private let balanceStore: BalanceStore
-  private let dnsService: DNSService
   private let tonConnectService: TonConnectService
   private let deeplinkParser: DeeplinkParser
-  // TODO: wrap to service
-  private let apiProvider: APIProvider
   
-  private var state = State()
+  private let walletStateLoader: WalletStateLoader
+  private let internalNotificationsLoader: InternalNotificationsLoader
   
-  private var nftStateTask: Task<Void, Never>?
-
-  init(walletsStore: WalletsStore, 
-       accountNFTService: AccountNFTService,
-       backgroundUpdateStore: BackgroundUpdateStore,
+  init(backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
-       knownAccountsStore: KnownAccountsStore,
-       balanceStore: BalanceStore,
-       dnsService: DNSService,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
-       apiProvider: APIProvider) {
-    self.walletsStore = walletsStore
-    self.accountNFTService = accountNFTService
-    self.backgroundUpdateStore = backgroundUpdateStore
+       walletStateLoader: WalletStateLoader,
+       internalNotificationsLoader: InternalNotificationsLoader) {
+    self.backgroundUpdateUpdater = backgroundUpdateUpdater
     self.tonConnectEventsStore = tonConnectEventsStore
-    self.knownAccountsStore = knownAccountsStore
-    self.balanceStore = balanceStore
-    self.dnsService = dnsService
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
-    self.apiProvider = apiProvider
+    self.walletStateLoader = walletStateLoader
+    self.internalNotificationsLoader = internalNotificationsLoader
   }
   
-  deinit {
-    walletsStoreObservationToken?.cancel()
-    backgroundUpdateStoreObservationToken?.cancel()
+  public func start() {
+    startUpdates()
+    internalNotificationsLoader.loadNotifications()
   }
   
-  public func start() async {
-    _ = await backgroundUpdateStore.addEventObserver(self) { observer, state in
-      switch state {
-      case .didUpdateState(let backgroundUpdateState):
-        switch backgroundUpdateState {
-        case .connected:
-          Task { await observer.updateNfts() }
-        default: break
-        }
-      case .didReceiveUpdateEvent(let backgroundUpdateEvent):
-        Task {
-          guard try backgroundUpdateEvent.accountAddress == observer.walletsStore.activeWallet.address else { return }
-          await observer.updateNfts()
-        }
+  public func stop() {
+    stopUpdates()
+  }
+  
+  public func startUpdates() {
+    guard !updatesStarted else { return }
+    walletStateLoader.startStateReload()
+    Task {
+      await backgroundUpdateUpdater.start()
+      await tonConnectEventsStore.addObserver(self)
+      await tonConnectEventsStore.start()
+      await MainActor.run {
+        updatesStarted = true
       }
     }
-    
-    _ = walletsStore.addEventObserver(self) { observer, event in
-      switch event {
-      case .didAddWallets:
-        Task { await observer.startBackgroundUpdate() }
-      case .didUpdateActiveWallet:
-        self.didUpdateActiveWallet()
-        Task { await observer.updateNfts() }
-      default: break
+  }
+  
+  public func stopUpdates() {
+    walletStateLoader.stopStateReload()
+    Task {
+      await backgroundUpdateUpdater.stop()
+      await tonConnectEventsStore.stop()
+      await tonConnectEventsStore.removeObserver(self)
+      await MainActor.run {
+        updatesStarted = false
       }
     }
-    
-    await tonConnectEventsStore.addObserver(self)
-    
-    await startBackgroundUpdate()
-    didUpdateActiveWallet()
   }
   
-  public func updateNfts() async {}
-  
-  public func startBackgroundUpdate() async {
-    await backgroundUpdateStore.start(addresses: walletsStore.wallets.compactMap { try? $0.address })
-    await tonConnectEventsStore.start()
+  public func handleTonConnectDeeplink(_ parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
+    try await tonConnectService.loadTonConnectConfiguration(with: parameters)
   }
-  
-  public func stopBackgroundUpdate() async {
-    await backgroundUpdateStore.stop()
-    await tonConnectEventsStore.stop()
-  }
-  
-  public func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest) {
-    try await tonConnectService.loadTonConnectConfiguration(with: deeplink)
-  }
-  
   public func parseDeeplink(deeplink: String?) throws -> Deeplink {
     try deeplinkParser.parse(string: deeplink)
-  }
-  
-  public func resolveRecipient(_ recipient: String) async -> Recipient? {
-    let inputRecipient: Recipient?
-    let knownAccounts = (try? await knownAccountsStore.getKnownAccounts()) ?? []
-    if let friendlyAddress = try? FriendlyAddress(string: recipient) {
-      inputRecipient = Recipient(
-        recipientAddress: .friendly(
-          friendlyAddress
-        ),
-        isMemoRequired: knownAccounts.first(where: { $0.address == friendlyAddress.address })?.requireMemo ?? false
-      )
-    } else if let rawAddress = try? Address.parse(recipient) {
-      inputRecipient = Recipient(
-        recipientAddress: .raw(
-          rawAddress
-        ),
-        isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
-      )
-    } else {
-      inputRecipient = nil
-    }
-    return inputRecipient
-  }
-  
-  public func resolveJetton(jettonAddress: Address) async -> JettonItem? {
-    let jettonInfo: JettonInfo
-    if let mainnetJettonInfo = try? await apiProvider.api(false).resolveJetton(address: jettonAddress) {
-      jettonInfo = mainnetJettonInfo
-    } else if let testnetJettonInfo = try? await apiProvider.api(true).resolveJetton(address: jettonAddress) {
-      jettonInfo = testnetJettonInfo
-    } else {
-      return nil
-    }
-    for wallet in walletsStore.wallets {
-      guard let balance = try? balanceStore.getBalance(wallet: wallet).balance else {
-        continue
-      }
-      guard let jettonItem =  balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
-        continue
-      }
-      return jettonItem
-    }
-    return nil
-  }
-  
-  private func didUpdateActiveWallet() {
-    didUpdateBrowserAvailability?(walletsStore.activeWallet.isBrowserAvailable)
   }
 }
 

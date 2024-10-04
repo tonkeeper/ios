@@ -1,167 +1,395 @@
-import Foundation
+import UIKit
 import TKUIKit
+import TKLocalize
 import KeeperCore
+import TonSwift
 
 protocol HistoryListModuleOutput: AnyObject {
-  var noEvents: (() -> Void)? { get set }
-  var hasEvents: (() -> Void)? { get set }
+  var didUpdateState: ((_ hasEvents: Bool) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
 }
 
-protocol HistoryListModuleInput: AnyObject {
-  
+enum HistoryListViewModelEvent {
+  case snapshotUpdate(HistoryListViewController.Snapshot)
 }
 
 protocol HistoryListViewModel: AnyObject {
-  var didResetList: (() -> Void)? { get set }
-  var didUpdateHistory: (([HistoryListSection]) -> Void)? { get set }
-  var didStartPagination: ((HistoryListSection.Pagination) -> Void)? { get set }
-  var didStartLoading: (() -> Void)? { get set }
-  var reloadEvent: (() -> Void)? { get set }
+  var eventHandler: ((_ event: HistoryListViewModelEvent) -> Void)? { get set }
   
   func viewDidLoad()
-  func loadNext()
+  func getEventCellConfiguration(identifier: String) -> HistoryCell.Model?
+  func getPaginationCellConfiguration() -> HistoryListPaginationCell.Model
+  func getSectionHeader(date: Date) -> String?
+  func loadNextPage()
 }
 
-final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput, HistoryListModuleInput {
+final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput {
   
-  actor CachedModels {
-    var models = [String: HistoryCell.Configuration]()
-    
-    func setModel(_ model: HistoryCell.Configuration, id: String) {
-      models[id] = model
-    }
-    
-    func reset() {
-      models.removeAll()
-    }
+  struct EventsSection {
+    let date: Date
+    let events: [AccountEvent]
   }
   
-  // MARK: - HistoryListModuleOutput
-  
-  var noEvents: (() -> Void)?
-  var hasEvents: (() -> Void)?
+  var didUpdateState: ((_ hasEvents: Bool) -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
-  var didSelectNFT: ((NFT) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)?
   
-  // MARK: - HistoryListModuleInput
-  
-  // MARK: - HistoryListViewModel
-  
-  var didResetList: (() -> Void)?
-  var didUpdateHistory: (([HistoryListSection]) -> Void)?
-  var didStartPagination: ((HistoryListSection.Pagination) -> Void)?
-  var didStartLoading: (() -> Void)?
-  var reloadEvent: (() -> Void)?
-  
+  var eventHandler: ((HistoryListViewModelEvent) -> Void)?
+
   func viewDidLoad() {
-    Task {
-      historyListController.didGetEvent = { [weak self] event in
-        self?.handleEvent(event)
+    appSettingsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateIsSecureMode:
+        observer.queue.async {
+          observer.didUpdateSecureMode()
+        }
+      default:
+        break
       }
-      await historyListController.start()
     }
+    paginationLoader.eventHandler = { [weak self] event in
+      self?.queue.async {
+        self?.didGetLoaderEvent(event: event)
+      }
+    }
+    paginationLoader.reload()
+    setInitialState()
   }
   
-  func loadNext() {
-    Task {
-      await historyListController.loadNext()
-    }
+  func getEventCellConfiguration(identifier: String) -> HistoryCell.Model? {
+    eventCellConfigurations[identifier]
   }
   
-  // MARK: - State
+  func getPaginationCellConfiguration() -> HistoryListPaginationCell.Model {
+    paginationCellConfiguration
+  }
   
-  private var cachedModels = CachedModels()
-    
-  // MARK: - Dependencies
+  func getSectionHeader(date: Date) -> String? {
+    mapEventsSectionDate(date)
+  }
   
-  private let historyListController: HistoryListController
+  func loadNextPage() {
+    guard isLoadNextAvaiable else { return }
+    paginationLoader.loadNext()
+  }
+  
+  private let queue = DispatchQueue(label: "HistoryListViewModelImplementationQueue")
+  private var relativeDate = Date()
+  private var events = [AccountEvent]()
+  private var sections = [EventsSection]()
+  private var sectionsOrder = [Date: Int]()
+
+  private var snapshot = HistoryListViewController.Snapshot() {
+    didSet {
+      eventHandler?(.snapshotUpdate(snapshot))
+    }
+  }
+  private var eventCellConfigurations = [String: HistoryCell.Model]()
+  private var paginationCellConfiguration = HistoryListPaginationCell.Model(state: .none)
+  private var isLoadNextAvaiable = false
+
+  private let wallet: Wallet
+  private let paginationLoader: HistoryPaginationLoader
+  private let appSettingsStore: AppSettingsV3Store
+  private let nftService: NFTService
+  private let cacheProvider: HistoryListCacheProvider
+  private let dateFormatter: DateFormatter
+  private let accountEventMapper: AccountEventMapper
   private let historyEventMapper: HistoryEventMapper
   
-  // MARK: - Init
-  
-  init(historyListController: HistoryListController,
+  init(wallet: Wallet,
+       paginationLoader: HistoryPaginationLoader,
+       appSettingsStore: AppSettingsV3Store,
+       nftService: NFTService,
+       cacheProvider: HistoryListCacheProvider,
+       dateFormatter: DateFormatter,
+       accountEventMapper: AccountEventMapper,
        historyEventMapper: HistoryEventMapper) {
-    self.historyListController = historyListController
+    self.wallet = wallet
+    self.paginationLoader = paginationLoader
+    self.appSettingsStore = appSettingsStore
+    self.nftService = nftService
+    self.cacheProvider = cacheProvider
+    self.dateFormatter = dateFormatter
+    self.accountEventMapper = accountEventMapper
     self.historyEventMapper = historyEventMapper
   }
-}
 
-private extension HistoryListViewModelImplementation {
-  func handleEvent(_ event: PaginationEvent<KeeperCore.HistoryListSection>) {
-    Task {
-      switch event {
-      case .cached(let updatedSections):
-        await cachedModels.reset()
-        await MainActor.run {
-          didResetList?()
-        }
-        await handleUpdatedSections(updatedSections)
-      case .loading:
-        await MainActor.run {
-          didStartLoading?()
-        }
-      case .empty:
-        await MainActor.run {
-          noEvents?()
-        }
-      case .loaded(let updatedSections):
-        await cachedModels.reset()
-        await MainActor.run {
-          didResetList?()
-        }
-        await handleUpdatedSections(updatedSections)
-      case .nextPage(let updatedSections):
-        await handleUpdatedSections(updatedSections)
-      case .pageLoading:
-        await MainActor.run {
-          didStartPagination?(.loading)
-        }
-      case .pageLoadingFailed:
-        await MainActor.run {
-          didStartPagination?(.error(title: "Failed to load"))
-        }
+  private func setInitialState() {
+    if let cachedEvents = try? cacheProvider.getCache(wallet: wallet),
+    !cachedEvents.isEmpty {
+      var configurations = [String: HistoryCell.Model]()
+      var snapshot = HistoryListViewController.Snapshot()
+      queue.sync {
+        handleEvents(cachedEvents, sections: &sections, sectionsOrder: &sectionsOrder, relativeDate: relativeDate)
+        configurations = updateEventConfigurations(events: cachedEvents, relativeDate: relativeDate)
+        snapshot = createEventsSnapshot(hasPagination: false)
       }
-    }
-  }
-  
-  func handleUpdatedSections(_ updatedSections: [KeeperCore.HistoryListSection]) async {
-    var sections = [HistoryListSection]()
-    for updatedSection in updatedSections {
-      var eventModels = [HistoryCell.Configuration]()
-      for event in updatedSection.events {
-        await eventModels.append(mapEvent(event))
-      }
-      let section = HistoryListEventsSection(
-        date: updatedSection.date,
-        title: updatedSection.title,
-        events: eventModels
-      )
-      sections.append(HistoryListSection.events(section))
-    }
-    let resultSections = sections
-    await MainActor.run {
-      hasEvents?()
-      didUpdateHistory?(resultSections)
-    }
-  }
-  
-  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Configuration {
-    if let cachedModel = await cachedModels.models[event.eventId] {
-      return cachedModel
+      
+      eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+      self.snapshot = snapshot
     } else {
-      let model = historyEventMapper.mapEvent(event) { [weak self] nft in
-        self?.didSelectNft(nft)
-      } tapAction: { [weak self] accountEventDetailsEvent in
+      self.snapshot = createShimmerSnapshot()
+    }
+  }
+  
+  private func createShimmerSnapshot() -> HistoryListViewController.Snapshot {
+    var snapshot = HistoryListViewController.Snapshot()
+    snapshot.appendSections([.shimmer])
+    snapshot.appendItems([.shimmer], toSection: .shimmer)
+    return snapshot
+  }
+  
+  private func createEventsSnapshot(hasPagination: Bool) -> HistoryListViewController.Snapshot {
+    var snapshot = HistoryListViewController.Snapshot()
+    for section in sections {
+      let snapshotSection = HistoryListViewController.Section.events(HistoryListEventsSection(date: section.date))
+      snapshot.appendSections([snapshotSection])
+      snapshot.appendItems(section.events.map { .event(identifier: $0.eventId) }, toSection: snapshotSection)
+    }
+    if hasPagination {
+      snapshot.appendSections([.pagination])
+      snapshot.appendItems([.pagination], toSection: .pagination)
+    }
+    return snapshot
+  }
+  
+  private func reconfigureItemsSnapshot(snapshot: HistoryListViewController.Snapshot) -> HistoryListViewController.Snapshot {
+    var snapshot = snapshot
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems(snapshot.itemIdentifiers)
+    } else {
+      snapshot.reloadItems(snapshot.itemIdentifiers)
+    }
+    return snapshot
+  }
+  
+  private func reconfigurePaginationSnapshot(snapshot: HistoryListViewController.Snapshot) -> HistoryListViewController.Snapshot {
+    var snapshot = snapshot
+    snapshot.reloadSections([.pagination])
+    return snapshot
+  }
+  
+  private func didGetLoaderEvent(event: HistoryPaginationLoader.Event) {
+    switch event {
+    case .initialLoading:
+      break
+    case .initialLoadingFailed:
+      events = []
+      sections = []
+      sectionsOrder = [:]
+      try? cacheProvider.setCache(events: [], wallet: wallet)
+      DispatchQueue.main.async {
+        self.didUpdateState?(false)
+      }
+    case .initialLoaded(let accountEvents):
+      events = []
+      sections = []
+      sectionsOrder = [:]
+      handleLoadedEvents(accountEvents)
+      DispatchQueue.main.async {
+        self.didUpdateState?(!accountEvents.events.isEmpty)
+      }
+    case .pageLoading:
+      break
+    case .pageLoadingFailed:
+      handlePageLoadingFailed()
+    case .pageLoaded(let accountEvents):
+      handleLoadedEvents(accountEvents)
+    }
+  }
+
+  private func didUpdateSecureMode() {
+    let configurations = updateEventConfigurations(events: events, relativeDate: relativeDate)
+    let snapshot = reconfigureItemsSnapshot(snapshot: snapshot)
+    DispatchQueue.main.async {
+      self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+      self.snapshot = snapshot
+    }
+  }
+  
+  private func handleLoadedEvents(_ events: AccountEvents) {
+    let hasMore = events.nextFrom != 0
+    self.events = self.events + events.events
+    try? cacheProvider.setCache(events: self.events, wallet: wallet)
+    handleEvents(events.events, sections: &sections, sectionsOrder: &sectionsOrder, relativeDate: relativeDate)
+    let configurations = updateEventConfigurations(events: events.events, relativeDate: relativeDate)
+    let snapshot = createEventsSnapshot(hasPagination: hasMore)
+    DispatchQueue.main.async {
+      self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+      if hasMore {
+        self.paginationCellConfiguration = HistoryListPaginationCell.Model(state: .loading)
+        self.isLoadNextAvaiable = true
+      } else {
+        self.paginationCellConfiguration = HistoryListPaginationCell.Model(state: .none)
+        self.isLoadNextAvaiable = false
+      }
+      self.snapshot = snapshot
+    }
+  }
+  
+  private func handlePageLoadingFailed() {
+    let snapshot = reconfigurePaginationSnapshot(snapshot: snapshot)
+    DispatchQueue.main.async {
+      self.paginationCellConfiguration = HistoryListPaginationCell.Model(
+        state: .error(
+          title: TKLocales.Actions.failed,
+          retryButtonAction: { [weak self] in
+            self?.paginationLoader.loadNext()
+          }
+        )
+      )
+      self.isLoadNextAvaiable = false
+      self.snapshot = snapshot
+    }
+  }
+
+  private func handleEvents(_ events: [AccountEvent],
+                            sections: inout [EventsSection],
+                            sectionsOrder: inout [Date: Int],
+                            relativeDate: Date) {
+    for event in events {
+      let eventPeriod = calculateEventPeriod(event: event, relativeDate: relativeDate)
+      guard let sectionDate = calculateEventSectionDate(event: event, eventPeriod: eventPeriod) else { continue }
+      
+      if let sectionIndex = sectionsOrder[sectionDate],
+         sections.count > sectionIndex {
+        let section = sections[sectionIndex]
+        var updatedEvents = section.events
+        if let indexToInsert = updatedEvents.firstIndex(where: { event.date > $0.date }) {
+          updatedEvents.insert(event, at: indexToInsert)
+        } else {
+          updatedEvents.append(event)
+        }
+        let updatedSection = EventsSection(
+          date: section.date,
+          events: updatedEvents
+        )
+        sections.remove(at: sectionIndex)
+        sections.insert(updatedSection, at: sectionIndex)
+      } else {
+        let section = EventsSection(
+          date: sectionDate,
+          events: [event]
+        )
+        
+        if let indexToInsert = sections.firstIndex(where: { section.date > $0.date }) {
+          sections.insert(section, at: indexToInsert)
+        } else {
+          sections.append(section)
+        }
+        sectionsOrder = Dictionary(uniqueKeysWithValues: sections.enumerated().map {
+          ($0.element.date, $0.offset) }
+        )
+      }
+    }
+  }
+  
+  private func updateEventConfigurations(events: [AccountEvent], relativeDate: Date) -> [String: HistoryCell.Model] {
+    var configurations = [String: HistoryCell.Model]()
+    for event in events {
+      let eventPeriod = calculateEventPeriod(event: event, relativeDate: relativeDate)
+      configurations[event.eventId] = mapEventCellConfiguration(mapEvent(event, eventPeriod: eventPeriod))
+    }
+    return configurations
+  }
+
+  private func mapEvent(_ event: AccountEvent, eventPeriod: EventPeriod) -> AccountEventModel {
+    dateFormatter.dateFormat = eventPeriod.dateFormat
+
+    let eventModel = accountEventMapper.mapEvent(
+      event,
+      eventDate: event.date,
+      accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
+        dateFormatter: dateFormatter
+      ),
+      isTestnet: wallet.isTestnet,
+      nftProvider: { [weak self] address in
+        guard let self else { return nil }
+        return try? self.nftService.getNFT(address: address, isTestnet: self.wallet.isTestnet)
+      }
+    )
+    
+    return eventModel
+  }
+  
+  func mapEventCellConfiguration(_ eventModel: AccountEventModel) -> HistoryCell.Model {
+    return historyEventMapper.mapEvent(
+      eventModel,
+      isSecureMode: appSettingsStore.getState().isSecureMode,
+      nftAction: { [weak self, wallet] address in
+        self?.didSelectNFT?(wallet, address)
+      }, encryptedCommentAction: { [weak self, wallet] payload in
+        self?.didSelectEncryptedComment?(wallet, payload)
+      },
+      tapAction: { [weak self] accountEventDetailsEvent in
         self?.didSelectEvent?(accountEventDetailsEvent)
       }
-      await cachedModels.setModel(model, id: event.eventId)
-      return model
+    )
+  }
+  
+  private enum EventPeriod {
+    case recent
+    case thisYear
+    case previousYear
+    
+    var dateFormat: String {
+      switch self {
+      case .recent:
+        "HH:mm"
+      case .thisYear:
+        "dd MMM, HH:mm"
+      case .previousYear:
+        "dd MMM yyyy, HH:mm"
+      }
+    }
+    
+    var calendarComponents: Set<Calendar.Component> {
+      switch self {
+      case .recent:
+        [.year, .month, .day]
+      case .thisYear:
+        [.year, .month]
+      case .previousYear:
+        [.year, .month]
+      }
+    }
+  }
+
+  private func calculateEventSectionDate(event: AccountEvent, eventPeriod: EventPeriod) -> Date? {
+    let dateComponents = Calendar.current.dateComponents(eventPeriod.calendarComponents, from: event.date)
+    return Calendar.current.date(from: dateComponents)
+  }
+  
+  private func calculateEventPeriod(event: AccountEvent, relativeDate: Date) -> EventPeriod {
+    let calendar = Calendar.current
+    if calendar.isDateInToday(event.date)
+        || calendar.isDateInYesterday(event.date)
+        || calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .month) {
+      return .recent
+    } else if calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .year) {
+      return .thisYear
+    } else {
+      return .previousYear
     }
   }
   
-  func didSelectNft(_ nft: NFT) {
-    didSelectNFT?(nft)
+  private func mapEventsSectionDate(_ date: Date) -> String? {
+    let calendar = Calendar.current
+    if calendar.isDateInToday(date) {
+      return TKLocales.Dates.today
+    } else if calendar.isDateInYesterday(date) {
+      return TKLocales.Dates.yesterday
+    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .month) {
+      dateFormatter.dateFormat = "d MMMM"
+    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {
+      dateFormatter.dateFormat = "LLLL"
+    } else {
+      dateFormatter.dateFormat = "LLLL y"
+    }
+    return dateFormatter.string(from: date).capitalized
   }
 }

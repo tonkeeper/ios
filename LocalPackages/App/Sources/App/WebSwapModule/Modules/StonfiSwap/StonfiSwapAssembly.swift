@@ -4,13 +4,19 @@ import KeeperCore
 
 struct StonfiSwapAssembly {
   private init() {}
-  static func module(keeperCoreAssembly: KeeperCore.MainAssembly, messageHandler: StonfiSwapMessageHandler)
+  static func module(wallet: Wallet,
+                     fromToken: String? = nil,
+                     toToken: String? = nil,
+                     keeperCoreAssembly: KeeperCore.MainAssembly,
+                     messageHandler: StonfiSwapMessageHandler)
   -> MVVMModule<StonfiSwapViewController, Void, Void> {
 
     let viewModel = StonfiSwapViewModelImplementation(
-      walletsStore: keeperCoreAssembly.walletAssembly.walletStore,
-      configurationStore: keeperCoreAssembly.configurationAssembly.remoteConfigurationStore,
-      messageHandler: messageHandler
+      wallet: wallet,
+      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore,
+      messageHandler: messageHandler,
+      fromToken: fromToken,
+      toToken: toToken
     )
     let viewController = StonfiSwapViewController(
       viewModel: viewModel

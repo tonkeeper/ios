@@ -4,8 +4,16 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TonSwift
+import CryptoKit
+import TweetNacl
+import CommonCrypto
+import CryptoSwift
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var didOpenEventDetails: ((_ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -26,45 +34,66 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension HistoryCoordinator {
   func openHistory() {
-    let module = HistoryAssembly.module(
-      historyController: keeperCoreMainAssembly.historyController(),
-      listModuleProvider: { [keeperCoreMainAssembly] wallet in
-        HistoryListAssembly.module(
-          historyListController: keeperCoreMainAssembly.historyListController(wallet: wallet),
-          historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
-        )
-      },
-      emptyModuleProvider: { wallet in
-        HistoryEmptyAssembly.module()
+    let module = HistoryContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+    
+    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
+      
+      let listModule = HistoryListAssembly.module(
+        wallet: wallet,
+        paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
+          wallet: wallet
+        ),
+        cacheProvider: HistoryListAllEventsCacheProvider(historyService: keeperCoreMainAssembly.servicesAssembly.historyService()),
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+      )
+      
+      let historyModule = HistoryAssembly.module(
+        wallet: wallet,
+        historyListViewController: listModule.view,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      listModule.output.didSelectEvent = { [weak self] event in
+        self?.openEventDetails(event: event, wallet: wallet)
       }
-    )
-    
-    module.output.didTapReceive = { [weak self] in
-      self?.openReceive()
+      
+      listModule.output.didSelectNFT = { [weak self] wallet, nftAddress in
+        guard let self else { return }
+        Task {
+          await self.openNFTDetails(wallet: wallet, address: nftAddress)
+        }
+      }
+      
+      listModule.output.didUpdateState = { hasEvents in
+        historyModule.input.setHasEvents(hasEvents)
+      }
+      
+      listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload in
+        self?.decryptComment(wallet: wallet, payload: payload)
+      }
+      
+      historyModule.output.didTapReceive = { [weak self] wallet in
+        self?.openReceive(wallet: wallet)
+      }
+
+      historyModule.output.didTapBuy = { [weak self] wallet in
+        self?.openBuy(wallet: wallet)
+      }
+      
+      module.view.historyViewController = historyModule.view
     }
-    
-    module.output.didTapBuy = { [weak self] wallet in
-      self?.openBuy(wallet: wallet)
-    }
-    
-    module.output.didSelectEvent = { [weak self] event in
-      self?.openEventDetails(event: event)
-    }
-    
-    module.output.didSelectNFT = { [weak self] nft in
-      self?.openNFTDetails(nft: nft)
-    }
-    
+
     router.push(viewController: module.view, animated: false)
   }
   
-  func openReceive() {
+  func openReceive(wallet: Wallet) {
     let module = ReceiveModule(
       dependencies: ReceiveModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).receiveModule(token: .ton)
+    ).receiveModule(token: .ton, wallet: wallet)
     
     module.view.setupSwipeDownButton()
     
@@ -86,43 +115,68 @@ private extension HistoryCoordinator {
     coordinator.start()
   }
   
-  func openEventDetails(event: AccountEventDetailsEvent) {
-    let module = HistoryEventDetailsAssembly.module(
-      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
-      urlOpener: coreAssembly.urlOpener()
-    )
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  func openEventDetails(event: AccountEventDetailsEvent, wallet: Wallet) {
+    didOpenEventDetails?(event, wallet.isTestnet)
   }
   
-  func openNFTDetails(nft: NFT) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    
-    let coordinator = CollectiblesDetailsCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      nft: nft,
-      coreAssembly: coreAssembly,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
+  @MainActor
+  func openNFTDetails(wallet: Wallet, address: Address) {
+    if let nft = try? keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet) {
+      openDetails(wallet: wallet, nft: nft)
+    } else {
+      ToastPresenter.showToast(configuration: .loading)
+      Task {
+        guard let loaded = try? await keeperCoreMainAssembly.servicesAssembly.nftService().loadNFTs(addresses: [address], isTestnet: wallet.isTestnet),
+              let nft = loaded[address] else {
+          await MainActor.run {
+            ToastPresenter.showToast(configuration: .failed)
+          }
+          return
+        }
+        await MainActor.run {
+          ToastPresenter.hideAll()
+          openDetails(wallet: wallet, nft: nft)
+        }
+      }
+    }
+
+    @MainActor
+    func openDetails(wallet: Wallet, nft: NFT) {
+      let navigationController = TKNavigationController()
+      navigationController.setNavigationBarHidden(true, animated: false)
+      
+      let coordinator = CollectiblesDetailsCoordinator(
+        router: NavigationControllerRouter(rootViewController: navigationController),
+        nft: nft,
+        wallet: wallet,
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+
+      coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      coordinator.start()
+      addChild(coordinator)
+      
+      router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      })
+    }
+  }
+  
+  func decryptComment(wallet: Wallet, payload: EncryptedCommentPayload) {}
+  
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
-    
-    coordinator.didPerformTransaction = { [weak self] in
-//      self?.didPerformTransaction?()
-    }
-    
-    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    coordinator.start()
-    addChild(coordinator)
-    
-    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    })
   }
 }

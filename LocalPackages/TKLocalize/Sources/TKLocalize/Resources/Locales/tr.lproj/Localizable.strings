@@ -47,6 +47,7 @@
 "settings.items.currency" = "Para Birimi";
 "settings.items.theme" = "Tema";
 "settings.items.logout" = "Çıkış Yap";
+"settings.items.faq" = "FAQ";
 "settings.items.support" = "Destek";
 "settings.items.tk_news" = "Tonkeeper haberleri";
 "settings.items.contact_us" = "Bize Ulaşın";

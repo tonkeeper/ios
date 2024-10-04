@@ -5,9 +5,14 @@ import KeeperCore
 struct CollectiblesListAssembly {
   private init() {}
   static func module(
-    collectiblesListController: CollectiblesListController
+    wallet: Wallet,
+    keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void> {
-    let viewModel = CollectiblesListViewModelImplementation(collectiblesListController: collectiblesListController)
+    let viewModel = CollectiblesListViewModelImplementation(
+      wallet: wallet,
+      walletNFTsManagedStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet),
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
+    )
     let viewController = CollectiblesListViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())
   }

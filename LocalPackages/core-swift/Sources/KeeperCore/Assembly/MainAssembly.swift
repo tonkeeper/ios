@@ -3,46 +3,38 @@ import TonSwift
 import BigInt
 
 public final class MainAssembly {
-  
-  public struct Dependencies {
-    let wallets: [Wallet]
-    let activeWallet: Wallet
-    
-    public init(wallets: [Wallet], activeWallet: Wallet) {
-      self.wallets = wallets
-      self.activeWallet = activeWallet
-    }
-  }
-  
+  public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
-  public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
   public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let formattersAssembly: FormattersAssembly
+  public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
+  public let loadersAssembly: LoadersAssembly
   let apiAssembly: APIAssembly
-  let loadersAssembly: LoadersAssembly
   
-  init(repositoriesAssembly: RepositoriesAssembly,
-       walletAssembly: WalletAssembly,
+  init(appInfoProvider: AppInfoProvider,
+       repositoriesAssembly: RepositoriesAssembly,
        walletUpdateAssembly: WalletsUpdateAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        formattersAssembly: FormattersAssembly,
+       mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly) {
+    self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
-    self.walletAssembly = walletAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.formattersAssembly = formattersAssembly
+    self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
@@ -56,173 +48,19 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      walletsStore: walletAssembly.walletStore,
-      accountNFTService: servicesAssembly.accountNftService(),
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      balanceStore: storesAssembly.balanceStore,
-      dnsService: servicesAssembly.dnsService(),
       tonConnectService: tonConnectAssembly.tonConnectService(),
-      deeplinkParser: DefaultDeeplinkParser(
-        parsers: [
-          TonkeeperDeeplinkParser(),
-          TonConnectDeeplinkParser(),
-          TonDeeplinkParser(),
-        ]
-      ),
-      apiProvider: apiAssembly.apiProvider
+      deeplinkParser: DeeplinkParser(),
+      walletStateLoader: loadersAssembly.walletStateLoader,
+      internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }
-  
-  public func walletMainController() -> WalletMainController {
-    WalletMainController(
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceLoader: loadersAssembly.walletBalanceLoader,
-      nftsStore: storesAssembly.nftsStore,
-      nftsLoader: loadersAssembly.nftsLoader,
-      tonRatesLoader: loadersAssembly.tonRatesLoader,
-      currencyStore: storesAssembly.currencyStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore
-    )
-  }
-  
-  public func walletStoreWalletListController() -> WalletListController {
-    let configurator = WalletStoreWalletListControllerConfigurator(
-      walletsStore: walletAssembly.walletStore,
-      walletsStoreUpdate: walletUpdateAssembly.walletsStoreUpdate
-    )
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
-  public func tonConnectWalletSelectWalletLisController(selectedWallet: Wallet,
-                                                        didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
-    let configurator = TonConnectWalletSelectWalletListControllerConfigurator(
-      selectedWallet: selectedWallet,
-      walletsStore: walletAssembly.walletStore
-    )
-    configurator.didSelectWallet = didSelectWallet
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
-  public func walletBalanceController() -> WalletBalanceController {
-    WalletBalanceController(
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      setupStore: storesAssembly.setupStore,
-      securityStore: storesAssembly.securityStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
-      walletBalanceMapper: walletBalanceMapper
-    )
-  }
-  
-  public var settingsController: SettingsController {
-    SettingsController(
-      walletsStore: walletAssembly.walletStore,
-      updateStore: walletUpdateAssembly.walletsStoreUpdate,
-      currencyStore: storesAssembly.currencyStore,
-      configurationStore: configurationAssembly.remoteConfigurationStore,
-      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
-    )
-  }
-  
-  public func historyController() -> HistoryController {
-    HistoryController(walletsStore: walletAssembly.walletStore,
-                      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
-  }
-  
-  public func historyListController(wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListAllEventsLoader(
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
-      paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
-  }
-  
-  public func tonEventsHistoryListController(wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListTonEventsLoader(
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
-      paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
-  }
-  
-  public func jettonEventsHistoryListController(jettonItem: JettonItem, wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListJettonEventsLoader(
-      jettonInfo: jettonItem.jettonInfo,
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
-      paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
-  }
-  
-  public func tonTokenDetailsController() -> TokenDetailsController {
-    let configurator = TonTokenDetailsControllerConfigurator(
-      mapper: tokenDetailsMapper
-    )
-    return TokenDetailsController(
-      configurator: configurator,
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
-    )
-  }
-  
-  public func jettonTokenDetailsController(jettonItem: JettonItem) -> TokenDetailsController {
-    let configurator = JettonTokenDetailsControllerConfigurator(
-      jettonItem: jettonItem,
-      mapper: tokenDetailsMapper
-    )
-    return TokenDetailsController(
-      configurator: configurator,
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
-    )
+
+  public var walletDeleteController: WalletDeleteController {
+    WalletDeleteController(walletStore: storesAssembly.walletsStore,
+                           keeperInfoStore: storesAssembly.keeperInfoStore,
+                           mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
   
   public func chartController() -> ChartController {
@@ -245,127 +83,33 @@ public final class MainAssembly {
     )
   }
   
-  public func receiveController(token: Token) -> ReceiveController {
-    ReceiveController(
-      token: token,
-      walletsStore: walletAssembly.walletStore,
-      deeplinkGenerator: DeeplinkGenerator()
-    )
-  }
-  
   public func storiesController(pages: [StoriesController.StoryPage]) -> StoriesController {
     StoriesController(
       pages: pages
     )
   }
   
-  public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
+  public func historyEventDetailsController(event: AccountEventDetailsEvent, isTestnet: Bool) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
-      walletsStore: walletAssembly.walletStore,
       currencyStore: storesAssembly.currencyStore,
-      nftService: servicesAssembly.nftService()
-    )
-  }
-  
-  public func collectiblesController() -> CollectiblesController {
-    CollectiblesController(
-      walletsStore: walletAssembly.walletStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
-      nftsStore: storesAssembly.nftsStore
-    )
-  }
-  
-  public func collectiblesListController(wallet: Wallet) -> CollectiblesListController {
-    CollectiblesListController(
-      wallet: wallet,
-      nftsListPaginator: NftsListPaginator(
-        wallet: wallet,
-        accountNftsService: servicesAssembly.accountNftService()
-      ),
-      nftsStore: storesAssembly.nftsStore
-    )
-  }
-  
-  public func collectibleDetailsController(nft: NFT) -> CollectibleDetailsController {
-    CollectibleDetailsController(
-      nft: nft,
-      walletsStore: walletAssembly.walletStore,
       nftService: servicesAssembly.nftService(),
-      dnsService: servicesAssembly.dnsService(),
-      collectibleDetailsMapper: CollectibleDetailsMapper(dateFormatter: formattersAssembly.dateFormatter)
+      isTestnet: isTestnet
     )
   }
   
-  public func backupController(wallet: Wallet) -> BackupController {
-    BackupController(
-      wallet: wallet,
-      backupStore: storesAssembly.backupStore,
-      walletsStore: walletAssembly.walletStore,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-  }
-  
-  public func settingsSecurityController() -> SettingsSecurityController {
-    SettingsSecurityController(
-      securityStore: storesAssembly.securityStore
-    )
-  }
-  
-  public func sendController(sendItem: SendItem, recipient: Recipient? = nil) -> SendController {
-    SendController(
-      sendItem: sendItem,
-      recipient: recipient,
-      walletsStore: walletAssembly.walletStore,
-      balanceStore: storesAssembly.balanceStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      dnsService: servicesAssembly.dnsService(),
-      amountFormatter: formattersAssembly.amountFormatter
-    )
-  }
-  
-  public func sendV3Controller() -> SendV3Controller {
+  public func sendV3Controller(wallet: Wallet) -> SendV3Controller {
     SendV3Controller(
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
+      wallet: wallet,
+      balanceStore: storesAssembly.convertedBalanceStore,
+      knownAccountsStore: loadersAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
+      recipientResolver: loadersAssembly.recipientResolver(),
       amountFormatter: formattersAssembly.amountFormatter
-    )
-  }
-  
-  public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {
-    SendRecipientController(
-      recipient: recipient,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      dnsService: servicesAssembly.dnsService()
-    )
-  }
-  
-  public func sendAmountController(token: Token,
-                                   tokenAmount: BigUInt,
-                                   wallet: Wallet) -> SendAmountController {
-    SendAmountController(
-      token: token,
-      tokenAmount: tokenAmount,
-      wallet: wallet,
-      balanceStore: storesAssembly.balanceStore,
-      ratesStore: storesAssembly.ratesStore,
-      currencyStore: storesAssembly.currencyStore,
-      rateConverter: RateConverter(),
-      amountFormatter: formattersAssembly.amountFormatter
-    )
-  }
-  
-  public func sendCommentController(isCommentRequired: Bool,
-                                    comment: String?) -> SendCommentController {
-    SendCommentController(
-      isCommentRequired: isCommentRequired,
-      comment: comment
     )
   }
   
@@ -382,29 +126,61 @@ public final class MainAssembly {
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
-      ratesStore: storesAssembly.ratesStore,
+      ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
   
-  public func tokenPickerController(wallet: Wallet, selectedToken: Token) -> TokenPickerController {
-    TokenPickerController(
+  public func stakingDepositConfirmationController(wallet: Wallet,
+                                                   stakingPool: StackingPoolInfo,
+                                                   amount: BigUInt,
+                                                   isMax: Bool) -> StakeConfirmationController {
+    StakeDepositConfirmationController(
       wallet: wallet,
-      selectedToken: selectedToken,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      amountFormatter: formattersAssembly.amountFormatter
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      sendService: servicesAssembly.sendService(),
+      accountService: servicesAssembly.accountService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
+  public func stakingWithdrawConfirmationController(wallet: Wallet,
+                                                    stakingPool: StackingPoolInfo,
+                                                    amount: BigUInt,
+                                                    isMax: Bool,
+                                                    isCollect: Bool) -> StakeConfirmationController {
+    StakeWithdrawConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      isCollect: isCollect,
+      sendService: servicesAssembly.sendService(),
+      accountService: servicesAssembly.accountService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
   
   public func buyListController(wallet: Wallet,
-                                isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
+                                isMarketRegionPickerAvailable: Bool) -> BuyListController {
     BuyListController(
       wallet: wallet,
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
-      configurationStore: configurationAssembly.remoteConfigurationStore,
+      configurationStore: configurationAssembly.configurationStore,
       currencyStore: storesAssembly.currencyStore,
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
@@ -420,7 +196,7 @@ public final class MainAssembly {
   
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: storesAssembly.walletsStore,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
@@ -432,9 +208,10 @@ public final class MainAssembly {
       bocProvider: bocProvider,
       sendService: servicesAssembly.sendService(),
       nftService: servicesAssembly.nftService(),
-      ratesStore: storesAssembly.ratesStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       confirmTransactionMapper: ConfirmTransactionMapper(
+        nftService: servicesAssembly.nftService(),
         accountEventMapper: AccountEventMapper(
           dateFormatter: formattersAssembly.dateFormatter,
           amountFormatter: formattersAssembly.amountFormatter,
@@ -455,32 +232,6 @@ public final class MainAssembly {
 }
 
 private extension MainAssembly {
-  func walletListController(configurator: WalletStoreWalletListControllerConfigurator) -> WalletListController {
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
-  var walletBalanceMapper: WalletBalanceMapper {
-    WalletBalanceMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter(),
-      dateFormatter: formattersAssembly.dateFormatter)
-  }
-  
-  var walletListMapper: WalletListMapper {
-    WalletListMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter()
-    )
-  }
-  
   var accountEventMapper: AccountEventMapper {
     AccountEventMapper(
       dateFormatter: formattersAssembly.dateFormatter,
@@ -490,13 +241,6 @@ private extension MainAssembly {
           amountFormatter: formattersAssembly.amountFormatter
         )
       )
-    )
-  }
-  
-  var tokenDetailsMapper: TokenDetailsMapper {
-    TokenDetailsMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      rateConverter: RateConverter()
     )
   }
 }

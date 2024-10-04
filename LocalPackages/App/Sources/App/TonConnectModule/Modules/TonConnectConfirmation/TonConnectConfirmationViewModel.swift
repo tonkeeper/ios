@@ -3,6 +3,7 @@ import KeeperCore
 import TKCore
 import UIKit
 import TKUIKit
+import TKLocalize
 
 protocol TonConnectConfirmationModuleOutput: AnyObject {
   var didTapConfirmButton: (() async -> Bool)? { get set }
@@ -33,7 +34,7 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   var didUpdateHeader: ((String, NSAttributedString?) -> Void)?
   
   func viewDidLoad() {
-    let wallet = "Wallet: ".withTextStyle(
+    let wallet = "\(TKLocales.ConfirmSend.wallet): ".withTextStyle(
       .body2,
       color: .Text.secondary,
       alignment: .left,
@@ -50,9 +51,9 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
     )
     let subtitle = NSMutableAttributedString(attributedString: wallet)
     subtitle.append(walletName)
-    
+
     didUpdateHeader?(
-      "Confirm Action",
+      TKLocales.ConfirmSend.TokenTransfer.title,
       subtitle
     )
     prepareContent()
@@ -71,6 +72,7 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
 }
 
 private extension TonConnectConfirmationViewModelImplementation {
+
   func prepareContent() {
     var contentItems = [TKModalCardViewController.Configuration.ContentItem]()
     if let contentItem = contentItem() {
@@ -93,7 +95,7 @@ private extension TonConnectConfirmationViewModelImplementation {
   
   func confirmButton() -> TKModalCardViewController.Configuration.Button {
     TKModalCardViewController.Configuration.Button(
-      title: "Confirm",
+      title: TKLocales.ConfirmSend.confirm,
       size: .large,
       category: .primary,
       isEnabled: true,
@@ -116,7 +118,7 @@ private extension TonConnectConfirmationViewModelImplementation {
   
   func cancelButton() -> TKModalCardViewController.Configuration.Button {
     TKModalCardViewController.Configuration.Button(
-      title: "Cancel",
+      title: TKLocales.Actions.cancel,
       size: .large,
       category: .secondary,
       isEnabled: true,
@@ -132,13 +134,21 @@ private extension TonConnectConfirmationViewModelImplementation {
   func contentItem() -> TKModalCardViewController.Configuration.Item? {
     let model = TonConnectConfirmationContentView.Model(
       actionsConfiguration: mapEvent(model.event),
-      feeModel: .init(title: "Network fee", fee: model.fee)
+      feeModel: .init(title: TKLocales.ConfirmSend.fee, fee: model.fee)
     )
     guard let view = contentView?(model) else { return nil }
     return .customView(view, bottomSpacing: 32)
   }
   
-  func mapEvent(_ event: AccountEventModel) -> HistoryCellContentView.Configuration {
-    return historyEventMapper.mapEventContentConfiguration(event, nftAction: { _ in }, tapAction: { _ in })
+  func mapEvent(_ event: AccountEventModel) -> HistoryCellContentView.Model {
+    return historyEventMapper.mapEventContentConfiguration(
+      event,
+      isSecureMode: false,
+      nftAction: { _ in },
+      encryptedCommentAction: { _ in
+        
+      },
+      tapAction: { _ in }
+    )
   }
 }

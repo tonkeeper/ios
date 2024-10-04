@@ -6,7 +6,6 @@ final class TokenDetailsViewController: GenericViewViewController<TokenDetailsVi
   private let listContentViewController: TokenDetailsListContentViewController
   
   private let headerViewController = TokenDetailsHeaderViewController()
-  private let titleView = TokenDetailsTitleView()
   
   init(viewModel: TokenDetailsViewModel,
        listContentViewController: TokenDetailsListContentViewController) {
@@ -27,17 +26,19 @@ final class TokenDetailsViewController: GenericViewViewController<TokenDetailsVi
     viewModel.viewDidLoad()
   }
   
-  public override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
     
-    navigationController?.setNavigationBarHidden(false, animated: true)
+    customView.navigationBar.layoutIfNeeded()
+    listContentViewController.scrollView.contentInset.top = customView.navigationBar.bounds.height
+    listContentViewController.scrollView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
   }
 }
 
 private extension TokenDetailsViewController {
   func setupBindings() {
-    viewModel.didUpdateTitleView = { [weak self] titleModel in
-      self?.titleView.configure(model: titleModel)
+    viewModel.didUpdateTitleView = { [weak self] model in
+      self?.customView.titleView.configure(model: model)
     }
     
     viewModel.didUpdateInformationView = { [weak self] model in
@@ -54,12 +55,42 @@ private extension TokenDetailsViewController {
   }
   
   func setup() {
-    navigationItem.titleView = titleView
-    navigationItem.setupBackButton { [weak self] in
-      self?.navigationController?.popViewController(animated: true)
-    }
+    setupNavigationBar()
+
+    listContentViewController.scrollView.contentInsetAdjustmentBehavior = .never
     
     setupListContent()
+  }
+  
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createBackButton {
+        navigationController.popViewController(animated: true)
+      }
+    ]
+    
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createMoreButton { view in
+        let item = TKPopupMenuItem(
+          title: "View details",
+          icon: .TKUIKit.Icons.Size16.globe,
+          selectionHandler: { [weak self] in
+            self?.viewModel.didTapOpenDetails()
+          }
+        )
+        TKPopupMenuController.show(
+          sourceView: view,
+          position: .topRight,
+          width: 0,
+          items: [item],
+          isSelectable: false,
+          selectedIndex: nil)
+      }
+    ]
   }
   
   func setupListContent() {
@@ -67,5 +98,6 @@ private extension TokenDetailsViewController {
     customView.embedListView(listContentViewController.view)
     listContentViewController.didMove(toParent: self)
     listContentViewController.setHeaderViewController(headerViewController)
+    customView.navigationBar.scrollView = listContentViewController.scrollView
   }
 }

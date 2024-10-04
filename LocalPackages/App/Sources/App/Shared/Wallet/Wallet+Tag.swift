@@ -11,7 +11,7 @@ extension Wallet {
     case .lockup:
       return nil
     case .watchonly:
-      return TKLocales.WalletTags.watch_only
+      return TKLocales.WalletTags.watchOnly
     case .w5:
       return "W5"
     case .w5Beta:
@@ -28,7 +28,7 @@ extension Wallet {
   func copyToastConfiguration() -> ToastPresenter.Configuration {
     let backgroundColor: UIColor
     let foregroundColor: UIColor
-    
+
     switch kind {
     case .w5, .w5Beta:
       backgroundColor = .Accent.green
@@ -47,14 +47,11 @@ extension Wallet {
     case .watchonly:
       backgroundColor = .Accent.orange
       foregroundColor = .Text.primary
-    case .signer:
-      backgroundColor = .Accent.purple
-      foregroundColor = .Text.primary
-    case .ledger:
-      backgroundColor = .Accent.purple
+    default:
+      backgroundColor = .Background.contentTint
       foregroundColor = .Text.primary
     }
-    
+
     return ToastPresenter.Configuration(
       title: TKLocales.Actions.copied,
       backgroundColor: backgroundColor,
@@ -62,7 +59,7 @@ extension Wallet {
       dismissRule: .default
     )
   }
-  
+
   func balanceTagConfiguration() -> TKUITagView.Configuration? {
     let tag = tag
     let textColor: UIColor?
@@ -91,16 +88,16 @@ extension Wallet {
       textColor = .Accent.green
       backgroundColor = .Accent.green.withAlphaComponent(0.16)
     }
-    
+
     guard let tag, let textColor, let backgroundColor else { return nil }
-    
+
     return TKUITagView.Configuration(
       text: tag,
       textColor: textColor,
       backgroundColor: backgroundColor
     )
   }
-  
+
   func receiveTagConfiguration() -> TKUITagView.Configuration? {
     let tag = tag
     let textColor: UIColor?
@@ -129,16 +126,15 @@ extension Wallet {
       textColor = .Accent.purple
       backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     }
-    
-    guard let tag, let textColor, let backgroundColor else { return nil }
-    
+    guard let tag else { return nil }
+
     return TKUITagView.Configuration(
       text: tag,
-      textColor: textColor,
-      backgroundColor: backgroundColor
+      textColor: .black,
+      backgroundColor: .Accent.orange
     )
   }
-  
+
   func listTagConfiguration() -> TKUITagView.Configuration? {
     let tag = tag
     let textColor: UIColor?
@@ -151,7 +147,7 @@ extension Wallet {
       textColor = .Text.secondary
       backgroundColor = .Background.contentTint
     }
-    
+
     guard let tag, let textColor, let backgroundColor else { return nil }
 
     return TKUITagView.Configuration(
@@ -159,5 +155,10 @@ extension Wallet {
       textColor: textColor,
       backgroundColor: backgroundColor
     )
+  }
+
+  func listTagConfiguration() -> TKTagView.Configuration? {
+    guard let tag = tag else { return nil }
+    return TKTagView.Configuration.outlintTag(text: tag)
   }
 }

@@ -60,14 +60,14 @@ private extension PublicKeyImportCoordinator {
   }
   
   func openChooseWalletToAdd(publicKey: TonSwift.PublicKey, activeWalletModels: [ActiveWalletModel]) {
-    let controller = walletsUpdateAssembly.chooseWalletController(
+    let module = ChooseWalletToAddAssembly.module(
       activeWalletModels: activeWalletModels,
-      configuration: ChooseWalletsController.Configuration(
+      configuration: ChooseWalletToAddConfiguration(
         showRevision: true,
         selectLastRevision: true
-      )
+      ),
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
     )
-    let module = ChooseWalletToAddAssembly.module(controller: controller)
     
     module.output.didSelectWallets = { [weak self] wallets in
       let revisions = wallets.map { $0.revision }

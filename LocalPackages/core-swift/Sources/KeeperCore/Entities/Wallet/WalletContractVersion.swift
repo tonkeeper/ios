@@ -1,12 +1,12 @@
 import Foundation
 import TonSwift
 
-public enum WalletContractVersion: String, Codable, CaseIterable, Comparable {
+public enum WalletContractVersion: String, Codable, CaseIterable, Comparable, Hashable {
   /// Regular wallets
   case v3R1, v3R2, v4R1, v4R2, v5Beta, v5R1
   
   public static var currentVersion: WalletContractVersion {
-    .v4R2
+    .v5R1
   }
   
   private var intValue: Int {

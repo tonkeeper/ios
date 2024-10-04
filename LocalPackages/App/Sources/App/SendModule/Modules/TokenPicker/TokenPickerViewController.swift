@@ -2,15 +2,14 @@ import UIKit
 import TKUIKit
 
 final class TokenPickerViewController: GenericViewViewController<TokenPickerView>, TKBottomSheetScrollContentViewController {
-  typealias Item = TokenPickerCell.Model
+  typealias Item = TKUIListItemCell.Configuration
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
+  typealias Snapshot = NSDiffableDataSourceSnapshot<Section,Item>
   
   enum Section {
     case tokens
   }
-  
-  // Collection
-  
+    
   private lazy var dataSource = createDataSource()
   
   private let viewModel: TokenPickerViewModel
@@ -39,7 +38,7 @@ final class TokenPickerViewController: GenericViewViewController<TokenPickerView
   var didUpdateHeight: (() -> Void)?
   var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Tokens")
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: "Tokens", subtitle: nil))
   }
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
     scrollView.contentSize.height
@@ -49,24 +48,29 @@ final class TokenPickerViewController: GenericViewViewController<TokenPickerView
 private extension TokenPickerViewController {
   func setup() {
     customView.collectionView.delegate = self
-    customView.collectionView.register(
-      TokenPickerCell.self,
-      forCellWithReuseIdentifier: TokenPickerCell.reuseIdentifier
-    )
     
     setupCollectionLayout()
   }
   
   func setupBindings() {
-    viewModel.didUpdateTokens = { [weak self] tokens in
-      self?.updateTokenItems(tokens)
+    viewModel.didUpdateSnapshot = { [weak self] snapshot in
+      guard let self else { return }
+      let contentOffset = self.customView.collectionView.contentOffset
+      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        self.customView.collectionView.layoutIfNeeded()
+        self.customView.collectionView.contentOffset = contentOffset
+      })
+      self.customView.collectionView.layoutIfNeeded()
+      self.customView.collectionView.contentOffset = contentOffset
+      self.didUpdateHeight?()
     }
     
-    viewModel.didUpdateSelectedToken = { [weak self] index in
+    viewModel.didUpdateSelectedToken = { [weak self] index, isScroll in
+      guard let index else { return }
       self?.customView.collectionView.selectItem(
         at: IndexPath(item: index, section: 0),
         animated: false,
-        scrollPosition: .centeredVertically
+        scrollPosition: isScroll ? [.centeredVertically] : []
       )
     }
   }
@@ -83,7 +87,7 @@ private extension TokenPickerViewController {
         )
       )
       
-      let group = NSCollectionLayoutGroup.vertical(
+      let group = NSCollectionLayoutGroup.horizontal(
         layoutSize: NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0),
                                            heightDimension: .absolute(76)),
         subitems: [item]
@@ -99,34 +103,38 @@ private extension TokenPickerViewController {
   }
   
   func createDataSource() -> DataSource {
-    DataSource(collectionView: customView.collectionView) { collectionView, indexPath, itemIdentifier in
-      let cell = collectionView.dequeueReusableCell(
-        withReuseIdentifier: TokenPickerCell.reuseIdentifier,
-        for: indexPath
-      ) as? TokenPickerCell
-      cell?.configure(model: itemIdentifier)
-      cell?.isFirstInSection = { return $0.item == 0 }
-      cell?.isLastInSection = { [unowned collectionView] in
-        let numberOfItems = collectionView.numberOfItems(inSection: $0.section)
-        return $0.item == numberOfItems - 1
+    let itemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>
+    { [weak self, weak collectionView = self.customView.collectionView] cell, indexPath, identifier in
+      guard let self else { return }
+      cell.isFirstInSection = { ip in ip.item == 0 }
+      cell.isLastInSection = { ip in
+        guard let collectionView = collectionView else { return false }
+        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
       }
-      return cell
+      cell.configure(configuration: identifier)
+      cell.selectionAccessoryViews = self.createSelectionAccessoryViews()
+    }
+    
+    return DataSource(collectionView: customView.collectionView) { collectionView, indexPath, itemIdentifier in
+      return collectionView.dequeueConfiguredReusableCell(using: itemCellConfiguration, for: indexPath, item: itemIdentifier)
     }
   }
   
-  func updateTokenItems(_ tokenItems: [TokenPickerCell.Model]) {
-    var snapshot = dataSource.snapshot()
-    snapshot.deleteAllItems()
-    snapshot.appendSections([.tokens])
-    snapshot.appendItems(tokenItems, toSection: .tokens)
-    snapshot.reloadItems(tokenItems)
-    dataSource.apply(snapshot)
-    didUpdateHeight?()
+  func createSelectionAccessoryViews() -> [UIView] {
+    var configuration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
+    configuration.contentPadding.right = 16
+    configuration.iconTintColor = .Accent.blue
+    configuration.content.icon = .TKUIKit.Icons.Size28.donemarkOutline
+    let button = TKButton(configuration: configuration)
+    button.isUserInteractionEnabled = false
+    return [button]
   }
 }
 
 extension TokenPickerViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    viewModel.didSelectItemAt(index: indexPath.item)
+    let snapshot = dataSource.snapshot()
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+    item.selectionClosure?()
   }
 }

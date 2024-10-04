@@ -6,60 +6,40 @@ public final class RootController {
     case main(wallets: [Wallet], activeWallet: Wallet)
   }
 
-  private let walletsService: WalletsService
-  private let remoteConfigurationStore: ConfigurationStore
+  private let remoteConfigurationStore: ConfigurationLoader
   private let knownAccountsStore: KnownAccountsStore
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
   private let mnemonicsRepository: MnemonicsRepository
-  private let buySellMethodsService: BuySellMethodsService
-  private let locationService: LocationService
+  private let fiatMethodsLoader: FiatMethodsLoader
   
-  init(walletsService: WalletsService,
-       remoteConfigurationStore: ConfigurationStore,
+  init(remoteConfigurationStore: ConfigurationLoader,
        knownAccountsStore: KnownAccountsStore,
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
        mnemonicsRepository: MnemonicsRepository,
-       buySellMethodsService: BuySellMethodsService,
-       locationService: LocationService) {
-    self.walletsService = walletsService
+       fiatMethodsLoader: FiatMethodsLoader) {
     self.remoteConfigurationStore = remoteConfigurationStore
     self.knownAccountsStore = knownAccountsStore
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
     self.mnemonicsRepository = mnemonicsRepository
-    self.buySellMethodsService = buySellMethodsService
-    self.locationService = locationService
+    self.fiatMethodsLoader = fiatMethodsLoader
   }
   
-  public func getState() -> State {
-    do {
-      let wallets = try walletsService.getWallets()
-      let activeWallet = try walletsService.getActiveWallet()
-      return .main(wallets: wallets, activeWallet: activeWallet)
-    } catch {
-      return .onboarding
-    }
+  public func loadFiatMethods(isMarketRegionPickerAvailable: Bool) {
+    fiatMethodsLoader.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
   }
   
-  public func loadConfiguration() {
+  public func loadConfigurations() {
     Task {
-      try await remoteConfigurationStore.load()
+      await remoteConfigurationStore.load()
     }
-  }
-  
-  public func loadKnownAccounts() {
+    Task {
+      await remoteConfigurationStore.load()
+    }
     Task {
       try await knownAccountsStore.load()
-    }
-  }
-  
-  public func loadBuySellMethods() {
-    Task {
-      let countryCode = try await locationService.getCountryCodeByIp()
-      let methods = try await buySellMethodsService.loadFiatMethods(countryCode: countryCode)
-      try? buySellMethodsService.saveFiatMethods(methods)
     }
   }
   

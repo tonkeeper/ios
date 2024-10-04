@@ -31,7 +31,7 @@ final class CollectiblesEmptyViewModelImplementation: CollectiblesEmptyViewModel
 
 private extension CollectiblesEmptyViewModelImplementation {
   func createModel() -> CollectiblesEmptyView.Model {
-    let title = TKLocales.Purchases.empty_placeholder.withTextStyle(
+    let title = TKLocales.Purchases.emptyPlaceholder.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,

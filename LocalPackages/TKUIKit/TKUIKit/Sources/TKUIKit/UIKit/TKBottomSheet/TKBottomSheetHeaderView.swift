@@ -1,6 +1,7 @@
 import UIKit
 
 public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
+  let titleContainer = UIView()
   let titleLabel = UILabel()
   let subtitleLabel = UILabel()
   let closeButton = TKUIHeaderIconButton()
@@ -9,9 +10,6 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
   private let titleVerticalStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins.top = 10
-    stackView.directionalLayoutMargins.bottom = 10
     return stackView
   }()
   private let titleHoriontalStackView: UIStackView = {
@@ -41,14 +39,21 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
       leftButtonContainer.subviews.forEach { $0.removeFromSuperview() }
       return
     }
-    titleLabel.attributedText = model.title.withTextStyle(
-      .h3,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byTruncatingTail
-    )
-    subtitleLabel.attributedText = model.subtitle
     
+    switch model.title {
+    case .title(let title, let subtitle):
+      titleVerticalStackView.addArrangedSubview(titleLabel)
+      titleVerticalStackView.addArrangedSubview(subtitleLabel)
+      titleLabel.attributedText = title.withTextStyle(
+        .h3,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+      subtitleLabel.attributedText = subtitle
+    case .customView(let customView):
+      titleVerticalStackView.addArrangedSubview(customView)
+    }
     leftButtonContainer.subviews.forEach { $0.removeFromSuperview() }
     if let leftButtonModel = model.leftButton {
       let leftButton = TKUIHeaderTitleIconButton()
@@ -93,8 +98,6 @@ private extension TKBottomSheetHeaderView {
     addSubview(titleHoriontalStackView)
     
     titleHoriontalStackView.addArrangedSubview(titleVerticalStackView)
-    titleVerticalStackView.addArrangedSubview(titleLabel)
-    titleVerticalStackView.addArrangedSubview(subtitleLabel)
     
     closeButton.configure(
       model: TKUIHeaderButtonIconContentView.Model(image: .TKUIKit.Icons.Size16.close)

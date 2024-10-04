@@ -2,14 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>APTABASE_KEY</key>
-	<string>$(APTABASE_KEY)</string>
-	<key>APTABSE_ENDPOINT</key>
-	<string>$(APTABASE_ENDPOINT)</string>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>APP_NAME</key>
 	<string>$(APP_NAME)</string>
+	<key>APTABASE_ENDPOINT</key>
+	<string>$(APTABASE_ENDPOINT)</string>
+	<key>APTABASE_KEY</key>
+	<string>$(APTABASE_KEY)</string>
 	<key>AppIdentifierPrefix</key>
 	<string>$(AppIdentifierPrefix)</string>
 	<key>CFBundleURLTypes</key>
@@ -54,7 +54,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tonsign</string>
-    <string>ledgerlive</string>
+		<string>ledgerlive</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
@@ -81,6 +81,12 @@
 	<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
 	<key>OLD_KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(OLD_KEYCHAIN_ACCESS_GROUP)</string>
+	<key>PLATFORM</key>
+	<string>$(PLATFORM)</string>
+	<key>PrivacyPolicyURL</key>
+	<string>$(PRIVACY_POLICY_URL)</string>
+	<key>TermsOfServiceURL</key>
+	<string>$(TERMS_OF_SERVICE_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -98,6 +104,10 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

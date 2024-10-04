@@ -3,114 +3,92 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-public protocol SettingsListModuleOutput: AnyObject {
-  var didTapEditWallet: ((Wallet) -> Void)? { get set }
-}
+public protocol SettingsListModuleOutput: AnyObject {}
 
 protocol SettingsListViewModel: AnyObject {
-  var didUpdateTitle: ((String) -> Void)? { get set }
-  var didUpdateSettingsSections: (([SettingsListSection]) -> Void)? { get set }
-  var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)? { get set }
-  var didSelectItem: ((IndexPath) -> Void)? { get set }
-  
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot, _ animated: Bool) -> Void)? { get set }
+  var selectedItems: Set<SettingsListItem> { get }
+
   func viewDidLoad()
-  func selectItem(section: SettingsListSection, index: Int)
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
-  func isHighlightableItem(section: SettingsListSection, index: Int) -> Bool
 }
 
-protocol SettingsListItemsProvider: AnyObject {
-  var didUpdateSections: (() -> Void)? { get set }
-  
+struct SettingsListState {
+  let sections: [SettingsListSection]
+}
+
+protocol SettingsListConfigurator: AnyObject {
   var title: String { get }
-  
-  func getSections() async -> [SettingsListSection]
-  func selectItem(section: SettingsListSection, index: Int)
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
-  func initialSelectedIndexPath() async -> IndexPath?
+  var didUpdateState: ((SettingsListState) -> Void)? { get set }
+  var selectedItems: Set<SettingsListItem> { get }
+  func getInitialState() -> SettingsListState
 }
 
-extension SettingsListItemsProvider {
-  func initialSelectedIndexPath() async -> IndexPath? { nil }
+extension SettingsListConfigurator {
+  var selectedItems: Set<SettingsListItem> { [] }
 }
 
 final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
   
   // MARK: - SettingsListModuleOutput
   
-  var didTapEditWallet: ((Wallet) -> Void)?
-  
   // MARK: - SettingsListViewModel
-  var didUpdateTitle: ((String) -> Void)?
-  var didUpdateSettingsSections: (([SettingsListSection]) -> Void)?
-  var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)?
-  var didSelectItem: ((IndexPath) -> Void)?
-
+  
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot, Bool) -> Void)?
+  var selectedItems: Set<SettingsListItem> {
+    configurator.selectedItems
+  }
+  
   func viewDidLoad() {
-    TKThemeManager.shared.addEventObserver(self) { observer, theme in
-      Task {
-        await observer.reloadSections()
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: configurator.title))
+    
+    configurator.didUpdateState = { [weak self] state in
+      DispatchQueue.main.async {
+        self?.update(with: state, animated: false)
       }
     }
     
-    didUpdateTitle?(itemsProvider.title)
-    
-    itemsProvider.didUpdateSections = { [weak self] in
-      guard let self = self else { return }
-      Task {
-        let sections = await self.itemsProvider.getSections()
-        await MainActor.run {
-          self.didUpdateSettingsSections?(sections)
+    let state = configurator.getInitialState()
+    update(with: state, animated: false)
+  }
+
+  
+  private let configurator: SettingsListConfigurator
+  
+  init(configurator: SettingsListConfigurator) {
+    self.configurator = configurator
+  }
+  
+  private func update(with state: SettingsListState, animated: Bool) {
+    var snapshot = SettingsListViewController.Snapshot()
+    snapshot.appendSections(state.sections)
+    for section in state.sections {
+      switch section {
+      case .listItems(let settingsListItemsSection):
+        snapshot.appendItems(settingsListItemsSection.items, toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems(settingsListItemsSection.items)
+        } else {
+          snapshot.reloadItems(settingsListItemsSection.items)
+        }
+      case .appInformation(let configuration):
+        snapshot.appendItems([configuration], toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems([configuration])
+        } else {
+          snapshot.reloadItems([configuration])
+        }
+      case .button(let item):
+        snapshot.appendItems([item], toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems([item])
+        } else {
+          snapshot.reloadItems([item])
         }
       }
     }
-    
-    Task {
-      await reloadSections()
-    }
-  }
-  
-  func selectItem(section: SettingsListSection, index: Int) {
-    switch section.items[index] {
-    case let item as SettingsCell.Model:
-      item.selectionHandler?()
-    case let item as TKUIListItemCell.Configuration:
-      item.selectionClosure?()
-    case _ as SettingsTextCell.Model:
-      break
-    default:
-      itemsProvider.selectItem(section: section, index: index)
-    }
-  }
-  
-  func isHighlightableItem(section: SettingsListSection, index: Int) -> Bool {
-    switch section.items[index] {
-    case let item as SettingsCell.Model:
-      return item.isHighlightable
-    default:
-      return true
-    }
-  }
-  
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
-    itemsProvider.cell(collectionView: collectionView, indexPath: indexPath, itemIdentifier: itemIdentifier)
-  }
-  
-  private let itemsProvider: SettingsListItemsProvider
-  
-  init(itemsProvider: SettingsListItemsProvider) {
-    self.itemsProvider = itemsProvider
-  }
-  
-  private func reloadSections() async {
-    let sections = await itemsProvider.getSections()
-    let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
-    await MainActor.run {
-      didUpdateSettingsSections?(sections)
-      if let initialSelectedIndexPath = initialSelectedIndexPath {
-        didSelectItem?(initialSelectedIndexPath)
-      }
-    }
+    didUpdateSnapshot?(snapshot, animated)
   }
 }
 

@@ -15,7 +15,7 @@ final class SetupServiceImplementation: SetupService {
   var isSetupFinished: Bool {
     do {
       let keeperInfo = try keeperInfoRepository.getKeeperInfo()
-      return keeperInfo.isSetupFinished
+      return keeperInfo.appSettings.isSetupFinished
     } catch {
       return false
     }

@@ -7,9 +7,7 @@ import TonSwift
 import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  
-  var didPerformTransaction: (() -> Void)?
-  
+    
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -21,7 +19,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = TKLocales.Tabs.purchases
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.collectibles
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
   }
   
@@ -29,7 +27,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     openCollectibles()
   }
   
-  public func handleTonkeeperDeeplink(deeplink: TonkeeperDeeplink) -> Bool {
+  public func handleTonkeeperDeeplink(deeplink: Deeplink) -> Bool {
     if let detailsCoordinator = detailsCoordinator {
       return detailsCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
     }
@@ -39,36 +37,41 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
 
 private extension CollectiblesCoordinator {
   func openCollectibles() {
-    let module = CollectiblesAssembly.module(
-      collectiblesController: keeperCoreMainAssembly.collectiblesController(), listModuleProvider: { [keeperCoreMainAssembly] wallet in
-        CollectiblesListAssembly.module(
-          collectiblesListController: keeperCoreMainAssembly.collectiblesListController(wallet: wallet)
-        )
-      }, emptyModuleProvider: { wallet in
-        CollectiblesEmptyAssembly.module()
-      })
+    let module = CollectiblesContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
-    module.output.didSelectNFT = { [weak self] nft in
-      self?.openNFTDetails(nft: nft)
+    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
+      let listModule = CollectiblesListAssembly.module(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      listModule.output.didSelectNFT = { nft, wallet in
+        self?.openNFTDetails(wallet: wallet, nft: nft)
+      }
+      
+      let collectiblesModule = CollectiblesAssembly.module(
+        wallet: wallet,
+        collectiblesListViewController: listModule.view,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      module.view.collectiblesViewController = collectiblesModule.view
+      
     }
-    
     router.push(viewController: module.view, animated: false)
   }
-  
-  func openNFTDetails(nft: NFT) {
+
+  func openNFTDetails(wallet: Wallet, nft: NFT) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = CollectiblesDetailsCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       nft: nft,
+      wallet: wallet,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
-    
-    coordinator.didPerformTransaction = { [weak self] in
-      self?.didPerformTransaction?()
-    }
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
       navigationController?.dismiss(animated: true)

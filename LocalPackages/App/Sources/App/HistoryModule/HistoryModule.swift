@@ -1,3 +1,4 @@
+import UIKit
 import TKUIKit
 import TKCoordinator
 import TKCore
@@ -24,28 +25,36 @@ struct HistoryModule {
     return coordinator
   }
   
-  func createTonHistoryListModule(wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
-    HistoryListAssembly.module(
-      historyListController: dependencies.keeperCoreMainAssembly.tonEventsHistoryListController(wallet: wallet),
-      historyEventMapper: HistoryEventMapper(
-        accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
-      )
+  func createTonHistoryListModule(
+    wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
+    let listModule = HistoryListAssembly.module(
+      wallet: wallet,
+      paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTonEventsPaginationLoader(
+        wallet: wallet
+      ),
+      cacheProvider: HistoryListTonEventsCacheProvider(historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
     )
+    return listModule
   }
   
   func createJettonHistoryListModule(
-    jettonItem: JettonItem,
+    jettonInfo: JettonInfo,
     wallet: Wallet
-  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
-    HistoryListAssembly.module(
-      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(
-        jettonItem: jettonItem,
-        wallet: wallet
+  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
+    let listModule = HistoryListAssembly.module(
+      wallet: wallet,
+      paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyJettonEventsPaginationLoader(
+        wallet: wallet,
+        jettonInfo: jettonInfo
       ),
-      historyEventMapper: HistoryEventMapper(
-        accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
-      )
+      cacheProvider: HistoryListJettonEventsCacheProvider(jettonInfo: jettonInfo,
+                                                          historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
     )
+    return listModule
   }
 }
 

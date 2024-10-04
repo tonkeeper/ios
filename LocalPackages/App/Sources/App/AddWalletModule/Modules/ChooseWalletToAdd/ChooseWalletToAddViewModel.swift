@@ -1,108 +1,157 @@
 import Foundation
 import TKUIKit
 import TKCore
-import KeeperCore
 import TKLocalize
+import KeeperCore
+import TonSwift
+import BigInt
 
 public protocol ChooseWalletToAddModuleOutput: AnyObject {
   var didSelectWallets: (([ActiveWalletModel]) -> Void)? { get set }
 }
 
 protocol ChooseWalletToAddViewModel: AnyObject {
+  var didUpdateHeaderViewModel: ((TKTitleDescriptionView.Model) -> Void)? { get set }
+  var didUpdateOptionsSections: (([ChooseWalletToAddSection]) -> Void)? { get set }
   var didUpdateModel: ((ChooseWalletToAddView.Model) -> Void)? { get set }
-  var didUpdateTitleDescriptionModel: ((TKTitleDescriptionView.Model) -> Void)? { get set }
-  var didUpdateList: (([ChooseWalletToAddCollectionController.Section]) -> Void)? { get set }
-  var didSelectItems: (([IndexPath]) -> Void)? { get set }
+  
+  var selectedItems: Set<ChooseWalletToAddItem> { get }
   
   func viewDidLoad()
-  func select(at indexPath: IndexPath)
-  func deselect(at indexPath: IndexPath)
+  func didSelect(item: ChooseWalletToAddItem)
+  func didDeselect(item: ChooseWalletToAddItem)
+}
+
+struct ChooseWalletToAddConfiguration {
+  let showRevision: Bool
+  let selectLastRevision: Bool
+  
+  init(showRevision: Bool, selectLastRevision: Bool) {
+    self.showRevision = showRevision
+    self.selectLastRevision = selectLastRevision
+  }
 }
 
 final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel, ChooseWalletToAddModuleOutput {
-  
   // MARK: - ChooseWalletToAddModuleOutput
   
   var didSelectWallets: (([ActiveWalletModel]) -> Void)?
   
   // MARK: - ChooseWalletToAddViewModel
   
+  var didUpdateHeaderViewModel: ((TKTitleDescriptionView.Model) -> Void)?
+  var didUpdateOptionsSections: (([ChooseWalletToAddSection]) -> Void)?
   var didUpdateModel: ((ChooseWalletToAddView.Model) -> Void)?
-  var didUpdateTitleDescriptionModel: ((TKTitleDescriptionView.Model) -> Void)?
-  var didUpdateList: (([ChooseWalletToAddCollectionController.Section]) -> Void)?
-  var didSelectItems: (([IndexPath]) -> Void)?
   
-  func viewDidLoad() {
-    let models = controller.models
-    setSelectedIndexes(models: models)
-    
-    didUpdateModel?(createModel())
-    didUpdateTitleDescriptionModel?(createTitleDescriptionModel())
-    didUpdateList?([createListSection(models: models)])
-    didSelectItems?(selectedIndexes.map { IndexPath(item: $0, section: 0) })
-  }
-  
-  private var selectedIndexes = Set<Int>()
-  
-  private let controller: ChooseWalletsController
-  
-  init(controller: ChooseWalletsController) {
-    self.controller = controller
-  }
-  
-  func select(at indexPath: IndexPath) {
-    selectedIndexes.insert(indexPath.item)
-    didUpdateModel?(createModel())
-  }
-  
-  func deselect(at indexPath: IndexPath) {
-    selectedIndexes.remove(indexPath.item)
-    didUpdateModel?(createModel())
-  }
-}
+  var selectedItems = Set<ChooseWalletToAddItem>()
 
-private extension ChooseWalletToAddViewModelImplementation {
-  func createModel() -> ChooseWalletToAddView.Model {
-    ChooseWalletToAddView.Model(
-      continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continue_action),
-      continueButtonAction: { [weak self] in
-        guard let self = self else { return }
-        let walletModels = self.controller.walletModels(indexes: Array(selectedIndexes.sorted(by: >)))
-        self.didSelectWallets?(walletModels)
-      },
-      isContinueButtonEnabled: !selectedIndexes.isEmpty
-    )
+  func viewDidLoad() {
+    didUpdateHeaderViewModel?(createHeaderViewModel())
+    didUpdateOptionsSections?([createSection()])
+    didUpdateModel?(createModel())
   }
   
-  func createListSection(models: [ChooseWalletsController.WalletModel]) -> ChooseWalletToAddCollectionController.Section {
-    let items = models.map { mapWalletModel($0) }
-    return .wallets(items)
+  func didSelect(item: ChooseWalletToAddItem) {
+    selectedItems.insert(item)
+    didUpdateModel?(createModel())
   }
   
-  func createTitleDescriptionModel() -> TKTitleDescriptionView.Model {
+  func didDeselect(item: ChooseWalletToAddItem) {
+    selectedItems.remove(item)
+    didUpdateModel?(createModel())
+  }
+  
+  private let activeWalletModels: [ActiveWalletModel]
+  private let amountFormatter: AmountFormatter
+  private let configuration: ChooseWalletToAddConfiguration
+  
+  init(activeWalletModels: [ActiveWalletModel],
+       amountFormatter: AmountFormatter,
+       configuration: ChooseWalletToAddConfiguration) {
+    self.activeWalletModels = activeWalletModels
+    self.amountFormatter = amountFormatter
+    self.configuration = configuration
+  }
+  
+  private func createHeaderViewModel() -> TKTitleDescriptionView.Model {
     TKTitleDescriptionView.Model(
       title: TKLocales.ChooseWallets.title,
       bottomDescription: TKLocales.ChooseWallets.description
     )
   }
   
-  func mapWalletModel(_ model: ChooseWalletsController.WalletModel) -> ChooseWalletToAddCell.Model {
-    let cellModel = ChooseWalletToAddCell.Model(
-      identifier: model.identifier,
-      contentViewModel: ChooseWalletToAddCellContentView.Model(
-        textContentModel: TKListItemTextContentView.Model(
-          textWithTagModel: TKTextWithTagView.Model(
-            title: model.address),
-          subtitle: model.subtitle)
-      ),
-      isEnable: model.isEnable
-    )
-    return cellModel
+  func createModel() -> ChooseWalletToAddView.Model {
+      ChooseWalletToAddView.Model(
+        continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continueAction),
+        continueButtonAction: { [weak self] in
+          guard let self = self else { return }
+          let dictionary = activeWalletModels.reduce(into: [:]) { partialResult, model in
+            partialResult[model.id] = model
+          }
+          let models = selectedItems
+            .compactMap { dictionary[$0.identifier] }
+            .sorted { lhs, rhs in lhs.revision > rhs.revision }
+          self.didSelectWallets?(models)
+        },
+        isContinueButtonEnabled: !selectedItems.isEmpty
+      )
+    }
+  
+  private func createSection() -> ChooseWalletToAddSection {
+    let items = activeWalletModels
+      .sorted{ lhs, rhs in lhs.revision > rhs.revision }
+      .map { createItem(walletModel: $0) }
+    return ChooseWalletToAddSection(items: items)
   }
   
-  func setSelectedIndexes(models: [ChooseWalletsController.WalletModel]) {
-    selectedIndexes = Set(models.enumerated().compactMap { index, model in
-      model.isSelected ? index : nil
-    })
+  private func createItem(walletModel: ActiveWalletModel) -> ChooseWalletToAddItem {
+    let tonAmount = amountFormatter.formatAmount(
+      BigUInt(
+        integerLiteral: UInt64(walletModel.balance.tonBalance.amount)
+      ),
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: 2,
+      currency: .TON
+    )
+    
+    let title = walletModel.address.toShortString(bounceable: false)
+    var subtitle = !configuration.showRevision ? tonAmount : "\(walletModel.revision.rawValue) · \(tonAmount)"
+    if !walletModel.balance.jettonsBalance.isEmpty || !walletModel.nfts.isEmpty {
+      subtitle.append(", " + TKLocales.ChooseWallets.tokens)
+    }
+    if (walletModel.isAdded) {
+      subtitle.append(" · " + TKLocales.ChooseWallets.alreadyAdded)
+    }
+    
+    let isEnable = !walletModel.isAdded
+    let isSelected: Bool = {
+      guard isEnable else { return false }
+      return !walletModel.balance.isEmpty || (walletModel.revision == .currentVersion && configuration.selectLastRevision)
+    }()
+    
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
+          captionViewsConfigurations: [TKListItemTextView.Configuration(
+            text: subtitle,
+            color: .Text.secondary,
+            textStyle: .body2
+          )]
+        )
+      )
+    )
+    
+    let item = ChooseWalletToAddItem(
+      identifier: walletModel.address.toRaw(),
+      isSelectionEnable: isEnable,
+      cellConfiguration: cellConfiguration
+    )
+    
+    if isSelected {
+      selectedItems.insert(item)
+    }
+    
+    return item
   }
 }

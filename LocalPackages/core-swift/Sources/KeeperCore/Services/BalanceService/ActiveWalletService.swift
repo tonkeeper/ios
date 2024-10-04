@@ -47,19 +47,16 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
   private let apiProvider: APIProvider
   private let jettonsBalanceService: JettonBalanceService
   private let accountNFTService: AccountNFTService
-  private let currencyService: CurrencyService
   private let walletsService: WalletsService
   
   
   init(apiProvider: APIProvider,
        jettonsBalanceService: JettonBalanceService,
        accountNFTService: AccountNFTService,
-       currencyService: CurrencyService,
        walletsService: WalletsService) {
     self.apiProvider = apiProvider
     self.jettonsBalanceService = jettonsBalanceService
     self.accountNFTService = accountNFTService
-    self.currencyService = currencyService
     self.walletsService = walletsService
   }
   

@@ -75,15 +75,15 @@ public final class ToastPresenter {
     }
   }
   
-  public static func hideToast() {
+  public static func hideToast(completion: (() -> Void)? = nil) {
+    if !queue.isEmpty {
+      queue.removeFirst()
+    }
     hideToastView {
       toastView?.removeFromSuperview()
       toastView = nil
       toastViewTopConstraint = nil
       isPresenting = false
-      if !queue.isEmpty {
-        queue.removeFirst()
-      }
       showNextIfPossible()
     }
   }
@@ -129,7 +129,10 @@ public final class ToastPresenter {
   
   private static func hideToastView(completion: @escaping () -> Void) {
     guard let toastWindow = toastWindow,
-          let toastView = toastView else { return }
+          let toastView = toastView else { 
+      completion()
+      return
+    }
     
     toastViewTopConstraint?.constant = -toastView.intrinsicContentSize.height - .hideInset
     UIView.animate(withDuration: .animationDuration,
@@ -138,9 +141,9 @@ public final class ToastPresenter {
                    animations: {
       toastView.alpha = 0
       toastWindow.layoutIfNeeded()
-    }, completion: { _ in
-      completion()
+    }, completion: { finished in
       self.toastWindow = nil
+      completion()
     })
   }
   
@@ -172,6 +175,7 @@ public final class ToastPresenter {
     toastViewTopConstraint = topConstraint
     topConstraint.isActive = true
     toastWindow.layoutIfNeeded()
+    toastWindow.setNeedsLayout()
 
     topConstraint.constant = 0
     UIView.animate(withDuration: .animationDuration,
@@ -180,7 +184,7 @@ public final class ToastPresenter {
                    animations: {
       toastView.alpha = 1
       toastWindow.layoutIfNeeded()
-    }, completion: { _ in
+    }, completion: { finished in
       completion?()
     })
   }

@@ -1,113 +1,82 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 import KeeperCore
-import TKCore
+import TonSwift
 
 protocol HistoryModuleOutput: AnyObject {
-  var didTapReceive: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+  var didTapReceive: ((Wallet) -> Void)? { get set }
+}
+
+protocol HistoryModuleInput: AnyObject {
+  func setHasEvents(_ hasEvents: Bool)
 }
 
 protocol HistoryViewModel: AnyObject {
-  var didUpdateListViewController: ((HistoryListViewController) -> Void)? { get set }
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)? { get set }
-  var didUpdateIsEmpty: ((Bool) -> Void)? { get set }
+  var didUpdateState: ((HistoryViewController.State) -> Void)? { get set }
+  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)? { get set }
   var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
 
-final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutput {
-  
-  // MARK: - HistoryModuleOutput
-  
-  var didTapReceive: (() -> Void)?
+final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOutput, HistoryModuleInput {
   var didTapBuy: ((Wallet) -> Void)?
-  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
-  var didSelectNFT: ((NFT) -> Void)?
+  var didTapReceive: ((Wallet) -> Void)?
+  var didChangeWallet: ((Wallet) -> Void)?
   
-  // MARK: - HistoryViewModel
-  
-  var didUpdateListViewController: ((HistoryListViewController) -> Void)?
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)?
-  var didUpdateIsEmpty: ((Bool) -> Void)?
-  var didUpdateIsConnecting: ((Bool) -> Void)?
-  
-  func viewDidLoad() {
-    historyController.didUpdateWallet = { [weak self] in
-      guard let self else { return }
-      Task { @MainActor in
-        self.setupChildren()
-      }
-    }
-    historyController.didUpdateIsConnecting = { [weak self] isConnecting in
-      guard let self = self else { return }
-      Task { @MainActor in
-        self.didUpdateIsConnecting?(isConnecting)
-      }
-    }
-    
-    historyController.updateConnectingState()
-    
-    setupChildren()
+  func setHasEvents(_ hasEvents: Bool) {
+    self.state = hasEvents ? .list : .empty
   }
   
-  // MARK: - Child
+  var didUpdateState: ((HistoryViewController.State) -> Void)?
+  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)?
+  var didUpdateIsConnecting: ((Bool) -> Void)?
   
-  private var listInput: HistoryListModuleInput?
+  private var state: ContentListEmptyViewController.State = .list {
+    didSet {
+      didUpdateState?(state)
+    }
+  }
   
-  // MARK: - Dependencies
+  private let wallet: Wallet
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
-  private let historyController: HistoryController
-  private let listModuleProvider: (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>
-  private let emptyModuleProvider: (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>
+  init(wallet: Wallet,
+       backgroundUpdateStore: BackgroundUpdateStore) {
+    self.wallet = wallet
+    self.backgroundUpdateStore = backgroundUpdateStore
+  }
   
-  // MARK: - Init
-  
-  init(historyController: HistoryController,
-       listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>,
-       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>) {
-    self.historyController = historyController
-    self.listModuleProvider = listModuleProvider
-    self.emptyModuleProvider = emptyModuleProvider
+  func viewDidLoad() {
+    setupEmpty(wallet: wallet)
+    didUpdateState?(state)
   }
 }
 
-private extension HistoryViewModelImplementation {
-  func setupChildren() {
-    let listModule = listModuleProvider(historyController.wallet)
-    listInput = listModule.input
-    didUpdateListViewController?(listModule.view)
-    
-    listModule.output.noEvents = { [weak self] in
-      self?.didUpdateIsEmpty?(true)
-    }
-    
-    listModule.output.hasEvents = { [weak self] in
-      self?.didUpdateIsEmpty?(false)
-    }
-    
-    listModule.output.didSelectEvent = { [weak self] event in
-      self?.didSelectEvent?(event)
-    }
-    
-    listModule.output.didSelectNFT = { [weak self] nft in
-      self?.didSelectNFT?(nft)
-    }
-    
-    let emptyModule = emptyModuleProvider(historyController.wallet)
-    
-    emptyModule.output.didTapReceive = { [weak self] in
-      self?.didTapReceive?()
-    }
-    
-    emptyModule.output.didTapBuy = { [weak self] in
-      guard let self else { return }
-      self.didTapBuy?(self.historyController.wallet)
-    }
-    
-    didUpdateEmptyViewController?(emptyModule.view)
+private extension HistoryV2ViewModelImplementation {
+  func setupEmpty(wallet: Wallet) {
+    let model = TKEmptyViewController.Model(
+      title: TKLocales.History.Placeholder.title,
+      caption: TKLocales.History.Placeholder.subtitle,
+      buttons: [
+        TKEmptyViewController.Model.Button(
+          title: TKLocales.History.Placeholder.Buttons.buy,
+          action: { [weak self] in
+            guard let self else { return }
+            self.didTapBuy?(wallet)
+          }
+        ),
+        TKEmptyViewController.Model.Button(
+          title: TKLocales.History.Placeholder.Buttons.receive,
+          action: { [weak self] in
+            guard let self else { return }
+            self.didTapReceive?(wallet)
+          }
+        )
+      ]
+    )
+    didUpdateEmptyModel?(model)
   }
 }

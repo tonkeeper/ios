@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-protocol NFTService {
+public protocol NFTService {
   func loadNFTs(addresses: [Address], isTestnet: Bool) async throws -> [Address: NFT]
   func getNFT(address: Address, isTestnet: Bool) throws -> NFT
   func saveNFT(nft: NFT, isTestnet: Bool) throws

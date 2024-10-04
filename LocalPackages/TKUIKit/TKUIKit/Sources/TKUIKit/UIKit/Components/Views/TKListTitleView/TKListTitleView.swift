@@ -4,17 +4,22 @@ public final class TKListTitleView: UIView, ReusableView, TKCollectionViewSupple
   
   public var didTapButton: (() -> Void)?
   
+  private var padding: UIEdgeInsets = .zero
+  
   public struct Model: Hashable {
     public let title: String?
     public let textStyle: TKTextStyle
     public let buttonContent: TKButton.Configuration.Content?
+    public let padding: UIEdgeInsets
     
     public init(title: String?,
                 textStyle: TKTextStyle,
-                buttonContent: TKButton.Configuration.Content? = nil) {
+                buttonContent: TKButton.Configuration.Content? = nil,
+                padding: UIEdgeInsets = .zero) {
       self.title = title
       self.textStyle = textStyle
       self.buttonContent = buttonContent
+      self.padding = padding
     }
   }
   
@@ -43,16 +48,25 @@ public final class TKListTitleView: UIView, ReusableView, TKCollectionViewSupple
     fatalError("init(coder:) has not been implemented")
   }
   
-  public override var intrinsicContentSize: CGSize {
-    return CGSize(width: UIView.noIntrinsicMetric, height: .height)
-  }
-  
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
-    return CGSize(width: size.width, height: .height)
+    let stackViewSize = systemLayoutSizeFitting(
+      size,
+      withHorizontalFittingPriority: .required,
+      verticalFittingPriority: .defaultLow
+    )
+    let height = stackViewSize.height + padding.top + padding.bottom
+    return CGSize(width: size.width, height: height)
   }
   
   public func prepareForReuse() {
     titleLabel.text = nil
+  }
+  
+  public override func setContentHuggingPriority(_ priority: UILayoutPriority, for axis: NSLayoutConstraint.Axis) {
+    super.setContentHuggingPriority(priority, for: axis)
+    
+    stackView.setContentHuggingPriority(priority, for: axis)
+    titleLabel.setContentHuggingPriority(priority, for: axis)
   }
   
   public func configure(model: Model) {
@@ -63,6 +77,10 @@ public final class TKListTitleView: UIView, ReusableView, TKCollectionViewSupple
       button.isHidden = false
     } else {
       button.isHidden = true
+    }
+    self.padding = model.padding
+    stackView.snp.remakeConstraints { make in
+      make.edges.equalTo(model.padding)
     }
   }
 }
@@ -76,22 +94,14 @@ private extension TKListTitleView {
     addSubview(stackView)
     stackView.addArrangedSubview(titleLabel)
     stackView.addArrangedSubview(button)
-    backgroundColor = .Background.page
-    
-    titleLabel.backgroundColor = .Background.page
+//    backgroundColor = .Background.page
+//    
+//    titleLabel.backgroundColor = .Background.page
     
     button.setContentHuggingPriority(.required, for: .horizontal)
     
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor),
-      stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(padding)
+    }
   }
-}
-
-private extension CGFloat {
-  static let height: CGFloat = 56
 }

@@ -28,7 +28,7 @@ final class StonfiSwapViewController: UIViewController {
 
 private extension StonfiSwapViewController {
   func setup() {
-    
+    view.backgroundColor = .Background.page
   }
   
   func setupBinding() {

@@ -87,7 +87,7 @@ private extension TonConnectConnectCoordinator {
     let module = TonConnectConnectAssembly.module(
       parameters: parameters,
       manifest: manifest,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       showWalletPicker: showWalletPicker
     )
     
@@ -149,18 +149,22 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
+    let model = TonConnectWalletsPickerListModel(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
+    model.didSelectWallet = { wallet in
+      didSelectWallet(wallet)
+    }
+    
     let module = WalletsListAssembly.module(
-      walletListController: keeperCoreMainAssembly.tonConnectWalletSelectWalletLisController(
-        selectedWallet: wallet,
-        didSelectWallet: { wallet in
-          didSelectWallet(wallet)
-        }
-      )
+      model: model,
+      totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
+    module.output.addButtonEvent = { [weak self, unowned bottomSheetViewController] in
       self?.openAddWallet(router: ViewControllerRouter(rootViewController: bottomSheetViewController)) {
       }
     }

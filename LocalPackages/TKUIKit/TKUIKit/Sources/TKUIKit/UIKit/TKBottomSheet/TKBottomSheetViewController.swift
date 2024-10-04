@@ -9,11 +9,12 @@ public final class TKBottomSheetViewController: UIViewController {
   let headerView = TKBottomSheetHeaderView()
   let contentViewController: TKBottomSheetContentViewController
   
+  private var isDismissing = false
   private let scrollController = TKBottomSheetScrollController()
   
   private lazy var tapGesture = UITapGestureRecognizer(
     target: self,
-    action: #selector(tapGestureHandler)
+    action: #selector(tapGestureHandler) 
   )
   
   private lazy var panGesture = UIPanGestureRecognizer(
@@ -95,6 +96,7 @@ private extension TKBottomSheetViewController {
     contentViewController.didMove(toParent: self)
     
     contentViewController.didUpdateHeight = { [weak self] in
+      guard self?.isDismissing != true else { return }
       self?.updateContentHeight()
     }
   }
@@ -162,21 +164,25 @@ private extension TKBottomSheetViewController {
   }
   
   func performDismiss(completion: (() -> Void)? = nil) {
+    isDismissing = true
     dimmingView.prepareForDimissalTransition()
     animateDragging {
       self.containerView.frame.origin.y = self.view.bounds.height
       self.dimmingView.performDismissalTransition()
-    } completion: { _ in
+    } completion: { [weak self] _ in
       completion?()
+      self?.isDismissing = false
     }
   }
   
   private func calculateContentHeight() -> CGFloat {
     if let scrollableContent = contentViewController as? TKBottomSheetScrollContentViewController {
       scrollableContent.view.frame = view.bounds
-      scrollableContent.scrollView.frame = view.bounds
-      scrollableContent.scrollView.setNeedsLayout()
-      scrollableContent.scrollView.layoutIfNeeded()
+      if scrollableContent.scrollView.contentSize.height == .zero {
+        scrollableContent.scrollView.frame = view.bounds
+        scrollableContent.scrollView.setNeedsLayout()
+        scrollableContent.scrollView.layoutIfNeeded()
+      }
 
       scrollController.scrollView = scrollableContent.scrollView
 

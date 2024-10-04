@@ -6,7 +6,7 @@ final class WalletIdentityCellCodableTests: XCTestCase {
   func test_wallet_identitty_coding() throws {
     // GIVEN
     let publicKey = TonSwift.PublicKey(data: Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")!)
-    let walletKind = WalletKind.Regular(publicKey)
+    let walletKind = WalletKind.Regular(publicKey, .v4R2)
     let walletIdentity = WalletIdentity(network: .testnet, kind: walletKind)
     let builder = Builder()
     
@@ -17,8 +17,9 @@ final class WalletIdentityCellCodableTests: XCTestCase {
     
     // THEN
     XCTAssertEqual(decodedWalletIdentity.network, .testnet)
-    guard case let .Regular(decodedPublicKey) = decodedWalletIdentity.kind,
-          decodedPublicKey.data == publicKey.data else {
+    guard case let .Regular(decodedPublicKey, revision) = decodedWalletIdentity.kind,
+          decodedPublicKey.data == publicKey.data,
+          revision == revision else {
       XCTFail()
       return
     }
@@ -31,7 +32,7 @@ extension WalletIdentityCellCodableTests {
   func test_wallet_kind_regular_coding() throws {
     // GIVEN
     let publicKey = TonSwift.PublicKey(data: Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")!)
-    let walletKind = WalletKind.Regular(publicKey)
+    let walletKind = WalletKind.Regular(publicKey, .v4R2)
     let builder = Builder()
     
     // WHEN
@@ -40,8 +41,9 @@ extension WalletIdentityCellCodableTests {
     let decodedWalletKind: WalletKind = try slice.loadType()
     
     // THEN
-    guard case let .Regular(decodedPublicKey) = decodedWalletKind,
-          decodedPublicKey.data ==  publicKey.data else {
+    guard case let .Regular(decodedPublicKey, revision) = decodedWalletKind,
+          decodedPublicKey.data ==  publicKey.data,
+          revision == revision else {
       XCTFail()
       return
     }
@@ -92,7 +94,7 @@ extension WalletIdentityCellCodableTests {
   func test_wallet_kind_external_coding() throws {
     // GIVEN
     let publicKey = TonSwift.PublicKey(data: Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")!)
-    let walletKind = WalletKind.External(publicKey)
+    let walletKind = WalletKind.Signer(publicKey, .v4R2)
     let builder = Builder()
     
     // WHEN
@@ -101,8 +103,9 @@ extension WalletIdentityCellCodableTests {
     let decodedWalletKind: WalletKind = try slice.loadType()
     
     // THEN
-    guard case let .External(decodedPublicKey) = decodedWalletKind,
-          decodedPublicKey.data == publicKey.data else {
+    guard case let .Signer(decodedPublicKey, revision) = decodedWalletKind,
+          decodedPublicKey.data == publicKey.data,
+          revision == revision else {
       XCTFail()
       return
     }
@@ -130,7 +133,8 @@ extension WalletIdentityCellCodableTests {
   func testResolvableAddressDomainCoding() throws {
     // GIVEN
     let domain = "it's test domain even with emoji🚘👯‍♂️. let's try to encode and decode it"
-    let resolvedAddress = ResolvableAddress.Domain(domain)
+    let address = Address.mock(workchain: 0, seed: "testResolvableAddressResolvedCoding")
+    let resolvedAddress = ResolvableAddress.Domain(domain, address)
     let builder = Builder()
     
     // WHEN

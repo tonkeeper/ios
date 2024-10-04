@@ -23,12 +23,12 @@ final class TonConnectConfirmationContentView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let actionsConfiguration: HistoryCellContentView.Configuration
+    let actionsConfiguration: HistoryCellContentView.Model
     let feeModel: TonConnectConfirmationFeeView.Model
   }
   
   func configure(model: Model) {
-    actionsView.configure(configuration: model.actionsConfiguration)
+    actionsView.configure(model: model.actionsConfiguration)
     feeView.configure(model: model.feeModel)
   }
 }

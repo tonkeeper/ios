@@ -1,6 +1,10 @@
 import Foundation
 import TonSwift
 
-struct NFTsCollection: Codable {
-  let nfts: [Address: NFT]
+public struct NFTsCollection: Codable {
+  public let nfts: [Address: NFT]
+  
+  public init(nfts: [Address : NFT]) {
+    self.nfts = nfts
+  }
 }

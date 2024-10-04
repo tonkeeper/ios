@@ -13,6 +13,8 @@ protocol SendV3ModuleOutput: AnyObject {
 protocol SendV3ModuleInput: AnyObject {
   func updateWithToken(_ token: Token)
   func setRecipient(string: String)
+  func setAmount(amount: BigUInt?)
+  func setComment(comment: String?)
 }
 
 protocol SendV3ViewModel: AnyObject {
@@ -110,9 +112,38 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     didInputRecipient(string)
   }
   
+  func setAmount(amount: BigUInt?) {
+    guard let amount else { return }
+    didInputAmount(amount.description)
+  }
+  
+  func setComment(comment: String?) {
+    guard let comment else {
+      return
+    }
+    didInputComment(comment)
+  }
+  
   // MARK: - SendV3ViewModel
   
   func viewDidLoad() {
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(_, let wallet):
+        guard observer.wallet == wallet else { return }
+        DispatchQueue.main.async {
+          observer.updateRemaining()
+          observer.update()
+        }
+      }
+    }
+    switch sendItem {
+    case .token(let token, let amount):
+      didInputAmount(sendController.convertAmountToInputString(amount: amount, token: token))
+      
+    case .nft:
+      break
+    }
     updateRemaining()
     update()
   }
@@ -134,22 +165,24 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     isResolving = true
     recipientResolveTask = Task {
       try? await Task.sleep(nanoseconds: 1_000_000_000)
-      guard !Task.isCancelled else { return }
-      guard let recipient = await sendController.resolveRecipient(input: string) else {
+      do {
+        try Task.checkCancellation()
+        let recipient = try await sendController.resolveRecipient(input: string)
+        try Task.checkCancellation()
         await MainActor.run {
-          self.recipient = nil
-          self.isRecipientValid = false
+          self.recipient = recipient
+          self.isRecipientValid = true
+          self.isResolving = false
+          self.isCommentRequired = recipient.isMemoRequired
+        }
+      } catch {
+        guard !error.isCancelledError else { return }
+        await MainActor.run {
+          self.recipient = recipient
+          self.isRecipientValid = true
           self.isResolving = false
           self.isCommentRequired = false
         }
-        return
-      }
-      
-      await MainActor.run {
-        self.recipient = recipient
-        self.isRecipientValid = true
-        self.isResolving = false
-        self.isCommentRequired = recipient.isMemoRequired
       }
     }
   }
@@ -188,7 +221,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func didTapWalletTokenPicker() {
     switch sendItem {
     case .token(let token, _):
-      self.didTapPicker?(walletsStore.activeWallet, token)
+      self.didTapPicker?(wallet, token)
     case .nft:
       break
     }
@@ -299,20 +332,28 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   // MARK: - Dependencies
   
+  private let wallet: Wallet
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
-  private let walletsStore: WalletsStore
+  private let balanceStore: ConvertedBalanceStore
+  private let appSettingsStore: AppSettingsV3Store
   
   // MARK: - Init
   
-  init(sendItem: SendItem,
+  init(wallet: Wallet,
+       sendItem: SendItem,
        recipient: Recipient?,
+       comment: String?,
        sendController: SendV3Controller,
-       walletsStore: WalletsStore) {
+       balanceStore: ConvertedBalanceStore,
+       appSettingsStore: AppSettingsV3Store) {
+    self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient
+    self.commentInput = comment ?? ""
     self.sendController = sendController
-    self.walletsStore = walletsStore
+    self.balanceStore = balanceStore
+    self.appSettingsStore = appSettingsStore
     
     switch sendItem {
     case .token(let token, _):
@@ -352,12 +393,12 @@ private extension SendV3ViewModelImplementation {
       ),
       comment: commentModel,
       button: Model.Button(
-        title: TKLocales.Actions.continue_action,
+        title: TKLocales.Actions.continueAction,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
           guard let self else { return }
-          let sendModel = SendModel(wallet: walletsStore.activeWallet,
+          let sendModel = SendModel(wallet: wallet,
                                     recipient: recipient,
                                     sendItem: sendItem,
                                     comment: commentInput)
@@ -398,7 +439,7 @@ private extension SendV3ViewModelImplementation {
     switch (isCommentRequired, commentInput.isEmpty, commentState) {
     case (_, false, .ledgerNonAsciiError):
       placeholder = TKLocales.Send.Comment.placeholder
-      description = TKLocales.Send.Comment.ascii_error.withTextStyle(
+      description = TKLocales.Send.Comment.asciiError.withTextStyle(
         .body2,
         color: .Accent.red,
         alignment: .left,
@@ -425,8 +466,6 @@ private extension SendV3ViewModelImplementation {
           lineBreakMode: .byWordWrapping
         )
     }
-    
-    print(commentState)
     
     return Model.Comment(
       placeholder: placeholder,
@@ -475,7 +514,7 @@ private extension SendV3ViewModelImplementation {
       switch sendItem {
       case .nft: break
       case .token(let token, let amount):
-        let remaining = await sendController.calculateRemaining(token: token, tokenAmount: amount)
+        let remaining = await sendController.calculateRemaining(token: token, tokenAmount: amount, isSecure: appSettingsStore.getState().isSecureMode)
         await MainActor.run {
           self.remaining = remaining
           update()
@@ -486,7 +525,6 @@ private extension SendV3ViewModelImplementation {
   
   func updateConverted() {
     Task {
-      
       switch sendItem {
       case .nft: break
       case .token(let token, let amount):

@@ -8,6 +8,18 @@ public extension UIImage {
           .imageWithName("Icons/12/ic-lock-12")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var chevronRight: UIImage {
+          .imageWithName("Icons/12/ic-chevron-right-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/12/ic-information-circle-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var pin: UIImage {
+          .imageWithName("Icons/12/ic-pin-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size16 {
         public static var chevronDown: UIImage {
@@ -28,6 +40,10 @@ public extension UIImage {
         }
         public static var globe: UIImage {
           .imageWithName("Icons/16/ic-globe-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var ellipses: UIImage {
+          .imageWithName("Icons/16/ic-ellipsis-16")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var doneBold: UIImage {
@@ -68,6 +84,37 @@ public extension UIImage {
         }
         public static var dote: UIImage {
           .imageWithName("Icons/16/ic-dote-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plus: UIImage {
+          .imageWithName("Icons/16/ic-plus-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var minus: UIImage {
+          .imageWithName("Icons/16/ic-minus-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var verificationBlueTint: UIImage {
+          .imageWithName("Icons/16/ic-verification-16-blue-tint")
+        }
+        public static var verification: UIImage {
+          .imageWithName("Icons/16/ic-verification-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }
@@ -152,6 +199,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-reorder-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var question: UIImage {
+          .imageWithName("Icons/28/ic-question-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var plusCircle: UIImage {
           .imageWithName("Icons/28/ic-plus-circle-28")
           .withRenderingMode(.alwaysTemplate)
@@ -220,6 +271,42 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-signer-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var eyeClosedOutline: UIImage {
+          .imageWithName("Icons/28/ic-eye-closed-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var eyeOutline: UIImage {
+          .imageWithName("Icons/28/ic-eye-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var pin: UIImage {
+          .imageWithName("Icons/28/ic-pin-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var minusOutline: UIImage {
+          .imageWithName("Icons/28/ic-minus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plusOutline: UIImage {
+          .imageWithName("Icons/28/ic-plus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plus: UIImage {
+          .imageWithName("Icons/28/ic-plus-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var minus: UIImage {
+          .imageWithName("Icons/28/ic-minus-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var notification: UIImage {
+          .imageWithName("Icons/28/ic-notification-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var bell: UIImage {
+          .imageWithName("Icons/28/ic-bell-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
@@ -249,6 +336,17 @@ public extension UIImage {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
         }
+        public static var tonNominatorsLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonnominators-44")
+        }
+        
+        public static var tonStakersLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonstakers-44")
+        }
+        
+        public static var tonWhalesLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonwhales-44")
+        }
       }
       public enum Size56 {
         public static var flashlightOff: UIImage {
@@ -259,6 +357,10 @@ public extension UIImage {
       public enum Size84 {
         public static var camera: UIImage {
           .imageWithName("Icons/84/ic-camera-84")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var exclamationmarkCircle: UIImage {
+          .imageWithName("Icons/84/ic-exclamationmark-circle-84")
           .withRenderingMode(.alwaysTemplate)
         }
       }

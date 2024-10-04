@@ -11,9 +11,13 @@ let package = Package(
             targets: ["TKLocalize"]),
     ],
     targets: [
-        .target(
-            name: "TKLocalize",
-            resources: [.process("Resources/Locales")]
-        )
+      .target(
+        name: "TKLocalize",
+        resources: [.process("Resources/Locales")]
+      ),
+      .testTarget(name: "TKLocalizeTests",
+                  dependencies: [
+                    "TKLocalize"
+                  ]),
     ]
 )

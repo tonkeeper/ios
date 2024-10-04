@@ -9,8 +9,9 @@ struct SettingsModule {
     self.dependencies = dependencies
   }
   
-  func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
+  func createSettingsCoordinator(router: NavigationControllerRouter, wallet: Wallet) -> SettingsCoordinator {
     let coordinator = SettingsCoordinator(
+      wallet: wallet,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly,
       router: router

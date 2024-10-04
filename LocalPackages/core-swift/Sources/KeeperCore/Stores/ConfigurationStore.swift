@@ -1,57 +1,61 @@
 import Foundation
 
-public actor ConfigurationStore {
-  enum State {
-    case idle
-    case isLoading(Task<RemoteConfiguration, Swift.Error>)
+public final class ConfigurationStore: StoreV3<ConfigurationStore.Event, ConfigurationStore.State> {
+  public struct State {
+    public let configuration: RemoteConfiguration
+    public let loadingTask: Task<RemoteConfiguration, Never>?
   }
   
-  private let configurationService: RemoteConfigurationService
-  
-  private var state: State = .idle
-  
-  init(configurationService: RemoteConfigurationService) {
-    self.configurationService = configurationService
+  public enum Event {
+    case didUpdateConfiguration
   }
   
-  func load() async throws -> RemoteConfiguration {
-    switch state {
-    case .idle:
-      let task = loadConfigurationTask()
-      state = .isLoading(task)
-      do {
-        let value = try await task.value
-        state = .idle
-        return value
-      } catch {
-        state = .idle
-        throw error
-      }
-    case .isLoading(let task):
-      let configuration = try await task.value
-      return configuration
+  private let repository: RemoteConfigurationRepository
+  
+  init(repository: RemoteConfigurationRepository) {
+    self.repository = repository
+    super.init(state: State(configuration: .empty, loadingTask: nil))
+  }
+  
+  public override var initialState: State {
+    do {
+      return State(configuration: try repository.configuration, loadingTask: nil)
+    } catch {
+      return State(configuration: .empty, loadingTask: nil)
     }
   }
   
-  public func getConfiguration() async throws -> RemoteConfiguration {
-    switch state {
-    case .idle:
-      return try configurationService.getConfiguration()
-    case .isLoading(let task):
-      let configuration = try await task.value
-      return configuration
+  public func getConfiguration() async -> RemoteConfiguration {
+    let state = await getState()
+    if let loadingTask = state.loadingTask {
+      return await loadingTask.value
+    } else {
+      return state.configuration
     }
   }
-}
-
-private extension ConfigurationStore {
-  func loadConfigurationTask() -> Task<RemoteConfiguration, Swift.Error> {
-    return Task {
-      do {
-        return try await configurationService.loadConfiguration()
-      } catch {
-        throw error
-      }
+  
+  public func getConfiguration() -> RemoteConfiguration {
+    let state = getState()
+    return state.configuration
+  }
+  
+  public func setConfiguration(_ configuration: RemoteConfiguration) async {
+    await setState { state in
+      let updatedState = State(configuration: configuration,
+                               loadingTask: state.loadingTask)
+      return StateUpdate(newState: updatedState)
+    } notify: { [weak self] _ in
+      self?.sendEvent(.didUpdateConfiguration)
+    }
+  }
+  
+  public func setLoadingTask(_ loadingTask: Task<RemoteConfiguration, Never>?) async {
+    await setState { state in
+      let updatedState = State(configuration: state.configuration,
+                               loadingTask: loadingTask)
+      return StateUpdate(newState: updatedState)
+    } notify: { _ in
+      
     }
   }
 }

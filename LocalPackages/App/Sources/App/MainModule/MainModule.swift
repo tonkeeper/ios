@@ -10,9 +10,6 @@ struct MainModule {
   }
   
   func createMainCoordinator() -> MainCoordinator {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    
     let tabBarController = TKTabBarController()
     tabBarController.configureAppearance()
     
@@ -21,7 +18,10 @@ struct MainModule {
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       appStateTracker: dependencies.coreAssembly.appStateTracker,
-      reachabilityTracker: dependencies.coreAssembly.reachabilityTracker
+      reachabilityTracker: dependencies.coreAssembly.reachabilityTracker,
+      recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver(),
+      jettonBalanceResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.jettonBalanceResolver()
+      
     )
     return coordinator
   }

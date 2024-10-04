@@ -2,6 +2,7 @@
 APP_NAME = Tonkeeper
 
 BUNDLE_DISPLAY_NAME = $(APP_NAME)
+ICON_NAME = AppIcon
 
 BASE_BUNDLE_IDENTIFIER = com.jbig.tonkeeper
 
@@ -15,11 +16,16 @@ APP_GROUP_IDENTIFIER = group.$(BASE_BUNDLE_IDENTIFIER)
 
 KEYCHAIN_ACCESS_GROUP = $(BASE_BUNDLE_IDENTIFIER).shared
 
-APP_VERSION = 4.6.4
-BUILD_NUMBER = 2
+APP_VERSION = 5.0.0
+BUILD_NUMBER = 3
+
+PLATFORM = ios
 
 ASSOCIATED_DOMAIN_APPLINKS_FIRST = applinks:app.tonkeeper.com
 ASSOCIATED_DOMAIN_APPLINKS_SECOND = applinks:app.tonkeeper.org
 
 APTABASE_KEY = A-SH-6199502298
-APTABASE_ENDPOINT = https://anonymous-analytics.tonkeeper.com
+APTABASE_ENDPOINT = https:/$()/anonymous-analytics.tonkeeper.com/
+
+TERMS_OF_SERVICE_URL = https:/$()/tonkeeper.com/terms
+PRIVACY_POLICY_URL = https:/$()/tonkeeper.com/privacy

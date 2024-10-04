@@ -3,16 +3,20 @@ import TonAPI
 import BigInt
 
 struct ConfirmTransactionMapper {
+
+  private let nftService: NFTService
   private let accountEventMapper: AccountEventMapper
   private let amountFormatter: AmountFormatter
   
-  init(accountEventMapper: AccountEventMapper,
+  init(nftService: NFTService,
+       accountEventMapper: AccountEventMapper,
        amountFormatter: AmountFormatter) {
+    self.nftService = nftService
     self.accountEventMapper = accountEventMapper
     self.amountFormatter = amountFormatter
   }
   
-  func mapTransactionInfo(_ info: Components.Schemas.MessageConsequences,
+  func mapTransactionInfo(_ info: TonAPI.MessageConsequences,
                           tonRates: Rates.Rate?,
                           currency: Currency,
                           nftsCollection: NFTsCollection,
@@ -27,9 +31,11 @@ struct ConfirmTransactionMapper {
       .mapEvent(
         try AccountEvent(accountEvent: info.event),
         eventDate: Date(),
-        nftsCollection: nftsCollection,
         accountEventRightTopDescriptionProvider: descriptionProvider,
-        isTestnet: wallet.isTestnet
+        isTestnet: wallet.isTestnet,
+        nftProvider: { address in
+          try? self.nftService.getNFT(address: address, isTestnet: wallet.isTestnet)
+        }
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"

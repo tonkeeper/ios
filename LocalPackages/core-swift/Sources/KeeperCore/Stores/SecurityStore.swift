@@ -1,49 +1,67 @@
 import Foundation
 
-public actor SecurityStore {
-  public typealias ObservationClosure = (Event) -> Void
-  public enum Event {
-    case didUpdateSecuritySettings
-  }
-  
-  private let securityService: SecurityService
-  
-  init(securityService: SecurityService) {
-    self.securityService = securityService
-  }
-  
-  public var isBiometryEnabled: Bool {
-    securityService.isBiometryTurnedOn
-  }
-  
-  public func setIsBiometryEnabled(_ isBiometryEnabled: Bool) throws {
-    try securityService.updateBiometry(isBiometryEnabled)
-    observations.values.forEach { $0(.didUpdateSecuritySettings) }
-  }
-  
-  private var observations = [UUID: ObservationClosure]()
-  
-  public func addEventObserver<T: AnyObject>(_ observer: T,
-                                             closure: @escaping (T, Event) -> Void) -> ObservationToken {
-    let id = UUID()
-    let eventHandler: (Event) -> Void = { [weak self, weak observer] event in
-      guard let self else { return }
-      guard let observer else {
-        Task { await self.removeObserver(id: id) }
-        return
-      }
-      
-      closure(observer, event)
-    }
-    observations[id] = eventHandler
+public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.State> {
+  public struct State {
+    public let isBiometryEnable: Bool
+    public let isLockScreen: Bool
     
-    return ObservationToken { [weak self] in
-      guard let self else { return }
-      Task { await self.removeObserver(id: id) }
+    static var defaultState: State {
+      State(isBiometryEnable: false, isLockScreen: false)
+    }
+    
+    static func state(keeperInfo: KeeperInfo?) -> State {
+      guard let keeperInfo else {
+        return .defaultState
+      }
+      let state = State(
+        isBiometryEnable: keeperInfo.securitySettings.isBiometryEnabled,
+        isLockScreen: keeperInfo.securitySettings.isLockScreen
+      )
+      return state
     }
   }
   
-  func removeObserver(id: UUID) {
-    observations.removeValue(forKey: id)
+  public enum Event {
+    case didUpdateIsBiometryEnabled(isBiometryEnable: Bool)
+    case didUpdateIsLockScreen(isLockScreen: Bool)
+  }
+  
+  private let keeperInfoStore: KeeperInfoStore
+  
+  init(keeperInfoStore: KeeperInfoStore) {
+    self.keeperInfoStore = keeperInfoStore
+    super.init(state: .defaultState)
+  }
+  
+  public override var initialState: State {
+    State.state(keeperInfo: keeperInfoStore.getState())
+  }
+  
+  public func setIsBiometryEnable(_ isBiometryEnable: Bool) async {
+    await setState { state in
+      let updatedState = State(isBiometryEnable: isBiometryEnable,
+                               isLockScreen: state.isLockScreen)
+      return StateUpdate(newState: updatedState)
+    } notify: { state in
+      self.sendEvent(.didUpdateIsBiometryEnabled(isBiometryEnable: state.isBiometryEnable))
+    }
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updated = keeperInfo?.updateIsBiometryEnable(isBiometryEnable)
+      return updated
+    }
+  }
+  
+  public func setIsLockScreen(_ isLockScreen: Bool) async {
+    await setState { state in
+      let updatedState = State(isBiometryEnable: state.isBiometryEnable,
+                               isLockScreen: isLockScreen)
+      return StateUpdate(newState: updatedState)
+    } notify: { state in
+      self.sendEvent(.didUpdateIsLockScreen(isLockScreen: state.isLockScreen))
+    }
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updated = keeperInfo?.updateIsLockScreen(isLockScreen)
+      return updated
+    }
   }
 }

@@ -59,6 +59,13 @@ public final class TKLoaderView: UIView {
       name: UIApplication.willEnterForegroundNotification,
       object: nil
     )
+    
+    if #available(iOS 17.0, *) {
+      registerForTraitChanges([UITraitUserInterfaceStyle.self]) { [weak self] (traitEnvironment: Self, previousTraitCollection: UITraitCollection) in
+        self?.bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
+        self?.topCircleLayer.strokeColor = style.tintColor.cgColor
+      }
+    }
   }
   
   deinit {
@@ -122,6 +129,14 @@ public final class TKLoaderView: UIView {
   public func stopAnimation() {
     isAnimating = false
     topCircleLayer.removeAnimation(forKey: .rotationAnimationKey)
+  }
+
+  public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    super.traitCollectionDidChange(previousTraitCollection)
+    if #unavailable(iOS 17.0) {
+      bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
+      topCircleLayer.strokeColor = style.tintColor.cgColor
+    }
   }
 }
 

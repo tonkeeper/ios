@@ -24,23 +24,25 @@ public final class ChartController {
   }
   
   public func start() async {
-    _ = await tonRatesStore.addEventObserver(self) { observer, event in
+    tonRatesStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateRates:
-        observer.didUpdateChartData?()
+      case .didUpdateTonRates:
+        DispatchQueue.main.async {
+          observer.didUpdateChartData?()
+        }
       }
     }
   }
   
   public func loadChartData(period: Period) async throws -> [Coordinate] {
     loadChartDataTask?.cancel()
-    let currency = await currencyStore.getActiveCurrency()
+    let currency = await currencyStore.getState()
     let task = Task {
       async let coordinatesTask = self.chartService.loadChartData(
         period: period,
         token: "ton",
         currency: currency, isTestnet: false)
-      let rates = await tonRatesStore.getTonRates()
+      let rates = await tonRatesStore.getState()
       let coordinates = try await coordinatesTask
       
       try Task.checkCancellation()
@@ -64,7 +66,7 @@ public final class ChartController {
         diff: .init(percent: "", fiat: "", direction: .none),
         date: "")
     }
-    let currency = await currencyStore.getActiveCurrency()
+    let currency = await currencyStore.getState()
     let coordinate = coordinates[index]
     
     let percentageValue = calculatePercentageDiff(at: index)

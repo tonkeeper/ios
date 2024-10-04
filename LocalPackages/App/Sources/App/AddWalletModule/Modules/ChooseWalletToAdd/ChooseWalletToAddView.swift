@@ -64,19 +64,13 @@ private extension ChooseWalletToAddView {
   }
   
   func setupConstraints() {
-    collectionView.translatesAutoresizingMaskIntoConstraints = false
-    continueButtonContainer.translatesAutoresizingMaskIntoConstraints = false
+    collectionView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
     
-    NSLayoutConstraint.activate([
-      collectionView.topAnchor.constraint(equalTo: topAnchor),
-      collectionView.leftAnchor.constraint(equalTo: leftAnchor),
-      collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      collectionView.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      continueButtonContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
-      continueButtonContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      continueButtonContainer.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    continueButtonContainer.snp.makeConstraints { make in
+      make.bottom.left.right.equalTo(self)
+    }
   }
 }
 

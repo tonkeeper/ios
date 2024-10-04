@@ -2,9 +2,15 @@ import Foundation
 import TonSwift
 import BigInt
 
-public struct Balance: Codable {
+public struct Balance: Codable, Equatable {
   public let tonBalance: TonBalance
   public let jettonsBalance: [JettonBalance]
+  
+  public init(tonBalance: TonBalance,
+              jettonsBalance: [JettonBalance]) {
+    self.tonBalance = tonBalance
+    self.jettonsBalance = jettonsBalance
+  }
 }
 
 public extension Balance {
@@ -13,17 +19,29 @@ public extension Balance {
   }
 }
 
-public struct TonBalance: Codable {
+public struct TonBalance: Codable, Equatable {
   public let amount: Int64
+  
+  public init(amount: Int64) {
+    self.amount = amount
+  }
 }
 
-public struct JettonBalance: Codable {
+public struct JettonBalance: Codable, Equatable {
   public let item: JettonItem
   public let quantity: BigUInt
   public let rates: [Currency: Rates.Rate]
+  
+  public init(item: JettonItem, 
+              quantity: BigUInt,
+              rates: [Currency : Rates.Rate]) {
+    self.item = item
+    self.quantity = quantity
+    self.rates = rates
+  }
 }
 
-public struct JettonItem: Codable, Equatable {
+public struct JettonItem: Codable, Equatable, Hashable {
   public let jettonInfo: JettonInfo
   public let walletAddress: Address
 }
@@ -42,6 +60,8 @@ public struct JettonInfo: Codable, Equatable, Hashable {
     case blacklist
   }
   
+  public let isTransferable: Bool
+  public let hasCustomPayload: Bool
   public let address: Address
   public let fractionDigits: Int
   public let name: String
@@ -56,4 +76,9 @@ public struct JettonInfo: Codable, Equatable, Hashable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(address)
   }
+}
+
+public enum JettonMasterAddress {
+  public static let tonUSDT = try! Address.parse("0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe")
+  public static let tonstakers = try! Address.parse("0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000")
 }

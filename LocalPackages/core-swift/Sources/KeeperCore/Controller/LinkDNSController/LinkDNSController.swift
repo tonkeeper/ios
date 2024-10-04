@@ -5,6 +5,7 @@ import BigInt
 public final class LinkDNSController {
   public enum Error: Swift.Error {
     case failedToSign
+    case indexerOffline
   }
   
   private let wallet: Wallet
@@ -39,14 +40,23 @@ public final class LinkDNSController {
 
   public func sendLinkTransaction(dnsLink: DNSLink,
                                   signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw Error.indexerOffline
+    }
+    
     let boc = try await createBoc(dnsLink: dnsLink) { transferMessageBuilder in
       guard let boc = try await signClosure(transferMessageBuilder) else {
         throw Error.failedToSign
       }
       return boc
     }
-
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
   }
 }
 

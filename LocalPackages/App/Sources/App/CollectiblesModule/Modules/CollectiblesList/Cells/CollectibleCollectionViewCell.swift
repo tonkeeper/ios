@@ -14,6 +14,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   }()
   private let titleLabel = UILabel()
   private let subtitleLabel = UILabel()
+  private let blurView = TKSecureBlurView()
   
   private var imageDownloadTask: ImageDownloadTask?
   
@@ -27,17 +28,24 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   }
   
   class Model: Hashable {
+    enum Subtitle {
+      case verified(String)
+      case unverified(String)
+    }
+    
     let identifier: String
     let imageDownloadTask: ImageDownloadTask?
     let title: NSAttributedString?
     let subtitle: NSAttributedString?
     let isOnSale: Bool
+    let isBlurVisible: Bool
     
     init(identifier: String,
          imageDownloadTask: ImageDownloadTask?,
          title: String?,
-         subtitle: String?,
-         isOnSale: Bool = false) {
+         subtitle: NSAttributedString?,
+         isOnSale: Bool = false,
+         isBlurVisible: Bool) {
       self.identifier = identifier
       self.imageDownloadTask = imageDownloadTask
       self.title = title?.withTextStyle(
@@ -46,13 +54,9 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
         alignment: .left,
         lineBreakMode: .byTruncatingTail
       )
-      self.subtitle = subtitle?.withTextStyle(
-        .body3,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      )
+      self.subtitle = subtitle
       self.isOnSale = isOnSale
+      self.isBlurVisible = isBlurVisible
     }
     
     func hash(into hasher: inout Hasher) {
@@ -70,6 +74,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     titleLabel.attributedText = model.title
     subtitleLabel.attributedText = model.subtitle
     saleImageView.isHidden = !model.isOnSale
+    blurView.isHidden = !model.isBlurVisible
   }
   
   override func layoutSubviews() {
@@ -87,6 +92,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   
   override func prepareForReuse() {
     super.prepareForReuse()
+    blurView.isHidden = true
     imageView.image = nil
     imageDownloadTask?.cancel()
     imageDownloadTask = nil
@@ -98,7 +104,9 @@ private extension CollectibleCollectionViewCell {
     contentView.layer.cornerRadius = 16
     contentView.layer.masksToBounds = true
     
-    contentView.backgroundColor = .Background.content
+    contentView.backgroundColor = .Background.contentTint
+    
+    blurView.isHidden = true
     
     titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -110,48 +118,35 @@ private extension CollectibleCollectionViewCell {
     contentView.addSubview(highlightView)
     contentView.addSubview(labelContainer)
     contentView.addSubview(imageView)
+    imageView.addSubview(blurView)
     contentView.addSubview(saleImageView)
     
-    labelContainer.translatesAutoresizingMaskIntoConstraints = false
-    titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-    imageView.translatesAutoresizingMaskIntoConstraints = false
-    highlightView.translatesAutoresizingMaskIntoConstraints = false
+    highlightView.snp.makeConstraints { make in
+      make.edges.equalTo(contentView)
+    }
     
-    NSLayoutConstraint.activate([
-      highlightView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      highlightView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      highlightView.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      highlightView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-      
-      imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      imageView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor)
-        .withPriority(.defaultHigh),
-      imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
-      
-      labelContainer.topAnchor.constraint(equalTo: imageView.bottomAnchor),
-      labelContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        .withPriority(.defaultHigh),
-      
-      titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,
-                                      constant: UIEdgeInsets.labelContainerInsets.top),
-      titleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
-                                       constant: UIEdgeInsets.labelContainerInsets.left),
-      titleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor,
-                                        constant: -UIEdgeInsets.labelContainerInsets.right)
-      .withPriority(.defaultHigh),
-      
-      subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
-      subtitleLabel.bottomAnchor.constraint(equalTo: labelContainer.bottomAnchor,
-                                            constant: -UIEdgeInsets.labelContainerInsets.bottom),
-      subtitleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
-                                          constant: UIEdgeInsets.labelContainerInsets.left),
-      subtitleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor, constant:
-                                            -UIEdgeInsets.labelContainerInsets.right).withPriority(.defaultHigh),
-    ])
+    imageView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(contentView)
+      make.height.equalTo(imageView.snp.width)
+    }
+    
+    blurView.snp.makeConstraints { make in
+      make.edges.equalTo(imageView)
+    }
+    
+    labelContainer.snp.makeConstraints { make in
+      make.top.equalTo(imageView.snp.bottom).offset(UIEdgeInsets.labelContainerInsets.top)
+      make.left.right.bottom.equalTo(contentView).inset(UIEdgeInsets.labelContainerInsets)
+    }
+    
+    titleLabel.snp.makeConstraints { make in
+      make.top.left.right.equalTo(labelContainer)
+    }
+    
+    subtitleLabel.snp.makeConstraints { make in
+      make.top.equalTo(titleLabel.snp.bottom)
+      make.left.bottom.right.equalTo(labelContainer)
+    }
   }
 }
 

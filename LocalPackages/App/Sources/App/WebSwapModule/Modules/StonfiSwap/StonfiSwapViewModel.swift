@@ -17,11 +17,9 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   
   func viewDidLoad() {
     Task {
-      guard let stonfiUrl = try? await configurationStore.getConfiguration().stonfiUrl else {
-        return
-      }
+      guard let url = await buildURL() else { return }
       await MainActor.run {
-        didOpen?(stonfiUrl, nil)
+        didOpen?(url, nil)
       }
     }
   }
@@ -69,17 +67,44 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
       }
     }
   }
+  
+  private let fromToken: String?
+  private let toToken: String?
 
-  private let walletsStore: WalletsStore
+  private let wallet: Wallet
   private let configurationStore: ConfigurationStore
   private let messageHandler: StonfiSwapMessageHandler
   
-  init(walletsStore: WalletsStore,
+  init(wallet: Wallet,
        configurationStore: ConfigurationStore,
-       messageHandler: StonfiSwapMessageHandler) {
-    self.walletsStore = walletsStore
+       messageHandler: StonfiSwapMessageHandler,
+       fromToken: String? = nil,
+       toToken: String? = nil) {
+    self.wallet = wallet
     self.configurationStore = configurationStore
     self.messageHandler = messageHandler
+    self.fromToken = fromToken
+    self.toToken = toToken
+  }
+  
+  private func buildURL() async -> URL? {
+    guard let stonfiUrl = await configurationStore.getConfiguration().stonfiUrl else {
+      return nil
+    }
+    
+    var urlComponents = URLComponents(url: stonfiUrl, resolvingAgainstBaseURL: false)
+    urlComponents?.queryItems = {
+      var items = [URLQueryItem]()
+      if let fromToken {
+        items.append(URLQueryItem(name: "ft", value: fromToken))
+      }
+      if let toToken {
+        items.append(URLQueryItem(name: "tt", value: toToken))
+      }
+      return items
+    }()
+    
+    return urlComponents?.url
   }
   
   private func sendResponse(_ response: StonfiSwapBridgeResponse) {
@@ -95,7 +120,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   }
   
   var jsInjection: String? {
-    guard let info = try? Info(address: walletsStore.activeWallet.address.toRaw()),
+    guard let info = try? Info(address: wallet.address.toRaw()),
           let infoData = try? JSONEncoder().encode(info),
           var infoString = String(data: infoData, encoding: .utf8) else { return nil }
     infoString = String(describing: infoString).replacingOccurrences(of: "\\", with: "")

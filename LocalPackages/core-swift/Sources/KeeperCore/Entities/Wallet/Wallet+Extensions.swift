@@ -70,7 +70,7 @@ public extension Wallet {
       switch identity.kind {
       case .Regular(_, let contractVersion):
         return contractVersion
-      case .Lockup(let publicKey, _):
+      case .Lockup(_, _):
         throw Error.invalidWalletKind
       case .Watchonly:
         throw Error.invalidWalletKind
@@ -219,6 +219,28 @@ public extension Wallet {
     }
   }
   
+  var isBiometryAvailable: Bool {
+    switch kind {
+    case .regular: 
+      return true
+    default: 
+      return false
+    }
+  }
+  
+  var isBackupAvailable: Bool {
+    switch kind {
+    case .regular:
+      return true
+    default:
+      return false
+    }
+  }
+  
+  var hasBackup: Bool {
+    setupSettings.backupDate != nil
+  }
+  
   var label: String {
     metaData.label
   }
@@ -229,6 +251,60 @@ public extension Wallet {
 
   var tintColor: WalletTintColor {
     metaData.tintColor
+  }
+  
+  var isSendEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .w5, .w5Beta:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isReceiveEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .watchonly, .w5, .w5Beta:
+      return true
+    case .lockup:
+      return false
+    }
+  }
+  
+  var isScanEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .w5, .w5Beta:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isSwapEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .w5, .w5Beta:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isBuyEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .watchonly, .w5, .w5Beta:
+      return true
+    case .lockup:
+      return false
+    }
+  }
+  
+  var isStakeEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .w5, .w5Beta:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
   }
 }
 

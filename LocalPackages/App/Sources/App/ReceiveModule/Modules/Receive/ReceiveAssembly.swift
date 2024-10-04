@@ -4,10 +4,13 @@ import KeeperCore
 
 struct ReceiveAssembly {
   private init() {}
-  static func module(receiveController: ReceiveController,
+  static func module(token: Token,
+                     wallet: Wallet,
                      qrCodeGenerator: QRCodeGenerator) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
     let viewModel = ReceiveViewModelImplementation(
-      receiveController: receiveController,
+      token: token,
+      wallet: wallet,
+      deeplinkGenerator: DeeplinkGenerator(),
       qrCodeGenerator: qrCodeGenerator
     )
     let viewController = ReceiveViewController(viewModel: viewModel)

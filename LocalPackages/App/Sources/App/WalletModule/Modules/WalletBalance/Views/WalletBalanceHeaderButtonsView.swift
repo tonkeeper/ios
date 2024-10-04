@@ -7,17 +7,21 @@ final class WalletBalanceHeaderButtonsView: UIView, ConfigurableView {
   private let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = .padding
     return stackView
   }()
+  private let bottomRowStackView: UIStackView = {
+    let view = UIStackView()
+    view.axis = .horizontal
+    view.distribution = .fillEqually
+    return view
+  }()
   
-  private let sendButton = TKUIIconButton()
-  private let recieveButton = TKUIIconButton()
-  private let scanButton = TKUIIconButton()
-  private let swapButton = TKUIIconButton()
-  private let buyButton = TKUIIconButton()
-  private let stakeButton = TKUIIconButton()
+  private let sendButton = TKIconButton()
+  private let recieveButton = TKIconButton()
+  private let scanButton = TKIconButton()
+  private let swapButton = TKIconButton()
+  private let buyButton = TKIconButton()
+  private let stakeButton = TKIconButton()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -39,18 +43,40 @@ final class WalletBalanceHeaderButtonsView: UIView, ConfigurableView {
     let sendButton: Button
     let recieveButton: Button
     let scanButton: Button
-    let swapButton: Button
-    let buyButton: Button
+    let swapButton: Button?
+    let buyButton: Button?
     let stakeButton: Button
   }
   
   func configure(model: Model) {
-    configureButton(button: sendButton, model: model.sendButton)
-    configureButton(button: recieveButton, model: model.recieveButton)
-    configureButton(button: scanButton, model: model.scanButton)
-    configureButton(button: swapButton, model: model.swapButton)
-    configureButton(button: buyButton, model: model.buyButton)
-    configureButton(button: stakeButton, model: model.stakeButton)
+
+    sendButton.configuration = buttonConfiguration(model: model.sendButton)
+    recieveButton.configuration = buttonConfiguration(model: model.recieveButton)
+    scanButton.configuration = buttonConfiguration(model: model.scanButton)
+    
+    bottomRowStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    
+    bottomRowStackView.addArrangedSubview(stakeButton)
+    stakeButton.configuration = buttonConfiguration(model: model.stakeButton)
+    
+    if let modelSwapButton = model.swapButton {
+      bottomRowStackView.insertArrangedSubview(swapButton, at: 0)
+      swapButton.configuration = buttonConfiguration(model: modelSwapButton)
+    }
+    if let modelBuyButton = model.buyButton {
+      bottomRowStackView.insertArrangedSubview(buyButton, at: 1)
+      buyButton.configuration = buttonConfiguration(model: modelBuyButton)
+    }
+    switch bottomRowStackView.arrangedSubviews.count {
+    case 1:
+      bottomRowStackView.insertArrangedSubview(UIView(), at: 0)
+      bottomRowStackView.insertArrangedSubview(UIView(), at: 2)
+    case 2:
+      let v1 = UIView()
+      v1.backgroundColor = .clear
+      bottomRowStackView.insertArrangedSubview(UIView(), at: 2)
+    default: break
+    }
   }
 }
 
@@ -62,17 +88,13 @@ private extension WalletBalanceHeaderButtonsView {
     topRowStackView.axis = .horizontal
     topRowStackView.distribution = .fillEqually
     stackView.addArrangedSubview(topRowStackView)
-    
-    let bottomRowStackView = UIStackView()
-    bottomRowStackView.axis = .horizontal
-    bottomRowStackView.distribution = .fillEqually
+
     stackView.addArrangedSubview(bottomRowStackView)
     
     topRowStackView.addArrangedSubview(sendButton)
     topRowStackView.addArrangedSubview(recieveButton)
     topRowStackView.addArrangedSubview(scanButton)
-    bottomRowStackView.addArrangedSubview(swapButton)
-    bottomRowStackView.addArrangedSubview(buyButton)
+    
     bottomRowStackView.addArrangedSubview(stakeButton)
     
     addSubview(dividerView)
@@ -82,7 +104,7 @@ private extension WalletBalanceHeaderButtonsView {
   
   func setupConstraints() {
     stackView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+      make.edges.equalTo(self).inset(NSDirectionalEdgeInsets.padding)
     }
     
     dividerView.snp.makeConstraints { make in
@@ -90,10 +112,13 @@ private extension WalletBalanceHeaderButtonsView {
     }
   }
   
-  private func configureButton(button: TKUIIconButton, model: Model.Button) {
-    button.configure(model: TKUIIconButton.Model(image: model.icon, title: model.title))
-    button.isEnabled = model.isEnabled
-    button.addTapAction(model.action)
+  private func buttonConfiguration(model: Model.Button) -> TKIconButton.Configuration {
+    return TKIconButton.Configuration(
+      title: model.title,
+      icon: model.icon,
+      isEnable: model.isEnabled,
+      action: model.action
+    )
   }
 }
 

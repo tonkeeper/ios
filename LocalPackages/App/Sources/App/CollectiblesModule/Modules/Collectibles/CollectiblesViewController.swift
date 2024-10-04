@@ -3,14 +3,15 @@ import TKUIKit
 import TKCoordinator
 import TKLocalize
 
-final class CollectiblesViewController: GenericViewViewController<CollectiblesView>, ScrollViewController {
+final class CollectiblesViewController: ContentListEmptyViewController {
+
   private let viewModel: CollectiblesViewModel
+  private let collectiblesListViewController: CollectiblesListViewController
   
-  private var emptyViewController: UIViewController?
-  private var listViewController: CollectiblesListViewController?
-  
-  init(viewModel: CollectiblesViewModel) {
+  init(viewModel: CollectiblesViewModel,
+       collectiblesListViewController: CollectiblesListViewController) {
     self.viewModel = viewModel
+    self.collectiblesListViewController = collectiblesListViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -20,66 +21,38 @@ final class CollectiblesViewController: GenericViewViewController<CollectiblesVi
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    
     setup()
-    setupBindings()
-    viewModel.viewDidLoad()
     
-    customView.showList()
-  }
-  
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-    listViewController?.customView.collectionView.contentInset.top = customView.navigationBarView.additionalInset
-    listViewController?.customView.collectionView.verticalScrollIndicatorInsets.top = customView.navigationBarView.additionalInset
-  }
-  
-  func scrollToTop() {
-    listViewController?.scrollToTop()
+    viewModel.viewDidLoad()
   }
 }
 
 private extension CollectiblesViewController {
+  func setup() {
+    customView.navigationBarView.title = TKLocales.Collectibles.title
+
+    emptyViewController.configure(model: TKEmptyViewController.Model(
+      title: TKLocales.Purchases.emptyPlaceholder,
+      caption: nil,
+      buttons: []
+    ))
+    
+    setListViewController(collectiblesListViewController)
+
+    setupBindings()
+  }
+  
   func setupBindings() {
-    viewModel.didUpdateListViewController = { [weak self] viewController in
-      self?.setupListViewController(viewController: viewController)
-    }
-    
-    viewModel.didUpdateEmptyViewController = { [weak self] viewController in
-      self?.setupEmptyViewController(viewController: viewController)
-    }
-    
-    viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
-      self?.customView.navigationBarView.isConnecting = isConnecting
+    viewModel.didUpdateIsLoading = { [weak self] isLoading in
+      self?.customView.navigationBarView.isConnecting = isLoading
     }
     
     viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
-      isEmpty ? self?.customView.showEmptyState() : self?.customView.showList()
-      self?.customView.navigationBarView.isHidden = isEmpty
+      if isEmpty {
+        self?.setState(.empty, animated: false)
+      } else {
+        self?.setState(.list, animated: false)
+      }
     }
-  }
-  
-  func setup() {
-      customView.navigationBarView.title = TKLocales.Purchases.title
-  }
-  
-  func setupListViewController(viewController: CollectiblesListViewController) {
-    self.listViewController?.removeFromParent()
-    self.listViewController = viewController
-    addChild(viewController)
-    customView.addListContentView(view: viewController.view)
-    viewController.didMove(toParent: self)
-    
-    DispatchQueue.main.async {
-      self.customView.navigationBarView.scrollView = self.listViewController?.customView.collectionView
-    }
-  }
-  
-  func setupEmptyViewController(viewController: UIViewController) {
-    self.emptyViewController?.removeFromParent()
-    self.emptyViewController = viewController
-    addChild(viewController)
-    customView.addEmptyContentView(view: viewController.view)
-    viewController.didMove(toParent: self)
   }
 }

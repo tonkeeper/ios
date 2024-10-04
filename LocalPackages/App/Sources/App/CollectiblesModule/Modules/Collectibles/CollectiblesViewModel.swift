@@ -1,91 +1,128 @@
 import UIKit
 import TKCore
 import TKUIKit
+import TKLocalize
 import KeeperCore
 import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+
+}
+
+protocol CollectiblesModuleInput: AnyObject {
+
 }
 
 protocol CollectiblesViewModel: AnyObject {
-  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)? { get set }
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)? { get set }
-  var didUpdateIsEmpty: ((Bool) -> Void)? { get set }
-  var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
-  
+  var didUpdateIsLoading: ((Bool) -> Void)? { get set }
+  var didUpdateIsEmpty: ((_ isEmpty: Bool) -> Void)? { get set }
+
   func viewDidLoad()
 }
 
-final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput {
+final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput, CollectiblesModuleInput {
   
   // MARK: - CollectiblesModuleOutput
   
-  var didSelectNFT: ((NFT) -> Void)?
+  // MARK: - CollectiblesModuleInput
 
-  
   // MARK: - CollectiblesViewModel
   
-  var didUpdateIsConnecting: ((Bool) -> Void)?
-  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)?
+  var didUpdateIsLoading: ((Bool) -> Void)?
   var didUpdateIsEmpty: ((Bool) -> Void)?
-  
+
   func viewDidLoad() {
-    setupChildren()
     
-    Task {
-      collectiblesController.didUpdateIsConnecting = { [weak self] isConnecting in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.didUpdateIsConnecting?(isConnecting)
-        }
-      }
-      
-      collectiblesController.didUpdateActiveWallet = { [weak self] in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.setupChildren()
-        }
-      }
-      
-      collectiblesController.didUpdateIsEmpty = { [weak self] isEmpty in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.didUpdateIsEmpty?(isEmpty)
-        }
-      }
-      
-      await collectiblesController.start()
-      await collectiblesController.updateConnectingState()
+    backgroundUpdateStore.addObserver(self) { observer, event in
+      observer.didGetBackgroundUpdateStoreEvent(event)
     }
+    
+    walletStateLoader.addObserver(self) { observer, event in
+      observer.didGetWalletStateLoaderEvent(event)
+    }
+    
+    walletNFTManagedStore.addObserver(self) { observer, event in
+      observer.didGetWalletNFTStoreEvent(event)
+    }
+    
+    update()
   }
   
   // MARK: Dependencies
   
-  private let collectiblesController: CollectiblesController
-  private let listModuleProvider: (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>
-  private let emptyModuleProvider: (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>
+  private let wallet: Wallet
+  private let walletNFTManagedStore: WalletNFTsManagedStore
+  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let walletStateLoader: WalletStateLoader
   
-  init(collectiblesController: CollectiblesController,
-       listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>,
-       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>) {
-    self.collectiblesController = collectiblesController
-    self.listModuleProvider = listModuleProvider
-    self.emptyModuleProvider = emptyModuleProvider
+  init(wallet: Wallet,
+       walletNFTManagedStore: WalletNFTsManagedStore,
+       backgroundUpdateStore: BackgroundUpdateStore,
+       walletStateLoader: WalletStateLoader) {
+    self.wallet = wallet
+    self.walletNFTManagedStore = walletNFTManagedStore
+    self.backgroundUpdateStore = backgroundUpdateStore
+    self.walletStateLoader = walletStateLoader
   }
 }
 
 private extension CollectiblesViewModelImplementation {
-  func setupChildren() {
-    let listModule = listModuleProvider(collectiblesController.wallet)
-    listModule.output.didSelectNFT = { [weak self] nft in
-      self?.didSelectNFT?(nft)
+  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
+    switch event {
+    case .didUpdateConnectionState(_, let wallet):
+      guard wallet == self.wallet else { return }
+      DispatchQueue.main.async {
+        self.update()
+      }
     }
-    didUpdateListViewController?(listModule.view)
+  }
+  
+  func didGetWalletStateLoaderEvent(_ event: WalletStateLoader.Event) {
+    switch event {
+    case .didStartLoadNFT(let wallet):
+      guard wallet == self.wallet else { return }
+      DispatchQueue.main.async {
+        self.update()
+      }
+    case .didEndLoadNFT(let wallet):
+      guard wallet == self.wallet else { return }
+      DispatchQueue.main.async {
+        self.update()
+      }
+    default: break
+    }
+  }
+  
+  func didGetWalletNFTStoreEvent(_ event: WalletNFTsManagedStore.Event) {
+    switch event {
+    case .didUpdateNFTs(let wallet):
+      guard wallet == self.wallet else { return }
+      DispatchQueue.main.async {
+        self.update()
+      }
+    }
+  }
+  
+  func update() {
+    let isLoading = {
+      let updateState = backgroundUpdateStore.getState()[wallet] ?? .connecting
+      let isBackgroundUpdate: Bool
+      switch updateState {
+      case .connected:
+        isBackgroundUpdate = false
+      default:
+        isBackgroundUpdate = true
+      }
+      
+      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
+      
+      return isLoadingNft || isBackgroundUpdate
+    }()
     
-    let emptyModule = emptyModuleProvider(collectiblesController.wallet)
+    let isEmpty = walletNFTManagedStore.getState().isEmpty
+    let listHidden = isEmpty && !isLoading
     
-    didUpdateEmptyViewController?(emptyModule.view)
+    didUpdateIsLoading?(isLoading)
+    didUpdateIsEmpty?(listHidden)
   }
 }

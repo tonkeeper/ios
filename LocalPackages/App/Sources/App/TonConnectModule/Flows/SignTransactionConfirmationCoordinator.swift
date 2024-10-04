@@ -7,6 +7,7 @@ import TonSwift
 
 enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
   case failedToSign
+  case indexerOffline
 }
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
@@ -34,6 +35,12 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw SignTransactionConfirmationCoordinatorConfirmatorError.indexerOffline
+    }
 
     let boc = try await tonConnectService.createConfirmTransactionBoc(
       wallet: wallet,
@@ -48,7 +55,12 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
       }
     )
     
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
     try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
   }
   
@@ -91,7 +103,12 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
         }
       )
       
-      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      do {
+        try await sendService.sendTransaction(boc: boc, wallet: wallet)
+        NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+      } catch {
+        throw error
+      }
       let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
         .init(result: boc,
               id: appRequest.id)
@@ -141,7 +158,12 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
       }
     )
     
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
     responseHandler(.response(boc))
   }
   
@@ -181,9 +203,9 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
     super.init(router: router)
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
-    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler?(sign)
     walletTransferSignCoordinator.externalSignHandler = nil
     return true
   }

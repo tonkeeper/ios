@@ -14,11 +14,4 @@ public final class PasscodeAssembly {
   public func passcodeCreateController() -> PasscodeCreateController {
     PasscodeCreateController(passcodeRepository: repositoriesAssembly.passcodeRepository())
   }
-  
-  public func passcodeConfirmationController() -> PasscodeConfirmationController {
-    PasscodeConfirmationController(
-      passcodeRepository: repositoriesAssembly.passcodeRepository(),
-      securityStore: storesAssembly.securityStore
-    )
-  }
 }

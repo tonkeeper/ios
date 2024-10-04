@@ -2,19 +2,22 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import TKCore
+import TKLocalize
 import KeeperCore
 import TKLocalize
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
-  var didLogout: (() -> Void)?
   
+  private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
-  init(keeperCoreMainAssembly: KeeperCore.MainAssembly,
+  init(wallet: Wallet,
+       keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly,
        router: NavigationControllerRouter) {
+    self.wallet = wallet
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -27,53 +30,76 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension SettingsCoordinator {
   func openSettingsRoot() {
-    let itemsProvider = SettingsRootListItemsProvider(
-      settingsController: keeperCoreMainAssembly.settingsController,
-      urlOpener: coreAssembly.urlOpener(),
+    let configurator = SettingsListRootConfigurator(
+      wallet: wallet,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      appSettings: coreAssembly.appSettings,
-      analyticsProvider: coreAssembly.analyticsProvider
+      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
+      walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
+      anaylticsProvider: coreAssembly.analyticsProvider
     )
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
-    itemsProvider.didTapEditWallet = { [weak self] wallet in
-      self?.openEditWallet(wallet: wallet)
+    configurator.didOpenURL = { [coreAssembly] in
+      coreAssembly.urlOpener().open(url: $0)
     }
     
-    itemsProvider.didTapCurrency = { [weak self] in
-      self?.openCurrencyPicker()
-    }
-    
-    itemsProvider.didTapW5Wallet = { [weak self] wallet in
-      self?.openW5Story(wallet: wallet)
-    }
-    
-    itemsProvider.didTapTheme = { [weak self] in
-      self?.openThemePicker()
-    }
-    
-    itemsProvider.didTapBackup = { [weak self] wallet in
-      self?.openBackup(wallet: wallet)
-    }
-    
-    itemsProvider.didTapSecurity = { [weak self] in
-      self?.openSecurity()
-    }
-    
-    itemsProvider.didShowAlert = { [weak self] title, description, actions in
+    configurator.didShowAlert = { [weak self] title, description, actions in
       let alertController = UIAlertController(title: title, message: description, preferredStyle: .alert)
       actions.forEach { action in alertController.addAction(action) }
       self?.router.rootViewController.present(alertController, animated: true)
     }
     
-    itemsProvider.didTapLogout = { [weak self] in
-      self?.didLogout?()
+    configurator.didTapEditWallet = { [weak self] wallet in
+      self?.openEditWallet(wallet: wallet)
     }
     
-    itemsProvider.didTapDeleteAccount = { [weak self] in
-      self?.router.pop()
+    configurator.didTapCurrencySettings = { [weak self] in
+      self?.openCurrencyPicker()
     }
-
+    
+    configurator.didTapSecuritySettings = { [weak self] in
+      self?.openSecurity()
+    }
+    
+    configurator.didTapLegal = { [weak self] in
+      self?.openLegal()
+    }
+    
+    configurator.didTapBackup = { [weak self, wallet] in
+      self?.openBackup(wallet: wallet)
+    }
+    
+    configurator.didTapSignOutRegularWallet = { [weak self] wallet in
+      self?.deleteRegular(wallet: wallet, isSignOut: true)
+    }
+    
+    configurator.didTapDeleteRegularWallet = { [weak self] wallet in
+      self?.deleteRegular(wallet: wallet, isSignOut: false)
+    }
+    
+    configurator.didTapPurchases = { [weak self] wallet in
+      self?.openPurchases(wallet: wallet)
+    }
+    
+    configurator.didTapNotifications = { [weak self] wallet in
+      self?.openNotifications(wallet: wallet)
+    }
+    
+    configurator.didDeleteWallet = { [weak self] in
+      guard let self else { return }
+      let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
+      if !wallets.isEmpty {
+        self.router.pop(animated: true)
+      }
+    }
+    
+    let module = SettingsListAssembly.module(configurator: configurator)
+    
+    module.viewController.setupBackButton()
+    
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
       self?.didFinish?()
@@ -151,67 +177,69 @@ private extension SettingsCoordinator {
   }
   
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
-    let controller = keeperCoreMainAssembly.walletUpdateAssembly.walletUpdateController()
-    let metaData = WalletMetaData(
-      label: model.name,
-      tintColor: model.tintColor,
-      icon: model.icon)
-    do {
-      try controller.updateWallet(wallet: wallet, metaData: metaData)
-    } catch {
-      print("Log: Wallet update failed")
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    Task {
+      await walletsStore.setWallet(
+        wallet,
+        metaData: WalletMetaData(customizeWalletModel: model)
+      )
     }
   }
   
   func openCurrencyPicker() {
-    let itemsProvider = SettingsCurrencyPickerListItemsProvider(settingsController: keeperCoreMainAssembly.settingsController)
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-    
-    router.push(viewController: module.viewController)
-  }
-  
-  func openThemePicker() {
-    let itemsProvider = SettingsThemePickerListItemsProvider(appSettings: coreAssembly.appSettings)
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-    
+    let configuration = SettingsListCurrencyPickerConfigurator(
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+    )
+    configuration.didSelect = { [weak self] in
+      self?.router.pop()
+    }
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
     router.push(viewController: module.viewController)
   }
   
   func openBackup(wallet: Wallet) {
-    let itemsProvider = SettingsBackupListItemsProvider(
-      backupController: keeperCoreMainAssembly.backupController(wallet: wallet)
+    let configuration = SettingsListBackupConfigurator(
+      wallet: wallet,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
     )
     
-    itemsProvider.didTapBackupManually = { [weak self] in
+    configuration.didTapBackupManually = { [weak self] in
       self?.openManuallyBackup(wallet: wallet)
     }
     
-    itemsProvider.didTapShowRecoveryPhrase = { [weak self] in
+    configuration.didTapShowRecoveryPhrase = { [weak self] in
       self?.openRecoveryPhrase(wallet: wallet)
     }
-    
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-    
+  
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
     router.push(viewController: module.viewController)
   }
   
   func openSecurity() {
-    let itemsProvider = SettingsSecurityListItemsProvider(
+    let configuration = SettingsListSecurityConfigurator(
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       biometryProvider: BiometryProvider()
     )
     
-    itemsProvider.didTapChangePasscode = { [weak self] in
-      self?.openChangePasscode()
-    }
-    
-    itemsProvider.didRequirePasscode = { [weak self] in
+    configuration.didRequirePasscode = { [weak self] in
       await self?.getPasscode()
     }
     
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
+    configuration.didTapChangePasscode = { [openChangePasscode] in
+      openChangePasscode()
+    }
     
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
     router.push(viewController: module.viewController)
   }
   
@@ -283,6 +311,93 @@ private extension SettingsCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     })
+  }
+  
+  func deleteRegular(wallet: Wallet, isSignOut: Bool) {
+    let viewController = SettingsDeleteWarningViewController(
+      popupTitle: isSignOut ? TKLocales.SignOutWarning.title : TKLocales.DeleteWalletWarning.title,
+      popupCaption: isSignOut ? TKLocales.SignOutWarning.caption : TKLocales.DeleteWalletWarning.caption,
+      buttonTitle: isSignOut ? TKLocales.Actions.signOut : TKLocales.DeleteWalletWarning.button,
+      walletName: wallet.iconWithName(
+        attributes: TKTextStyle.body1.getAttributes(color: .Text.primary),
+        iconColor: .Icon.primary,
+        iconSide: 20
+      )
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+
+    viewController.didTapSignOut = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        guard let self else { return }
+        Task {
+          guard let passcode = await self.getPasscode() else { return }
+          await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
+          await MainActor.run {
+            let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
+            if !wallets.isEmpty {
+              self.router.pop(animated: true)
+            }
+          }
+        }
+      })
+    }
+    
+    viewController.didTapBackup = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        if wallet.isBackupAvailable {
+          if wallet.hasBackup {
+            self?.openRecoveryPhrase(wallet: wallet)
+          } else {
+            self?.openManuallyBackup(wallet: wallet)
+          }
+        }
+      })
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openLegal() {
+    let configuration = SettingsListLegalConfigurator()
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+    
+    configuration.didTapFontLicense = { [weak self] in
+      let viewController = FontLicenseViewController()
+      viewController.setupBackButton()
+      self?.router.push(viewController: viewController)
+    }
+    
+    configuration.openUrl = { [coreAssembly] url in
+      coreAssembly.urlOpener().open(url: url)
+    }
+
+    router.push(viewController: module.viewController)
+  }
+  
+  func openPurchases(wallet: Wallet) {
+    let module = SettingsPurchasesAssembly.module(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
+  }
+  
+  func openNotifications(wallet: Wallet) {
+    let configuration = SettingsListNotificationsConfigurator(
+    wallet: wallet,
+    walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+    tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
+    urlOpener: coreAssembly.urlOpener())
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
   }
   
   func getPasscode() async -> String? {

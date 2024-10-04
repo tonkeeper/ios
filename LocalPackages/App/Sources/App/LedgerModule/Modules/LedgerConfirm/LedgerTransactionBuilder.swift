@@ -46,12 +46,12 @@ public struct LedgerTransactionBuilder {
         commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
       }
       return Transaction(
-        destination: jetton.recipient,
+        destination: jetton.jettonAddress,
         sendMode: .walletDefault(),
         seqno: jetton.seqno,
         timeout: jetton.timeout,
         bounceable: jetton.isBouncable,
-        coins: Coins(rawValue: BigUInt(stringLiteral: "640000000"))!,
+        coins: Coins(rawValue: BigUInt(stringLiteral: "64000000"))!,
         stateInit: nil,
         payload: .jettonTransfer(
           TonPayloadFormat.JettonTransfer(
@@ -62,6 +62,26 @@ public struct LedgerTransactionBuilder {
             customPayload: nil,
             forwardAmount: Coins(rawValue: BigUInt(stringLiteral: "1"))!,
             forwardPayload: commentCell
+          )
+        )
+      )
+    case .nft(let nft):
+      return Transaction(
+        destination: nft.nftAddress,
+        sendMode: .walletDefault(),
+        seqno: nft.seqno,
+        timeout: nft.timeout,
+        bounceable: nft.isBounceable,
+        coins: Coins(rawValue: nft.transferAmount)!,
+        stateInit: nil,
+        payload: .nftTransfer(
+          TonPayloadFormat.NftTransfer(
+            queryId: transferMessageBuilder.queryId,
+            newOwnerAddress: nft.recipient,
+            excessesAddress: try wallet.address,
+            customPayload: nil,
+            forwardAmount: Coins(rawValue: BigUInt(stringLiteral: "1"))!,
+            forwardPayload: nft.forwardPayload
           )
         )
       )

@@ -32,10 +32,14 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   func viewDidLoad() {
     browserConnectedController.didUpdateApps = { [weak self] in
-      self?.reloadContent()
+      self?.syncQueue.async {
+        self?.reloadContent()
+      }
     }
     browserConnectedController.start()
-    reloadContent()
+    syncQueue.sync {
+      reloadContent()
+    }
   }
   
   func selectApp(index: Int) {
@@ -47,7 +51,9 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
       icon: connectedApp.iconURL,
       poster: nil,
       url: connectedApp.url,
-      textColor: nil
+      textColor: nil,
+      excludeCountries: nil,
+      includeCountries: nil
     )
     didSelectDapp?(dapp)
   }
@@ -56,9 +62,12 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   private var connectedApps = [BrowserConnectedController.ConnectedApp]() {
     didSet {
-      didUpdateConnectedApps()
+      DispatchQueue.main.async {
+        self.didUpdateConnectedApps()
+      }
     }
   }
+  private let syncQueue = DispatchQueue(label: "BrowserConnectedViewModelImplementationQueue")
   
   // MARK: - Image Loading
   

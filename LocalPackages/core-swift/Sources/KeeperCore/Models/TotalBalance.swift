@@ -1,8 +1,9 @@
 import Foundation
 import BigInt
 
-public struct TotalBalance: Codable {
-  let amount: BigUInt
-  let fractionalDigits: Int
-  let date: Date
+public struct TotalBalance: Codable, Equatable {
+  public let amount: Decimal
+  public let balance: ProcessedBalance
+  public let currency: Currency
+  public let date: Date
 }

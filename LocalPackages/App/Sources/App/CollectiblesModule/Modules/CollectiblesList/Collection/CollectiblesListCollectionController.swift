@@ -35,21 +35,6 @@ final class CollectiblesListCollectionController: NSObject {
     
     collectionView.delegate = self
   }
-  
-//  func setSections(_ sections: [CollectiblesListSection]) {
-//    var snapshot = dataSource.snapshot()
-//    snapshot.deleteAllItems()
-//    snapshot.appendSections(sections)
-//    for section in sections {
-//      switch section {
-//      case .collectibles(let items):
-//        snapshot.appendItems(items, toSection: section)
-//      }
-//    }
-//    UIView.performWithoutAnimation {
-//      dataSource.apply(snapshot)
-//    }
-//  }
 }
 
 private extension CollectiblesListCollectionController {

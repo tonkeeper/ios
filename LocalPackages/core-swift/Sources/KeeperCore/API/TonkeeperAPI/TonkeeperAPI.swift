@@ -12,15 +12,18 @@ protocol TonkeeperAPI {
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
+  func loadNotifications() async throws -> [InternalNotification]
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
   private let urlSession: URLSession
   private let host: URL
+  private let appInfoProvider: AppInfoProvider
   
-  init(urlSession: URLSession, host: URL) {
+  init(urlSession: URLSession, host: URL, appInfoProvider: AppInfoProvider) {
     self.urlSession = urlSession
     self.host = host
+    self.appInfoProvider = appInfoProvider
   }
   
   func loadConfiguration(lang: String,
@@ -34,10 +37,10 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ) else { throw TonkeeperAPIError.incorrectUrl }
     
     components.queryItems = [
-      .init(name: "lang", value: lang),
-      .init(name: "build", value: build),
+      .init(name: "lang", value: appInfoProvider.language),
+      .init(name: "build", value: appInfoProvider.version),
       .init(name: "chainName", value: chainName),
-      .init(name: "platform", value: "ios_x")
+      .init(name: "platform", value: appInfoProvider.platform)
     ]
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
@@ -69,10 +72,10 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ) else { throw TonkeeperAPIError.incorrectUrl }
     
     components.queryItems = [
-      .init(name: "lang", value: "en"),
-      .init(name: "build", value: "3.4.0"),
+      .init(name: "lang", value: appInfoProvider.language),
+      .init(name: "build", value: "5.0.0"),
       .init(name: "chainName", value: "mainnet"),
-      .init(name: "platform", value: "ios_x")
+      .init(name: "platform", value: appInfoProvider.platform)
     ]
     if let countryCode = countryCode {
       components.queryItems?.append(URLQueryItem(name: "countryCode", value: countryCode))
@@ -91,13 +94,36 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ) else { throw TonkeeperAPIError.incorrectUrl }
     
     components.queryItems = [
-      .init(name: "lang", value: lang),
-      .init(name: "build", value: "3.4.0"),
-      .init(name: "platform", value: "ios_x")
+      .init(name: "lang", value: appInfoProvider.language),
+      .init(name: "build", value: appInfoProvider.version),
+      .init(name: "platform", value: appInfoProvider.platform)
     ]
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(PopularAppsResponse.self, from: data)
     return entity.data
+  }
+  
+  func loadNotifications() async throws -> [InternalNotification] {
+    let url = host.appendingPathComponent("/notifications")
+    guard var components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: false
+    ) else { throw TonkeeperAPIError.incorrectUrl }
+    
+    components.queryItems = [
+      .init(name: "lang", value: appInfoProvider.language),
+      .init(name: "version", value: appInfoProvider.version),
+      .init(name: "platform", value: appInfoProvider.platform)
+    ]
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    do {
+      let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
+      return response.notifications
+    } catch {
+      throw error
+    }
+    
   }
 }
