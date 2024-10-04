@@ -62,8 +62,8 @@ public struct RNWallet: Codable {
   }
   
   public enum RNContractVersion: String, Codable {
-    case v5Beta
-    case v5R1
+    case w5Beta
+    case w5R1
     case v4R2
     case v4R1
     case v3R2
@@ -80,10 +80,10 @@ public struct RNWallet: Codable {
         self = .v4R1
       case .v4R2:
         self = .v4R2
-      case .v5Beta:
-        self = .v5Beta
-      case .v5R1:
-        self = .v5R1
+      case .w5Beta:
+        self = .w5Beta
+      case .w5R1:
+        self = .w5R1
       }
     }
   }
@@ -181,10 +181,10 @@ public extension RNWallet {
       contractVersion = .v4R1
     case .v4R2:
       contractVersion = .v4R2
-    case .v5Beta:
-      contractVersion = .v5Beta
-    case .v5R1:
-      contractVersion = .v5R1
+    case .w5Beta:
+      contractVersion = .w5Beta
+    case .w5R1:
+      contractVersion = .w5R1
     case .LockupV1:
       contractVersion = .v3R1
     }
@@ -199,7 +199,7 @@ public extension RNWallet {
     
     let contract: WalletContract
     switch contractVersion {
-    case .v5R1:
+    case .w5R1:
       contract = WalletV5R1(
         publicKey: publicKey.data,
         walletId: WalletId(
@@ -209,7 +209,7 @@ public extension RNWallet {
           workchain: 0
         )
       )
-    case .v5Beta:
+    case .w5Beta:
       contract = WalletV5Beta(
         publicKey: publicKey.data,
         walletId: WalletIdBeta(

@@ -193,12 +193,12 @@ private extension ActiveWalletsServiceImplementation {
   func createAddress(publicKey: TonSwift.PublicKey, revision: WalletContractVersion, networkId: Network) throws -> Address {
     let contract: WalletContract
     switch revision {
-    case .v5R1:
+    case .w5R1:
       contract = WalletV5R1(
         publicKey: publicKey.data,
         walletId: WalletId(networkGlobalId: Int32(networkId.rawValue), workchain: 0)
       )
-    case .v5Beta:
+    case .w5Beta:
       contract = WalletV5Beta(
         publicKey: publicKey.data,
         walletId: WalletIdBeta(networkGlobalId: Int32(networkId.rawValue), workchain: 0)
