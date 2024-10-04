@@ -702,7 +702,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         backgroundUpdateState: state.backgroundUpdateState,
         isLoading: state.isLoadingBalance
       ),
-      tagConfiguration: state.wallet.balanceTagConfiguration(),
+      tags: state.wallet.balanceTagConfigurations(),
       stateDate: stateDate
     )
     
