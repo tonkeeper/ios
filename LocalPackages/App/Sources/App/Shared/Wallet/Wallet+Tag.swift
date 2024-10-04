@@ -12,10 +12,6 @@ extension Wallet {
       return nil
     case .watchonly:
       return TKLocales.WalletTags.watchOnly
-    case .w5:
-      return "W5"
-    case .w5Beta:
-      return "W5 BETA"
     case .signer:
       return "SIGNER"
     case .ledger:
@@ -30,9 +26,6 @@ extension Wallet {
     let foregroundColor: UIColor
 
     switch kind {
-    case .w5, .w5Beta:
-      backgroundColor = .Accent.green
-      foregroundColor = .Text.primary
     case .regular:
       if isTestnet {
         backgroundColor = .Accent.orange
@@ -65,9 +58,6 @@ extension Wallet {
     let textColor: UIColor?
     let backgroundColor: UIColor?
     switch kind {
-    case .w5, .w5Beta:
-      textColor = .Accent.green
-      backgroundColor = .Accent.green.withAlphaComponent(0.16)
     case .regular:
       if isTestnet {
         textColor = .Accent.orange
@@ -100,19 +90,15 @@ extension Wallet {
 
   func receiveTagConfiguration() -> TKUITagView.Configuration? {
     let tag = tag
-    let textColor: UIColor?
-    let backgroundColor: UIColor?
+    let textColor: UIColor
+    let backgroundColor: UIColor
     switch kind {
-    case .w5, .w5Beta:
-      textColor = .Accent.green
-      backgroundColor = .Accent.green.withAlphaComponent(0.16)
     case .regular:
       if isTestnet {
         textColor = .black
         backgroundColor = .Accent.orange
       } else {
-        textColor = nil
-        backgroundColor = nil
+        return nil
       }
     case .lockup:
       return nil
@@ -130,8 +116,8 @@ extension Wallet {
 
     return TKUITagView.Configuration(
       text: tag,
-      textColor: .black,
-      backgroundColor: .Accent.orange
+      textColor: textColor,
+      backgroundColor: backgroundColor
     )
   }
 
@@ -140,9 +126,6 @@ extension Wallet {
     let textColor: UIColor?
     let backgroundColor: UIColor?
     switch kind {
-    case .w5, .w5Beta:
-      textColor = .Accent.green
-      backgroundColor = .Accent.green.withAlphaComponent(0.16)
     default:
       textColor = .Text.secondary
       backgroundColor = .Background.contentTint

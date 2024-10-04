@@ -12,19 +12,11 @@ public extension Wallet {
     case watchonly
     case signer
     case ledger
-    case w5
-    case w5Beta
   }
   
   var kind: Kind {
     switch identity.kind {
     case .Regular:
-      if (try? contractVersion) == .v5Beta {
-        return .w5Beta
-      }
-      if (try? contractVersion) == .v5R1 {
-        return .w5
-      }
       return .regular
     case .Lockup:
       return .lockup
@@ -173,16 +165,12 @@ public extension Wallet {
       return false
     case .ledger:
       return false
-    case .w5:
-      return true
-    case .w5Beta:
-      return true
     }
   }
   
   var isBrowserAvailable: Bool {
     switch kind {
-    case .regular, .w5, .w5Beta:
+    case .regular:
       return true
     case .lockup:
       return false
@@ -196,17 +184,32 @@ public extension Wallet {
   }
   
   var isGaslessAvailable: Bool {
-    switch kind {
-    case .w5, .w5Beta:
-      return true
-    default:
+    isW5Generation
+  }
+  
+  var isW5: Bool {
+    do {
+      return try contractVersion == .v5R1
+    } catch {
       return false
     }
   }
   
+  var isW5Beta: Bool {
+    do {
+      return try contractVersion == .v5Beta
+    } catch {
+      return false
+    }
+  }
+  
+  var isW5Generation: Bool {
+    isW5 || isW5Beta
+  }
+  
   var isSendAvailable: Bool {
     switch kind {
-    case .regular, .w5, .w5Beta:
+    case .regular:
       return true
     case .lockup:
       return false
@@ -255,7 +258,7 @@ public extension Wallet {
   
   var isSendEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .w5, .w5Beta:
+    case .regular, .signer, .ledger:
       return true
     case .watchonly, .lockup:
       return false
@@ -264,7 +267,7 @@ public extension Wallet {
   
   var isReceiveEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .watchonly, .w5, .w5Beta:
+    case .regular, .signer, .ledger, .watchonly:
       return true
     case .lockup:
       return false
@@ -273,7 +276,7 @@ public extension Wallet {
   
   var isScanEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .w5, .w5Beta:
+    case .regular, .signer, .ledger:
       return true
     case .watchonly, .lockup:
       return false
@@ -282,7 +285,7 @@ public extension Wallet {
   
   var isSwapEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .w5, .w5Beta:
+    case .regular, .signer, .ledger:
       return true
     case .watchonly, .lockup:
       return false
@@ -291,7 +294,7 @@ public extension Wallet {
   
   var isBuyEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .watchonly, .w5, .w5Beta:
+    case .regular, .signer, .ledger, .watchonly:
       return true
     case .lockup:
       return false
@@ -300,7 +303,7 @@ public extension Wallet {
   
   var isStakeEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .w5, .w5Beta:
+    case .regular, .signer, .ledger:
       return true
     case .watchonly, .lockup:
       return false
