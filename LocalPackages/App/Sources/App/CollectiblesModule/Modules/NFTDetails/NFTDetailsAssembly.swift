@@ -13,8 +13,7 @@ struct NFTDetailsAssembly {
       nft: nft,
       wallet: wallet,
       dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService(),
-      appSetttingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-      mnemonicRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+      appSetttingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
     )
     let viewController = NFTDetailsViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

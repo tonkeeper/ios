@@ -54,18 +54,14 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsV3Store
   
-  private let mnemonicRepository: MnemonicsRepository
-
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
-       appSetttingsStore: AppSettingsV3Store,
-       mnemonicRepository: MnemonicsRepository) {
+       appSetttingsStore: AppSettingsV3Store) {
     self.nft = nft
     self.wallet = wallet
     self.dnsService = dnsService
     self.appSetttingsStore = appSetttingsStore
-    self.mnemonicRepository = mnemonicRepository
   }
   
   // MARK: - NFTDetailsModuleOutput
