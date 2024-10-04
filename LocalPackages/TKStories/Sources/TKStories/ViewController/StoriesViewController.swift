@@ -92,6 +92,7 @@ public final class StoriesViewController: UIViewController {
     
     let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
     longPressGesture.minimumPressDuration = 0.2
+    longPressGesture.delegate = self
     self.view.addGestureRecognizer(longPressGesture)
   }
   
