@@ -66,6 +66,10 @@ extension Wallet {
   func balanceTagConfigurations() -> [TKTagView.Configuration] {
     [revisionTagConfiguration(), balanceKindTagConfiguration()].compactMap { $0 }
   }
+  
+  func listTagConfigurations() -> [TKTagView.Configuration] {
+    [revisionTagConfiguration(), listTagConfiguration()].compactMap { $0 }
+  }
 
   func balanceKindTagConfiguration() -> TKTagView.Configuration? {
     let color: UIColor? = {
