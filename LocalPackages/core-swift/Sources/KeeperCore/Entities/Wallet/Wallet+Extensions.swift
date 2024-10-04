@@ -89,7 +89,7 @@ public extension Wallet {
         return WalletV4R1(publicKey: publicKey.data)
       case .v4R2:
         return WalletV4R2(publicKey: publicKey.data)
-      case .w5Beta:
+      case .v5Beta:
         return WalletV5Beta(
           publicKey: publicKey.data,
           walletId: WalletIdBeta(
@@ -99,7 +99,7 @@ public extension Wallet {
             workchain: 0
           )
         )
-      case .w5R1:
+      case .v5R1:
         return WalletV5R1(
           publicKey: publicKey.data,
           walletId: WalletId(
