@@ -313,7 +313,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   }
 
   private func composeProgrammaticButtons() -> [NFTDetailsButtonView.Model] {
-    guard let buttons = nft.programmaticButtons, nft.trust == .whitelist else {
+    guard let buttons = nft.programmaticButtons/*, nft.trust == .whitelist*/ else {
       return []
     }
 
@@ -322,43 +322,36 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return nil
       }
 
-      let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
+      let isPrimary = button.offset == 0
       let category = TKActionButtonCategory.secondary
-      var configuration: TKButton.Configuration
-      let size = TKActionButtonSize.large
-      if button.offset == 0 {
-        configuration = TKButton.Configuration(
-          content: content,
-          contentPadding: size.padding,
-          textStyle: TKActionButtonSize.large.textStyle,
-          textColor: category.titleColor,
-          iconTintColor: category.titleColor,
-          backgroundColors: [
-            .normal: UIColor.Button.primaryBackgroundGreen,
-            .highlighted: UIColor.Button.primaryBackgroundGreenHighlighted,
-            .disabled: UIColor.Button.primaryBackgroundGreenDisabled
-          ],
-          cornerRadius: size.cornerRadius,
-          loaderSize: size.loaderViewSize
-        )
-      } else {
-        configuration = TKButton.Configuration(
-          content: content,
-          contentPadding: size.padding,
-          textStyle: TKActionButtonSize.large.textStyle,
-          textColor: category.titleColor,
-          iconTintColor: UIColor.Text.secondary,
-          backgroundColors: [
-            .normal: category.backgroundColor,
-            .highlighted: category.highlightedBackgroundColor,
-            .disabled: category.disabledBackgroundColor
-          ],
-          cornerRadius: size.cornerRadius,
-          loaderSize: size.loaderViewSize
-        )
-      }
 
-      configuration.content = content
+      let backgroundColors: [TKButtonState : UIColor]
+      if isPrimary {
+        backgroundColors = [
+          .normal: UIColor.Button.primaryBackgroundGreen,
+          .highlighted: UIColor.Button.primaryBackgroundGreenHighlighted,
+          .disabled: UIColor.Button.primaryBackgroundGreenDisabled
+        ]
+      } else {
+        backgroundColors = [
+          .normal: category.backgroundColor,
+          .highlighted: category.highlightedBackgroundColor,
+          .disabled: category.disabledBackgroundColor
+        ]
+      }
+      let size = TKActionButtonSize.large
+      let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
+      var configuration = TKButton.Configuration(
+        content: content,
+        contentPadding: size.padding,
+        textStyle: TKActionButtonSize.large.textStyle,
+        textColor: category.titleColor,
+        iconTintColor: isPrimary ? category.titleColor : .Icon.secondary,
+        backgroundColors: backgroundColors,
+        cornerRadius: size.cornerRadius,
+        loaderSize: size.loaderViewSize
+      )
+
       configuration.iconPosition = .right
       configuration.action = { [weak self] in
         guard let url = button.element.url else {
