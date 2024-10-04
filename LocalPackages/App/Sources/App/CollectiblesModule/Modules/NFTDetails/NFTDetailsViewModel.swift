@@ -325,8 +325,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
       let category = TKActionButtonCategory.secondary
       var configuration: TKButton.Configuration
+      let size = TKActionButtonSize.large
       if button.offset == 0 {
-        let size = TKActionButtonSize.large
         configuration = TKButton.Configuration(
           content: content,
           contentPadding: size.padding,
@@ -342,9 +342,19 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
           loaderSize: size.loaderViewSize
         )
       } else {
-        configuration = TKButton.Configuration.actionButtonConfiguration(
-          category: .secondary,
-          size: .large
+        configuration = TKButton.Configuration(
+          content: content,
+          contentPadding: size.padding,
+          textStyle: TKActionButtonSize.large.textStyle,
+          textColor: category.titleColor,
+          iconTintColor: UIColor.Text.secondary,
+          backgroundColors: [
+            .normal: category.backgroundColor,
+            .highlighted: category.highlightedBackgroundColor,
+            .disabled: category.disabledBackgroundColor
+          ],
+          cornerRadius: size.cornerRadius,
+          loaderSize: size.loaderViewSize
         )
       }
 
