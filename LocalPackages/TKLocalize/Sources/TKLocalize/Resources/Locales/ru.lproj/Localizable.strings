@@ -12,6 +12,7 @@
 "actions.loading" = "Загрузка";
 "actions.failed" = "Неуспешно";
 "actions.ok" = "Хорошо";
+"actions.open" = "Открыть";
 
 "errors.unknown" = "Ошибка";
 

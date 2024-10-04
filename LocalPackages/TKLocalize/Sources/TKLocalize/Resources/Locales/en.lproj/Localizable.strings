@@ -12,6 +12,7 @@
 "actions.loading" = "Loading";
 "actions.failed" = "Failed";
 "actions.ok" = "OK";
+"actions.open" = "Open";
 
 "errors.unknown" = "Error";
 
