@@ -230,7 +230,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: wallet.listItemIconViewConfiguration,
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: wallet.label),
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: wallet.label,
+                                                                    tags: wallet.listTagConfigurations()),
           captionViewsConfigurations: [
             TKListItemTextView.Configuration(text: TKLocales.Settings.Items.setupWalletDescription,
                                              color: .Text.secondary,
