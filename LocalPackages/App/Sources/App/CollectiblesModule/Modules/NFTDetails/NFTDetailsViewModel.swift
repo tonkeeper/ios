@@ -313,7 +313,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   }
 
   private func composeProgrammaticButtons() -> [NFTDetailsButtonView.Model] {
-    guard let buttons = nft.programmaticButtons/*, nft.trust == .whitelist*/ else {
+    guard let buttons = nft.programmaticButtons, nft.trust == .whitelist else {
       return []
     }
 
