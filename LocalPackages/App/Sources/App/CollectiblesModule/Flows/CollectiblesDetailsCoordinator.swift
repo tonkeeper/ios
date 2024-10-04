@@ -103,6 +103,11 @@ private extension CollectiblesDetailsCoordinator {
               mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
             )
             guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
+              await MainActor.run {
+                let configuration = ToastPresenter.Configuration(title: TKLocales.Actions.serviceUnavailable)
+                ToastPresenter.showToast(configuration: configuration)
+              }
+              
               return
             }
 
