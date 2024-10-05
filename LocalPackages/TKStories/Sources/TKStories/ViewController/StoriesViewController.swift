@@ -32,6 +32,9 @@ public final class StoriesViewController: UIViewController {
   private var didStart = false
   private var timer: ResumableTimer?
   
+  private lazy var longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
+  private let trasitionManager = StoriesModalTransitionManager()
+  
   private let models: [StoriesPageModel]
   private let pageDuration: TimeInterval
   
@@ -40,6 +43,8 @@ public final class StoriesViewController: UIViewController {
     self.models = models
     self.pageDuration = pageDuration
     super.init(nibName: nil, bundle: nil)
+    self.modalPresentationStyle = .custom
+    self.transitioningDelegate = trasitionManager
   }
   
   required init?(coder: NSCoder) {
@@ -54,6 +59,12 @@ public final class StoriesViewController: UIViewController {
   public override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     start()
+  }
+  
+  public override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    timer?.pause()
+    bar.pause()
   }
   
   private func setup() {
@@ -90,16 +101,19 @@ public final class StoriesViewController: UIViewController {
     tapGestureRecognizer.delegate = self
     self.view.addGestureRecognizer(tapGestureRecognizer)
     
-    let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
     longPressGesture.minimumPressDuration = 0.2
     longPressGesture.delegate = self
     self.view.addGestureRecognizer(longPressGesture)
   }
   
   private func start() {
-    guard !didStart else { return }
-    activePage = 0
-    didStart = true
+    if didStart {
+      bar.resume()
+      timer?.resume()
+    } else {
+      activePage = 0
+      didStart = true
+    }
   }
   
   private func didChangeActivePage() {
@@ -163,7 +177,7 @@ public final class StoriesViewController: UIViewController {
     default: break
     }
   }
-  
+
   private func updateBarVisibility(_ isVisible: Bool, delay: CGFloat, animationDuration: TimeInterval) {
     UIView.animate(withDuration: animationDuration, delay: delay, options: .curveEaseOut) {
       self.bar.alpha = isVisible ? 1 : 0
@@ -213,6 +227,7 @@ final class ResumableTimer {
   }
   
   func resume() {
+    guard isPaused() else { return }
     interval -= elapsedTime ?? 0.0
     runTimer(interval: interval)
   }

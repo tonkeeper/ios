@@ -53,6 +53,7 @@ final class PageBarView: UIView, CAAnimationDelegate {
   }
   
   func resume() {
+    guard fillLayer.speed == 0 else { return }
     let pausedTime = fillLayer.timeOffset
     fillLayer.speed = 1
     fillLayer.timeOffset = 0
