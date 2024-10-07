@@ -87,6 +87,8 @@ public enum TKLocales {
     public static let more = TKLocales.tr("Localizable", "actions.more", fallback: "More")
     /// OK
     public static let ok = TKLocales.tr("Localizable", "actions.ok", fallback: "OK")
+    /// Open
+    public static let `open` = TKLocales.tr("Localizable", "actions.open", fallback: "Open")
     /// Paste
     public static let paste = TKLocales.tr("Localizable", "actions.paste", fallback: "Paste")
     /// Save

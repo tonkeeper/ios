@@ -13,6 +13,7 @@
 "actions.failed" = "Неуспешно";
 "actions.ok" = "Хорошо";
 "actions.service_unavailable" = "Сервис недоступен";
+"actions.open" = "Открыть";
 
 "errors.unknown" = "Ошибка";
 
