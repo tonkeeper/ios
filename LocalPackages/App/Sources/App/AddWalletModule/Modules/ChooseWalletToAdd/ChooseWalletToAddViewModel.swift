@@ -129,10 +129,16 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
       return !walletModel.balance.isEmpty || (walletModel.revision == .currentVersion && configuration.selectLastRevision)
     }()
     
+    var tags = [TKTagView.Configuration]()
+    if let revisionTag = walletModel.revision.tag {
+      tags.append(TKTagView.Configuration.accentTag(text: revisionTag, color: .Accent.green))
+    }
+    
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: title,
+                                                                    tags: tags),
           captionViewsConfigurations: [TKListItemTextView.Configuration(
             text: subtitle,
             color: .Text.secondary,
