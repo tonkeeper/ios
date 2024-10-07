@@ -93,6 +93,10 @@ private extension SettingsCoordinator {
       self?.openW5Story(wallet: wallet)
     }
     
+    configurator.didTapV4Wallet = { [weak self] wallet in
+      self?.addV4Wallet(wallet: wallet)
+    }
+    
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
@@ -149,8 +153,9 @@ private extension SettingsCoordinator {
         coreAssembly: coreAssembly,
         scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createAddW5WalletCoordinator(
+    ).createAddDifferentRevisionWalletCoordinator(
       wallet: wallet,
+      revisionToAdd: .v5R1,
       router: ViewControllerRouter(rootViewController: router.rootViewController)
     )
     
@@ -191,6 +196,30 @@ private extension SettingsCoordinator {
       ]
     )
     router.present(storiesViewController)
+  }
+  
+  func addV4Wallet(wallet: Wallet) {
+    let coordinator = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+      )
+    ).createAddDifferentRevisionWalletCoordinator(
+      wallet: wallet,
+      revisionToAdd: .v4R2,
+      router: ViewControllerRouter(
+        rootViewController: router.rootViewController
+      )
+    )
+    
+    coordinator.didAddedWallet = { [weak self] in
+      self?.router.pop(animated: true)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
   
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {

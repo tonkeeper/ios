@@ -187,6 +187,14 @@ public extension Wallet {
     isW5Generation
   }
   
+  var isV4R2: Bool {
+    do {
+      return try contractVersion == .v4R2
+    } catch {
+      return false
+    }
+  }
+  
   var isW5: Bool {
     do {
       return try contractVersion == .v5R1

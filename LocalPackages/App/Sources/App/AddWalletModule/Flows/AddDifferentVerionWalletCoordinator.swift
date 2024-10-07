@@ -52,9 +52,6 @@ private extension AddDifferentVersionWalletCoordinator {
         self?.didCancel?()
       },
       onInput: { [weak self] passcode in
-        let navigationController = TKNavigationController()
-        navigationController.configureTransparentAppearance()
-        
         guard let self else { return }
         Task {
           do {
