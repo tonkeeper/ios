@@ -112,18 +112,28 @@ private extension CollectiblesDetailsCoordinator {
             }
 
             await MainActor.run {
-              self.openDapp(with: composedURL)
+              self.openDapp(url: composedURL)
             }
           }
         })
     }
 
+    module.output.didRequestTonviewerShowing = { [weak self] in
+      guard let self = self else {
+        return
+      }
+      guard let url = URL(string: "https://tonviewer.com/\(self.nft.address.toFriendly().toString())?section=nft") else {
+        return
+      }
+      self.openDapp(title: "Tonviewer", url: url)
+    }
+
     router.push(viewController: module.view)
   }
 
-  func openDapp(with url: URL) {
+  func openDapp(title: String = "", url: URL) {
     let dapp = Dapp(
-      name: "",
+      name: title,
       description: "",
       icon: nil,
       poster: nil,
