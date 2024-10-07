@@ -42,7 +42,8 @@ public final class HistoryEventDetailsController {
     public let fiatPrice: String?
     public let nftModel: NFT?
     public let status: String?
-    
+    public let isScam: Bool
+
     public let listItems: [ListItem]
     
     init(headerImage: HeaderImage? = nil,
@@ -52,8 +53,8 @@ public final class HistoryEventDetailsController {
          fiatPrice: String? = nil,
          nft: NFT? = nil,
          status: String? = nil,
-         listItems: [ListItem] = []
-    ) {
+         isScam: Bool,
+         listItems: [ListItem] = []) {
       self.headerImage = headerImage
       self.title = title
       self.aboveTitle = aboveTitle
@@ -61,6 +62,7 @@ public final class HistoryEventDetailsController {
       self.fiatPrice = fiatPrice
       self.nftModel = nft
       self.status = status
+      self.isScam = isScam
       self.listItems = listItems
     }
   }
@@ -247,7 +249,7 @@ private extension HistoryEventDetailsController {
       title = "None"
     }
     
-    return Model(title: title, date: nil, fiatPrice: nil, listItems: [])
+    return Model(title: title, date: nil, fiatPrice: nil, isScam: false, listItems: [])
   }
   
   func mapTonTransfer(activityEvent: AccountEvent,
@@ -311,7 +313,7 @@ private extension HistoryEventDetailsController {
     }
     listItems.append(Model.ListItem(title: addressTitle, topValue: addressValue, isTopValueFullString: true))
     listItems.append(feeListItem)
-    if let comment = tonTransfer.comment, !comment.isEmpty {
+    if let comment = tonTransfer.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(Model.ListItem(title: .comment, topValue: comment, topNumberOfLines: 0))
     }
     
@@ -321,6 +323,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -369,7 +372,7 @@ private extension HistoryEventDetailsController {
       listItems.append(Model.ListItem(title: addressTitle, topValue: addressValue, isTopValueFullString: true))
     }
     listItems.append(feeListItem)
-    if let comment = nftTransfer.comment, !comment.isEmpty {
+    if let comment = nftTransfer.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(Model.ListItem(title: .comment, topValue: comment, topNumberOfLines: 0))
     }
     
@@ -387,6 +390,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       nft: nftModel,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -438,6 +442,7 @@ private extension HistoryEventDetailsController {
       fiatPrice: fiatPrice,
       nft: nftModel,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -456,6 +461,7 @@ private extension HistoryEventDetailsController {
       date: date,
       fiatPrice: nil,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -492,6 +498,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -525,6 +532,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -636,6 +644,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: nil,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -680,6 +689,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: nil,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -717,6 +727,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -752,6 +763,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: nil,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -792,6 +804,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -865,7 +878,7 @@ private extension HistoryEventDetailsController {
       listItems.append(Model.ListItem(title: addressTitle, topValue: addressValue, isTopValueFullString: true))
     }
     listItems.append(feeListItem)
-    if let comment = action.comment, !comment.isEmpty {
+    if let comment = action.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(Model.ListItem(title: .comment, topValue: comment, topNumberOfLines: 0))
     }
     
@@ -880,6 +893,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -911,6 +925,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       fiatPrice: fiatPrice,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -933,6 +948,7 @@ private extension HistoryEventDetailsController {
       title: title,
       date: dateString,
       status: status.rawValue,
+      isScam: activityEvent.isScam,
       listItems: listItems
     )
   }
@@ -951,6 +967,7 @@ private extension HistoryEventDetailsController {
       title: title,
       date: date,
       status: nil,
+      isScam: false,
       listItems: listItems
     )
   }

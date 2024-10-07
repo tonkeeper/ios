@@ -3,8 +3,8 @@ import TonSwift
 
 public enum WalletContractVersion: String, Codable, CaseIterable, Comparable, Hashable {
   /// Regular wallets
-  case v3R1, v3R2, v4R1, v4R2, v5Beta, v5R1
-  
+  case v3R1, v3R2, v4R1, v4R2, v5Beta = "w5 beta", v5R1 = "w5"
+
   public static var currentVersion: WalletContractVersion {
     .v5R1
   }
