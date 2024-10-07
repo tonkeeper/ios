@@ -1031,17 +1031,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private func decryptComment(wallet: Wallet,
                               payload: EncryptedCommentPayload,
                               eventId: String) {
-    let controller = keeperCoreMainAssembly.decryptCommentController()
-    Task {
-      guard let passcode = await getPasscode() else { return }
-      do {
-        try await controller.decryptComment(payload, wallet: wallet, eventId: eventId, passcode: passcode)
-      } catch {
-        await MainActor.run {
-          ToastPresenter.showToast(configuration: .failed)
-        }
-      }
-    }
+    
+    DecryptCommentHandler.decryptComment(
+      wallet: wallet,
+      payload: payload,
+      eventId: eventId,
+      parentCoordinator: self,
+      parentRouter: router,
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
   }
   
   private func getPasscode() async -> String? {
