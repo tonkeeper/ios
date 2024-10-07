@@ -105,7 +105,7 @@ private extension WalletContainerViewModelImplementation {
       walletButtonConfiguration: walletButtonConfiguration,
       settingButtonConfiguration: .init(
         configuration: settingsButtonConfiguration,
-        isIndicatorHidden: !isNotificationIndicatorVisible
+        isIndicatorVisible: isNotificationIndicatorVisible
       )
     )
     return WalletContainerView.Model(

@@ -39,7 +39,7 @@ final public class TKIndicatorButton: TKButton {
     indicatorView.layer.cornerRadius = Constants.indicatorSide / 2
   }
 
-  public func configure(isIndicatorHidden: Bool) {
-    indicatorView.isHidden = isIndicatorHidden
+  public func configureIndicatorVisibility(_ isVisible: Bool) {
+    indicatorView.isHidden = !isVisible
   }
 }

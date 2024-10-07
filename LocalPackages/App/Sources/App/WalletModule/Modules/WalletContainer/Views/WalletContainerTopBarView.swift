@@ -32,7 +32,7 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   struct Model {
     struct SettingsButtonModel {
       let configuration: TKButton.Configuration
-      let isIndicatorHidden: Bool
+      let isIndicatorVisible: Bool
     }
     let walletButtonConfiguration: WalletContainerWalletButton.Model
     let settingButtonConfiguration: SettingsButtonModel
@@ -41,7 +41,7 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   func configure(model: Model) {
     walletButton.configure(model: model.walletButtonConfiguration)
     settingsButton.configuration = model.settingButtonConfiguration.configuration
-    settingsButton.configure(isIndicatorHidden: model.settingButtonConfiguration.isIndicatorHidden)
+    settingsButton.configureIndicatorVisibility(model.settingButtonConfiguration.isIndicatorVisible)
   }
 }
 
