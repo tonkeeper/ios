@@ -102,9 +102,9 @@ private extension StakingDepositInputPoolPickerViewController {
     
     let title = item.name
     
-    var tagConfiguration: TKTagView.Configuration?
+    var tags = [TKTagView.Configuration]()
     if let tagText {
-      tagConfiguration = .accentTag(text: tagText, color: .Accent.green)
+      tags.append(.accentTag(text: tagText, color: .Accent.green))
     }
     
     return TKListItemContentView.Configuration(
@@ -123,7 +123,7 @@ private extension StakingDepositInputPoolPickerViewController {
       ),
       textContentViewConfiguration: TKListItemTextContentView.Configuration(
         titleViewConfiguration: TKListItemTitleView.Configuration(title: title,
-                                                                  tagConfiguration: tagConfiguration),
+                                                                  tags: tags),
         captionViewsConfigurations: [
           TKListItemTextView.Configuration(text: subtitle, color: .Text.secondary, textStyle: .body2)
         ]

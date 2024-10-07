@@ -182,7 +182,7 @@ private extension WalletsListViewModelImplementation {
   private func createWalletCellConfiguration(wallet: Wallet, totalBalanceState: TotalBalanceState?, isSecure: Bool) -> TKListItemCell.Configuration {
     let titleViewConfiguration = TKListItemTitleView.Configuration(
       title: wallet.label,
-      tagConfiguration: wallet.listTagConfiguration()
+      tags: wallet.listTagConfigurations()
     )
     
     let caption: String

@@ -60,4 +60,6 @@ public protocol ColorScheme {
   var bubbleForeground: UIColor { get }
 
   var constantTonBlue: UIColor { get }
+  var constantWhite: UIColor { get }
+  var constantBlack: UIColor { get }
 }

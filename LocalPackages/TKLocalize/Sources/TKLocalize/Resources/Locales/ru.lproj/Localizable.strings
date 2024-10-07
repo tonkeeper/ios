@@ -81,6 +81,8 @@
 "settings.items.setup_wallet_description" = "Кастомизировать";
 "settings.items.purchases" = "Покупки";
 "settings.items.notifications" = "Уведомления";
+"settings.items.wallet_w5" = "Кошелёк W5";
+"settings.items.wallet_v4R2" = "Кошелёк v4R2";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -463,3 +465,11 @@
 
 "buy_sell_list.buy" = "Купить";
 "buy_sell_list.sell" = "Продать";
+
+"w5_stories.gasless.title" = "Безгазовые переводы USDT";
+"w5_stories.gasless.subtitle" = "Отправляйте USDT без необходимости иметь TON: комиссии за транзакцию будут автоматически покрыты несколькими центами USDT.";
+"w5_stories.messages.title" = "До 255 операций в одной транзакции";
+"w5_stories.messages.subtitle" = "W5 увеличивает количество одновременных операций с 4 до 255, что позволяет вам сэкономить на комиссиях.";
+"w5_stories.phrase.title" = "Ваш секретный ключ не меняется";
+"w5_stories.phrase.subtitle" = "Ваш старый и новый кошелёк W5 используют один и тот же секретный ключ: при восстановлении на новом устройстве оба кошелька появятся автоматически.";
+"w5_stories.phrase.button" = "Добавить кошелёк W5";

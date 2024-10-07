@@ -183,6 +183,38 @@ public extension Wallet {
     }
   }
   
+  var isGaslessAvailable: Bool {
+    isW5Generation
+  }
+  
+  var isV4R2: Bool {
+    do {
+      return try contractVersion == .v4R2
+    } catch {
+      return false
+    }
+  }
+  
+  var isW5: Bool {
+    do {
+      return try contractVersion == .v5R1
+    } catch {
+      return false
+    }
+  }
+  
+  var isW5Beta: Bool {
+    do {
+      return try contractVersion == .v5Beta
+    } catch {
+      return false
+    }
+  }
+  
+  var isW5Generation: Bool {
+    isW5 || isW5Beta
+  }
+  
   var isSendAvailable: Bool {
     switch kind {
     case .regular:

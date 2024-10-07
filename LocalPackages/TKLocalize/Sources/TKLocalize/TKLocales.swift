@@ -749,6 +749,10 @@ public enum TKLocales {
       public static let theme = TKLocales.tr("Localizable", "settings.items.theme", fallback: "Theme")
       /// Tonkeeper news
       public static let tkNews = TKLocales.tr("Localizable", "settings.items.tk_news", fallback: "Tonkeeper news")
+      /// Wallet v4R2
+      public static let walletV4R2 = TKLocales.tr("Localizable", "settings.items.wallet_v4R2", fallback: "Wallet v4R2")
+      /// Wallet W5
+      public static let walletW5 = TKLocales.tr("Localizable", "settings.items.wallet_w5", fallback: "Wallet W5")
     }
     public enum Legal {
       /// Legal
@@ -1029,6 +1033,28 @@ public enum TKLocales {
   public enum Unstaking {
     /// Unstake
     public static let title = TKLocales.tr("Localizable", "unstaking.title", fallback: "Unstake")
+  }
+  public enum W5Stories {
+    public enum Gasless {
+      /// Send USDT without having TON – transaction fees will be covered by a few cents of USDT automatically.
+      public static let subtitle = TKLocales.tr("Localizable", "w5_stories.gasless.subtitle", fallback: "Send USDT without having TON – transaction fees will be covered by a few cents of USDT automatically.")
+      /// Gasless USDT Transfers
+      public static let title = TKLocales.tr("Localizable", "w5_stories.gasless.title", fallback: "Gasless USDT Transfers")
+    }
+    public enum Messages {
+      /// W5 increases the number of simultaneous operations from 4 to 255, which can save on fee costs.
+      public static let subtitle = TKLocales.tr("Localizable", "w5_stories.messages.subtitle", fallback: "W5 increases the number of simultaneous operations from 4 to 255, which can save on fee costs.")
+      /// Up to 255 Operations in One Transaction
+      public static let title = TKLocales.tr("Localizable", "w5_stories.messages.title", fallback: "Up to 255 Operations in One Transaction")
+    }
+    public enum Phrase {
+      /// Add W5 Wallet
+      public static let button = TKLocales.tr("Localizable", "w5_stories.phrase.button", fallback: "Add W5 Wallet")
+      /// Old accounts and W5 use the same recovery phrase – when restoring accounts on a new device, both old and new will appear automatically.
+      public static let subtitle = TKLocales.tr("Localizable", "w5_stories.phrase.subtitle", fallback: "Old accounts and W5 use the same recovery phrase – when restoring accounts on a new device, both old and new will appear automatically.")
+      /// Recovery Phrase Does Not Change
+      public static let title = TKLocales.tr("Localizable", "w5_stories.phrase.title", fallback: "Recovery Phrase Does Not Change")
+    }
   }
   public enum WalletBalanceList {
     /// Join Tonkeeper channel

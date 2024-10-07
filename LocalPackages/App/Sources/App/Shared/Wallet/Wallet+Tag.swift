@@ -4,7 +4,7 @@ import KeeperCore
 import TKLocalize
 
 extension Wallet {
-  var tag: String? {
+  var kindTag: String? {
     switch kind {
     case .regular:
       return isTestnet ? "TESTNET" : nil
@@ -18,14 +18,35 @@ extension Wallet {
       return "LEDGER"
     }
   }
+  
+  var revisionTag: String? {
+    if isW5 {
+      return "W5"
+    }
+    if isW5Beta {
+      return "W5 BETA"
+    }
+    return nil
+  }
 }
 
 extension Wallet {
   func copyToastConfiguration() -> ToastPresenter.Configuration {
     let backgroundColor: UIColor
     let foregroundColor: UIColor
-    
+
     switch kind {
+    case .regular:
+      if isTestnet {
+        backgroundColor = .Accent.orange
+        foregroundColor = .Text.primary
+      } else {
+        backgroundColor = .Background.contentTint
+        foregroundColor = .Text.primary
+      }
+    case .lockup:
+      backgroundColor = .Background.contentTint
+      foregroundColor = .Text.primary
     case .watchonly:
       backgroundColor = .Accent.orange
       foregroundColor = .Text.primary
@@ -33,7 +54,7 @@ extension Wallet {
       backgroundColor = .Background.contentTint
       foregroundColor = .Text.primary
     }
-    
+
     return ToastPresenter.Configuration(
       title: TKLocales.Actions.copied,
       backgroundColor: backgroundColor,
@@ -42,66 +63,92 @@ extension Wallet {
     )
   }
   
-  func balanceTagConfiguration() -> TKUITagView.Configuration? {
-    let tag = tag
-    let textColor: UIColor?
-    let backgroundColor: UIColor?
+  func balanceTagConfigurations() -> [TKTagView.Configuration] {
+    [revisionTagConfiguration(), balanceKindTagConfiguration()].compactMap { $0 }
+  }
+  
+  func listTagConfigurations() -> [TKTagView.Configuration] {
+    [revisionTagConfiguration(), listTagConfiguration()].compactMap { $0 }
+  }
+
+  func balanceKindTagConfiguration() -> TKTagView.Configuration? {
+    let color: UIColor? = {
+      switch kind {
+      case .regular:
+        isTestnet ? .Accent.orange : nil
+      case .lockup:
+        nil
+      case .watchonly:
+          .Accent.orange
+      case .signer:
+          .Accent.purple
+      case .ledger:
+          .Accent.green
+      }
+    }()
+    guard let kindTag, let color else { return nil }
+    return .accentTag(text: kindTag, color: color)
+  }
+  
+  func revisionTagConfiguration() -> TKTagView.Configuration? {
+    guard let revisionTag else { return nil }
+    return .accentTag(text: revisionTag, color: .Accent.green)
+  }
+
+  func receiveTagConfiguration() -> TKUITagView.Configuration? {
+    let tag = kindTag
+    let textColor: UIColor
+    let backgroundColor: UIColor
     switch kind {
     case .regular:
       if isTestnet {
-        textColor = .Accent.orange
-        backgroundColor = UIColor(hex: "332d24")
+        textColor = .black
+        backgroundColor = .Accent.orange
       } else {
-        textColor = nil
-        backgroundColor = nil
+        return nil
       }
     case .lockup:
       return nil
     case .watchonly:
-      textColor = .Accent.orange
-      backgroundColor = UIColor(hex: "332d24")
+      textColor = .black
+      backgroundColor = .Accent.orange
     case .signer:
       textColor = .Accent.purple
       backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     case .ledger:
-      textColor = .Accent.green
-      backgroundColor = .Accent.green.withAlphaComponent(0.16)
+      textColor = .Accent.purple
+      backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     }
-    
-    guard let tag, let textColor, let backgroundColor else { return nil }
-    
+    guard let tag else { return nil }
+
     return TKUITagView.Configuration(
       text: tag,
       textColor: textColor,
       backgroundColor: backgroundColor
     )
   }
-  
-  func receiveTagConfiguration() -> TKUITagView.Configuration? {
-    guard let tag else { return nil }
-    
-    if (kind == .watchonly) {
-      return TKUITagView.Configuration(
-        text: tag,
-        textColor: .black,
-        backgroundColor: .Accent.orange
-      )
-    }
-    
-    return nil
-  }
-  
+
   func listTagConfiguration() -> TKUITagView.Configuration? {
-    guard let tag = tag else { return nil }
+    let tag = kindTag
+    let textColor: UIColor?
+    let backgroundColor: UIColor?
+    switch kind {
+    default:
+      textColor = .Text.secondary
+      backgroundColor = .Background.contentTint
+    }
+
+    guard let tag, let textColor, let backgroundColor else { return nil }
+
     return TKUITagView.Configuration(
       text: tag,
-      textColor: .Text.secondary,
-      backgroundColor: .Background.contentTint
+      textColor: textColor,
+      backgroundColor: backgroundColor
     )
   }
-  
+
   func listTagConfiguration() -> TKTagView.Configuration? {
-    guard let tag = tag else { return nil }
+    guard let tag = kindTag else { return nil }
     return TKTagView.Configuration.outlintTag(text: tag)
   }
 }
