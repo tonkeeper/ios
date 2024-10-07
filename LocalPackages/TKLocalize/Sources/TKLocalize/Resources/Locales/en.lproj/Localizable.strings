@@ -12,6 +12,7 @@
 "actions.loading" = "Loading";
 "actions.failed" = "Failed";
 "actions.ok" = "OK";
+"actions.service_unavailable" = "Service unavailable";
 "actions.open" = "Open";
 
 "errors.unknown" = "Error";

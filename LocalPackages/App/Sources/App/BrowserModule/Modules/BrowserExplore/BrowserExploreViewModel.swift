@@ -66,11 +66,9 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   }
   
   func selectFeaturedApp(index: Int) {
-    guard let featuredCategory,
-          index < (featuredCategory.apps.count - 1) else {
+    guard let app = featuredCategory?.apps[safe: index] else {
       return
     }
-    let app = featuredCategory.apps[index]
     didSelectDapp?(app)
   }
   

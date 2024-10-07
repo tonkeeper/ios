@@ -77,7 +77,7 @@ struct DarkColorScheme: ColorScheme {
   var buttonPrimaryBackgroundGreenDisabled: UIColor {
     return UIColor(hex: "#2B9962")
   }
-  
+
   var fieldActiveBorder: UIColor {
     return UIColor(hex: "#45AEF5")
   }
