@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class BrowserSearchViewController: GenericViewViewController<BrowserSearchView>, KeyboardObserving {
   typealias DataSource = UICollectionViewDiffableDataSource<BrowserSearchSection, AnyHashable>
@@ -97,7 +98,7 @@ private extension BrowserSearchViewController {
     cancelButton.configuration.padding.bottom = 4
     cancelButton.configuration.content = TKButton.Configuration.Content(
       title: .plainString(
-        "Cancel"
+        TKLocales.Actions.cancel
       )
     )
     cancelButton.configuration.action = { [weak self] in

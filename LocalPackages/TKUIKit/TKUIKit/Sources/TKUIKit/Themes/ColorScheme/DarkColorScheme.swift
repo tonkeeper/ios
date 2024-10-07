@@ -161,4 +161,11 @@ struct DarkColorScheme: ColorScheme {
     return UIColor(hex: "#0088CC")
   }
   
+  var constantWhite: UIColor {
+    return UIColor(hex: "FFFFFF")
+  }
+  
+  var constantBlack: UIColor {
+    return UIColor(hex: "000000")
+  }
 }

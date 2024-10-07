@@ -7,13 +7,13 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
   private let balanceView = BalanceHeaderAmountView()
   private let statusView = ConnectionStatusView()
   private let addressButton = TKButton()
-  private let tagView = TKUITagView()
   private let stateDateLabel = UILabel()
   
   private let stackView = UIStackView()
   private let balanceStackView = UIStackView()
   private let addressTagContainer = UIStackView()
   private let addressTagStatusContainer = UIStackView()
+  private let tagsContainer = UIStackView()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -28,7 +28,7 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
     let balanceModel: BalanceHeaderAmountView.Model
     let addressButtonConfiguration: TKButton.Configuration
     let connectionStatusModel: ConnectionStatusView.Model?
-    let tagConfiguration: TKUITagView.Configuration?
+    let tags: [TKTagView.Configuration]
     let stateDate: String?
   }
   
@@ -37,17 +37,19 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
     addressButton.configuration = model.addressButtonConfiguration
     stateDateLabel.attributedText = model.stateDate?.withTextStyle(.body2, color: .Text.secondary, alignment: .center)
     
-    if let tagConfiguration = model.tagConfiguration {
-      tagView.configure(configuration: tagConfiguration)
+    tagsContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    tagsContainer.isHidden = model.tags.isEmpty
+    model.tags.forEach {
+      let view = TKTagView()
+      view.configuration = $0
+      tagsContainer.addArrangedSubview(view)
     }
-    
     if let connectionStatusModel = model.connectionStatusModel {
       statusView.configure(model: connectionStatusModel)
     }
     
     addressTagContainer.isHidden = model.connectionStatusModel != nil || model.stateDate != nil
     statusView.isHidden = model.connectionStatusModel == nil
-    tagView.isHidden = model.tagConfiguration == nil
     stateDateLabel.isHidden = model.stateDate == nil || model.connectionStatusModel != nil
   }
 }
@@ -69,7 +71,7 @@ private extension BalanceHeaderBalanceView {
     stackView.addArrangedSubview(addressTagStatusContainer)
     balanceStackView.addArrangedSubview(balanceView)
     addressTagContainer.addArrangedSubview(addressButton)
-    addressTagContainer.addArrangedSubview(tagView)
+    addressTagContainer.addArrangedSubview(tagsContainer)
     addressTagStatusContainer.addArrangedSubview(addressTagContainer)
     addressTagStatusContainer.addArrangedSubview(statusView)
     addressTagStatusContainer.addArrangedSubview(stateDateLabel)

@@ -40,6 +40,18 @@ public extension UIColor {
     public static let primaryBackground = UIColor {
       TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonPrimaryBackground
     }
+    public static let overlayBackground = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantWhite
+    }
+    public static let overlayForeground = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantBlack
+    }
+    public static let overlayBackgroundDisabled = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantWhite
+    }
+    public static let overlayBackgroundHighlighted = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantWhite
+    }
     public static let primaryForeground = UIColor {
       TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonPrimaryForeground
     }
@@ -166,6 +178,10 @@ public extension UIColor {
   enum Constant {
     public static let tonBlue = UIColor {
       TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantTonBlue
+    }
+    
+    public static let white = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantWhite
     }
   }
   

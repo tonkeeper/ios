@@ -405,21 +405,26 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = configuration
         sectionItems.append(notificationsItem)
       case .telegramChannel:
+      let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
+          guard let self else {
+            return
+          }
+
+          Task {
+            guard let telegramChannelURL = await self.configurationStore.getConfiguration().tonkeeperNewsUrl else {
+              return
+            }
+            await MainActor.run {
+              self.urlOpener.open(url: telegramChannelURL)
+            }
+          }
+        })
+
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
         let telegramChannelItem = WalletBalanceListItem(
           identifier: item.rawValue,
-          accessory: .chevron,
-          onSelection: { [weak self] in
-            guard let self else { return }
-            Task {
-              guard let telegramChannelURL = await self.configurationStore.getConfiguration().tonkeeperNewsUrl else {
-                return
-              }
-              await MainActor.run {
-                self.urlOpener.open(url: telegramChannelURL)
-              }
-            }
-          }
+          accessory: .button(buttonConfiguration),
+          onSelection: nil
         )
         cellConfigurations[item.rawValue] = telegramChannelConfiguration
         sectionItems.append(telegramChannelItem)
@@ -702,7 +707,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         backgroundUpdateState: state.backgroundUpdateState,
         isLoading: state.isLoadingBalance
       ),
-      tagConfiguration: state.wallet.balanceTagConfiguration(),
+      tags: state.wallet.balanceTagConfigurations(),
       stateDate: stateDate
     )
     

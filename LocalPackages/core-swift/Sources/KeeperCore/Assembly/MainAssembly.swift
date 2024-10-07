@@ -83,8 +83,13 @@ public final class MainAssembly {
     )
   }
   
-  public func historyEventDetailsController(event: AccountEventDetailsEvent,
-                                            isTestnet: Bool) -> HistoryEventDetailsController {
+  public func storiesController(pages: [StoriesController.StoryPage]) -> StoriesController {
+    StoriesController(
+      pages: pages
+    )
+  }
+  
+  public func historyEventDetailsController(event: AccountEventDetailsEvent, isTestnet: Bool) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
