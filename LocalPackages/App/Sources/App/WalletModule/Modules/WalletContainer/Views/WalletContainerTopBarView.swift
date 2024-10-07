@@ -30,12 +30,12 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   }
   
   struct Model {
-    struct ButtonModel {
+    struct SettingsButtonModel {
       let configuration: TKButton.Configuration
       let isIndicatorHidden: Bool
     }
     let walletButtonConfiguration: WalletContainerWalletButton.Model
-    let settingButtonConfiguration: ButtonModel
+    let settingButtonConfiguration: SettingsButtonModel
   }
   
   func configure(model: Model) {
