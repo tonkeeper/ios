@@ -9,14 +9,7 @@ final class StoriesPresentationAnimator: UIPercentDrivenInteractiveTransition {
 
 extension StoriesPresentationAnimator: UIViewControllerAnimatedTransitioning {
   func transitionDuration(using transitionContext: (any UIViewControllerContextTransitioning)?) -> TimeInterval {
-//    let coeff =
-//    1 / progress
-//    if isPresentation {
-//      0.5
-//    } else {
-//      0.65
-//    }
-    1
+    0.45
   }
   
   func animateTransition(using transitionContext: any UIViewControllerContextTransitioning) {
@@ -48,8 +41,7 @@ extension StoriesPresentationAnimator: UIViewControllerAnimatedTransitioning {
     let finalFrame = isPresentation ? presentedFrame : dismissedFrame
     
     view.frame = initialFrame
-    let animator = UIViewPropertyAnimator(duration: duration, timingParameters: UISpringTimingParameters(dampingRatio: 1, initialVelocity: CGVector(dx: 0.9, dy: 0.2)))
-//    let animator = UIViewPropertyAnimator(duration: duration, dampingRatio: 1.0)
+    let animator = UIViewPropertyAnimator(duration: duration, dampingRatio: 1.5)
     animator.addAnimations {
       view.frame = finalFrame
     }

@@ -25,7 +25,9 @@ public final class StoriesViewController: UIViewController {
     }
     set {
       _activePage = newValue
-      didChangeActivePage()
+      openActivePage()
+      startTimer()
+      updateActivePageBar()
     }
   }
   private var _activePage = 0
@@ -45,6 +47,19 @@ public final class StoriesViewController: UIViewController {
     super.init(nibName: nil, bundle: nil)
     self.modalPresentationStyle = .custom
     self.transitioningDelegate = trasitionManager
+    
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(didEnterBackground),
+      name: UIApplication.didEnterBackgroundNotification,
+      object: nil
+    )
+    NotificationCenter.default.addObserver(
+      self,
+      selector: #selector(didBecomeActive),
+      name: UIApplication.didBecomeActiveNotification,
+      object: nil
+    )
   }
   
   required init?(coder: NSCoder) {
@@ -54,11 +69,19 @@ public final class StoriesViewController: UIViewController {
   public override func viewDidLoad() {
     super.viewDidLoad()
     setup()
+    openActivePage()
   }
-  
-  public override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    start()
+
+  public override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    if didStart {
+      bar.resume()
+      timer?.resume()
+    } else {
+      didStart = true
+      updateActivePageBar()
+      startTimer()
+    }
   }
   
   public override func viewWillDisappear(_ animated: Bool) {
@@ -67,8 +90,21 @@ public final class StoriesViewController: UIViewController {
     bar.pause()
   }
   
+  @objc
+  func didEnterBackground() {
+    bar.pause()
+    timer?.pause()
+  }
+  
+  @objc
+  func didBecomeActive() {
+    bar.resume()
+    timer?.resume()
+  }
+  
   private func setup() {
     bar.barsCount = models.count
+    bar.animationDuration = pageDuration
     _activePage = 0
     
     closeButton.configuration.action = { [weak self] in
@@ -105,23 +141,19 @@ public final class StoriesViewController: UIViewController {
     longPressGesture.delegate = self
     self.view.addGestureRecognizer(longPressGesture)
   }
-  
-  private func start() {
-    if didStart {
-      bar.resume()
-      timer?.resume()
-    } else {
-      activePage = 0
-      didStart = true
-    }
-  }
-  
-  private func didChangeActivePage() {
-    bar.setActivePage(index: _activePage, animationDuration: pageDuration)
+
+  private func startTimer() {
     timer = ResumableTimer(interval: pageDuration, callback: { [weak self] in
       self?.activateNextPage()
     })
     timer?.start()
+  }
+  
+  private func updateActivePageBar() {
+    bar.setActivePage(index: _activePage)
+  }
+  
+  private func openActivePage() {
     pageContainerView.removeSubviews()
     let pageViewController = StoriesPageViewController(model: models[_activePage])
     
@@ -133,7 +165,7 @@ public final class StoriesViewController: UIViewController {
       make.edges.equalTo(pageContainerView)
     }
   }
-  
+
   private func activateNextPage() {
     let nextIndex = min(_activePage + 1, models.count - 1)
     guard nextIndex != _activePage else { return  }

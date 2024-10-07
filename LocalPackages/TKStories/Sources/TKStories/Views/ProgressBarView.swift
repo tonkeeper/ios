@@ -7,6 +7,11 @@ final class ProgressBarView: UIView {
       setupBars()
     }
   }
+  var animationDuration: TimeInterval = 0 {
+    didSet {
+      barViews.forEach { $0.animationDuration = animationDuration }
+    }
+  }
   
   private let stackView = UIStackView()
   private var barViews = [PageBarView]()
@@ -30,13 +35,13 @@ final class ProgressBarView: UIView {
     barViews.forEach { $0.resume() }
   }
   
-  func setActivePage(index: Int, animationDuration: TimeInterval) {
+  func setActivePage(index: Int) {
     let activeIndex = min(max(index, 0), barsCount - 1)
     barViews.enumerated().forEach { index, view in
       if index < activeIndex {
         view.progress = 1
       } else if index == activeIndex {
-        view.setProgress(1, animationDuration: animationDuration)
+        view.setProgress(1, animated: true)
       } else {
         view.progress = 0
       }
@@ -60,6 +65,7 @@ final class ProgressBarView: UIView {
     var barViews = [PageBarView]()
     for _ in (0..<barsCount) {
       let barView = PageBarView()
+      barView.animationDuration = animationDuration
       barViews.append(barView)
       stackView.addArrangedSubview(barView)
     }

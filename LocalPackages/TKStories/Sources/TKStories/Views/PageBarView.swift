@@ -3,19 +3,20 @@ import TKUIKit
 
 final class PageBarView: UIView, CAAnimationDelegate {
   
+  var animationDuration: CGFloat = 0
   var progress: CGFloat {
     get {
       _progress
     }
     set {
       _progress = newValue
-      updateProgress(progress, animationDuration: 0)
+      updateProgress(progress, animated: false)
     }
   }
   private var _progress: CGFloat = 0
   
-  private let backgroundLayer = CAShapeLayer()
-  private let fillLayer = CAShapeLayer()
+  private let backgroundLayer = CALayer()
+  private let fillLayer = CALayer()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -28,84 +29,81 @@ final class PageBarView: UIView, CAAnimationDelegate {
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    
     backgroundLayer.frame = bounds
-    fillLayer.frame = bounds
-    fillLayer.lineWidth = bounds.height
-    
-    backgroundLayer.path = UIBezierPath(roundedRect: bounds, cornerRadius: 2).cgPath
-    fillLayer.path = createFillLayerPath(bounds: bounds).cgPath
   }
   
   override var intrinsicContentSize: CGSize {
     CGSize(width: UIView.noIntrinsicMetric, height: .height)
   }
   
-  func setProgress(_ progress: CGFloat, animationDuration: TimeInterval) {
+  func setProgress(_ progress: CGFloat, animated: Bool) {
     _progress = progress
-    updateProgress(progress, animationDuration: animationDuration)
+    updateProgress(progress, animated: true)
   }
   
+  
   func pause() {
-    let pauseTime = fillLayer.convertTime(CACurrentMediaTime(), from: nil)
-    fillLayer.speed = 0
-    fillLayer.timeOffset = pauseTime
+    let pausedTime = fillLayer.convertTime(CACurrentMediaTime(), from: nil)
+    fillLayer.speed = 0.0
+    fillLayer.timeOffset = pausedTime
   }
   
   func resume() {
-    guard fillLayer.speed == 0 else { return }
     let pausedTime = fillLayer.timeOffset
-    fillLayer.speed = 1
-    fillLayer.timeOffset = 0
-    fillLayer.beginTime = 0
+    fillLayer.speed = 1.0
+    fillLayer.timeOffset = 0.0
+    fillLayer.beginTime = 0.0
     let timeSincePause = fillLayer.convertTime(CACurrentMediaTime(), from: nil) - pausedTime
     fillLayer.beginTime = timeSincePause
   }
   
   private func setup() {
-    backgroundLayer.fillColor = UIColor.Constant.white.withAlphaComponent(0.24).cgColor
-    backgroundLayer.cornerRadius = 2
-    backgroundLayer.masksToBounds = true
+    backgroundLayer.backgroundColor = UIColor.Constant.white.withAlphaComponent(0.24).cgColor
+    backgroundLayer.cornerRadius = .height/2
     
-    fillLayer.strokeColor = UIColor.Constant.white.cgColor
-    fillLayer.strokeEnd = progress
+    fillLayer.backgroundColor = UIColor.Constant.white.cgColor
+    fillLayer.anchorPoint = CGPoint(x: 0, y: 0.5)
+    fillLayer.cornerRadius = .height/2
     
     layer.addSublayer(backgroundLayer)
-    backgroundLayer.addSublayer(fillLayer)
+    layer.addSublayer(fillLayer)
   }
   
-  private func createFillLayerPath(bounds: CGRect) -> UIBezierPath {
-    let path = UIBezierPath()
-    path.move(to: CGPoint(x: 0, y: bounds.height/2))
-    path.addLine(to: CGPoint(x: bounds.width, y: bounds.height/2))
-    return path
+  private func createFillViewFrame(bounds: CGRect, progress: CGFloat) -> CGRect {
+    let frame = CGRect(origin: CGPoint(x: 0, y: 0),
+                       size: CGSize(width: bounds.width * progress, height: bounds.height))
+    return frame
   }
   
-  private func updateProgress(_ progress: CGFloat, animationDuration: TimeInterval) {
-    let fromValue: CGFloat = 0
-    guard !animationDuration.isZero else {
+  private func updateProgress(_ progress: CGFloat, animated: Bool) {
+    guard animated else {
       fillLayer.removeAllAnimations()
+      let toFrame = createFillViewFrame(bounds: bounds, progress: progress)
       CATransaction.begin()
       CATransaction.setDisableActions(true)
-      fillLayer.strokeEnd = _progress
+      fillLayer.frame = toFrame
       CATransaction.commit()
       return
     }
-    let duration = abs(progress - fromValue) * animationDuration
-    let animation = CABasicAnimation(keyPath: "strokeEnd")
-    animation.duration = duration
-    animation.fromValue = fromValue
-    animation.toValue = progress
-    animation.delegate = self
-    fillLayer.add(animation, forKey: "strokeEnd")
+    
+    let fromFrame = createFillViewFrame(bounds: bounds, progress: 0)
+    let toFrame = createFillViewFrame(bounds: bounds, progress: progress)
+    addAnimation(fromBounds: fromFrame, toBounds: toFrame)
   }
   
-  func animationDidStop(_ anim: CAAnimation, finished flag: Bool) {
-    guard flag else { return }
+  func addAnimation(fromBounds: CGRect, toBounds: CGRect) {
     CATransaction.begin()
     CATransaction.setDisableActions(true)
-    fillLayer.strokeEnd = _progress
+    fillLayer.frame = toBounds
     CATransaction.commit()
+    
+    let animation = CABasicAnimation(keyPath: "bounds")
+    animation.duration = animationDuration
+    animation.fromValue = fromBounds
+    animation.toValue = toBounds
+    animation.delegate = self
+    animation.isRemovedOnCompletion = false
+    fillLayer.add(animation, forKey: "bounds")
   }
 }
 

@@ -12,12 +12,9 @@ final class StoriesPresentationController: UIPresentationController {
   
   private lazy var gesture = UIPanGestureRecognizer(target: self, action: #selector(panGestureHandler(_:)))
   
-  private let animationController: StoriesPresentationAnimator
   
-  init(presentedViewController: UIViewController,
-                presenting presentingViewController: UIViewController?,
-                animationController: StoriesPresentationAnimator) {
-    self.animationController = animationController
+  override init(presentedViewController: UIViewController,
+                presenting presentingViewController: UIViewController?) {
     super.init(presentedViewController: presentedViewController, presenting: presentingViewController)
   }
   
@@ -35,11 +32,11 @@ final class StoriesPresentationController: UIPresentationController {
     }
     
     guard let coordinator = presentedViewController.transitionCoordinator else {
-      dimmingView.alpha = 1.0
+      dimmingView.alpha = .dimmingViewPresentedAlpha
       return
     }
     coordinator.animate { _ in
-      self.dimmingView.alpha = 1.0
+      self.dimmingView.alpha = .dimmingViewPresentedAlpha
     }
   }
   
@@ -61,7 +58,8 @@ final class StoriesPresentationController: UIPresentationController {
     guard let containerView else { return .zero }
     let frame = CGRect(
       origin: CGPoint(x: 0, y: containerView.safeAreaInsets.top),
-      size: CGSize(width: containerView.bounds.width, height: containerView.bounds.height - containerView.safeAreaInsets.top - containerView.safeAreaInsets.bottom)
+      size: CGSize(width: containerView.bounds.width,
+                   height: containerView.bounds.height - presentedViewTopPadding - containerView.safeAreaInsets.bottom)
     )
     return frame
   }
@@ -72,30 +70,60 @@ final class StoriesPresentationController: UIPresentationController {
     containerView?.addGestureRecognizer(gesture)
   }
   
+  private var isDismissing = false
+  private var presentedViewTopPadding: CGFloat {
+    containerView?.safeAreaInsets.top ?? 0
+  }
   @objc
   private func panGestureHandler(_ gesture: UIPanGestureRecognizer) {
     guard let containerView else { return }
     let containerViewFrame = containerView.frame
+    let translation = gesture.translation(in: containerView)
+    let velocity = gesture.velocity(in: containerView)
+    let progress = translation.y / containerViewFrame.height
+    let maxY = presentedViewTopPadding/2
+    let offset = max(presentedViewTopPadding + translation.y, maxY)
+    
     switch gesture.state {
-    case .began:
-      animationController.wantsInteractiveStart = true
-      presentedViewController.dismiss(animated: true)
     case .changed:
-      let translation = gesture.translation(in: containerView)
-      let progress = translation.y / containerViewFrame.height
-      animationController.update(progress)
-    case .ended, .cancelled, .failed:
-      animationController.wantsInteractiveStart = false
-      let translation = gesture.translation(in: containerView)
-      let progress = translation.y / containerViewFrame.height
-      if progress > 0.5 {
-        animationController.finish()
+      updatePresentedViewOriginY(offset, animated: false)
+      updateDimmingViewAlpha(.dimmingViewPresentedAlpha - progress, animated: false)
+    case .failed, .cancelled:
+      updatePresentedViewOriginY(presentedViewTopPadding, animated: true)
+      updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
+    case .ended:
+      if progress > 0.5 || velocity.y > 900 {
+        presentedViewController.dismiss(animated: true)
       } else {
-        animationController.cancel()
+        updatePresentedViewOriginY(presentedViewTopPadding, animated: true)
+        updateDimmingViewAlpha(.dimmingViewPresentedAlpha, animated: true)
       }
-    default:
-      break
+    default: break
     }
+  }
+  
+  private func updatePresentedViewOriginY(_ originY: CGFloat, animated: Bool) {
+    guard animated else {
+      presentedView?.frame.origin.y = originY
+      return
+    }
+    let animator = UIViewPropertyAnimator(duration: 0.2, dampingRatio: 1.0)
+    animator.addAnimations {
+      self.presentedView?.frame.origin.y = originY
+    }
+    animator.startAnimation()
+  }
+  
+  private func updateDimmingViewAlpha(_ alpha: CGFloat, animated: Bool) {
+    guard animated else {
+      dimmingView.alpha = alpha
+      return
+    }
+    let animator = UIViewPropertyAnimator(duration: 0.2, dampingRatio: 1.0)
+    animator.addAnimations {
+      self.dimmingView.alpha = alpha
+    }
+    animator.startAnimation()
   }
 }
 
@@ -108,4 +136,8 @@ extension StoriesPresentationController: UIGestureRecognizerDelegate {
     guard gestureRecognizer == gesture else { return true }
     return false
   }
+}
+
+private extension CGFloat {
+  static let dimmingViewPresentedAlpha: CGFloat = 0.85
 }
