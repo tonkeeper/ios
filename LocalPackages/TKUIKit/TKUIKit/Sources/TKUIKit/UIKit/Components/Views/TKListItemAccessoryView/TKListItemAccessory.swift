@@ -5,7 +5,7 @@ public enum TKListItemAccessory {
   case icon(TKListItemIconAccessoryView.Configuration)
   case text(TKListItemTextAccessoryView.Configuration)
   case `switch`(TKListItemSwitchAccessoryView.Configuration)
-  case button(TKButton.Configuration)
+  case button(TKListItemButtonAccessoryView.Configuration)
 
   public var view: UIView {
     switch self {
@@ -26,7 +26,9 @@ public enum TKListItemAccessory {
       accessoryView.configuration = configuration
       return accessoryView
     case .button(let configuration):
-      return TKButton(configuration: configuration)
+      let view = TKListItemButtonAccessoryView()
+      view.configuration = configuration
+      return view
     }
   }
 }

@@ -405,15 +405,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = configuration
         sectionItems.append(notificationsItem)
       case .telegramChannel:
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .small)
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.open))
-        buttonConfiguration.backgroundColors = [
-          .disabled: .Button.tertiaryBackgroundDisabled,
-          .highlighted: .Button.tertiaryBackgroundHighlighted,
-          .normal: .Button.tertiaryBackground
-        ]
-        buttonConfiguration.padding = .init(top: 0, left: 12, bottom: 0, right: 12)
-        buttonConfiguration.action = { [weak self] in
+      let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
           guard let self else {
             return
           }
@@ -426,7 +418,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
               self.urlOpener.open(url: telegramChannelURL)
             }
           }
-        }
+        })
 
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
         let telegramChannelItem = WalletBalanceListItem(
