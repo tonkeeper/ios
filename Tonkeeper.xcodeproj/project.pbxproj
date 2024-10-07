@@ -54,6 +54,7 @@
 		7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
+		7DF339922CB400F2003D689D /* TKStories in Frameworks */ = {isa = PBXBuildFile; productRef = 7DF339912CB400F2003D689D /* TKStories */; };
 		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
 		C34C70612BE1157200143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; };
 		C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -237,6 +238,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
@@ -519,6 +521,7 @@
 				C3FAB42C2BE11D4400C81547 /* TKScreenKit */,
 				C3CC74412BE11EC6006022FE /* TKCoordinator */,
 				C3CC74432BE11F08006022FE /* TKUIKitDynamic */,
+				7DF339912CB400F2003D689D /* TKStories */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */;
@@ -1560,6 +1563,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
+		};
+		7DF339912CB400F2003D689D /* TKStories */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKStories;
 		};
 		C32C7C462BCD0D8E00785B6A /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
