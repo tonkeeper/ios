@@ -100,9 +100,13 @@ private extension WalletContainerViewModelImplementation {
       self?.didTapSettingsButton?(wallet)
     }
 
+    let isBackupAvailable = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
     let topBarViewModel = WalletContainerTopBarView.Model(
       walletButtonConfiguration: walletButtonConfiguration,
-      settingButtonConfiguration: settingsButtonConfiguration
+      settingButtonConfiguration: .init(
+        configuration: settingsButtonConfiguration,
+        isIndicatorHidden: !isBackupAvailable
+      )
     )
     return WalletContainerView.Model(
       topBarViewModel: topBarViewModel

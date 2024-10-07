@@ -17,7 +17,7 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   
   private let contentContainerView = UIView()
   let walletButton = WalletContainerWalletButton()
-  let settingsButton = TKButton()
+  private let settingsButton = TKIndicatorButton(frame: .zero)
   private let blurView = TKBlurView()
   
   override init(frame: CGRect) {
@@ -30,13 +30,18 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   }
   
   struct Model {
+    struct ButtonModel {
+      let configuration: TKButton.Configuration
+      let isIndicatorHidden: Bool
+    }
     let walletButtonConfiguration: WalletContainerWalletButton.Model
-    let settingButtonConfiguration: TKButton.Configuration
+    let settingButtonConfiguration: ButtonModel
   }
   
   func configure(model: Model) {
     walletButton.configure(model: model.walletButtonConfiguration)
-    settingsButton.configuration = model.settingButtonConfiguration
+    settingsButton.configuration = model.settingButtonConfiguration.configuration
+    settingsButton.configure(isIndicatorHidden: model.settingButtonConfiguration.isIndicatorHidden)
   }
 }
 
