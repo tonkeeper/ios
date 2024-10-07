@@ -10,6 +10,7 @@ final public class TKIndicatorButton: TKButton {
     let view = UIView()
     view.backgroundColor = .Accent.red
     view.layer.masksToBounds = true
+    view.isHidden = true
     return view
   }()
 
