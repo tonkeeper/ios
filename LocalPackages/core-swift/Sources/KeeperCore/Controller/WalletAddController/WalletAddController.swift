@@ -34,6 +34,40 @@ public final class WalletAddController {
     await walletsStore.addWallets([wallet])
   }
   
+  public enum AddWalletRevisionError: Swift.Error {
+    case unsupportedWalletKind
+  }
+  public func addWalletRevision(wallet: Wallet, revision: WalletContractVersion,  passcode: String) async throws {
+    let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
+    
+    let newWalletKind: WalletKind
+    switch wallet.identity.kind {
+    case .Regular(let publicKey, _):
+      newWalletKind = .Regular(publicKey, revision)
+    case .Signer(let publicKey, _):
+      newWalletKind = .Signer(publicKey, revision)
+    case .SignerDevice(let publicKey, _):
+      newWalletKind = .SignerDevice(publicKey, revision)
+    default:
+      throw AddWalletRevisionError.unsupportedWalletKind
+    }
+    
+    let newWalletIdentity = WalletIdentity(
+      network: wallet.identity.network,
+      kind: newWalletKind
+    )
+
+    let wallet = Wallet(
+      id: UUID().uuidString,
+      identity: newWalletIdentity,
+      metaData: wallet.metaData,
+      setupSettings: wallet.setupSettings
+    )
+    
+    try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
+    await walletsStore.addWallets([wallet])
+  }
+  
   public func importWallets(phrase: [String],
                             revisions: [WalletContractVersion],
                             metaData: WalletMetaData,

@@ -10,24 +10,26 @@ public final class AddDifferentVersionWalletCoordinator: RouterCoordinator<ViewC
   public var didCancel: (() -> Void)?
   public var didAddedWallet: (() -> Void)?
   
-  private let walletsUpdateAssembly: WalletsUpdateAssembly
-  private let analyticsProvider: AnalyticsProvider
-  private let storesAssembly: StoresAssembly
-  private let wallet: Wallet
   private let revisionToAdd: WalletContractVersion
+  private let wallet: Wallet
+  private let securityStore: SecurityStore
+  private let mnemonicsRepository: MnemonicsRepository
+  private let addController: WalletAddController
+  private let analyticsProvider: AnalyticsProvider
   
   init(router: ViewControllerRouter,
-       analyticsProvider: AnalyticsProvider,
-       walletsUpdateAssembly: WalletsUpdateAssembly,
-       wallet: Wallet,
        revisionToAdd: WalletContractVersion,
-       storesAssembly: StoresAssembly
-  ) {
-    self.walletsUpdateAssembly = walletsUpdateAssembly
-    self.analyticsProvider = analyticsProvider
-    self.storesAssembly = storesAssembly
+       wallet: Wallet,
+       securityStore: SecurityStore,
+       mnemonicsRepository: MnemonicsRepository,
+       addController: WalletAddController,
+       analyticsProvider: AnalyticsProvider) {
     self.revisionToAdd = revisionToAdd
     self.wallet = wallet
+    self.securityStore = securityStore
+    self.mnemonicsRepository = mnemonicsRepository
+    self.addController = addController
+    self.analyticsProvider = analyticsProvider
     super.init(router: router)
   }
 
@@ -40,13 +42,12 @@ private extension AddDifferentVersionWalletCoordinator {
   func openConfirmPasscode() {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
-    let router = NavigationControllerRouter(rootViewController: navigationController)
     
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: self.router,
-      mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: storesAssembly.securityStore,
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()
       },
@@ -57,13 +58,14 @@ private extension AddDifferentVersionWalletCoordinator {
         guard let self else { return }
         Task {
           do {
-            try await self.openWalletsList(
-              router: NavigationControllerRouter(rootViewController: navigationController),
-              animated: false,
-              passcode: passcode
-            )
+            try await self.importWallet(passcode: passcode)
+            await MainActor.run {
+              self.didAddedWallet?()
+            }
           } catch {
-            print("openWalletsList error:", error)
+            await MainActor.run {
+              self.didCancel?()
+            }
           }
         }
       }
@@ -73,31 +75,9 @@ private extension AddDifferentVersionWalletCoordinator {
       self?.didCancel?()
     })
   }
-
   
-  func openWalletsList(router: NavigationControllerRouter,
-                       animated: Bool,
-                       passcode: String) async throws {
-    let mnemonic = try await walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
-      wallet: wallet,
-      password: passcode
-    )
-    try await importWallet(phrase: mnemonic.mnemonicWords, passcode: passcode)
-  }
-  
-  func importWallet(phrase: [String],
-                    passcode: String) async throws {
-    
+  func importWallet(passcode: String) async throws {
+    try await addController.addWalletRevision(wallet: wallet, revision: revisionToAdd, passcode: passcode)
     self.analyticsProvider.logEvent(eventKey: .importWallet)
-    
-    let addController = walletsUpdateAssembly.walletAddController()
-    let metaData = self.wallet.metaData
-    try await addController.importWallets(
-      phrase: phrase,
-      revisions: [self.revisionToAdd],
-      metaData: metaData,
-      passcode: passcode,
-      isTestnet: self.wallet.isTestnet
-    )
   }
 }

@@ -5,6 +5,7 @@ import TKCore
 import TKLocalize
 import KeeperCore
 import TKLocalize
+import TKStories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -153,31 +154,43 @@ private extension SettingsCoordinator {
       router: ViewControllerRouter(rootViewController: router.rootViewController)
     )
     
+    coordinator.didAddedWallet = { [weak self] in
+      self?.router.pop(animated: true)
+    }
+    
     addChild(coordinator)
     coordinator.start()
   }
   
   func openW5Story(wallet: Wallet) {
-    func onTapCallback() {
-      self.didTapAddW5Wallet(wallet: wallet)
-    }
-    
-    // TODO: fix button on story page
-    return onTapCallback()
-    
-    let module = StoriesModule(
-      dependencies: StoriesModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).storiesModule(pages: [
-      StoriesController.StoryPage(title: TKLocales.W5Stories.Gasless.title, description: TKLocales.W5Stories.Gasless.subtitle, button: nil, backgroundImage: .TKUIKit.Images.storyGasless), StoriesController.StoryPage(title: TKLocales.W5Stories.Messages.title, description: TKLocales.W5Stories.Messages.subtitle, button: nil, backgroundImage: .TKUIKit.Images.storyMessages), StoriesController.StoryPage(title: TKLocales.W5Stories.Phrase.title, description: TKLocales.W5Stories.Phrase.subtitle, button: .init(title: TKLocales.W5Stories.Phrase.button, action: onTapCallback), backgroundImage: .TKUIKit.Images.storyPhrase)
-    ])
-    
-    let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.setNavigationBarHidden(true, animated: false)
-    
-    router.present(navigationController)
+    let storiesViewController = TKStories.storiesViewController(
+      models: [
+        StoriesPageModel(
+          title: TKLocales.W5Stories.Gasless.title,
+          description: TKLocales.W5Stories.Gasless.subtitle,
+          backgroundImage: .TKUIKit.Images.storyGasless
+        ),
+        StoriesPageModel(
+          title: TKLocales.W5Stories.Messages.title,
+          description: TKLocales.W5Stories.Messages.subtitle,
+          backgroundImage: .TKUIKit.Images.storyMessages
+        ),
+        StoriesPageModel(
+          title: TKLocales.W5Stories.Phrase.title,
+          description: TKLocales.W5Stories.Phrase.subtitle,
+          button: StoriesPageModel.Button(
+            title: TKLocales.W5Stories.Phrase.button,
+            action: { [weak self] in
+              self?.router.dismiss(animated: true, completion: {
+                self?.didTapAddW5Wallet(wallet: wallet)
+              })
+            }
+          ),
+          backgroundImage: .TKUIKit.Images.storyPhrase
+        )
+      ]
+    )
+    router.present(storiesViewController)
   }
   
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {

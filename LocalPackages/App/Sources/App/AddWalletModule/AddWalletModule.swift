@@ -57,11 +57,12 @@ struct AddWalletModule {
   func createAddW5WalletCoordinator(wallet: Wallet, router: ViewControllerRouter) -> AddDifferentVersionWalletCoordinator {
     let coordinator = AddDifferentVersionWalletCoordinator(
       router: router,
-      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
-      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
-      wallet: wallet,
       revisionToAdd: .v5R1,
-      storesAssembly: dependencies.storesAssembly
+      wallet: wallet,
+      securityStore: dependencies.storesAssembly.securityStore,
+      mnemonicsRepository: dependencies.walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      addController: dependencies.walletsUpdateAssembly.walletAddController(),
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider
     )
     return coordinator
   }
