@@ -12,6 +12,7 @@
 "actions.loading" = "Загрузка";
 "actions.failed" = "Неуспешно";
 "actions.ok" = "Хорошо";
+"actions.service_unavailable" = "Сервис недоступен";
 
 "errors.unknown" = "Ошибка";
 

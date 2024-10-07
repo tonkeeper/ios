@@ -5,6 +5,7 @@ import TKCore
 import KeeperCore
 import TonSwift
 import TKLocalize
+import TKScreenKit
 
 public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -55,6 +56,7 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
 }
 
 private extension CollectiblesDetailsCoordinator {
+
   func openDetails() {
     let module = NFTDetailsAssembly.module(
       wallet: wallet,
@@ -81,10 +83,68 @@ private extension CollectiblesDetailsCoordinator {
     module.output.didTapRenewDomain = { [weak self] wallet, nft in
       self?.openRenewDomain(wallet: wallet, nft: nft)
     }
-    
+
+    module.output.didTapProgrammaticButton = { [weak self] url in
+      guard let self = self else {
+        return
+      }
+
+      PasscodeInputCoordinator.present(
+        parentCoordinator: self,
+        parentRouter: self.router,
+        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+        onCancel: { },
+        onInput: { passcode in
+          Task {
+            let proofProvider = TonConnectNFTProofProvider(
+              wallet: self.wallet,
+              nft: self.nft,
+              mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+            )
+            guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
+              await MainActor.run {
+                let configuration = ToastPresenter.Configuration(title: TKLocales.Actions.serviceUnavailable)
+                ToastPresenter.showToast(configuration: configuration)
+              }
+              
+              return
+            }
+
+            await MainActor.run {
+              self.openDapp(with: composedURL)
+            }
+          }
+        })
+    }
+
     router.push(viewController: module.view)
   }
-  
+
+  func openDapp(with url: URL) {
+    let dapp = Dapp(
+      name: "",
+      description: "",
+      icon: nil,
+      poster: nil,
+      url: url,
+      textColor: nil,
+      excludeCountries: nil,
+      includeCountries: nil
+    )
+
+    let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
+    let coordinator = DappCoordinator(
+      router: controllerRouter,
+      dapp: dapp,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+
+    addChild(coordinator)
+    coordinator.start()
+  }
+
   func openTransfer(nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()

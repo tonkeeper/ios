@@ -55,8 +55,9 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   }
   
   func didSelectNftAt(index: Int) {
-    guard index < nfts.count else { return }
-    let nft = nfts[index]
+    guard let nft = nfts[safe: index] else {
+      return
+    }
     didSelectNFT?(nft, wallet)
   }
   

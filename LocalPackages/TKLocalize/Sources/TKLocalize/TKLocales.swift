@@ -91,6 +91,8 @@ public enum TKLocales {
     public static let paste = TKLocales.tr("Localizable", "actions.paste", fallback: "Paste")
     /// Save
     public static let save = TKLocales.tr("Localizable", "actions.save", fallback: "Save")
+    /// Service unavailable
+    public static let serviceUnavailable = TKLocales.tr("Localizable", "actions.service_unavailable", fallback: "Service unavailable")
     /// Sign Out
     public static let signOut = TKLocales.tr("Localizable", "actions.sign_out", fallback: "Sign Out")
   }

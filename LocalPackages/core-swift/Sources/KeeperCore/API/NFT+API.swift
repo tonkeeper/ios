@@ -85,7 +85,24 @@ extension NFT {
       case .unknownDefaultOpenApi: return .unknown
       }
     }()
-    
+
+    var buttons: [Button]?
+    if let metadataButtons = nftItem.metadata["buttons"]?.value as? [AnyObject] {
+      buttons = metadataButtons
+        .compactMap { $0 as? [String: AnyObject] }
+        .compactMap { metaButton -> Button in
+          let label: String? = metaButton?["label"] as? String
+          let style: String? = metaButton?["style"] as? String
+          var url: URL?
+          if let stringURL = metaButton?["uri"] as? String,
+             let resultURL = URL(string: stringURL)  {
+            url = resultURL
+          }
+
+          return Button(label: label, style: style, url: url)
+        }
+    }
+
     self.address = address
     self.owner = owner
     self.name = name
@@ -95,6 +112,7 @@ extension NFT {
     self.preview = Self.mapPreviews(nftItem.previews)
     self.collection = collection
     self.dns = nftItem.dns
+    self.programmaticButtons = buttons
     self.sale = sale
     self.isHidden = isHidden
     self.trust = trust

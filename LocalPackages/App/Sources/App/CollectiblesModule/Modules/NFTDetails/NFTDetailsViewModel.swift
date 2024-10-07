@@ -10,6 +10,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
+  var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
 }
 
 protocol NFTDetailsViewModel: AnyObject {
@@ -24,7 +25,7 @@ protocol NFTDetailsViewModel: AnyObject {
 }
 
 final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsModuleOutput {
-  
+
   private struct DNSResolveData {
     let linkedAddressResult: Result<FriendlyAddress, Swift.Error>
     let expirationDateResult: Result<Date?, Swift.Error>
@@ -70,7 +71,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
-  
+  var didTapProgrammaticButton: ((_ url: URL) -> Void)?
+
   // MARK: - NFTDetailsViewModel
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
@@ -87,7 +89,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   func didTapClose() {
     didClose?()
   }
-  
+
   // MARK: - Private
   
   private func update() {
@@ -141,7 +143,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 
     let itemInformationViewModel: NFTDetailsItemInformationView.Model = {
       let name: String = isSecureMode ? .secureModeValueLong : nft.notNilName
-      let collectionName: String = isSecureMode ? .secureModeValueShort : nft.collection?.notEmptyName ?? "Single NFT"
+      let collectionName: String = isSecureMode ? .secureModeValueShort : nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft
       let nftDescription: String? = isSecureMode ? .secureModeValueShort : nft.description
       return NFTDetailsItemInformationView.Model(
         name: name,
@@ -269,7 +271,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
     
     buttonsConfigurations.append(contentsOf: createLinkButtons())
-    
+
+    buttonsConfigurations.append(contentsOf: composeProgrammaticButtons())
+
     guard !buttonsConfigurations.isEmpty else {
       return nil
     }
@@ -302,7 +306,59 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     return NFTDetailsButtonView.Model(buttonConfiguration: buttonConfiguration,
                                       description: description)
   }
-  
+
+  private func composeProgrammaticButtons() -> [NFTDetailsButtonView.Model] {
+    guard let buttons = nft.programmaticButtons, nft.trust == .whitelist else {
+      return []
+    }
+
+    return buttons.enumerated().compactMap { button -> NFTDetailsButtonView.Model? in
+      guard let label = button.element.label else {
+        return nil
+      }
+
+      let isPrimary = button.offset == 0
+      let category = TKActionButtonCategory.secondary
+
+      let backgroundColors: [TKButtonState : UIColor]
+      if isPrimary {
+        backgroundColors = [
+          .normal: UIColor.Button.primaryBackgroundGreen,
+          .highlighted: UIColor.Button.primaryBackgroundGreenHighlighted,
+          .disabled: UIColor.Button.primaryBackgroundGreenDisabled
+        ]
+      } else {
+        backgroundColors = [
+          .normal: category.backgroundColor,
+          .highlighted: category.highlightedBackgroundColor,
+          .disabled: category.disabledBackgroundColor
+        ]
+      }
+      let size = TKActionButtonSize.large
+      let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
+      var configuration = TKButton.Configuration(
+        content: content,
+        contentPadding: size.padding,
+        textStyle: TKActionButtonSize.large.textStyle,
+        textColor: category.titleColor,
+        iconTintColor: isPrimary ? category.titleColor : .Icon.secondary,
+        backgroundColors: backgroundColors,
+        cornerRadius: size.cornerRadius,
+        loaderSize: size.loaderViewSize
+      )
+
+      configuration.iconPosition = .right
+      configuration.action = { [weak self] in
+        guard let url = button.element.url else {
+          return
+        }
+
+        self?.didTapProgrammaticButton?(url)
+      }
+      return .init(buttonConfiguration: configuration, description: nil)
+    }
+  }
+
   private func createLinkButtons() -> [NFTDetailsButtonView.Model] {
     switch dnsResolveState {
     case .idle:
