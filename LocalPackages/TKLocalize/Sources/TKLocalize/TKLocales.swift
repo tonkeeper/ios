@@ -81,6 +81,12 @@ public enum TKLocales {
     public static let edit = TKLocales.tr("Localizable", "actions.edit", fallback: "Edit")
     /// Failed
     public static let failed = TKLocales.tr("Localizable", "actions.failed", fallback: "Failed")
+    /// Hide and Report Spam
+    public static let hideAndReportSpam = TKLocales.tr("Localizable", "actions.hide_and_report_spam", fallback: "Hide and Report Spam")
+    /// Hide Collection
+    public static let hideCollection = TKLocales.tr("Localizable", "actions.hide_collection", fallback: "Hide Collection")
+    /// Hide NFT
+    public static let hideNft = TKLocales.tr("Localizable", "actions.hide_nft", fallback: "Hide NFT")
     /// Loading
     public static let loading = TKLocales.tr("Localizable", "actions.loading", fallback: "Loading")
     /// More
@@ -97,6 +103,8 @@ public enum TKLocales {
     public static let serviceUnavailable = TKLocales.tr("Localizable", "actions.service_unavailable", fallback: "Service unavailable")
     /// Sign Out
     public static let signOut = TKLocales.tr("Localizable", "actions.sign_out", fallback: "Sign Out")
+    /// View on Tonviewer
+    public static let viewOnTonviewier = TKLocales.tr("Localizable", "actions.view_on_tonviewier", fallback: "View on Tonviewer")
   }
   public enum AddWallet {
     /// Create a new wallet or add an existing one.
@@ -324,6 +332,10 @@ public enum TKLocales {
     public static let tokens = TKLocales.tr("Localizable", "choose_wallets.tokens", fallback: "tokens")
   }
   public enum Collectibles {
+    /// Collection hidden
+    public static let collectionHidden = TKLocales.tr("Localizable", "collectibles.collection_hidden", fallback: "Collection hidden")
+    /// NFT hidden
+    public static let nftHidden = TKLocales.tr("Localizable", "collectibles.nft_hidden", fallback: "NFT hidden")
     /// Collectibles
     public static let title = TKLocales.tr("Localizable", "collectibles.title", fallback: "Collectibles")
   }

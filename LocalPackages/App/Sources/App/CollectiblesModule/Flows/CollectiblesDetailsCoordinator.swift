@@ -128,6 +128,32 @@ private extension CollectiblesDetailsCoordinator {
       self.openDapp(title: "Tonviewer", url: url)
     }
 
+    module.output.didRequestHidingNFT = { [weak self] in
+      Task {
+        guard let self = self else {
+          return
+        }
+
+        let nftManagment = self.keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: self.wallet)
+
+        let toastTitle: String
+        if let collection = self.nft.collection {
+          toastTitle = TKLocales.Collectibles.collectionHidden
+          await nftManagment.hideItem(.collection(collection.address))
+        } else {
+          toastTitle = TKLocales.Collectibles.nftHidden
+          await nftManagment.hideItem(.singleItem(self.nft.address))
+        }
+
+        await MainActor.run {
+          self.router.dismiss(animated: true, completion: {
+            let configuration = ToastPresenter.Configuration(title: toastTitle)
+            ToastPresenter.showToast(configuration: configuration)
+          })
+        }
+      }
+    }
+
     router.push(viewController: module.view)
   }
 

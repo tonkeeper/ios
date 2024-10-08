@@ -12,6 +12,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
   var didRequestTonviewerShowing: (() -> Void)? { get set }
+  var didRequestHidingNFT: (() -> Void)? { get set }
 }
 
 protocol NFTDetailsViewModel: AnyObject {
@@ -20,7 +21,8 @@ protocol NFTDetailsViewModel: AnyObject {
   var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)? { get set }
   var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)? { get set }
   var didUpdateDetailsView: ((NFTDetailsDetailsView.Model) -> Void)? { get set }
-  
+  var didUpdateMenuItems: (([TKPopupMenuItem]) -> Void)? { get set }
+
   func viewDidLoad()
   func didTapClose()
 }
@@ -54,7 +56,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let wallet: Wallet
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsV3Store
-  
+
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
@@ -74,6 +76,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
   var didRequestTonviewerShowing: (() -> Void)?
+  var didRequestHidingNFT: (() -> Void)?
 
   // MARK: - NFTDetailsViewModel
   
@@ -82,7 +85,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)?
   var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)?
   var didUpdateDetailsView: ((NFTDetailsDetailsView.Model) -> Void)?
-  
+  var didUpdateMenuItems: (([TKPopupMenuItem]) -> Void)?
+
   func viewDidLoad() {
     resolveDNS()
     update()
@@ -101,8 +105,36 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     didUpdateButtonsView?(createButtonsViewModel())
     didUpdateDetailsView?(createDetailsViewModel())
     didUpdatePropertiesView?(createPropertiesViewModel(isSecureMode: isSecureMode))
+    didUpdateMenuItems?(composeMenuItems())
   }
-  
+
+  private func composeMenuItems() -> [TKPopupMenuItem] {
+    let hideNftTitle: String
+    if nft.collection != nil {
+      hideNftTitle = TKLocales.Actions.hideCollection
+    } else {
+      hideNftTitle = TKLocales.Actions.hideNft
+    }
+
+    let hideNftITem = TKPopupMenuItem(
+      title: hideNftTitle,
+      icon: .TKUIKit.Icons.Size16.eyeDisable,
+      selectionHandler: { [weak self] in
+        self?.didRequestHidingNFT?()
+      }
+    )
+
+    let tonViewerItem = TKPopupMenuItem(
+      title: TKLocales.Actions.viewOnTonviewier,
+      icon: .TKUIKit.Icons.Size16.globe,
+      selectionHandler: { [weak self] in
+        self?.didRequestTonviewerShowing?()
+      }
+    )
+
+    return [hideNftITem, tonViewerItem]
+  }
+
   private func createTitleViewModel(isSecureMode: Bool) -> TKUINavigationBarTitleView.Model {
     let captionModel: TKPlainButton.Model? = {
       switch nft.trust {

@@ -14,6 +14,10 @@
 "actions.ok" = "OK";
 "actions.service_unavailable" = "Service unavailable";
 "actions.open" = "Open";
+"actions.hide_nft" = "Hide NFT";
+"actions.hide_collection" = "Hide Collection";
+"actions.hide_and_report_spam" = "Hide and Report Spam";
+"actions.view_on_tonviewier" = "View on Tonviewer";
 
 "errors.unknown" = "Error";
 
@@ -33,6 +37,8 @@
 "camera_permission.button" = "Open Settings";
 
 "collectibles.title" = "Collectibles";
+"collectibles.collection_hidden" = "Collection hidden";
+"collectibles.nft_hidden" = "NFT hidden";
 
 "purchases.title" = "Purchases";
 "purchases.empty_placeholder" = "Your collectibles\nwill be shown here";

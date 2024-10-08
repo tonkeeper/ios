@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> {
   private let viewModel: NFTDetailsViewModel
@@ -62,6 +63,20 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
       } else {
         self?.customView.propertiesView.isHidden = true
       }
+    }
+
+    viewModel.didUpdateMenuItems = { [weak self] items in
+      self?.customView.navigationBar.rightViews = [
+        TKUINavigationBar.createMoreButton(action: { targetView in
+          TKPopupMenuController.show(
+            sourceView: targetView,
+            position: .bottomRight(inset: 8),
+            width: 0,
+            items: items,
+            isSelectable: false,
+            selectedIndex: nil)
+        })
+      ]
     }
   }
 }
