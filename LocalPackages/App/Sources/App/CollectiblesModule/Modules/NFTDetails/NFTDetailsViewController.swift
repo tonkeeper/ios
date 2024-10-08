@@ -1,6 +1,5 @@
 import UIKit
 import TKUIKit
-import TKLocalize
 
 final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> {
   private let viewModel: NFTDetailsViewModel

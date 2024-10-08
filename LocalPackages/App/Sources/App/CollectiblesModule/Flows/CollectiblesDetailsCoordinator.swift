@@ -129,11 +129,11 @@ private extension CollectiblesDetailsCoordinator {
     }
 
     module.output.didRequestHidingNFT = { [weak self] in
-      Task {
-        guard let self = self else {
-          return
-        }
+      guard let self = self else {
+        return
+      }
 
+      Task {
         let nftManagment = self.keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: self.wallet)
 
         let toastTitle: String
