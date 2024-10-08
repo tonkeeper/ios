@@ -9,7 +9,7 @@ protocol BuyListPopUpModuleOutput: AnyObject {
 }
 
 protocol BuyListPopUpViewModel: AnyObject {
-  var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
+  var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
   var headerImageView: ((HistoryEventDetailsNFTHeaderImageView.Model) -> UIView)? { get set }
   var descriptionView: ((TKDetailsDescriptionView.Model) -> UIView)? { get set }
   var doNotShowView: ((TKDetailsTickView.Model) -> UIView)? { get set }
@@ -25,7 +25,7 @@ final class BuyListPopUpViewModelImplementation: BuyListPopUpViewModel, BuyListP
   
   // MARK: - BuyListPopUpViewModel
   
-  var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
+  var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   var headerImageView: ((HistoryEventDetailsNFTHeaderImageView.Model) -> UIView)?
   var descriptionView: ((TKDetailsDescriptionView.Model) -> UIView)?
   var doNotShowView: ((TKDetailsTickView.Model) -> UIView)?
@@ -58,38 +58,21 @@ final class BuyListPopUpViewModelImplementation: BuyListPopUpViewModel, BuyListP
 private extension BuyListPopUpViewModelImplementation {
   func configure() {
     
-    var headerItems = [TKModalCardViewController.Configuration.Item]()
+    var isDoNotShowMarked = false
     
-    if let headerImageView = headerImageView?(
-      HistoryEventDetailsNFTHeaderImageView.Model(
-        image: .url(buySellItem.fiatItem.iconURL),
-        size: CGSize(
-          width: 64,
-          height: 64
-        )
-      )
-    ) {
-      headerItems.append(.customView(headerImageView, bottomSpacing: 20))
-    }
+    let imageItem = TKPopUp.Component.ImageComponent(
+      image: TKImageView.Model(image: .urlImage(buySellItem.fiatItem.iconURL),
+                               size: .size(CGSize(width: 64, height: 64)),
+                               corners: .cornerRadius(cornerRadius: 12),
+                               padding: .zero),
+      bottomSpace: 20
+    )
     
-    headerItems.append(contentsOf: [
-      .text(.init(text: buySellItem.fiatItem.title.withTextStyle(
-        .h2,
-        color: .Text.primary,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      ), numberOfLines: 1), bottomSpacing: 4),
-      .text(.init(text: buySellItem.fiatItem.description?.withTextStyle(
-        .body1,
-        color: .Text.secondary,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      ), numberOfLines: 0), bottomSpacing: 0)
-    ])
-    
-    let header = TKModalCardViewController.Configuration.Header(items: headerItems)
-    
-    var contentItems = [TKModalCardViewController.Configuration.ContentItem]()
+    let titleCaption = TKPopUp.Component.TitleCaption(
+      title: buySellItem.fiatItem.title,
+      caption: buySellItem.fiatItem.description,
+      bottomSpace: 16
+    )
     
     let descriptionButtons: [TKDetailsDescriptionView.Model.Button] = buySellItem.fiatItem.infoButtons.map { infoButton in
       TKDetailsDescriptionView.Model.Button(text: infoButton.title, closure: { [weak self] in
@@ -97,56 +80,63 @@ private extension BuyListPopUpViewModelImplementation {
         self?.urlOpener.open(url: url)
       })
     }
-    if let descriptionView = descriptionView?(
-      TKDetailsDescriptionView.Model(
-        title: .externalWarningText,
-        buttons: descriptionButtons
-      )) {
-      contentItems.append(.item(.customView(descriptionView, bottomSpacing: 32)))
+    let description: TKPopUp.Item = {
+      TKPopUp.Component.GroupComponent(
+        padding: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
+        items: [
+          TKPopUp.Component.DetailsDescription(
+            model: TKDetailsDescriptionView.Model(
+              title: .externalWarningText,
+              buttons: descriptionButtons
+            ))
+        ],
+        bottomSpace: 16
+      )
+    }()
+    
+    var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+    buttonConfiguration.content = TKButton.Configuration.Content(
+      title: .plainString("\(TKLocales.Actions.open) \(buySellItem.fiatItem.title)")
+    )
+    buttonConfiguration.action = { [weak self] in
+      guard let self else { return }
+      appSettings.setIsBuySellItemMarkedDoNotShowWarning(
+        self.buySellItem.fiatItem.id, 
+        doNotShow: isDoNotShowMarked
+      )
+      self.didTapOpen?(self.buySellItem)
     }
     
-    contentItems.append(
-      .item(
-        .button(
-          TKModalCardViewController.Configuration.Button(
-            title: "Open \(buySellItem.fiatItem.title)",
-            size: .large,
-            category: .primary,
-            isEnabled: true,
-            isActivity: false,
-            tapAction: { [weak self] _, _ in
-              guard let self else { return }
-              self.appSettings.setIsBuySellItemMarkedDoNotShowWarning(
-                self.buySellItem.fiatItem.id,
-                doNotShow: self.doNotShowAgain
-              )
-              self.didTapOpen?(self.buySellItem)
-            }
-          ),
-          bottomSpacing: 16
-        )
-      )
-    )
+    let buttons = TKPopUp.Component.ButtonGroupComponent(buttons: [
+      TKPopUp.Component.ButtonComponent(buttonConfiguration: buttonConfiguration)
+    ], bottomSpace: 16)
     
-    if let doNotShowView = doNotShowView?(
-      TKDetailsTickView.Model(
-        text: .checkmarkTitle,
+    let doNotShowItem = TKPopUp.Component.TickItem(
+      model: TKDetailsTickView.Model(
+        text: TKLocales.Tick.doNotShowAgain,
         tick: TKDetailsTickView.Model.Tick(
-          isSelected: false,
-          closure: { [weak self] in
-            self?.doNotShowAgain = $0
+          isSelected: isDoNotShowMarked,
+          closure: {
+            isDoNotShowMarked = $0
           }
         )
-      )
-    ) {
-      contentItems.append(.item(.customView(doNotShowView, bottomSpacing: 4)))
-    }
-    
-    let configuration = TKModalCardViewController.Configuration(
-      header: header,
-      content: TKModalCardViewController.Configuration.Content(items: contentItems),
-      actionBar: nil
+      ),
+      bottomSpace: 16
     )
+    
+    let configuration = TKPopUp.Configuration(
+      items: [
+        imageItem,
+        titleCaption,
+        description,
+        buttons,
+        doNotShowItem
+      ]
+    )
+    
     didUpdateConfiguration?(configuration)
   }
 }

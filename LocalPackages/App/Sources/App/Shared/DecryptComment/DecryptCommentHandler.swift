@@ -64,33 +64,33 @@ final class DecryptCommentHandler {
         coreAssembly.appSettings.isDecryptCommentWarningDoNotShow = isDoNotShowMarked
         bottomSheetViewController?.dismiss(completion: onConfirm)
       }
-      return PopUp.Component.ButtonComponent(buttonConfiguration: configuration)
+      return TKPopUp.Component.ButtonComponent(buttonConfiguration: configuration)
     }()
     
-    let configuration = PopUp.Configuration(
+    let configuration = TKPopUp.Configuration(
       items: [
-        PopUp.Component.ImageComponent(
+        TKPopUp.Component.ImageComponent(
           image: TKImageView.Model(image: .image(.TKUIKit.Icons.Size128.lock), tintColor: .Accent.green, size: .auto, corners: .none),
           bottomSpace: 12
         ),
-        PopUp.Component.GroupComponent(
+        TKPopUp.Component.GroupComponent(
           padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
           items: [
-            PopUp.Component.LabelComponent(
+            TKPopUp.Component.LabelComponent(
               text: TKLocales.DecryptCommentPopup.title
                 .withTextStyle(.h2, color: .Text.primary, alignment: .center),
               numberOfLines: 0,
               bottomSpace: 4
             ),
-            PopUp.Component.LabelComponent(
+            TKPopUp.Component.LabelComponent(
               text: TKLocales.DecryptCommentPopup.caption
                 .withTextStyle(.body1, color: .Text.secondary, alignment: .center),
               numberOfLines: 0),
           ]),
-        PopUp.Component.ButtonGroupComponent(buttons: [
+        TKPopUp.Component.ButtonGroupComponent(buttons: [
           decryptButtonItem
         ]),
-        PopUp.Component.TickItem(
+        TKPopUp.Component.TickItem(
           model: TKDetailsTickView.Model(
             text: TKLocales.Tick.doNotShowAgain,
             tick: TKDetailsTickView.Model.Tick(
@@ -105,7 +105,7 @@ final class DecryptCommentHandler {
       ]
     )
     
-    let popupViewController = PopUp.ViewController()
+    let popupViewController = TKPopUp.ViewController(configuration: configuration)
     popupViewController.configuration = configuration
     let viewController = TKBottomSheetViewController(contentViewController: popupViewController)
     bottomSheetViewController = viewController

@@ -1,22 +1,21 @@
 import UIKit
-import TKUIKit
 
-extension PopUp {
+public extension TKPopUp {
   final class ViewController: UIViewController, TKBottomSheetScrollContentViewController {
-    var configuration: PopUp.Configuration? {
+    public var configuration: TKPopUp.Configuration {
       didSet {
         didUpdateConfiguration()
       }
     }
     
-    let scrollView = UIScrollView()
+    public let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
     
-    var didUpdateHeight: (() -> Void)?
+    public var didUpdateHeight: (() -> Void)?
     
-    var headerItem: TKPullCardHeaderItem?
-    var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
-    func calculateHeight(withWidth width: CGFloat) -> CGFloat {
+    public var headerItem: TKPullCardHeaderItem?
+    public var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
+    public func calculateHeight(withWidth width: CGFloat) -> CGFloat {
       contentStackView.systemLayoutSizeFitting(
         CGSize(width: width, height: 0),
         withHorizontalFittingPriority: .required,
@@ -24,7 +23,16 @@ extension PopUp {
       ).height
     }
     
-    override func viewDidLoad() {
+    public init(configuration: TKPopUp.Configuration = .empty) {
+      self.configuration = configuration
+      super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+    }
+    
+    public override func viewDidLoad() {
       super.viewDidLoad()
       
       setup()
@@ -33,7 +41,6 @@ extension PopUp {
     
     private func didUpdateConfiguration() {
       contentStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-      guard let configuration else { return }
       for item in configuration.items {
         let view = item.getView()
         contentStackView.addArrangedSubview(view)

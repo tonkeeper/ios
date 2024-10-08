@@ -10,12 +10,12 @@ class BuyListPopUpViewController: GenericViewViewController<BuyListPopUpView>, T
   
   // MARK: - Child
   
-  private let modalCardViewController = TKModalCardViewController()
+  private let popUpViewController = TKPopUp.ViewController()
   
   // MARK: - TKBottomSheetScrollContentViewController
   
   var scrollView: UIScrollView {
-    modalCardViewController.scrollView
+    popUpViewController.scrollView
   }
   
   var didUpdateHeight: (() -> Void)?
@@ -25,7 +25,7 @@ class BuyListPopUpViewController: GenericViewViewController<BuyListPopUpView>, T
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
   
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    modalCardViewController.calculateHeight(withWidth: width)
+    popUpViewController.calculateHeight(withWidth: width)
   }
   
   // MARK: - Init
@@ -53,14 +53,14 @@ class BuyListPopUpViewController: GenericViewViewController<BuyListPopUpView>, T
 
 private extension BuyListPopUpViewController {
   func setup() {
-    addChild(modalCardViewController)
-    customView.embedContent(modalCardViewController.view)
-    modalCardViewController.didMove(toParent: self)
+    addChild(popUpViewController)
+    customView.embedContent(popUpViewController.view)
+    popUpViewController.didMove(toParent: self)
   }
   
   func setupBindings() {
-    viewModel.didUpdateConfiguration = { [weak modalCardViewController, weak self] configuration in
-      modalCardViewController?.configuration = configuration
+    viewModel.didUpdateConfiguration = { [weak popUpViewController, weak self] configuration in
+      popUpViewController?.configuration = configuration
       self?.didUpdateHeight?()
     }
     

@@ -1,6 +1,6 @@
 import UIKit
 
-extension PopUp {
+public extension TKPopUp {
   protocol Item {
     var bottomSpace: CGFloat { get }
     func getView() -> UIView
