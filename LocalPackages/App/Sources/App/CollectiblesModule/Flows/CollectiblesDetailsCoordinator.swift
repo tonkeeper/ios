@@ -118,11 +118,8 @@ private extension CollectiblesDetailsCoordinator {
         })
     }
 
-    module.output.didRequestTonviewerShowing = { [weak self] in
-      guard let self = self else {
-        return
-      }
-      guard let url = URL(string: "https://tonviewer.com/\(self.nft.address.toFriendly().toString())?section=nft") else {
+    module.output.didRequestTonviewerShowing = { [weak self] context in
+      guard let self = self, let url = TonviewerLinkBuilder(nft: self.nft).buildLink(context) else {
         return
       }
       self.openDapp(title: "Tonviewer", url: url)

@@ -11,7 +11,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
-  var didRequestTonviewerShowing: (() -> Void)? { get set }
+  var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
   var didRequestHidingNFT: (() -> Void)? { get set }
 }
 
@@ -39,7 +39,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     case loading
     case resolved(DNSResolveData)
   }
-  
+
   private var dnsResolveState: DNSResolveState = .idle {
     didSet {
       update()
@@ -75,7 +75,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
-  var didRequestTonviewerShowing: (() -> Void)?
+  var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
   var didRequestHidingNFT: (() -> Void)?
 
   // MARK: - NFTDetailsViewModel
@@ -128,7 +128,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: TKLocales.Actions.viewOnTonviewier,
       icon: .TKUIKit.Icons.Size16.globe,
       selectionHandler: { [weak self] in
-        self?.didRequestTonviewerShowing?()
+        self?.didRequestTonviewerShowing?(.history)
       }
     )
 
@@ -218,7 +218,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       )
 
     let buttonModel = TKPlainButton.Model(title: buttonTitle, icon: nil, action: { [weak self] in
-      self?.didRequestTonviewerShowing?()
+      self?.didRequestTonviewerShowing?(.nftItem)
     })
 
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
