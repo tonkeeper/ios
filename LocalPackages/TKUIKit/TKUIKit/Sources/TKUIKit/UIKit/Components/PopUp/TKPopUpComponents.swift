@@ -211,3 +211,22 @@ public extension TKPopUp.Component {
     }
   }
 }
+
+public extension TKPopUp.Component {
+  struct List: TKPopUp.Item {
+    public func getView() -> UIView {
+      let view = TKListContainerView()
+      view.configuration = configuration
+      return view
+    }
+    
+    private let configuration: TKListContainerView.Configuration
+    public let bottomSpace: CGFloat
+    
+    init(configuration: TKListContainerView.Configuration,
+         bottomSpace: CGFloat = 0) {
+      self.configuration = configuration
+      self.bottomSpace = bottomSpace
+    }
+  }
+}

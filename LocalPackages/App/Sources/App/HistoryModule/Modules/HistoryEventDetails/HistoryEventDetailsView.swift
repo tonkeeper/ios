@@ -43,8 +43,8 @@ private extension HistoryEventDetailsView {
     NSLayoutConstraint.activate([
       modalContentContainer.topAnchor.constraint(equalTo: topAnchor),
       modalContentContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      modalContentContainer.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
-      modalContentContainer.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh)
+      modalContentContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      modalContentContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
     ])
   }
 }

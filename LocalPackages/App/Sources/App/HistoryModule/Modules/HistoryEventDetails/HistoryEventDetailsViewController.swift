@@ -3,7 +3,7 @@ import TKUIKit
 
 final class HistoryEventDetailsViewController: GenericViewViewController<HistoryEventDetailsView>, TKBottomSheetScrollContentViewController {
   var scrollView: UIScrollView {
-    modalCardViewController.scrollView
+    popUpViewController.scrollView
   }
   
   var didUpdateHeight: (() -> Void)?
@@ -13,12 +13,12 @@ final class HistoryEventDetailsViewController: GenericViewViewController<History
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
   
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    modalCardViewController.calculateHeight(withWidth: width)
+    popUpViewController.calculateHeight(withWidth: width)
   }
 
   private let viewModel: HistoryEventDetailsViewModel
   
-  private let modalCardViewController = TKModalCardViewController()
+  private let popUpViewController = TKPopUp.ViewController()
   
   init(viewModel: HistoryEventDetailsViewModel) {
     self.viewModel = viewModel
@@ -41,7 +41,7 @@ final class HistoryEventDetailsViewController: GenericViewViewController<History
 private extension HistoryEventDetailsViewController {
   func setupBindings() {
     viewModel.didUpdateConfiguration = { [weak self] configuration in
-      self?.modalCardViewController.configuration = configuration
+      self?.popUpViewController.configuration = configuration
       self?.didUpdateHeight?()
     }
   }
@@ -51,6 +51,8 @@ private extension HistoryEventDetailsViewController {
   }
   
   func setupModalContent() {
-    customView.embedContent(modalCardViewController.view)
+    addChild(popUpViewController)
+    customView.embedContent(popUpViewController.view)
+    popUpViewController.didMove(toParent: self)
   }
 }
