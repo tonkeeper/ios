@@ -18,6 +18,15 @@ public final class AppSettings {
     let key = String.buySellItemDoNotShowKey + "_\(buySellItemId)"
     userDefaults.set(doNotShow, forKey: key)
   }
+
+  public var isDecryptCommentWarningDoNotShow: Bool {
+    get {
+      userDefaults.bool(forKey: .decryptCommentDoNotShowKey)
+    }
+    set {
+      userDefaults.setValue(newValue, forKey: .decryptCommentDoNotShowKey)
+    }
+  }
   
   public var isSecureMode: Bool {
     get {
@@ -59,6 +68,7 @@ public final class AppSettings {
 
 private extension String {
   static let buySellItemDoNotShowKey = "buy_sell_item_do_not_show_warning"
+  static let decryptCommentDoNotShowKey = "decrypt_comment_do_not_show_warning"
   static let isSecureModeKey = "is_secure_mode"
   static let selectedCountryCode = "selected_country_code"
   static let installDeviceId = "install_device_id"

@@ -292,8 +292,6 @@ public enum TKLocales {
     }
   }
   public enum BuyListPopup {
-    /// Do not show again
-    public static let doNotShowAgain = TKLocales.tr("Localizable", "buy_list_popup.do_not_show_again", fallback: "Do not show again")
     /// You are opening an external app not operated by Tonkeeper.
     public static let youAreOpeningExternalApp = TKLocales.tr("Localizable", "buy_list_popup.you_are_opening_external_app", fallback: "You are opening an external app not operated by Tonkeeper.")
   }
@@ -412,6 +410,14 @@ public enum TKLocales {
     public static let today = TKLocales.tr("Localizable", "dates.today", fallback: "Today")
     /// Yesterday
     public static let yesterday = TKLocales.tr("Localizable", "dates.yesterday", fallback: "Yesterday")
+  }
+  public enum DecryptCommentPopup {
+    /// Decrypt the comment
+    public static let button = TKLocales.tr("Localizable", "decrypt_comment_popup.button", fallback: "Decrypt the comment")
+    /// The comment is encrypted by sender and can only be decryptedby you. Please be careful with the content and beware of scams.
+    public static let caption = TKLocales.tr("Localizable", "decrypt_comment_popup.caption", fallback: "The comment is encrypted by sender and can only be decryptedby you. Please be careful with the content and beware of scams.")
+    /// Encrypted comment
+    public static let title = TKLocales.tr("Localizable", "decrypt_comment_popup.title", fallback: "Encrypted comment")
   }
   public enum DeleteWalletWarning {
     /// Delete Wallet Data
@@ -1009,6 +1015,10 @@ public enum TKLocales {
       /// System
       public static let system = TKLocales.tr("Localizable", "theme.options.system", fallback: "System")
     }
+  }
+  public enum Tick {
+    /// Do not show again
+    public static let doNotShowAgain = TKLocales.tr("Localizable", "tick.do_not_show_again", fallback: "Do not show again")
   }
   public enum Token {
     /// Unverified token

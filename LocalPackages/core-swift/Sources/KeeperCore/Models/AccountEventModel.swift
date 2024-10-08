@@ -42,6 +42,11 @@ public struct AccountEventModel {
       case empty(Address)
     }
     
+    public enum EncryptedComment {
+      case encrypted(EncryptedCommentPayload)
+      case decrypted(String?)
+    }
+    
     public let eventType: ActionType
     public let amount: String?
     public let subamount: String?
@@ -50,7 +55,7 @@ public struct AccountEventModel {
     public let rightTopDescription: String?
     public let status: String?
     public let comment: String?
-    public let encryptedCommentPayload: EncryptedCommentPayload?
+    public let encryptedComment: EncryptedComment?
     public let description: String?
     public let nft: ActionNFT?
     
@@ -62,7 +67,7 @@ public struct AccountEventModel {
          rightTopDescription: String?,
          status: String?,
          comment: String?,
-         encryptedCommentPayload: EncryptedCommentPayload? = nil,
+         encryptedComment: EncryptedComment? = nil,
          description: String? = nil,
          nft: ActionNFT?) {
       self.eventType = eventType
@@ -73,7 +78,7 @@ public struct AccountEventModel {
       self.rightTopDescription = rightTopDescription
       self.status = status
       self.comment = comment
-      self.encryptedCommentPayload = encryptedCommentPayload
+      self.encryptedComment = encryptedComment
       self.description = description
       self.nft = nft
     }

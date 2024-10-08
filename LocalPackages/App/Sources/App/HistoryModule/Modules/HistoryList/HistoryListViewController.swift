@@ -3,11 +3,7 @@ import TKUIKit
 import TKCoordinator
 
 final class HistoryListViewController: GenericViewViewController<HistoryListView>, ContentListEmptyViewControllerListViewController {
-  typealias Item = HistoryListItem
-  typealias Section = HistoryListSection
-  typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
-  typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
-  typealias EventCellConfiguration = UICollectionView.CellRegistration<HistoryCell, String>
+  typealias EventCellConfiguration = UICollectionView.CellRegistration<HistoryCell, HistoryList.EventID>
   typealias PaginationCellConfiguration = UICollectionView.CellRegistration<HistoryListPaginationCell, HistoryListPaginationCell.Model>
   typealias ShimmerCellConfiguration = UICollectionView.CellRegistration<HistoryListShimmerCell, HistoryListShimmerCell.Model>
   typealias ContainerViewConfiguration = UICollectionView.SupplementaryRegistration<TKReusableContainerView>
@@ -66,13 +62,7 @@ private extension HistoryListViewController {
       guard let self else { return }
       switch event {
       case .snapshotUpdate(let snapshot):
-        let contentOffset = self.customView.collectionView.contentOffset
-        self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
-          self.customView.collectionView.layoutIfNeeded()
-          self.customView.collectionView.contentOffset = contentOffset
-        })
-        self.customView.collectionView.layoutIfNeeded()
-        self.customView.collectionView.contentOffset = contentOffset
+        self.dataSource.apply(snapshot, animatingDifferences: false)
       }
     }
   }
@@ -109,10 +99,10 @@ private extension HistoryListViewController {
     return layout
   }
   
-  func setupDataSource() -> DataSource {
+  func setupDataSource() -> HistoryList.DataSource {
     let eventCellConfiguration = EventCellConfiguration {
       [weak viewModel] cell, indexPath, itemIdentifier in
-      guard let model = viewModel?.getEventCellConfiguration(identifier: itemIdentifier) else { return }
+      guard let model = viewModel?.getEventCellConfiguration(eventID: itemIdentifier) else { return }
       cell.configure(model: model)
     }
     
@@ -126,15 +116,15 @@ private extension HistoryListViewController {
       cell.configure(model: itemIdentifier)
     }
     
-    let dataSource = DataSource(collectionView: customView.collectionView) { [weak self]
+    let dataSource = HistoryList.DataSource(collectionView: customView.collectionView) { [weak self]
       collectionView, indexPath, itemIdentifier in
       guard let self else { return nil }
       switch itemIdentifier {
-      case .event(let identifier):
+      case .event(let eventId):
         return collectionView.dequeueConfiguredReusableCell(
           using: eventCellConfiguration,
           for: indexPath,
-          item: identifier)
+          item: eventId)
       case .pagination:
         return collectionView.dequeueConfiguredReusableCell(
           using: paginationCellConfiguration,
@@ -161,7 +151,7 @@ private extension HistoryListViewController {
       case .events(let eventsSection):
         supplementaryView.configure(
           model: TKListTitleView.Model(
-            title: viewModel?.getSectionHeader(date: eventsSection.date),
+            title: viewModel?.getSectionHeaderTitle(sectionID: eventsSection),
             textStyle: .h3
           )
         )

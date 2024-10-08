@@ -35,7 +35,7 @@ struct ConfirmTransactionMapper {
         isTestnet: wallet.isTestnet,
         nftProvider: { address in
           try? self.nftService.getNFT(address: address, isTestnet: wallet.isTestnet)
-        }
+        }, decryptedCommentProvider: { _ in return nil }
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
