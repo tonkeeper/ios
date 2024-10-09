@@ -394,7 +394,6 @@
 "nft_details.domain_on_sale_description" = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first.";
 "nft_details.nft_on_sale_description" = "NFT is on sale at the marketplace now. For transfer, you should remove it from sale first.";
 
-"buy_list_popup.do_not_show_again" = "Do not show again";
 "buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Tonkeeper.";
 
 "ugly_buy_list.buy" = "Buy";
@@ -481,3 +480,9 @@
 "w5_stories.phrase.title" = "Recovery Phrase Does Not Change";
 "w5_stories.phrase.subtitle" = "Old accounts and W5 use the same recovery phrase – when restoring accounts on a new device, both old and new will appear automatically.";
 "w5_stories.phrase.button" = "Add W5 Wallet";
+
+"decrypt_comment_popup.title" = "Encrypted comment";
+"decrypt_comment_popup.caption" = "The comment is encrypted by sender and can only be decrypted by you. Please be careful with the content and beware of scams.";
+"decrypt_comment_popup.button" = "Decrypt the comment";
+
+"tick.do_not_show_again" = "Do not show again";

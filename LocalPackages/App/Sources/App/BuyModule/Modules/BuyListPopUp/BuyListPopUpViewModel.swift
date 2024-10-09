@@ -152,6 +152,6 @@ private extension BuyListPopUpViewModelImplementation {
 }
 
 private extension String {
-  static let checkmarkTitle = TKLocales.BuyListPopup.doNotShowAgain
+  static let checkmarkTitle = TKLocales.Tick.doNotShowAgain
   static let externalWarningText = TKLocales.BuyListPopup.youAreOpeningExternalApp
 }

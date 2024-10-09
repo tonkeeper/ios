@@ -281,6 +281,17 @@ public final class StoresAssembly {
       return appSettingsStore
     }
   }
+  
+  private weak var _decryptedCommentStore: DecryptedCommentStore?
+  public var decryptedCommentStore: DecryptedCommentStore {
+    if let decryptedCommentStore = _decryptedCommentStore {
+      return decryptedCommentStore
+    } else {
+      let decryptedCommentStore = DecryptedCommentStore()
+      _decryptedCommentStore = decryptedCommentStore
+      return decryptedCommentStore
+    }
+  }
 }
 
 class Weak<T: AnyObject> {
