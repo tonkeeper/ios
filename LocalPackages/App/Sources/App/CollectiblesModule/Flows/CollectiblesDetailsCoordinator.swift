@@ -119,7 +119,13 @@ private extension CollectiblesDetailsCoordinator {
     }
 
     module.output.didRequestTonviewerShowing = { [weak self] context in
-      guard let self = self, let url = TonviewerLinkBuilder(nft: self.nft).buildLink(context) else {
+      guard let self = self else {
+        return
+      }
+
+      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
+      let linkBuilder = TonviewerLinkBuilder(nft: self.nft, configurationStore: configurationStore)
+      guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
       self.openDapp(title: "Tonviewer", url: url)

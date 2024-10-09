@@ -9,21 +9,33 @@ struct TonviewerLinkBuilder {
   }
 
   private let nft: NFT
+  private let configurationStore: ConfigurationStore
 
-  init(nft: NFT) {
+  init(nft: NFT, configurationStore: ConfigurationStore) {
     self.nft = nft
+    self.configurationStore = configurationStore
   }
 
-  func buildLink(_ context: TonviewerURLContext) -> URL? {
-    var urlComponents = URLComponents(string: "https://tonviewer.com/\(nft.address.toFriendly().toString())")
-    var queryItems = [URLQueryItem]()
+  func buildLink(context: TonviewerURLContext, isTestnet: Bool) -> URL? {
+    let configuration = configurationStore.getConfiguration()
+    let stringAddress = nft.address.toFriendly().toString()
+
+    let resultStringURL: String
     switch context {
     case .history:
-      break
+      let accountExplorer = isTestnet ? configuration.accountExplorerTestnet : configuration.accountExplorer
+      guard let url = accountExplorer else {
+        return nil
+      }
+      resultStringURL = url.replacingOccurrences(of: "%s", with: stringAddress)
     case .nftItem:
-      queryItems.append(URLQueryItem(name: "section", value: "nft"))
+      let nftOnExplorerUrl = isTestnet ? configuration.nftOnExplorerTestnetUrl : configuration.nftOnExplorerUrl
+      guard let url = nftOnExplorerUrl else {
+        return nil
+      }
+      resultStringURL = url.replacingOccurrences(of: "%s", with: stringAddress)
     }
-    urlComponents?.queryItems = queryItems
-    return urlComponents?.url
+
+    return URL(string: resultStringURL)
   }
 }
