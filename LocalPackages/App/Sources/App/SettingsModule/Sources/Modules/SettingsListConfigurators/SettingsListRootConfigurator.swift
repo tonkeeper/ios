@@ -290,7 +290,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     let isBackupNotificationVisible = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
     if isBackupNotificationVisible {
-      resultAttributedString.append(" •".withTextStyle(.h2, color: .Accent.red))
+      resultAttributedString.append(NSAttributedString(string: " "))
+      let attachment = NSTextAttachment(image: .TKUIKit.Icons.Size12.redDot)
+      let attachmentString = NSAttributedString(attachment: attachment)
+      resultAttributedString.append(attachmentString)
     }
     let titleViewConfiguration = TKListItemTitleView.Configuration(title: resultAttributedString, numberOfLines: 1)
     let cellConfiguration = TKListItemCell.Configuration(

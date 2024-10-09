@@ -20,6 +20,9 @@ public extension UIImage {
           .imageWithName("Icons/12/ic-pin-12")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var redDot: UIImage {
+          .imageWithName("Icons/12/ic-dot-12")
+        }
       }
       public enum Size16 {
         public static var chevronDown: UIImage {
