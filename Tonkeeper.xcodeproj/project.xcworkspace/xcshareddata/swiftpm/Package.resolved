@@ -217,15 +217,6 @@
       }
     },
     {
-      "identity" : "swift-sodium",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/jedisct1/swift-sodium",
-      "state" : {
-        "revision" : "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
-        "version" : "0.9.1"
-      }
-    },
-    {
       "identity" : "ton-api-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
@@ -239,7 +230,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "0813b47dbeeca9d139de091f76c611e87f481850"
+        "revision" : "5f58cb5940145b837c1b21f64381b84cce09cc50",
+        "version" : "1.0.17"
       }
     },
     {

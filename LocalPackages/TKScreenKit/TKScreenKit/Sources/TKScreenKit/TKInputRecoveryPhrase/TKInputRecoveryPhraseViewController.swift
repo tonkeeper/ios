@@ -63,6 +63,10 @@ private extension TKInputRecoveryPhraseViewController {
       customView.configure(model: model)
     }
     
+    viewModel.showToast = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
+    }
+    
     viewModel.didUpdateContinueButton = { [weak customView] configuration in
       customView?.continueButton.configuration = configuration
     }

@@ -7,7 +7,13 @@ struct OnboardingInputRecoveryPhraseValidator: TKInputRecoveryPhraseValidator {
     Mnemonic.words.contains(word)
   }
   
-  func validatePhrase(_ phrase: [String]) -> Bool {
-    Mnemonic.mnemonicValidate(mnemonicArray: phrase)
+  func validatePhrase(_ phrase: [String]) -> RecoveryPhraseValidationResult {
+    if (Mnemonic.mnemonicValidate(mnemonicArray: phrase)) {
+      return .ton
+    }
+    if (Mnemonic.isMultiAccountSeed(mnemonicArray: phrase)) {
+      return .multiaccount
+    }
+    return .invalid
   }
 }

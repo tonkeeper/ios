@@ -16,6 +16,7 @@
 "actions.open" = "Открыть";
 
 "errors.unknown" = "Ошибка";
+"errors.multiaccount_error" = "Пожалуйста используйте Tonkeeper Desktop для аккаунта мульти-кошелька";
 
 "dates.today" = "Сегодня";
 "dates.yesterday" = "Вчера";
