@@ -16,7 +16,7 @@ public final class TKSpoilerView: TKEmitterView {
     
     let emitterCell = CAEmitterCell()
     emitterCell.contents = UIImage.TKUIKit.Images.text_spoiler.cgImage
-    emitterCell.color = UIColor.Text.primary.cgColor
+    emitterCell.color = UIColor.white.cgColor
     emitterCell.contentsScale = 1.8
     emitterCell.emissionRange = .pi * 2
     emitterCell.lifetime = 1
@@ -26,21 +26,6 @@ public final class TKSpoilerView: TKEmitterView {
 
     emitterLayer.emitterShape = .rectangle
     emitterLayer.emitterCells = [emitterCell]
-    
-    if #available(iOS 17.0, *) {
-      registerForTraitChanges([UITraitUserInterfaceStyle.self]) { (traitEnvironment: Self, previousTraitCollection: UITraitCollection) in
-        emitterCell.color = UIColor.Text.primary.cgColor
-      }
-    }
-  }
-  
-  public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-    super.traitCollectionDidChange(previousTraitCollection)
-    if #unavailable(iOS 17.0) {
-      emitterLayer.emitterCells?.forEach {
-        $0.color = UIColor.Text.primary.cgColor
-      }
-    }
   }
   
   public override func layoutSubviews() {

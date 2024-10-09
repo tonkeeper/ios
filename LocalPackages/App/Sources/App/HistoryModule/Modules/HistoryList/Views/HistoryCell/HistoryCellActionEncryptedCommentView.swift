@@ -24,8 +24,8 @@ extension HistoryCellActionView {
     
     struct Model {
       enum State {
-        case encrypted(text: NSAttributedString)
-        case decrypted(text: NSAttributedString)
+        case encrypted(text: NSAttributedString?)
+        case decrypted(text: NSAttributedString?)
       }
       
       let state: State
@@ -38,8 +38,8 @@ extension HistoryCellActionView {
         self.action = action
       }
       
-      init(decryptedText: String) {
-        self.state = .decrypted(text: decryptedText.withTextStyle(.body2, color: .Bubble.foreground))
+      init(decryptedText: String?) {
+        self.state = .decrypted(text: decryptedText?.withTextStyle(.body2, color: .Bubble.foreground))
         self.action = nil
       }
     }
@@ -81,19 +81,17 @@ extension HistoryCellActionView {
     }
     
     func configure(model: Model) {
+      self.action = model.action
       switch model.state {
       case .encrypted(let text):
-        textLabel.isHidden = true
+        textLabel.alpha = 0
         textLabel.attributedText = text
-        spoilerView.isHidden = false
         spoilerView.isOn = true
       case .decrypted(let text):
-        textLabel.isHidden = false
+        textLabel.alpha = 1
         textLabel.attributedText = text
         spoilerView.isOn = false
-        spoilerView.isHidden = true
       }
-      self.action = model.action
       setNeedsLayout()
     }
     

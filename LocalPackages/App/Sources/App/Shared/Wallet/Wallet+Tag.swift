@@ -3,6 +3,18 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 
+extension WalletContractVersion {
+  var tag: String? {
+    switch self {
+    case .v5Beta:
+      "W5 BETA"
+    case .v5R1:
+      "W5"
+    default: nil
+    }
+  }
+}
+
 extension Wallet {
   var kindTag: String? {
     switch kind {
@@ -20,13 +32,7 @@ extension Wallet {
   }
   
   var revisionTag: String? {
-    if isW5 {
-      return "W5"
-    }
-    if isW5Beta {
-      return "W5 BETA"
-    }
-    return nil
+    try? contractVersion.tag
   }
 }
 

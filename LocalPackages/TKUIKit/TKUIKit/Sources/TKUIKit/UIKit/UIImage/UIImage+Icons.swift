@@ -455,6 +455,12 @@ public extension UIImage {
           .withRenderingMode(.alwaysTemplate)
         }
       }
+      public enum Size128 {
+        public static var lock: UIImage {
+          .imageWithName("Icons/128/ic-lock-128")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
   }
 }

@@ -1,7 +1,9 @@
 import Foundation
 
 public struct AccountEvent: Codable {
-  public let eventId: String
+  public typealias EventID = String
+  
+  public let eventId: EventID
   public let date: Date
   public let account: WalletAccount
   public let isScam: Bool
@@ -9,7 +11,7 @@ public struct AccountEvent: Codable {
   public let fee: Int64
   public let actions: [AccountEventAction]
   
-  public init(eventId: String, 
+  public init(eventId: EventID, 
               date: Date,
               account: WalletAccount,
               isScam: Bool,

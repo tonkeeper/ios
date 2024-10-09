@@ -13,6 +13,7 @@ import CryptoSwift
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didOpenEventDetails: ((_ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -69,8 +70,8 @@ private extension HistoryCoordinator {
         historyModule.input.setHasEvents(hasEvents)
       }
       
-      listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload in
-        self?.decryptComment(wallet: wallet, payload: payload)
+      listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in
+        self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
       }
       
       historyModule.output.didTapReceive = { [weak self] wallet in
@@ -169,14 +170,7 @@ private extension HistoryCoordinator {
     }
   }
   
-  func decryptComment(wallet: Wallet, payload: EncryptedCommentPayload) {}
-  
-  func getPasscode() async -> String? {
-    return await PasscodeInputCoordinator.getPasscode(
-      parentCoordinator: self,
-      parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
-    )
+  func decryptComment(wallet: Wallet, payload: EncryptedCommentPayload, eventId: String) {
+    didDecryptComment?(wallet, payload, eventId)
   }
 }
