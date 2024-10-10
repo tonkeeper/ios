@@ -12,7 +12,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
   var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
-  var didRequestHidingNFT: (() -> Void)? { get set }
+  var didHideNFT: (() -> Void)? { get set }
 }
 
 protocol NFTDetailsViewModel: AnyObject {
@@ -56,15 +56,18 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let wallet: Wallet
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsV3Store
+  private let walletNftManagementStore: WalletNFTsManagementStore
 
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
-       appSetttingsStore: AppSettingsV3Store) {
+       appSetttingsStore: AppSettingsV3Store,
+       walletNftManagementStore: WalletNFTsManagementStore) {
     self.nft = nft
     self.wallet = wallet
     self.dnsService = dnsService
     self.appSetttingsStore = appSetttingsStore
+    self.walletNftManagementStore = walletNftManagementStore
   }
   
   // MARK: - NFTDetailsModuleOutput
@@ -76,7 +79,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
   var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
-  var didRequestHidingNFT: (() -> Void)?
+  var didHideNFT: (() -> Void)?
 
   // MARK: - NFTDetailsViewModel
   
@@ -120,7 +123,15 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: hideNftTitle,
       icon: .TKUIKit.Icons.Size16.eyeDisable,
       selectionHandler: { [weak self] in
-        self?.didRequestHidingNFT?()
+        Task {
+          guard let self else {
+            return
+          }
+
+          await self.hideNFT()
+
+          await MainActor.run { self.didHideNFT?() }
+        }
       }
     )
 
@@ -128,7 +139,10 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: TKLocales.Actions.viewOnTonviewier,
       icon: .TKUIKit.Icons.Size16.globe,
       selectionHandler: { [weak self] in
-        self?.didRequestTonviewerShowing?(.history)
+        guard let self else {
+          return
+        }
+        self.didRequestTonviewerShowing?(.nftHistory(nft: self.nft))
       }
     )
 
@@ -218,7 +232,11 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       )
 
     let buttonModel = TKPlainButton.Model(title: buttonTitle, icon: nil, action: { [weak self] in
-      self?.didRequestTonviewerShowing?(.nftItem)
+      guard let self else {
+        return
+      }
+
+      self.didRequestTonviewerShowing?(.nftDetails(nft: self.nft))
     })
 
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
@@ -539,6 +557,14 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       return .success(date)
     } catch {
       return .failure(error)
+    }
+  }
+
+  private func hideNFT() async {
+    if let collection = self.nft.collection {
+      await self.walletNftManagementStore.hideItem(.collection(collection.address))
+    } else {
+      await self.walletNftManagementStore.hideItem(.singleItem(self.nft.address))
     }
   }
 }

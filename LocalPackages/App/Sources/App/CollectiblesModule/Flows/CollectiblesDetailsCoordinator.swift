@@ -124,28 +124,24 @@ private extension CollectiblesDetailsCoordinator {
       }
 
       let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
-      let linkBuilder = TonviewerLinkBuilder(nft: self.nft, configurationStore: configurationStore)
+      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
       self.openDapp(title: "Tonviewer", url: url)
     }
 
-    module.output.didRequestHidingNFT = { [weak self] in
+    module.output.didHideNFT = { [weak self] in
       guard let self = self else {
         return
       }
 
       Task {
-        let nftManagment = self.keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: self.wallet)
-
         let toastTitle: String
-        if let collection = self.nft.collection {
+        if self.nft.collection != nil {
           toastTitle = TKLocales.Collectibles.collectionHidden
-          await nftManagment.hideItem(.collection(collection.address))
         } else {
           toastTitle = TKLocales.Collectibles.nftHidden
-          await nftManagment.hideItem(.singleItem(self.nft.address))
         }
 
         await MainActor.run {

@@ -1,38 +1,36 @@
 import Foundation
-import KeeperCore
 
-struct TonviewerLinkBuilder {
+public struct TonviewerLinkBuilder {
 
-  enum TonviewerURLContext {
-    case history
-    case nftItem
+  public enum TonviewerURLContext {
+    case nftHistory(nft: NFT)
+    case nftDetails(nft: NFT)
   }
 
-  private let nft: NFT
   private let configurationStore: ConfigurationStore
 
-  init(nft: NFT, configurationStore: ConfigurationStore) {
-    self.nft = nft
+  public init(configurationStore: ConfigurationStore) {
     self.configurationStore = configurationStore
   }
 
-  func buildLink(context: TonviewerURLContext, isTestnet: Bool) -> URL? {
+  public func buildLink(context: TonviewerURLContext, isTestnet: Bool) -> URL? {
     let configuration = configurationStore.getConfiguration()
-    let stringAddress = nft.address.toFriendly().toString()
 
     let resultStringURL: String
     switch context {
-    case .history:
+    case .nftHistory(let nft):
       let accountExplorer = isTestnet ? configuration.accountExplorerTestnet : configuration.accountExplorer
       guard let url = accountExplorer else {
         return nil
       }
+      let stringAddress = nft.address.toFriendly().toString()
       resultStringURL = url.replacingOccurrences(of: "%s", with: stringAddress)
-    case .nftItem:
+    case .nftDetails(let nft):
       let nftOnExplorerUrl = isTestnet ? configuration.nftOnExplorerTestnetUrl : configuration.nftOnExplorerUrl
       guard let url = nftOnExplorerUrl else {
         return nil
       }
+      let stringAddress = nft.address.toFriendly().toString()
       resultStringURL = url.replacingOccurrences(of: "%s", with: stringAddress)
     }
 
