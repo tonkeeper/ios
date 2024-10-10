@@ -6,7 +6,11 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
   
   let titleLabel = UILabel()
   let valueLabel = UILabel()
-  let rightIconImageView = UIImageView()
+  let rightIconImageView: UIImageView = {
+    let view = UIImageView()
+    view.tintColor = .Accent.blue
+    return view
+  }()
   let selectionView = UIImageView()
   let highlightView = TKHighlightView()
   

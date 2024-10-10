@@ -84,7 +84,7 @@ private extension TokenDetailsViewController {
         )
         TKPopupMenuController.show(
           sourceView: view,
-          position: .topRight,
+          position: .bottomRight(inset: 8),
           width: 0,
           items: [item],
           isSelectable: false,

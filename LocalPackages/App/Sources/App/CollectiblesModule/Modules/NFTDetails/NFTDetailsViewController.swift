@@ -63,5 +63,19 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
         self?.customView.propertiesView.isHidden = true
       }
     }
+
+    viewModel.didUpdateMenuItems = { [weak self] items in
+      self?.customView.navigationBar.rightViews = [
+        TKUINavigationBar.createMoreButton(action: { targetView in
+          TKPopupMenuController.show(
+            sourceView: targetView,
+            position: .bottomRight(inset: 8),
+            width: 0,
+            items: items,
+            isSelectable: false,
+            selectedIndex: nil)
+        })
+      ]
+    }
   }
 }

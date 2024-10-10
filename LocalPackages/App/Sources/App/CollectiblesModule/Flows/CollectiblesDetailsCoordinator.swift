@@ -112,18 +112,53 @@ private extension CollectiblesDetailsCoordinator {
             }
 
             await MainActor.run {
-              self.openDapp(with: composedURL)
+              self.openDapp(url: composedURL)
             }
           }
         })
     }
 
+    module.output.didRequestTonviewerShowing = { [weak self] context in
+      guard let self = self else {
+        return
+      }
+
+      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
+      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
+      guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
+        return
+      }
+      self.openDapp(title: "Tonviewer", url: url)
+    }
+
+    module.output.didHideNFT = { [weak self] in
+      guard let self = self else {
+        return
+      }
+
+      Task {
+        let toastTitle: String
+        if self.nft.collection != nil {
+          toastTitle = TKLocales.Collectibles.collectionHidden
+        } else {
+          toastTitle = TKLocales.Collectibles.nftHidden
+        }
+
+        await MainActor.run {
+          self.router.dismiss(animated: true, completion: {
+            let configuration = ToastPresenter.Configuration(title: toastTitle)
+            ToastPresenter.showToast(configuration: configuration)
+          })
+        }
+      }
+    }
+
     router.push(viewController: module.view)
   }
 
-  func openDapp(with url: URL) {
+  func openDapp(title: String = "", url: URL) {
     let dapp = Dapp(
-      name: "",
+      name: title,
       description: "",
       icon: nil,
       poster: nil,

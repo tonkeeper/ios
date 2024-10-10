@@ -20,6 +20,9 @@ public extension UIImage {
           .imageWithName("Icons/12/ic-pin-12")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var redDot: UIImage {
+          .imageWithName("Icons/12/ic-dot-12")
+        }
       }
       public enum Size16 {
         public static var chevronDown: UIImage {
@@ -115,6 +118,14 @@ public extension UIImage {
         }
         public static var verification: UIImage {
           .imageWithName("Icons/16/ic-verification-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var eyeDisable: UIImage {
+          .imageWithName("Icons/16/ic-eye-disable-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var block: UIImage {
+          .imageWithName("Icons/16/ic-block-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }

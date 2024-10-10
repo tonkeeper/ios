@@ -61,6 +61,9 @@ final class TKPopupMenuViewController: UIViewController {
     case .topRight:
       origin = CGPoint(x: sourceViewFrame.maxX - menuSize.width,
                        y: sourceViewFrame.minY)
+    case .bottomRight(let inset):
+      origin = CGPoint(x: sourceViewFrame.maxX - menuSize.width,
+                       y: sourceViewFrame.maxY + inset)
     }
 
     let frame = CGRect(origin: origin, size: menuSize)

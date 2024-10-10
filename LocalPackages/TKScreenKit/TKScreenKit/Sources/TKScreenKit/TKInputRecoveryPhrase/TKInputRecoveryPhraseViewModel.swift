@@ -1,12 +1,13 @@
 import UIKit
 import TKUIKit
-//import TKLocalize
+import TKLocalize
 
 public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
   var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)? { get set }
 }
 
 protocol TKInputRecoveryPhraseViewModel: AnyObject {
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
   var didUpdateModel: ((TKInputRecoveryPhraseView.Model) -> Void)? { get set }
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdatePasteButton: ((TKButton.Configuration) -> Void)? { get set }
@@ -21,9 +22,15 @@ protocol TKInputRecoveryPhraseViewModel: AnyObject {
   func viewDidLoad()
 }
 
+public enum RecoveryPhraseValidationResult {
+  case ton
+  case multiaccount
+  case invalid
+}
+
 public protocol TKInputRecoveryPhraseValidator {
   func validateWord(_ word: String) -> Bool
-  func validatePhrase(_ phrase: [String]) -> Bool
+  func validatePhrase(_ phrase: [String]) -> RecoveryPhraseValidationResult
 }
 
 public protocol TKInputRecoveryPhraseSuggestsProvider {
@@ -35,6 +42,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   // MARK: - TKInputRecoveryPhraseModuleOutput
   
   var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)?
+  
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   // MARK: - TKInputRecoveryPhraseViewModel
   
@@ -203,23 +212,30 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     continueButtonConfiguration.showsLoader = true
     dispatchQueue.async { [weak self, phrase] in
       guard let self = self else { return }
-      let isPhraseValid = self.validator.validatePhrase(phrase)
-      if !isPhraseValid {
-        let wordsValidation = phrase.map {
-          self.validator.validateWord($0)
-        }
-        DispatchQueue.main.async {
-          self.continueButtonConfiguration.showsLoader = false
-          wordsValidation.enumerated().forEach { index, isValid in
-            self.didUpdateInputValidationState?(index, isValid)
+      let validationResult = self.validator.validatePhrase(phrase)
+      
+      switch validationResult {
+        case .invalid:
+          let wordsValidation = phrase.map {
+            self.validator.validateWord($0)
           }
-        }
-      } else {
-        DispatchQueue.main.async {
-          self.didInputRecoveryPhrase?(phrase, {
+          DispatchQueue.main.async {
             self.continueButtonConfiguration.showsLoader = false
-          })
-        }
+            wordsValidation.enumerated().forEach { index, isValid in
+              self.didUpdateInputValidationState?(index, isValid)
+            }
+          }
+        case .multiaccount:
+          DispatchQueue.main.async {
+            self.continueButtonConfiguration.showsLoader = false
+            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.multiaccountError))
+          }
+        case .ton:
+          DispatchQueue.main.async {
+            self.didInputRecoveryPhrase?(phrase, {
+              self.continueButtonConfiguration.showsLoader = false
+            })
+          }
       }
     }
   }
