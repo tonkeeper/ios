@@ -275,12 +275,35 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createBackupItem() -> SettingsListItem? {
-    guard wallet.isBackupAvailable else { return nil }
+    guard wallet.isBackupAvailable else {
+      return nil
+    }
+
+    let title = TKLocales.Settings.Items.backup
+      .withTextStyle(
+        .label1,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+    let resultAttributedString = NSMutableAttributedString(attributedString: title)
+
+    let isBackupNotificationVisible = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
+    if isBackupNotificationVisible {
+      resultAttributedString.append(NSAttributedString(string: " "))
+      let attachment = NSTextAttachment(image: .TKUIKit.Icons.Size12.redDot)
+      let attachmentString = NSAttributedString(attachment: attachment)
+      resultAttributedString.append(attachmentString)
+    }
+    let titleViewConfiguration = TKListItemTitleView.Configuration(title: resultAttributedString, numberOfLines: 1)
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.backup)
-        )))
+          titleViewConfiguration: titleViewConfiguration
+        )
+      )
+    )
+    
     return SettingsListItem(
       id: .backupItemIdentifier,
       cellConfiguration: cellConfiguration,
