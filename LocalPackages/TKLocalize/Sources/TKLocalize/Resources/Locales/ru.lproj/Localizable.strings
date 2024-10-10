@@ -14,6 +14,10 @@
 "actions.ok" = "Хорошо";
 "actions.service_unavailable" = "Сервис недоступен";
 "actions.open" = "Открыть";
+"actions.hide_nft" = "Скрыть NFT";
+"actions.hide_collection" = "Скрыть коллекцию";
+"actions.hide_and_report_spam" = "Скрыть и пожаловаться";
+"actions.view_on_tonviewier" = "Открыть в Tonviewer";
 
 "errors.unknown" = "Ошибка";
 "errors.multiaccount_error" = "Пожалуйста используйте Tonkeeper Desktop для аккаунта мульти-кошелька";
@@ -34,6 +38,8 @@
 "camera_permission.button" = "Открыть настройки";
 
 "collectibles.title" = "Коллекции";
+"collectibles.collection_hidden" = "Коллекция скрыта";
+"collectibles.nft_hidden" = "Токен скрыт";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
