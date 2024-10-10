@@ -20,6 +20,7 @@
 "actions.view_on_tonviewier" = "Открыть в Tonviewer";
 
 "errors.unknown" = "Ошибка";
+"errors.multiaccount_error" = "Пожалуйста используйте Tonkeeper Desktop для аккаунта мульти-кошелька";
 
 "dates.today" = "Сегодня";
 "dates.yesterday" = "Вчера";

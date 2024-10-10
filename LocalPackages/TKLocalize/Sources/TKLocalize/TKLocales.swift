@@ -444,6 +444,8 @@ public enum TKLocales {
     public static let title = TKLocales.tr("Localizable", "delete_wallet_warning.title", fallback: "Delete Wallet Data")
   }
   public enum Errors {
+    /// Please use Tonkeeper Desktop for Multi-Wallet Account
+    public static let multiaccountError = TKLocales.tr("Localizable", "errors.multiaccount_error", fallback: "Please use Tonkeeper Desktop for Multi-Wallet Account")
     /// Error
     public static let unknown = TKLocales.tr("Localizable", "errors.unknown", fallback: "Error")
   }
