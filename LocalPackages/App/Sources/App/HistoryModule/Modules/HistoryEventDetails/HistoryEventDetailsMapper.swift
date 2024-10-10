@@ -19,11 +19,10 @@ final class HistoryEventDetailsMapper {
     }
     
     enum ListItem {
-      case recipientName(value: String, copyValue: String)
+      case recipient(value: String, copyValue: String)
       case recipientAddress(value: String, copyValue: String)
-      case senderName(value: String, copyValue: String)
-      case senderAddress(value: String, copyValue: String)
       case sender(value: String, copyValue: String)
+      case senderAddress(value: String, copyValue: String)
       case fee(value: String, converted: String?)
       case refund(value: String, converted: String?)
       case comment(String)
@@ -270,7 +269,7 @@ final class HistoryEventDetailsMapper {
       dateFormatted = TKLocales.EventDetails.sentOn(date)
       amountType = .outcome
       if let name = tonTransfer.recipient.name {
-        listItems.append(.recipientName(value: name, copyValue: name))
+        listItems.append(.recipient(value: name, copyValue: name))
       }
       listItems.append(.recipientAddress(
         value: tonTransfer.recipient.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.recipient.isWallet),
@@ -280,7 +279,7 @@ final class HistoryEventDetailsMapper {
       dateFormatted = TKLocales.EventDetails.receivedOn(date)
       amountType = .income
       if let name = tonTransfer.sender.name {
-        listItems.append(.senderName(value: name, copyValue: name))
+        listItems.append(.sender(value: name, copyValue: name))
       }
       listItems.append(.senderAddress(
         value: tonTransfer.sender.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.sender.isWallet),
@@ -340,7 +339,7 @@ final class HistoryEventDetailsMapper {
       amountType = .outcome
       if let recipient = action.recipient {
         if let name = recipient.name {
-          listItems.append(.recipientName(value: name, copyValue: name))
+          listItems.append(.recipient(value: name, copyValue: name))
         }
         listItems.append(.recipientAddress(
           value: recipient.address.toString(testOnly: isTestnet, bounceable: !recipient.isWallet),
@@ -352,7 +351,7 @@ final class HistoryEventDetailsMapper {
       amountType = .income
       if let sender = action.sender {
         if let name = sender.name {
-          listItems.append(.senderName(value: name, copyValue: name))
+          listItems.append(.sender(value: name, copyValue: name))
         }
         listItems.append(.senderAddress(
           value: sender.address.toString(testOnly: isTestnet, bounceable: !sender.isWallet),
@@ -417,7 +416,7 @@ final class HistoryEventDetailsMapper {
       dateFormatted = TKLocales.EventDetails.sentOn(date)
       if let recipient = nftTransfer.recipient {
         if let name = recipient.name {
-          listItems.append(.recipientName(value: name, copyValue: name))
+          listItems.append(.recipient(value: name, copyValue: name))
         }
         listItems.append(.recipientAddress(
           value: recipient.address.toString(testOnly: isTestnet, bounceable: !recipient.isWallet),
@@ -428,7 +427,7 @@ final class HistoryEventDetailsMapper {
       dateFormatted = TKLocales.EventDetails.receivedOn(date)
       if let sender = nftTransfer.sender {
         if let name = sender.name {
-          listItems.append(.senderName(value: name, copyValue: name))
+          listItems.append(.sender(value: name, copyValue: name))
         }
         listItems.append(.senderAddress(
           value: sender.address.toString(testOnly: isTestnet, bounceable: !sender.isWallet),
@@ -483,10 +482,10 @@ final class HistoryEventDetailsMapper {
                       status: AccountEventStatus,
                       isTestnet: Bool) -> Model {
     var listItems = [Model.ListItem]()
-    let dateFormatted = "Purchased on \(date)"
+    let dateFormatted = TKLocales.EventDetails.purchasedOn(date)
     
-    if let senderName = action.seller.name {
-      listItems.append(.senderName(value: senderName, copyValue: senderName))
+    if let sender = action.seller.name {
+      listItems.append(.sender(value: sender, copyValue: sender))
     }
     listItems.append(.senderAddress(value: action.seller.address.toString(testOnly: isTestnet, bounceable: !action.seller.isWallet),
                                     copyValue: action.seller.address.toString(testOnly: isTestnet, bounceable: !action.seller.isWallet)))
@@ -533,10 +532,10 @@ final class HistoryEventDetailsMapper {
                       status: AccountEventStatus,
                       description: String) -> Model {
     let title = action.domain
-    let dateFormatted = "Renewed on \(date)"
+    let dateFormatted = TKLocales.EventDetails.renewedOn(date)
     
     var listItems: [Model.ListItem] = [
-      .operation("Domain Renew"),
+      .operation(TKLocales.EventDetails.domainRenew),
     ]
     if !description.isEmpty {
       listItems.append(.description(description))
@@ -601,8 +600,8 @@ final class HistoryEventDetailsMapper {
     let dateString = TKLocales.EventDetails.receivedOn(date)
     let fiatPrice = jettonFiatString(amount: action.amount, jettonInfo: action.jettonInfo)
     var listItems = [Model.ListItem]()
-    if let recipientName = action.recipient.name {
-      listItems.append(.recipientName(value: recipientName, copyValue: recipientName))
+    if let recipient = action.recipient.name {
+      listItems.append(.recipient(value: recipient, copyValue: recipient))
     }
     listItems.append(
       .recipientAddress(value: action.recipient.address.toString(testOnly: isTestnet, bounceable: !action.recipient.isWallet),
@@ -690,7 +689,7 @@ final class HistoryEventDetailsMapper {
         )
     }()
     
-    let dateString = "Swapped on \(date)"
+    let dateString = TKLocales.EventDetails.swappedOn(date)
     
     var listItems = [Model.ListItem]()
     listItems.append(
@@ -786,11 +785,11 @@ final class HistoryEventDetailsMapper {
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .outcome,
       currency: .TON)
-    let dateString = "Staked on \(date)"
+    let dateString = TKLocales.EventDetails.stakedOn(date)
     
     var listItems = [Model.ListItem]()
     if let poolName = action.pool.name {
-      listItems.append(.recipientName(value: poolName, copyValue: poolName))
+      listItems.append(.recipient(value: poolName, copyValue: poolName))
     }
     listItems.append(.recipientAddress(
       value: action.pool.address.toString(testOnly: isTestnet, bounceable: !action.pool.isWallet),
@@ -824,7 +823,7 @@ final class HistoryEventDetailsMapper {
       maximumFractionDigits: 2,
       type: .outcome,
       currency: .TON)
-    let dateString = "Called contract on \(date)"
+    let dateString = TKLocales.EventDetails.calledContractOn(date)
     
     var listItems = [Model.ListItem]()
     listItems.append(.other(
@@ -838,7 +837,7 @@ final class HistoryEventDetailsMapper {
     listItems.append(.fee(value: fee, converted: feeConverted))
     if let payload = smartContractExec.payload {
       listItems.append(.other(
-        title: "Payload",
+        title: TKLocales.EventDetails.payload,
         value: payload,
         copyValue: payload)
       )
@@ -861,12 +860,12 @@ final class HistoryEventDetailsMapper {
                                feeConverted: String?,
                                status: AccountEventStatus,
                                isTestnet: Bool) -> Model {
-    let title = "Unstake Request"
+    let title = TKLocales.EventDetails.unstakeRequest
     let dateString = "\(date)"
     
     var listItems = [Model.ListItem]()
     if let poolName = action.pool.name {
-      listItems.append(.senderName(value: poolName, copyValue: poolName))
+      listItems.append(.sender(value: poolName, copyValue: poolName))
     }
     listItems.append(.senderAddress(
       value: action.pool.address.toString(
@@ -885,7 +884,9 @@ final class HistoryEventDetailsMapper {
         maximumFractionDigits: TonInfo.fractionDigits,
         type: .none,
         currency: .TON)
-      listItems.append(.other(title: "Unstake amount", value: formattedAmount, copyValue: formattedAmount))
+      listItems.append(.other(title: TKLocales.EventDetails.unstakeAmount,
+                              value: formattedAmount,
+                              copyValue: formattedAmount))
     }
     listItems.append(.fee(value: fee, converted: feeConverted))
     
@@ -915,11 +916,11 @@ final class HistoryEventDetailsMapper {
       currency: .TON)
     let fiatPrice = convertTonToFiatString(amount: BigUInt(action.amount))
     
-    let dateString = "Unstake on \(date)"
+    let dateString = TKLocales.EventDetails.unstakeOn(date)
     
     var listItems = [Model.ListItem]()
     if let poolName = action.pool.name {
-      listItems.append(.senderName(value: poolName, copyValue: poolName))
+      listItems.append(.sender(value: poolName, copyValue: poolName))
     }
     listItems.append(.senderAddress(
       value: action.pool.address.toString(
@@ -949,7 +950,7 @@ final class HistoryEventDetailsMapper {
                          fee: String,
                          feeConverted: String?,
                          status: AccountEventStatus) -> Model {
-    let title = "Wallet initialized"
+    let title = TKLocales.EventDetails.walletInitialized
     
     return Model(
       title: title,
@@ -964,10 +965,10 @@ final class HistoryEventDetailsMapper {
   func mapUnknownAction(date: String, 
                         fee: String,
                         feeConverted: String?) -> Model {
-    let title = "Unknown"
+    let title = TKLocales.EventDetails.unknown
     let listItems: [Model.ListItem] = [
-      .operation("Unknown"),
-      .description("Something happened but we don't understand what."),
+      .operation(TKLocales.EventDetails.unknown),
+      .description(TKLocales.EventDetails.unknownDescription),
       .fee(value: fee, converted: feeConverted)
     ]
     return Model(

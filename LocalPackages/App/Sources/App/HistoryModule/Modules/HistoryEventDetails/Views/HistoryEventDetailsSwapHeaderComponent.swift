@@ -57,6 +57,8 @@ final class HistoryEventDetailsSwapHeaderView: UIView {
     rightImageView.layer.cornerRadius = 38
     rightImageView.layer.borderWidth = 4
     
+    updateColors()
+    
     addSubviews(containerView)
     containerView.addSubview(leftImageView)
     containerView.addSubview(rightImageView)

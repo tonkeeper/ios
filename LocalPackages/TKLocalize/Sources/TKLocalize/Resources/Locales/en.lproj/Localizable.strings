@@ -60,6 +60,9 @@
 "event_details.sender.address" = "Sender address";
 "event_details.fee" = "Fee";
 "event_details.comment" = "Comment";
+"event_details.description" = "Description";
+"event_details.operation" = "Operation";
+"event_details.swapped" = "Operation";
 
 "settings.title" = "Settings";
 "settings.items.security" = "Security";
@@ -303,9 +306,23 @@
 "event_details.comment" = "Comment";
 "event_details.sent_on" = "Sent on %@";
 "event_details.received_on" = "Received on %@";
+"event_details.purchased_on" = "Purchased on %@";
+"event_details.renewed_on" = "Renewed on %@";
+"event_details.burned_on" = "Burned on %@";
+"event_details.swapped_on" = "Swapped on %@";
+"event_details.staked_on" = "Staked on %@";
+"event_details.unstake_on" = "Unstake on %@";
+"event_details.called_contract_on" = "Called contract on %@";
 "event_details.received" = "Received";
 "event_details.sent" = "Sent";
-"event_details.transaction" = "Transaction";
+"event_details.transaction" = "Transaction ";
+"event_details.domain_renew" = "Domain Renew";
+"event_details.payload" = "Payload";
+"event_details.unstake_request" = "Unstake Request";
+"event_details.unstake_amount" = "Unstake amount";
+"event_details.wallet_initialized" = "Walelt initialized";
+"event_details.unknown" = "Unknown";
+"event_details.unknown_description" = "Something happened but we don't understand what.";
 
 "action_types.future.send" = "Send";
 "action_types.future.receive" = "Receive";

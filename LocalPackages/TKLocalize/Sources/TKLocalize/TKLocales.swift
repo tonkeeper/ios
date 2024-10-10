@@ -414,8 +414,8 @@ public enum TKLocales {
   public enum DecryptCommentPopup {
     /// Decrypt the comment
     public static let button = TKLocales.tr("Localizable", "decrypt_comment_popup.button", fallback: "Decrypt the comment")
-    /// The comment is encrypted by sender and can only be decryptedby you. Please be careful with the content and beware of scams.
-    public static let caption = TKLocales.tr("Localizable", "decrypt_comment_popup.caption", fallback: "The comment is encrypted by sender and can only be decryptedby you. Please be careful with the content and beware of scams.")
+    /// The comment is encrypted by sender and can only be decrypted by you. Please be careful with the content and beware of scams.
+    public static let caption = TKLocales.tr("Localizable", "decrypt_comment_popup.caption", fallback: "The comment is encrypted by sender and can only be decrypted by you. Please be careful with the content and beware of scams.")
     /// Encrypted comment
     public static let title = TKLocales.tr("Localizable", "decrypt_comment_popup.title", fallback: "Encrypted comment")
   }
@@ -436,10 +436,30 @@ public enum TKLocales {
     public static let unknown = TKLocales.tr("Localizable", "errors.unknown", fallback: "Error")
   }
   public enum EventDetails {
+    /// Burned on %@
+    public static func burnedOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.burned_on", String(describing: p1), fallback: "Burned on %@")
+    }
+    /// Called contract on %@
+    public static func calledContractOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.called_contract_on", String(describing: p1), fallback: "Called contract on %@")
+    }
     /// Comment
     public static let comment = TKLocales.tr("Localizable", "event_details.comment", fallback: "Comment")
+    /// Description
+    public static let description = TKLocales.tr("Localizable", "event_details.description", fallback: "Description")
+    /// Domain Renew
+    public static let domainRenew = TKLocales.tr("Localizable", "event_details.domain_renew", fallback: "Domain Renew")
     /// Fee
     public static let fee = TKLocales.tr("Localizable", "event_details.fee", fallback: "Fee")
+    /// Operation
+    public static let operation = TKLocales.tr("Localizable", "event_details.operation", fallback: "Operation")
+    /// Payload
+    public static let payload = TKLocales.tr("Localizable", "event_details.payload", fallback: "Payload")
+    /// Purchased on %@
+    public static func purchasedOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.purchased_on", String(describing: p1), fallback: "Purchased on %@")
+    }
     /// Received
     public static let received = TKLocales.tr("Localizable", "event_details.received", fallback: "Received")
     /// Received on %@
@@ -450,6 +470,10 @@ public enum TKLocales {
     public static let recipient = TKLocales.tr("Localizable", "event_details.recipient", fallback: "Recipient")
     /// Recipient address
     public static let recipientAddress = TKLocales.tr("Localizable", "event_details.recipient_address", fallback: "Recipient address")
+    /// Renewed on %@
+    public static func renewedOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.renewed_on", String(describing: p1), fallback: "Renewed on %@")
+    }
     /// Sender
     public static let sender = TKLocales.tr("Localizable", "event_details.sender", fallback: "Sender")
     /// Sender address
@@ -460,8 +484,32 @@ public enum TKLocales {
     public static func sentOn(_ p1: Any) -> String {
       return TKLocales.tr("Localizable", "event_details.sent_on", String(describing: p1), fallback: "Sent on %@")
     }
-    /// Transaction
-    public static let transaction = TKLocales.tr("Localizable", "event_details.transaction", fallback: "Transaction")
+    /// Staked on %@
+    public static func stakedOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.staked_on", String(describing: p1), fallback: "Staked on %@")
+    }
+    /// Operation
+    public static let swapped = TKLocales.tr("Localizable", "event_details.swapped", fallback: "Operation")
+    /// Swapped on %@
+    public static func swappedOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.swapped_on", String(describing: p1), fallback: "Swapped on %@")
+    }
+    /// Transaction 
+    public static let transaction = TKLocales.tr("Localizable", "event_details.transaction", fallback: "Transaction ")
+    /// Unknown
+    public static let unknown = TKLocales.tr("Localizable", "event_details.unknown", fallback: "Unknown")
+    /// Something happened but we don't understand what.
+    public static let unknownDescription = TKLocales.tr("Localizable", "event_details.unknown_description", fallback: "Something happened but we don't understand what.")
+    /// Unstake amount
+    public static let unstakeAmount = TKLocales.tr("Localizable", "event_details.unstake_amount", fallback: "Unstake amount")
+    /// Unstake on %@
+    public static func unstakeOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "event_details.unstake_on", String(describing: p1), fallback: "Unstake on %@")
+    }
+    /// Unstake Request
+    public static let unstakeRequest = TKLocales.tr("Localizable", "event_details.unstake_request", fallback: "Unstake Request")
+    /// Walelt initialized
+    public static let walletInitialized = TKLocales.tr("Localizable", "event_details.wallet_initialized", fallback: "Walelt initialized")
     public enum Recipient {
       /// Recipient address
       public static let address = TKLocales.tr("Localizable", "event_details.recipient.address", fallback: "Recipient address")

@@ -303,7 +303,7 @@
 "event_details.received_on" = "Получено %@";
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";
-"event_details.transaction" = "Транзакция";
+"event_details.transaction" = "Транзакция ";
 
 "action_types.future.send" = "Отправить";
 "action_types.future.receive" = "Получить";

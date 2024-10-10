@@ -1,12 +1,30 @@
 import UIKit
 import TKUIKit
 
-final class HistoryEventDetailsScamView: UIView {
+struct HistoryEventDetailsSpamComponent: TKPopUp.Item {
+  func getView() -> UIView {
+    let view = HistoryEventDetailsSpamView(
+      configuration: configuration
+    )
+    return view
+  }
+  
+  private let configuration: HistoryEventDetailsSpamView.Configuration
+  public let bottomSpace: CGFloat
+  
+  init(configuration: HistoryEventDetailsSpamView.Configuration,
+       bottomSpace: CGFloat) {
+    self.configuration = configuration
+    self.bottomSpace = bottomSpace
+  }
+}
 
-  struct Model {
+final class HistoryEventDetailsSpamView: UIView {
+  
+  struct Configuration {
     let title: NSAttributedString
   }
-
+  
   private let containerView: UIView = {
     let view = UIView()
     view.backgroundColor = .Accent.orange
@@ -16,15 +34,19 @@ final class HistoryEventDetailsScamView: UIView {
   }()
   private let label = UILabel()
 
-  override init(frame: CGRect) {
-    super.init(frame: frame)
+  
+  private let configuration: Configuration
+
+  init(configuration: Configuration) {
+    self.configuration = configuration
+    super.init(frame: .zero)
     setup()
   }
-
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-
+  
   private func setup() {
     containerView.addSubview(label)
     addSubview(containerView)
@@ -37,14 +59,7 @@ final class HistoryEventDetailsScamView: UIView {
       $0.top.bottom.equalToSuperview()
       $0.centerX.equalToSuperview()
     }
-  }
-}
-
-// MARK: -  ConfigurableView
-
-extension HistoryEventDetailsScamView: ConfigurableView {
-
-  func configure(model: Model) {
-    label.attributedText = model.title
+    
+    label.attributedText = configuration.title
   }
 }
