@@ -196,7 +196,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: TKLocales.NftDetails.owner,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
-          topValue: nft.owner?.address.toShortString(bounceable: false)
+          topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.owner?.address.toShortString(bounceable: false))
         )
       ),
       isHighlightable: true,
@@ -211,7 +211,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         title: TKLocales.NftDetails.expirationDate,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
-            topValue: dateFormatted
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: dateFormatted)
           )
         ),
         isHighlightable: false,
@@ -225,7 +225,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: TKLocales.NftDetails.contractAddress,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
-          topValue: nft.address.toShortString(bounceable: true)
+          topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.address.toShortString(bounceable: true))
         )
       ),
       isHighlightable: true,
@@ -336,9 +336,11 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       }
       let size = TKActionButtonSize.large
       let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
+      var contentPadding = size.padding
+      contentPadding.left += 28
       var configuration = TKButton.Configuration(
         content: content,
-        contentPadding: size.padding,
+        contentPadding: contentPadding,
         textStyle: TKActionButtonSize.large.textStyle,
         textColor: category.titleColor,
         iconTintColor: isPrimary ? category.titleColor : .Icon.secondary,

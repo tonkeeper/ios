@@ -30,30 +30,32 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   
   // MARK: - Dependencies
   
-  private let historyEventDetailsController: HistoryEventDetailsController
+  private let event: AccountEventDetailsEvent
+  private let historyEventDetailsMapper: HistoryEventDetailsMapper
   private let urlOpener: URLOpener
+  private let configurationStore: ConfigurationStore
   
   // MARK: - Init
   
-  init(historyEventDetailsController: HistoryEventDetailsController,
-       urlOpener: URLOpener) {
-    self.historyEventDetailsController = historyEventDetailsController
+  init(event: AccountEventDetailsEvent,
+       historyEventDetailsMapper: HistoryEventDetailsMapper,
+       urlOpener: URLOpener,
+       configurationStore: ConfigurationStore) {
+    self.event = event
+    self.historyEventDetailsMapper = historyEventDetailsMapper
     self.urlOpener = urlOpener
+    self.configurationStore = configurationStore
   }
 }
 
 private extension HistoryEventDetailsViewModelImplementation {
-
+  
   func setupContent() {
-    Task {
-      let model = await self.historyEventDetailsController.model
-      await MainActor.run {
-        self.configure(model: model)
-      }
-    }
+    let model = self.historyEventDetailsMapper.mapEvent(event: event)
+    self.configure(model: model)
   }
   
-  func configure(model: HistoryEventDetailsController.Model) {
+  func configure(model: HistoryEventDetailsMapper.Model) {
     var items = [TKPopUp.Item]()
     
     if let spamItem = configureSpamItem(model: model) {
@@ -109,18 +111,31 @@ private extension HistoryEventDetailsViewModelImplementation {
       )
     }()
     items.append(labelsGroup)
+    if let listItem = configureListItems(model: model) {
+      items.append(
+        TKPopUp.Component.GroupComponent(
+          padding: UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16),
+          items: [listItem]
+        )
+      )
+    }
+    
+    items.append(TKPopUp.Component.GroupComponent(
+      padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
+      items: [configureTransactionButton()]
+    ))
     
     let configuration = TKPopUp.Configuration(items: items)
     
     didUpdateConfiguration?(configuration)
   }
   
-  func configureSpamItem(model: HistoryEventDetailsController.Model) -> TKPopUp.Item? {
+  func configureSpamItem(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Item? {
     guard model.isScam else { return nil }
     return nil
   }
   
-  func configureHeaderImage(model: HistoryEventDetailsController.Model) -> TKPopUp.Item? {
+  func configureHeaderImage(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Item? {
     guard !model.isScam else { return nil }
     guard let headerImage = model.headerImage else { return nil }
     
@@ -163,7 +178,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     }
   }
   
-  func configureNFTItems(model: HistoryEventDetailsController.Model) -> [TKPopUp.Item] {
+  func configureNFTItems(model: HistoryEventDetailsMapper.Model) -> [TKPopUp.Item] {
     guard !model.isScam else { return [] }
     guard let nftModel = model.nftModel else { return [] }
     guard let nftName = nftModel.name else { return [] }
@@ -183,7 +198,173 @@ private extension HistoryEventDetailsViewModelImplementation {
     return items
   }
   
-  func configureDetails() {
+  private func configureListItems(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Component.List? {
+    guard !model.listItems.isEmpty else { return nil }
+    return TKPopUp.Component.List(
+      configuration: TKListContainerView.Configuration(
+        items: model.listItems.map {
+          listItem in
+          configureListItem(listItem)
+        }
+      )
+    )
+  }
+  
+  private func configureListItem(_ modelListItem: HistoryEventDetailsMapper.Model.ListItem) -> TKListContainerItem {
+    switch modelListItem {
+    case .recipientName(let value, let copyValue):
+      TKListContainerItemView.Model(
+        title: "Recipient name",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: copyValue
+      )
+    case .recipientAddress(let value, let copyValue):
+      HistoryEventDetailsListAddressItem(
+        title: "Recipient address",
+        value: value,
+        copyValue: copyValue,
+        isHighlightable: true
+      )
+    case .senderName(let value, let copyValue):
+      TKListContainerItemView.Model(
+        title: "Sender name",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: copyValue
+      )
+    case .senderAddress(let value, let copyValue):
+      HistoryEventDetailsListAddressItem(
+        title: "Sender address",
+        value: value,
+        copyValue: copyValue,
+        isHighlightable: true
+      )
+    case .sender(let value, let copyValue):
+      TKListContainerItemView.Model(
+        title: "Sender",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: copyValue
+      )
+    case let .fee(value, converted):
+      TKListContainerItemView.Model(
+        title: "Fee",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value),
+            bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: converted)
+          )
+        ),
+        isHighlightable: false,
+        copyValue: nil
+      )
+    case .refund(let value, let converted):
+      TKListContainerItemView.Model(
+        title: "Refund",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value),
+            bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: converted)
+          )
+        ),
+        isHighlightable: false,
+        copyValue: nil
+      )
+    case .comment(let string):
+      TKListContainerItemView.Model(
+        title: "Comment",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: string, numberOfLines: 0)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: string
+      )
+    case .encryptedComment:
+      TKListContainerItemView.Model(
+        title: "Encrypted comment",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: "AAA", numberOfLines: 0)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: nil
+      )
+    case .description(let string):
+      TKListContainerItemView.Model(
+        title: "Description",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: string, numberOfLines: 0)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: string
+      )
+    case .operation(let value):
+      TKListContainerItemView.Model(
+        title: "Operation",
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value, numberOfLines: 0)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: value
+      )
+    case let .other(title, value, copyValue):
+      TKListContainerItemView.Model(
+        title: title,
+        value: .value(
+          TKListContainerItemDefaultValueView.Model(
+            topValue: TKListContainerItemDefaultValueView.Model.Value(value: value, numberOfLines: 0)
+          )
+        ),
+        isHighlightable: true,
+        copyValue: copyValue
+      )
+    }
+  }
+  
+  func configureTransactionButton() -> HistoryEventDetailsTransactionButtonComponent {
+    let transaction = "Transaction ".withTextStyle(.label1, color: .Text.primary)
+    let hash = String(event.accountEvent.eventId.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
+    let title = NSMutableAttributedString(attributedString: transaction)
+    title.append(hash)
+    
+    return HistoryEventDetailsTransactionButtonComponent(
+      configuration: HistoryEventDetailsTransactionButtonView.Configuration(
+        title: title,
+        action: { [configurationStore, event, urlOpener] in
+          guard let transactionExplorer = configurationStore.getConfiguration().transactionExplorer else {
+            return
+          }
+          let urlString = String(format: transactionExplorer.replacingOccurrences(of: "%s", with: "%@"), 
+                                 event.accountEvent.eventId)
+          guard let url = URL(string: urlString) else { return }
+          urlOpener.open(url: url)
+        }
+      ),
+      bottomSpace: 32
+    )
+  }
+  
+//  func configureDetails() {
 //    Task {
 //      let model = await self.historyEventDetailsController.model
 //      await MainActor.run {
@@ -234,7 +415,7 @@ private extension HistoryEventDetailsViewModelImplementation {
 //        didUpdateConfiguration?(configuration)
 //      }
 //    }
-  }
+//  }
 
 //  func composeHeaderImageItems(with model: HistoryEventDetailsController.Model) -> [TKModalCardViewController.Configuration.Item] {
 //    var headerItems = [TKModalCardViewController.Configuration.Item]()
@@ -345,6 +526,7 @@ private extension HistoryEventDetailsViewModelImplementation {
 //    return items
 //  }
 }
+
 
 private extension HistoryEventDetailsViewModelImplementation {
 //  func createOpenTransactionButtonContainerView() -> UIView {

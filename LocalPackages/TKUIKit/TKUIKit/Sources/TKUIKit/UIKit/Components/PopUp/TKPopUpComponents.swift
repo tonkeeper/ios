@@ -223,8 +223,8 @@ public extension TKPopUp.Component {
     private let configuration: TKListContainerView.Configuration
     public let bottomSpace: CGFloat
     
-    init(configuration: TKListContainerView.Configuration,
-         bottomSpace: CGFloat = 0) {
+    public init(configuration: TKListContainerView.Configuration,
+                bottomSpace: CGFloat = 0) {
       self.configuration = configuration
       self.bottomSpace = bottomSpace
     }

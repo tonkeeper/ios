@@ -59,6 +59,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     let stackView = UIStackView()
     stackView.axis = .horizontal
     stackView.alignment = .top
+    stackView.distribution = .fillProportionally
     return stackView
   }()
   
@@ -72,6 +73,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
   private let titleLabel = UILabel()
   private let valueStackView: UIStackView = {
     let stackView = UIStackView()
+    stackView.axis = .vertical
     return stackView
   }()
   private let valueViewContainer = UIView()
@@ -89,6 +91,11 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
   private func setup() {
     addSubview(stackView)
     
+    titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+    titleStackView.setContentHuggingPriority(.required, for: .horizontal)
+    titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    titleStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
     stackView.addArrangedSubview(titleStackView)
     titleStackView.addArrangedSubview(titleLabel)
     
@@ -105,8 +112,8 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     }
     
     shimmerView.snp.makeConstraints { make in
-      make.width.equalTo(80)
-      make.height.equalTo(24)
+      make.width.equalTo(80).priority(.medium)
+      make.height.equalTo(24).priority(.medium)
     }
   }
 }

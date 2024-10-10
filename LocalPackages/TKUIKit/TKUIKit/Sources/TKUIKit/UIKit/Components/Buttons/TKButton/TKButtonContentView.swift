@@ -1,7 +1,7 @@
 import UIKit
 
 class TKButtonContentView: UIView {
-
+  
   var iconPosition: TKButtonIconPosition = .left {
     didSet { invalidateIntrinsicContentSize() }
   }
@@ -40,7 +40,7 @@ class TKButtonContentView: UIView {
     }
   }
   
-  let titleLabel = TKButtonPaddingLabel()
+  let titleLabel = UILabel()
   let imageView = UIImageView()
   let contentContainerView = UIView()
   
@@ -93,18 +93,20 @@ class TKButtonContentView: UIView {
     let titleHeigth = min(availableWidth - imageViewHeight, titleSizeThatFits.height)
     
     let imageViewX: CGFloat
-    let labelInsets = UIEdgeInsets(top: 0, left: imageViewWidth + spacing, bottom: 0, right: imageViewWidth + spacing)
+    let titleX: CGFloat
     switch iconPosition {
     case .left:
       imageViewX = 0
+      titleX = imageViewWidth + spacing
     case .right:
       imageViewX = titleWidth + spacing
+      titleX = 0
     }
-    titleLabel.insets = labelInsets
+    
     let contentContainerViewFrame = CGRect(x: padding.left, y: padding.top, width: availableWidth, height: availableHeight)
     let imageViewFrame = CGRect(x: imageViewX, y: availableHeight/2 - imageViewHeight/2, width: imageViewWidth, height: imageViewHeight)
-    let titleFrame = CGRect(x: 0, y: availableHeight/2 - titleHeigth/2, width: availableWidth, height: titleHeigth)
-
+    let titleFrame = CGRect(x: titleX, y: availableHeight/2 - titleHeigth/2, width: titleWidth, height: titleHeigth)
+    
     contentContainerView.frame = contentContainerViewFrame
     imageView.frame = imageViewFrame
     titleLabel.frame = titleFrame

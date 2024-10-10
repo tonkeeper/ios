@@ -1,7 +1,7 @@
 import Foundation
 import BigInt
 
-enum AccountEventActionAmountMapperActionType {
+public enum AccountEventActionAmountMapperActionType {
   case income
   case outcome
   case none
@@ -15,7 +15,7 @@ enum AccountEventActionAmountMapperActionType {
   }
 }
 
-protocol AccountEventAmountMapper {
+public protocol AccountEventAmountMapper {
   func mapAmount(amount: BigUInt,
                  fractionDigits: Int,
                  maximumFractionDigits: Int,
@@ -29,18 +29,18 @@ protocol AccountEventAmountMapper {
                  symbol: String?) -> String
 }
 
-struct PlainAccountEventAmountMapper: AccountEventAmountMapper {
+public struct PlainAccountEventAmountMapper: AccountEventAmountMapper {
   private let amountFormatter: AmountFormatter
   
-  init(amountFormatter: AmountFormatter) {
+  public init(amountFormatter: AmountFormatter) {
     self.amountFormatter = amountFormatter
   }
   
-  func mapAmount(amount: BigUInt,
-                 fractionDigits: Int,
-                 maximumFractionDigits: Int,
-                 type: AccountEventActionAmountMapperActionType,
-                 currency: Currency?) -> String {
+  public func mapAmount(amount: BigUInt,
+                        fractionDigits: Int,
+                        maximumFractionDigits: Int,
+                        type: AccountEventActionAmountMapperActionType,
+                        currency: Currency?) -> String {
     amountFormatter.formatAmount(
       amount,
       fractionDigits: fractionDigits,
@@ -48,11 +48,11 @@ struct PlainAccountEventAmountMapper: AccountEventAmountMapper {
       currency: currency)
   }
   
-  func mapAmount(amount: BigUInt,
-                 fractionDigits: Int,
-                 maximumFractionDigits: Int,
-                 type: AccountEventActionAmountMapperActionType,
-                 symbol: String?) -> String {
+  public func mapAmount(amount: BigUInt,
+                        fractionDigits: Int,
+                        maximumFractionDigits: Int,
+                        type: AccountEventActionAmountMapperActionType,
+                        symbol: String?) -> String {
     amountFormatter.formatAmount(
       amount,
       fractionDigits: fractionDigits,
@@ -61,18 +61,18 @@ struct PlainAccountEventAmountMapper: AccountEventAmountMapper {
   }
 }
 
-struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
+public struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
   let plainAccountEventAmountMapper: AccountEventAmountMapper
   
-  init(plainAccountEventAmountMapper: AccountEventAmountMapper) {
+  public init(plainAccountEventAmountMapper: AccountEventAmountMapper) {
     self.plainAccountEventAmountMapper = plainAccountEventAmountMapper
   }
   
-  func mapAmount(amount: BigUInt,
-                 fractionDigits: Int,
-                 maximumFractionDigits: Int,
-                 type: AccountEventActionAmountMapperActionType,
-                 currency: Currency?) -> String {
+  public func mapAmount(amount: BigUInt,
+                        fractionDigits: Int,
+                        maximumFractionDigits: Int,
+                        type: AccountEventActionAmountMapperActionType,
+                        currency: Currency?) -> String {
     return type.sign + plainAccountEventAmountMapper
       .mapAmount(
         amount: amount,
@@ -83,11 +83,11 @@ struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
       )
   }
   
-  func mapAmount(amount: BigUInt,
-                 fractionDigits: Int,
-                 maximumFractionDigits: Int,
-                 type: AccountEventActionAmountMapperActionType,
-                 symbol: String?) -> String {
+  public func mapAmount(amount: BigUInt,
+                        fractionDigits: Int,
+                        maximumFractionDigits: Int,
+                        type: AccountEventActionAmountMapperActionType,
+                        symbol: String?) -> String {
     return type.sign + plainAccountEventAmountMapper
       .mapAmount(
         amount: amount,

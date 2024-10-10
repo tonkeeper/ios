@@ -13,28 +13,50 @@ public final class TKListContainerItemDefaultValueView: UIView, ConfigurableView
       return view
     }
     
-    public let topValue: String?
-    public let bottomValue: String?
+    public struct Value {
+      public let value: String?
+      public let numberOfLines: Int
+      
+      public init(value: String?,
+                  numberOfLines: Int = 1) {
+        self.value = value
+        self.numberOfLines = numberOfLines
+      }
+    }
     
-    public init(topValue: String? = nil, bottomValue: String? = nil) {
+    public let topValue: Value?
+    public let bottomValue: Value?
+    
+    public init(topValue: Value? = nil, bottomValue: Value? = nil) {
       self.topValue = topValue
       self.bottomValue = bottomValue
     }
   }
   
   public func configure(model: Model) {
-    topValueLabel.attributedText = model.topValue?.withTextStyle(
-      .label1,
-      color: .Text.primary,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
-    bottomValueLabel.attributedText = model.bottomValue?.withTextStyle(
-      .body2,
-      color: .Text.secondary,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
+    if let topValue = model.topValue {
+      topValueLabel.attributedText = topValue.value?.withTextStyle(
+        .label1,
+        color: .Text.primary,
+        alignment: .right,
+        lineBreakMode: .byTruncatingTail
+      )
+      topValueLabel.numberOfLines = topValue.numberOfLines
+    } else {
+      topValueLabel.attributedText = nil
+    }
+    
+    if let bottomValue = model.bottomValue {
+      bottomValueLabel.attributedText = bottomValue.value?.withTextStyle(
+        .body2,
+        color: .Text.secondary,
+        alignment: .right,
+        lineBreakMode: .byTruncatingTail
+      )
+      bottomValueLabel.numberOfLines = bottomValue.numberOfLines
+    } else {
+      bottomValueLabel.attributedText = nil
+    }
   }
   
   private let stackView: UIStackView = {
@@ -56,6 +78,8 @@ public final class TKListContainerItemDefaultValueView: UIView, ConfigurableView
   }
   
   private func setup() {
+    topValueLabel.numberOfLines = 0
+    
     addSubview(stackView)
     stackView.addArrangedSubview(topValueLabel)
     stackView.addArrangedSubview(bottomValueLabel)

@@ -923,11 +923,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent, isTestnet: Bool) {
     let module = HistoryEventDetailsAssembly.module(
-      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(
-        event: event,
-        isTestnet: isTestnet
-      ),
-      urlOpener: coreAssembly.urlOpener()
+      event: event,
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      urlOpener: coreAssembly.urlOpener(),
+      isTestnet: isTestnet
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

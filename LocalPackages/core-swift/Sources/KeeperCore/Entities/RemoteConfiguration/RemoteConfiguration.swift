@@ -11,6 +11,7 @@ public struct RemoteConfiguration: Equatable {
   public let stonfiUrl: URL?
   public let faqUrl: URL?
   public let stakingInfoUrl: URL?
+  public let transactionExplorer: String?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
@@ -24,6 +25,7 @@ public struct RemoteConfiguration: Equatable {
     case stonfiUrl
     case faqUrl = "faq_url"
     case stakingInfoUrl
+    case transactionExplorer
     case flags
   }
 }
@@ -65,6 +67,7 @@ extension RemoteConfiguration {
       stonfiUrl: nil,
       faqUrl: nil,
       stakingInfoUrl: nil,
+      transactionExplorer: nil,
       flags: .default
     )
   }

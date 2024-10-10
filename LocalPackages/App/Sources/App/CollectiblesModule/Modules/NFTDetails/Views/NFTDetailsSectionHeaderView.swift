@@ -42,6 +42,8 @@ final class NFTDetailsSectionHeaderView: UIView, ConfigurableView {
   }
   
   private func setup() {
+    button.setContentHuggingPriority(.required, for: .horizontal)
+    
     addSubview(stackView)
     stackView.addArrangedSubview(titleLabel)
     stackView.addArrangedSubview(button)

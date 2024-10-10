@@ -89,17 +89,6 @@ public final class MainAssembly {
     )
   }
   
-  public func historyEventDetailsController(event: AccountEventDetailsEvent, isTestnet: Bool) -> HistoryEventDetailsController {
-    HistoryEventDetailsController(
-      event: event,
-      amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      nftService: servicesAssembly.nftService(),
-      isTestnet: isTestnet
-    )
-  }
-  
   public func sendV3Controller(wallet: Wallet) -> SendV3Controller {
     SendV3Controller(
       wallet: wallet,

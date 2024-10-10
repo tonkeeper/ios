@@ -68,6 +68,12 @@ open class TKPlainButton: UIControl, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  open override func setContentHuggingPriority(_ priority: UILayoutPriority, for axis: NSLayoutConstraint.Axis) {
+    super.setContentHuggingPriority(priority, for: axis)
+    stackView.setContentHuggingPriority(priority, for: axis)
+    label.setContentHuggingPriority(priority, for: axis)
+  }
+  
   private func setup() {
     stackView.isUserInteractionEnabled = false
     addSubview(stackView)
