@@ -16,6 +16,7 @@
 "actions.open" = "Open";
 
 "errors.unknown" = "Error";
+"errors.multiaccount_error" = "Please use Tonkeeper Desktop for Multi-Wallet Account";
 
 "dates.today" = "Today";
 "dates.yesterday" = "Yesterday";
