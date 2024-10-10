@@ -12,19 +12,20 @@ struct HistoryEventDetailsListAddressItem: TKListContainerItem {
     return view
   }
   
+  var action: TKListContainerItemAction? {
+    .copy(copyValue: copyValue)
+  }
+  
   private let title: String
   private let value: String
-  let isHighlightable: Bool
-  let copyValue: String?
+  private let copyValue: String?
 
   init(title: String,
        value: String,
-       copyValue: String?,
-       isHighlightable: Bool) {
+       copyValue: String?) {
     self.title = title
     self.value = value
     self.copyValue = copyValue
-    self.isHighlightable = isHighlightable
   }
 }
 

@@ -12,7 +12,7 @@ import CryptoSwift
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  var didOpenEventDetails: ((_ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  var didOpenEventDetails: ((_ wallet: Wallet, _ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
   var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -117,7 +117,7 @@ private extension HistoryCoordinator {
   }
   
   func openEventDetails(event: AccountEventDetailsEvent, wallet: Wallet) {
-    didOpenEventDetails?(event, wallet.isTestnet)
+    didOpenEventDetails?(wallet, event, wallet.isTestnet)
   }
   
   @MainActor

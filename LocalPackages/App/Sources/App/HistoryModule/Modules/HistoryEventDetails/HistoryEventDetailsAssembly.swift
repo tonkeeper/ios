@@ -5,6 +5,7 @@ import KeeperCore
 struct HistoryEventDetailsAssembly {
   private init() {}
   static func module(
+    wallet: Wallet,
     event: AccountEventDetailsEvent,
     keeperCoreAssembly: KeeperCore.MainAssembly,
     urlOpener: URLOpener,
@@ -23,10 +24,12 @@ struct HistoryEventDetailsAssembly {
     )
     
     let viewModel = HistoryEventDetailsViewModelImplementation(
+      wallet: wallet,
       event: event,
       historyEventDetailsMapper: mapper,
       urlOpener: urlOpener,
-      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore
+      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore,
+      decryptedCommentStore: keeperCoreAssembly.storesAssembly.decryptedCommentStore
     )
     let viewController = HistoryEventDetailsViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

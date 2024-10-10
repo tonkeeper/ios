@@ -6,7 +6,7 @@ import KeeperCore
 import TKLocalize
 
 protocol HistoryEventDetailsModuleOutput: AnyObject {
-  
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)? { get set }
 }
 
 protocol HistoryEventDetailsViewModel: AnyObject {
@@ -20,38 +20,61 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   
   // MARK: - HistoryEventDetailsModuleOutput
   
+  var didSelectEncryptedComment: ((Wallet, EncryptedCommentPayload, String) -> Void)?
+  
   // MARK: - HistoryEventDetailsViewModel
   
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   
   func viewDidLoad() {
     setupContent()
+    
+    decryptedCommentStore.addObserver(self) { observer, event in
+      switch event {
+      case let .didDecryptComment(eventId, wallet):
+        DispatchQueue.main.async {
+          guard observer.event.accountEvent.eventId == eventId, wallet == observer.wallet else {
+            return
+          }
+          observer.setupContent()
+        }
+      }
+    }
   }
   
   // MARK: - Dependencies
   
+  private let wallet: Wallet
   private let event: AccountEventDetailsEvent
   private let historyEventDetailsMapper: HistoryEventDetailsMapper
   private let urlOpener: URLOpener
   private let configurationStore: ConfigurationStore
+  private let decryptedCommentStore: DecryptedCommentStore
   
   // MARK: - Init
   
-  init(event: AccountEventDetailsEvent,
+  init(wallet: Wallet,
+       event: AccountEventDetailsEvent,
        historyEventDetailsMapper: HistoryEventDetailsMapper,
        urlOpener: URLOpener,
-       configurationStore: ConfigurationStore) {
+       configurationStore: ConfigurationStore,
+       decryptedCommentStore: DecryptedCommentStore) {
+    self.wallet = wallet
     self.event = event
     self.historyEventDetailsMapper = historyEventDetailsMapper
     self.urlOpener = urlOpener
     self.configurationStore = configurationStore
+    self.decryptedCommentStore = decryptedCommentStore
   }
 }
 
 private extension HistoryEventDetailsViewModelImplementation {
   
   func setupContent() {
-    let model = self.historyEventDetailsMapper.mapEvent(event: event)
+    let model = self.historyEventDetailsMapper.mapEvent(
+      event: event) { eventId, payload in
+        decryptedCommentStore.getDecryptedComment(wallet: wallet, payload: payload, eventId: eventId)
+      }
     self.configure(model: model)
   }
   
@@ -220,45 +243,42 @@ private extension HistoryEventDetailsViewModelImplementation {
   }
   
   private func configureListItem(_ modelListItem: HistoryEventDetailsMapper.Model.ListItem) -> TKListContainerItem {
+    let item: TKListContainerItem
     switch modelListItem {
     case .recipient(let value, let copyValue):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.recipient,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
           )
         ),
-        isHighlightable: true,
-        copyValue: copyValue
+        action: .copy(copyValue: copyValue)
       )
     case .recipientAddress(let value, let copyValue):
-      HistoryEventDetailsListAddressItem(
+      item = HistoryEventDetailsListAddressItem(
         title: TKLocales.EventDetails.recipientAddress,
         value: value,
-        copyValue: copyValue,
-        isHighlightable: true
+        copyValue: copyValue
       )
     case .sender(let value, let copyValue):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.sender,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
           )
         ),
-        isHighlightable: true,
-        copyValue: copyValue
+        action: .copy(copyValue: copyValue)
       )
     case .senderAddress(let value, let copyValue):
-      HistoryEventDetailsListAddressItem(
+      item = HistoryEventDetailsListAddressItem(
         title: TKLocales.EventDetails.senderAddress,
         value: value,
-        copyValue: copyValue,
-        isHighlightable: true
+        copyValue: copyValue
       )
     case let .fee(value, converted):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.fee,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
@@ -266,11 +286,10 @@ private extension HistoryEventDetailsViewModelImplementation {
             bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: converted)
           )
         ),
-        isHighlightable: false,
-        copyValue: nil
+        action: nil
       )
     case .refund(let value, let converted):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: "Refund",
         value: .value(
           TKListContainerItemDefaultValueView.Model(
@@ -278,65 +297,83 @@ private extension HistoryEventDetailsViewModelImplementation {
             bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: converted)
           )
         ),
-        isHighlightable: false,
-        copyValue: nil
+        action: nil
       )
     case .comment(let string):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.comment,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: string, numberOfLines: 0)
           )
         ),
-        isHighlightable: true,
-        copyValue: string
+        action: .copy(copyValue: string)
       )
-    case .encryptedComment:
-      TKListContainerItemView.Model(
+    case .encryptedComment(let encryptedComment):
+      let value: HistoryEventDetailsListContainerItemEncryptedCommenValueView.Configuration = {
+        switch encryptedComment {
+        case .decrypted(let value):
+            .decrypted(text: value)
+        case .encrypted(let payload):
+            .encrypted(text: payload.encryptedComment.cipherText)
+        }
+      }()
+      
+      let action: TKListContainerItemAction = {
+        switch encryptedComment {
+        case .decrypted(let value):
+          return .copy(copyValue: value)
+        case .encrypted(let payload):
+          return .custom { [weak self, wallet, event] in
+            self?.didSelectEncryptedComment?(wallet, payload, event.accountEvent.eventId)
+          }
+        }
+      }()
+      
+      item = TKListContainerItemView.Model(
+        id: "encrypted_comment_item",
         title: TKLocales.EventDetails.comment,
-        value: .value(
-          TKListContainerItemDefaultValueView.Model(
-            topValue: TKListContainerItemDefaultValueView.Model.Value(value: "AAA", numberOfLines: 0)
-          )
+        titleIcon: TKListContainerItemView.Model.Icon(
+          image: .TKUIKit.Icons.Size12.lock,
+          tintColor: .Accent.green
         ),
-        isHighlightable: true,
-        copyValue: nil
+        value: .value(
+          value
+        ),
+        action: action
       )
     case .description(let string):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.description,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: string, numberOfLines: 0)
           )
         ),
-        isHighlightable: true,
-        copyValue: string
+        action: .copy(copyValue: string)
       )
     case .operation(let value):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: TKLocales.EventDetails.operation,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: value, numberOfLines: 0)
           )
         ),
-        isHighlightable: true,
-        copyValue: value
+        action: .copy(copyValue: value)
       )
     case let .other(title, value, copyValue):
-      TKListContainerItemView.Model(
+      item = TKListContainerItemView.Model(
         title: title,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: value, numberOfLines: 0)
           )
         ),
-        isHighlightable: true,
-        copyValue: copyValue
+        action: .copy(copyValue: copyValue)
       )
     }
+    return item
   }
   
   func configureTransactionButton() -> HistoryEventDetailsTransactionButtonComponent {

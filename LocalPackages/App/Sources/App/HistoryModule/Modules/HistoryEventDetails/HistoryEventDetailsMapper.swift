@@ -18,6 +18,11 @@ final class HistoryEventDetailsMapper {
       public let isVerified: Bool
     }
     
+    public enum EncryptedComment {
+      case encrypted(payload: EncryptedCommentPayload)
+      case decrypted(String?)
+    }
+    
     enum ListItem {
       case recipient(value: String, copyValue: String)
       case recipientAddress(value: String, copyValue: String)
@@ -26,7 +31,7 @@ final class HistoryEventDetailsMapper {
       case fee(value: String, converted: String?)
       case refund(value: String, converted: String?)
       case comment(String)
-      case encryptedComment
+      case encryptedComment(EncryptedComment)
       case description(String)
       case operation(String)
       case other(title: String, value: String, copyValue: String?)
@@ -89,7 +94,8 @@ final class HistoryEventDetailsMapper {
     self.isTestnet = isTestnet
   }
   
-  func mapEvent(event: AccountEventDetailsEvent) -> Model {
+  func mapEvent(event: AccountEventDetailsEvent,
+                decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let eventAction = event.action
     let date = dateFormatter.string(from: event.accountEvent.date)
     let fee = amountMapper.mapAmount(
@@ -110,7 +116,8 @@ final class HistoryEventDetailsMapper {
         fee: fee,
         feeConverted: fiatFee,
         status: eventAction.status,
-        isTestnet: isTestnet)
+        isTestnet: isTestnet,
+        decryptedCommentProvider: decryptedCommentProvider)
     case let .jettonTransfer(jettonTransfer):
       return mapJettonTransfer(
         activityEvent: event.accountEvent,
@@ -119,7 +126,8 @@ final class HistoryEventDetailsMapper {
         fee: fee,
         feeConverted: fiatFee,
         status: eventAction.status,
-        isTestnet: isTestnet)
+        isTestnet: isTestnet,
+        decryptedCommentProvider: decryptedCommentProvider)
     case let .nftItemTransfer(nftItemTransfer):
       return mapNFTTransfer(
         activityEvent: event.accountEvent,
@@ -128,7 +136,8 @@ final class HistoryEventDetailsMapper {
         fee: fee,
         feeConverted: fiatFee,
         status: eventAction.status,
-        isTestnet: isTestnet)
+        isTestnet: isTestnet,
+        decryptedCommentProvider: decryptedCommentProvider)
     case let .nftPurchase(nftPurchase):
       return mapNFTPurchase(
         activityEvent: event.accountEvent,
@@ -251,7 +260,8 @@ final class HistoryEventDetailsMapper {
                               fee: String,
                               feeConverted: String?,
                               status: AccountEventStatus,
-                              isTestnet: Bool) -> Model {
+                              isTestnet: Bool,
+                              decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let transferDirection: TransferDirection = {
       if tonTransfer.recipient == activityEvent.account {
         return .receive
@@ -291,7 +301,14 @@ final class HistoryEventDetailsMapper {
       listItems.append(.comment(comment))
     }
     if let encryptedComment = tonTransfer.encryptedComment {
-      listItems.append(.encryptedComment)
+      listItems.append(
+        createEncryptedCommentListItem(
+          encryptedComment: encryptedComment,
+          eventId: activityEvent.eventId,
+          senderAddress: tonTransfer.sender.address,
+          decryptedCommentProvider: decryptedCommentProvider
+        )
+      )
     }
     
     let title = amountMapper.mapAmount(
@@ -320,7 +337,8 @@ final class HistoryEventDetailsMapper {
                          fee: String,
                          feeConverted: String?,
                          status: AccountEventStatus,
-                         isTestnet: Bool) -> Model {
+                         isTestnet: Bool,
+                         decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let transferDirection: TransferDirection = {
       if action.recipient == activityEvent.account {
         return .receive
@@ -364,7 +382,14 @@ final class HistoryEventDetailsMapper {
       listItems.append(.comment(comment))
     }
     if let encryptedComment = action.encryptedComment {
-      listItems.append(.encryptedComment)
+      listItems.append(
+        createEncryptedCommentListItem(
+          encryptedComment: encryptedComment,
+          eventId: activityEvent.eventId,
+          senderAddress: action.senderAddress,
+          decryptedCommentProvider: decryptedCommentProvider
+        )
+      )
     }
     
     let title = amountMapper.mapAmount(
@@ -398,7 +423,8 @@ final class HistoryEventDetailsMapper {
                       fee: String,
                       feeConverted: String?,
                       status: AccountEventStatus,
-                      isTestnet: Bool) -> Model {
+                      isTestnet: Bool,
+                      decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     
     let transferDirection: TransferDirection = {
       if nftTransfer.recipient == activityEvent.account {
@@ -451,8 +477,15 @@ final class HistoryEventDetailsMapper {
     if let comment = nftTransfer.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(.comment(comment))
     }
-    if let encryptedComment = nftTransfer.encryptedComment {
-      listItems.append(.encryptedComment)
+    if let encryptedComment = nftTransfer.encryptedComment, let sender = nftTransfer.sender {
+      listItems.append(
+        createEncryptedCommentListItem(
+          encryptedComment: encryptedComment,
+          eventId: activityEvent.eventId,
+          senderAddress: sender.address,
+          decryptedCommentProvider: decryptedCommentProvider
+        )
+      )
     }
     
     var headerImage: Model.HeaderImage?
@@ -978,6 +1011,21 @@ final class HistoryEventDetailsMapper {
       isScam: false,
       listItems: listItems
     )
+  }
+  
+  private func createEncryptedCommentListItem(encryptedComment: EncryptedComment,
+                                              eventId: AccountEvent.EventID,
+                                              senderAddress: Address,
+                                              decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model.ListItem {
+    let payload = EncryptedCommentPayload(
+      encryptedComment: encryptedComment,
+      senderAddress: senderAddress
+    )
+    if let decrypted = decryptedCommentProvider(eventId, payload) {
+      return .encryptedComment(.decrypted(decrypted))
+    } else {
+      return .encryptedComment(.encrypted(payload: payload))
+    }
   }
   
   private func convertTonToFiatString(amount: BigUInt) -> String? {

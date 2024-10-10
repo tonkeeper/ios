@@ -41,7 +41,14 @@ final class DecryptCommentHandler {
         await decrypt()
       }
     } else {
-      showDecryptCommentWarningPopup(fromViewController: parentRouter.rootViewController,
+      let fromViewController: UIViewController = {
+        if let presentedViewController = parentRouter.rootViewController.presentedViewController {
+          return presentedViewController
+        } else {
+          return parentRouter.rootViewController
+        }
+      }()
+      showDecryptCommentWarningPopup(fromViewController: fromViewController,
                                      coreAssembly: coreAssembly) {
         Task {
           await decrypt()

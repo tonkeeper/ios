@@ -133,6 +133,15 @@ extension PasscodeInputCoordinator {
     navigationController.modalPresentationStyle = .fullScreen
     navigationController.modalTransitionStyle = .crossDissolve
     
+    let fromViewController: UIViewController = {
+      if let presentedViewController = parentRouter.rootViewController.presentedViewController {
+        return presentedViewController
+      } else {
+        return parentRouter.rootViewController
+      }
+    }()
+    
+    
     let coordinator = confirmationCoordinator(
       router: NavigationControllerRouter(
         rootViewController: navigationController
@@ -142,14 +151,14 @@ extension PasscodeInputCoordinator {
     )
     
     coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
-      parentRouter.dismiss(animated: true) {
+      fromViewController.dismiss(animated: true) {
         parentCoordinator?.removeChild(coordinator)
         onCancel()
       }
     }
     
     coordinator.didInputPasscode = { [weak coordinator, weak parentCoordinator] passcode in
-      parentRouter.dismiss(animated: true) {
+      fromViewController.dismiss(animated: true) {
         parentCoordinator?.removeChild(coordinator)
         onInput(passcode)
       }
@@ -158,7 +167,7 @@ extension PasscodeInputCoordinator {
     parentCoordinator.addChild(coordinator)
     coordinator.start()
     
-    parentRouter.present(
+    fromViewController.present(
       navigationController,
       animated: true)
   }

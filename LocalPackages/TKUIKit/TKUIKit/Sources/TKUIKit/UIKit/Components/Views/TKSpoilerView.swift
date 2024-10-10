@@ -11,21 +11,15 @@ public final class TKSpoilerView: TKEmitterView {
     }
   }
   
+  public var spoilerColor: UIColor = .Constant.white {
+    didSet {
+      setEmitterCell()
+    }
+  }
+  
   public override func setup() {
     super.setup()
-    
-    let emitterCell = CAEmitterCell()
-    emitterCell.contents = UIImage.TKUIKit.Images.text_spoiler.cgImage
-    emitterCell.color = UIColor.white.cgColor
-    emitterCell.contentsScale = 1.8
-    emitterCell.emissionRange = .pi * 2
-    emitterCell.lifetime = 1
-    emitterCell.scale = 0.5
-    emitterCell.velocityRange = 20
-    emitterCell.alphaRange = 1
-
-    emitterLayer.emitterShape = .rectangle
-    emitterLayer.emitterCells = [emitterCell]
+    setEmitterCell()
   }
   
   public override func layoutSubviews() {
@@ -33,6 +27,21 @@ public final class TKSpoilerView: TKEmitterView {
     emitterLayer.emitterCells?.forEach {
       $0.birthRate = Float((bounds.width * bounds.height) / 3)
     }
+  }
+  
+  private func setEmitterCell() {
+    let emitterCell = CAEmitterCell()
+    emitterCell.contents = UIImage.TKUIKit.Images.text_spoiler.cgImage
+    emitterCell.color = spoilerColor.cgColor
+    emitterCell.contentsScale = 1.8
+    emitterCell.emissionRange = .pi * 2
+    emitterCell.lifetime = 1
+    emitterCell.scale = 0.5
+    emitterCell.velocityRange = 20
+    emitterCell.alphaRange = 1
+    
+    emitterLayer.emitterShape = .rectangle
+    emitterLayer.emitterCells = [emitterCell]
   }
 }
 

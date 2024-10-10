@@ -19,8 +19,9 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
   }()
   
   struct Model: TKListContainerItem {
-    var isHighlightable: Bool
-    var copyValue: String?
+    var action: TKListContainerItemAction? {
+      .copy(copyValue: copyValue)
+    }
     
     func getView() -> UIView {
       let view = SettingsPurchasesDetailsListItemView()
@@ -31,6 +32,7 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
     let title: NSAttributedString
     let caption: NSAttributedString?
     let image: TKImageView.Model?
+    let copyValue: String?
     
     init(title: String,
          caption: String?,
@@ -50,7 +52,6 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
         lineBreakMode: .byTruncatingTail
       )
       self.image = image
-      self.isHighlightable = isHighlightable
       self.copyValue = copyValue
     }
   }

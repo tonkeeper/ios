@@ -1,10 +1,19 @@
 import UIKit
 
+public enum TKListContainerItemAction {
+  case copy(copyValue: String?)
+  case custom(() -> Void)
+}
+
 public protocol TKListContainerItem {
-  var isHighlightable: Bool { get }
-  var copyValue: String? { get }
+  var action: TKListContainerItemAction? { get }
   
   func getView() -> UIView
+}
+
+public protocol TKListContainerReconfigurableItem: TKListContainerItem {
+  var id: String? { get }
+  func reconfigure(view: UIView)
 }
 
 public final class TKListContainerView: UIView {
@@ -22,6 +31,8 @@ public final class TKListContainerView: UIView {
     }
   }
   
+  private var contentViews = [String: UIView]()
+  
   private let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -35,7 +46,7 @@ public final class TKListContainerView: UIView {
     view.layer.cornerRadius = 16
     return view
   }()
-  
+
   public override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -63,18 +74,45 @@ public final class TKListContainerView: UIView {
     stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
     guard let configuration else { return }
     configuration.items.forEach { item in
-      let contentView = item.getView()
-      contentView.isUserInteractionEnabled = false
-      let itemView = TKListContainerItemViewContainer()
-      itemView.setContentView(contentView)
-      itemView.isHighlightable = item.isHighlightable
-      itemView.addAction(UIAction(handler: { _ in
-        guard let copyValue = item.copyValue else { return }
-        UIPasteboard.general.string = copyValue
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        ToastPresenter.showToast(configuration: .copied)
-      }), for: .touchUpInside)
-      stackView.addArrangedSubview(itemView)
+      
+      let createView = { (id: String?) in
+        let contentView = item.getView()
+        contentView.isUserInteractionEnabled = false
+        let itemView = TKListContainerItemViewContainer()
+        itemView.setContentView(contentView)
+        if let action = item.action {
+          itemView.isHighlightable = true
+          itemView.addAction(UIAction(handler: { _ in
+            switch action {
+            case .copy(let copyValue):
+              guard let copyValue = copyValue else { return }
+              UIPasteboard.general.string = copyValue
+              UINotificationFeedbackGenerator().notificationOccurred(.warning)
+              ToastPresenter.showToast(configuration: .copied)
+            case .custom(let action):
+              action()
+            }
+          }), for: .touchUpInside)
+        } else {
+          itemView.isHighlightable = false
+        }
+        if let id {
+          self.contentViews[id] = contentView
+        }
+        return itemView
+      }
+
+      if let reconfigurable = item as? TKListContainerReconfigurableItem {
+        if let id = reconfigurable.id, let view = contentViews[id] {
+          reconfigurable.reconfigure(view: view)
+        } else {
+          let view = createView(reconfigurable.id)
+          stackView.addArrangedSubview(view)
+        }
+      } else {
+        let view = createView(nil)
+        stackView.addArrangedSubview(view)
+      }
     }
   }
 }

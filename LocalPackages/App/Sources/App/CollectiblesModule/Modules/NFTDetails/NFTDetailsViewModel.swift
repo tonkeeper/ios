@@ -199,8 +199,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.owner?.address.toShortString(bounceable: false))
         )
       ),
-      isHighlightable: true,
-      copyValue: nft.owner?.address.toString(bounceable: false)
+      action: .copy(copyValue: nft.owner?.address.toString(bounceable: false))
     ))
     
     switch dnsResolveState {
@@ -214,8 +213,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
             topValue: TKListContainerItemDefaultValueView.Model.Value(value: dateFormatted)
           )
         ),
-        isHighlightable: false,
-        copyValue: nil
+        action: nil
       ))
     default:
       break
@@ -228,8 +226,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.address.toShortString(bounceable: true))
         )
       ),
-      isHighlightable: true,
-      copyValue: nft.address.toString(bounceable: true)
+      action: .copy(copyValue: nft.address.toString(bounceable: true))
     ))
   
     let listViewConfiguration = TKListContainerView.Configuration(

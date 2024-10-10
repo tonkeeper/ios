@@ -228,6 +228,7 @@ extension MainCoordinator {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self.openHistoryEventDetails(
+            wallet: wallet,
             event: AccountEventDetailsEvent(
               accountEvent: event,
               action: action

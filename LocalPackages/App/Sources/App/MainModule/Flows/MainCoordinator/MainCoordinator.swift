@@ -200,8 +200,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
-    historyCoordinator.didOpenEventDetails = { [weak self] event, isTestnet in
-      self?.openHistoryEventDetails(event: event, isTestnet: isTestnet)
+    historyCoordinator.didOpenEventDetails = { [weak self] wallet, event, isTestnet in
+      self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: isTestnet)
     }
     historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
@@ -618,7 +618,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createTonHistoryListModule(wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(event: event, isTestnet: wallet.isTestnet)
+      self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
     }
     
     let module = TokenDetailsAssembly.module(
@@ -671,7 +671,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createJettonHistoryListModule(jettonInfo: jettonItem.jettonInfo, wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(event: event, isTestnet: wallet.isTestnet)
+      self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
     }
     
     let module = TokenDetailsAssembly.module(
@@ -921,13 +921,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
-  func openHistoryEventDetails(event: AccountEventDetailsEvent, isTestnet: Bool) {
+  func openHistoryEventDetails(wallet: Wallet, event: AccountEventDetailsEvent, isTestnet: Bool) {
     let module = HistoryEventDetailsAssembly.module(
+      wallet: wallet,
       event: event,
       keeperCoreAssembly: keeperCoreMainAssembly,
       urlOpener: coreAssembly.urlOpener(),
       isTestnet: isTestnet
     )
+    
+    module.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in
+      self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
+    }
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     router.rootViewController.dismiss(animated: true) { [weak self] in

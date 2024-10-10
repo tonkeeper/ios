@@ -2,16 +2,26 @@ import UIKit
 
 public final class TKListContainerItemView: UIView, ConfigurableView {
   
-  public struct Model: TKListContainerItem {
+  public struct Model: TKListContainerReconfigurableItem {
     public enum Value {
       case loading
       case value(TKListContainerItemValue)
     }
     
+    public struct Icon {
+      public let image: UIImage
+      public let tintColor: UIColor
+      public init(image: UIImage, tintColor: UIColor) {
+        self.image = image
+        self.tintColor = tintColor
+      }
+    }
+    
+    public var id: String?
     public let title: String
+    public let titleIcon: Icon?
     public let value: Value
-    public let isHighlightable: Bool
-    public let copyValue: String?
+    public var action: TKListContainerItemAction?
     
     public func getView() -> UIView {
       let view = TKListContainerItemView()
@@ -19,14 +29,20 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
       return view
     }
     
-    public init(title: String,
+    public func reconfigure(view: UIView) {
+      (view as? TKListContainerItemView)?.configure(model: self)
+    }
+    
+    public init(id: String? = nil,
+                title: String,
+                titleIcon: Icon? = nil,
                 value: Value,
-                isHighlightable: Bool,
-                copyValue: String?) {
+                action: TKListContainerItemAction?) {
+      self.id = id
       self.title = title
+      self.titleIcon = titleIcon
       self.value = value
-      self.isHighlightable = isHighlightable
-      self.copyValue = copyValue
+      self.action = action
     }
   }
   
@@ -37,6 +53,8 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
+    titleIconImageView.image = model.titleIcon?.image
+    titleIconImageView.tintColor = model.titleIcon?.tintColor
     valueViewContainer.subviews.forEach { $0.removeFromSuperview() }
     switch model.value {
     case .loading:
@@ -60,17 +78,14 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     stackView.axis = .horizontal
     stackView.alignment = .top
     stackView.distribution = .fillProportionally
+    stackView.spacing = 4
     return stackView
   }()
   
-  private let titleStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.spacing = 4
-    stackView.alignment = .center
-    return stackView
-  }()
+  private let titleContainerView = UIView()
+
   private let titleLabel = UILabel()
+  private let titleIconImageView = UIImageView()
   private let valueStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -91,13 +106,14 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
   private func setup() {
     addSubview(stackView)
     
-    titleLabel.setContentHuggingPriority(.required, for: .horizontal)
-    titleStackView.setContentHuggingPriority(.required, for: .horizontal)
-    titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-    titleStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    titleIconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     
-    stackView.addArrangedSubview(titleStackView)
-    titleStackView.addArrangedSubview(titleLabel)
+    titleLabel.setContentHuggingPriority(.required, for: .horizontal)
+    titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
+    stackView.addArrangedSubview(titleContainerView)
+    titleContainerView.addSubview(titleLabel)
+    titleContainerView.addSubview(titleIconImageView)
     
     stackView.addArrangedSubview(valueStackView)
     valueStackView.addArrangedSubview(valueViewContainer)
@@ -114,6 +130,16 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     shimmerView.snp.makeConstraints { make in
       make.width.equalTo(80).priority(.medium)
       make.height.equalTo(24).priority(.medium)
+    }
+    
+    titleLabel.snp.makeConstraints { make in
+      make.top.left.bottom.equalTo(titleContainerView)
+    }
+    
+    titleIconImageView.snp.makeConstraints { make in
+      make.right.lessThanOrEqualTo(titleContainerView)
+      make.left.equalTo(titleLabel.snp.right).offset(4)
+      make.centerY.equalTo(titleContainerView)
     }
   }
 }
