@@ -14,6 +14,7 @@
   "accountExplorerTestnet": "https://testnet.tonviewer.com/%s",
   "mercuryoSecret": "yMd6dkP9SVip98Nw",
   "subscriptionsHost": "https://api.tonkeeper.com",
+  "battery_beta": true,
   "tonapiV2Endpoint": "https://keeper.tonapi.io",
   "tonapiMainnetHost": "https://keeper.tonapi.io",
   "tonapiTestnetHost": "https://testnet.tonapi.io",

@@ -12,6 +12,7 @@ public struct RemoteConfiguration: Equatable {
   public let stonfiUrl: URL?
   public let faqUrl: URL?
   public let stakingInfoUrl: URL?
+  public let isBatteryBeta: Bool
   public let accountExplorer: String?
   public let accountExplorerTestnet: String?
   public let transactionExplorer: String?
@@ -31,6 +32,7 @@ public struct RemoteConfiguration: Equatable {
     case stonfiUrl
     case faqUrl = "faq_url"
     case stakingInfoUrl
+    case isBatteryBeta = "battery_beta"
     case flags
     case accountExplorer
     case accountExplorerTestnet
@@ -78,6 +80,7 @@ extension RemoteConfiguration {
       stonfiUrl: nil,
       faqUrl: nil,
       stakingInfoUrl: nil,
+      isBatteryBeta: true,
       accountExplorer: nil,
       accountExplorerTestnet: nil,
       transactionExplorer: nil,
