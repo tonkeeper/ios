@@ -653,7 +653,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     )
     
     let balanceColor: UIColor
-    let backup: BalanceHeaderAmountView.Model.Backup
+    let backup: BalanceHeaderAmountView.Configuration.Backup
     let backupWarningState = BalanceBackupWarningCheck().check(
       wallet: state.wallet,
       tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
@@ -675,7 +675,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
     
     let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
-    let balanceModel = BalanceHeaderAmountView.Model(
+    let balanceConfiguration = BalanceHeaderAmountView.Configuration(
       balanceButtonModel: BalanceHeaderAmountButton.Model(
         balance: totalBalanceMapped,
         balanceColor: balanceColor,
@@ -687,6 +687,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           }
         }
       ),
+      batteryButtonConfiguration: createBatteryButtonConfiguration(),
       backup: backup
     )
     
@@ -701,7 +702,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let headerModel = BalanceHeaderBalanceView.Model(
-      balanceModel: balanceModel,
+      balanceConfiguration: balanceConfiguration,
       addressButtonConfiguration: addressButtonConfiguration,
       connectionStatusModel: self.createConnectionStatusModel(
         backgroundUpdateState: state.backgroundUpdateState,
@@ -716,6 +717,15 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
     )
     return model
+  }
+  
+  func createBatteryButtonConfiguration() -> BalanceHeaderBatteryButton.Configuration? {
+    BalanceHeaderBatteryButton.Configuration(
+      batteryConfiguration: .fill(0.3),
+      action: {
+        
+      }
+    )
   }
   
   func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {
