@@ -128,6 +128,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-block-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var flash: UIImage {
+          .imageWithName("Icons/16/ic-flash-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -469,6 +473,12 @@ public extension UIImage {
       public enum Size128 {
         public static var lock: UIImage {
           .imageWithName("Icons/128/ic-lock-128")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
+      public enum Vector {
+        public static var flash: UIImage {
+          .imageWithName("Icons/Vector/ic-flash-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }
