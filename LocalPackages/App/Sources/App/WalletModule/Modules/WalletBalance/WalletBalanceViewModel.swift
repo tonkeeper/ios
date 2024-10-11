@@ -673,7 +673,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       balanceColor = .Text.primary
       backup = .none
     }
-    
+  
     let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
     let balanceConfiguration = BalanceHeaderAmountView.Configuration(
       balanceButtonModel: BalanceHeaderAmountButton.Model(
@@ -687,7 +687,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           }
         }
       ),
-      batteryButtonConfiguration: createBatteryButtonConfiguration(),
+      batteryButtonConfiguration: createBatteryButtonConfiguration(batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance),
       backup: backup
     )
     
@@ -719,9 +719,16 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     return model
   }
   
-  func createBatteryButtonConfiguration() -> BalanceHeaderBatteryButton.Configuration? {
-    BalanceHeaderBatteryButton.Configuration(
-      batteryConfiguration: .fill(0.3),
+  func createBatteryButtonConfiguration(batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
+    let state: BatteryView.State
+    switch batteryBalance?.batteryState {
+    case .fill(let percents):
+      state = .fill(percents)
+    case .empty, .none:
+      state = .emptyTinted
+    }
+    return BalanceHeaderBatteryButton.Configuration(
+      batteryConfiguration: state,
       action: {
         
       }

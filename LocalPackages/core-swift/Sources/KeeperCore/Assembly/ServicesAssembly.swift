@@ -28,7 +28,9 @@ public final class ServicesAssembly {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),
+      batteryBalanceService: batteryBalanceService(),
       stackingService: stackingService(),
+      tonProofTokenService: tonProofTokenService(),
       walletBalanceRepository: repositoriesAssembly.walletBalanceRepository())
   }
   
@@ -117,6 +119,10 @@ public final class ServicesAssembly {
     )
   }
   
+  func batteryBalanceService() -> BatteryBalanceService {
+    BatteryBalanceServiceImplementation(batteryAPIProvider: apiAssembly.batteryApiProvider)
+  }
+  
   public func sendService() -> SendService {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
@@ -150,5 +156,14 @@ public final class ServicesAssembly {
   
   public func encryptedCommentService() -> EncryptedCommentService {
     EncryptedCommentServiceImplementation(mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+  }
+  
+  public func tonProofTokenService() -> TonProofTokenService {
+    TonProofTokenServiceImplementation(
+      keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
+      tonProofTokenRepository: repositoriesAssembly.tonProofTokenRepository(),
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
+      api: apiAssembly.api
+    )
   }
 }

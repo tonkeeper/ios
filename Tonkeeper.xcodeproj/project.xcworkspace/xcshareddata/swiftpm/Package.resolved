@@ -46,15 +46,6 @@
       }
     },
     {
-      "identity" : "battery-api-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/battery-api-swift",
-      "state" : {
-        "revision" : "b9f25d7db7bcbb8190722d29929ca19d4d465ae7",
-        "version" : "2.0.0"
-      }
-    },
-    {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/attaswift/BigInt",

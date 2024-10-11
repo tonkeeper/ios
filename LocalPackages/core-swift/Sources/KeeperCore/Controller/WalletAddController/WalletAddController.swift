@@ -6,11 +6,14 @@ import TonTransport
 public final class WalletAddController {
 
   private let walletsStore: WalletsStore
+  private let tonProofTokenService: TonProofTokenService
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
+       tonProofTokenService: TonProofTokenService,
        mnemonicsRepositoty: MnemonicsRepository) {
     self.walletsStore = walletsStore
+    self.tonProofTokenService = tonProofTokenService
     self.mnemonicsRepository = mnemonicsRepositoty
   }
   
@@ -30,6 +33,12 @@ public final class WalletAddController {
       setupSettings: WalletSetupSettings(backupDate: nil)
     )
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: [WalletPrivateKeyPair(
+        wallet: wallet,
+        privateKey: keyPair.privateKey
+      )]
+    )
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
     await walletsStore.addWallets([wallet])
   }
@@ -39,6 +48,9 @@ public final class WalletAddController {
   }
   public func addWalletRevision(wallet: Wallet, revision: WalletContractVersion,  passcode: String) async throws {
     let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
+    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+      mnemonicArray: mnemonic.mnemonicWords
+    )
     
     let newWalletKind: WalletKind
     switch wallet.identity.kind {
@@ -64,6 +76,12 @@ public final class WalletAddController {
       setupSettings: wallet.setupSettings
     )
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: [WalletPrivateKeyPair(
+        wallet: wallet,
+        privateKey: keyPair.privateKey
+      )]
+    )
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
     await walletsStore.addWallets([wallet])
   }
@@ -102,6 +120,14 @@ public final class WalletAddController {
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: wallets.map {
+        WalletPrivateKeyPair(
+          wallet: $0,
+          privateKey: keyPair.privateKey
+        )
+      }
+    )
     try await mnemonicsRepository.saveMnemonic(
       mnemonic,
       wallets: wallets,

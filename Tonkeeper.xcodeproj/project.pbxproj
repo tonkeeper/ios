@@ -208,6 +208,7 @@
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
 		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DEF51BD2CB8D18900A6DB2F /* battery-api-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "battery-api-swift"; path = "../../battery-api-swift"; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
@@ -448,6 +449,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				7DEF51BD2CB8D18900A6DB2F /* battery-api-swift */,
 				7D6A3DDC2CB00CB8008314E1 /* TKStories */,
 				E66F82AA2C2F2BB00009E7C2 /* Ledger */,
 				7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */,

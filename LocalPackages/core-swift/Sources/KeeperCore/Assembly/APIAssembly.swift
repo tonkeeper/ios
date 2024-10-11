@@ -44,6 +44,26 @@ final class APIAssembly {
     )
   }
   
+  var batteryApiProvider: BatteryAPIProvider {
+    BatteryAPIProvider { [configurationAssembly] isTestnet in
+      let hostProvider: APIHostProvider
+      if isTestnet {
+        hostProvider = TestnetBatteryAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
+      } else {
+        hostProvider = MainnetBatteryAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
+      }
+      
+      return BatteryAPI(
+        hostProvider: hostProvider,
+        urlSession: URLSession(
+          configuration: self.urlSessionConfiguration
+        ),
+        configurationStore: configurationAssembly.configurationStore,
+        requestBuilderActor: self.requestBuilderActor
+      )
+    }
+  }
+
   private lazy var requestBuilderActor = APIRequestBuilderSerialActor()
   
   private var tonApiHostProvider: APIHostProvider {

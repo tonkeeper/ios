@@ -54,7 +54,11 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
       let total = balance.items.reduce(Decimal(0)) { partialResult, item in
         return partialResult + item.converted
       }
-      return TotalBalance(amount: total, balance: balance, currency: balance.currency, date: balance.date)
+      return TotalBalance(amount: total, 
+                          balance: balance,
+                          batteryBalance: balance.batteryBalance, 
+                          currency: balance.currency,
+                          date: balance.date)
     }
     switch balanceState {
     case .none:

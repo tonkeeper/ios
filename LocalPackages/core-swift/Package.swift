@@ -35,7 +35,7 @@ let package = Package(
               .product(name: "TonTransport", package: "Ledger"),
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
-              .product(name: "BatteryAPI", package: "battery-api-swift"),
+              .product(name: "TKBatteryAPI", package: "battery-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
               .target(name: "TonConnectAPI"),
               .target(name: "CoreComponents")

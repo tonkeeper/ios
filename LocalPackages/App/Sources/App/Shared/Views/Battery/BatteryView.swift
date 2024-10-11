@@ -200,7 +200,7 @@ final class BatteryView: UIView {
     switch state {
     case .fill(let fill):
       finalAlpha = 1
-      height = size.fillMaximumHeight * max(fill, 0.2)
+      height = size.fillMaximumHeight * min(1, max(fill, 0.2))
       color = fill <= 0.1 ? .Accent.orange : .Accent.blue
     case .emptyTinted:
       finalAlpha = 0

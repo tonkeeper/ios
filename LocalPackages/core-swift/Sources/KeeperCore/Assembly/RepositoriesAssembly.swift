@@ -84,6 +84,10 @@ public struct RepositoriesAssembly {
     TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func tonProofTokenRepository() -> TonProofTokenRepository {
+    TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
+  }
+  
   public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {
     let seedProvider = {
       return self.settingsRepository().seed

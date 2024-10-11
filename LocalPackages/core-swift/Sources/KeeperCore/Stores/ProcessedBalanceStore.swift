@@ -216,6 +216,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
       tonItem: tonItem,
       jettonItems: jettonItems,
       stakingItems: stakingItems,
+      batteryBalance: walletBalance.batteryBalance,
       currency: currency,
       date: walletBalance.date
     )
