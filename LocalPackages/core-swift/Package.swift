@@ -16,6 +16,7 @@ let package = Package(
     .package(path: "../Ledger"),
     .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.18")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
+    .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.0")),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
@@ -34,6 +35,7 @@ let package = Package(
               .product(name: "TonTransport", package: "Ledger"),
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
+              .product(name: "BatteryAPI", package: "battery-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
               .target(name: "TonConnectAPI"),
               .target(name: "CoreComponents")
