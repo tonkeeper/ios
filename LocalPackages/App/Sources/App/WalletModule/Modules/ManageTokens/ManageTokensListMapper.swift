@@ -6,9 +6,7 @@ import KeeperCore
 import BigInt
 
 struct ManageTokensListMapper {
-  
-  let imageLoader = ImageLoader()
-  
+    
   private let amountFormatter: AmountFormatter
   
   init(amountFormatter: AmountFormatter) {

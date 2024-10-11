@@ -6,7 +6,6 @@ import TonSwift
 
 struct HistoryEventMapper {
   
-  let imageLoader = ImageLoader()
   let accountEventActionContentProvider: AccountEventActionContentProvider
   
   init(accountEventActionContentProvider: AccountEventActionContentProvider) {
