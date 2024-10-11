@@ -401,12 +401,12 @@ private extension AccountEventMapper {
                            isTestnet: Bool) -> AccountEventModel.Action {
     var nft: AccountEventModel.Action.ActionNFT?
     if let actionNft = action.nft {
-      let nftModel = AccountEventModel.Action.ActionNFT.Model(
+      let nftModel = AccountEventModel.Action.ActionNFT(
         nft: actionNft,
         name: actionNft.name,
         collectionName: actionNft.collection?.name ?? .singleNFT,
         image: actionNft.preview.size500)
-      nft = .model(nftModel)
+      nft = nftModel
     }
     
     return AccountEventModel.Action(eventType: .bid,
@@ -427,7 +427,7 @@ private extension AccountEventMapper {
                             status: String?,
                             isTestnet: Bool) -> AccountEventModel.Action {
     
-    let nftModel = AccountEventModel.Action.ActionNFT.Model(
+    let nftModel = AccountEventModel.Action.ActionNFT(
       nft: action.nft,
       name: action.nft.name,
       collectionName: action.nft.collection?.name ?? .singleNFT,
@@ -451,7 +451,7 @@ private extension AccountEventMapper {
       rightTopDescription: rightTopDescription,
       status: status,
       comment: nil,
-      nft: .model(nftModel)
+      nft: nftModel
     )
   }
   
@@ -528,16 +528,14 @@ private extension AccountEventMapper {
       eventType = .receieved
     }
     
-    let actionNFT: AccountEventModel.Action.ActionNFT
+    var actionNFT: AccountEventModel.Action.ActionNFT?
     if let nft = nftProvider(action.nftAddress) {
-      let nftModel = AccountEventModel.Action.ActionNFT.Model(
+      let nftModel = AccountEventModel.Action.ActionNFT(
         nft: nft,
         name: nft.name,
         collectionName: nft.collection?.name ?? .singleNFT,
         image: nft.preview.size500)
-      actionNFT = .model(nftModel)
-    } else {
-      actionNFT = .empty(action.nftAddress)
+      actionNFT = nftModel 
     }
 
     var encryptedComment: AccountEventModel.Action.EncryptedComment?
