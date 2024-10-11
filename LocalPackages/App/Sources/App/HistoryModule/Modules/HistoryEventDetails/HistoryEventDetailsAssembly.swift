@@ -27,8 +27,6 @@ struct HistoryEventDetailsAssembly {
       wallet: wallet,
       event: event,
       historyEventDetailsMapper: mapper,
-      urlOpener: urlOpener,
-      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore,
       decryptedCommentStore: keeperCoreAssembly.storesAssembly.decryptedCommentStore
     )
     let viewController = HistoryEventDetailsViewController(viewModel: viewModel)

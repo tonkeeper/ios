@@ -206,10 +206,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
     }
+    historyCoordinator.didOpenDapp = { url, title in
+      self.openDapp(title: title, url: url)
+    }
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    collectiblesCoordinator.didOpenDapp = { url, title in
+      self.openDapp(title: title, url: url)
+    }
     
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
@@ -934,6 +940,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
     }
     
+    module.output.didTapOpenTransactionInTonviewer = { [weak self, keeperCoreMainAssembly] in
+      guard let url = TonviewerLinkBuilder(configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore)
+        .buildLink(context: .eventDetails(eventID: event.accountEvent.eventId), isTestnet: wallet.isTestnet) else { return }
+      self?.openDapp(title: "Tonviewer", url: url)
+    }
+    
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     router.rootViewController.dismiss(animated: true) { [weak self] in
       guard let router = self?.router else { return }
@@ -1025,6 +1037,31 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
   }
+  
+  func openDapp(title: String?, url: URL) {
+    let dapp = Dapp(
+      name: title ?? "",
+      description: "",
+      icon: nil,
+      poster: nil,
+      url: url,
+      textColor: nil,
+      excludeCountries: nil,
+      includeCountries: nil
+    )
+
+    let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
+    let coordinator = DappCoordinator(
+      router: controllerRouter,
+      dapp: dapp,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
   private func openHistoryTab() {
     guard let historyViewController = historyCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }

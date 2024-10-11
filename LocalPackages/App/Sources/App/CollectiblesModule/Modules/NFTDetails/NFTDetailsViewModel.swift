@@ -11,7 +11,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
-  var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
+  var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
   var didHideNFT: (() -> Void)? { get set }
 }
 
@@ -78,7 +78,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
-  var didRequestTonviewerShowing: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
+  var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
   var didHideNFT: (() -> Void)?
 
   // MARK: - NFTDetailsViewModel
@@ -123,13 +123,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       title: hideNftTitle,
       icon: .TKUIKit.Icons.Size16.eyeDisable,
       selectionHandler: { [weak self] in
+        guard let self else { return }
         Task {
-          guard let self else {
-            return
-          }
-
           await self.hideNFT()
-
           await MainActor.run { self.didHideNFT?() }
         }
       }
@@ -142,7 +138,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         guard let self else {
           return
         }
-        self.didRequestTonviewerShowing?(.nftHistory(nft: self.nft))
+        self.didTapOpenInTonviewer?(.nftHistory(nft: self.nft))
       }
     )
 
@@ -236,7 +232,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return
       }
 
-      self.didRequestTonviewerShowing?(.nftDetails(nft: self.nft))
+      self.didTapOpenInTonviewer?(.nftDetails(nft: self.nft))
     })
 
     let headerViewModel = NFTDetailsSectionHeaderView.Model(

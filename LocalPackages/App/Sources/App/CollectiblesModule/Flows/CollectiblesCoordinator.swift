@@ -8,6 +8,8 @@ import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
+  var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
+  
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -72,6 +74,10 @@ private extension CollectiblesCoordinator {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
+    
+    coordinator.didOpenDapp = { [weak self] url, title in
+      self?.didOpenDapp?(url, title)
+    }
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
       navigationController?.dismiss(animated: true)

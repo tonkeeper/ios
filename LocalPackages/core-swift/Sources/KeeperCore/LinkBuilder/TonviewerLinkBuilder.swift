@@ -5,6 +5,7 @@ public struct TonviewerLinkBuilder {
   public enum TonviewerURLContext {
     case nftHistory(nft: NFT)
     case nftDetails(nft: NFT)
+    case eventDetails(eventID: String)
   }
 
   private let configurationStore: ConfigurationStore
@@ -32,6 +33,10 @@ public struct TonviewerLinkBuilder {
       }
       let stringAddress = nft.address.toFriendly().toString()
       resultStringURL = url.replacingOccurrences(of: "%s", with: stringAddress)
+    case .eventDetails(let eventID):
+      let url = isTestnet ? configuration.transactionExplorerTestnet : configuration.transactionExplorer
+      guard let url else { return nil }
+      resultStringURL = url.replacingOccurrences(of: "%s", with: eventID)
     }
 
     return URL(string: resultStringURL)

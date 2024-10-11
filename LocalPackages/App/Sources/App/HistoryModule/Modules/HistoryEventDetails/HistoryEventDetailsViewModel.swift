@@ -6,6 +6,7 @@ import KeeperCore
 import TKLocalize
 
 protocol HistoryEventDetailsModuleOutput: AnyObject {
+  var didTapOpenTransactionInTonviewer: (() -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)? { get set }
 }
 
@@ -20,6 +21,7 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   
   // MARK: - HistoryEventDetailsModuleOutput
   
+  var didTapOpenTransactionInTonviewer: (() -> Void)?
   var didSelectEncryptedComment: ((Wallet, EncryptedCommentPayload, String) -> Void)?
   
   // MARK: - HistoryEventDetailsViewModel
@@ -47,8 +49,6 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   private let wallet: Wallet
   private let event: AccountEventDetailsEvent
   private let historyEventDetailsMapper: HistoryEventDetailsMapper
-  private let urlOpener: URLOpener
-  private let configurationStore: ConfigurationStore
   private let decryptedCommentStore: DecryptedCommentStore
   
   // MARK: - Init
@@ -56,14 +56,10 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   init(wallet: Wallet,
        event: AccountEventDetailsEvent,
        historyEventDetailsMapper: HistoryEventDetailsMapper,
-       urlOpener: URLOpener,
-       configurationStore: ConfigurationStore,
        decryptedCommentStore: DecryptedCommentStore) {
     self.wallet = wallet
     self.event = event
     self.historyEventDetailsMapper = historyEventDetailsMapper
-    self.urlOpener = urlOpener
-    self.configurationStore = configurationStore
     self.decryptedCommentStore = decryptedCommentStore
   }
 }
@@ -385,14 +381,8 @@ private extension HistoryEventDetailsViewModelImplementation {
     return HistoryEventDetailsTransactionButtonComponent(
       configuration: HistoryEventDetailsTransactionButtonView.Configuration(
         title: title,
-        action: { [configurationStore, event, urlOpener] in
-          guard let transactionExplorer = configurationStore.getConfiguration().transactionExplorer else {
-            return
-          }
-          let urlString = String(format: transactionExplorer.replacingOccurrences(of: "%s", with: "%@"),
-                                 event.accountEvent.eventId)
-          guard let url = URL(string: urlString) else { return }
-          urlOpener.open(url: url)
+        action: { [weak self] in
+          self?.didTapOpenTransactionInTonviewer?()
         }
       ),
       bottomSpace: 32

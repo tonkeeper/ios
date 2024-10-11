@@ -71,7 +71,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     module.view.modalPresentationStyle = .fullScreen
-    router.present(module.view, animated: true)
+    router.rootViewController.topPresentedViewController().present(module.view, animated: true)
   }
 
   private func performConnect(protocolVersion: Int,

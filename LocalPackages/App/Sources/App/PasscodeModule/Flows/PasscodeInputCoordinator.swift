@@ -133,14 +133,7 @@ extension PasscodeInputCoordinator {
     navigationController.modalPresentationStyle = .fullScreen
     navigationController.modalTransitionStyle = .crossDissolve
     
-    let fromViewController: UIViewController = {
-      if let presentedViewController = parentRouter.rootViewController.presentedViewController {
-        return presentedViewController
-      } else {
-        return parentRouter.rootViewController
-      }
-    }()
-    
+    let fromViewController: UIViewController = parentRouter.rootViewController.topPresentedViewController()
     
     let coordinator = confirmationCoordinator(
       router: NavigationControllerRouter(

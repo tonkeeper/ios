@@ -31,7 +31,6 @@ public struct RemoteConfiguration: Equatable {
     case stonfiUrl
     case faqUrl = "faq_url"
     case stakingInfoUrl
-    case transactionExplorer
     case flags
     case accountExplorer
     case accountExplorerTestnet

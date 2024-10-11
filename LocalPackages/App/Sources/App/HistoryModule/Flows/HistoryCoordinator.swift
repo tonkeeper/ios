@@ -14,6 +14,7 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
   
   var didOpenEventDetails: ((_ wallet: Wallet, _ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
   var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
+  var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -153,6 +154,10 @@ private extension HistoryCoordinator {
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
+      
+      coordinator.didOpenDapp = { [weak self] url, title in
+        self?.didOpenDapp?(url, title)
+      }
 
       coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
         navigationController?.dismiss(animated: true)

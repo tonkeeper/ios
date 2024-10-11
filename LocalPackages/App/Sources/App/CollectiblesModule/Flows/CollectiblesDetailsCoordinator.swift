@@ -11,6 +11,7 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   
   var didClose: (() -> Void)?
   var didPerformTransaction: (() -> Void)?
+  var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var linkDNSCoordinator: LinkDNSCoordinator?
@@ -112,13 +113,13 @@ private extension CollectiblesDetailsCoordinator {
             }
 
             await MainActor.run {
-              self.openDapp(url: composedURL)
+              self.didOpenDapp?(composedURL, nil)
             }
           }
         })
     }
 
-    module.output.didRequestTonviewerShowing = { [weak self] context in
+    module.output.didTapOpenInTonviewer = { [weak self] context in
       guard let self = self else {
         return
       }
@@ -128,7 +129,7 @@ private extension CollectiblesDetailsCoordinator {
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
-      self.openDapp(title: "Tonviewer", url: url)
+      self.didOpenDapp?(url, "Tonviewer")
     }
 
     module.output.didHideNFT = { [weak self] in
@@ -154,30 +155,6 @@ private extension CollectiblesDetailsCoordinator {
     }
 
     router.push(viewController: module.view)
-  }
-
-  func openDapp(title: String = "", url: URL) {
-    let dapp = Dapp(
-      name: title,
-      description: "",
-      icon: nil,
-      poster: nil,
-      url: url,
-      textColor: nil,
-      excludeCountries: nil,
-      includeCountries: nil
-    )
-
-    let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
-    let coordinator = DappCoordinator(
-      router: controllerRouter,
-      dapp: dapp,
-      coreAssembly: coreAssembly,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-
-    addChild(coordinator)
-    coordinator.start()
   }
 
   func openTransfer(nft: NFT) {
