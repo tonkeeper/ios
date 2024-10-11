@@ -199,6 +199,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBackup(wallet: wallet)
     }
     
+    walletCoordinator.didTapBattery = { [weak self] wallet in
+      self?.openBattery(wallet: wallet)
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     historyCoordinator.didOpenEventDetails = { [weak self] wallet, event, isTestnet in
       self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: isTestnet)
@@ -604,6 +608,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let coordinator = module.createSettingsCoordinator(router: router,
                                                        wallet: wallet)
+    
+    coordinator.didTapBattery = { [weak self] wallet in
+      self?.openBattery(wallet: wallet)
+    }
+    
     coordinator.didFinish = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
@@ -975,6 +984,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     module.viewController.setupBackButton()
     
     navigationController.pushViewController(module.viewController, animated: true)
+  }
+  
+  func openBattery(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = BatteryRefillCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+    })
   }
   
   func openRecoveryPhrase(wallet: Wallet) {

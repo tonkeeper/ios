@@ -24,6 +24,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapStake: ((Wallet) -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
+  var didTapBattery: ((Wallet) -> Void)? { get set }
   
   var didTapManage: ((Wallet) -> Void)? { get set }
   
@@ -76,6 +77,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapStake: ((Wallet) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   var didTapManage: ((Wallet) -> Void)?
   
@@ -687,7 +689,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           }
         }
       ),
-      batteryButtonConfiguration: createBatteryButtonConfiguration(batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance),
+      batteryButtonConfiguration: createBatteryButtonConfiguration(
+        wallet: state.wallet,
+        batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance
+      ),
       backup: backup
     )
     
@@ -719,7 +724,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     return model
   }
   
-  func createBatteryButtonConfiguration(batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
+  func createBatteryButtonConfiguration(wallet: Wallet, batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
     let state: BatteryView.State
     switch batteryBalance?.batteryState {
     case .fill(let percents):
@@ -729,8 +734,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
     return BalanceHeaderBatteryButton.Configuration(
       batteryConfiguration: state,
-      action: {
-        
+      action: { [weak self] in
+        self?.didTapBattery?(wallet)
       }
     )
   }

@@ -9,6 +9,7 @@ import TKStories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -95,6 +96,10 @@ private extension SettingsCoordinator {
     
     configurator.didTapV4Wallet = { [weak self] wallet in
       self?.addV4Wallet(wallet: wallet)
+    }
+    
+    configurator.didTapBattery = { [weak self] wallet in
+      self?.didTapBattery?(wallet)
     }
     
     configurator.didDeleteWallet = { [weak self] in

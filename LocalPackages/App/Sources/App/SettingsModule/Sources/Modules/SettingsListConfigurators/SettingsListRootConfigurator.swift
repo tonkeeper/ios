@@ -24,6 +24,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapNotifications: ((Wallet) -> Void)?
   var didTapW5Wallet: ((Wallet) -> Void)?
   var didTapV4Wallet: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -120,10 +121,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createState() -> SettingsListState {
+    let remoteConfiguration = configurationStore.getConfiguration()
+    
     var sections = [SettingsListSection]()
     
     sections.append(createWalletEditSection())
-    if let walletSettingsSection = createWalletSettingsSection() {
+    if let walletSettingsSection = createWalletSettingsSection(configuration: remoteConfiguration) {
       sections.append(walletSettingsSection)
     }
     if let appSettingsSection = createAppSettingsSection() {
@@ -149,7 +152,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func createWalletSettingsSection() -> SettingsListSection? {
+  private func createWalletSettingsSection(configuration: RemoteConfiguration) -> SettingsListSection? {
     var items = [AnyHashable]()
     if let backupItem = createBackupItem() {
       items.append(backupItem)
@@ -165,6 +168,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     if let v4Item = createV4Item() {
       items.append(v4Item)
     }
+    items.append(createBatteryItem(configuration: configuration))
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
       SettingsListItemsSection(
@@ -755,6 +759,31 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func createBatteryItem(configuration: RemoteConfiguration) -> SettingsListItem {
+    var tags = [TKTagView.Configuration]()
+    if configuration.isBatteryBeta {
+      tags.append(TKTagView.Configuration.tag(text: "BETA"))
+    }
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Battery",
+            tags: tags
+          )
+        )))
+    return SettingsListItem(
+      id: .batteryIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.battery, tintColor: .Accent.blue)),
+      onSelection: {
+        [weak self] _ in
+        guard let self else { return }
+        self.didTapBattery?(wallet)
+      }
+    )
+  }
 }
 
 private extension String {
@@ -775,4 +804,5 @@ private extension String {
   static let logoutIdentifier = "LogoutItem"
   static let purchasesIdentifier = "Purhases item"
   static let notificationsIdentifier = "Notifications item"
+  static let batteryIdentifier = "Battery item"
 }

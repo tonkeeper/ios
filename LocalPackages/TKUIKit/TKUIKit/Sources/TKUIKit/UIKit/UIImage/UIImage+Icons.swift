@@ -132,10 +132,18 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-flash-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var battery: UIImage {
+          .imageWithName("Icons/16/ic-battery-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
           .imageWithName("Icons/28/ic-qr-viewfinder-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var battery: UIImage {
+          .imageWithName("Icons/28/ic-battery-28")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var linkOutline: UIImage {
