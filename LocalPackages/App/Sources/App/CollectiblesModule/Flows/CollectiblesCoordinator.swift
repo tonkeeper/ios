@@ -9,7 +9,8 @@ import TKLocalize
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-  
+  var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -84,7 +85,11 @@ private extension CollectiblesCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
+    coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+      self?.didRequestDeeplinkHandling?(deeplink)
+    }
+
     self.detailsCoordinator = coordinator
     
     coordinator.start()

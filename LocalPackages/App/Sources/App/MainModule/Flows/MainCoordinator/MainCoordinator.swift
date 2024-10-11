@@ -216,7 +216,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
     }
-    
+    collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+      _ = self?.handleTonkeeperDeeplink(deeplink)
+    }
+
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
     self.browserCoordinator = browserCoordinator
@@ -310,14 +313,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
-    
-    self.router.dismiss(animated: true, completion: { [weak self] in
-      self?.router.present(navigationController, onDismiss: { [weak self, weak sendTokenCoordinator] in
-        self?.sendTokenCoordinator = nil
-        guard let sendTokenCoordinator else { return }
-        self?.removeChild(sendTokenCoordinator)
-      })
-    })
+
+    router.rootViewController.topPresentedViewController().present(navigationController, animated: true)
   }
   
   func openSwap(wallet: Wallet,
