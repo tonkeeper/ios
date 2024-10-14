@@ -152,7 +152,7 @@ private extension CustomizeWalletViewModelImplementation {
   func createIconPickerItems() async -> [WalletIcon] {
     var emojis = await emojiDataSource.loadData()
 
-    if #unavailable(iOS 16) {
+    if #unavailable(iOS 16.4) {
       emojis = emojis.filter { $0.emojiVersion.major <= 1 }
     }
 
