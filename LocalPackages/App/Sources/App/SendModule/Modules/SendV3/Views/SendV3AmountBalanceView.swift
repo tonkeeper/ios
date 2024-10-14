@@ -51,9 +51,9 @@ final class SendV3AmountBalanceView: UIView {
     stackView.addArrangedSubview(remainingView)
     stackView.addArrangedSubview(insufficientLabel)
     
-    remainingView.addAction(UIAction(handler: { [weak self] _ in
+    remainingView.didTapMax = { [weak self] in
       self?.didTapMax?()
-    }), for: .touchUpInside)
+    }
     
     insufficientLabel.isHidden = true
     insufficientLabel.attributedText = "Insufficient balance".withTextStyle(
@@ -70,7 +70,9 @@ final class SendV3AmountBalanceView: UIView {
   }
 }
 
-final class SendV3AmountBalanceRemainingView: UIControl {
+final class SendV3AmountBalanceRemainingView: UIView {
+  
+  var didTapMax: (() -> Void)?
   
   var remaining: String = "" {
     didSet {
@@ -83,16 +85,11 @@ final class SendV3AmountBalanceRemainingView: UIControl {
     }
   }
   
-  override var isHighlighted: Bool {
-    didSet { maxLabel.alpha = isHighlighted ? 0.44 : 1 }
-  }
-  
   let remainingLabel = UILabel()
-  let maxLabel = UILabel()
+  let maxButton = TKPlainButton()
   
   let stackView: UIStackView = {
     let stackView = UIStackView()
-    stackView.spacing = 8
     stackView.alignment = .center
     return stackView
   }()
@@ -111,28 +108,38 @@ final class SendV3AmountBalanceRemainingView: UIControl {
   }
 
   private func setup() {
-    maxLabel.attributedText = "MAX".withTextStyle(
-      .body2,
-      color: .Accent.blue,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
+    maxButton.padding.left = 8
     
+    maxButton.configure(
+      model: TKPlainButton.Model(
+        title: "MAX".withTextStyle(
+          .body2,
+          color: .Accent.blue,
+          alignment: .right,
+          lineBreakMode: .byTruncatingTail
+        ),
+        icon: nil,
+        action: { [weak self] in
+          self?.didTapMax?()
+        }
+      )
+    )
     setContentHuggingPriority(.required, for: .horizontal)
-    maxLabel.setContentHuggingPriority(.required, for: .horizontal)
+    maxButton.setContentHuggingPriority(.required, for: .horizontal)
     remainingLabel.setContentHuggingPriority(.required, for: .horizontal)
     
-    stackView.isUserInteractionEnabled = false
     remainingLabel.isUserInteractionEnabled = false
-    maxLabel.isUserInteractionEnabled = false
     
     addSubview(stackView)
+    
+    stackView.addArrangedSubview(remainingLabel)
+    stackView.addArrangedSubview(maxButton)
     
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
-    
-    stackView.addArrangedSubview(remainingLabel)
-    stackView.addArrangedSubview(maxLabel)
+    maxButton.snp.makeConstraints { make in
+      make.top.bottom.equalTo(self)
+    }
   }
 }

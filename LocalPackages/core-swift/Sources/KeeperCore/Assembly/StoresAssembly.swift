@@ -178,7 +178,10 @@ public final class StoresAssembly {
     if let store = _stackingPoolsStore {
       return store
     } else {
-      let store = StakingPoolsStore()
+      let store = StakingPoolsStore(
+        walletsStore: walletsStore,
+        repository: repositoriesAssembly.stakingPoolsInfoRepository()
+      )
       _stackingPoolsStore = store
       return store
     }

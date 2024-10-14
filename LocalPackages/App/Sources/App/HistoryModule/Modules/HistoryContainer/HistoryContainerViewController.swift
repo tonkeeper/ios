@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class HistoryContainerViewController: GenericViewViewController<HistoryContainerView> {
+final class HistoryContainerViewController: GenericViewViewController<HistoryContainerView>, ScrollViewController {
   private let viewModel: HistoryContainerViewModel
   
   var historyViewController: HistoryViewController? {
@@ -28,6 +29,10 @@ final class HistoryContainerViewController: GenericViewViewController<HistoryCon
     
     setup()
     viewModel.viewDidLoad()
+  }
+  
+  func scrollToTop() {
+    historyViewController?.scrollToTop()
   }
   
   private func setup() {

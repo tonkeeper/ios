@@ -64,13 +64,16 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
   private let activeWalletModels: [ActiveWalletModel]
   private let amountFormatter: AmountFormatter
   private let configuration: ChooseWalletToAddConfiguration
+  private let isTestnet: Bool
   
   init(activeWalletModels: [ActiveWalletModel],
        amountFormatter: AmountFormatter,
-       configuration: ChooseWalletToAddConfiguration) {
+       configuration: ChooseWalletToAddConfiguration,
+       isTestnet: Bool) {
     self.activeWalletModels = activeWalletModels
     self.amountFormatter = amountFormatter
     self.configuration = configuration
+    self.isTestnet = isTestnet
   }
   
   private func createHeaderViewModel() -> TKTitleDescriptionView.Model {
@@ -114,7 +117,7 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
       currency: .TON
     )
     
-    let title = walletModel.address.toShortString(bounceable: false)
+    let title = walletModel.address.toShortString(bounceable: false, isTestonly: isTestnet)
     var subtitle = !configuration.showRevision ? tonAmount : "\(walletModel.revision.rawValue) · \(tonAmount)"
     if !walletModel.balance.jettonsBalance.isEmpty || !walletModel.nfts.isEmpty {
       subtitle.append(", " + TKLocales.ChooseWallets.tokens)

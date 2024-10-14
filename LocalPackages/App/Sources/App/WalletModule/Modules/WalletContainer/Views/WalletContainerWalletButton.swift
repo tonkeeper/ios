@@ -106,6 +106,9 @@ private extension WalletContainerWalletButton {
     addSubview(backgroundView)
     addSubview(stackView)
     
+    iconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    chevronImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
     stackView.snp.makeConstraints { make in
       make.top.left.equalTo(self).offset(10)
       make.bottom.equalTo(self).offset(-10)

@@ -1,8 +1,15 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class CollectiblesContainerViewController: GenericViewViewController<CollectiblesContainerView> {
+final class CollectiblesContainerViewController: GenericViewViewController<CollectiblesContainerView>, ScrollViewController {
   private let viewModel: CollectiblesContainerViewModel
+  
+  // MARK: - ScrollViewController
+  func scrollToTop() {
+    collectiblesViewController?.scrollToTop()
+  }
+  
   
   var collectiblesViewController: CollectiblesViewController? {
     didSet {
