@@ -3,10 +3,10 @@ import TKUIKit
 
 extension HistoryCellActionView {
   
-  final class NFTView: UIControl, TKConfigurableView, ReusableView {
+  final class NFTView: UIControl, ReusableView {
     private let contentView = UIView()
     private let highlightView = TKHighlightView()
-    private let imageView = UIImageView()
+    private let imageView = TKImageView()
     private let nameLabel = UILabel()
     private let collectionNameLabel = UILabel()
     private let collectionVerificationImageView: UIImageView = {
@@ -17,8 +17,7 @@ extension HistoryCellActionView {
       imageView.isHidden = true
       return imageView
     }()
-
-    private var imageDownloadTask: ImageDownloadTask?
+    private let blurView = TKSecureBlurView()
     
     override var isHighlighted: Bool {
       didSet {
@@ -47,7 +46,8 @@ extension HistoryCellActionView {
         origin: .zero,
         size: CGSize(width: .imageSize, height: .imageSize)
       )
-
+      blurView.frame = imageView.frame
+      
       let verificationViewSideEffect: CGFloat = collectionVerificationImageView.isHidden ? 0 : .verificationImageSide
       let textSize = CGSize(
         width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - verificationViewSideEffect,
@@ -99,85 +99,59 @@ extension HistoryCellActionView {
       return CGSize(width: width, height: .height + 8)
     }
     
-    enum Configuration: Hashable {
-      struct NFT: Hashable {
-        let imageDownloadTask: ImageDownloadTask?
-        let imageUrl: URL?
-        let name: NSAttributedString?
-        let collectionName: NSAttributedString?
-        let isVerified: Bool
-        let action: () -> Void
-
-        init(imageDownloadTask: ImageDownloadTask?,
-             imageUrl: URL?,
-             name: String?,
-             collectionName: String?,
-             isVerified: Bool,
-             action: @escaping () -> Void) {
-          self.imageDownloadTask = imageDownloadTask
-          self.imageUrl = imageUrl
-          self.name = name?.withTextStyle(
+    struct Configuration {
+      let imageModel: TKImageView.Model
+      let name: NSAttributedString?
+      let collectionName: NSAttributedString?
+      let isVerified: Bool
+      let isBlurVisible: Bool
+      let action: () -> Void
+      
+      init(imageModel: TKImageView.Model,
+           name: String?,
+           collectionName: String?,
+           isVerified: Bool,
+           isBlurVisible: Bool,
+           action: @escaping () -> Void) {
+        self.imageModel = imageModel
+        self.name = name?.withTextStyle(
+          .body2,
+          color: .Bubble.foreground,
+          alignment: .left,
+          lineBreakMode: .byTruncatingTail
+        )
+        
+        self.collectionName = collectionName?
+          .withTextStyle(
             .body2,
-            color: .Bubble.foreground,
+            color: .Bubble.foreground.withAlphaComponent(0.64),
             alignment: .left,
             lineBreakMode: .byTruncatingTail
           )
-
-          self.collectionName = collectionName?
-            .withTextStyle(
-              .body2,
-              color: .Bubble.foreground.withAlphaComponent(0.64),
-              alignment: .left,
-              lineBreakMode: .byTruncatingTail
-            )
-          self.isVerified = isVerified
-          self.action = action
-        }
-        
-        func hash(into hasher: inout Hasher) {
-          hasher.combine(name)
-          hasher.combine(collectionName)
-          hasher.combine(imageUrl)
-        }
-        
-        static func ==(lhs: NFT, rhs: NFT) -> Bool {
-          lhs.name == rhs.name && lhs.collectionName == rhs.collectionName && lhs.imageUrl == rhs.imageUrl
-        }
+        self.isVerified = isVerified
+        self.isBlurVisible = isBlurVisible
+        self.action = action
       }
-      
-      case nft(NFT)
-      case shimmer
     }
     
     func configure(configuration: Configuration) {
-      switch configuration {
-      case .nft(let nft):
-        nameLabel.attributedText = nft.name
-        collectionNameLabel.attributedText = nft.collectionName
-        collectionVerificationImageView.isHidden = !nft.isVerified
-        imageDownloadTask = nft.imageDownloadTask
-        imageDownloadTask?.start(
-          imageView: imageView,
-          size: CGSize(width: .imageSize, height: .imageSize),
-          cornerRadius: nil
-        )
-        enumerateEventHandlers { action, targetAction, event, stop in
-          if let action = action {
-            self.removeAction(action, for: event)
-          }
+      blurView.isHidden = !configuration.isBlurVisible
+      nameLabel.attributedText = configuration.name
+      collectionNameLabel.attributedText = configuration.collectionName
+      collectionVerificationImageView.isHidden = !configuration.isVerified
+      imageView.configure(model: configuration.imageModel)
+      enumerateEventHandlers { action, targetAction, event, stop in
+        if let action = action {
+          self.removeAction(action, for: event)
         }
-        addAction(UIAction(handler: { _ in
-          nft.action()
-        }), for: .touchUpInside)
-      case .shimmer:
-        break
       }
+      addAction(UIAction(handler: { _ in
+        configuration.action()
+      }), for: .touchUpInside)
     }
     
     func prepareForReuse() {
-      imageDownloadTask?.cancel()
-      imageDownloadTask = nil
-      imageView.image = nil
+      imageView.prepareForReuse()
       nameLabel.text = nil
       collectionNameLabel.text = nil
     }
@@ -188,6 +162,8 @@ private extension HistoryCellActionView.NFTView {
 
   func setup() {
     isExclusiveTouch = true
+    
+    blurView.isHidden = true
     
     contentView.backgroundColor = .Bubble.background
     contentView.isUserInteractionEnabled = false
@@ -200,6 +176,7 @@ private extension HistoryCellActionView.NFTView {
     addSubview(contentView)
     contentView.addSubview(highlightView)
     contentView.addSubview(imageView)
+    contentView.addSubview(blurView)
     contentView.addSubview(nameLabel)
     contentView.addSubview(collectionNameLabel)
     contentView.addSubview(collectionVerificationImageView)

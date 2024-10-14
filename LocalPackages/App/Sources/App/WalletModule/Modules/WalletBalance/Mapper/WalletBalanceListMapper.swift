@@ -6,9 +6,7 @@ import KeeperCore
 import BigInt
 
 struct WalletBalanceListMapper {
-  
-  let imageLoader = ImageLoader()
-  
+    
   private let dateComponentsFormatter: DateComponentsFormatter = {
     let formatter = DateComponentsFormatter()
     formatter.allowedUnits = [.hour, .minute, .second]

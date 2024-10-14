@@ -6,7 +6,6 @@ import TonSwift
 
 struct HistoryEventMapper {
   
-  let imageLoader = ImageLoader()
   let accountEventActionContentProvider: AccountEventActionContentProvider
   
   init(accountEventActionContentProvider: AccountEventActionContentProvider) {
@@ -166,31 +165,22 @@ struct HistoryEventMapper {
     }
     
     var nftConfiguration: HistoryCellActionView.NFTView.Configuration?
-    if let nft = action.nft {
-      switch nft {
-      case .model(let model):
-        let imageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
-          imageLoader.loadImage(
-            url: model.image,
-            imageView: imageView,
-            size: size,
-            cornerRadius: cornerRadius
-          )
+    if let actionNft = action.nft {
+      let imageViewModel = TKImageView.Model(
+        image: TKImage.urlImage(actionNft.image),
+        size: .size(CGSize(width: 64, height: 64))
+      )
+      
+      nftConfiguration = HistoryCellActionView.NFTView.Configuration(
+        imageModel: imageViewModel,
+        name: actionNft.name,
+        collectionName: actionNft.collectionName,
+        isVerified: actionNft.nft.trust == .whitelist,
+        isBlurVisible: isSecureMode,
+        action: {
+          nftAction(actionNft.nft.address)
         }
-        let nftItem = HistoryCellActionView.NFTView.Configuration.NFT(
-          imageDownloadTask: imageDownloadTask,
-          imageUrl: model.image,
-          name: model.name,
-          collectionName: model.collectionName,
-          isVerified: model.nft.trust == .whitelist,
-          action: {
-            nftAction(model.nft.address)
-          }
-        )
-        nftConfiguration = .nft(nftItem)
-      case .empty(let address):
-        nftConfiguration = nil
-      }
+      )
     }
     
     return HistoryCellActionView.Model(
