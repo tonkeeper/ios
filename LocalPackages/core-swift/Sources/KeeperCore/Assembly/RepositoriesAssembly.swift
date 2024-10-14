@@ -84,6 +84,10 @@ public struct RepositoriesAssembly {
     TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func stakingPoolsInfoRepository() -> StakingPoolsInfoRepository {
+    StakingPoolsInfoRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
   public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {
     let seedProvider = {
       return self.settingsRepository().seed
