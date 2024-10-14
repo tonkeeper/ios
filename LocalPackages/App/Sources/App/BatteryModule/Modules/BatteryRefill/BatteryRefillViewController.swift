@@ -45,6 +45,8 @@ private extension BatteryRefillViewController {
   
   func createDataSource() -> BatteryRefill.DataSource {
     let listCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
+    let headerCellRegistration = BatteryRefillHeaderCellRegistration.registration(collectionView: customView.collectionView)
+    let footerCellRegistration = BatteryRefillFooterCellRegistration.registration(collectionView: customView.collectionView)
     
     let dataSource = BatteryRefill.DataSource(
       collectionView: customView.collectionView
@@ -52,6 +54,10 @@ private extension BatteryRefillViewController {
       [weak self, weak viewModel] collectionView, indexPath, itemIdentifier -> UICollectionViewCell? in
       guard let self, let viewModel else { return nil }
       switch itemIdentifier {
+      case .header:
+        guard let headerCellConfiguration = viewModel.getHeaderCellConfiguration() else { return nil }
+        let cell = collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: headerCellConfiguration)
+        return cell
       case .listItem(let listItem):
         let configuration = viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
         let cell = collectionView.dequeueConfiguredReusableCell(using: listCellRegistration, for: indexPath, item: configuration)
@@ -62,6 +68,10 @@ private extension BatteryRefillViewController {
         let cell = collectionView.dequeueConfiguredReusableCell(using: listCellRegistration, for: indexPath, item: configuration)
         cell.leftAccessoryViews = [createAccessoryBatteryView(item: purhaseItem)]
         cell.defaultAccessoryViews = [createAccessoryBuyButton(item: purhaseItem)]
+        return cell
+      case .footer:
+        guard let headerCellConfiguration = viewModel.getFooterCellConfiguration() else { return nil }
+        let cell = collectionView.dequeueConfiguredReusableCell(using: footerCellRegistration, for: indexPath, item: headerCellConfiguration)
         return cell
       }
     }

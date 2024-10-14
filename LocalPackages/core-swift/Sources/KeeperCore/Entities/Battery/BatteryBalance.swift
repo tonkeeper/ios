@@ -14,4 +14,12 @@ public struct BatteryBalance: Codable, Equatable {
   
   public let balance: String
   public let reserved: String
+  
+  public var isZero: Bool {
+    balanceDecimalNumber == NSDecimalNumber.zero && reservedDecimalNumber == NSDecimalNumber.zero
+  }
+  
+  public var isBalanceZero: Bool {
+    balanceDecimalNumber == NSDecimalNumber.zero
+  }
 }

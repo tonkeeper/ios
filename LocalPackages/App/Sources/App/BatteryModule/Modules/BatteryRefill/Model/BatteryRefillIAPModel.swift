@@ -117,10 +117,12 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
   }
 
   func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse) {
-    guard request == self.request else { return }
-    self.products = response.products
-    self.state = .idle
-    self.request = nil
+    DispatchQueue.main.async {
+      guard request == self.request else { return }
+      self.products = response.products
+      self.state = .idle
+      self.request = nil
+    }
   }
   
   private func calculateChargesCount(pack: BatteryIAPPack,

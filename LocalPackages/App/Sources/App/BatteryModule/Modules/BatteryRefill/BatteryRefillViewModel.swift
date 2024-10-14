@@ -19,6 +19,8 @@ protocol BatteryRefillViewModel: AnyObject {
   func viewDidLoad()
   func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
   func getListItemCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
+  func getHeaderCellConfiguration() -> BatteryRefillHeaderView.Configuration?
+  func getFooterCellConfiguration() -> BatteryRefillFooterView.Configuration?
   func purchaseItem(productIdentifier: String)
 }
 
@@ -35,13 +37,19 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
       switch event {
       case .didUpdateItems(let items):
         self?.iapItems = items
+        self?.updateList()
       }
     }
     rechargeMethodsModelState = rechargeMethodsModel.state
     rechargeMethodsModel.stateHandler = { [weak self] state in
       self?.rechargeMethodsModelState = state
+      self?.updateList()
     }
     rechargeMethodsModel.loadMethods()
+    
+    headerState = headerModel.getState()
+    
+    updateList()
   }
   
   func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration? {
@@ -52,30 +60,35 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
     listItemCellConfigurations[identifier]
   }
   
+  func getHeaderCellConfiguration() -> BatteryRefillHeaderView.Configuration? {
+    headerCellConfiguration
+  }
+  
+  func getFooterCellConfiguration() -> BatteryRefillFooterView.Configuration? {
+    footerCellConfiguration
+  }
+  
   func purchaseItem(productIdentifier: String) {
     inAppPurchaseModel.startProcessing()
   }
   
   // MARK: - State
   
-  private var iapItems = [BatteryIAPItem]() {
-    didSet {
-      didUpdateIAPModelState()
-    }
-  }
-  private var rechargeMethodsModelState: BatteryRefillRechargeMethodsModel.State = .loading {
-    didSet {
-      didUpdateRechargeMethodsModelState()
-    }
-  }
+  
+  private var headerState: BatteryRefillHeaderModel.State?
+  private var iapItems = [BatteryIAPItem]()
+  private var rechargeMethodsModelState: BatteryRefillRechargeMethodsModel.State = .loading
 
   private var purchasesCellConfigurations = [String: TKListItemCell.Configuration]()
   private var listItemCellConfigurations = [String: TKListItemCell.Configuration]()
+  private var headerCellConfiguration: BatteryRefillHeaderView.Configuration?
+  private var footerCellConfiguration: BatteryRefillFooterView.Configuration?
 
   // MARK: - Dependencies
   
   private let inAppPurchaseModel: BatteryRefillIAPModel
   private let rechargeMethodsModel: BatteryRefillRechargeMethodsModel
+  private let headerModel: BatteryRefillHeaderModel
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -83,20 +96,14 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
   
   init(inAppPurchaseModel: BatteryRefillIAPModel,
        rechargeMethodsModel: BatteryRefillRechargeMethodsModel,
+       headerModel: BatteryRefillHeaderModel,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.inAppPurchaseModel = inAppPurchaseModel
     self.rechargeMethodsModel = rechargeMethodsModel
+    self.headerModel = headerModel
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountFormatter = amountFormatter
-  }
-
-  private func didUpdateIAPModelState() {
-    updateList()
-  }
-  
-  private func didUpdateRechargeMethodsModelState() {
-    updateList()
   }
   
   private func updateList() {
@@ -107,11 +114,61 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
   private func createSnapshot() -> BatteryRefill.Snapshot {
     var snapshot = BatteryRefill.Snapshot()
 
+    createHeaderSections(snapshot: &snapshot)
     createInAppPurchasesSnapshotSection(snapshot: &snapshot)
     createRechargeMethodsSnapshotSection(snapshot: &snapshot)
     createHistorySnapshotSection(snapshot: &snapshot)
+    createFooterSection(snapshot: &snapshot)
     
     return snapshot
+  }
+  
+  private func createHeaderSections(snapshot: inout BatteryRefill.Snapshot) {
+    let batteryViewState: BatteryView.State
+    let caption: String
+    let informationButtonModel: TKPlainButton.Model?
+    var tagConfiguration: TKTagView.Configuration?
+    
+    snapshot.appendSections([.header])
+    snapshot.appendItems([.header], toSection: .header)
+    
+    if headerState?.isBeta == true {
+      tagConfiguration = .accentTag(text: "BETA", color: .Accent.orange)
+    }
+    
+    switch headerState?.charge {
+    case let .charged(chargesCount, batteryPercent):
+      listItemCellConfigurations[.settingsCellIdentifier] = createSettingsCellConfiguration()
+      batteryViewState = .fill(batteryPercent)
+      caption = "\(chargesCount) \(TKLocales.Battery.Refill.InAppPurchase.Caption.chargesCount(count: chargesCount))"
+      informationButtonModel = nil
+      
+      snapshot.appendItems([.listItem(BatteryRefill.ListItem(
+        identifier: .settingsCellIdentifier,
+        onSelection: {
+          
+        })
+      )], toSection: .settings)
+      
+    case .notCharged:
+      batteryViewState = .emptyTinted
+      caption = "Swap via Tonkeeper, send tokens and unstake TON."
+      informationButtonModel = TKPlainButton.Model(title: "Supported transactions".withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
+                                                   icon: nil,
+                                                   action: {
+        
+      })
+    case .none:
+      return
+    }
+    
+    headerCellConfiguration = BatteryRefillHeaderView.Configuration(
+      batteryViewState: batteryViewState,
+      tagConfiguration: tagConfiguration,
+      title: "Tonkeeper Battery",
+      caption: caption,
+      informationButtonModel: informationButtonModel
+    )
   }
   
   private func createInAppPurchasesSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
@@ -153,6 +210,19 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
         
       }))], toSection: .history)
     listItemCellConfigurations[.historyCellIdentifier] = createHistoryCellConfiguration()
+  }
+  
+  private func createFooterSection(snapshot: inout BatteryRefill.Snapshot) {
+    snapshot.appendSections([.footer, .settings])
+    snapshot.appendItems([.footer], toSection: .footer)
+
+    footerCellConfiguration = BatteryRefillFooterView.Configuration(
+      description: "One charge covers the average transaction fee. Some transactions may cost more.",
+      restoreButtonTitle: "Restore purchases",
+      restoreButtonAction: {
+        
+      }
+    )
   }
   
   private func createInAppPurchaseSnapshotItem(item: BatteryIAPItem) -> BatteryRefill.SnapshotItem {
@@ -278,8 +348,25 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
       )
     )
   }
+  
+  private func createSettingsCellConfiguration() -> TKListItemCell.Configuration {
+    let title = "Battery Settings"
+    let caption = "Will be paid: swaps via Tonkeeper, token transfers, NFT transfers."
+   
+    return TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
+          captionViewsConfigurations: [
+            TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2, numberOfLines: 0)
+          ]
+        )
+      )
+    )
+  }
 }
 
 private extension String {
   static let historyCellIdentifier = "history_item"
+  static let settingsCellIdentifier = "settings_item"
 }

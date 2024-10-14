@@ -20,6 +20,11 @@ struct BatteryRefillAssembly {
         configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
         batteryService: keeperCoreMainAssembly.servicesAssembly.batteryService()
       ),
+      headerModel: BatteryRefillHeaderModel(
+        wallet: wallet,
+        balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
+        configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore
+      ),
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
