@@ -11,8 +11,6 @@ final class BatteryRefillView: TKView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     
-    collectionView.isHidden = true
-    
     addSubview(collectionView)
     
     setupConstraints()

@@ -99,7 +99,7 @@ private extension SettingsCoordinator {
     }
     
     configurator.didTapBattery = { [weak self] wallet in
-      self?.didTapBattery?(wallet)
+      self?.openBattery(wallet: wallet)
     }
     
     configurator.didDeleteWallet = { [weak self] in
@@ -458,5 +458,24 @@ private extension SettingsCoordinator {
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
+  }
+  
+  func openBattery(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = BatteryRefillCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+    })
   }
 }

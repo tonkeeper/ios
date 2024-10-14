@@ -259,6 +259,26 @@ public enum TKLocales {
       }
     }
   }
+  public enum Battery {
+    public enum Refill {
+      public enum InAppPurchase {
+        public enum Caption {
+          public enum Charges {
+            /// charges
+            public static let few = TKLocales.tr("Localizable", "battery.refill.in_app_purchase.caption.charges.few", fallback: "charges")
+            /// charges
+            public static let many = TKLocales.tr("Localizable", "battery.refill.in_app_purchase.caption.charges.many", fallback: "charges")
+            /// charge
+            public static let one = TKLocales.tr("Localizable", "battery.refill.in_app_purchase.caption.charges.one", fallback: "charge")
+            /// charges
+            public static let other = TKLocales.tr("Localizable", "battery.refill.in_app_purchase.caption.charges.other", fallback: "charges")
+            /// charges
+            public static let zero = TKLocales.tr("Localizable", "battery.refill.in_app_purchase.caption.charges.zero", fallback: "charges")
+          }
+        }
+      }
+    }
+  }
   public enum Bluetooth {
     public enum PermissionsAlert {
       /// Please enable Bluetooth permissions in your settings to use this feature

@@ -8,17 +8,27 @@ final public class TKListItemButtonAccessoryView: UIControl {
 
   public struct Configuration {
     let title: String
+    let category: TKActionButtonCategory
+    let isEnable: Bool
     let action: (() -> Void)?
 
-    public init(title: String, action: (() -> Void)?) {
+    public init(title: String, 
+                category: TKActionButtonCategory,
+                isEnable: Bool = true,
+                action: (() -> Void)?) {
       self.title = title
+      self.category = category
+      self.isEnable = isEnable
       self.action = action
     }
   }
 
   private let button = TKButton()
 
-  public var configuration: Configuration = .init(title: "", action: nil) {
+  public var configuration: Configuration = .init(title: "", 
+                                                  category: .primary,
+                                                  isEnable: true,
+                                                  action: nil) {
     didSet {
       updateConfiguration()
     }
@@ -46,8 +56,10 @@ final public class TKListItemButtonAccessoryView: UIControl {
 
   private func updateConfiguration() {
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-      category: .tertiary, size: .small
+      category: configuration.category,
+      size: .small
     )
+    buttonConfiguration.isEnabled = configuration.isEnable
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(configuration.title))
     buttonConfiguration.action = configuration.action
 

@@ -3,7 +3,18 @@ import TKUIKit
 
 enum BatteryRefill {
   enum SnapshotSection: Hashable {
-    case items([SnapshotItem])
+    case inAppPurchases
+    case rechargeMethods
+    case history
+    
+    var isSelectable: Bool {
+      switch self {
+      case .inAppPurchases:
+        false
+      case .rechargeMethods, .history:
+        true
+      }
+    }
   }
   
   enum SnapshotItem: Hashable {
@@ -12,7 +23,10 @@ enum BatteryRefill {
   }
   
   struct InAppPurchaseItem: Hashable {
-    
+    let identifier: String
+    let batteryPercent: CGFloat
+    let buttonTitle: String
+    let isEnable: Bool
   }
 
   struct ListItem: Hashable {

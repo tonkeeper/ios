@@ -407,7 +407,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = configuration
         sectionItems.append(notificationsItem)
       case .telegramChannel:
-      let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
+        let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open,
+                                                                              category: .tertiary,
+                                                                              action: { [weak self] in
           guard let self else {
             return
           }

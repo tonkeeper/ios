@@ -48,26 +48,53 @@ private extension BatteryRefillViewController {
     
     let dataSource = BatteryRefill.DataSource(
       collectionView: customView.collectionView
-    ) { collectionView, indexPath, itemIdentifier -> UICollectionViewCell? in
+    ) {
+      [weak self, weak viewModel] collectionView, indexPath, itemIdentifier -> UICollectionViewCell? in
+      guard let self, let viewModel else { return nil }
       switch itemIdentifier {
       case .listItem(let listItem):
-        return nil
+        let configuration = viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
+        let cell = collectionView.dequeueConfiguredReusableCell(using: listCellRegistration, for: indexPath, item: configuration)
+        cell.defaultAccessoryViews = [TKListItemAccessory.chevron.view]
+        return cell
       case .inAppPurchase(let purhaseItem):
-        return nil
+        let configuration = viewModel.getInAppPurchaseCellConfiguration(identifier: purhaseItem.identifier) ?? .default
+        let cell = collectionView.dequeueConfiguredReusableCell(using: listCellRegistration, for: indexPath, item: configuration)
+        cell.leftAccessoryViews = [createAccessoryBatteryView(item: purhaseItem)]
+        cell.defaultAccessoryViews = [createAccessoryBuyButton(item: purhaseItem)]
+        return cell
       }
     }
     
     return dataSource
+  }
+  
+  
+  private func createAccessoryBatteryView(item: BatteryRefill.InAppPurchaseItem) -> UIView  {
+    let batteryView = BatteryView(size: .size44)
+    batteryView.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
+    batteryView.state = .fill(item.batteryPercent)
+    return batteryView
+  }
+  
+  private func createAccessoryBuyButton(item: BatteryRefill.InAppPurchaseItem) -> UIView {
+    return TKListItemAccessory.button(
+      TKListItemButtonAccessoryView.Configuration(
+        title: item.buttonTitle,
+        category: .primary,
+        isEnable: item.isEnable,
+        action: { [weak viewModel] in
+          viewModel?.purchaseItem(productIdentifier: item.identifier)
+        }
+      )
+    ).view
   }
 
   func createLayout() -> UICollectionViewCompositionalLayout {
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
     
-    let layout = UICollectionViewCompositionalLayout(sectionProvider: { [dataSource] sectionIndex, _ in
-      let snapshot = dataSource.snapshot()
-      let section = snapshot.sectionIdentifiers[sectionIndex]
-      
+    let layout = UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, _ in
       let itemLayoutSize = NSCollectionLayoutSize(
         widthDimension: .fractionalWidth(1.0),
         heightDimension: .estimated(96)
@@ -101,5 +128,15 @@ private extension BatteryRefillViewController {
 extension BatteryRefillViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
+    let snapshot = dataSource.snapshot()
+    return snapshot.sectionIdentifiers[indexPath.section].isSelectable
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
+    let snapshot = dataSource.snapshot()
+    return snapshot.sectionIdentifiers[indexPath.section].isSelectable
   }
 }

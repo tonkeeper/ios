@@ -487,3 +487,9 @@
 "decrypt_comment_popup.button" = "Расшифровать комментарий";
 
 "tick.do_not_show_again" = "Не показывать снова";
+
+"battery.refill.in_app_purchase.caption.charges.zero" = "зарядов";
+"battery.refill.in_app_purchase.caption.charges.one" = "заряд";
+"battery.refill.in_app_purchase.caption.charges.few" = "заряда";
+"battery.refill.in_app_purchase.caption.charges.many" = "зарядов";
+"battery.refill.in_app_purchase.caption.charges.other" = "зарядов";

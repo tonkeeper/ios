@@ -1,11 +1,20 @@
 import Foundation
 
 public struct RemoteConfiguration: Equatable {
+  
+  public var batteryMeanFeesDecimaNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanFees)
+  }
+  
+  public var batteryReservedAmountDecimalNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryReservedAmount)
+  }
 
   public let tonapiV2Endpoint: String
   public let tonapiTestnetHost: String
   public let batteryHost: String
   public let batteryMeanFees: String?
+  public let batteryReservedAmount: String?
   public let tonApiV2Key: String
   public let mercuryoSecret: String?
   public let supportLink: URL?
@@ -28,6 +37,7 @@ public struct RemoteConfiguration: Equatable {
     case tonapiTestnetHost
     case batteryHost
     case batteryMeanFees
+    case batteryReservedAmount
     case tonApiV2Key
     case mercuryoSecret
     case supportLink
@@ -78,6 +88,7 @@ extension RemoteConfiguration {
       tonapiTestnetHost: "",
       batteryHost: "",
       batteryMeanFees: nil,
+      batteryReservedAmount: nil,
       tonApiV2Key: "",
       mercuryoSecret: nil,
       supportLink: nil,
@@ -95,5 +106,15 @@ extension RemoteConfiguration {
       nftOnExplorerTestnetUrl: nil,
       flags: .default
     )
+  }
+}
+
+public extension NSDecimalNumber {
+  static func number(stringValue: String?) -> NSDecimalNumber? {
+    let number = NSDecimalNumber(string: stringValue)
+    guard number != NSDecimalNumber.notANumber else {
+      return nil
+    }
+    return number
   }
 }

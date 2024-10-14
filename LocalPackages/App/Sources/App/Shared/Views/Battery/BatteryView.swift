@@ -114,9 +114,19 @@ final class BatteryView: UIView {
     }
   }
   
+  var padding: UIEdgeInsets = .zero {
+    didSet {
+      invalidateIntrinsicContentSize()
+      contentView.snp.remakeConstraints { make in
+        make.edges.equalTo(self).inset(padding)
+      }
+    }
+  }
+  
   private let bodyImageView = UIImageView()
   private let flashImageView = UIImageView()
   private let fillView = UIView()
+  private let contentView = UIView()
   
   private var fillViewHeightConstraint: Constraint?
   
@@ -133,7 +143,13 @@ final class BatteryView: UIView {
   }
   
   override var intrinsicContentSize: CGSize {
-    size.bodySize
+    let size = CGSize(width: size.bodySize.width + padding.left + padding.right,
+                      height: size.bodySize.height + padding.top + padding.bottom)
+    return size
+  }
+  
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    intrinsicContentSize
   }
   
   private func setup() {
@@ -141,21 +157,26 @@ final class BatteryView: UIView {
     flashImageView.image = size.flashImage
     fillView.layer.cornerRadius = size.fillCornerRadius
     
-    addSubview(bodyImageView)
-    addSubview(flashImageView)
-    addSubview(fillView)
+    addSubview(contentView)
+    contentView.addSubview(bodyImageView)
+    contentView.addSubview(flashImageView)
+    contentView.addSubview(fillView)
+    
+    contentView.snp.makeConstraints { make in
+      make.edges.equalTo(self).inset(padding)
+    }
     
     bodyImageView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+      make.edges.equalTo(contentView)
     }
     flashImageView.snp.makeConstraints { make in
       make.size.equalTo(size.flashSize)
-      make.centerX.equalTo(self)
-      make.centerY.equalTo(self).offset(size.bodySize.height * 0.05)
+      make.centerX.equalTo(contentView)
+      make.centerY.equalTo(contentView).offset(size.bodySize.height * 0.05)
     }
     fillView.snp.makeConstraints { make in
-      make.bottom.equalTo(self).inset(size.fillViewInset)
-      make.left.right.equalTo(self).inset(size.fillViewInset)
+      make.bottom.equalTo(contentView).inset(size.fillViewInset)
+      make.left.right.equalTo(contentView).inset(size.fillViewInset)
       fillViewHeightConstraint = make.height.equalTo(0).constraint
     }
     
@@ -205,11 +226,11 @@ final class BatteryView: UIView {
     case .emptyTinted:
       finalAlpha = 0
       height = 0
-      color = .orange
+      color = .Accent.orange
     case .empty:
       finalAlpha = 0
       height = 0
-      color = .orange
+      color = .Accent.orange
     }
     fillViewHeightConstraint?.update(offset: height)
     UIView.animate(

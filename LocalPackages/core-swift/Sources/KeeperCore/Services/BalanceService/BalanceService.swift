@@ -10,20 +10,20 @@ public protocol BalanceService {
 final class BalanceServiceImplementation: BalanceService {
   private let tonBalanceService: TonBalanceService
   private let jettonsBalanceService: JettonBalanceService
-  private let batteryBalanceService: BatteryBalanceService
+  private let batteryService: BatteryService
   private let stackingService: StakingService
   private let tonProofTokenService: TonProofTokenService
   private let walletBalanceRepository: WalletBalanceRepository
   
   init(tonBalanceService: TonBalanceService, 
        jettonsBalanceService: JettonBalanceService,
-       batteryBalanceService: BatteryBalanceService,
+       batteryService: BatteryService,
        stackingService: StakingService,
        tonProofTokenService: TonProofTokenService,
        walletBalanceRepository: WalletBalanceRepository) {
     self.tonBalanceService = tonBalanceService
     self.jettonsBalanceService = jettonsBalanceService
-    self.batteryBalanceService = batteryBalanceService
+    self.batteryService = batteryService
     self.stackingService = stackingService
     self.tonProofTokenService = tonProofTokenService
     self.walletBalanceRepository = walletBalanceRepository
@@ -33,7 +33,10 @@ final class BalanceServiceImplementation: BalanceService {
     async let tonBalanceTask = tonBalanceService.loadBalance(wallet: wallet)
     async let jettonsBalanceTask = jettonsBalanceService.loadJettonsBalance(wallet: wallet, currency: currency)
     async let stackingBalanceTask = stackingService.loadStakingBalance(wallet: wallet)
-    async let batteryBalanceTask = batteryBalanceService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofTokenService.getWalletToken(wallet))
+    async let batteryBalanceTask = batteryService.loadBatteryBalance(
+      wallet: wallet, 
+      tonProofToken: tonProofTokenService.getWalletToken(wallet)
+    )
     
     let tonBalance = try await tonBalanceTask
     let jettonsBalance = try await jettonsBalanceTask

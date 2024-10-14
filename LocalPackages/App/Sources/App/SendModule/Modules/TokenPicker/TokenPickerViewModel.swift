@@ -152,7 +152,6 @@ private extension TokenPickerViewModelImplementation {
         selectedIndex = 0
       case .jetton(let jettonItem):
         if let index = sortedJettonBalances.firstIndex(where: { $0.jettonBalance.item == jettonItem }) {
-          print(jettonItem.jettonInfo.name)
           selectedIndex = index + 1
         }
       }

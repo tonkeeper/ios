@@ -60,6 +60,12 @@ public extension UIImage {
       public static var batteryBody128: UIImage {
         .imageWithName("Icons/Battery/battery-body-128")
       }
+      public static var gift: UIImage {
+        .imageWithName("Images/Battery/battery_gift")
+      }
+      public static var history: UIImage {
+        .imageWithName("Images/Battery/battery_history")
+      }
     }
   }
 }

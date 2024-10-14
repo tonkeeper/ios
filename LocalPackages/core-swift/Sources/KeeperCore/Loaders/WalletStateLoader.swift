@@ -223,7 +223,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   
   private func loadRates(currency: Currency) async throws -> [Rates.Rate] {
     let task = Task<[Rates.Rate], Swift.Error> {
-      let rates = try await ratesService.loadRates(jettons: [], currencies: [currency, .TON]).ton
+      let rates = try await ratesService.loadRates(jettons: [], currencies: [currency, .TON, .USD]).ton
       try Task.checkCancellation()
       await setRatesLoadTask(task: nil)
       return rates
