@@ -160,8 +160,8 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
       id: .backupDoneItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .chevron,
-      onSelection: { _ in
-        
+      onSelection: { [weak self] _ in
+        self?.didTapBackupManually?()
       }
     )
   }
