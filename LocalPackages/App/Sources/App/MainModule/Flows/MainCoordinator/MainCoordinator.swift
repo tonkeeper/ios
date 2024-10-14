@@ -402,6 +402,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleSignerDeeplink(data)
     case .tonconnect(let parameters):
       return handleTonConnectDeeplink(parameters)
+    case .dapp(let dappURL):
+      openDapp(title: "", url: dappURL)
+      return true
     }
   }
   
