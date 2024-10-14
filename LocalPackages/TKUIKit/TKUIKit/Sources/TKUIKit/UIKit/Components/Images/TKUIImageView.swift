@@ -3,7 +3,7 @@ import Kingfisher
 
 public final class TKImageView: UIView, ConfigurableView {
   
-  public struct Model {
+  public struct Model: Hashable {
     public let image: TKImage?
     public let tintColor: UIColor?
     public let size: Size
@@ -33,13 +33,13 @@ public final class TKImageView: UIView, ConfigurableView {
     invalidateIntrinsicContentSize()
   }
   
-  public enum Corners {
+  public enum Corners: Hashable {
     case none
     case circle
     case cornerRadius(cornerRadius: CGFloat)
   }
   
-  public enum Size {
+  public enum Size: Hashable {
     case none
     case auto
     case size(CGSize)

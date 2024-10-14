@@ -3,9 +3,7 @@ import TKUIKit
 import TKCore
 
 final class TonConnectConfirmationContentView: UIView, ConfigurableView {
-  
-  let imageLoader = ImageLoader()
-  
+    
   private let actionsView = HistoryCellContentView()
   private let feeView = TonConnectConfirmationFeeView()
   

@@ -5,9 +5,7 @@ import TKLocalize
 import TKCore
 import BigInt
 
-struct BalanceItemMapper {
-  private let imageLoader = ImageLoader()
-  
+struct BalanceItemMapper {  
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   
