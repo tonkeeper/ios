@@ -101,6 +101,8 @@ private final class SettingsDeleteWarningTickButton: UIControl {
   func setup() {
     label.numberOfLines = 0
     
+    tickView.isUserInteractionEnabled = false
+    
     addSubview(tickView)
     addSubview(label)
     setupConstraints()
