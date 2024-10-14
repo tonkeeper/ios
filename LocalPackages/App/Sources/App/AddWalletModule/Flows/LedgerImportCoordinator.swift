@@ -45,7 +45,8 @@ private extension LedgerImportCoordinator {
         showRevision: false,
         selectLastRevision: false
       ),
-      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter,
+      isTestnet: false
     )
     
     module.output.didSelectWallets = { [weak self] selectedWalletModels in
