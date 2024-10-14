@@ -988,7 +988,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openBattery(wallet: Wallet) {
     let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = BatteryRefillCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),

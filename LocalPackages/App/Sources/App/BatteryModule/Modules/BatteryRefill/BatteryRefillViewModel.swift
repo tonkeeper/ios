@@ -3,10 +3,9 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
-import StoreKit
 
 protocol BatteryRefillModuleOutput: AnyObject {
-  
+  var didTapSupportedTransactions: (() -> Void)? { get set }
 }
 
 protocol BatteryRefillModuleInput: AnyObject {
@@ -24,7 +23,11 @@ protocol BatteryRefillViewModel: AnyObject {
   func purchaseItem(productIdentifier: String)
 }
 
-final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewModel, BatteryRefillModuleOutput, BatteryRefillModuleInput {
+final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, BatteryRefillModuleOutput, BatteryRefillModuleInput {
+  
+  // MARK: - BatteryRefillModuleOutput
+  
+  var didTapSupportedTransactions: (() -> Void)?
   
   // MARK: - BatteryRefillViewModel
 
@@ -140,7 +143,7 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
     case let .charged(chargesCount, batteryPercent):
       listItemCellConfigurations[.settingsCellIdentifier] = createSettingsCellConfiguration()
       batteryViewState = .fill(batteryPercent)
-      caption = "\(chargesCount) \(TKLocales.Battery.Refill.InAppPurchase.Caption.chargesCount(count: chargesCount))"
+      caption = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
       informationButtonModel = nil
       
       snapshot.appendItems([.listItem(BatteryRefill.ListItem(
@@ -155,8 +158,8 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
       caption = "Swap via Tonkeeper, send tokens and unstake TON."
       informationButtonModel = TKPlainButton.Model(title: "Supported transactions".withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
                                                    icon: nil,
-                                                   action: {
-        
+                                                   action: { [weak self] in
+        self?.didTapSupportedTransactions?()
       })
     case .none:
       return
@@ -264,7 +267,7 @@ final class BatteryRefillViewModelImplementation: NSObject, BatteryRefillViewMod
     case .loading:
       caption = "Loading"
     case .amount(let amount):
-      caption = "\(amount.charges) \(TKLocales.Battery.Refill.InAppPurchase.Caption.chargesCount(count: amount.charges))"
+      caption = "\(amount.charges) \(TKLocales.Battery.Refill.chargesCount(count: amount.charges))"
     }
     
     return TKListItemCell.Configuration(

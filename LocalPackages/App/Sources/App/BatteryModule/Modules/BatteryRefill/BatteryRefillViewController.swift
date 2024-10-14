@@ -32,14 +32,27 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
 
 private extension BatteryRefillViewController {
   func setup() {
+    customView.navigationBar.apperance = .transparent
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
+    
+    setupNavigationBar()
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
       guard let self else { return }
       self.dataSource.apply(snapshot, animatingDifferences: false)
+    }
+  }
+  
+  private func setupNavigationBar() {
+    if presentingViewController != nil {
+      customView.navigationBar.rightViews = [
+        TKUINavigationBar.createCloseButton { [weak self] in
+          self?.dismiss(animated: true)
+        }
+      ]
     }
   }
   

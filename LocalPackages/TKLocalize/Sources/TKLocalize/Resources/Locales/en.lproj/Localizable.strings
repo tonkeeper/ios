@@ -505,8 +505,8 @@
 
 "tick.do_not_show_again" = "Do not show again";
 
-"battery.refill.in_app_purchase.caption.charges.zero" = "charges";
-"battery.refill.in_app_purchase.caption.charges.one" = "charge";
-"battery.refill.in_app_purchase.caption.charges.few" = "charges";
-"battery.refill.in_app_purchase.caption.charges.many" = "charges";
-"battery.refill.in_app_purchase.caption.charges.other" = "charges";
+"battery.refill.charges.zero" = "charges";
+"battery.refill.charges.one" = "charge";
+"battery.refill.charges.few" = "charges";
+"battery.refill.charges.many" = "charges";
+"battery.refill.charges.other" = "charges";

@@ -33,6 +33,19 @@ private extension BatteryRefillCoordinator {
       coreAssembly: coreAssembly
     )
     
+    module.output.didTapSupportedTransactions = { [weak self] in
+      self?.openSupportedTransactions()
+    }
+    
     router.push(viewController: module.view, animated: true)
+  }
+  
+  func openSupportedTransactions() {
+    let module = BatteryRefillSupportedTransactionsAssembly.module(
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    router.push(viewController: module.view)
   }
 }

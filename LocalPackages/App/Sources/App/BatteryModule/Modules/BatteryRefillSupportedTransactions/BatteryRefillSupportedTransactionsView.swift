@@ -1,8 +1,9 @@
 import UIKit
 import TKUIKit
 
-final class BatteryRefillView: TKView {
+final class BatteryRefillSupportedTransactionsView: TKView {
   let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
   public override func layoutSubviews() {
@@ -20,6 +21,9 @@ final class BatteryRefillView: TKView {
     
     collectionView.backgroundColor = .Background.page
     collectionView.contentInsetAdjustmentBehavior = .never
+    
+    navigationBar.scrollView = collectionView
+    navigationBar.centerView = titleView
     
     addSubview(collectionView)
     addSubview(navigationBar)

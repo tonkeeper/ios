@@ -2,6 +2,17 @@ import UIKit
 
 public final class TKUINavigationBar: UIView {
   
+  public enum Appearance {
+    case `default`
+    case transparent
+  }
+  
+  public var apperance: Appearance = .default {
+    didSet {
+      setupAppearance()
+    }
+  }
+  
   public var centerView: UIView? {
     didSet {
       oldValue?.removeFromSuperview()
@@ -51,6 +62,8 @@ public final class TKUINavigationBar: UIView {
     view.backgroundColor = .Background.page
     return view
   }()
+  
+  private let gradientView = TKGradientView(color: .Background.page, direction: .topToBottom)
 
   private let barContentContainer = UIView()
   
@@ -93,6 +106,7 @@ public final class TKUINavigationBar: UIView {
   
   private func setup() {
     addSubview(backgroundView)
+    addSubview(gradientView)
     addSubview(barView)
     addSubview(separatorView)
     barView.addSubview(barContentContainer)
@@ -101,6 +115,8 @@ public final class TKUINavigationBar: UIView {
     barContentContainer.addSubview(rightStackView)
     
     setupConstraints()
+    
+    setupAppearance()
   }
   
   private func setupConstraints() {
@@ -136,6 +152,11 @@ public final class TKUINavigationBar: UIView {
     separatorView.snp.makeConstraints { make in
       make.left.bottom.right.equalTo(self)
     }
+    
+    gradientView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+      make.bottom.equalTo(self)
+    }
   }
   
   func didSetScrollView() {
@@ -147,6 +168,21 @@ public final class TKUINavigationBar: UIView {
     contentOffsetToken = scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
       let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
       self?.separatorView.isHidden = offset <= 0
+    }
+  }
+  
+  func setupAppearance() {
+    switch apperance {
+    case .default:
+      backgroundView.backgroundColor = .Background.page
+      barView.backgroundColor = .Background.page
+      gradientView.isHidden = true
+      separatorView.isHidden = false
+    case .transparent:
+      backgroundView.backgroundColor = .clear
+      barView.backgroundColor = .clear
+      gradientView.isHidden = false
+      separatorView.isHidden = true
     }
   }
 }

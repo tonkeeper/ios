@@ -9,12 +9,22 @@ public struct RemoteConfiguration: Equatable {
   public var batteryReservedAmountDecimalNumber: NSDecimalNumber? {
     NSDecimalNumber.number(stringValue: batteryReservedAmount)
   }
+  
+  public var batteryMeanFeesPriceSwapDecimaNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanPriceSwap)
+  }
+  
+  public var batteryMeanFeesPriceJettonDecimaNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanPriceJetton)
+  }
+  
+  public var batteryMeanFeesPriceNFTDecimaNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanPriceNFT)
+  }
 
   public let tonapiV2Endpoint: String
   public let tonapiTestnetHost: String
   public let batteryHost: String
-  public let batteryMeanFees: String?
-  public let batteryReservedAmount: String?
   public let tonApiV2Key: String
   public let mercuryoSecret: String?
   public let supportLink: URL?
@@ -30,14 +40,17 @@ public struct RemoteConfiguration: Equatable {
   public let transactionExplorerTestnet: String?
   public let nftOnExplorerUrl: String?
   public let nftOnExplorerTestnetUrl: String?
+  public let batteryMeanFees: String?
+  public let batteryReservedAmount: String?
+  public let batteryMeanPriceSwap: String?
+  public let batteryMeanPriceJetton: String?
+  public let batteryMeanPriceNFT: String?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
     case tonapiV2Endpoint
     case tonapiTestnetHost
     case batteryHost
-    case batteryMeanFees
-    case batteryReservedAmount
     case tonApiV2Key
     case mercuryoSecret
     case supportLink
@@ -54,6 +67,11 @@ public struct RemoteConfiguration: Equatable {
     case transactionExplorerTestnet
     case nftOnExplorerUrl = "NFTOnExplorerUrl"
     case nftOnExplorerTestnetUrl = "NFTOnExplorerTestnetUrl"
+    case batteryMeanFees
+    case batteryReservedAmount
+    case batteryMeanPriceSwap = "batteryMeanPrice_swap"
+    case batteryMeanPriceJetton = "batteryMeanPrice_jetton"
+    case batteryMeanPriceNFT = "batteryMeanPrice_nft"
   }
 }
 
@@ -87,8 +105,6 @@ extension RemoteConfiguration {
       tonapiV2Endpoint: "",
       tonapiTestnetHost: "",
       batteryHost: "",
-      batteryMeanFees: nil,
-      batteryReservedAmount: nil,
       tonApiV2Key: "",
       mercuryoSecret: nil,
       supportLink: nil,
@@ -104,6 +120,11 @@ extension RemoteConfiguration {
       transactionExplorerTestnet: nil,
       nftOnExplorerUrl: nil,
       nftOnExplorerTestnetUrl: nil,
+      batteryMeanFees: nil,
+      batteryReservedAmount: nil,
+      batteryMeanPriceSwap: nil,
+      batteryMeanPriceJetton: nil,
+      batteryMeanPriceNFT: nil,
       flags: .default
     )
   }
