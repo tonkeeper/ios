@@ -60,7 +60,7 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
   
   // MARK: - ConfigurableView
   
-  public struct Model {
+  public struct Model: Hashable {
     let title: String
     let topDescription: String?
     let bottomDescription: String?

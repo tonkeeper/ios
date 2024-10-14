@@ -211,6 +211,7 @@ private extension KeeperInfo {
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
       appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
       country: .auto,
+      batterySettings: BatterySettings(),
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )

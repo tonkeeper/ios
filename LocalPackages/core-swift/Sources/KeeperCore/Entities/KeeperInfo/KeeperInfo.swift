@@ -18,6 +18,8 @@ public struct KeeperInfo: Equatable {
 
   public let country: SelectedCountry
   
+  public let batterySettings: BatterySettings
+  
   ///
   let assetsPolicy: AssetsPolicy
   let appCollection: AppCollection
@@ -44,6 +46,12 @@ extension KeeperInfo: Codable {
       self.country = selectedCountry
     } else {
       self.country = .auto
+    }
+    
+    if let batterySettings = try container.decodeIfPresent(BatterySettings.self, forKey: .batterySettings) {
+      self.batterySettings = batterySettings
+    } else {
+      self.batterySettings = BatterySettings()
     }
   }
 }

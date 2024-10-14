@@ -150,7 +150,13 @@ private extension BatteryRefillViewController {
 
 extension BatteryRefillViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    
+    let snapshot = dataSource.snapshot()
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+    switch item {
+    case .listItem(let item):
+      item.onSelection?()
+    default: break
+    }
   }
   
   func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {

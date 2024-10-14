@@ -6,6 +6,7 @@ import TKLocalize
 
 protocol BatteryRefillModuleOutput: AnyObject {
   var didTapSupportedTransactions: (() -> Void)? { get set }
+  var didTapTransactionsSettings: (() -> Void)? { get set }
 }
 
 protocol BatteryRefillModuleInput: AnyObject {
@@ -28,6 +29,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   // MARK: - BatteryRefillModuleOutput
   
   var didTapSupportedTransactions: (() -> Void)?
+  var didTapTransactionsSettings: (() -> Void)?
   
   // MARK: - BatteryRefillViewModel
 
@@ -146,10 +148,11 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       caption = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
       informationButtonModel = nil
       
+      snapshot.appendSections([.settings])
       snapshot.appendItems([.listItem(BatteryRefill.ListItem(
         identifier: .settingsCellIdentifier,
-        onSelection: {
-          
+        onSelection: { [weak self] in
+          self?.didTapTransactionsSettings?()
         })
       )], toSection: .settings)
       
@@ -216,7 +219,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   }
   
   private func createFooterSection(snapshot: inout BatteryRefill.Snapshot) {
-    snapshot.appendSections([.footer, .settings])
+    snapshot.appendSections([.footer])
     snapshot.appendItems([.footer], toSection: .footer)
 
     footerCellConfiguration = BatteryRefillFooterView.Configuration(
