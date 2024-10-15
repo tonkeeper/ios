@@ -79,9 +79,8 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
       }
     }
     
-    fiatMethodsState = fiatMethodsStore.getState()
-
     selectedCountry = regionStore.getState()
+    fiatMethodsState = fiatMethodsStore.getState()
     updateCountryPickerButton()
   }
 

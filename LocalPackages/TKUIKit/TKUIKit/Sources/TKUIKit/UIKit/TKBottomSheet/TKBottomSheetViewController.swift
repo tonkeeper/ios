@@ -195,7 +195,7 @@ private extension TKBottomSheetViewController {
       }
       
       let contentHeight = scrollableContent.calculateHeight(withWidth: containerView.bounds.width)
-      let adjustedHeight = min(contentMaximumHeight, contentHeight)
+      let adjustedHeight = max(min(contentMaximumHeight, contentHeight), 1)
       scrollableContent.scrollView.isScrollEnabled = adjustedHeight < contentHeight
 
       return adjustedHeight
