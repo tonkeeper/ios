@@ -166,8 +166,6 @@ extension MainCoordinator {
         return
       }
 
-      guard !Task.isCancelled else { return }
-
       var isDappHandlingApproved = false
       if let _ = popularAppsResponse.apps.first(with: url, at: \.url) {
         isDappHandlingApproved = true
