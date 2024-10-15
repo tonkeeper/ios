@@ -50,7 +50,12 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
   }
   
   func scrollToTop() {
-    
+    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
+    customView.collectionView.setContentOffset(
+      CGPoint(x: 0,
+              y: -customView.collectionView.adjustedContentInset.top),
+      animated: true
+    )
   }
   
   func setListContentInsets(_ insets: UIEdgeInsets) {

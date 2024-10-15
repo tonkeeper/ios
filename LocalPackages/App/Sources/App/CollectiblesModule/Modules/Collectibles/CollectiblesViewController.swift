@@ -25,6 +25,10 @@ final class CollectiblesViewController: ContentListEmptyViewController {
     
     viewModel.viewDidLoad()
   }
+  
+  override func scrollToTop() {
+    collectiblesListViewController.scrollToTop()
+  }
 }
 
 private extension CollectiblesViewController {

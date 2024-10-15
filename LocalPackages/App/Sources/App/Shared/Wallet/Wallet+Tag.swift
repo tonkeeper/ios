@@ -155,6 +155,6 @@ extension Wallet {
 
   func listTagConfiguration() -> TKTagView.Configuration? {
     guard let tag = kindTag else { return nil }
-    return TKTagView.Configuration.outlintTag(text: tag)
+    return TKTagView.Configuration.tag(text: tag)
   }
 }
