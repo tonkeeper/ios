@@ -17,8 +17,9 @@ public struct DecimalAmountFormatter {
   
   public func format(amount: Decimal,
                      maximumFractionDigits: Int? = nil,
+                     significantFractionDigits: Int = 2,
                      currency: Currency? = nil) -> String {
-    let formatterMaximumFractionDigits: Int = maximumFractionDigits ?? calculateFractionalDigitsCount(amount: amount, maximumNotZeroFractionalCount: 2)
+    let formatterMaximumFractionDigits: Int = maximumFractionDigits ?? calculateFractionalDigitsCount(amount: amount, maximumNotZeroFractionalCount: significantFractionDigits)
     let formatFractional: String
     if formatterMaximumFractionDigits == 0 {
       formatFractional = ""
