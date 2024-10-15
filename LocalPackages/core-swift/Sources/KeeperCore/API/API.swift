@@ -37,19 +37,20 @@ struct TestnetAPIHostProvider: APIHostProvider {
 }
 
 public struct API {
-  
-  private let requestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
-  
+
   private let hostProvider: APIHostProvider
   private let urlSession: URLSession
   private let configurationStore: ConfigurationStore
+  private let requestCreationQueue: DispatchQueue
   
   init(hostProvider: APIHostProvider,
        urlSession: URLSession,
-       configurationStore: ConfigurationStore) {
+       configurationStore: ConfigurationStore,
+       requestCreationQueue: DispatchQueue) {
     self.hostProvider = hostProvider
     self.urlSession = urlSession
     self.configurationStore = configurationStore
+    self.requestCreationQueue = requestCreationQueue
   }
   
   private func createRequest<T>(requestCreation: () -> T) async throws -> T {
