@@ -186,7 +186,7 @@ private extension AccountEventMapper {
     
     let amount = amountMapper
       .mapAmount(
-        amount: BigUInt(integerLiteral: UInt64(action.amount)),
+        amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
         fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2,
         type: amountType,
@@ -326,7 +326,7 @@ private extension AccountEventMapper {
                              rightTopDescription: String?,
                              status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .outcome,
@@ -351,7 +351,7 @@ private extension AccountEventMapper {
                               rightTopDescription: String?,
                               status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .income,
@@ -376,7 +376,7 @@ private extension AccountEventMapper {
                                      rightTopDescription: String?,
                                      status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount ?? 0)),
+      amount: BigUInt(integerLiteral: UInt64(abs((action.amount ?? 0)))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .none,
@@ -486,7 +486,7 @@ private extension AccountEventMapper {
                                   isTestnet: Bool) -> AccountEventModel.Action {
     let amount = amountMapper
       .mapAmount(
-        amount: BigUInt(integerLiteral: UInt64(action.tonAttached)),
+        amount: BigUInt(integerLiteral: UInt64(abs(action.tonAttached))),
         fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2,
         type: action.executor == accountEvent.account ? .outcome : .income,
@@ -576,7 +576,7 @@ private extension AccountEventMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonOut = action.tonOut {
-        amount = BigUInt(integerLiteral: UInt64(tonOut))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonOut)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = 2
         symbol = TonInfo.symbol
@@ -605,7 +605,7 @@ private extension AccountEventMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonIn = action.tonIn {
-        amount = BigUInt(integerLiteral: UInt64(tonIn))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonIn)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = 2
         symbol = TonInfo.symbol
