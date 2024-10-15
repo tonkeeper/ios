@@ -49,15 +49,14 @@ struct BalanceItemMapper {
       diff: item.diff,
       verification: .whitelist
     )
-    
     return TKListItemContentView.Configuration(
       iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
         isPinned: isPinned,
         caption: caption,
-        amount: BigUInt(item.amount),
-        amountFractionDigits: TonInfo.fractionDigits,
+        amount: item.amount,
+        amountFractionDigits: item.fractionalDigits,
         convertedAmount: item.converted,
         currency: item.currency,
         isSecure: isSecure

@@ -66,7 +66,8 @@ private extension PublicKeyImportCoordinator {
         showRevision: true,
         selectLastRevision: true
       ),
-      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter,
+      isTestnet: false
     )
     
     module.output.didSelectWallets = { [weak self] wallets in

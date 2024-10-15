@@ -45,10 +45,12 @@ public final class TKListItemBadgeView: UIView {
     iconView.frame = contentViewFrame
     customViewContainer.frame = contentViewFrame
     customView?.frame = customViewContainer.bounds
+    
+    layer.cornerRadius = bounds.width/2
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
-    CGSize(width: .side + .padding, height: .side + .padding)
+    CGSize(width: .side + .padding * 2, height: .side + .padding * 2)
   }
   
   private func setup() {
@@ -58,7 +60,6 @@ public final class TKListItemBadgeView: UIView {
     addSubview(customViewContainer)
     
     layer.masksToBounds = true
-    layer.cornerRadius = .side/2
     
     didUpdateConfiguration()
   }

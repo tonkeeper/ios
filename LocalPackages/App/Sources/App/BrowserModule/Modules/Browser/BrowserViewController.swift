@@ -6,6 +6,8 @@ import TKLocalize
 final class BrowserViewController: GenericViewViewController<BrowserView>, ScrollViewController {
   private let viewModel: BrowserViewModel
   
+  private weak var selectedViewController: ScrollViewController?
+  
   private let exploreViewController: BrowserExploreViewController
   private let connectedViewController: BrowserConnectedViewController
   
@@ -36,7 +38,7 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
   }
   
   func scrollToTop() {
-    
+    selectedViewController?.scrollToTop()
   }
   
   override func viewDidLayoutSubviews() {
@@ -105,11 +107,13 @@ private extension BrowserViewController {
   func showExplore() {
     customView.exploreContainer.isHidden = false
     customView.connectedContainer.isHidden = true
+    selectedViewController = exploreViewController
   }
   
   func showConnected() {
     customView.connectedContainer.isHidden = false
     customView.exploreContainer.isHidden = true
+    selectedViewController = connectedViewController
   }
   
   @objc
