@@ -218,7 +218,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   }
   
   private func handleLoadedEvents(_ events: AccountEvents) {
-    let hasMore = !events.events.isEmpty
+    let hasMore = events.nextFrom != 0
     self.events = self.events + events.events
     
     try? cacheProvider.setCache(events: self.events, wallet: wallet)
