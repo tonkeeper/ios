@@ -55,7 +55,7 @@ public extension Array where Element: Equatable {
   }
 }
 
-extension Sequence {
+public extension Sequence {
 
   func group<U: Hashable>(by key: (Iterator.Element) -> U) -> [U: [Iterator.Element]] {
     return .init(grouping: self, by: key)

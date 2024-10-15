@@ -166,13 +166,28 @@ extension MainCoordinator {
         return
       }
 
-      guard !Task.isCancelled else {
+      guard !Task.isCancelled else { return }
+
+      var isDappHandlingApproved = false
+      if let _ = popularAppsResponse.apps.first(with: url, at: \.url) {
+        isDappHandlingApproved = true
+      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url, at: \.url) }) {
+        isDappHandlingApproved = true
+      }
+
+      guard isDappHandlingApproved, !Task.isCancelled else {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          produceFailingFlow()
+        }
         return
       }
 
+      await MainActor.run {
+        ToastPresenter.hideAll()
+        self.openDapp(title: "", url: url)
+      }
     }
-
-    openDapp(title: "", url: url)
 
     deeplinkHandleTask = task
     return true
