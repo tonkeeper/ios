@@ -6,7 +6,7 @@ import KeeperCore
 import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
-
+  var didTapCollectiblesDetails: (() -> Void)? { get set }
 }
 
 protocol CollectiblesModuleInput: AnyObject {
@@ -16,6 +16,8 @@ protocol CollectiblesModuleInput: AnyObject {
 protocol CollectiblesViewModel: AnyObject {
   var didUpdateIsLoading: ((Bool) -> Void)? { get set }
   var didUpdateIsEmpty: ((_ isEmpty: Bool) -> Void)? { get set }
+  var didUpdateNavigationRightButtonVisibility: ((_ isHidden: Bool) -> Void)? { get set }
+  var didTapDetailsButton: (() -> Void)? { get set }
 
   func viewDidLoad()
 }
@@ -23,31 +25,40 @@ protocol CollectiblesViewModel: AnyObject {
 final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput, CollectiblesModuleInput {
   
   // MARK: - CollectiblesModuleOutput
-  
+
+  var didTapCollectiblesDetails: (() -> Void)?
+
   // MARK: - CollectiblesModuleInput
 
   // MARK: - CollectiblesViewModel
   
   var didUpdateIsLoading: ((Bool) -> Void)?
   var didUpdateIsEmpty: ((Bool) -> Void)?
+  var didUpdateNavigationRightButtonVisibility: ((_ isVisible: Bool) -> Void)?
+  var didTapDetailsButton: (() -> Void)?
 
   func viewDidLoad() {
-    
+    configureBindings()
+    update()
+  }
+
+  private func configureBindings() {
     backgroundUpdateStore.addObserver(self) { observer, event in
       observer.didGetBackgroundUpdateStoreEvent(event)
     }
-    
+
     walletStateLoader.addObserver(self) { observer, event in
       observer.didGetWalletStateLoaderEvent(event)
     }
-    
+
     walletNFTManagedStore.addObserver(self) { observer, event in
       observer.didGetWalletNFTStoreEvent(event)
     }
-    
-    update()
+    didTapDetailsButton = { [weak self] in
+      self?.didTapCollectiblesDetails?()
+    }
   }
-  
+
   // MARK: Dependencies
   
   private let wallet: Wallet
@@ -123,6 +134,7 @@ private extension CollectiblesViewModelImplementation {
     let listHidden = isEmpty && !isLoading
     
     didUpdateIsLoading?(isLoading)
+    didUpdateNavigationRightButtonVisibility?(listHidden)
     didUpdateIsEmpty?(listHidden)
   }
 }

@@ -28,8 +28,9 @@ final class CollectiblesViewController: ContentListEmptyViewController {
 }
 
 private extension CollectiblesViewController {
+
   func setup() {
-    customView.navigationBarView.title = TKLocales.Collectibles.title
+    configureNavigationBar()
 
     emptyViewController.configure(model: TKEmptyViewController.Model(
       title: TKLocales.Purchases.emptyPlaceholder,
@@ -41,7 +42,11 @@ private extension CollectiblesViewController {
 
     setupBindings()
   }
-  
+
+  func configureNavigationBar() {
+    customView.navigationBarView.title = TKLocales.Collectibles.title
+  }
+
   func setupBindings() {
     viewModel.didUpdateIsLoading = { [weak self] isLoading in
       self?.customView.navigationBarView.isConnecting = isLoading
@@ -53,6 +58,21 @@ private extension CollectiblesViewController {
       } else {
         self?.setState(.list, animated: false)
       }
+    }
+
+    viewModel.didUpdateNavigationRightButtonVisibility = { [weak self] isHidden in
+      var buttonItems = [TKNavigationBar.HeaderButtonItem]()
+      if !isHidden {
+        let rightButtonModel = TKNavigationBar.HeaderButtonItem(
+          model: TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.sliders)
+        ) {
+          self?.viewModel.didTapDetailsButton?()
+        }
+        buttonItems.append(rightButtonModel)
+      }
+
+
+      self?.customView.navigationBarView.configuration = .init(rightButtonItems: buttonItems)
     }
   }
 }

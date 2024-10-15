@@ -81,10 +81,6 @@ private extension SettingsCoordinator {
       self?.deleteRegular(wallet: wallet, isSignOut: false)
     }
     
-    configurator.didTapPurchases = { [weak self] wallet in
-      self?.openPurchases(wallet: wallet)
-    }
-    
     configurator.didTapNotifications = { [weak self] wallet in
       self?.openNotifications(wallet: wallet)
     }
@@ -420,17 +416,6 @@ private extension SettingsCoordinator {
     }
 
     router.push(viewController: module.viewController)
-  }
-  
-  func openPurchases(wallet: Wallet) {
-    let module = SettingsPurchasesAssembly.module(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-    
-    module.view.setupBackButton()
-    
-    router.push(viewController: module.view)
   }
   
   func openNotifications(wallet: Wallet) {
