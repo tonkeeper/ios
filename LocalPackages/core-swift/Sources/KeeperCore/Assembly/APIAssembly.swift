@@ -28,8 +28,7 @@ final class APIAssembly {
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.configurationStore,
-      requestBuilderActor: requestBuilderActor
+      configurationStore: configurationAssembly.configurationStore
     )
   }
   
@@ -39,13 +38,10 @@ final class APIAssembly {
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.configurationStore,
-      requestBuilderActor: requestBuilderActor
+      configurationStore: configurationAssembly.configurationStore
     )
   }
-  
-  private lazy var requestBuilderActor = APIRequestBuilderSerialActor()
-  
+    
   private var tonApiHostProvider: APIHostProvider {
     MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
   }
