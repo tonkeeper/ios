@@ -49,6 +49,11 @@ public final class WalletBalanceListCell: TKCollectionViewListCell {
     updateCornerRadius()
   }
   
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    walletBalanceListCellContentView.prepareForReuse()
+  }
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -147,6 +152,10 @@ public final class WalletBalanceListCellContentView: UIView {
     }
     let height = listItemSize.height + commentSize.height
     return CGSize(width: size.width, height: height)
+  }
+  
+  func prepareForReuse() {
+    listItemContentView.prepareForReuse()
   }
   
   private func setup() {

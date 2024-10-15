@@ -43,7 +43,6 @@ public final class TKTextInputTextViewControl: UITextView, TKTextFieldInputViewC
 
 private extension TKTextInputTextViewControl {
   func setup() {
-    keyboardType = .alphabet
     autocapitalizationType = .none
     autocorrectionType = .no
     isScrollEnabled = false

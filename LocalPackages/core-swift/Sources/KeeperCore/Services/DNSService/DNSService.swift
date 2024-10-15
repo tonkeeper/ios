@@ -3,8 +3,14 @@ import TonAPI
 import TonSwift
 
 public protocol DNSService {
-  func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain
+  func resolveDomainName(_ domainName: String, addTonPostfix: Bool, isTestnet: Bool) async throws -> Domain
   func loadDomainExpirationDate(_ domainName: String, isTestnet: Bool) async throws -> Date?
+}
+
+public extension DNSService {
+  func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain {
+    try await resolveDomainName(domainName, addTonPostfix: false, isTestnet: isTestnet)
+  }
 }
 
 final class DNSServiceImplementation: DNSService {
@@ -18,15 +24,22 @@ final class DNSServiceImplementation: DNSService {
     self.apiProvider = apiProvider
   }
   
-  func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain {
-    let parsedDomainName = parseDomainName(domainName)
-    let result = try await apiProvider.api(isTestnet).resolveDomainName(parsedDomainName)
-    return Domain(domain: parsedDomainName, friendlyAddress: result)
+  func resolveDomainName(_ domainName: String, addTonPostfix: Bool, isTestnet: Bool) async throws -> Domain {
+    let resolveName: String = {
+      if addTonPostfix {
+        return parseDomainName(domainName)
+      } else {
+        return domainName
+      }
+    }()
+    
+    
+    let result = try await apiProvider.api(isTestnet).resolveDomainName(resolveName)
+    return Domain(domain: resolveName, friendlyAddress: result)
   }
   
   func loadDomainExpirationDate(_ domainName: String, isTestnet: Bool) async throws -> Date? {
-    let parsedDomainName = parseDomainName(domainName)
-    return try await apiProvider.api(isTestnet).getDomainExpirationDate(parsedDomainName)
+    return try await apiProvider.api(isTestnet).getDomainExpirationDate(domainName)
   }
 }
 

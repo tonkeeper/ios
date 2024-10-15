@@ -47,7 +47,6 @@ private extension TKTextInputTextFieldControl {
     font = TKTextStyle.body1.font
     textColor = .Text.primary
     tintColor = .Text.accent
-    keyboardType = .alphabet
     autocapitalizationType = .none
     autocorrectionType = .no
     pasteDelegate = self

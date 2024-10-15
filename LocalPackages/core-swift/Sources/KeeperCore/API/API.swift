@@ -36,43 +36,30 @@ struct TestnetAPIHostProvider: APIHostProvider {
   }
 }
 
-public actor APIRequestBuilderSerialActor {
-  private var previousTask: Task<Any, Swift.Error>?
-  
-  public init() {}
-  
-  public func addTask<T>(block: @Sendable @escaping () async throws -> T) async throws -> T {
-    previousTask = Task { [previousTask] in
-      let _ = await previousTask?.result
-      return try await block()
-    }
-    return try await previousTask!.value as! T
-  }
-}
-
 public struct API {
+  
+  private let requestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
+  
   private let hostProvider: APIHostProvider
   private let urlSession: URLSession
   private let configurationStore: ConfigurationStore
-  private let requestBuilderActor: APIRequestBuilderSerialActor
   
   init(hostProvider: APIHostProvider,
        urlSession: URLSession,
-       configurationStore: ConfigurationStore,
-       requestBuilderActor: APIRequestBuilderSerialActor) {
+       configurationStore: ConfigurationStore) {
     self.hostProvider = hostProvider
     self.urlSession = urlSession
     self.configurationStore = configurationStore
-    self.requestBuilderActor = requestBuilderActor
   }
   
-  private func prepareAPIForRequest() async {
-    async let apiKeyTask = await configurationStore.getConfiguration().tonApiV2Key
-    async let hostUrlTask = await hostProvider.basePath
-    let apiKey = await apiKeyTask
-    let hostURL = await hostUrlTask
-    TonAPIAPI.customHeaders = ["Authorization": "Bearer \(apiKey)"]
-    TonAPIAPI.basePath = hostURL
+  private func createRequest<T>(requestCreation: () -> T) async throws -> T {
+    let apiKey = await configurationStore.getConfiguration().tonApiV2Key
+    let hostUrl = await hostProvider.basePath
+    return requestCreationQueue.sync {
+      TonAPIAPI.customHeaders = ["Authorization": "Bearer \(apiKey)"]
+      TonAPIAPI.basePath = hostUrl
+      return requestCreation()
+    }
   }
 }
 
@@ -80,18 +67,15 @@ public struct API {
 
 extension API {
   func getAccountInfo(address: String) async throws -> Account {
-    let request = try await requestBuilderActor.addTask(block: {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountWithRequestBuilder(accountId: address)
-    })
-    
+    }
     let response = try await request.execute().body
     return try Account(account: response)
   }
   
   func getAccountJettonsBalances(address: Address, currencies: [Currency]) async throws -> [JettonBalance] {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountJettonsBalancesWithRequestBuilder(
         accountId: address.toRaw(),
         currencies: currencies.map { $0.code },
@@ -134,8 +118,7 @@ extension API {
   func getAccountEvents(address: Address,
                         beforeLt: Int64?,
                         limit: Int) async throws -> AccountEvents {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountEventsWithRequestBuilder(
         accountId: address.toRaw(),
         limit: limit,
@@ -159,8 +142,7 @@ extension API {
                               jettonInfo: JettonInfo,
                               beforeLt: Int64?,
                               limit: Int) async throws -> AccountEvents {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountJettonHistoryByIDWithRequestBuilder(
         accountId: address.toRaw(),
         jettonId: jettonInfo.address.toRaw(),
@@ -185,8 +167,7 @@ extension API {
   
   func getEvent(address: Address,
                 eventId: String) async throws -> AccountEvent {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountEventWithRequestBuilder(
         accountId: address.toRaw(),
         eventId: eventId
@@ -201,8 +182,7 @@ extension API {
 
 extension API {
   func getSeqno(address: Address) async throws -> Int {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return WalletAPI.getAccountSeqnoWithRequestBuilder(accountId: address.toRaw())
     }
     
@@ -211,8 +191,7 @@ extension API {
   }
   
   func emulateMessageWallet(boc: String) async throws -> MessageConsequences {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return EmulationAPI.emulateMessageToWalletWithRequestBuilder(
         emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc)
       )
@@ -223,8 +202,7 @@ extension API {
   }
   
   func sendTransaction(boc: String) async throws {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return BlockchainAPI.sendBlockchainMessageWithRequestBuilder(
         sendBlockchainMessageRequest: SendBlockchainMessageRequest(
           boc: boc
@@ -243,8 +221,7 @@ extension API {
                           limit: Int?,
                           offset: Int?,
                           isIndirectOwnership: Bool) async throws -> [NFT] {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return AccountsAPI.getAccountNftItemsWithRequestBuilder(
         accountId: address.toRaw(),
         collection: collectionAddress?.toRaw(),
@@ -263,8 +240,7 @@ extension API {
   }
   
   func getNftItemsByAddresses(_ addresses: [Address]) async throws -> [NFT] {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return NFTAPI.getNftItemsByAddressesWithRequestBuilder(
         getAccountsRequest: GetAccountsRequest(
           accountIds: addresses.map { $0.toRaw() }
@@ -284,8 +260,7 @@ extension API {
 
 extension API {
   func resolveJetton(address: Address) async throws -> JettonInfo {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return JettonsAPI.getJettonInfoWithRequestBuilder(accountId: address.toRaw())
     }
     let response = try await request.execute().body
@@ -321,8 +296,7 @@ extension API {
   func getRates(jettons: [JettonInfo],
                 currencies: [Currency]) async throws -> Rates {
     let tokens = CollectionOfOne(TonInfo.symbol.lowercased()) + jettons.map { $0.address.toRaw() }
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return RatesAPI.getRatesWithRequestBuilder(
         tokens: tokens,
         currencies: currencies.map { $0.code }
@@ -373,8 +347,7 @@ extension API {
   }
   
   func resolveDomainName(_ domainName: String) async throws -> FriendlyAddress {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return DNSAPI.dnsResolveWithRequestBuilder(domainName: domainName)
     }
 
@@ -388,8 +361,7 @@ extension API {
   }
   
   func getDomainExpirationDate(_ domainName: String) async throws -> Date? {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return DNSAPI.getDnsInfoWithRequestBuilder(domainName: domainName)
     }
     
@@ -425,7 +397,7 @@ extension API {
   }
   
   func getChart(token: String, period: Period, currency: Currency) async throws -> [Coordinate] {
-    let configuration = try await configurationStore.getConfiguration()
+    let configuration = await configurationStore.getConfiguration()
     guard var components = URLComponents(string: configuration.tonapiV2Endpoint) else { return [] }
     components.path = "/v2/rates/chart"
     components.queryItems = [
@@ -436,7 +408,7 @@ extension API {
     ]
     
     guard let url = components.url else { return [] }
-    let token = try await configurationStore.getConfiguration().tonApiV2Key
+    let token = await configurationStore.getConfiguration().tonApiV2Key
     var request = URLRequest(url: url)
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     let (data, response) = try await urlSession.data(for: request)
@@ -455,8 +427,7 @@ extension API {
 
 extension API {
   func getCustomPayload(address: Address, jettonAddress: Address) async throws -> JettonTransferPayload {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return JettonsAPI.getJettonTransferPayloadWithRequestBuilder(
         accountId: address.toRaw(),
         jettonId: jettonAddress.toRaw()
@@ -471,8 +442,7 @@ extension API {
 
 extension API {
   func getPools(address: Address) async throws -> [StackingPoolInfo]{
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return StakingAPI.getStakingPoolsWithRequestBuilder(
         availableFor: address.toRaw(),
         includeUnverified: false
@@ -487,8 +457,7 @@ extension API {
   }
   
   func getNominators(address: Address) async throws -> [AccountStackingInfo] {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return StakingAPI.getAccountNominatorsPoolsWithRequestBuilder(accountId: address.toRaw())
     }
     
@@ -498,8 +467,7 @@ extension API {
   }
   
   func getPoolInfo(poolAddress: Address) async throws -> StackingPoolInfo {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return StakingAPI.getStakingPoolInfoWithRequestBuilder(accountId: poolAddress.toRaw())
     }
     let response = try await request.execute().body
@@ -512,8 +480,7 @@ extension API {
 
 extension API {
   func getWalletAddress(jettonMaster: String, owner: String) async throws -> Address {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return BlockchainAPI.execGetMethodForBlockchainAccountWithRequestBuilder(
         accountId: jettonMaster,
         methodName: "get_wallet_address",
@@ -535,8 +502,7 @@ extension API {
 // MARK: - Time
 extension API {
   func getTime() async throws -> TimeInterval {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return LiteServerAPI.getRawTimeWithRequestBuilder()
     }
     
@@ -548,8 +514,7 @@ extension API {
 // MARK: - Status
 extension API {
   func getStatus() async throws -> Int {
-    let request = try await requestBuilderActor.addTask {
-      await prepareAPIForRequest()
+    let request = try await createRequest {
       return BlockchainAPI.statusWithRequestBuilder()
     }
     let response = try await request.execute().body
