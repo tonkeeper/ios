@@ -45,7 +45,7 @@ extension KeeperInfo: Codable {
     if let appSettings = try container.decodeIfPresent(AppSettings.self, forKey: .appSettings) {
       self.appSettings = appSettings
     } else {
-      self.appSettings = AppSettings(isSetupFinished: false, isSecureMode: false)
+      self.appSettings = AppSettings(isSecureMode: false)
     }
     
     self.assetsPolicy = try container.decode(AssetsPolicy.self, forKey: .assetsPolicy)

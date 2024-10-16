@@ -2,7 +2,6 @@ import Foundation
 
 public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSettingsV3Store.State> {
   public struct State {
-    public var isSetupFinished: Bool
     public var isSecureMode: Bool
   }
   
@@ -19,21 +18,7 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
   
   init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
-    super.init(state: State(isSetupFinished: false, isSecureMode: false))
-  }
-  
-  public func setIsSetupFinished(_ isSetupFinished: Bool) async {
-    await setState { state in
-      var updatedState = state
-      updatedState.isSetupFinished = isSetupFinished
-      return StateUpdate(newState: updatedState)
-    } notify: { state in
-      self.sendEvent(.didUpdateIsSetupFinished(isSetupFinished: state.isSetupFinished))
-    }
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      let updated = keeperInfo?.updateIsSetupFinished(isSetupFinished)
-      return updated
-    }
+    super.init(state: State(isSecureMode: false))
   }
   
   public func toggleIsSecureMode() async {
@@ -69,12 +54,10 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
   private func getState(keeperInfo: KeeperInfo?) -> State {
     if let keeperInfo = keeperInfoStore.getState() {
       return State(
-        isSetupFinished: keeperInfo.appSettings.isSetupFinished,
         isSecureMode: keeperInfo.appSettings.isSecureMode
       )
     } else {
       return State(
-        isSetupFinished: false,
         isSecureMode: false
       )
     }
