@@ -18,13 +18,19 @@ open class TKPlainButton: UIControl, ConfigurableView {
   
   public struct Model {
     public struct Icon {
+      public enum IconPosition {
+        case left
+        case right
+      }
       public let image: UIImage
       public let tintColor: UIColor?
       public let padding: UIEdgeInsets
-      public init(image: UIImage, tintColor: UIColor?, padding: UIEdgeInsets) {
+      public let iconPosition: IconPosition
+      public init(image: UIImage, tintColor: UIColor?, padding: UIEdgeInsets, iconPosition: IconPosition = .right) {
         self.image = image
         self.tintColor = tintColor
         self.padding = padding
+        self.iconPosition = iconPosition
       }
     }
     public let title: NSAttributedString?
@@ -49,6 +55,15 @@ open class TKPlainButton: UIControl, ConfigurableView {
       iconImageView.snp.makeConstraints { make in
         make.edges.equalTo(iconContainer).inset(icon.padding)
       }
+      
+      iconContainer.removeFromSuperview()
+      switch icon.iconPosition {
+      case .left:
+        stackView.insertArrangedSubview(iconContainer, at: 0)
+      case .right:
+        stackView.insertArrangedSubview(iconContainer, at: 1)
+      }
+      
     } else {
       iconContainer.isHidden = true
     }
@@ -87,7 +102,6 @@ open class TKPlainButton: UIControl, ConfigurableView {
     addSubview(stackView)
     iconContainer.addSubview(iconImageView)
     stackView.addArrangedSubview(label)
-    stackView.addArrangedSubview(iconContainer)
     
     addAction(UIAction(handler: { [weak self] _ in
       self?.action?()
