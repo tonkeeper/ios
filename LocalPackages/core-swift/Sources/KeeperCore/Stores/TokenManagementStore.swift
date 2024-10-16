@@ -51,7 +51,7 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedPinnedItems.append(identifier)
       let walletUpdatedState = TokenManagementState(
         pinnedItems: updatedPinnedItems,
-        hiddenItems: walletState.hiddenItems
+        hiddenState: walletState.hiddenState
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
@@ -70,7 +70,7 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       let updatedPinnedItems = walletState.pinnedItems.filter { $0 != identifier }
       let walletUpdatedState = TokenManagementState(
         pinnedItems: updatedPinnedItems,
-        hiddenItems: walletState.hiddenItems
+        hiddenState: walletState.hiddenState
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
@@ -86,11 +86,11 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       guard let walletState = state[wallet] else {
         return nil
       }
-      var updatedHiddenItems = walletState.hiddenItems
-      updatedHiddenItems.append(identifier)
+      var updatedHiddenItems = walletState.hiddenState
+      updatedHiddenItems[identifier] = true
       let walletUpdatedState = TokenManagementState(
         pinnedItems: walletState.pinnedItems,
-        hiddenItems: updatedHiddenItems
+        hiddenState: updatedHiddenItems
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
@@ -106,10 +106,11 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       guard let walletState = state[wallet] else {
         return nil
       }
-      let updatedHiddenItems = walletState.hiddenItems.filter { $0 != identifier }
+      var updatedHiddenItems = walletState.hiddenState
+      updatedHiddenItems[identifier] = false
       let walletUpdatedState = TokenManagementState(
         pinnedItems: walletState.pinnedItems,
-        hiddenItems: updatedHiddenItems
+        hiddenState: updatedHiddenItems
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
@@ -130,7 +131,7 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       pinnedItems.insert(item, at: to)
       let walletUpdatedState = TokenManagementState(
         pinnedItems: pinnedItems,
-        hiddenItems: walletState.hiddenItems
+        hiddenState: walletState.hiddenState
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState

@@ -21,24 +21,7 @@ final class JettonBalanceServiceImplementation: JettonBalanceService {
       address: wallet.address,
       currencies: currencies
     )
-    let sortedTokensBalance = tokensBalance.sorted {
-      if $0.item.jettonInfo.address == JettonMasterAddress.tonUSDT {
-        return true
-      }
-      if $1.item.jettonInfo.address == JettonMasterAddress.tonUSDT {
-        return false
-      }
-      switch ($0.item.jettonInfo.verification, $1.item.jettonInfo.verification) {
-      case (.whitelist, .whitelist):
-        return true
-      case (.whitelist, _):
-        return true
-      case (_, .whitelist):
-        return false
-      default:
-        return true
-      }
-    }
-    return sortedTokensBalance
+    let filtered = tokensBalance.filter { $0.item.jettonInfo.verification != .blacklist }
+    return filtered
   }
 }

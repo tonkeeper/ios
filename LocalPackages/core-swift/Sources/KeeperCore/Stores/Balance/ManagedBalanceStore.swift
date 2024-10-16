@@ -119,7 +119,7 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
     guard let balance = balanceState?.balance else { return nil }
     
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
-    let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
+    let stateHiddenItems = tokenManagementState?.hiddenState ?? [:]
 
     var tonItems = [ProcessedBalanceTonItem]()
     var pinnedItems = [ProcessedBalanceItem]()
@@ -133,9 +133,10 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
         if statePinnedItems.contains(balanceItem.identifier) {
           pinnedItems.append(balanceItem)
         } else {
-          guard !stateHiddenItems.contains(balanceItem.identifier) else {
-            continue
-          }
+          let isHidden = {
+            stateHiddenItems[balanceItem.identifier] == true || (stateHiddenItems[balanceItem.identifier] == nil && balanceItem.isZeroBalance)
+          }()
+          guard !isHidden else { continue }
           unpinnedItems.append(balanceItem)
         }
       }
@@ -167,7 +168,11 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
       case (.jetton(let lModel), .jetton(let rModel)):
         switch (lModel.jetton.jettonInfo.verification, rModel.jetton.jettonInfo.verification) {
         case (.whitelist, .whitelist):
-          return lModel.converted > rModel.converted
+          if lModel.converted == rModel.converted {
+            return lModel.amount > rModel.amount
+          } else {
+            return lModel.converted > rModel.converted
+          }
         case (.whitelist, _):
           return true
         case (_, .whitelist):

@@ -47,7 +47,7 @@ struct BalanceItemMapper {
       price: item.price,
       currency: item.currency,
       diff: item.diff,
-      verification: .whitelist
+      verification: item.jetton.jettonInfo.verification
     )
     return TKListItemContentView.Configuration(
       iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
