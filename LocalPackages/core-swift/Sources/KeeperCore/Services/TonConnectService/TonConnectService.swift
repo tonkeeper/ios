@@ -185,7 +185,6 @@ final class TonConnectServiceImplementation: TonConnectService {
   func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws {
     let apps = try getConnectedApps(forWallet: wallet)
     let updatedApps = apps.removeApp(app)
-    let key = try wallet.address.toRaw()
     try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
   }
   

@@ -40,12 +40,6 @@ final class ManageTokensModel {
     tokenManagementStore.addObserver(self) { observer, event in
       observer.didGetTokenManagmentStoreEvent(event)
     }
-    
-//    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-//      Task {
-//        await observer.didUpdateTokenManagementState(newState: newState, oldState: oldState)
-//      }
-//    }
   }
   
   func getState() -> State {
@@ -163,8 +157,11 @@ final class ManageTokensModel {
     let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
     var pinnedItems = [BalanceItem]()
     var unpinnedItems = [UnpinnedItem]()
-    
     for item in balanceItems.items {
+      if case .ton(_) = item {
+        continue
+      }
+      
       if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {

@@ -15,6 +15,21 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
     self.walletsStore = walletsStore
     self.tokenManagementRepository = tokenManagementRepository
     super.init(state: State())
+    
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didAddWallets(let wallets):
+        self.setState { state in
+          var updatedState = state
+          for wallet in wallets {
+            let walletState = tokenManagementRepository.getState(wallet: wallet)
+            updatedState[wallet] = walletState
+          }
+          return StateUpdate(newState: updatedState)
+        }
+      default: break
+      }
+    }
   }
   
   public override var initialState: State {
