@@ -25,6 +25,7 @@ public enum Deeplink: Equatable {
   case publish(sign: Data)
   case externalSign(ExternalSignDeeplink)
   case tonconnect(TonConnectParameters)
+  case dapp(URL)
 }
 
 public enum ExternalSignDeeplink: Equatable {
