@@ -156,7 +156,7 @@ public extension Wallet {
   var isTonconnectAvailable: Bool {
     switch kind {
     case .regular:
-      return true
+      return !isTestnet
     case .lockup:
       return false
     case .watchonly:
