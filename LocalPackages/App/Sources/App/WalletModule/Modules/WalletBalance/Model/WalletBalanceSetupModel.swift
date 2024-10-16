@@ -57,7 +57,7 @@ final class WalletBalanceSetupModel {
     guard let wallet = try? walletsStore.getActiveWallet() else {
       return nil
     }
-    let isSetupFinished = appSettingsStore.getState().isSetupFinished
+    let isSetupFinished = wallet.setupSettings.isSetupFinished
     let isBiometryEnable = securityStore.getState().isBiometryEnable
     let isNotificationsOn = walletNotificationStore.getState()[wallet] ?? false
     return calculateState(
@@ -70,7 +70,10 @@ final class WalletBalanceSetupModel {
   
   func finishSetup() {
     Task {
-      await appSettingsStore.setIsSetupFinished(true)
+      guard let wallet = try? await walletsStore.getActiveWallet() else {
+        return
+      }
+      await walletsStore.setWalletIsSetupFinished(wallet: wallet, isSetupFinished: true)
     }
   }
   
@@ -139,8 +142,8 @@ final class WalletBalanceSetupModel {
     switch walletsStoreState {
     case .empty: break
     case .wallets(let walletsState):
-      let isSetupFinished = appSettingsStore.getState().isSetupFinished
       let isBiometryEnable = securityStore.getState().isBiometryEnable
+      let isSetupFinished = walletsState.activeWalelt.setupSettings.isSetupFinished
       let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWalelt] ?? false
       let state = calculateState(
         wallet: walletsState.activeWalelt,

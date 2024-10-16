@@ -110,13 +110,7 @@ public final class ServicesAssembly {
       keeperInfoRepository: repositoriesAssembly.keeperInfoRepository()
     )
   }
-  
-  func setupService() -> SetupService {
-    SetupServiceImplementation(
-      keeperInfoRepository: repositoriesAssembly.keeperInfoRepository()
-    )
-  }
-  
+
   public func sendService() -> SendService {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }

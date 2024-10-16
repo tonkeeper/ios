@@ -8,7 +8,7 @@ open class TKBridgeWebViewController: UIViewController {
   public var isHeaderHidden = false {
     didSet {
       setupWebViewConstraints()
-      headerView.isHidden = isHeaderHidden
+      navigationBar.isHidden = isHeaderHidden
     }
   }
   
@@ -30,7 +30,36 @@ open class TKBridgeWebViewController: UIViewController {
     return webView
   }()
   
-  private let headerView = TKBridgeWebHeaderView()
+  private let navigationBar = TKUINavigationBar()
+  private let titleView = TKUINavigationBarTitleView()
+  private lazy var backButton: TKUIHeaderIconButton = {
+    let button = TKUINavigationBar.createBackButton { [weak self] in
+      self?.backButtonAction()
+    }
+    button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    return button
+  }()
+  private lazy var rightPillButton: TKPillButton = {
+    let button = TKPillButton()
+    button.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
+    button.configuration = TKPillButton.Configuration(
+      leftButton: TKPillButton.Configuration.Button(
+        icon: .TKUIKit.Icons.Size16.ellipses,
+        action: { [weak self] in
+          self?.menuButtonAction()
+        }
+      ),
+      rightButton: TKPillButton.Configuration.Button(
+        icon: .TKUIKit.Icons.Size16.close,
+        action: { [weak self] in
+          self?.closeButtonAction()
+        }
+      )
+    )
+    
+    return button
+  }()
   
   // MARK: - KVO
   
@@ -84,6 +113,8 @@ open class TKBridgeWebViewController: UIViewController {
   open override func viewDidLoad() {
     super.viewDidLoad()
     
+    navigationBar.centerView = titleView
+    
     view.backgroundColor = .Background.page
     webView.backgroundColor = .Background.page
     webView.scrollView.backgroundColor = .Background.page
@@ -100,27 +131,21 @@ open class TKBridgeWebViewController: UIViewController {
 #endif
     
     view.addSubview(webView)
-    view.addSubview(headerView)
+    view.addSubview(navigationBar)
     
-    headerView.isHidden = isHeaderHidden
+    navigationBar.isHidden = isHeaderHidden
     
     setupConstraints()
     
     didUpdateUrl()
     
-    headerView.closeButton.configuration.action = { [weak self] in
-      self?.webView.scrollView.layer.masksToBounds = true
-      self?.webView.layer.masksToBounds = true
-      self?.dismiss(animated: true)
-    }
-    headerView.backButton.configuration.action = { [weak self] in
-      self?.webView.goBack()
-    }
-    
-    headerView.backButton.isHidden = true
+    navigationBar.leftViews = [backButton]
+    navigationBar.rightViews = [rightPillButton]
+
+    backButton.isHidden = true
     canGoBack = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
       guard let canGoBack = value.newValue else { return }
-      self?.headerView.backButton.isHidden = !canGoBack
+      self?.backButton.isHidden = !canGoBack
     }
   
     let urlRequest = URLRequest(url: url)
@@ -150,7 +175,7 @@ open class TKBridgeWebViewController: UIViewController {
   }
   
   private func setupConstraints() {
-    headerView.snp.makeConstraints { make in
+    navigationBar.snp.makeConstraints { make in
       make.top.left.right.equalTo(self.view)
     }
     setupWebViewConstraints()
@@ -161,23 +186,112 @@ open class TKBridgeWebViewController: UIViewController {
       if isHeaderHidden {
         make.top.equalTo(view)
       } else {
-        make.top.equalTo(headerView.snp.bottom)
+        make.top.equalTo(navigationBar.snp.bottom)
       }
       make.left.right.equalTo(self.view)
       make.bottom.equalTo(self.view.snp.bottom)
     }
   }
   
+  private func backButtonAction() {
+    webView.goBack()
+  }
+  
+  private func closeButtonAction() {
+    webView.scrollView.layer.masksToBounds = true
+    webView.layer.masksToBounds = true
+    dismiss(animated: true)
+  }
+  
+  private func menuButtonAction() {
+    let items = [
+      TKPopupMenuItem(
+        title: "Refresh",
+        icon: .TKUIKit.Icons.Size16.refresh,
+        selectionHandler: { [weak self] in
+          self?.webView.reload()
+        }
+      ),
+      TKPopupMenuItem(
+        title: "Share",
+        icon: .TKUIKit.Icons.Size16.share,
+        selectionHandler: { [weak self] in
+          guard let url = self?.webView.url else { return }
+          self?.shareURL(url: url)
+        }
+      ),
+      TKPopupMenuItem(
+        title: "Copy link",
+        icon: .TKUIKit.Icons.Size16.copy,
+        selectionHandler: { [weak self] in
+          guard let url = self?.webView.url else { return }
+          ToastPresenter.showToast(configuration: .copied)
+          UIPasteboard.general.string = url.absoluteString
+        }
+      )
+      ]
+    TKPopupMenuController.show(
+      sourceView: rightPillButton,
+      position: .bottomRight(inset: 8),
+      width: 0,
+      items: items,
+      isSelectable: false,
+      selectedIndex: nil)
+  }
+  
+  private func shareURL(url: URL) {
+    let activityViewController = UIActivityViewController(
+      activityItems: [url as Any],
+      applicationActivities: nil
+    )
+    present(
+      activityViewController,
+      animated: true
+    )
+  }
+  
   private func didUpdateUrl() {
-    headerView.setTitle(title)
+    
+    func update(title: String?, caption: String, isSecure: Bool) {
+      var icon: TKPlainButton.Model.Icon?
+      if isSecure {
+        icon = TKPlainButton.Model.Icon(
+          image: .TKUIKit.Icons.Size12.lock,
+          tintColor: .Text.secondary,
+          padding: UIEdgeInsets(top: 5, left: 0, bottom: 3, right: 4),
+          iconPosition: .left
+        )
+      }
+      
+      let caption = TKPlainButton.Model(
+        title: caption.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byTruncatingTail
+        ),
+        icon: icon,
+        action: nil
+      )
+
+      let titleConfiguration = TKUINavigationBarTitleView.Model(
+        title: title,
+        caption: caption
+      )
+      
+      titleView.configure(model: titleConfiguration)
+    }
+    
     if let serverTrust = webView.serverTrust {
       SecTrustEvaluateAsyncWithError(serverTrust, .main) { _, isSecured, _ in
-        self.headerView.setSubtitle(self.url.host ?? "", isSecured: isSecured)
+        let caption = self.url.host ?? ""
+        update(title: self.title, caption: caption, isSecure: isSecured)
       }
     } else {
       let components = URLComponents(string: url.absoluteString)
       let isSecured = components?.scheme == "https"
-      self.headerView.setSubtitle(url.host ?? "", isSecured: isSecured)
+      let caption = url.host ?? ""
+      update(title: self.title, caption: caption, isSecure: isSecured)
     }
   }
 }

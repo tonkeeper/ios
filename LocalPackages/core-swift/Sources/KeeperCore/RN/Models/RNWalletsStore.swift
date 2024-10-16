@@ -267,7 +267,8 @@ public extension RNWallet {
       id: identifier,
       identity: WalletIdentity(network: network, kind: kind),
       metaData: WalletMetaData(label: name, tintColor: tintColor, icon: icon),
-      setupSettings: WalletSetupSettings(backupDate: backupDate)
+      setupSettings: WalletSetupSettings(backupDate: backupDate,
+                                         isSetupFinished: false)
     )
   }
 }
