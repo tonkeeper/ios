@@ -6,6 +6,7 @@ import TKLocalize
 
 protocol BrowserCategoryModuleOutput: AnyObject {
   var didSelectDapp: ((Dapp) -> Void)? { get set }
+  var didTapSearch: (() -> Void)? { get set }
 }
 
 protocol BrowserCategoryViewModel: AnyObject {
@@ -13,6 +14,7 @@ protocol BrowserCategoryViewModel: AnyObject {
   var didUpdateTitle: ((String?) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapSearchBar()
 }
 
 final class BrowserCategoryViewModelImplementation: BrowserCategoryViewModel, BrowserCategoryModuleOutput {
@@ -20,6 +22,7 @@ final class BrowserCategoryViewModelImplementation: BrowserCategoryViewModel, Br
   // MARK: - BrowserCategoryModuleOutput
   
   var didSelectDapp: ((Dapp) -> Void)?
+  var didTapSearch: (() -> Void)?
   
   // MARK: - BrowserCategoryViewModel
   
@@ -45,6 +48,10 @@ final class BrowserCategoryViewModelImplementation: BrowserCategoryViewModel, Br
   
   init(category: PopularAppsCategory) {
     self.category = category
+  }
+  
+  func didTapSearchBar() {
+    didTapSearch?()
   }
 }
 

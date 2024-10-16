@@ -68,6 +68,15 @@ private extension BrowserCategoryViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(createLayout(), animated: false)
     customView.collectionView.delegate = self
+    
+    customView.searchBar.addGestureRecognizer(
+      UITapGestureRecognizer(
+        target: self,
+        action: #selector(
+          didTapSearchBar
+        )
+      )
+    )
   }
   
   func setupBindings() {
@@ -128,6 +137,11 @@ private extension BrowserCategoryViewController {
     }
     
     return dataSource
+  }
+  
+  @objc
+  func didTapSearchBar() {
+    viewModel.didTapSearchBar()
   }
 }
 

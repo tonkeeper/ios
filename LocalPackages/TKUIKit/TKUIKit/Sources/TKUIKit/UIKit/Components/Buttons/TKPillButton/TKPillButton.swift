@@ -37,6 +37,7 @@ public final class TKPillButton: UIView {
   
   private let leftButton = TKButton()
   private let rightButton = TKButton()
+  private let divider = UIView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -56,8 +57,11 @@ public final class TKPillButton: UIView {
     backgroundColor = .Button.secondaryBackground
     layer.masksToBounds = true
     
-    addSubviews(leftButton)
-    addSubviews(rightButton)
+    divider.backgroundColor = .Background.contentTint
+    
+    addSubview(leftButton)
+    addSubview(divider)
+    addSubview(rightButton)
     
     setupConstraints()
     
@@ -68,9 +72,14 @@ public final class TKPillButton: UIView {
     leftButton.snp.makeConstraints { make in
       make.left.top.bottom.equalTo(self)
     }
+    divider.snp.makeConstraints { make in
+      make.top.bottom.equalTo(self).inset(8)
+      make.width.equalTo(1)
+      make.left.equalTo(leftButton.snp.right)
+    }
     rightButton.snp.makeConstraints { make in
       make.top.right.bottom.equalTo(self)
-      make.left.equalTo(leftButton.snp.right)
+      make.left.equalTo(divider.snp.right)
     }
   }
   
