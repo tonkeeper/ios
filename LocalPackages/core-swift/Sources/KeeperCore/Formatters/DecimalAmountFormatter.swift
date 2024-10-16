@@ -46,13 +46,22 @@ public struct DecimalAmountFormatter {
 private extension DecimalAmountFormatter {
   func calculateFractionalDigitsCount(amount: Decimal,
                                       maximumNotZeroFractionalCount: Int) -> Int {
-    let amountNumber = NSDecimalNumber(decimal: amount)
-    let amountFractionalLength = max(Int16(-amount.exponent), 0)
-    let amountFractional = amountNumber
-      .subtracting(NSDecimalNumber(integerLiteral: amountNumber.intValue))
-      .multiplying(byPowerOf10: amountFractionalLength)
-    let notZeroFractionalCount = String(amountFractional.intValue).count
-    let formatterFractinalDigitsCount = Int(amountFractionalLength) - notZeroFractionalCount + min(maximumNotZeroFractionalCount, notZeroFractionalCount)
-    return formatterFractinalDigitsCount
+    let fractionLength = abs(amount.exponent)
+    if fractionLength == 0 { return 0 }
+    let integerNumber = NSDecimalNumber(decimal: amount.rounded())
+    let fractionalNumber = NSDecimalNumber(decimal: amount.fraction).multiplying(byPowerOf10: Int16(fractionLength))
+    return (fractionLength - fractionalNumber.stringValue.count) + min(maximumNotZeroFractionalCount, fractionLength)
   }
 }
+
+private extension Decimal {
+  func rounded(_ roundingMode: NSDecimalNumber.RoundingMode = .plain) -> Decimal {
+    var result = Decimal()
+    var number = self
+    NSDecimalRound(&result, &number, 0, roundingMode)
+    return result
+  }
+  var whole: Decimal { rounded(sign == .minus ? .up : .down) }
+  var fraction: Decimal { self - whole }
+}
+
