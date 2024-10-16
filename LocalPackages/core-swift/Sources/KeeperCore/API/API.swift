@@ -53,13 +53,14 @@ public struct API {
     self.requestCreationQueue = requestCreationQueue
   }
   
-  private func createRequest<T>(requestCreation: () -> T) async throws -> T {
+  private func createRequest<T>(requestCreation: () -> RequestBuilder<T>) async throws -> RequestBuilder<T> {
     let apiKey = await configurationStore.getConfiguration().tonApiV2Key
     let hostUrl = await hostProvider.basePath
     return requestCreationQueue.sync {
-      TonAPIAPI.customHeaders = ["Authorization": "Bearer \(apiKey)"]
       TonAPIAPI.basePath = hostUrl
-      return requestCreation()
+      var request = requestCreation()
+      request = request.addHeader(name: "Authorization", value: "Bearer \(apiKey)")
+      return request
     }
   }
 }
