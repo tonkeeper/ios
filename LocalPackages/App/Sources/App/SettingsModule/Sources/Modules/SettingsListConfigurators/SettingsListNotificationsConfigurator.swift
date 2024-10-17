@@ -58,12 +58,13 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   }
   
   private func createState() -> SettingsListState {
+    let notificationsState = walletNotificationStore.getState()[wallet]
     var sections = [SettingsListSection]()
     if !isPushAvailable {
       sections.append(createNotificationsNotAvailableSection())
     }
     sections.append(createPushNotificationsSection())
-    if let connectedAppsSection = createConnectedAppsSection() {
+    if let connectedAppsSection = createConnectedAppsSection(notificationsState: notificationsState) {
       sections.append(connectedAppsSection)
     }
     return SettingsListState(sections: sections)
@@ -112,7 +113,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     )
     
     let isOn: Bool = {
-      guard let isOn = walletNotificationStore.getState()[wallet] else { return false }
+      guard let isOn = walletNotificationStore.getState()[wallet]?.isOn else { return false }
       return isOn
     }()
     
@@ -164,10 +165,13 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func createConnectedAppsSection() -> SettingsListSection? {
+  private func createConnectedAppsSection(notificationsState: WalletNotificationStore.NotificationsState?) -> SettingsListSection? {
     let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? []
     guard !apps.isEmpty else { return nil }
-    let items = apps.map { createConnectedAppItem($0) }
+    let items = apps.map { app in
+      let isOn = notificationsState?.dapps.first(where: { $0.key == app.manifest.host })?.value ?? false
+      return createConnectedAppItem(app, isOn: isOn)
+    }
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
       topPadding: 0,
@@ -183,7 +187,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     []
   }
   
-  private func createConnectedAppItem(_ app: TonConnectApp) -> SettingsListItem {
+  private func createConnectedAppItem(_ app: TonConnectApp, isOn: Bool) -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: TKListItemIconView.Configuration(
@@ -200,18 +204,26 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
         )
       )
     )
+    
+    let action: (Bool) -> Void = { [weak self, wallet] isOn in
+      guard let self else { return }
+      Task {
+        await self.walletNotificationStore.setNotificationsIsOn(isOn, wallet: wallet, dappHost: app.manifest.host)
+      }
+    }
+    
     return SettingsListItem(
       id: app.manifest.host,
       cellConfiguration: cellConfiguration,
       accessory: .switch(
         TKListItemSwitchAccessoryView.Configuration(
-          isOn: false,
+          isOn: isOn,
           isEnable: true,
-          action: { _ in }
+          action: { action($0) }
         )
       ),
       onSelection: { _ in
-        //        action(!isOn)
+        action(!isOn)
       }
     )
   }

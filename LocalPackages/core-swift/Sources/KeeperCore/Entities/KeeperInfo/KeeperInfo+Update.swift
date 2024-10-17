@@ -207,7 +207,17 @@ extension KeeperInfo {
   func updateWallet(_ wallet: Wallet,
                     notificationsIsOn: Bool) -> KeeperInfo {
     let notificationSettings = NotificationSettings(
-      isOn: notificationsIsOn
+      isOn: notificationsIsOn,
+      dapps: wallet.notificationSettings.dapps
+    )
+    return updateWallet(wallet, notificationSettings: notificationSettings).keeperInfo
+  }
+  
+  func updateWallet(_ wallet: Wallet,
+                    dappsNotifications: [String: Bool]) -> KeeperInfo {
+    let notificationSettings = NotificationSettings(
+      isOn: wallet.notificationSettings.isOn,
+      dapps: dappsNotifications
     )
     return updateWallet(wallet, notificationSettings: notificationSettings).keeperInfo
   }

@@ -2,9 +2,15 @@ import Foundation
 import TonSwift
 
 public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Event, WalletNotificationStore.State> {
-  public typealias State = [Wallet: Bool]
+  public struct NotificationsState {
+    public let isOn: Bool
+    public let dapps: [String: Bool]
+  }
+  
+  public typealias State = [Wallet: NotificationsState]
   public enum Event {
     case didUpdateNotificationsIsOn(wallet: Wallet)
+    case didUpdateDappNotificationsIsOn(wallet: Wallet)
   }
   
   private let keeperInfoStore: KeeperInfoStore
@@ -26,11 +32,35 @@ public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Even
     }
     
     await setState { state in
+      let walletState = state[wallet]
+      let updatedWalletState = NotificationsState(isOn: isOn,
+                                                  dapps: walletState?.dapps ?? [:])
       var updatedState = state
-      updatedState[wallet] = isOn
+      updatedState[wallet] = updatedWalletState
       return StateUpdate(newState: updatedState)
     } notify: { _ in
       self.sendEvent(.didUpdateNotificationsIsOn(wallet: wallet))
+    }
+  }
+  
+  public func setNotificationsIsOn(_ isOn: Bool, wallet: Wallet, dappHost: String) async {
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.updateWallet(wallet, notificationsIsOn: isOn)
+      return updated
+    }
+    
+    await setState { state in
+      let walletState = state[wallet]
+      var dapps = walletState?.dapps ?? [:]
+      dapps[dappHost] = isOn
+      let updatedWalletState = NotificationsState(isOn: walletState?.isOn ?? false,
+                                                  dapps: dapps)
+      var updatedState = state
+      updatedState[wallet] = updatedWalletState
+      return StateUpdate(newState: updatedState)
+    } notify: { _ in
+      self.sendEvent(.didUpdateDappNotificationsIsOn(wallet: wallet))
     }
   }
   
@@ -40,7 +70,11 @@ public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Even
     }
     var result = State()
     for wallet in keeperInfo.wallets {
-      result[wallet] = wallet.notificationSettings.isOn
+      let settings = wallet.notificationSettings
+      result[wallet] = NotificationsState(
+        isOn: settings.isOn,
+        dapps: settings.dapps
+      )
     }
     return result
   }

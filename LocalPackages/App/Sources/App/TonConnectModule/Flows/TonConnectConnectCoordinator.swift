@@ -88,6 +88,7 @@ private extension TonConnectConnectCoordinator {
       parameters: parameters,
       manifest: manifest,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
       showWalletPicker: showWalletPicker
     )
     
@@ -95,12 +96,12 @@ private extension TonConnectConnectCoordinator {
       contentViewController: module.view
     )
     
-    module.output.didTapWalletPicker = { [weak self, weak bottomSheetViewController] wallet in
+    module.output.didTapWalletPicker = { [weak self, weak bottomSheetViewController, weak input = module.input] wallet in
       guard let bottomSheetViewController else { return }
       self?.openWalletPicker(
         wallet: wallet,
         fromViewController: bottomSheetViewController,
-        didSelectWallet: { [weak input = module.input] wallet in
+        didSelectWallet: { wallet in
           input?.setWallet(wallet)
         }
       )
@@ -149,7 +150,10 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
-    let model = TonConnectWalletsPickerListModel(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
+    let model = TonConnectWalletsPickerListModel(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      selectedWallet: wallet
+    )
     model.didSelectWallet = { wallet in
       didSelectWallet(wallet)
     }

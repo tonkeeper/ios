@@ -88,9 +88,12 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didSelectWallet: ((Wallet) -> Void)?
   
   private let walletsStore: WalletsStore
+  private let selectedWallet: Wallet
   
-  init(walletsStore: WalletsStore) {
+  init(walletsStore: WalletsStore,
+       selectedWallet: Wallet) {
     self.walletsStore = walletsStore
+    self.selectedWallet = selectedWallet
   }
   
   var isEditable: Bool {
@@ -108,7 +111,7 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
     }
 
     let wallets = state.wallets.filter { $0.isTonconnectAvailable }
-    guard let activeWallet = (wallets.first(where: { $0 == state.activeWalelt }) ?? wallets.first) else {
+    guard let activeWallet = (wallets.first(where: { $0 == selectedWallet }) ?? wallets.first) else {
       return WalletsListModelState(wallets: wallets, selectedWallet: nil)
     }
     return WalletsListModelState(wallets: wallets, selectedWallet: wallets.firstIndex(of: activeWallet))
