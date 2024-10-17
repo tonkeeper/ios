@@ -4,16 +4,13 @@ import KeeperCore
 import TKLocalize
 
 struct TonConnectConnectMapper {
-  static func modalCardConfiguration(
-    wallet: Wallet,
-    manifest: TonConnectManifest,
-    showWalletPicker: Bool,
-    headerView: (String?, URL?) -> UIView?,
-    walletPickerView: (TonConnectConnectWalletButton.Model) -> UIControl?,
-    walletPickerAction: (() -> Void)?,
-    connectAction: @escaping () async -> Bool,
-    completionAction: @escaping () -> Void
-  ) -> TKModalCardViewController.Configuration {
+  
+  private static func titleCaptionItem(wallet: Wallet,
+                                       manifest: TonConnectManifest,
+                                       showWalletPicker: Bool) -> TKPopUp.Item {
+    
+    let walletAddress = try? wallet.friendlyAddress
+    
     let connectTo = TKLocales.TonConnectMapper.connectTo.withTextStyle(
       .h2,
       color: .Text.primary,
@@ -46,90 +43,95 @@ struct TonConnectConnectMapper {
         lineBreakMode: .byWordWrapping
       )
     description.append(caption)
-    if !showWalletPicker, let address = try? wallet.friendlyAddress.toShort() {
-      let walletAddress = address.withTextStyle(.body1, color: .Text.tertiary)
-      description.append(walletAddress)
+    if !showWalletPicker, let shortAddress = walletAddress?.toShort() {
+      description.append(shortAddress.withTextStyle(.body1, color: .Text.tertiary))
     }
     
-    let address = try? wallet.friendlyAddress.toShort()
-    
-    var headerItems = [TKModalCardViewController.Configuration.Item]()
-    if let address,
-       let headerView = headerView(address, manifest.iconUrl) {
-      headerItems.append(.customView(headerView, bottomSpacing: 20))
-    }
-    headerItems.append(
-      .text(
-        TKModalCardViewController.Configuration.Text(
-          text: title,
-          numberOfLines: 0
-        ),
-        bottomSpacing: 4
-      )
+    return TKPopUp.Component.TitleCaption(
+      title: title,
+      caption: description,
+      bottomSpace: 0
     )
-    headerItems.append(
-      .text(
-        TKModalCardViewController.Configuration.Text(
-          text: description,
-          numberOfLines: 0
-        ),
-        bottomSpacing: 16
-      )
+  }
+  
+  private static func headerItem(wallet: Wallet, manifest: TonConnectManifest) -> TKPopUp.Item? {
+    guard let walletAddress = try? wallet.friendlyAddress else { return nil }
+    return TonConnectConnectHeaderComponent(
+      configuration: TonConnectConnectHeaderView.Model(
+        walletAddress: walletAddress.toString(),
+        appImage: manifest.iconUrl
+      ),
+      bottomSpace: 20
+    )
+  }
+  
+  private static func tickComponent(isOn: Bool, action: @escaping (Bool) -> Void) -> TKPopUp.Item {
+    TonConnectConnectNotificationTickComponent(
+      configuration: TonConnectConnectNotificationTickView.Configuration(
+        text: "Allow Notifications".withTextStyle(.label1, color: .Text.primary),
+        isOn: isOn,
+        action: action
+      ),
+      bottomSpace: 0
+    )
+  }
+  
+  static func modalCardConfiguration(
+    wallet: Wallet,
+    manifest: TonConnectManifest,
+    showWalletPicker: Bool,
+    isNotificationOn: Bool,
+    connectingState: TKProcessContainerView.State,
+    tickAction: @escaping (Bool) -> Void,
+    walletPickerAction: @escaping () -> Void,
+    connectAction: @escaping () -> Void
+  ) -> TKPopUp.Configuration {
+    
+    var items = [TKPopUp.Item]()
+    
+    if let headerItem = headerItem(wallet: wallet, manifest: manifest) {
+      items.append(headerItem)
+    }
+    
+    items.append(
+      titleCaptionItem(wallet: wallet, manifest: manifest, showWalletPicker: showWalletPicker)
     )
     
     if showWalletPicker {
-      let model = TonConnectConnectWalletButton.Model.configuration(wallet: wallet,
-                                                                    subtitle: address)
-      if let walletPickerView = walletPickerView(model) {
-        walletPickerView.addAction(UIAction(handler: { _ in
-          walletPickerAction?()
-        }), for: .touchUpInside)
-        headerItems.append(.customView(walletPickerView, bottomSpacing: 16))
-      }
+      items.append(
+        TKPopUp.Component.GroupComponent(
+          padding: UIEdgeInsets(top: 16, left: 16, bottom: 0, right: 16),
+          items: [
+            TonConnectConnectWalletButtonComponent(
+              configuration: TonConnectConnectWalletButton.Model.configuration(
+                wallet: wallet,
+                subtitle: try? wallet.friendlyAddress.toShort()
+              ),
+              action: {
+                walletPickerAction()
+              },
+              bottomSpace: 0
+            )
+          ]
+        )
+      )
     }
     
-    let actionBarItems: [TKModalCardViewController.Configuration.Item] = [
-      .button(
-        TKModalCardViewController.Configuration.Button(
-          title: .connectButtonTitle,
-          size: .large,
-          category: .primary,
-          isEnabled: true,
-          isActivity: false,
-          tapAction: { isActivityClosure, isSuccessClosure in
-            isActivityClosure(true)
-            Task {
-              let isConnected = await connectAction()
-              await MainActor.run {
-                isSuccessClosure(isConnected)
-              }
-            }
-          },
-          completionAction: { isSuccess in
-            guard isSuccess else { return }
-            completionAction()
-          }
-        ),
-        bottomSpacing: 16
-      ),
-      .text(
-        TKModalCardViewController.Configuration.Text(
-          text: .footerText,
-          numberOfLines: 0
-        ),
-        bottomSpacing: 0
-      )
-    ]
+    items.append(tickComponent(isOn: isNotificationOn, action: tickAction))
     
-    let configuration = TKModalCardViewController.Configuration(
-      header: TKModalCardViewController.Configuration.Header(
-        items: headerItems
-      ),
-      actionBar: TKModalCardViewController.Configuration.ActionBar(
-        items: actionBarItems
-      )
-    )
-    return configuration
+    var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    btnConf.content = .init(title: .plainString(.connectButtonTitle))
+    btnConf.action = connectAction
+    
+    items.append(TKPopUp.Component.Process(items: [
+      TKPopUp.Component.ButtonGroupComponent(buttons: [
+        TKPopUp.Component.ButtonComponent(buttonConfiguration: btnConf)
+      ]),
+      TKPopUp.Component.GroupComponent(padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
+                                       items: [TKPopUp.Component.LabelComponent(text: .footerText, numberOfLines: 0)])
+    ], state: connectingState))
+    
+    return TKPopUp.Configuration(items: items)
   }
 }
 

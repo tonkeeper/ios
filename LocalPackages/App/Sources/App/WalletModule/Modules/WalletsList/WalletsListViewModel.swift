@@ -279,10 +279,14 @@ private extension WalletsListViewModelImplementation {
     let leftButtonModel = TKUIHeaderTitleIconButton.Model(
       title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
     )
-    let leftButton = TKPullCardHeaderItem.LeftButton(
-      model: leftButtonModel) { [weak self] in
-        self?.isEditing.toggle()
-      }
+    var leftButton: TKPullCardHeaderItem.LeftButton?
+    if model.isEditable {
+      leftButton = TKPullCardHeaderItem.LeftButton(
+        model: leftButtonModel) { [weak self] in
+          self?.isEditing.toggle()
+        }
+    }
+    
     return TKPullCardHeaderItem(
       title: .title(title: TKLocales.WalletsList.title, subtitle: nil),
       leftButton: leftButton)

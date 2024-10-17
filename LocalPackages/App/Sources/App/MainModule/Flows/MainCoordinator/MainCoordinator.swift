@@ -212,7 +212,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
-    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
     }

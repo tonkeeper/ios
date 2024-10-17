@@ -59,7 +59,7 @@ final class WalletBalanceSetupModel {
     }
     let isSetupFinished = wallet.setupSettings.isSetupFinished
     let isBiometryEnable = securityStore.getState().isBiometryEnable
-    let isNotificationsOn = walletNotificationStore.getState()[wallet] ?? false
+    let isNotificationsOn = walletNotificationStore.getState()[wallet]?.isOn ?? false
     return calculateState(
       wallet: wallet,
       isSetupFinished: isSetupFinished,
@@ -133,6 +133,7 @@ final class WalletBalanceSetupModel {
       switch event {
       case .didUpdateNotificationsIsOn:
         self.updateState()
+      default: break
       }
     }
   }
@@ -144,7 +145,7 @@ final class WalletBalanceSetupModel {
     case .wallets(let walletsState):
       let isBiometryEnable = securityStore.getState().isBiometryEnable
       let isSetupFinished = walletsState.activeWalelt.setupSettings.isSetupFinished
-      let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWalelt] ?? false
+      let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWalelt]?.isOn ?? false
       let state = calculateState(
         wallet: walletsState.activeWalelt,
         isSetupFinished: isSetupFinished,

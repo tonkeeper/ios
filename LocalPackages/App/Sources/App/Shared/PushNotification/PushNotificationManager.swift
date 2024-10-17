@@ -72,12 +72,15 @@ final class PushNotificationManager {
     switch event {
     case .didUpdateNotificationsIsOn(let wallet):
       notificationsUpdateTask[wallet]?.cancel()
-      let isOn = walletNotificationsStore.getState()[wallet] ?? false
+      let isOn = walletNotificationsStore.getState()[wallet]?.isOn ?? false
       if isOn {
         subscribePushNotifications(wallet: wallet)
       } else {
         unsubscribePushNotifications(wallet: wallet)
       }
+    case .didUpdateDappNotificationsIsOn(wallet: let wallet):
+      // TODO: send notification
+      break
     }
   }
   

@@ -2,7 +2,24 @@ import UIKit
 import TKUIKit
 import TKCore
 
-final class TonConnectModalHeaderView: UIView, ConfigurableView {
+struct TonConnectConnectHeaderComponent: TKPopUp.Item {
+  func getView() -> UIView {
+    let view = TonConnectConnectHeaderView()
+    view.configure(model: configuration)
+    return view
+  }
+  
+  private let configuration: TonConnectConnectHeaderView.Model
+  public let bottomSpace: CGFloat
+  
+  init(configuration: TonConnectConnectHeaderView.Model,
+       bottomSpace: CGFloat) {
+    self.configuration = configuration
+    self.bottomSpace = bottomSpace
+  }
+}
+
+final class TonConnectConnectHeaderView: UIView, ConfigurableView {
   
   // MARK: - Subviews
   
@@ -62,7 +79,7 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
   }
 }
 
-private extension TonConnectModalHeaderView {
+private extension TonConnectConnectHeaderView {
   func setup() {
     addSubview(stackView)
     stackView.addArrangedSubview(tonImageView)
