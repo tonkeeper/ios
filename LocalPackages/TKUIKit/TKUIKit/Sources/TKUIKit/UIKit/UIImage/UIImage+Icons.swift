@@ -132,6 +132,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-refresh-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var sliders: UIImage {
+          .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {

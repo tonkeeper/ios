@@ -38,7 +38,6 @@ private extension SettingsCoordinator {
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
-      walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
       anaylticsProvider: coreAssembly.analyticsProvider
     )
@@ -79,10 +78,6 @@ private extension SettingsCoordinator {
     
     configurator.didTapDeleteRegularWallet = { [weak self] wallet in
       self?.deleteRegular(wallet: wallet, isSignOut: false)
-    }
-    
-    configurator.didTapPurchases = { [weak self] wallet in
-      self?.openPurchases(wallet: wallet)
     }
     
     configurator.didTapNotifications = { [weak self] wallet in
@@ -420,17 +415,6 @@ private extension SettingsCoordinator {
     }
 
     router.push(viewController: module.viewController)
-  }
-  
-  func openPurchases(wallet: Wallet) {
-    let module = SettingsPurchasesAssembly.module(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-    
-    module.view.setupBackButton()
-    
-    router.push(viewController: module.view)
   }
   
   func openNotifications(wallet: Wallet) {
