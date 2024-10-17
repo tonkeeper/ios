@@ -134,6 +134,7 @@ public extension UIImage {
         }
         public static var sliders: UIImage {
           .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
         }
       }
       public enum Size28 {

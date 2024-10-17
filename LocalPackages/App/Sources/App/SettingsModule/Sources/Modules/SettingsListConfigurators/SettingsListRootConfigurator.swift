@@ -43,7 +43,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
-  private let walletNFTStore: WalletNFTStore
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -55,7 +54,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
-       walletNFTStore: WalletNFTStore,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -64,7 +62,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
-    self.walletNFTStore = walletNFTStore
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -95,16 +92,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       switch event {
       case .didUpdateCurrency:
         DispatchQueue.main.async {
-          let state = observer.createState()
-          observer.didUpdateState?(state)
-        }
-      }
-    }
-    walletNFTStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateNFTs(let wallet):
-        DispatchQueue.main.async {
-          guard wallet == self.wallet else { return }
           let state = observer.createState()
           observer.didUpdateState?(state)
         }

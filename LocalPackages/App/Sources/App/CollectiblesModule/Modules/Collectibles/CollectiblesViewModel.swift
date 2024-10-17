@@ -16,7 +16,7 @@ protocol CollectiblesModuleInput: AnyObject {
 protocol CollectiblesViewModel: AnyObject {
   var didUpdateIsLoading: ((Bool) -> Void)? { get set }
   var didUpdateIsEmpty: ((_ isEmpty: Bool) -> Void)? { get set }
-  var didUpdateNavigationRightButtonVisibility: ((_ isHidden: Bool) -> Void)? { get set }
+  var didUpdateNavigationBarButtons: ((_ buttons: [TKNavigationBar.HeaderButtonItem]) -> Void)? { get set }
   var didTapDetailsButton: (() -> Void)? { get set }
 
   func viewDidLoad()
@@ -34,7 +34,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   var didUpdateIsLoading: ((Bool) -> Void)?
   var didUpdateIsEmpty: ((Bool) -> Void)?
-  var didUpdateNavigationRightButtonVisibility: ((_ isVisible: Bool) -> Void)?
+  var didUpdateNavigationBarButtons: ((_ buttons: [TKNavigationBar.HeaderButtonItem]) -> Void)?
   var didTapDetailsButton: (() -> Void)?
 
   func viewDidLoad() {
@@ -132,9 +132,22 @@ private extension CollectiblesViewModelImplementation {
     
     let isEmpty = walletNFTManagedStore.getState().isEmpty
     let listHidden = isEmpty && !isLoading
-    
+
+    updateNavigationBarButtons(isHidden: listHidden)
     didUpdateIsLoading?(isLoading)
-    didUpdateNavigationRightButtonVisibility?(listHidden)
     didUpdateIsEmpty?(listHidden)
+  }
+
+  func updateNavigationBarButtons(isHidden: Bool) {
+    var buttonItems = [TKNavigationBar.HeaderButtonItem]()
+    if !isHidden {
+      let rightButtonModel = TKNavigationBar.HeaderButtonItem(
+        model: TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.sliders)
+      ) { [weak self] in
+        self?.didTapDetailsButton?()
+      }
+      buttonItems.append(rightButtonModel)
+    }
+    didUpdateNavigationBarButtons?(buttonItems)
   }
 }

@@ -64,19 +64,8 @@ private extension CollectiblesViewController {
       }
     }
 
-    viewModel.didUpdateNavigationRightButtonVisibility = { [weak self] isHidden in
-      var buttonItems = [TKNavigationBar.HeaderButtonItem]()
-      if !isHidden {
-        let rightButtonModel = TKNavigationBar.HeaderButtonItem(
-          model: TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.sliders)
-        ) {
-          self?.viewModel.didTapDetailsButton?()
-        }
-        buttonItems.append(rightButtonModel)
-      }
-
-
-      self?.customView.navigationBarView.configuration = .init(rightButtonItems: buttonItems)
+    viewModel.didUpdateNavigationBarButtons = { [weak self] buttons in
+      self?.customView.navigationBarView.configuration = .init(rightButtonItems: buttons)
     }
   }
 }
