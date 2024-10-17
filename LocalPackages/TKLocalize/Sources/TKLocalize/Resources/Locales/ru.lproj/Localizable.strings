@@ -62,6 +62,7 @@
 "browser.search.placeholder" = "Введите адрес или начните поиск";
 "browser.search.duckgo_search.title" = "Поиск в DuckDuckGo";
 "browser.search.google_search.title" = "Поиск в Google";
+"browser.search.open_link_placeholder" = "Открыть ссылку";
 
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";

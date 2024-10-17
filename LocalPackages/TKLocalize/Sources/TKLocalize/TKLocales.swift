@@ -283,6 +283,8 @@ public enum TKLocales {
       public static let all = TKLocales.tr("Localizable", "browser.list.all", fallback: "All")
     }
     public enum Search {
+      /// Open link
+      public static let openLinkPlaceholder = TKLocales.tr("Localizable", "browser.search.open_link_placeholder", fallback: "Open link")
       /// Enter an address or search the web
       public static let placeholder = TKLocales.tr("Localizable", "browser.search.placeholder", fallback: "Enter an address or search the web")
       /// Browser

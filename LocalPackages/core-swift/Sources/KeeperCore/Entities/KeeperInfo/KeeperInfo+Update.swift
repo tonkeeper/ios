@@ -13,8 +13,7 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
@@ -27,8 +26,7 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
@@ -42,8 +40,7 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
@@ -134,8 +131,7 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: self.country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
 
@@ -148,22 +144,24 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: region,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
 
   func updateSearchEngine(_ searchEngine: SearchEngine) -> KeeperInfo {
-    KeeperInfo(
+    let appSettings = AppSettings(
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: searchEngine
+    )
+    return KeeperInfo(
       wallets: self.wallets,
       currentWallet: self.currentWallet,
       currency: currency,
       securitySettings: self.securitySettings,
-      appSettings: self.appSettings,
+      appSettings: appSettings,
       country: self.country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: searchEngine
+      appCollection: self.appCollection
     )
   }
 
@@ -189,7 +187,8 @@ extension KeeperInfo {
   
   func updateIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSecureMode: self.appSettings.isSecureMode
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(
@@ -200,14 +199,14 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
   func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSecureMode: isSecureMode
+      isSecureMode: isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(
@@ -218,8 +217,7 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
@@ -259,8 +257,7 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
   
@@ -273,8 +270,7 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection,
-      searchEngine: self.searchEngine
+      appCollection: self.appCollection
     )
   }
 }

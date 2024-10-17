@@ -61,6 +61,7 @@
 "browser.search.placeholder" = "Enter an address or search the web";
 "browser.search.duckgo_search.title" = "DuckDuckGo Search";
 "browser.search.google_search.title" = "Google Search";
+"browser.search.open_link_placeholder" = "Open link";
 
 "event_details.received" = "Received";
 "event_details.sent" = "Sent";

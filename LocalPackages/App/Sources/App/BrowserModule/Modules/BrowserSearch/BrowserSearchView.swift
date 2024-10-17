@@ -23,7 +23,9 @@ final class BrowserSearchView: TKView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .clear
     searchBar.textField.returnKeyType = .go
-    
+    searchBar.textField.autocorrectionType = .no
+    searchBar.textField.autocapitalizationType = .none
+
     searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
     
     addSubview(collectionView)

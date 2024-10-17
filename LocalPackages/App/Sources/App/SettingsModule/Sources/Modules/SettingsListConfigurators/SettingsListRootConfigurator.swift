@@ -41,7 +41,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private var wallet: Wallet
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let searchEngineStore: SearchEngineStore
+  private let appSettingsStore: AppSettingsV3Store
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
@@ -54,7 +54,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   init(wallet: Wallet,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
-       searchEngineStore: SearchEngineStore,
+       appSettingsStore: AppSettingsV3Store,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
@@ -64,7 +64,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.wallet = wallet
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
-    self.searchEngineStore = searchEngineStore
+    self.appSettingsStore = appSettingsStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
@@ -104,13 +104,14 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         }
       }
     }
-    searchEngineStore.addObserver(self) { observer, event in
+    appSettingsStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateSearchEngine:
         DispatchQueue.main.async {
           let state = observer.createState()
           observer.didUpdateState?(state)
         }
+      default: break
       }
     }
     walletNFTStore.addObserver(self) { observer, event in
@@ -429,7 +430,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
 
-  #warning("")
   private func createSearchItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
@@ -437,13 +437,13 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.search)
         )))
 
-    let text = searchEngineStore.initialState.rawValue
+    let searchEngine = appSettingsStore.initialState.searchEngine
     return SettingsListItem(
       id: .searchItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .text(
         TKListItemTextAccessoryView.Configuration(
-          text: text,
+          text: searchEngine.rawValue,
           color: .Accent.blue,
           textStyle: .label1
         )
@@ -456,11 +456,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                           value: nil,
                           description: nil,
                           icon: nil) {
-            Task { await self.searchEngineStore.updateSearchEngine(item) }
+            Task { await self.appSettingsStore.updateSearchEngine(item) }
           }
         }
 
-        let selectedIndex = SearchEngine.allCases.firstIndex(of: searchEngineStore.initialState)
+        let selectedIndex = SearchEngine.allCases.firstIndex(of: searchEngine)
         TKPopupMenuController.show(
           sourceView: view,
           position: .topRight,

@@ -3,6 +3,9 @@ import Foundation
 public protocol SearchEngineServiceProtocol {
   func loadSuggestions(searchText: String, searchEngine: SearchEngine) async throws -> [String]
   func composeSearchURL(input: String, searchEngine: SearchEngine) -> URL?
+
+  typealias SearchEngineTitle = (title: String?, url: URL)
+  func parseTitleFrom(stringURL: String) async -> SearchEngineTitle?
 }
 
 public final class SearchEngineService: SearchEngineServiceProtocol {
@@ -41,8 +44,11 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
       return []
     }
 
-    let (data, _) = try await session.data(from: url)
-    guard let response = try? JSONSerialization.jsonObject(with: data) as? [Any],
+    let stringContent = try? String(contentsOf: url, encoding: .utf8)
+    let data = stringContent?.data(using: .utf8)
+
+    guard let data,
+          let response = try? JSONSerialization.jsonObject(with: data) as? [Any],
           response.count > 1,
           let sugesstions = response[1] as? [String] else {
       return []
@@ -63,5 +69,26 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
     }
     let mappedStringValues = response.compactMap { $0.phrase }
     return mappedStringValues
+  }
+
+  public func parseTitleFrom(stringURL: String) async -> SearchEngineTitle? {
+    await withCheckedContinuation { continuation in
+      let httpPrefix = "https://"
+      var input = stringURL
+      if !input.hasPrefix(httpPrefix) {
+        input = "\(httpPrefix)\(input)"
+      }
+      guard let url = URL(string: input),
+            let content = try? String(contentsOf: url, encoding: .utf8) else {
+        continuation.resume(returning: nil)
+        return
+      }
+
+      var title: String?
+      if let range = content.range(of: "<title>.*?</title>", options: .regularExpression, range: nil, locale: nil) {
+        title = content[range].replacingOccurrences(of: "</?title>", with: "", options: .regularExpression, range: nil)
+      }
+      continuation.resume(returning: (title, url))
+    }
   }
 }

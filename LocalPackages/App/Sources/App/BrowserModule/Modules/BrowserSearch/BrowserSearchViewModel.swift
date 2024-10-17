@@ -22,7 +22,7 @@ protocol BrowserSearchViewModel: AnyObject {
 final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, BrowserSearchModuleOutput {
 
   struct SearchEngineSuggestion: Equatable {
-    let title: String
+    let title: String?
     let url: URL?
   }
 
@@ -47,7 +47,9 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   }
   
   func goButtonPressed() {
-    if let app = apps[safe: 0] {
+    if let validUrlSuggestion, let dapp = composeDapp(validUrlSuggestion) {
+      didSelectDapp?(dapp)
+    } else if let app = apps[safe: 0] {
       didSelectDapp?(app)
     } else if let suggestion = searchSuggestions[safe: 0],
               let dapp = composeDapp(suggestion) {
@@ -62,37 +64,84 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   // MARK: - State
   
   private var snapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>()
-  private var apps = [Dapp]()
-  private var searchSuggestions = [SearchEngineSuggestion]()
+
+  private var validUrlSuggestion: SearchEngineSuggestion? {
+    didSet {
+      updateSnapshot()
+    }
+  }
+  private var apps = [Dapp]() {
+    didSet {
+      updateSnapshot()
+    }
+  }
+  private var searchSuggestions = [SearchEngineSuggestion]() {
+    didSet {
+      updateSnapshot()
+    }
+  }
   private var suggestionTask: Task<(), Error>?
 
   // MARK: - Dependencies
   
   private let popularAppsService: PopularAppsService
-  private let searchEngineStore: SearchEngineStore
+  private let appSettingsStore: AppSettingsV3Store
   private let searchEngineService: SearchEngineServiceProtocol
 
   // MARK: - Init
   
   init(popularAppsService: PopularAppsService,
-       searchEngineStore: SearchEngineStore,
+       appSettingsStore: AppSettingsV3Store,
        searchEngineService: SearchEngineServiceProtocol) {
     self.popularAppsService = popularAppsService
-    self.searchEngineStore = searchEngineStore
+    self.appSettingsStore = appSettingsStore
     self.searchEngineService = searchEngineService
   }
 }
 
 private extension BrowserSearchViewModelImplementation {
 
-  func searchPopularApps(input: String) {
+  func updateSnapshot() {
+    defer {
+      DispatchQueue.main.async {
+        self.didUpdateSnapshot?(self.snapshot)
+      }
+    }
+
     snapshot.deleteAllItems()
 
+    if !apps.isEmpty || validUrlSuggestion != nil {
+      snapshot.appendSections([.apps])
+    }
+
+    if let validUrlSuggestion {
+      let item = mapValidURLSuggestion(suggestion: validUrlSuggestion)
+      snapshot.appendItems([item], toSection: .apps)
+    }
+
+    if !apps.isEmpty {
+      let items = apps.map { mapDapp($0) }
+      snapshot.appendItems(items, toSection: .apps)
+    }
+
+    if !searchSuggestions.isEmpty {
+      let headerModel = BrowserSearchListSectionHeaderView.Model(
+        titleModel: TKListTitleView.Model(
+          title: appSettingsStore.initialState.searchEngine.searchTitle,
+          textStyle: .label1
+        )
+      )
+      let models = searchSuggestions.compactMap { mapSuggestion($0) }
+      snapshot.appendSections([.newSearch(headerModel: headerModel)])
+      snapshot.appendItems(models, toSection: .newSearch(headerModel: headerModel))
+    }
+  }
+
+  func searchPopularApps(input: String) {
     guard !input.isEmpty else {
       apps = [Dapp]()
       searchSuggestions = [SearchEngineSuggestion]()
-
-      didUpdateSnapshot?(snapshot)
+      validUrlSuggestion = nil
       return
     }
 
@@ -100,43 +149,86 @@ private extension BrowserSearchViewModelImplementation {
     if let popularApps = try? popularAppsService.getPopularApps(lang: lang) {
       let filtered = popularApps.categories
         .flatMap { $0.apps }
-        .filter { $0.name.contains(input) }
+        .filter { $0.name.contains(input) || $0.url.absoluteString.contains(input) }
         .prefix(3)
-      apps = Array(filtered)
-      let items = apps.map { mapDapp($0) }
-
-      snapshot.appendSections([.apps])
-      snapshot.appendItems(items, toSection: .apps)
-      didUpdateSnapshot?(snapshot)
+      self.apps = Array(filtered)
     }
 
     suggestionTask?.cancel()
     suggestionTask = Task {
-      let suggesstions = try await searchEngineService.loadSuggestions(
+      if input.isValidURL, let inputURL = URL(string: input) {
+        validUrlSuggestion = .init(title: nil, url: inputURL)
+        //-wait for parse title and compose url-//
+
+        if !Task.isCancelled, let searchEngineTitle = await searchEngineService.parseTitleFrom(stringURL: input) {
+          validUrlSuggestion = .init(title: searchEngineTitle.title, url: searchEngineTitle.url)
+        }
+      } else {
+        validUrlSuggestion = nil
+      }
+
+      let searchEngine = appSettingsStore.initialState.searchEngine
+      let suggestions = try await searchEngineService.loadSuggestions(
         searchText: input,
-        searchEngine: searchEngineStore.initialState)
+        searchEngine: searchEngine)
         .prefix(4)
 
-      guard !Task.isCancelled, !suggesstions.isEmpty else { return }
+      guard !Task.isCancelled, !suggestions.isEmpty else { return }
 
-      let headerModel = BrowserSearchListSectionHeaderView.Model(
-        titleModel: TKListTitleView.Model(
-          title: searchEngineStore.initialState.searchTitle,
-          textStyle: .label1
+      searchSuggestions = suggestions.compactMap {
+        SearchEngineSuggestion(
+          title: $0,
+          url: searchEngineService.composeSearchURL(input: $0, searchEngine: searchEngine)
         )
-      )
-      let searchEngineResult = mapSearchEngineResult(input: input, items: Array(suggesstions))
-      snapshot.appendSections([.newSearch(headerModel: headerModel)])
-      snapshot.appendItems(searchEngineResult.cellModels, toSection: .newSearch(headerModel: headerModel))
-      searchSuggestions = searchEngineResult.models
-
-      await MainActor.run {
-        didUpdateSnapshot?(snapshot)
       }
     }
   }
-  
-  private func mapDapp(_ dapp: Dapp) -> TKUIListItemCell.Configuration {
+
+  func mapValidURLSuggestion(suggestion: SearchEngineSuggestion) -> TKUIListItemCell.Configuration {
+    let id = UUID().uuidString
+   
+    let title = suggestion.title ?? TKLocales.Browser.Search.openLinkPlaceholder
+    let subtitle = suggestion.url?.absoluteString.withTextStyle(.body2, color: .Text.secondary)
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
+        title: title.withTextStyle(.label1, color: .Text.primary),
+        tagViewModel: nil,
+        subtitle: subtitle,
+        description: nil
+      ),
+      rightItemConfiguration: nil
+    )
+
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: TKUIListItemIconView.Configuration(
+        iconConfiguration: .image(
+          TKUIListItemImageIconView.Configuration(
+            image: .image(.TKUIKit.Icons.Size16.linkSmall),
+            tintColor: .Icon.secondary,
+            backgroundColor: .Background.contentAttention,
+            size: CGSize(width: 44, height: 44),
+            cornerRadius: 12
+          )
+        ),
+        alignment: .center
+      ),
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: .none
+    )
+
+    return TKUIListItemCell.Configuration(
+      id: id,
+      listItemConfiguration: listItemConfiguration,
+      selectionClosure: { [weak self] in
+        guard let self, let dapp = composeDapp(suggestion) else {
+          return
+        }
+        self.didSelectDapp?(dapp)
+      }
+    )
+  }
+
+  func mapDapp(_ dapp: Dapp, icon: UIImage? = nil) -> TKUIListItemCell.Configuration {
     let id = UUID().uuidString
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
@@ -157,12 +249,11 @@ private extension BrowserSearchViewModelImplementation {
       )
     }
 
-    let image = TKUIListItemImageIconView.Configuration.Image.asyncImage(dapp.icon, imageDownloadTask)
     let listItemConfiguration = TKUIListItemView.Configuration(
       iconConfiguration: TKUIListItemIconView.Configuration(
         iconConfiguration: .image(
           TKUIListItemImageIconView.Configuration(
-            image: image,
+            image: .asyncImage(dapp.icon, imageDownloadTask),
             tintColor: .clear,
             backgroundColor: .clear,
             size: CGSize(width: 44, height: 44),
@@ -184,30 +275,10 @@ private extension BrowserSearchViewModelImplementation {
     )
   }
 
-  func mapSearchEngineResult(input: String, items: [String]) -> (models: [SearchEngineSuggestion], cellModels: [TKUIListItemCell.Configuration]) {
-    guard !items.isEmpty else {
-      return ([], [])
-    }
-
-    let items = items.compactMap {
-      SearchEngineSuggestion(
-        title: $0,
-        url: searchEngineService.composeSearchURL(input: $0, searchEngine: searchEngineStore.initialState)
-      )
-    }
-
-    var resultItems = [TKUIListItemCell.Configuration]()
-    let mappedResult: [TKUIListItemCell.Configuration] = items.compactMap {
-      return mapSuggestion($0)
-    }
-    resultItems.append(contentsOf: mappedResult)
-    return (items, resultItems)
-  }
-
   func mapSuggestion(_ suggestion: SearchEngineSuggestion) -> TKUIListItemCell.Configuration {
     let id = UUID().uuidString
 
-    let title = suggestion.title
+    let title = suggestion.title?
       .withTextStyle(
         .label1,
         color: .Text.primary
@@ -256,7 +327,7 @@ private extension BrowserSearchViewModelImplementation {
       return nil
     }
     let dapp = Dapp(
-      name: suggestion.title,
+      name: suggestion.title ?? "",
       description: nil,
       icon: nil,
       poster: nil,
@@ -277,6 +348,20 @@ extension SearchEngine {
       TKLocales.Browser.Search.DuckgoSearch.title
     case .google:
       TKLocales.Browser.Search.GoogleSearch.title
+    }
+  }
+}
+
+
+extension String {
+
+  var isValidURL: Bool {
+    let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
+    if let match = detector?.firstMatch(in: self, options: [], range: NSRange(location: 0, length: self.utf16.count)) {
+      // it is a link, if the match covers the whole string
+      return match.range.length == self.utf16.count
+    } else {
+      return false
     }
   }
 }

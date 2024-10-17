@@ -237,11 +237,10 @@ private extension KeeperInfo {
       currentWallet: wallets[0],
       currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
-      appSettings: AppSettings(isSecureMode: false),
+      appSettings: AppSettings(isSecureMode: false, searchEngine: .duckduckgo),
       country: .auto,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
-      appCollection: AppCollection(connected: [:], recent: [], pinned: []),
-      searchEngine: .duckduckgo
+      appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )
     return keeperInfo
   }

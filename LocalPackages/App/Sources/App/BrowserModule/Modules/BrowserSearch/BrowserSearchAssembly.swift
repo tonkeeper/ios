@@ -8,7 +8,7 @@ struct BrowserSearchAssembly {
   -> MVVMModule<BrowserSearchViewController, BrowserSearchModuleOutput, Void> {
     let viewModel = BrowserSearchViewModelImplementation(
       popularAppsService: keeperCoreAssembly.servicesAssembly.popularAppsService(),
-      searchEngineStore: keeperCoreAssembly.storesAssembly.searchEngineStore,
+      appSettingsStore: keeperCoreAssembly.storesAssembly.appSettingsStore,
       searchEngineService: keeperCoreAssembly.servicesAssembly.searchEngineService()
     )
     let viewController = BrowserSearchViewController(viewModel: viewModel)
