@@ -13,7 +13,8 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -26,7 +27,8 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -40,7 +42,8 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -131,7 +134,8 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: self.country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
 
@@ -144,7 +148,22 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: region,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
+    )
+  }
+
+  func updateSearchEngine(_ searchEngine: SearchEngine) -> KeeperInfo {
+    KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: currency,
+      securitySettings: self.securitySettings,
+      appSettings: self.appSettings,
+      country: self.country,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection,
+      searchEngine: searchEngine
     )
   }
 
@@ -181,7 +200,8 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -198,7 +218,8 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -238,7 +259,8 @@ extension KeeperInfo {
       appSettings: self.appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
   
@@ -251,7 +273,8 @@ extension KeeperInfo {
       appSettings: appSettings,
       country: country,
       assetsPolicy: self.assetsPolicy,
-      appCollection: self.appCollection
+      appCollection: self.appCollection,
+      searchEngine: self.searchEngine
     )
   }
 }

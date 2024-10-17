@@ -240,7 +240,8 @@ private extension KeeperInfo {
       appSettings: AppSettings(isSecureMode: false),
       country: .auto,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
-      appCollection: AppCollection(connected: [:], recent: [], pinned: [])
+      appCollection: AppCollection(connected: [:], recent: [], pinned: []),
+      searchEngine: .duckduckgo
     )
     return keeperInfo
   }

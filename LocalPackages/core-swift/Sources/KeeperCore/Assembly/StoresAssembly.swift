@@ -111,6 +111,16 @@ public final class StoresAssembly {
     return store
   }
 
+  private weak var _searchEngineStore: SearchEngineStore?
+  public var searchEngineStore: SearchEngineStore {
+    if let _searchEngineStore {
+      return _searchEngineStore
+    }
+    let store = SearchEngineStore(keeperInfoStore: keeperInfoStore)
+    _searchEngineStore = store
+    return store
+  }
+
   private weak var _regionStore: RegionStore?
   public var regionStore: RegionStore {
     if let _regionStore {

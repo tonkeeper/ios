@@ -56,9 +56,12 @@
 "browser.tab.explore" = "Витрина";
 "browser.tab.connected" = "Подключенные";
 "browser.list.all" = "Все";
+
 "browser.search_field.placeholder" = "Поиск";
 "browser.search.title" = "Браузер";
 "browser.search.placeholder" = "Введите адрес или начните поиск";
+"browser.search.duckgo_search.title" = "Поиск в DuckDuckGo";
+"browser.search.google_search.title" = "Поиск в Google";
 
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";
@@ -74,6 +77,7 @@
 "settings.items.backup" = "Резервная копия";
 "settings.items.currency" = "Валюта";
 "settings.items.theme" = "Тема";
+"settings.items.search" = "Поиск";
 "settings.items.logout" = "Выйти";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Поддержка";

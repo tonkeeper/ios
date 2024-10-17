@@ -21,6 +21,8 @@ public struct KeeperInfo: Equatable {
   ///
   let assetsPolicy: AssetsPolicy
   let appCollection: AppCollection
+
+  public let searchEngine: SearchEngine
 }
 
 extension KeeperInfo: Codable {
@@ -54,6 +56,12 @@ extension KeeperInfo: Codable {
       self.country = selectedCountry
     } else {
       self.country = .auto
+    }
+
+    if let selectedSearchEngine = try container.decodeIfPresent(SearchEngine.self, forKey: .searchEngine) {
+      self.searchEngine = selectedSearchEngine
+    } else {
+      self.searchEngine = .duckduckgo
     }
   }
 }

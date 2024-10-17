@@ -10,7 +10,7 @@ final class BrowserSearchView: TKView {
         make.left.right.equalTo(self)
         make.bottom.equalTo(self).offset(-keyboardHeight)
       }
-      collectionView.contentInset.bottom = keyboardHeight
+      collectionView.contentInset.bottom = keyboardHeight + searchBar.frame.height
     }
   }
   

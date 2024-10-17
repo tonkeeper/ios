@@ -2,5 +2,5 @@ import Foundation
 
 enum BrowserSearchSection: Hashable {
   case apps
-  case newSearch
+  case newSearch(headerModel: BrowserSearchListSectionHeaderView.Model)
 }

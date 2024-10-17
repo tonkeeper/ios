@@ -7,8 +7,11 @@ struct BrowserSearchAssembly {
   static func module(keeperCoreAssembly: KeeperCore.MainAssembly)
   -> MVVMModule<BrowserSearchViewController, BrowserSearchModuleOutput, Void> {
 
+    let searchEngineStore = keeperCoreAssembly.storesAssembly.searchEngineStore
     let viewModel = BrowserSearchViewModelImplementation(
-      popularAppsService: keeperCoreAssembly.servicesAssembly.popularAppsService()
+      popularAppsService: keeperCoreAssembly.servicesAssembly.popularAppsService(),
+      searchEngineStore: keeperCoreAssembly.storesAssembly.searchEngineStore,
+      searchEngineService: keeperCoreAssembly.servicesAssembly.searchEngineService()
     )
     let viewController = BrowserSearchViewController(viewModel: viewModel)
     

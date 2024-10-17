@@ -35,6 +35,7 @@ private extension SettingsCoordinator {
       wallet: wallet,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      searchEngineStore: keeperCoreMainAssembly.storesAssembly.searchEngineStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
