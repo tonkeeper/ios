@@ -40,12 +40,6 @@ final class ManageTokensModel {
     tokenManagementStore.addObserver(self) { observer, event in
       observer.didGetTokenManagmentStoreEvent(event)
     }
-    
-//    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-//      Task {
-//        await observer.didUpdateTokenManagementState(newState: newState, oldState: oldState)
-//      }
-//    }
   }
   
   func getState() -> State {
@@ -160,15 +154,20 @@ final class ManageTokensModel {
     )
     
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
-    let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
+    let stateHiddenItems = tokenManagementState?.hiddenState ?? [:]
     var pinnedItems = [BalanceItem]()
     var unpinnedItems = [UnpinnedItem]()
-    
     for item in balanceItems.items {
+      if case .ton(_) = item {
+        continue
+      }
       if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
-        let isHidden = stateHiddenItems.contains(item.identifier)
+        let isHidden = {
+          stateHiddenItems[item.identifier] == true || (stateHiddenItems[item.identifier] == nil && item.isZeroBalance)
+        }()
+        
         unpinnedItems.append(UnpinnedItem(item: item, isHidden: isHidden))
       }
     }
@@ -205,7 +204,11 @@ final class ManageTokensModel {
         }
         switch (lModel.jetton.jettonInfo.verification, rModel.jetton.jettonInfo.verification) {
         case (.whitelist, .whitelist):
-          return lModel.converted > rModel.converted
+          if lModel.converted == rModel.converted {
+            return lModel.amount > rModel.amount  
+          } else {
+            return lModel.converted > rModel.converted
+          }
         case (.whitelist, _):
           return true
         case (_, .whitelist):
@@ -229,6 +232,17 @@ extension BalanceItem {
       return jetton.jetton.jettonInfo.address.toRaw()
     case .staking(let staking):
       return staking.info.pool.toRaw()
+    }
+  }
+  
+  var isZeroBalance: Bool {
+    switch self {
+    case .ton(let ton):
+      return ton.amount == 0
+    case .jetton(let jetton):
+      return jetton.amount.isZero
+    case .staking(let staking):
+      return staking.info.amount == 0
     }
   }
 }

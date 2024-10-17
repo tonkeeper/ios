@@ -104,7 +104,8 @@ private extension ImportWalletCoordinator {
         showRevision: true,
         selectLastRevision: true
       ),
-      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter,
+      isTestnet: isTestnet
     )
     
     module.output.didSelectWallets = { [weak self] wallets in

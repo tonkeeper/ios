@@ -3,14 +3,11 @@ import TonSwift
 import BigInt
 
 public enum ProcessedBalanceState: Equatable {
-  case none
   case current(ProcessedBalance)
   case previous(ProcessedBalance)
   
   public var balance: ProcessedBalance? {
     switch self {
-    case .none:
-      return nil
     case .current(let balance):
       return balance
     case .previous(let balance):
@@ -136,9 +133,9 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
                               balanceState: WalletBalanceState?,
                               tonRates: [Rates.Rate],
                               stakingPools: [StackingPoolInfo],
-                              currency: Currency) -> ProcessedBalanceState {
+                              currency: Currency) -> ProcessedBalanceState? {
     guard let balanceState = balanceState else {
-      return ProcessedBalanceState.none
+      return nil
     }
     let walletBalance = balanceState.walletBalance
     

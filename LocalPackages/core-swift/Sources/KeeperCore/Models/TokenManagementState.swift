@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TokenManagementState: Codable, Equatable {
+public struct TokenManagementState: Codable {
   public let pinnedItems: [String]
-  public let hiddenItems: [String]
+  public let hiddenState: [String: Bool]
 }

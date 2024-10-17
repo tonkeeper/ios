@@ -43,7 +43,6 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
       DispatchQueue.main.async {
         switch event {
         case .didUpdateItems(let state):
-          self?.sectionStates = [:]
           self?.state = state
         case .didUpdateManagementState(let state):
           self?.state = state

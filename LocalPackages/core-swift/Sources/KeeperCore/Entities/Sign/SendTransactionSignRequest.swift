@@ -41,7 +41,12 @@ public struct SendTransactionParam: Decodable {
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
       address = try Address.parse(try container.decode(String.self, forKey: .address))
-      amount = Int64(try container.decode(String.self, forKey: .amount)) ?? 0
+      if let amountString = try? container.decode(String.self, forKey: .amount) {
+        amount = Int64(amountString) ?? 0
+      } else {
+        amount = try container.decode(Int64.self, forKey: .amount)
+      }
+    
       stateInit = try container.decodeIfPresent(String.self, forKey: .stateInit)
       payload = try container.decodeIfPresent(String.self, forKey: .payload)
     }

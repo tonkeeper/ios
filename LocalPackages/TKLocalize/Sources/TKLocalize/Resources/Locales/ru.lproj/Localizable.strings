@@ -118,7 +118,7 @@
 "settings.purchases.details.button.hide_token" = "Скрыть токен из кошелька";
 "settings.purchases.details.button.show_token" = "Показать токен в кошельке";
 "settings.purchases.details.button.hide_collection" = "Скрыть коллекцию из кошелька";
-"settings.purchases.details.button.show_collection" = "Показать коллекцию в кошелька";
+"settings.purchases.details.button.show_collection" = "Показать коллекцию в кошельке";
 "settings.purchases.details.button.not_spam" = "Это не спам";
 "settings.purchases.details.items.name" = "Имя";
 "settings.purchases.details.items.collection_id" = "ID коллекции";

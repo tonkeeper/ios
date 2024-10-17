@@ -170,7 +170,6 @@ extension KeeperInfo {
   
   func updateIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSetupFinished: isSetupFinished,
       isSecureMode: self.appSettings.isSecureMode
     )
     
@@ -188,7 +187,6 @@ extension KeeperInfo {
   
   func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSetupFinished: self.appSettings.isSetupFinished,
       isSecureMode: isSecureMode
     )
     

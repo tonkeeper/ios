@@ -312,7 +312,7 @@ final class HistoryEventDetailsMapper {
     }
     
     let title = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(tonTransfer.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(tonTransfer.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: amountType,
@@ -671,7 +671,7 @@ final class HistoryEventDetailsMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonOut = action.tonOut {
-        amount = BigUInt(integerLiteral: UInt64(tonOut))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonOut)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = TonInfo.fractionDigits
         symbol = TonInfo.symbol
@@ -700,7 +700,7 @@ final class HistoryEventDetailsMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonIn = action.tonIn {
-        amount = BigUInt(integerLiteral: UInt64(tonIn))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonIn)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = TonInfo.fractionDigits
         symbol = TonInfo.symbol
@@ -813,7 +813,7 @@ final class HistoryEventDetailsMapper {
                        status: AccountEventStatus,
                        isTestnet: Bool) -> Model {
     let title = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .outcome,
@@ -851,7 +851,7 @@ final class HistoryEventDetailsMapper {
     let fiatPrice = convertTonToFiatString(amount: BigUInt(smartContractExec.tonAttached))
     
     let title = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(smartContractExec.tonAttached)),
+      amount: BigUInt(integerLiteral: UInt64(abs(smartContractExec.tonAttached))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .outcome,
@@ -912,7 +912,7 @@ final class HistoryEventDetailsMapper {
     )
     if let amount = action.amount {
       let formattedAmount = amountMapper.mapAmount(
-        amount: BigUInt(integerLiteral: UInt64(amount)),
+        amount: BigUInt(integerLiteral: UInt64(abs(amount))),
         fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: TonInfo.fractionDigits,
         type: .none,
@@ -941,13 +941,14 @@ final class HistoryEventDetailsMapper {
                         feeConverted: String?,
                         status: AccountEventStatus,
                         isTestnet: Bool) -> Model {
+    let amount = BigUInt(integerLiteral: UInt64(abs(action.amount)))
     let title = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: amount,
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .income,
       currency: .TON)
-    let fiatPrice = convertTonToFiatString(amount: BigUInt(action.amount))
+    let fiatPrice = convertTonToFiatString(amount: amount)
     
     let dateString = TKLocales.EventDetails.unstakeOn(date)
     

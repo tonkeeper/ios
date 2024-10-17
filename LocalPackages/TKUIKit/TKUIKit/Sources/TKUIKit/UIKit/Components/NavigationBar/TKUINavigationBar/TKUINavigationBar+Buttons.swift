@@ -1,7 +1,7 @@
 import UIKit
 
 public extension TKUINavigationBar {
-  static func createBackButton(action: @escaping () -> Void) -> UIView {
+  static func createBackButton(action: @escaping () -> Void) -> TKUIHeaderIconButton {
     let button = TKUIHeaderIconButton()
     button.configure(
       model: TKUIHeaderButtonIconContentView.Model(

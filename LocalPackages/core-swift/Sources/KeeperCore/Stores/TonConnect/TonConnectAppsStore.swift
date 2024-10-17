@@ -26,7 +26,7 @@ public final class TonConnectAppsStore {
   init(tonConnectService: TonConnectService) {
     self.tonConnectService = tonConnectService
   }
-  
+
   public func connect(wallet: Wallet,
                       passcode: String,
                       parameters: TonConnectParameters,

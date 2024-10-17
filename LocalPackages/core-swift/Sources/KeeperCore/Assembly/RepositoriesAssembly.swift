@@ -28,11 +28,7 @@ public struct RepositoriesAssembly {
   func walletBalanceRepositoryV2() -> WalletBalanceRepositoryV2 {
     WalletBalanceRepositoryV2implementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
-  
-  func totalBalanceRepository() -> TotalBalanceRepository {
-    TotalBalanceRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
+
   func ratesRepository() -> RatesRepository {
     RatesRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
@@ -82,6 +78,10 @@ public struct RepositoriesAssembly {
   
   func tokenManagementRepository() -> TokenManagementRepository {
     TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  func stakingPoolsInfoRepository() -> StakingPoolsInfoRepository {
+    StakingPoolsInfoRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
   public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {

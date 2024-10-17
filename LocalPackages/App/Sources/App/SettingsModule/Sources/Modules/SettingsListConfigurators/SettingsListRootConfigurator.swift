@@ -224,7 +224,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private func createAppInformationSection() -> SettingsListSection {
     let configuration = SettingsAppInformationCell.Configuration(
       appName: InfoProvider.appName(),
-      version: "Version \(InfoProvider.appVersion())"
+      version: "Version \(InfoProvider.appVersion())(\(InfoProvider.buildVersion()))"
     )
     return SettingsListSection.appInformation(configuration)
   }

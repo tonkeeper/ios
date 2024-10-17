@@ -46,9 +46,10 @@ struct RNMigration {
         errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, publicKey: rnWallet.pubkey))
         continue
       }
+      guard !wallets.contains(where: { $0.identity == wallet.identity }) else { continue }
       wallets.append(wallet)
     }
-    
+
     guard !wallets.isEmpty else { return errors }
 
     let activeWallet = wallets.first(where: {

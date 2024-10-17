@@ -78,12 +78,25 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _managedBalanceStore: ManagedBalanceStore?
+  public var managedBalanceStore: ManagedBalanceStore {
+    if let _managedBalanceStore {
+      return _managedBalanceStore
+    }
+    let store = ManagedBalanceStore(
+      balanceStore: processedBalanceStore,
+      tokenManagementStore: tokenManagementStore
+    )
+    _managedBalanceStore = store
+    return store
+  }
+  
   private weak var _totalBalanceStore: TotalBalanceStore?
   public var totalBalanceStore: TotalBalanceStore {
     if let _totalBalanceStore {
       return _totalBalanceStore
     }
-    let store = TotalBalanceStore(processedBalanceStore: processedBalanceStore)
+    let store = TotalBalanceStore(managedBalanceStore: managedBalanceStore)
     _totalBalanceStore = store
     return store
   }
@@ -178,7 +191,10 @@ public final class StoresAssembly {
     if let store = _stackingPoolsStore {
       return store
     } else {
-      let store = StakingPoolsStore()
+      let store = StakingPoolsStore(
+        walletsStore: walletsStore,
+        repository: repositoriesAssembly.stakingPoolsInfoRepository()
+      )
       _stackingPoolsStore = store
       return store
     }

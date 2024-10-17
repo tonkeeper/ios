@@ -247,7 +247,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     if let itemTextColor = dapp.textColor {
       textColor = UIColor(hex: itemTextColor)
     } else {
-      textColor = .Text.primary
+      textColor = .Constant.white
     }
     
     let listModel = TKUIListItemView.Configuration(

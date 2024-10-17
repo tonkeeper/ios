@@ -142,7 +142,55 @@ extension MainCoordinator {
     
     self.deeplinkHandleTask = deeplinkHandleTask
   }
-  
+
+  func handleDappDeeplink(url: URL) -> Bool {
+    @Sendable func produceFailingFlow() {
+      ToastPresenter.hideAll()
+      ToastPresenter.showToast(configuration: .failed)
+    }
+
+    deeplinkHandleTask?.cancel()
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+
+    let task = Task {
+      let browserController = keeperCoreMainAssembly.browserExploreController()
+      let lang = Locale.current.languageCode ?? "en"
+
+      guard let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang) else {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          produceFailingFlow()
+        }
+
+        return
+      }
+
+      var isDappHandlingApproved = false
+      if let _ = popularAppsResponse.apps.first(with: url.host, at: \.url.host) {
+        isDappHandlingApproved = true
+      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url.host, at: \.url.host) }) {
+        isDappHandlingApproved = true
+      }
+
+      guard isDappHandlingApproved, !Task.isCancelled else {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          produceFailingFlow()
+        }
+        return
+      }
+
+      await MainActor.run {
+        ToastPresenter.hideAll()
+        self.openDapp(title: "", url: url)
+      }
+    }
+
+    deeplinkHandleTask = task
+    return true
+  }
+
   func openExchangeDeeplink(provider: String) {
     deeplinkHandleTask?.cancel()
     

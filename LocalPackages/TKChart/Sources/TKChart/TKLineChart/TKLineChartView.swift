@@ -36,6 +36,8 @@ public final class TKLineChartView: UIView {
   public var didStartDragging: (() -> Void)?
   public var didEndDragging: (() -> Void)?
   
+  private var selectedValueIndex: Int?
+  
   public var padding: UIEdgeInsets = .zero {
     didSet {
       chartView.setExtraOffsets(
@@ -155,10 +157,14 @@ public final class TKLineChartView: UIView {
         height: chartView.frame.height
       )
       verticalHighlightIndicatorView.isHidden = false
-      let index = dataSet.entryIndex(entry: entry)
       chartView.highlightValue(highlight)
-      didSelectValue?(index)
+      let index = dataSet.entryIndex(entry: entry)
+      if selectedValueIndex != index || selectedValueIndex == nil {
+        selectedValueIndex = index
+        didSelectValue?(index)
+      }
     case .cancelled, .ended, .failed:
+      selectedValueIndex = nil
       verticalHighlightIndicatorView.isHidden = true
       didEndDragging?()
       chartView.highlightValue(nil)
