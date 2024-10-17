@@ -76,9 +76,21 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
       DispatchQueue.main.async { self.updateSnapshot() }
     }
   }
-  private var searchSuggestions = [SearchEngineSuggestion]() {
-    didSet {
-      DispatchQueue.main.async { self.updateSnapshot() }
+
+  private var syncQueue = DispatchQueue(label: #function)
+  private var _searchSuggestions = [SearchEngineSuggestion]()
+  private var searchSuggestions: [SearchEngineSuggestion] {
+    get {
+      return syncQueue.sync {
+        _searchSuggestions
+      }
+    }
+    set {
+      syncQueue.sync {
+        self._searchSuggestions = newValue
+
+        DispatchQueue.main.async { self.updateSnapshot() }
+      }
     }
   }
   private var suggestionTask: Task<(), Error>?
