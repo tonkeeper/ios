@@ -62,22 +62,23 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   private let imageLoader = ImageLoader()
   
   // MARK: - State
-  
+
+  typealias Snapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>
   private var snapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>()
 
   private var validUrlSuggestion: SearchEngineSuggestion? {
     didSet {
-      updateSnapshot()
+      DispatchQueue.main.async { self.updateSnapshot() }
     }
   }
   private var apps = [Dapp]() {
     didSet {
-      updateSnapshot()
+      DispatchQueue.main.async { self.updateSnapshot() }
     }
   }
   private var searchSuggestions = [SearchEngineSuggestion]() {
     didSet {
-      updateSnapshot()
+      DispatchQueue.main.async { self.updateSnapshot() }
     }
   }
   private var suggestionTask: Task<(), Error>?
@@ -103,12 +104,10 @@ private extension BrowserSearchViewModelImplementation {
 
   func updateSnapshot() {
     defer {
-      DispatchQueue.main.async {
-        self.didUpdateSnapshot?(self.snapshot)
-      }
+      self.didUpdateSnapshot?(self.snapshot)
     }
 
-    snapshot.deleteAllItems()
+    var snapshot = Snapshot()
 
     if !apps.isEmpty || validUrlSuggestion != nil {
       snapshot.appendSections([.apps])
@@ -135,11 +134,13 @@ private extension BrowserSearchViewModelImplementation {
       snapshot.appendSections([.newSearch(headerModel: headerModel)])
       snapshot.appendItems(models, toSection: .newSearch(headerModel: headerModel))
     }
+    self.snapshot = snapshot
   }
 
   func searchPopularApps(input: String) {
     guard !input.isEmpty else {
       apps = [Dapp]()
+      suggestionTask?.cancel()
       searchSuggestions = [SearchEngineSuggestion]()
       validUrlSuggestion = nil
       return
