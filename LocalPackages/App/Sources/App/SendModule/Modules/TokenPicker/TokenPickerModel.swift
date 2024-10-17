@@ -53,7 +53,7 @@ private extension TokenPickerModel {
     guard let balance = balanceState?.balance else { return nil}
     return State(
       tonBalance: balance.tonBalance,
-      jettonBalances: balance.jettonsBalance,
+      jettonBalances: balance.jettonsBalance.filter { !$0.jettonBalance.quantity.isZero },
       selectedToken: selectedToken,
       scrollToSelected: scrollToSelected
     )

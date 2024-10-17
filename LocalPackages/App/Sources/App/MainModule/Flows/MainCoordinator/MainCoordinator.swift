@@ -399,6 +399,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleSignerDeeplink(data)
     case .tonconnect(let parameters):
       return handleTonConnectDeeplink(parameters)
+    case .dapp(let dappURL):
+      return handleDappDeeplink(url: dappURL)
     }
   }
   
@@ -488,7 +490,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     return true
   }
-  
+
   func openWalletPicker() {
     UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
     let module = WalletsListAssembly.module(

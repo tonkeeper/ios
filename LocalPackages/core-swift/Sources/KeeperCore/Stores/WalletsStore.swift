@@ -177,9 +177,13 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
   public func setWalletBackupDate(wallet: Wallet, backupDate: Date?) async {
     let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
+      let setupSettings = WalletSetupSettings(
+        backupDate: backupDate,
+        isSetupFinished: wallet.setupSettings.isSetupFinished
+      )
       let updated = keeperInfo.updateWallet(
         wallet, 
-        setupSettings: WalletSetupSettings(backupDate: backupDate)
+        setupSettings: setupSettings
       )
       return updated.keeperInfo
     }
@@ -187,7 +191,31 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
     } notify: { _ in
       var wallet = wallet
-      wallet.setupSettings = WalletSetupSettings(backupDate: backupDate)
+      wallet.setupSettings = WalletSetupSettings(backupDate: backupDate, 
+                                                 isSetupFinished: wallet.setupSettings.isSetupFinished)
+      self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+    }
+  }
+  
+  public func setWalletIsSetupFinished(wallet: Wallet, isSetupFinished: Bool) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let setupSettings = WalletSetupSettings(
+        backupDate: wallet.setupSettings.backupDate,
+        isSetupFinished: isSetupFinished
+      )
+      let updated = keeperInfo.updateWallet(
+        wallet,
+        setupSettings: setupSettings
+      )
+      return updated.keeperInfo
+    }
+    await self.setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      var wallet = wallet
+      wallet.setupSettings = WalletSetupSettings(backupDate: wallet.setupSettings.backupDate,
+                                                 isSetupFinished: isSetupFinished)
       self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
     }
   }
@@ -209,7 +237,7 @@ private extension KeeperInfo {
       currentWallet: wallets[0],
       currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
-      appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
+      appSettings: AppSettings(isSecureMode: false),
       country: .auto,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])

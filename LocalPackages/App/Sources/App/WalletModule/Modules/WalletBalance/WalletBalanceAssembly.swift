@@ -10,9 +10,8 @@ struct WalletBalanceAssembly {
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-        balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+        balanceStore: keeperCoreMainAssembly.storesAssembly.managedBalanceStore,
         stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
       ),
       setupModel: WalletBalanceSetupModel(

@@ -22,30 +22,32 @@ final class APIAssembly {
     }
   }
   
-  var api: API {
-    API(
+  lazy var api: API = {
+    print("VVV")
+    return API(
       hostProvider: tonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
       configurationStore: configurationAssembly.configurationStore,
-      requestBuilderActor: requestBuilderActor
+      requestCreationQueue: apiRequestCreationQueue
     )
-  }
+  }()
   
-  var testnetAPI: API {
-    API(
+  lazy var testnetAPI: API = {
+    print("ZZZ")
+    return API(
       hostProvider: testnetTonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
       configurationStore: configurationAssembly.configurationStore,
-      requestBuilderActor: requestBuilderActor
+      requestCreationQueue: apiRequestCreationQueue
     )
-  }
+  }()
   
-  private lazy var requestBuilderActor = APIRequestBuilderSerialActor()
-  
+  private lazy var apiRequestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
+    
   private var tonApiHostProvider: APIHostProvider {
     MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
   }

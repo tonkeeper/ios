@@ -9,27 +9,27 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
     case didUpdateTotalBalance(state: TotalBalanceState, wallet: Wallet)
   }
 
-  private let processedBalanceStore: ProcessedBalanceStore
+  private let managedBalanceStore: ManagedBalanceStore
   
-  init(processedBalanceStore: ProcessedBalanceStore) {
-    self.processedBalanceStore = processedBalanceStore
+  init(managedBalanceStore: ManagedBalanceStore) {
+    self.managedBalanceStore = managedBalanceStore
     super.init(state: [:])
-    processedBalanceStore.addObserver(self) { observer, event in
+    managedBalanceStore.addObserver(self) { observer, event in
       observer.didGetProcessedBalanceStoreEvent(event)
     }
   }
   
   public override var initialState: State {
-    let balanceStates = processedBalanceStore.getState()
+    let balanceStates = managedBalanceStore.getState()
     let total = balanceStates.mapValues {
       self.recalculateTotalBalance($0)
     }
     return total
   }
   
-  private func didGetProcessedBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
+  private func didGetProcessedBalanceStoreEvent(_ event: ManagedBalanceStore.Event) {
     switch event {
-    case .didUpdateProccessedBalance(_, let wallet):
+    case .didUpdateManagedBalance(_ , let wallet):
       Task {
         await recalculateTotalBalance(wallet: wallet)
       }
@@ -37,7 +37,7 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
   }
   
   private func recalculateTotalBalance(wallet: Wallet) async {
-    guard let balanceState = await processedBalanceStore.getState()[wallet] else { return }
+    guard let balanceState = await managedBalanceStore.getState()[wallet] else { return }
     let totalBalanceState = recalculateTotalBalance(balanceState)
     await setState { state in
       var updatedState = state
@@ -48,17 +48,16 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
     }
   }
   
-  private func recalculateTotalBalance(_ balanceState: ProcessedBalanceState) -> TotalBalanceState {
+  private func recalculateTotalBalance(_ balanceState: ManagedBalanceState) -> TotalBalanceState {
     
-    func calculateTotal(balance: ProcessedBalance) -> TotalBalance {
-      let total = balance.items.reduce(Decimal(0)) { partialResult, item in
+    func calculateTotal(balance: ManagedBalance) -> TotalBalance {
+      let items: [ProcessedBalanceItem] = balance.tonItems.map { .ton($0) } + balance.pinnedItems + balance.unpinnedItems
+      let total = items.reduce(Decimal(0)) { partialResult, item in
         return partialResult + item.converted
       }
       return TotalBalance(amount: total, balance: balance, currency: balance.currency, date: balance.date)
     }
     switch balanceState {
-    case .none:
-      return .none
     case .current(let processedBalance):
       return .current(calculateTotal(balance: processedBalance))
     case .previous(let processedBalance):

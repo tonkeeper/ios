@@ -65,6 +65,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       openLaunchScreen()
       migrateIfNeed(deeplink: deeplink)
     case .main:
+      migrateTonConnectVaultIfNeeded()
       openMain(deeplink: deeplink)
     }
   }
@@ -145,6 +146,15 @@ private extension RootCoordinator {
     navigationController.configureDefaultAppearance()
       
     showViewController(navigationController, animated: true)
+  }
+  
+  // TODO: Delete after open beta
+  
+  func migrateTonConnectVaultIfNeeded() {
+    guard !dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault else { return }
+    let wallets = dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore.wallets
+    dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectService().migrateTonConnectAppsVault(wallets: wallets)
+    dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault = true
   }
   
   func migrateIfNeed(deeplink: CoordinatorDeeplink?) {

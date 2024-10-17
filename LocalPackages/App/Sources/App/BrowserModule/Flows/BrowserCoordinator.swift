@@ -66,6 +66,10 @@ private extension BrowserCoordinator {
       self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
     
+    module.output.didTapSearch = { [weak self] in
+      self?.openSearch()
+    }
+    
     module.view.setupBackButton()
     
     router.push(viewController: module.view)

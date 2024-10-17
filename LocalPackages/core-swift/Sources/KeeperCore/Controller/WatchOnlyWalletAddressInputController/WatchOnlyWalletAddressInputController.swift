@@ -41,7 +41,7 @@ public actor WatchOnlyWalletAddressInputController {
       
       self.state = .resolving
       do {
-        let resolvableAddress = try await self.addressResolver.resolveRecipient(input: input)
+        let resolvableAddress = try await self.addressResolver.resolveRecipient(input: input, addTonPostfix: true)
         self.state = .resolved(resolvableAddress)
       } catch {
         self.state = .failed

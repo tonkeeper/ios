@@ -656,7 +656,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     let backup: BalanceHeaderAmountView.Model.Backup
     let backupWarningState = BalanceBackupWarningCheck().check(
       wallet: state.wallet,
-      tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
+      tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
     )
     switch backupWarningState {
     case .error:
