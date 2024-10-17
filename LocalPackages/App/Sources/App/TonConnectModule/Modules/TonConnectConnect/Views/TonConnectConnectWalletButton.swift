@@ -1,6 +1,29 @@
 import UIKit
 import TKUIKit
 
+struct TonConnectConnectWalletButtonComponent: TKPopUp.Item {
+  func getView() -> UIView {
+    let view = TonConnectConnectWalletButton()
+    view.configure(model: configuration)
+    view.addAction(UIAction(handler: { _ in
+      action()
+    }), for: .touchUpInside)
+    return view
+  }
+  
+  private let configuration: TonConnectConnectWalletButton.Model
+  private let action: () -> Void
+  public let bottomSpace: CGFloat
+  
+  init(configuration: TonConnectConnectWalletButton.Model,
+       action: @escaping () -> Void,
+       bottomSpace: CGFloat) {
+    self.configuration = configuration
+    self.action = action
+    self.bottomSpace = bottomSpace
+  }
+}
+
 final class TonConnectConnectWalletButton: UIControl, ConfigurableView {
   override var isHighlighted: Bool {
     didSet {

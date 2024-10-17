@@ -20,7 +20,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapDeleteRegularWallet: ((Wallet) -> Void)?
   var didTapLogout: (() -> Void)?
   var didDeleteWallet: (() -> Void)?
-  var didTapPurchases: ((Wallet) -> Void)?
   var didTapNotifications: ((Wallet) -> Void)?
   var didTapW5Wallet: ((Wallet) -> Void)?
   var didTapV4Wallet: ((Wallet) -> Void)?
@@ -44,7 +43,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
-  private let walletNFTStore: WalletNFTStore
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -56,7 +54,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
-       walletNFTStore: WalletNFTStore,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -65,7 +62,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
-    self.walletNFTStore = walletNFTStore
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -96,16 +92,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       switch event {
       case .didUpdateCurrency:
         DispatchQueue.main.async {
-          let state = observer.createState()
-          observer.didUpdateState?(state)
-        }
-      }
-    }
-    walletNFTStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateNFTs(let wallet):
-        DispatchQueue.main.async {
-          guard wallet == self.wallet else { return }
           let state = observer.createState()
           observer.didUpdateState?(state)
         }
@@ -153,9 +139,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     var items = [AnyHashable]()
     if let backupItem = createBackupItem() {
       items.append(backupItem)
-    }
-    if let purchasesManagementItem = createPurchasesManagementItem() {
-      items.append(purchasesManagementItem)
     }
     items.append(createNotificationsItem())
     items.append(createCurrencyItem())
@@ -253,25 +236,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       guard let self else { return }
       self.didTapEditWallet?(self.wallet)
     }
-  }
-  
-  private func createPurchasesManagementItem() -> SettingsListItem? {
-    guard let nfts = walletNFTStore.getState()[wallet] else { return nil }
-    guard !nfts.isEmpty else { return nil }
-    
-    let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentView.Configuration(
-        textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.purchases)
-        )))
-    
-    return SettingsListItem(id: .purchasesIdentifier,
-                            cellConfiguration: cellConfiguration,
-                            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.purchase, tintColor: .Accent.blue)),
-                            onSelection: { [weak self] _ in
-      guard let self else { return }
-      self.didTapPurchases?(self.wallet)
-    })
   }
   
   private func createBackupItem() -> SettingsListItem? {
@@ -773,6 +737,5 @@ private extension String {
   static let legalItemIdentifier = "LegalItem"
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
-  static let purchasesIdentifier = "Purhases item"
   static let notificationsIdentifier = "Notifications item"
 }

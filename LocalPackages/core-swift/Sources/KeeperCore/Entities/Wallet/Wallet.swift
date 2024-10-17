@@ -37,7 +37,7 @@ public struct Wallet: Codable, Hashable {
        identity: WalletIdentity,
        metaData: WalletMetaData,
        setupSettings: WalletSetupSettings,
-       notificationSettings: NotificationSettings = NotificationSettings(isOn: false),
+       notificationSettings: NotificationSettings = NotificationSettings(isOn: false, dapps: [:]),
        backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
        addressBook: [AddressBookEntry] = []) {
     self.id = id

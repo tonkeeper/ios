@@ -187,6 +187,27 @@ public extension TKPopUp.Component {
     private let item: TKPopUp.Item
     public let bottomSpace: CGFloat
     
+    public init(title: NSAttributedString,
+                caption: NSAttributedString?,
+                bottomSpace: CGFloat) {
+      var items = [TKPopUp.Item]()
+      items.append(TKPopUp.Component.LabelComponent(
+        text: title,
+        numberOfLines: 0,
+        bottomSpace: 4
+      ))
+      if let caption {
+        items.append(TKPopUp.Component.LabelComponent(
+          text: caption,
+          numberOfLines: 0))
+      }
+      item = GroupComponent(
+        padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
+        items: items
+      )
+      self.bottomSpace = bottomSpace
+    }
+    
     public init(title: String,
                 caption: String?,
                 bottomSpace: CGFloat) {
@@ -227,6 +248,39 @@ public extension TKPopUp.Component {
                 bottomSpace: CGFloat = 0) {
       self.configuration = configuration
       self.bottomSpace = bottomSpace
+    }
+  }
+}
+
+public extension TKPopUp.Component {
+  struct Process: TKPopUp.Item {
+    public func getView() -> UIView {
+      let stackView = UIStackView()
+      stackView.axis = .vertical
+      
+      for item in items {
+        let view = item.getView()
+        stackView.addArrangedSubview(view)
+        stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
+      }
+    
+      processView.setContent(stackView)
+      processView.state = state
+      return processView
+    }
+    
+    private let processView = TKProcessContainerView()
+    
+    private let items: [TKPopUp.Item]
+    private let state: TKProcessContainerView.State
+    public let bottomSpace: CGFloat
+    
+    public init(items: [TKPopUp.Item],
+                state: TKProcessContainerView.State,
+                bottomSpace: CGFloat = 0) {
+      self.items = items
+      self.bottomSpace = bottomSpace
+      self.state = state
     }
   }
 }

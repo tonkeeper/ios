@@ -8,6 +8,7 @@ struct TonConnectConnectAssembly {
     parameters: TonConnectParameters,
     manifest: TonConnectManifest,
     walletsStore: WalletsStore,
+    walletNotificationStore: WalletNotificationStore,
     showWalletPicker: Bool
   ) -> MVVMModule<
     TonConnectConnectViewController,
@@ -18,6 +19,7 @@ struct TonConnectConnectAssembly {
       parameters: parameters,
       manifest: manifest,
       walletsStore: walletsStore,
+      walletNotificationStore: walletNotificationStore,
       showWalletPicker: showWalletPicker
     )
     let viewController = TonConnectConnectViewController(viewModel: viewModel)

@@ -198,10 +198,14 @@ private extension TKNavigationBar {
   }
   
   func didUpdateConfiguration() {
+    rightButtonsStackView.arrangedSubviews.forEach { rightButtonsStackView.removeArrangedSubview($0) }
+    largeBarRightButtonsStackView.arrangedSubviews.forEach { largeBarRightButtonsStackView.removeArrangedSubview($0) }
+
     configuration.rightButtonItems.forEach {
       let button = TKUIHeaderIconButton()
       button.padding = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
       button.configure(model: $0.model)
+      button.addTapAction($0.action)
       rightButtonsStackView.addArrangedSubview(button)
     }
     
@@ -209,6 +213,7 @@ private extension TKNavigationBar {
       let button = TKUIHeaderIconButton()
       button.padding = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
       button.configure(model: $0.model)
+      button.addTapAction($0.action)
       largeBarRightButtonsStackView.addArrangedSubview(button)
     }
   }

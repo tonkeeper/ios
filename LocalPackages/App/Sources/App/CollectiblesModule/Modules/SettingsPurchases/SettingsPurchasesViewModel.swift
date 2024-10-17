@@ -37,8 +37,8 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
   var didCopyItem: ((String?) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: TKLocales.Settings.Purchases.title))
-    
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: TKLocales.Collectibles.title))
+
     model.didUpdate = { [weak self] event in
       DispatchQueue.main.async {
         switch event {

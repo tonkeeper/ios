@@ -265,6 +265,9 @@
 "add_wallet.items.pair_signer.title" = "Пара для Signer";
 "add_wallet.items.pair_signer.subtitle" = "Более высокий уровень контроля и безопасности";
 
+"add_wallet.items.testnet.title" = "Аккаунт в Testnet";
+"add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов в Testnet";
+
 "add_wallet.items.pair_ledger.title" = "Подключить Ledger";
 "add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
 
