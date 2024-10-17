@@ -316,12 +316,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
 
-    deeplinkRouter = ContainerViewControllerRouter(rootViewController: router.rootViewController.topPresentedViewController())
-    deeplinkRouter?.present(navigationController, animated: true, completion: nil, onDismiss: { [weak self, weak sendTokenCoordinator] in
+    router.presentOverTopPresented(
+      navigationController,
+      animated: true,
+      completion: nil
+    ) { [weak self, weak sendTokenCoordinator] in
       self?.sendTokenCoordinator = nil
       guard let sendTokenCoordinator else { return }
       self?.removeChild(sendTokenCoordinator)
-    })
+    }
   }
   
   func openSwap(wallet: Wallet,
