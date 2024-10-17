@@ -40,7 +40,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   var deeplinkHandleTask: Task<Void, Never>?
   
   private var sendTransactionNotificationToken: NSObjectProtocol?
-  
+
+  private var deeplinkRouter: ContainerViewControllerRouter<UIViewController>?
+
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -314,7 +316,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
 
-    router.rootViewController.topPresentedViewController().present(navigationController, animated: true)
+    deeplinkRouter = ContainerViewControllerRouter(rootViewController: router.rootViewController.topPresentedViewController())
+    deeplinkRouter?.present(navigationController, animated: true, completion: nil, onDismiss: { [weak self, weak sendTokenCoordinator] in
+      self?.sendTokenCoordinator = nil
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    })
   }
   
   func openSwap(wallet: Wallet,
