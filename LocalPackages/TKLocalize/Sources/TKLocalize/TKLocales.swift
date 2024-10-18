@@ -87,6 +87,8 @@ public enum TKLocales {
     public static let hideCollection = TKLocales.tr("Localizable", "actions.hide_collection", fallback: "Hide Collection")
     /// Hide NFT
     public static let hideNft = TKLocales.tr("Localizable", "actions.hide_nft", fallback: "Hide NFT")
+    /// Срок действия ссылки истёк
+    public static let linkExpired = TKLocales.tr("Localizable", "actions.link_expired", fallback: "Срок действия ссылки истёк")
     /// Loading
     public static let loading = TKLocales.tr("Localizable", "actions.loading", fallback: "Loading")
     /// More
