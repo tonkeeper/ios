@@ -1,4 +1,3 @@
-"actions.copied" = "Copied";
 "actions.delete" = "Delete";
 "actions.cancel" = "Cancel";
 "actions.save" = "Save";
@@ -9,16 +8,20 @@
 "actions.copy" = "Copy";
 "actions.sign_out" = "Sign Out";
 "actions.more" = "More";
-"actions.loading" = "Loading";
-"actions.failed" = "Failed";
 "actions.ok" = "OK";
-"actions.service_unavailable" = "Service unavailable";
 "actions.open" = "Open";
 "actions.hide_nft" = "Hide NFT";
 "actions.hide_collection" = "Hide Collection";
 "actions.hide_and_report_spam" = "Hide and Report Spam";
 "actions.view_on_tonviewier" = "View on Tonviewer";
-"actions.link_expired" = "Срок действия ссылки истёк";
+
+"state.failed" = "Failed";
+
+"toast.copied" = "Copied";
+"toast.loading" = "Loading";
+"toast.link_expired" = "Expired link";
+"toast.service_unavailable" = "Service unavailable";
+"toast.failed" = "Failed";
 
 "errors.unknown" = "Error";
 "errors.multiaccount_error" = "Please use Tonkeeper Desktop for Multi-Wallet Account";

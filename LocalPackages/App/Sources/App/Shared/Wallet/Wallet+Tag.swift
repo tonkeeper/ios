@@ -62,7 +62,7 @@ extension Wallet {
     }
 
     return ToastPresenter.Configuration(
-      title: TKLocales.Actions.copied,
+      title: TKLocales.Toast.copied,
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
       dismissRule: .default

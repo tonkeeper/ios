@@ -17,12 +17,9 @@ extension MainCoordinator {
     ToastPresenter.showToast(configuration: .loading)
 
     if let expirationTimestamp {
-
       let expirationDate = Date(timeIntervalSince1970: TimeInterval(expirationTimestamp))
-
-      if Date() > expirationDate {
-        let configuration = ToastPresenter.Configuration(title: TKLocales.Actions.linkExpired)
-
+      guard Date() <= expirationDate else {
+        let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.linkExpired)
         ToastPresenter.hideAll()
         ToastPresenter.showToast(configuration: configuration)
         return
