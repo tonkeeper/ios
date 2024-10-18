@@ -1,4 +1,3 @@
-"actions.copied" = "Скопировано";
 "actions.delete" = "Удалить";
 "actions.cancel" = "Отмена";
 "actions.save" = "Сохранить";
@@ -9,15 +8,20 @@
 "actions.copy" = "Скопировать";
 "actions.sign_out" = "Выйти";
 "actions.more" = "Ещё";
-"actions.loading" = "Загрузка";
-"actions.failed" = "Неуспешно";
 "actions.ok" = "Хорошо";
-"actions.service_unavailable" = "Сервис недоступен";
 "actions.open" = "Открыть";
 "actions.hide_nft" = "Скрыть NFT";
 "actions.hide_collection" = "Скрыть коллекцию";
 "actions.hide_and_report_spam" = "Скрыть и пожаловаться";
 "actions.view_on_tonviewier" = "Открыть в Tonviewer";
+
+"state.failed" = "Неуспешно";
+
+"toast.copied" = "Скопировано";
+"toast.loading" = "Загрузка";
+"toast.link_expired" = "Срок действия ссылки истёк";
+"toast.service_unavailable" = "Сервис недоступен";
+"toast.failed" = "Неуспешно";
 
 "errors.unknown" = "Ошибка";
 "errors.multiaccount_error" = "Пожалуйста используйте Tonkeeper Desktop для аккаунта мульти-кошелька";

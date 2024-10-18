@@ -9,7 +9,7 @@ public enum AccountEventStatus: Codable {
   public var rawValue: String? {
     switch self {
     case .ok: return nil
-    case .failed: return TKLocales.Actions.failed
+    case .failed: return TKLocales.State.failed
     case .unknown(let value):
       return value
     }

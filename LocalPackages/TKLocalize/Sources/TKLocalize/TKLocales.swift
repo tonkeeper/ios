@@ -69,8 +69,6 @@ public enum TKLocales {
     public static let cancel = TKLocales.tr("Localizable", "actions.cancel", fallback: "Cancel")
     /// Continue
     public static let continueAction = TKLocales.tr("Localizable", "actions.continue_action", fallback: "Continue")
-    /// Copied
-    public static let copied = TKLocales.tr("Localizable", "actions.copied", fallback: "Copied")
     /// Copy
     public static let copy = TKLocales.tr("Localizable", "actions.copy", fallback: "Copy")
     /// Delete
@@ -79,16 +77,12 @@ public enum TKLocales {
     public static let done = TKLocales.tr("Localizable", "actions.done", fallback: "Done")
     /// Edit
     public static let edit = TKLocales.tr("Localizable", "actions.edit", fallback: "Edit")
-    /// Failed
-    public static let failed = TKLocales.tr("Localizable", "actions.failed", fallback: "Failed")
     /// Hide and Report Spam
     public static let hideAndReportSpam = TKLocales.tr("Localizable", "actions.hide_and_report_spam", fallback: "Hide and Report Spam")
     /// Hide Collection
     public static let hideCollection = TKLocales.tr("Localizable", "actions.hide_collection", fallback: "Hide Collection")
     /// Hide NFT
     public static let hideNft = TKLocales.tr("Localizable", "actions.hide_nft", fallback: "Hide NFT")
-    /// Loading
-    public static let loading = TKLocales.tr("Localizable", "actions.loading", fallback: "Loading")
     /// More
     public static let more = TKLocales.tr("Localizable", "actions.more", fallback: "More")
     /// OK
@@ -99,8 +93,6 @@ public enum TKLocales {
     public static let paste = TKLocales.tr("Localizable", "actions.paste", fallback: "Paste")
     /// Save
     public static let save = TKLocales.tr("Localizable", "actions.save", fallback: "Save")
-    /// Service unavailable
-    public static let serviceUnavailable = TKLocales.tr("Localizable", "actions.service_unavailable", fallback: "Service unavailable")
     /// Sign Out
     public static let signOut = TKLocales.tr("Localizable", "actions.sign_out", fallback: "Sign Out")
     /// View on Tonviewer
@@ -1054,6 +1046,10 @@ public enum TKLocales {
     /// Minimal Deposit
     public static let minimalDeposit = TKLocales.tr("Localizable", "staking_pool_details.minimal_deposit", fallback: "Minimal Deposit")
   }
+  public enum State {
+    /// Failed
+    public static let failed = TKLocales.tr("Localizable", "state.failed", fallback: "Failed")
+  }
   public enum Tabs {
     /// Browser
     public static let browser = TKLocales.tr("Localizable", "tabs.browser", fallback: "Browser")
@@ -1081,6 +1077,18 @@ public enum TKLocales {
   public enum Tick {
     /// Do not show again
     public static let doNotShowAgain = TKLocales.tr("Localizable", "tick.do_not_show_again", fallback: "Do not show again")
+  }
+  public enum Toast {
+    /// Copied
+    public static let copied = TKLocales.tr("Localizable", "toast.copied", fallback: "Copied")
+    /// Failed
+    public static let failed = TKLocales.tr("Localizable", "toast.failed", fallback: "Failed")
+    /// Expired link
+    public static let linkExpired = TKLocales.tr("Localizable", "toast.link_expired", fallback: "Expired link")
+    /// Loading
+    public static let loading = TKLocales.tr("Localizable", "toast.loading", fallback: "Loading")
+    /// Service unavailable
+    public static let serviceUnavailable = TKLocales.tr("Localizable", "toast.service_unavailable", fallback: "Service unavailable")
   }
   public enum Token {
     /// Unverified token

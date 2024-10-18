@@ -364,7 +364,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         recipient: data.recipient,
         amount: data.amount,
         comment: data.comment,
-        jettonAddress: data.jettonAddress
+        jettonAddress: data.jettonAddress,
+        expirationTimestamp: data.expirationTimestamp
       )
       return true
     case .buyTon:
@@ -385,7 +386,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     case .action(let eventId):
       openActionDeeplink(eventId: eventId)
       return true
-    case .publish(sign: let sign):
+    case .publish(let sign):
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
       }
