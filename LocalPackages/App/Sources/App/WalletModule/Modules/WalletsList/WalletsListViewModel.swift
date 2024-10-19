@@ -261,8 +261,6 @@ private extension WalletsListViewModelImplementation {
           self.didUpdateTotalBalancesState(state: totalBalanceState[wallet], wallet: wallet, isSecure: isSecure)
         }
       }
-    case .didUpdateIsSetupFinished:
-      break
     }
   }
   
