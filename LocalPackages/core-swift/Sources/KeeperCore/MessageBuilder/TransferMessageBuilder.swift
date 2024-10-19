@@ -497,7 +497,7 @@ public struct TonConnectTransferMessageBuilder {
       }
       var body: Cell = .empty
       if let messagePayload = payload.payload {
-        body = try Cell.fromBase64(src: messagePayload)
+        body = try Cell.fromBase64(src: messagePayload.base64UrlToBase64())
       }
       return MessageRelaxed.internal(
         to: payload.recipientAddress,
