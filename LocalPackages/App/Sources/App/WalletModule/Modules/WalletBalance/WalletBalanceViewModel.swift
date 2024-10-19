@@ -147,7 +147,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let walletsStore: WalletsStore
   private let notificationStore: InternalNotificationsStore
   private let configurationStore: ConfigurationStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   private let urlOpener: URLOpener
@@ -159,7 +159,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
        walletsStore: WalletsStore,
        notificationStore: InternalNotificationsStore,
        configurationStore: ConfigurationStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
        urlOpener: URLOpener,

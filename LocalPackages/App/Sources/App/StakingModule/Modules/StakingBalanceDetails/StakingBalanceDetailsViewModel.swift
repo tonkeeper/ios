@@ -76,7 +76,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let balanceStore: ProcessedBalanceStore
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -91,7 +91,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        balanceStore: ProcessedBalanceStore,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet

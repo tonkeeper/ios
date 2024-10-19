@@ -95,7 +95,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   private let wallet: Wallet
   private let paginationLoader: HistoryPaginationLoader
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let decryptedCommentStore: DecryptedCommentStore
   private let nftService: NFTService
   private let cacheProvider: HistoryListCacheProvider
@@ -107,7 +107,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   init(wallet: Wallet,
        paginationLoader: HistoryPaginationLoader,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        decryptedCommentStore: DecryptedCommentStore,
        nftService: NFTService,
        cacheProvider: HistoryListCacheProvider,
@@ -178,7 +178,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     switch event {
     case .didUpdateIsSecureMode:
       queue.async { [weak self] in

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSettingsV3Store.State> {
+public final class AppSettingsStore: StoreV3<AppSettingsStore.Event, AppSettingsStore.State> {
   public struct State {
     public var isSecureMode: Bool
   }

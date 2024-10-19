@@ -55,13 +55,13 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private var nft: NFT
   private let wallet: Wallet
   private let dnsService: DNSService
-  private let appSetttingsStore: AppSettingsV3Store
+  private let appSetttingsStore: AppSettingsStore
   private let walletNftManagementStore: WalletNFTsManagementStore
 
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
-       appSetttingsStore: AppSettingsV3Store,
+       appSetttingsStore: AppSettingsStore,
        walletNftManagementStore: WalletNFTsManagementStore) {
     self.nft = nft
     self.wallet = wallet

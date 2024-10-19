@@ -6,7 +6,7 @@ struct WalletsListAssembly {
   private init() {}
   static func module(model: WalletsListModel,
                      totalBalancesStore: TotalBalanceStore,
-                     appSettingsStore: AppSettingsV3Store,
+                     appSettingsStore: AppSettingsStore,
                      decimalAmountFormatter: DecimalAmountFormatter,
                      amountFormatter: AmountFormatter) -> MVVMModule<WalletsListViewController, WalletsListModuleOutput, Void> {
     let viewModel = WalletsListViewModelImplementation(

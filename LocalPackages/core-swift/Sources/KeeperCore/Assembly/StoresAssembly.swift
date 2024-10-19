@@ -287,12 +287,12 @@ public final class StoresAssembly {
     }
   }
   
-  private weak var _appSettingsStore: AppSettingsV3Store?
-  public var appSettingsStore: AppSettingsV3Store {
+  private weak var _appSettingsStore: AppSettingsStore?
+  public var appSettingsStore: AppSettingsStore {
     if let appSettingsStore = _appSettingsStore {
       return appSettingsStore
     } else {
-      let appSettingsStore = AppSettingsV3Store(keeperInfoStore: keeperInfoStore)
+      let appSettingsStore = AppSettingsStore(keeperInfoStore: keeperInfoStore)
       _appSettingsStore = appSettingsStore
       return appSettingsStore
     }

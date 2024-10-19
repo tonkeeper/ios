@@ -46,13 +46,13 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   // MARK: - Dependencies
   
   private let tokenPickerModel: TokenPickerModel
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(tokenPickerModel: TokenPickerModel,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        amountFormatter: AmountFormatter) {
     self.tokenPickerModel = tokenPickerModel
     self.appSettingsStore = appSettingsStore

@@ -69,7 +69,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   private let model: WalletsListModel
   private let totalBalancesStore: TotalBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -77,7 +77,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   init(model: WalletsListModel,
        totalBalancesStore: TotalBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
@@ -250,7 +250,7 @@ private extension WalletsListViewModelImplementation {
     }
   }
   
-  func didAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  func didAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     switch event {
     case .didUpdateIsSecureMode:
       syncQueue.async {

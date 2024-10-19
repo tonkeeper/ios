@@ -69,7 +69,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
@@ -77,7 +77,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.wallet = wallet

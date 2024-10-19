@@ -20,13 +20,13 @@ final class WalletTotalBalanceModel {
   
   private let walletsStore: WalletsStore
   private let totalBalanceStore: TotalBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let backgroundUpdateStore: BackgroundUpdateStore
   private let stateLoader: WalletStateLoader
   
   init(walletsStore: WalletsStore,
        totalBalanceStore: TotalBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        backgroundUpdateStore: BackgroundUpdateStore,
        stateLoader: WalletStateLoader) {
     self.walletsStore = walletsStore
@@ -95,7 +95,7 @@ final class WalletTotalBalanceModel {
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     Task {
       await self.actor.addTask(block: { try await self.updateModel() })
     }

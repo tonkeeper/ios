@@ -31,12 +31,12 @@ final class WalletBalanceBalanceModel {
   private let walletsStore: WalletsStore
   private let balanceStore: ManagedBalanceStore
   private let stackingPoolsStore: StakingPoolsStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   
   init(walletsStore: WalletsStore,
        balanceStore: ManagedBalanceStore,
        stackingPoolsStore: StakingPoolsStore,
-       appSettingsStore: AppSettingsV3Store) {
+       appSettingsStore: AppSettingsStore) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.stackingPoolsStore = stackingPoolsStore
@@ -123,7 +123,7 @@ final class WalletBalanceBalanceModel {
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     Task {
       await self.actor.addTask(block: { await self.updateItems() })
     }
