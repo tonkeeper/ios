@@ -228,6 +228,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
           self?.sendEvent(.didDeleteWallet(wallet: wallet))
           self?.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
         }
+        completion(state)
       }
     }
   }
@@ -239,8 +240,9 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
       guard let self else { return }
       updateState { _ in
         return StateUpdate(newState: .empty)
-      } completion: { [weak self] _ in
+      } completion: { [weak self] state in
         self?.sendEvent(.didDeleteAll)
+        completion(state)
       }
     }
   }
@@ -260,6 +262,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
         return StateUpdate(newState: state)
       } completion: { [weak self] _ in
         self?.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
+        completion(state)
       }
     }
   }
@@ -281,6 +284,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
         return StateUpdate(newState: state)
       } completion: { [weak self] _ in
         self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+        completion(state)
       }
     }
   }
@@ -302,6 +306,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
         return StateUpdate(newState: state)
       } completion: { [weak self] _ in
         self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+        completion(state)
       }
     }
   }
