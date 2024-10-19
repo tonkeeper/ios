@@ -44,23 +44,15 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
   }
   
   public var wallets: [Wallet] {
-    switch getState() {
-    case .empty:
-      return []
-    case .wallets(let wallets):
-      return wallets.wallets
-    }
+    state.wallets
   }
   
   public var activeWallet: Wallet {
     get throws {
-      switch state {
-      case .empty: throw Error.noWallets
-      case .wallets(let state): return state.activeWalelt
-      }
+      try state.activeWallet
     }
   }
-
+  
   private let keeperInfoStore: KeeperInfoStore
   
   public override func createInitialState() -> State {
@@ -81,17 +73,90 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
     }
   }
   
-  public func addWallets(_ wallets: [Wallet], completion: @escaping (State) -> Void) {
+  @discardableResult
+  public func makeWalletActive(_ wallet: Wallet) async -> State {
+    return await withCheckedContinuation { continuation in
+      makeWalletActive(wallet) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func updateWalletMetaData(_ wallet: Wallet,
+                                   metaData: WalletMetaData) async -> State {
+    return await withCheckedContinuation { continuation in
+      updateWalletMetaData(wallet, metaData: metaData) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func deleteWallet(_ wallet: Wallet) async -> State {
+    return await withCheckedContinuation { continuation in
+      deleteWallet(wallet) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func deleteAllWallets() async -> State {
+    return await withCheckedContinuation { continuation in
+      deleteAllWallets() { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func moveWallet(fromIndex: Int, toIndex: Int) async -> State {
+    return await withCheckedContinuation { continuation in
+      moveWallet(fromIndex: fromIndex, toIndex: toIndex) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func setWalletBackupDate(wallet: Wallet,
+                                  backupDate: Date?) async -> State {
+    return await withCheckedContinuation { continuation in
+      setWalletBackupDate(wallet: wallet,
+                          backupDate: backupDate) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func setWalletIsSetupFinished(wallet: Wallet,
+                                       isSetupFinished: Bool) async -> State {
+    return await withCheckedContinuation { continuation in
+      setWalletIsSetupFinished(wallet: wallet,
+                               isSetupFinished: isSetupFinished) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  public func addWallets(_ wallets: [Wallet],
+                         completion: @escaping (State) -> Void) {
     guard !wallets.isEmpty else { return }
+    let activeWallet = wallets[0]
     keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else {
         return KeeperInfo.keeperInfo(wallets: wallets)
       }
       let filter: (Wallet) -> Bool = { wallet in
-        !keeperInfo.wallets.contains(where: { $0.isIdentityEqual(wallet: wallet) })
+        !wallets.contains(where: { $0.isIdentityEqual(wallet: wallet) })
       }
-      let wallets = keeperInfo.wallets + wallets.filter(filter)
-      let updateKeeperInfo = keeperInfo.updateWallets(wallets)
+      let wallets = keeperInfo.wallets.filter(filter) + wallets
+      let updateKeeperInfo = keeperInfo.updateWallets(
+        wallets,
+        activeWallet: activeWallet
+      )
       return updateKeeperInfo
     } completion: { [weak self] keeperInfo in
       guard let self else { return }
@@ -100,128 +165,144 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
         return StateUpdate(newState: state)
       } completion: { [weak self] state in
         self?.sendEvent(.didAddWallets(wallets: wallets))
+        self?.sendEvent(.didChangeActiveWallet(wallet: activeWallet))
         completion(state)
       }
     }
   }
   
-  public func setWalletActive(_ wallet: Wallet) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+  public func makeWalletActive(_ wallet: Wallet,
+                               completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      let updatedKeeperInfo = keeperInfo.updateActiveWallet(wallet)
-      return updatedKeeperInfo
-    }
-    
-    await setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      self.sendEvent(.didChangeActiveWallet(wallet: wallet))
-    }
-  }
-
-  public func setWallet(_ wallet: Wallet, metaData: WalletMetaData) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      guard let keeperInfo else { return nil }
-      let updated = keeperInfo.updateWallet(wallet, metaData: metaData)
-      return updated.keeperInfo
-    }
-    
-    await setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      var updatedWallet = wallet
-      updatedWallet.metaData = metaData
-      self.sendEvent(.didUpdateWalletMetaData(wallet: updatedWallet))
-    }
-  }
-  
-  public func deleteWallet(_ wallet: Wallet) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      guard let keeperInfo else { return nil }
-      let updatedKeeperInfo = keeperInfo.deleteWallet(wallet)
-      return updatedKeeperInfo
-    }
-    
-    await setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { state in
-      switch state {
-      case .empty:
-        self.sendEvent(.didDeleteAll)
-      case .wallets(let walletsState):
-        self.sendEvent(.didDeleteWallet(wallet: wallet))
-        self.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
+      let updateKeeperInfo = keeperInfo.updateActiveWallet(wallet)
+      return updateKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        self?.sendEvent(.didChangeActiveWallet(wallet: wallet))
+        completion(state)
       }
     }
   }
   
-  public func deleteAllWallets() async {
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+  public func updateWalletMetaData(_ wallet: Wallet,
+                                   metaData: WalletMetaData,
+                                   completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updateKeeperInfo = keeperInfo.updateWallet(wallet, metaData: metaData).keeperInfo
+      return updateKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        guard let wallet = state.wallets.first(where: { $0 == wallet }) else { return }
+        self?.sendEvent(.didUpdateWalletMetaData(wallet: wallet))
+        completion(state)
+      }
+    }
+  }
+  
+  public func deleteWallet(_ wallet: Wallet,
+                           completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.deleteWallet(wallet)
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        switch state {
+        case .empty:
+          self?.sendEvent(.didDeleteAll)
+        case .wallets(let walletsState):
+          self?.sendEvent(.didDeleteWallet(wallet: wallet))
+          self?.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
+        }
+      }
+    }
+  }
+  
+  public func deleteAllWallets(completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
       return nil
-    }
-    await self.setState { _ in
-      return StateUpdate(newState: .empty)
-    } notify: { _ in
-      self.sendEvent(.didDeleteAll)
-    }
-  }
-  
-  public func moveWallet(fromIndex: Int, toIndex: Int) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      guard let keeperInfo else { return nil }
-      let updated = keeperInfo.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
-      return updated
-    }
-    await self.setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      self.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      updateState { _ in
+        return StateUpdate(newState: .empty)
+      } completion: { [weak self] _ in
+        self?.sendEvent(.didDeleteAll)
+      }
     }
   }
   
-  public func setWalletBackupDate(wallet: Wallet, backupDate: Date?) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+  public func moveWallet(fromIndex: Int, toIndex: Int, completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      let setupSettings = WalletSetupSettings(
-        backupDate: backupDate,
-        isSetupFinished: wallet.setupSettings.isSetupFinished
+      let updatedKeeperInfo = keeperInfo.moveWallet(
+        fromIndex: fromIndex,
+        toIndex: toIndex
       )
-      let updated = keeperInfo.updateWallet(
-        wallet, 
-        setupSettings: setupSettings
-      )
-      return updated.keeperInfo
-    }
-    await self.setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      var wallet = wallet
-      wallet.setupSettings = WalletSetupSettings(backupDate: backupDate, 
-                                                 isSetupFinished: wallet.setupSettings.isSetupFinished)
-      self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] _ in
+        self?.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
+      }
     }
   }
   
-  public func setWalletIsSetupFinished(wallet: Wallet, isSetupFinished: Bool) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+  public func setWalletBackupDate(wallet: Wallet,
+                                  backupDate: Date?,
+                                  completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      let setupSettings = WalletSetupSettings(
-        backupDate: wallet.setupSettings.backupDate,
+      let updatedKeeperInfo = keeperInfo.updateWalletBackupDate(
+        wallet,
+        backupDate: backupDate
+      )
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] _ in
+        self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+      }
+    }
+  }
+  
+  public func setWalletIsSetupFinished(wallet: Wallet,
+                                       isSetupFinished: Bool,
+                                       completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.updateWalletIsSetupFinished(
+        wallet,
         isSetupFinished: isSetupFinished
       )
-      let updated = keeperInfo.updateWallet(
-        wallet,
-        setupSettings: setupSettings
-      )
-      return updated.keeperInfo
-    }
-    await self.setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      var wallet = wallet
-      wallet.setupSettings = WalletSetupSettings(backupDate: wallet.setupSettings.backupDate,
-                                                 isSetupFinished: isSetupFinished)
-      self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] _ in
+        self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+      }
     }
   }
   
@@ -235,7 +316,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
 }
 
 private extension KeeperInfo {
-
+  
   static func keeperInfo(wallets: [Wallet]) -> KeeperInfo {
     let keeperInfo = KeeperInfo(
       wallets: wallets,

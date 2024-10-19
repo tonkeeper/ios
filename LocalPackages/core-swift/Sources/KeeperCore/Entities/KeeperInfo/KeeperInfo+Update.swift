@@ -120,6 +120,22 @@ extension KeeperInfo {
     return updateWallets(updatedWallets)
   }
   
+  func updateWalletBackupDate(_ wallet: Wallet, backupDate: Date?) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: backupDate,
+      isSetupFinished: wallet.setupSettings.isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
+  func updateWalletIsSetupFinished(_ wallet: Wallet, isSetupFinished: Bool) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: wallet.setupSettings.backupDate,
+      isSetupFinished: isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
   // MARK: - Currency
   
   func updateCurrency(_ currency: Currency) -> KeeperInfo {

@@ -102,7 +102,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.openHistoryTab()
         if let wallet = notification.userInfo?["wallet"] as? Wallet {
           Task {
-            await self.keeperCoreMainAssembly.storesAssembly.walletsStore.setWalletActive(wallet)
+            await self.keeperCoreMainAssembly.storesAssembly.walletsStore.makeWalletActive(wallet)
           }
         }
     }
@@ -577,7 +577,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       guard let self else { return }
       let walletsStore = self.keeperCoreMainAssembly.storesAssembly.walletsStore
       Task {
-        await walletsStore.setWallet(
+        await walletsStore.updateWalletMetaData(
           wallet,
           metaData: WalletMetaData(customizeWalletModel: model)
         )

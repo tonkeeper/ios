@@ -60,7 +60,7 @@ final class WalletsPickerListModel: WalletsListModel {
     Task {
       do {
         guard try await walletsStore.activeWallet != wallet else { return }
-        await walletsStore.setWalletActive(wallet)
+        await walletsStore.makeWalletActive(wallet)
       } catch { return  }
     }
   }

@@ -220,7 +220,7 @@ private extension SettingsCoordinator {
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
-      await walletsStore.setWallet(
+      await walletsStore.updateWalletMetaData(
         wallet,
         metaData: WalletMetaData(customizeWalletModel: model)
       )
