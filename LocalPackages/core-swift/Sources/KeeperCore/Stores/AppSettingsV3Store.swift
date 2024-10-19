@@ -12,7 +12,7 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
   
   private let keeperInfoStore: KeeperInfoStore
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   

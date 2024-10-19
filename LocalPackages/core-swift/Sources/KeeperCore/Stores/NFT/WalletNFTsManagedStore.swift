@@ -35,7 +35,7 @@ public final class WalletNFTsManagedStore: StoreV3<WalletNFTsManagedStore.Event,
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     calculateState()
   }
   

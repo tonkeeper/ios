@@ -14,7 +14,7 @@ public final class TonRatesStore: StoreV3<TonRatesStore.Event, TonRatesStore.Sta
     super.init(state: [])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     do {
       return try repository.getRates(jettons: []).ton
     } catch {

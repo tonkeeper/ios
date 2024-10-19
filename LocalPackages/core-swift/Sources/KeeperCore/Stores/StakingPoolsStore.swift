@@ -17,7 +17,7 @@ public final class StakingPoolsStore: StoreV3<StakingPoolsStore.Event, StakingPo
     super.init(state: [:])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in

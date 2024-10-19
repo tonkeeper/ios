@@ -43,7 +43,7 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
     setupObservers()
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let balanceStates = balanceStore.getState()
     let tokenManagementState = tokenManagementStore.getState()
     var state = State()

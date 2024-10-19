@@ -23,15 +23,22 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
     
     case empty
     case wallets(Wallets)
-  }
-  
-  public var stateWallets: State.Wallets {
-    get throws {
-      switch getState() {
+    
+    public var wallets: [Wallet] {
+      switch self {
       case .empty:
-        throw Error.noWallets
+        return []
       case .wallets(let wallets):
-        return wallets
+        return wallets.wallets
+      }
+    }
+    
+    public var activeWallet: Wallet {
+      get throws {
+        switch self {
+        case .empty: throw Error.noWallets
+        case .wallets(let state): return state.activeWalelt
+        }
       }
     }
   }
@@ -45,27 +52,18 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
     }
   }
   
-  public func getActiveWallet() throws -> Wallet {
-    switch getState() {
-    case .empty:
-      throw Error.noWallets
-    case .wallets(let wallets):
-      return wallets.activeWalelt
-    }
-  }
-  
-  public func getActiveWallet() async throws -> Wallet {
-    switch await getState() {
-    case .empty:
-      throw Error.noWallets
-    case .wallets(let wallets):
-      return wallets.activeWalelt
+  public var activeWallet: Wallet {
+    get throws {
+      switch state {
+      case .empty: throw Error.noWallets
+      case .wallets(let state): return state.activeWalelt
+      }
     }
   }
 
   private let keeperInfoStore: KeeperInfoStore
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   
@@ -74,29 +72,36 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
     super.init(state: State.empty)
   }
   
-  public func addWallets(_ wallets: [Wallet]) async {
-    guard !wallets.isEmpty else { return }
-    
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      if let keeperInfo {
-        let updatedWallets = keeperInfo.wallets
-          .filter { keeperInfoWallet in !wallets.contains(where: { $0.identity == keeperInfoWallet.identity }) }
-        + wallets
-        let updatedKeeperInfo = keeperInfo.updateWallets(
-          updatedWallets,
-          activeWallet: wallets[0]
-        )
-        return updatedKeeperInfo
-      } else {
-        return KeeperInfo.keeperInfo(wallets: wallets)
+  @discardableResult
+  public func addWallets(_ wallets: [Wallet]) async -> State {
+    return await withCheckedContinuation { continuation in
+      addWallets(wallets) { state in
+        continuation.resume(returning: state)
       }
     }
-    
-    await setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: { _ in
-      self.sendEvent(.didAddWallets(wallets: wallets))
-      self.sendEvent(.didChangeActiveWallet(wallet: wallets[0]))
+  }
+  
+  public func addWallets(_ wallets: [Wallet], completion: @escaping (State) -> Void) {
+    guard !wallets.isEmpty else { return }
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else {
+        return KeeperInfo.keeperInfo(wallets: wallets)
+      }
+      let filter: (Wallet) -> Bool = { wallet in
+        !keeperInfo.wallets.contains(where: { $0.isIdentityEqual(wallet: wallet) })
+      }
+      let wallets = keeperInfo.wallets + wallets.filter(filter)
+      let updateKeeperInfo = keeperInfo.updateWallets(wallets)
+      return updateKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        self?.sendEvent(.didAddWallets(wallets: wallets))
+        completion(state)
+      }
     }
   }
   

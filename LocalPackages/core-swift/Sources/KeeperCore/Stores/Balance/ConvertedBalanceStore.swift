@@ -30,7 +30,7 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     let balanceStates = balanceStore.getState()
     let tonRates = tonRatesStore.getState()

@@ -87,7 +87,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
     self.walletNotificationStore = walletNotificationStore
     self.showWalletPicker = showWalletPicker
     
-    self.selectedWallet = try? walletsStore.getActiveWallet()
+    self.selectedWallet = try? walletsStore.activeWallet
   }
 }
 

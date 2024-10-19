@@ -6,7 +6,7 @@ public final class RegionStore: StoreV3<RegionStore.Event, SelectedCountry> {
     case didUpdateRegion(_ country: SelectedCountry)
   }
 
-  public override var initialState: SelectedCountry {
+  public override func createInitialState() -> SelectedCountry {
     if let info = keeperInfoStore.getState() {
       info.country
     } else {

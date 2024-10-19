@@ -14,7 +14,7 @@ public final class NFTStore: StoreV3<NFTStore.Event, NFTStore.State> {
     super.init(state: Void())
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     Void()
   }
   

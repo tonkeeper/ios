@@ -43,7 +43,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
     setupObservers()
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     let balanceStates = balanceStore.getState()
     let tonRates = tonRatesStore.getState()

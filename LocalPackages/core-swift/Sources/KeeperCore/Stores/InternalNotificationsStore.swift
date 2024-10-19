@@ -10,7 +10,7 @@ public final class InternalNotificationsStore: StoreV3<InternalNotificationsStor
     super.init(state: [])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     []
   }
   

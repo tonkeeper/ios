@@ -18,7 +18,7 @@ public final class BackgroundUpdateStore: StoreV3<BackgroundUpdateStore.Event, B
     super.init(state: [:])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     [:]
   }
   

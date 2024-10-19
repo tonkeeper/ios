@@ -42,7 +42,8 @@ final class WalletsPickerListModel: WalletsListModel {
   var didUpdateState: ((WalletsListModelState) -> Void)?
   
   func getState() -> WalletsListModelState {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return WalletsListModelState(
         wallets: [],
         selectedWallet: nil
@@ -51,14 +52,14 @@ final class WalletsPickerListModel: WalletsListModel {
     
     return WalletsListModelState(
       wallets: state.wallets,
-      selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
+      selectedWallet: state.wallets.firstIndex(of: activeWallet)
     )
   }
   
   func selectWallet(wallet: Wallet) {
     Task {
       do {
-        guard try await walletsStore.getActiveWallet() != wallet else { return }
+        guard try await walletsStore.activeWallet != wallet else { return }
         await walletsStore.setWalletActive(wallet)
       } catch { return  }
     }
@@ -71,13 +72,14 @@ final class WalletsPickerListModel: WalletsListModel {
   }
   
   private func updateState() {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return
     }
     didUpdateState?(
       WalletsListModelState(
         wallets: state.wallets,
-        selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
+        selectedWallet: state.wallets.firstIndex(of: activeWallet)
       )
     )
   }
@@ -103,7 +105,8 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didUpdateState: ((WalletsListModelState) -> Void)?
   
   func getState() -> WalletsListModelState {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return WalletsListModelState(
         wallets: [],
         selectedWallet: nil

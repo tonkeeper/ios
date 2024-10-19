@@ -64,7 +64,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     addObservers()
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     State()
   }
   

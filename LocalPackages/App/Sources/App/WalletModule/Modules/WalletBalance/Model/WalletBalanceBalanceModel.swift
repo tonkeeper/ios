@@ -60,7 +60,7 @@ final class WalletBalanceBalanceModel {
   }
   
   func getItems() throws -> BalanceListItems {
-    let activeWallet = try walletsStore.getActiveWallet()
+    let activeWallet = try walletsStore.activeWallet
     let isSecureMode = appSettingsStore.getState().isSecureMode
     let balanceState = balanceStore.getState()[activeWallet]
     let stakingPools = stackingPoolsStore.getState()[activeWallet]
@@ -73,7 +73,7 @@ final class WalletBalanceBalanceModel {
   }
   
   func getItems() async throws -> BalanceListItems {
-    let activeWallet = try await walletsStore.getActiveWallet()
+    let activeWallet = try await walletsStore.activeWallet
     let isSecureMode = await appSettingsStore.getState().isSecureMode
     let balanceState = await balanceStore.getState()[activeWallet]
     let stakingPools = await stackingPoolsStore.getState()[activeWallet]

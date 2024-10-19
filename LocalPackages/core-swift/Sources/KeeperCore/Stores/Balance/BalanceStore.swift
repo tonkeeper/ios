@@ -27,7 +27,7 @@ public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State>
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in

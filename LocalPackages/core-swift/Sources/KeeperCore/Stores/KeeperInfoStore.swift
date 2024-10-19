@@ -12,23 +12,30 @@ public final class KeeperInfoStore: StoreV3<KeeperInfoStore.Event, KeeperInfo?> 
     super.init(state: nil)
   }
   
-  public override var initialState: KeeperInfo? {
+  public override func createInitialState() -> KeeperInfo? {
     try? self.keeperInfoRepository.getKeeperInfo()
   }
-
-  @discardableResult
-  public func updateKeeperInfo(_ block: @escaping (KeeperInfo?) -> KeeperInfo?) async -> KeeperInfo? {
-    let newState = await setState { [keeperInfoRepository] current in
-      if let updated = block(current) {
-        try? keeperInfoRepository.saveKeeperInfo(updated)
-        return StateUpdate(newState: updated)
-      } else {
+  
+  public func updateKeeperInfo(_ updateBlock: @escaping (KeeperInfo?) -> KeeperInfo?,
+                               completion: ((KeeperInfo?) -> Void)? = nil) {
+    updateState { [keeperInfoRepository] keeperInfo in
+      guard let newState = updateBlock(keeperInfo) else {
         try? keeperInfoRepository.removeKeeperInfo()
         return StateUpdate(newState: nil)
       }
-    } notify: { state in
-      self.sendEvent(.didUpdateKeeperInfo(state))
+      try? keeperInfoRepository.saveKeeperInfo(newState)
+      return StateUpdate(newState: newState)
+    } completion: { [weak self] updatedState in
+      self?.sendEvent(.didUpdateKeeperInfo(updatedState))
+      completion?(updatedState)
     }
-    return newState
+  }
+  
+  public func updateKeeperInfo(_ updateBlock: @escaping (KeeperInfo?) -> KeeperInfo?) async -> KeeperInfo? {
+    return await withCheckedContinuation { continuation in
+      updateKeeperInfo(updateBlock) { updatedState in
+        continuation.resume(returning: updatedState)
+      }
+    }
   }
 }

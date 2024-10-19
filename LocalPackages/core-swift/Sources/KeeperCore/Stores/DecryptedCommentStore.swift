@@ -18,7 +18,7 @@ public final class DecryptedCommentStore: StoreV3<DecryptedCommentStore.Event, D
     super.init(state: [:])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     [:]
   }
   

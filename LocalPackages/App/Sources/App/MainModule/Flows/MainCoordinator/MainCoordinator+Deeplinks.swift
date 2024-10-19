@@ -30,7 +30,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try await walletsStore.activeWallet
         
         let token: Token
         if let jettonAddress {
@@ -101,14 +101,14 @@ extension MainCoordinator {
   func openBuyDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openBuy(wallet: wallet)
   }
   
   func openStakingDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openStake(wallet: wallet)
   }
   
@@ -124,7 +124,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try await walletsStore.activeWallet
         let stakingPools = try await stakingService.loadStakingPools(wallet: wallet)
         await stakingStore.setStackingPools(stakingPools, wallet: wallet)
         guard let stakingPool = stakingPools.first(where: { $0.address == poolAddress }) else {
@@ -219,7 +219,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try await walletsStore.activeWallet
         let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret
         let currency = await currencyStore.getState()
         
@@ -260,7 +260,7 @@ extension MainCoordinator {
   func openSwapDeeplink(fromToken: String?, toToken: String?) {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
   
@@ -276,7 +276,7 @@ extension MainCoordinator {
   
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try await walletsStore.activeWallet
         let event = try await service.loadEvent(wallet: wallet, eventId: eventId)
         guard let action = event.actions.first else {
           await MainActor.run {

@@ -28,7 +28,7 @@ public final class BrowserConnectedController {
   
   public func getConnectedApps() -> [ConnectedApp] {
     do {
-      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.getActiveWallet())
+      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.activeWallet)
         .apps
         .map { item in
           ConnectedApp(

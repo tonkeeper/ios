@@ -19,7 +19,7 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let balanceStates = managedBalanceStore.getState()
     let total = balanceStates.mapValues {
       self.recalculateTotalBalance($0)

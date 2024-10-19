@@ -48,7 +48,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       [weak self] dapp,
       completion in
       guard let self,
-      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
@@ -60,7 +60,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     messageHandler.disconnect = {
       [weak self] dapp in
       guard let self,
-      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
       try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
     }
 
@@ -144,7 +144,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private func openSend(dapp: Dapp,
                         appRequest: TonConnect.AppRequest,
                         completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
-    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet(),
+    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
           let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
           let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
       completion(.error(.unknownApp))

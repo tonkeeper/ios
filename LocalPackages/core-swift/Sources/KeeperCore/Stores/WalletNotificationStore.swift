@@ -20,7 +20,7 @@ public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Even
     super.init(state: [:])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     getState(keeperInfo: keeperInfoStore.getState())
   }
 

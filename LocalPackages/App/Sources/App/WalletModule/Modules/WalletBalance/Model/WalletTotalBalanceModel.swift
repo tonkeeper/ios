@@ -57,7 +57,7 @@ final class WalletTotalBalanceModel {
   }
   
   func getState() throws -> State {
-    let activeWallet = try walletsStore.getActiveWallet()
+    let activeWallet = try walletsStore.activeWallet
     let isSecureMode = appSettingsStore.getState().isSecureMode
     let totalBalanceState = totalBalanceStore.getState()[activeWallet]
     let backgroundUpdateState = backgroundUpdateStore.getState()[activeWallet] ?? .connecting

@@ -39,7 +39,7 @@ public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in

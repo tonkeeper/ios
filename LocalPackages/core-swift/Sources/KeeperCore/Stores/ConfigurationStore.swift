@@ -17,7 +17,7 @@ public final class ConfigurationStore: StoreV3<ConfigurationStore.Event, Configu
     super.init(state: State(configuration: .empty, loadingTask: nil))
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     do {
       return State(configuration: try repository.configuration, loadingTask: nil)
     } catch {

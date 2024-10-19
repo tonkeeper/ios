@@ -21,7 +21,7 @@ public final class WalletNFTsManagementStore: StoreV3<WalletNFTsManagementStore.
     super.init(state: NFTsManagementState(nftStates: [:]))
   }
   
-  public override var initialState: NFTsManagementState {
+  public override func createInitialState() -> NFTsManagementState {
     accountNFTsManagementRepository.getState(wallet: wallet)
   }
   

@@ -7,7 +7,7 @@ public final class CurrencyStore: StoreV3<CurrencyStore.Event, Currency> {
   
   private let keeperInfoStore: KeeperInfoStore
   
-  public override var initialState: Currency {
+  public override func createInitialState() -> Currency {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   

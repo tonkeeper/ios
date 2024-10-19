@@ -15,7 +15,7 @@ public final class FiatMethodsStore: StoreV3<FiatMethodsStore.Event, FiatMethods
     super.init(state: .none)
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     .none
   }
   

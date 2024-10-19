@@ -33,7 +33,7 @@ public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.Sta
     super.init(state: .defaultState)
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     State.state(keeperInfo: keeperInfoStore.getState())
   }
   
