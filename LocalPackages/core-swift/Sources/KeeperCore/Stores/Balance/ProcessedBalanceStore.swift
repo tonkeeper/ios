@@ -20,7 +20,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   public typealias State = [Wallet: ProcessedBalanceState]
   
   public enum Event {
-    case didUpdateProccessedBalance(state: ProcessedBalanceState, wallet: Wallet)
+    case didUpdateProccessedBalance(wallet: Wallet)
   }
   
   private let walletsStore: WalletsStore
@@ -45,21 +45,8 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   
   public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
-    let balanceStates = balanceStore.getState()
-    let tonRates = tonRatesStore.getState()
-    let stakingPools = stakingPoolsStore.getState()
-    let currency = currencyStore.getState()
-    
-    var state = State()
-    for wallet in wallets {
-      state[wallet] = calculateState(
-        wallet: wallet,
-        balanceState: balanceStates[wallet],
-        tonRates: tonRates,
-        stakingPools: stakingPools[wallet] ?? [],
-        currency: currency
-      )
-    }
+    guard !wallets.isEmpty else { return [:] }
+    let state = calculateState(wallets: wallets)
     return state
   }
   
@@ -76,62 +63,65 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   }
   
   private func didGetBalanceStoreEvent(_ event: BalanceStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateBalanceState(let wallet):
-        await updateState(wallet: wallet)
-      }
+    switch event {
+    case .didUpdateBalanceState(let wallet):
+      updateState(wallets: [wallet])
     }
   }
   
   private func didGetTonRateStoreEvent(_ event: TonRatesStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateTonRates:
-        let wallets = walletsStore.wallets
-        for wallet in wallets {
-          await updateState(wallet: wallet)
-        }
-      }
+    switch event {
+    case .didUpdateTonRates:
+      let wallets = walletsStore.wallets
+      updateState(wallets: wallets)
     }
+    
   }
   
   private func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateStakingPools(let wallet):
-        await updateState(wallet: wallet)
-      }
+    switch event {
+    case .didUpdateStakingPools(let wallet):
+      updateState(wallets: [wallet])
     }
   }
   
-  private func updateState(wallet: Wallet) async {
-    var proccessedBalanceState: ProcessedBalanceState?
-    await setState { state in
-      let balanceState = self.balanceStore.getState()[wallet]
-      let tonRates = self.tonRatesStore.getState()
-      let stakingPools = self.stakingPoolsStore.getState()[wallet] ?? []
-      let currency = self.currencyStore.getState()
-      
-      var updatedState = state
-      proccessedBalanceState = self.calculateState(
+  private func updateState(wallets: [Wallet]) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
+      let walletsState = self.calculateState(wallets: wallets)
+      let updatedState = state.merging(walletsState, uniquingKeysWith: { $1 })
+      return StateUpdate(newState: updatedState)
+    } completion: { [weak self] _ in
+      wallets.forEach { self?.sendEvent(.didUpdateProccessedBalance(wallet: $0)) }
+    }
+  }
+  
+  private func calculateState(wallets: [Wallet]) -> State {
+    guard !wallets.isEmpty else { return [:] }
+    let balanceStates = balanceStore.state
+    let tonRates = tonRatesStore.state
+    let currency = currencyStore.state
+    
+    let rates = tonRates.first(where: { $0.currency == currency })
+    
+    var state = State()
+    for wallet in wallets {
+      guard let walletBalanceState = balanceStates[wallet] else { continue }
+      let stakingPools = stakingPoolsStore.state[wallet] ?? []
+      state[wallet] = calculateState(
         wallet: wallet,
-        balanceState: balanceState,
-        tonRates: tonRates,
+        balanceState: walletBalanceState,
+        tonRates: rates,
         stakingPools: stakingPools,
         currency: currency
       )
-      updatedState[wallet] = proccessedBalanceState
-      return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      guard let proccessedBalanceState else { return }
-      self.sendEvent(.didUpdateProccessedBalance(state: proccessedBalanceState, wallet: wallet))
     }
+    return state
   }
   
   private func calculateState(wallet: Wallet,
                               balanceState: WalletBalanceState?,
-                              tonRates: [Rates.Rate],
+                              tonRates: Rates.Rate?,
                               stakingPools: [StackingPoolInfo],
                               currency: Currency) -> ProcessedBalanceState? {
     guard let balanceState = balanceState else {
@@ -226,12 +216,12 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   }
   
   private func processTonBalance(tonBalance: TonBalance,
-                                 tonRates: [Rates.Rate],
+                                 tonRates: Rates.Rate?,
                                  currency: Currency) -> ProcessedBalanceTonItem {
     let converted: Decimal
     let price: Decimal
     let diff: String?
-    if let tonRate = tonRates.first(where: { $0.currency == currency }) {
+    if let tonRate = tonRates {
       converted = RateConverter().convertToDecimal(
         amount: BigUInt(tonBalance.amount),
         amountFractionLength: TonInfo.fractionDigits,
@@ -294,14 +284,14 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   private func processStaking(_ stakingInfo: AccountStackingInfo,
                               stakingPool: StackingPoolInfo?,
                               jetton: ProcessedBalanceJettonItem?,
-                              tonRates: [Rates.Rate],
+                              tonRates: Rates.Rate?,
                               currency: Currency) -> ProcessedBalanceStakingItem {
     var amountConverted: Decimal = 0
     var pendingDepositConverted: Decimal = 0
     var pendingWithdrawConverted: Decimal = 0
     var readyWithdrawConverted: Decimal = 0
     var price: Decimal = 0
-    if let tonRate = tonRates.first(where: { $0.currency == currency }) {
+    if let tonRate = tonRates {
       amountConverted = RateConverter().convertToDecimal(
         amount: BigUInt(stakingInfo.amount),
         amountFractionLength: TonInfo.fractionDigits,

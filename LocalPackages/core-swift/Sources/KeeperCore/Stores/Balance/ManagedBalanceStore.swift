@@ -69,7 +69,7 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
   private func didGetBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
     Task {
       switch event {
-      case .didUpdateProccessedBalance(_, let wallet):
+      case .didUpdateProccessedBalance(let wallet):
         await updateState(wallet: wallet)
       }
     }
