@@ -104,7 +104,7 @@ final class ManageTokensModel {
   
   private func didGetBalanceStateEvent(_ event: ConvertedBalanceStore.Event) {
     switch event {
-    case .didUpdateConvertedBalance(_, let wallet):
+    case .didUpdateConvertedBalance(let wallet):
       guard wallet == self.wallet else { return }
       Task {
         await actor.addTask { [wallet] in

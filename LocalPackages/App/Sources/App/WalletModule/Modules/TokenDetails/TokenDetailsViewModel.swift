@@ -102,7 +102,7 @@ private extension TokenDetailsViewModelImplementation {
   func setupObservations() {
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard wallet == observer.wallet else { return }
         observer.syncQueue.async {
           let balance = observer.balanceStore.getState()[wallet]?.balance

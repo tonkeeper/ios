@@ -5,7 +5,7 @@ public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State>
   public typealias State = [Wallet: WalletBalanceState]
   
   public enum Event {
-    case didUpdateBalanceState(wallet: Wallet, WalletBalanceState)
+    case didUpdateBalanceState(wallet: Wallet)
   }
   
   private let walletsStore: WalletsStore
@@ -16,17 +16,9 @@ public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State>
     self.walletsStore = walletsStore
     self.repository = repository
     super.init(state: [:])
-    walletsStore.addObserver(self) { observer, event in
-      Task {
-        switch event {
-        case .didAddWallets(let wallets):
-          await observer.didAddWallets(wallets)
-        default: break
-        }
-      }
-    }
+    setObservations()
   }
-  
+
   public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
@@ -41,37 +33,52 @@ public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State>
     return state
   }
   
-  public func setBalanceState(_ balanceState: WalletBalanceState, wallet: Wallet) async {
-    await setState { state in
-      try? self.repository.saveWalletBalance(balanceState.walletBalance, 
-                                             for: wallet.friendlyAddress)
-      var updatedState = state
-      updatedState[wallet] = balanceState
-      return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      self.sendEvent(.didUpdateBalanceState(wallet: wallet, balanceState))
+  public func setBalanceState(_ balanceState: WalletBalanceState,
+                              wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      setBalanceState(balanceState, wallet: wallet) {
+        continuation.resume()
+      }
     }
   }
   
-  private func didAddWallets(_ wallets: [Wallet]) async {
-    var observersActions = [(() -> Void)]()
-    await setState { [repository] state in
+  public func setBalanceState(_ balanceState: WalletBalanceState,
+                              wallet: Wallet,
+                              completion: (() -> Void)?) {
+    updateState { state in
+      var updatedState = state
+      updatedState[wallet] = balanceState
+      return StateUpdate(newState: updatedState)
+    } completion: { _ in
+      self.sendEvent(.didUpdateBalanceState(wallet: wallet))
+      completion?()
+    }
+  }
+
+  private func setObservations() {
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didAddWallets(let wallets):
+        observer.updateState(wallets: wallets) { [weak observer] in
+          wallets.forEach { observer?.sendEvent(.didUpdateBalanceState(wallet: $0)) }
+        }
+      default: break
+      }
+    }
+  }
+  
+  private func updateState(wallets: [Wallet], completion: @escaping () -> Void) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
       var updatedState = state
       wallets.forEach { wallet in
         guard state[wallet] == nil else { return }
-        do {
-          let balance = try repository.getBalance(address: wallet.friendlyAddress)
-          updatedState[wallet] = .previous(balance)
-          observersActions.append({
-            self.sendEvent(.didUpdateBalanceState(wallet: wallet, .previous(balance)))
-          })
-        } catch {
-          updatedState[wallet] = nil
-        }
+        guard let balance = try? self.repository.getBalance(address: wallet.friendlyAddress) else { return }
+        updatedState[wallet] = .previous(balance)
       }
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      observersActions.forEach { $0() }
+    } completion: { _ in
+      completion()
     }
   }
 }

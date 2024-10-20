@@ -21,13 +21,24 @@ public final class TonRatesStore: StoreV3<TonRatesStore.Event, TonRatesStore.Sta
       return []
     }
   }
-
+  
   public func setRates(_ rates: [Rates.Rate]) async {
-    await setState { [repository] _ in
+    return await withCheckedContinuation { continuation in
+      setRates(rates) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func setRates(_ rates: [Rates.Rate],
+                       completion: @escaping () -> Void) {
+    updateState { [repository] _ in
       try? repository.saveRates(Rates(ton: rates, jettonsRates: []))
       return StateUpdate(newState: rates)
-    } notify: { state in
+    } completion: { [weak self] state in
+      guard let self else { return }
       self.sendEvent(.didUpdateTonRates(rates: state))
+      completion()
     }
   }
 }

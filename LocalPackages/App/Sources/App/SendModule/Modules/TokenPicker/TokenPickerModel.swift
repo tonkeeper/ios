@@ -26,7 +26,7 @@ final class TokenPickerModel {
     
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet): 
+      case .didUpdateConvertedBalance(let wallet): 
         guard wallet == observer.wallet else { return }
         Task {
           await observer.didUpdateBalanceState()

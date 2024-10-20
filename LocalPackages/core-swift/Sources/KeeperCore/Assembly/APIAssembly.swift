@@ -23,7 +23,6 @@ final class APIAssembly {
   }
   
   lazy var api: API = {
-    print("VVV")
     return API(
       hostProvider: tonApiHostProvider,
       urlSession: URLSession(
@@ -35,7 +34,6 @@ final class APIAssembly {
   }()
   
   lazy var testnetAPI: API = {
-    print("ZZZ")
     return API(
       hostProvider: testnetTonApiHostProvider,
       urlSession: URLSession(

@@ -129,7 +129,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func viewDidLoad() {
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard observer.wallet == wallet else { return }
         DispatchQueue.main.async {
           observer.updateRemaining()

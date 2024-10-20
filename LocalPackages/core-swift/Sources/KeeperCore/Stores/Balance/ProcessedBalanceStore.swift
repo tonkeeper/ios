@@ -78,7 +78,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   private func didGetBalanceStoreEvent(_ event: BalanceStore.Event) {
     Task {
       switch event {
-      case .didUpdateBalanceState(let wallet, _):
+      case .didUpdateBalanceState(let wallet):
         await updateState(wallet: wallet)
       }
     }
