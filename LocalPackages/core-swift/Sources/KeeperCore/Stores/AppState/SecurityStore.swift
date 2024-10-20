@@ -37,6 +37,7 @@ public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.Sta
     State.state(keeperInfo: keeperInfoStore.getState())
   }
   
+  @discardableResult
   public func setIsBiometryEnable(_ isBiometryEnable: Bool) async -> State {
     return await withCheckedContinuation { continuation in
       setIsBiometryEnable(isBiometryEnable) { state in
@@ -45,6 +46,7 @@ public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.Sta
     }
   }
   
+  @discardableResult
   public func setIsLockScreen(_ isLockScreen: Bool) async -> State {
     return await withCheckedContinuation { continuation in
       setIsLockScreen(isLockScreen) { state in
