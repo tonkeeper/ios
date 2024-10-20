@@ -267,7 +267,7 @@ final class StakingInputModelImplementation: StakingInputModel {
 
   func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
     switch event {
-    case .didUpdateStakingPools(_, let wallet):
+    case .didUpdateStakingPools(let wallet):
       guard wallet == wallet else {
         return
       }

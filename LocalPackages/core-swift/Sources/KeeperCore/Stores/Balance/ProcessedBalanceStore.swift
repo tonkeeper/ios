@@ -99,7 +99,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   private func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
     Task {
       switch event {
-      case .didUpdateStakingPools(_, let wallet):
+      case .didUpdateStakingPools(let wallet):
         await updateState(wallet: wallet)
       }
     }
