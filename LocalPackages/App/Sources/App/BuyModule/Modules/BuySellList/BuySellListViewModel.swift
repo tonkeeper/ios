@@ -44,7 +44,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   
   func setSelectedCountry(_ selectedCountry: SelectedCountry) {
     Task {
-      await regionStore.updateRegion(selectedCountry)
+      await regionStore.setRegion(selectedCountry)
 
       await MainActor.run {
         self.selectedCountry = selectedCountry
