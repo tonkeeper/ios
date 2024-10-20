@@ -37,31 +37,53 @@ public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.Sta
     State.state(keeperInfo: keeperInfoStore.getState())
   }
   
-  public func setIsBiometryEnable(_ isBiometryEnable: Bool) async {
-    await setState { state in
-      let updatedState = State(isBiometryEnable: isBiometryEnable,
-                               isLockScreen: state.isLockScreen)
-      return StateUpdate(newState: updatedState)
-    } notify: { state in
-      self.sendEvent(.didUpdateIsBiometryEnabled(isBiometryEnable: state.isBiometryEnable))
-    }
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      let updated = keeperInfo?.updateIsBiometryEnable(isBiometryEnable)
-      return updated
+  public func setIsBiometryEnable(_ isBiometryEnable: Bool) async -> State {
+    return await withCheckedContinuation { continuation in
+      setIsBiometryEnable(isBiometryEnable) { state in
+        continuation.resume(returning: state)
+      }
     }
   }
   
-  public func setIsLockScreen(_ isLockScreen: Bool) async {
-    await setState { state in
-      let updatedState = State(isBiometryEnable: state.isBiometryEnable,
-                               isLockScreen: isLockScreen)
-      return StateUpdate(newState: updatedState)
-    } notify: { state in
-      self.sendEvent(.didUpdateIsLockScreen(isLockScreen: state.isLockScreen))
+  public func setIsLockScreen(_ isLockScreen: Bool) async -> State {
+    return await withCheckedContinuation { continuation in
+      setIsLockScreen(isLockScreen) { state in
+        continuation.resume(returning: state)
+      }
     }
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      let updated = keeperInfo?.updateIsLockScreen(isLockScreen)
-      return updated
+  }
+  
+  public func setIsBiometryEnable(_ isBiometryEnable: Bool,
+                                  completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updateKeeperInfo = keeperInfo?.updateIsBiometryEnable(isBiometryEnable)
+      return updateKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = State.state(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        self?.sendEvent(.didUpdateIsBiometryEnabled(isBiometryEnable: isBiometryEnable))
+        completion(state)
+      }
+    }
+  }
+  
+  public func setIsLockScreen(_ isLockScreen: Bool,
+                              completion: @escaping (State) -> Void) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updateKeeperInfo = keeperInfo?.updateIsLockScreen(isLockScreen)
+      return updateKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = State.state(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] state in
+        self?.sendEvent(.didUpdateIsLockScreen(isLockScreen: isLockScreen))
+        completion(state)
+      }
     }
   }
 }
