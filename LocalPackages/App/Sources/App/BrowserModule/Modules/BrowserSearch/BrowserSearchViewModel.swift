@@ -4,19 +4,16 @@ import KeeperCore
 import TKCore
 import TKLocalize
 
-typealias BrowserSearchSnapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>
-
 protocol BrowserSearchModuleOutput: AnyObject {
   var didSelectDapp: ((Dapp) -> Void)? { get set }
 }
 
 protocol BrowserSearchViewModel: AnyObject {
   var didUpdateEmptyText: ((NSAttributedString) -> Void)? { get set }
-  var didUpdateSnapshot: ((BrowserSearchSnapshot) -> Void)? { get set }
+  var didUpdateSnapshot: ((BrowserSearch.Snapshot) -> Void)? { get set }
   
   func viewDidLoad()
   func searchInput(_ input: String)
-  func goButtonPressed()
 }
 
 final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, BrowserSearchModuleOutput {
@@ -29,7 +26,7 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   var didSelectDapp: ((Dapp) -> Void)?
   
   var didUpdateEmptyText: ((NSAttributedString) -> Void)?
-  var didUpdateSnapshot: ((BrowserSearchSnapshot) -> Void)?
+  var didUpdateSnapshot: ((BrowserSearch.Snapshot) -> Void)?
   
   func viewDidLoad() {
     let emptyText = TKLocales.Browser.Search.placeholder
@@ -45,55 +42,30 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   func searchInput(_ input: String) {
     searchPopularApps(input: input)
   }
-  
-  func goButtonPressed() {
-    if let validUrlSuggestion, let dapp = composeDapp(validUrlSuggestion) {
-      didSelectDapp?(dapp)
-    } else if let app = apps[safe: 0] {
-      didSelectDapp?(app)
-    } else if let suggestion = searchSuggestions[safe: 0],
-              let dapp = composeDapp(suggestion) {
-      didSelectDapp?(dapp)
-    }
-  }
-  
+
   // MARK: - Image Loader
   
   private let imageLoader = ImageLoader()
   
   // MARK: - State
-
-  typealias Snapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>
-  private var snapshot = NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>()
-
-  private var validUrlSuggestion: SearchEngineSuggestion? {
+  
+  private var urlSuggestion: SearchEngineSuggestion? {
     didSet {
-      DispatchQueue.main.async { self.updateSnapshot() }
+      updateSnapshot()
     }
   }
-  private var apps = [Dapp]() {
+  private var dapps = [Dapp]() {
     didSet {
-      DispatchQueue.main.async { self.updateSnapshot() }
+      updateSnapshot()
     }
   }
-
-  private var syncQueue = DispatchQueue(label: #function)
-  private var _searchSuggestions = [SearchEngineSuggestion]()
-  private var searchSuggestions: [SearchEngineSuggestion] {
-    get {
-      return syncQueue.sync {
-        _searchSuggestions
-      }
-    }
-    set {
-      syncQueue.sync {
-        self._searchSuggestions = newValue
-
-        DispatchQueue.main.async { self.updateSnapshot() }
-      }
+  private var searchSuggestions =  [SearchEngineSuggestion]() {
+    didSet {
+      updateSnapshot()
     }
   }
-  private var suggestionTask: Task<(), Error>?
+  
+  private var suggestionsTask: Task<(), Error>?
 
   // MARK: - Dependencies
   
@@ -115,26 +87,32 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
 private extension BrowserSearchViewModelImplementation {
 
   func updateSnapshot() {
-    defer {
-      self.didUpdateSnapshot?(self.snapshot)
+    var snapshot = BrowserSearch.Snapshot()
+    
+    if !dapps.isEmpty || urlSuggestion != nil {
+      snapshot.appendSections([.dapps])
     }
-
-    var snapshot = Snapshot()
-
-    if !apps.isEmpty || validUrlSuggestion != nil {
-      snapshot.appendSections([.apps])
+    
+    if let urlSuggestion {
+      let item = BrowserSearch.Item(
+        identifier: .suggestURLIdentifier,
+        configuration: mapValidURLSuggestion(suggestion: urlSuggestion),
+        onSelection: { [weak self] in
+          guard let self, let dapp = composeDapp(urlSuggestion) else { return }
+          didSelectDapp?(dapp)
+        }
+      )
+      snapshot.appendItems([item], toSection: .dapps)
     }
-
-    if let validUrlSuggestion {
-      let item = mapValidURLSuggestion(suggestion: validUrlSuggestion)
-      snapshot.appendItems([item], toSection: .apps)
+    
+    if !dapps.isEmpty {
+      let items = dapps.map { dapp in
+        return BrowserSearch.Item(identifier: dapp.url.absoluteString, configuration: mapDapp(dapp)) { [weak self] in
+        self?.didSelectDapp?(dapp)
+      }}
+      snapshot.appendItems(items, toSection: .dapps)
     }
-
-    if !apps.isEmpty {
-      let items = apps.map { mapDapp($0) }
-      snapshot.appendItems(items, toSection: .apps)
-    }
-
+    
     if !searchSuggestions.isEmpty {
       let headerModel = BrowserSearchListSectionHeaderView.Model(
         titleModel: TKListTitleView.Model(
@@ -142,19 +120,35 @@ private extension BrowserSearchViewModelImplementation {
           textStyle: .label1
         )
       )
-      let models = searchSuggestions.compactMap { mapSuggestion($0) }
-      snapshot.appendSections([.newSearch(headerModel: headerModel)])
-      snapshot.appendItems(models, toSection: .newSearch(headerModel: headerModel))
+      let section = BrowserSearch.Section.suggests(headerModel: headerModel)
+      
+      snapshot.appendSections([section])
+      snapshot.appendItems(searchSuggestions.compactMap { suggest -> BrowserSearch.Item? in
+        guard let url = suggest.url else { return nil }
+        return BrowserSearch.Item(identifier: url.absoluteString,
+                                  configuration: mapSuggestion(suggest),
+                                  onSelection: { [weak self] in
+          guard let self, let dapp = composeDapp(suggest) else { return }
+          didSelectDapp?(dapp)
+        })
+      }, toSection: section)
     }
-    self.snapshot = snapshot
+    
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems(snapshot.itemIdentifiers)
+    } else {
+      snapshot.reloadItems(snapshot.itemIdentifiers)
+    }
+    
+    didUpdateSnapshot?(snapshot)
   }
 
   func searchPopularApps(input: String) {
     guard !input.isEmpty else {
-      apps = [Dapp]()
-      suggestionTask?.cancel()
+      dapps = [Dapp]()
+      suggestionsTask?.cancel()
       searchSuggestions = [SearchEngineSuggestion]()
-      validUrlSuggestion = nil
+      urlSuggestion = nil
       return
     }
 
@@ -163,175 +157,122 @@ private extension BrowserSearchViewModelImplementation {
       let filtered = popularApps.categories
         .flatMap { $0.apps }
         .filter { $0.name.contains(input) || $0.url.absoluteString.contains(input) }
+        .removingDuplicatedElements()
         .prefix(3)
-      self.apps = Array(filtered)
+      self.dapps = Array(filtered)
     }
 
-    suggestionTask?.cancel()
-    suggestionTask = Task {
+    suggestionsTask?.cancel()
+    suggestionsTask = Task { [weak self] in
+      guard let self else { return }
       if input.isValidURL, let inputURL = URL(string: input) {
-        validUrlSuggestion = .init(title: nil, url: inputURL)
+        await MainActor.run {
+          self.urlSuggestion = .init(title: nil, url: inputURL)
+        }
         //-wait for parse title and compose url-//
 
         if !Task.isCancelled, let searchEngineTitle = await searchEngineService.parseTitleFrom(stringURL: input) {
-          validUrlSuggestion = .init(title: searchEngineTitle.title, url: searchEngineTitle.url)
+          await MainActor.run {
+            self.urlSuggestion = .init(title: searchEngineTitle.title, url: searchEngineTitle.url)
+          }
         }
       } else {
-        validUrlSuggestion = nil
+        await MainActor.run {
+          self.urlSuggestion = nil
+        }
       }
 
-      let searchEngine = appSettingsStore.initialState.searchEngine
+      let searchEngine = await appSettingsStore.getState().searchEngine
       let suggestions = try await searchEngineService.loadSuggestions(
         searchText: input,
         searchEngine: searchEngine)
+        .removingDuplicates()
         .prefix(4)
 
-      guard !Task.isCancelled, !suggestions.isEmpty else { return }
+      guard !Task.isCancelled else { return }
 
-      searchSuggestions = suggestions.compactMap {
-        SearchEngineSuggestion(
-          title: $0,
-          url: searchEngineService.composeSearchURL(input: $0, searchEngine: searchEngine)
-        )
+      await MainActor.run {
+        self.searchSuggestions = suggestions.compactMap {
+          SearchEngineSuggestion(
+            title: $0,
+            url: self.searchEngineService.composeSearchURL(input: $0, searchEngine: searchEngine)
+          )
+        }
       }
     }
   }
 
-  func mapValidURLSuggestion(suggestion: SearchEngineSuggestion) -> TKUIListItemCell.Configuration {
-    let id = UUID().uuidString
-   
+  func mapValidURLSuggestion(suggestion: SearchEngineSuggestion) -> TKListItemCell.Configuration {
     let title = suggestion.title ?? TKLocales.Browser.Search.openLinkPlaceholder
-    let subtitle = suggestion.url?.absoluteString.withTextStyle(.body2, color: .Text.secondary)
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-        title: title.withTextStyle(.label1, color: .Text.primary),
-        tagViewModel: nil,
-        subtitle: subtitle,
-        description: nil
-      ),
-      rightItemConfiguration: nil
-    )
-
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: .image(.TKUIKit.Icons.Size16.linkSmall),
-            tintColor: .Icon.secondary,
-            backgroundColor: .Background.contentAttention,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 12
-          )
+    let caption = suggestion.url?.absoluteString
+    
+    return TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
+          content: .image(TKImageView.Model(image: .image(.TKUIKit.Icons.Size16.linkSmall),
+                                            tintColor: .Icon.secondary,
+                                            size: .auto)),
+          alignment: .center,
+          cornerRadius: 12,
+          backgroundColor: .Background.contentAttention,
+          size: CGSize(width: 44, height: 44)
         ),
-        alignment: .center
-      ),
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: .none
-    )
-
-    return TKUIListItemCell.Configuration(
-      id: id,
-      listItemConfiguration: listItemConfiguration,
-      selectionClosure: { [weak self] in
-        guard let self, let dapp = composeDapp(suggestion) else {
-          return
-        }
-        self.didSelectDapp?(dapp)
-      }
-    )
-  }
-
-  func mapDapp(_ dapp: Dapp, icon: UIImage? = nil) -> TKUIListItemCell.Configuration {
-    let id = UUID().uuidString
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-        title: dapp.name.withTextStyle(.label1, color: .Text.primary),
-        tagViewModel: nil,
-        subtitle: dapp.url.absoluteString.withTextStyle(.body2, color: .Text.secondary),
-        description: nil
-      ),
-      rightItemConfiguration: nil
-    )
-
-    let imageDownloadTask = TKCore.ImageDownloadTask() { [imageLoader] imageView, size, cornerRadius in
-      return imageLoader.loadImage(
-        url: dapp.icon,
-        imageView: imageView,
-        size: size,
-        cornerRadius: cornerRadius
-      )
-    }
-
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: .asyncImage(dapp.icon, imageDownloadTask),
-            tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 16
-          )
-        ),
-        alignment: .center
-      ),
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: .none
-    )
-
-    return TKUIListItemCell.Configuration(
-      id: id,
-      listItemConfiguration: listItemConfiguration,
-      selectionClosure: { [weak self] in
-        self?.didSelectDapp?(dapp)
-      }
-    )
-  }
-
-  func mapSuggestion(_ suggestion: SearchEngineSuggestion) -> TKUIListItemCell.Configuration {
-    let id = UUID().uuidString
-
-    let title = suggestion.title?
-      .withTextStyle(
-        .label1,
-        color: .Text.primary
-      )
-    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
-      title: title,
-      tagViewModel: nil,
-      subtitle: nil,
-      description: nil
-    )
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: leftItemConfiguration,
-      rightItemConfiguration: nil
-    )
-
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .image(
-        TKUIListItemImageIconView.Configuration(
-          image: .image(.TKUIKit.Icons.Size16.magnifyingGlass),
-          tintColor: .Icon.secondary,
-          backgroundColor: .clear,
-          size: CGSize(width: 16, height: 16),
-          cornerRadius: 0
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: title
+          ),
+          captionViewsConfigurations: [
+            TKListItemTextView.Configuration(
+              text: caption,
+              color: .Text.secondary,
+              textStyle: .body2)
+          ]
         )
-      ),
-      alignment: .center
+      )
     )
-    let listConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: iconConfiguration,
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: .none)
-    return TKUIListItemCell.Configuration(
-      id: id,
-      listItemConfiguration: listConfiguration,
-      selectionClosure: { [weak self] in
-        guard let dapp = self?.composeDapp(suggestion) else {
-          return
-        }
-        self?.didSelectDapp?(dapp)
-      }
+  }
+
+  func mapDapp(_ dapp: Dapp) -> TKListItemCell.Configuration {
+    TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
+          content: .image(TKImageView.Model(image: .urlImage(dapp.icon), size: .size(CGSize(width: 44, height: 44)), corners: .cornerRadius(cornerRadius: 12))),
+          alignment: .center,
+          cornerRadius: 12,
+          backgroundColor: .clear,
+          size: CGSize(width: 44, height: 44)
+        ),
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: dapp.name
+          ),
+          captionViewsConfigurations: [
+            TKListItemTextView.Configuration(
+              text: dapp.url.absoluteString,
+              color: .Text.secondary,
+              textStyle: .body2)
+          ]
+        )
+      )
+    )
+  }
+  
+  func mapSuggestion(_ suggestion: SearchEngineSuggestion) -> TKListItemCell.Configuration {
+    return TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
+          content: .image(TKImageView.Model(image: .image(.TKUIKit.Icons.Size16.magnifyingGlass),
+                                            tintColor: .Icon.secondary,
+                                            size: .auto)),
+          alignment: .center,
+          backgroundColor: .clear,
+          size: CGSize(width: 16, height: 16)
+        ),
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: suggestion.title?.withTextStyle(.label2, color: .Text.primary), numberOfLines: 1)
+        )
+      )
     )
   }
 
@@ -376,5 +317,23 @@ extension String {
     } else {
       return false
     }
+  }
+}
+
+private extension String {
+  static let suggestURLIdentifier = "SuggestURLIdentifier"
+}
+
+private extension Array where Element: Hashable {
+  func removingDuplicates() -> [Element] {
+    var addedDict = [Element: Bool]()
+    
+    return filter {
+      addedDict.updateValue(true, forKey: $0) == nil
+    }
+  }
+  
+  mutating func removeDuplicates() {
+    self = self.removingDuplicates()
   }
 }

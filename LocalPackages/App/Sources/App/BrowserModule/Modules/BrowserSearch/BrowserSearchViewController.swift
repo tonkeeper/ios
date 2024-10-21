@@ -3,24 +3,9 @@ import TKUIKit
 import TKLocalize
 
 final class BrowserSearchViewController: GenericViewViewController<BrowserSearchView>, KeyboardObserving {
-  
-  typealias DataSource = UICollectionViewDiffableDataSource<BrowserSearchSection, TKUIListItemCell.Configuration>
-
   private let viewModel: BrowserSearchViewModel
   
   private lazy var dataSource = createDataSource()
-  
-  private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
-    cell, indexPath, itemIdentifier in
-    cell.configure(configuration: itemIdentifier)
-    cell.isFirstInSection = { ip in
-      return ip.item == 0
-    }
-    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-      guard let collectionView else { return false }
-      return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-    }
-  }
   
   init(viewModel: BrowserSearchViewModel) {
     self.viewModel = viewModel
@@ -82,12 +67,9 @@ extension BrowserSearchViewController: UICollectionViewDelegate {
 
   func collectionView(_ collectionView: UICollectionView,
                       didSelectItemAt indexPath: IndexPath) {
-    guard let section = dataSource.snapshot().sectionIdentifiers[safe: indexPath.section],
-          let item = dataSource.snapshot().itemIdentifiers(inSection: section)[safe: indexPath.item] else {
-      return
-    }
-
-    item.selectionClosure?()
+    let snapshot = dataSource.snapshot()
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+    item.onSelection()
   }
 }
 
@@ -146,154 +128,74 @@ private extension BrowserSearchViewController {
   
   @objc
   func didTapReturnButton() {
-    viewModel.goButtonPressed()
+    dataSource.snapshot().itemIdentifiers.first?.onSelection()
   }
   
-  func createLayout() -> UICollectionViewCompositionalLayout {
+  private func createLayout() -> UICollectionViewCompositionalLayout {
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
-    configuration.interSectionSpacing = 16
     
-    let layout = UICollectionViewCompositionalLayout(sectionProvider: {
-      [weak self] sectionIndex, environment -> NSCollectionLayoutSection? in
-      guard let self = self else { return nil }
-      
-      let snapshot = dataSource.snapshot()
-      let section = snapshot.sectionIdentifiers[sectionIndex]
-      switch section {
-      case .apps:
-        return appsSectionLayout(
-          snapshot: snapshot,
-          section: section,
-          environment: environment
-        )
-      case .newSearch:
-        return searchSectionLayout(
-          snapshot: snapshot,
-          section: section,
-          environment: environment
-        )
-      }
-    }, configuration: configuration)
-    
+    let layout = UICollectionViewCompositionalLayout(
+      sectionProvider: { [weak dataSource] sectionIndex, _ in
+        guard let dataSource else { return nil }
+        let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
+        
+        switch snapshotSection {
+        case .dapps:
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          sectionLayout.contentInsets.bottom = 16
+          return sectionLayout
+        case .suggests:
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          sectionLayout.contentInsets.bottom = 16
+          
+          let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(32)
+          )
+          let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+          )
+          sectionLayout.boundarySupplementaryItems.append(header)
+          
+          return sectionLayout
+        }
+      },
+      configuration: configuration
+    )
     return layout
   }
-  
-  func appsSectionLayout(snapshot: NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>,
-                         section: BrowserSearchSection,
-                         environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
-    let itemSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1),
-      heightDimension: .absolute(76)
-    )
-    let item = NSCollectionLayoutItem(layoutSize: itemSize)
-    item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
 
-    let groupSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(76)
-    )
-    
-    let group: NSCollectionLayoutGroup
-    
-    if #available(iOS 16.0, *) {
-      group = NSCollectionLayoutGroup.verticalGroup(
-        with: groupSize,
-        repeatingSubitem: item,
-        count: 1
-      )
-    } else {
-      group = NSCollectionLayoutGroup.vertical(
-        layoutSize: groupSize,
-        subitem: item,
-        count: 1
-      )
-    }
-    
-    let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = .init(top: 10, leading: 16, bottom: 16, trailing: 0)
-    return section
-  }
-
-  func searchSectionLayout(snapshot: NSDiffableDataSourceSnapshot<BrowserSearchSection, TKUIListItemCell.Configuration>,
-                           section: BrowserSearchSection,
-                           environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
-    let heightDimension: CGFloat = 48
-    let itemSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1),
-      heightDimension: .absolute(heightDimension)
-    )
-    let item = NSCollectionLayoutItem(layoutSize: itemSize)
-    item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
-
-    let groupSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(heightDimension)
-    )
-
-    let group: NSCollectionLayoutGroup
-
-    if #available(iOS 16.0, *) {
-      group = NSCollectionLayoutGroup.verticalGroup(
-        with: groupSize,
-        repeatingSubitem: item,
-        count: 1
-      )
-    } else {
-      group = NSCollectionLayoutGroup.vertical(
-        layoutSize: groupSize,
-        subitem: item,
-        count: 1
-      )
-    }
-
-    let section = NSCollectionLayoutSection(group: group)
-    let headerSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(34)
-    )
-    let header = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: headerSize,
-      elementKind: UICollectionView.elementKindSectionHeader,
-      alignment: .top
-    )
-    section.boundarySupplementaryItems = [header]
-    section.contentInsets = .init(top: 10, leading: 16, bottom: 16, trailing: 0)
-    return section
-  }
-
-  func createDataSource() -> DataSource {
-    let dataSource = DataSource(
+  func createDataSource() -> BrowserSearch.DataSource {
+    let listCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
+    let dataSource = BrowserSearch.DataSource(
       collectionView: customView.collectionView
-    ) { [listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
-      switch itemIdentifier {
-      case let listCellConfiguration:
-        let cell = collectionView.dequeueConfiguredReusableCell(
-          using: listItemCellConfiguration,
-          for: indexPath,
-          item: listCellConfiguration
-        )
-
-        cell.backgroundColor = indexPath.item == 0 ? .Background.contentTint : .Background.content
-        return cell
-      }
+    ) { collectionView, indexPath, itemIdentifier in
+      let cell = collectionView.dequeueConfiguredReusableCell(
+        using: listCellRegistration,
+        for: indexPath,
+        item: itemIdentifier.configuration)
+      return cell
     }
 
-    dataSource.supplementaryViewProvider = { collectionView, kind, indexPath in
+    dataSource.supplementaryViewProvider = { [weak dataSource] collectionView, kind, indexPath in
+      guard let dataSource else { return nil }
       guard let section = dataSource.snapshot().sectionIdentifiers[safe: indexPath.section] else {
         return nil
       }
-
+      
       switch section {
-      case .apps:
+      case .dapps:
         return nil
-      case let .newSearch(headerModel):
+      case let .suggests(headerModel):
         let view: BrowserSearchListSectionHeaderView = collectionView.dequeueReusableHeaderView(for: indexPath)
         view.configure(model: headerModel)
         return view
       }
     }
-
+    
     return dataSource
   }
 }
