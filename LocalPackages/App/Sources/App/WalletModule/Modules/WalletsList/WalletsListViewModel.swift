@@ -241,7 +241,7 @@ private extension WalletsListViewModelImplementation {
   
   func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStore.Event) {
     switch event {
-    case .didUpdateTotalBalance(_, let wallet):
+    case .didUpdateTotalBalance(let wallet):
       syncQueue.async {
         let totalBalanceState = self.totalBalancesStore.getState()[wallet]
         let isSecure = self.appSettingsStore.getState().isSecureMode

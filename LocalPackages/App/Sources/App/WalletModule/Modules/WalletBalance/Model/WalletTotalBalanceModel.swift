@@ -84,7 +84,7 @@ final class WalletTotalBalanceModel {
   private func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStore.Event) {
     Task {
       switch event {
-      case .didUpdateTotalBalance(_, let wallet):
+      case .didUpdateTotalBalance(let wallet):
         switch await walletsStore.getState() {
         case .empty: break
         case .wallets(let state):

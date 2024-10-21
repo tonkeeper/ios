@@ -6,7 +6,7 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
   public typealias State = [Wallet: TotalBalanceState]
   
   public enum Event {
-    case didUpdateTotalBalance(state: TotalBalanceState, wallet: Wallet)
+    case didUpdateTotalBalance(wallet: Wallet)
   }
 
   private let managedBalanceStore: ManagedBalanceStore
@@ -20,7 +20,7 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
   }
   
   public override func createInitialState() -> State {
-    let balanceStates = managedBalanceStore.getState()
+    let balanceStates = managedBalanceStore.state
     let total = balanceStates.mapValues {
       self.recalculateTotalBalance($0)
     }
@@ -30,24 +30,23 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
   private func didGetProcessedBalanceStoreEvent(_ event: ManagedBalanceStore.Event) {
     switch event {
     case .didUpdateManagedBalance(let wallet):
-      Task {
-        await recalculateTotalBalance(wallet: wallet)
-      }
+      updateTotalBalance(wallet: wallet)
     }
   }
   
-  private func recalculateTotalBalance(wallet: Wallet) async {
-    guard let balanceState = await managedBalanceStore.getState()[wallet] else { return }
-    let totalBalanceState = recalculateTotalBalance(balanceState)
-    await setState { state in
+  private func updateTotalBalance(wallet: Wallet) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
+      guard let balanceState = managedBalanceStore.state[wallet] else { return nil }
       var updatedState = state
-      updatedState[wallet] = totalBalanceState
+      let walletState = recalculateTotalBalance(balanceState)
+      updatedState[wallet] = walletState
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      self.sendEvent(.didUpdateTotalBalance(state: totalBalanceState, wallet: wallet))
+    } completion: { _ in
+      self.sendEvent(.didUpdateTotalBalance(wallet: wallet))
     }
   }
-  
+
   private func recalculateTotalBalance(_ balanceState: ManagedBalanceState) -> TotalBalanceState {
     
     func calculateTotal(balance: ManagedBalance) -> TotalBalance {
