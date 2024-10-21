@@ -19,7 +19,7 @@ final class StakingWithdrawInputModelConfigurator: StakingInputModelConfigurator
   var didUpdateBalance: ((UInt64) -> Void)?
   
   func getBalance() -> UInt64 {
-    return UInt64(balanceStore.getState()[wallet]?.balance?.stakingItems
+    return UInt64(balanceStore.getState()[wallet]?.balance.stakingItems
       .first(where: { $0.poolInfo?.address == stakingPoolInfo?.address })?
       .info.amount ?? 0)
   }

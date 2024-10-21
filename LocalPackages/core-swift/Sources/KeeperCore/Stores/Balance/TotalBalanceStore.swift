@@ -29,7 +29,7 @@ public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBala
   
   private func didGetProcessedBalanceStoreEvent(_ event: ManagedBalanceStore.Event) {
     switch event {
-    case .didUpdateManagedBalance(_ , let wallet):
+    case .didUpdateManagedBalance(let wallet):
       Task {
         await recalculateTotalBalance(wallet: wallet)
       }

@@ -6,7 +6,7 @@ public enum ProcessedBalanceState: Equatable {
   case current(ProcessedBalance)
   case previous(ProcessedBalance)
   
-  public var balance: ProcessedBalance? {
+  public var balance: ProcessedBalance {
     switch self {
     case .current(let balance):
       return balance
