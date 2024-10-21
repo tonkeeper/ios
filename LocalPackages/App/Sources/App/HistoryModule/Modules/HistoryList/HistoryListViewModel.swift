@@ -243,7 +243,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     
     let paginationCellConfiguration = HistoryListPaginationCell.Model(
       state: .error(
-        title: TKLocales.Actions.failed,
+        title: TKLocales.State.failed,
         retryButtonAction: { [weak self] in
           self?.paginationLoader.loadNext()
         }

@@ -69,12 +69,20 @@ public struct TonkeeperDeeplinkParser {
       }
       return try? Address.parse(jettonAddressParameter)
     }()
-    
+
+    let expirationTimestamp: Int64? = {
+      guard let exp = components?.queryItems?.first(where: { $0.name == "exp" })?.value else {
+        return nil
+      }
+      return Int64(exp)
+    }()
+
     return Deeplink.TransferData(
       recipient: recipient,
       amount: amount,
       comment: comment,
-      jettonAddress: jettonAddress
+      jettonAddress: jettonAddress,
+      expirationTimestamp: expirationTimestamp
     )
   }
   

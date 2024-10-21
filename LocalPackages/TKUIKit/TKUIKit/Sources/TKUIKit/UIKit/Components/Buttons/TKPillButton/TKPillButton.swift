@@ -69,6 +69,10 @@ public final class TKPillButton: UIView {
   }
   
   private func setupConstraints() {
+    leftButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    rightButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    divider.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
     leftButton.snp.makeConstraints { make in
       make.left.top.bottom.equalTo(self)
     }

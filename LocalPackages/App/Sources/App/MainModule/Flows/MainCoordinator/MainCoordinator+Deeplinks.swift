@@ -3,14 +3,29 @@ import TKUIKit
 import KeeperCore
 import TonSwift
 import BigInt
+import TKLocalize
 
 extension MainCoordinator {
-  func openSendDeeplink(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?) {
+  func openSendDeeplink(recipient: String,
+                        amount: BigUInt?,
+                        comment: String?,
+                        jettonAddress: Address?,
+                        expirationTimestamp: Int64?) {
     deeplinkHandleTask?.cancel()
-    
+
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
-    
+
+    if let expirationTimestamp {
+      let expirationDate = Date(timeIntervalSince1970: TimeInterval(expirationTimestamp))
+      guard Date() <= expirationDate else {
+        let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.linkExpired)
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(configuration: configuration)
+        return
+      }
+    }
+
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     
     let deeplinkHandleTask = Task {

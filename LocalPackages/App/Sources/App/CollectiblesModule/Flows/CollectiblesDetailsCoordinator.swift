@@ -105,7 +105,7 @@ private extension CollectiblesDetailsCoordinator {
             )
             guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
               await MainActor.run {
-                let configuration = ToastPresenter.Configuration(title: TKLocales.Actions.serviceUnavailable)
+                let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.serviceUnavailable)
                 ToastPresenter.showToast(configuration: configuration)
               }
               

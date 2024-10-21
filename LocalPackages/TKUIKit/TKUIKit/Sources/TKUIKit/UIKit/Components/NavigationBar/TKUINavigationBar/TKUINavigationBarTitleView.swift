@@ -47,8 +47,6 @@ public final class TKUINavigationBarTitleView: UIView, ConfigurableView {
   }
   
   private func setup() {
-    topLabel.minimumScaleFactor = 0.3
-    topLabel.adjustsFontSizeToFitWidth = true
     
     addSubview(stackView)
     stackView.addArrangedSubview(topLabel)
