@@ -10,7 +10,7 @@ final class BrowserSearchView: TKView {
         make.left.right.equalTo(self)
         make.bottom.equalTo(self).offset(-keyboardHeight)
       }
-      collectionView.contentInset.bottom = keyboardHeight
+      collectionView.contentInset.bottom = keyboardHeight + searchBar.frame.height
     }
   }
   
@@ -23,7 +23,9 @@ final class BrowserSearchView: TKView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .clear
     searchBar.textField.returnKeyType = .go
-    
+    searchBar.textField.autocorrectionType = .no
+    searchBar.textField.autocapitalizationType = .none
+
     searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
     
     addSubview(collectionView)

@@ -59,9 +59,13 @@
 "browser.tab.explore" = "Explore";
 "browser.tab.connected" = "Connected";
 "browser.list.all" = "All";
+
 "browser.search_field.placeholder" = "Search or enter address";
 "browser.search.title" = "Browser";
 "browser.search.placeholder" = "Enter an address or search the web";
+"browser.search.duckgo_search.title" = "DuckDuckGo Search";
+"browser.search.google_search.title" = "Google Search";
+"browser.search.open_link_placeholder" = "Open link";
 
 "event_details.received" = "Received";
 "event_details.sent" = "Sent";
@@ -80,6 +84,7 @@
 "settings.items.backup" = "Backup";
 "settings.items.currency" = "Currency";
 "settings.items.theme" = "Theme";
+"settings.items.search" = "Search";
 "settings.items.logout" = "Sign out";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Support";

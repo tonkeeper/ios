@@ -148,6 +148,23 @@ extension KeeperInfo {
     )
   }
 
+  func updateSearchEngine(_ searchEngine: SearchEngine) -> KeeperInfo {
+    let appSettings = AppSettings(
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: searchEngine
+    )
+    return KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: currency,
+      securitySettings: self.securitySettings,
+      appSettings: appSettings,
+      country: self.country,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+
   // MARK: - SecuritySettings
   
   func updateIsBiometryEnable(_ isBiometryEnable: Bool) -> KeeperInfo {
@@ -170,7 +187,8 @@ extension KeeperInfo {
   
   func updateIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSecureMode: self.appSettings.isSecureMode
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(
@@ -187,7 +205,8 @@ extension KeeperInfo {
   
   func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSecureMode: isSecureMode
+      isSecureMode: isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(

@@ -275,10 +275,20 @@ public enum TKLocales {
       public static let all = TKLocales.tr("Localizable", "browser.list.all", fallback: "All")
     }
     public enum Search {
+      /// Open link
+      public static let openLinkPlaceholder = TKLocales.tr("Localizable", "browser.search.open_link_placeholder", fallback: "Open link")
       /// Enter an address or search the web
       public static let placeholder = TKLocales.tr("Localizable", "browser.search.placeholder", fallback: "Enter an address or search the web")
       /// Browser
       public static let title = TKLocales.tr("Localizable", "browser.search.title", fallback: "Browser")
+      public enum DuckgoSearch {
+        /// DuckDuckGo Search
+        public static let title = TKLocales.tr("Localizable", "browser.search.duckgo_search.title", fallback: "DuckDuckGo Search")
+      }
+      public enum GoogleSearch {
+        /// Google Search
+        public static let title = TKLocales.tr("Localizable", "browser.search.google_search.title", fallback: "Google Search")
+      }
     }
     public enum SearchField {
       /// Search or enter address
@@ -799,6 +809,8 @@ public enum TKLocales {
       public static func rate(_ p1: Any) -> String {
         return TKLocales.tr("Localizable", "settings.items.rate", String(describing: p1), fallback: "Rate %@")
       }
+      /// Search
+      public static let search = TKLocales.tr("Localizable", "settings.items.search", fallback: "Search")
       /// Security
       public static let security = TKLocales.tr("Localizable", "settings.items.security", fallback: "Security")
       /// Edit name and color

@@ -145,4 +145,8 @@ public final class ServicesAssembly {
   public func encryptedCommentService() -> EncryptedCommentService {
     EncryptedCommentServiceImplementation(mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
+
+  public func searchEngineService() -> SearchEngineServiceProtocol {
+    SearchEngineService(session: .shared)
+  }
 }
