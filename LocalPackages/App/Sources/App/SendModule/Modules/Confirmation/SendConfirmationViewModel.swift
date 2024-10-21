@@ -224,7 +224,7 @@ private extension SendConfirmationViewModelImplementation {
     
     let content = TKModalCardViewController.Configuration.Content(items: [
       .list(listItems)
-    ])
+    ], copyToastConfiguration: .copied)
     
     let actionBar = TKModalCardViewController.Configuration.ActionBar(
       items: [

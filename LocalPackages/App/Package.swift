@@ -17,8 +17,8 @@ let package = Package(
     .package(path: "../TKCore"),
     .package(path: "../TKCoordinator"),
     .package(path: "../TKUIKit"),
-    .package(path: "../TKScreenKit"),
     .package(path: "../TKLocalize"),
+    .package(path: "../TKScreenKit"),
     .package(path: "../TKStories")
   ],
   targets: [

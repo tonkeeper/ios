@@ -29,7 +29,8 @@ extension TKModalCardViewController {
       guard let viewController = viewController else { return }
       TKModalCardViewBuilder.buildContentViews(
         contentItems: model.items,
-        viewController: viewController
+        viewController: viewController,
+        copyToastConfiguration: model.copyToastConfiguration
       )
       .forEach {
         stackView.addArrangedSubview($0)

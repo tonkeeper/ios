@@ -338,7 +338,10 @@ private extension SettingsPurchasesViewModelImplementation {
     
     return PurchasesManagementDetailsViewController.Configuration(
       title: title,
-      listConfiguration: TKListContainerView.Configuration(items: listItems),
+      listConfiguration: TKListContainerView.Configuration(
+        items: listItems,
+        copyToastConfiguration: .copied
+      ),
       buttonConfiguration: buttonConfiguration
     )
   }

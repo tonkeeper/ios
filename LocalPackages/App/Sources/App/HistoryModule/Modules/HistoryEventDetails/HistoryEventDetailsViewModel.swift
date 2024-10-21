@@ -233,7 +233,8 @@ private extension HistoryEventDetailsViewModelImplementation {
         items: model.listItems.map {
           listItem in
           configureListItem(listItem)
-        }
+        },
+        copyToastConfiguration: .copied
       )
     )
   }

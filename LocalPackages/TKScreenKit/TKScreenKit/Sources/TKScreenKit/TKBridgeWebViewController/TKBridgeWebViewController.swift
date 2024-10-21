@@ -5,6 +5,13 @@ import WebKit
 
 open class TKBridgeWebViewController: UIViewController {
   
+  public struct Configuration {
+    public let copyToastConfiguration: ToastPresenter.Configuration
+    public init(copyToastConfiguration: ToastPresenter.Configuration) {
+      self.copyToastConfiguration = copyToastConfiguration
+    }
+  }
+  
   public var isHeaderHidden = false {
     didSet {
       setupWebViewConstraints()
@@ -14,8 +21,6 @@ open class TKBridgeWebViewController: UIViewController {
   
   public var didLoadInitialURLHandler: (() -> Void)?
   private let userContentController = WKUserContentController()
-  
-  private let jsInjection: String
 
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
@@ -90,15 +95,19 @@ open class TKBridgeWebViewController: UIViewController {
   
   private let initialURL: URL
   private let initialTitle: String?
+  private let jsInjection: String
+  private let configuration: Configuration
   
   // MARK: - Init
   
   public init(initialURL: URL,
               initialTitle: String?,
-              jsInjection: String?) {
+              jsInjection: String?,
+              configuration: Configuration) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
     self.url = initialURL
+    self.configuration = configuration
     self.jsInjection = jsInjection ?? ""
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle
@@ -223,9 +232,9 @@ open class TKBridgeWebViewController: UIViewController {
       TKPopupMenuItem(
         title: "Copy link",
         icon: .TKUIKit.Icons.Size16.copy,
-        selectionHandler: { [weak self] in
+        selectionHandler: { [weak self, configuration] in
           guard let url = self?.webView.url else { return }
-          ToastPresenter.showToast(configuration: .copied)
+          ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
           UIPasteboard.general.string = url.absoluteString
         }
       )

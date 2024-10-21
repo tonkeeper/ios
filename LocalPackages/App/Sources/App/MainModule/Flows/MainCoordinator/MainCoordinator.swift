@@ -40,7 +40,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   var deeplinkHandleTask: Task<Void, Never>?
   
   private var sendTransactionNotificationToken: NSObjectProtocol?
-  
+
+  private var deeplinkRouter: ContainerViewControllerRouter<UIViewController>?
+
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -216,7 +218,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
     }
-    
+    collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+      _ = self?.handleTonkeeperDeeplink(deeplink)
+    }
+
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
     self.browserCoordinator = browserCoordinator
@@ -310,14 +315,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
-    
-    self.router.dismiss(animated: true, completion: { [weak self] in
-      self?.router.present(navigationController, onDismiss: { [weak self, weak sendTokenCoordinator] in
-        self?.sendTokenCoordinator = nil
-        guard let sendTokenCoordinator else { return }
-        self?.removeChild(sendTokenCoordinator)
-      })
-    })
+
+    router.presentOverTopPresented(
+      navigationController,
+      animated: true,
+      completion: nil
+    ) { [weak self, weak sendTokenCoordinator] in
+      self?.sendTokenCoordinator = nil
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    }
   }
   
   func openSwap(wallet: Wallet,
@@ -806,7 +813,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openURL(_ url: URL, title: String?) {
-    let viewController = TKBridgeWebViewController(initialURL: url, initialTitle: nil, jsInjection: nil)
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default)
     router.present(viewController)
   }
   

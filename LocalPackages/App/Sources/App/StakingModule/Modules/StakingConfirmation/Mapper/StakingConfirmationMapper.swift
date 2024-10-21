@@ -16,7 +16,7 @@ struct StakingConfirmationMapper {
   ) -> TKModalCardViewController.Configuration {
     let header = mapHeader(model)
     let listItems = mapListItems(model)
-    let content = TKModalCardViewController.Configuration.Content(items: [.list(listItems)])
+    let content = TKModalCardViewController.Configuration.Content(items: [.list(listItems)], copyToastConfiguration: .copied)
     
     let actionBar = TKModalCardViewController.Configuration.ActionBar(
       items: [
