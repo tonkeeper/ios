@@ -25,7 +25,7 @@ public enum ManagedBalanceState {
   }
 }
 
-public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, ManagedBalanceStore.State> {
+public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, ManagedBalanceStore.State> {
   public typealias State = [Wallet: ManagedBalanceState]
   
   public enum Event {

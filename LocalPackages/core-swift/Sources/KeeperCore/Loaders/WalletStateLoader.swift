@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoader.State> {
+public final class WalletStateLoader: Store<WalletStateLoader.Event, WalletStateLoader.State> {
   public struct State {
     public var balanceLoadTasks: [Wallet: Task<(), Never>]
     public var nftLoadTasks: [Wallet: Task<(), Never>]

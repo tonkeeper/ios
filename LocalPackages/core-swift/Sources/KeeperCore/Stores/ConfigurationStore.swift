@@ -1,6 +1,6 @@
 import Foundation
 
-public final class ConfigurationStore: StoreV3<ConfigurationStore.Event, ConfigurationStore.State> {
+public final class ConfigurationStore: Store<ConfigurationStore.Event, ConfigurationStore.State> {
   public struct State {
     public let configuration: RemoteConfiguration
     public let loadingTask: Task<RemoteConfiguration, Never>?

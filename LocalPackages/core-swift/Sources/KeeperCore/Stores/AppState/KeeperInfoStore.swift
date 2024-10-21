@@ -1,6 +1,6 @@
 import Foundation
 
-public final class KeeperInfoStore: StoreV3<KeeperInfoStore.Event, KeeperInfo?> {
+public final class KeeperInfoStore: Store<KeeperInfoStore.Event, KeeperInfo?> {
   public enum Event {
     case didUpdateKeeperInfo(KeeperInfo?)
   }

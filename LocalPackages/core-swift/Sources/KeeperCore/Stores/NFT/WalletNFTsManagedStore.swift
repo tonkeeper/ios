@@ -1,6 +1,6 @@
 import Foundation
 
-public final class WalletNFTsManagedStore: StoreV3<WalletNFTsManagedStore.Event, WalletNFTsManagedStore.State> {
+public final class WalletNFTsManagedStore: Store<WalletNFTsManagedStore.Event, WalletNFTsManagedStore.State> {
   public typealias State = [NFT]
   public enum Event {
     case didUpdateNFTs(wallet: Wallet)

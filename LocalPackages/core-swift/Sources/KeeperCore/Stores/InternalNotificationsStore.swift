@@ -1,6 +1,6 @@
 import Foundation
 
-public final class InternalNotificationsStore: StoreV3<InternalNotificationsStore.Event, InternalNotificationsStore.State> {
+public final class InternalNotificationsStore: Store<InternalNotificationsStore.Event, InternalNotificationsStore.State> {
   public typealias State = [NotificationModel]
   public enum Event {
     case didUpdateNotifications(notifications: [NotificationModel])

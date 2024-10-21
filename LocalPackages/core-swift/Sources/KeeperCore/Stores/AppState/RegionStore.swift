@@ -1,6 +1,6 @@
 import Foundation
 
-public final class RegionStore: StoreV3<RegionStore.Event, SelectedCountry> {
+public final class RegionStore: Store<RegionStore.Event, SelectedCountry> {
   
   public enum Event {
     case didUpdateRegion(_ country: SelectedCountry)

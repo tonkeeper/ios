@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.State> {
+public final class WalletNFTStore: Store<WalletNFTStore.Event, WalletNFTStore.State> {
   public typealias State = [Wallet: [NFT]]
   public enum Event {
     case didUpdateNFTs(wallet: Wallet)

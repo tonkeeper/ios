@@ -1,6 +1,6 @@
 import Foundation
 
-public final class BackgroundUpdateStore: StoreV3<BackgroundUpdateStore.Event, BackgroundUpdateStore.State> {
+public final class BackgroundUpdateStore: Store<BackgroundUpdateStore.Event, BackgroundUpdateStore.State> {
   public typealias State = [Wallet: ConnectionState]
   
   public enum ConnectionState: Equatable {

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class TonRatesStore: StoreV3<TonRatesStore.Event, TonRatesStore.State> {
+public final class TonRatesStore: Store<TonRatesStore.Event, TonRatesStore.State> {
   public typealias State = [Rates.Rate]
   
   public enum Event {

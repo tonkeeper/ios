@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class DecryptedCommentStore: StoreV3<DecryptedCommentStore.Event, DecryptedCommentStore.State> {
+public final class DecryptedCommentStore: Store<DecryptedCommentStore.Event, DecryptedCommentStore.State> {
   public typealias State = [Key: String?]
   
   public struct Key: Hashable {

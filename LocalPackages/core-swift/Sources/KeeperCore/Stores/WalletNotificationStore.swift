@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Event, WalletNotificationStore.State> {
+public final class WalletNotificationStore: Store<WalletNotificationStore.Event, WalletNotificationStore.State> {
   public struct NotificationsState {
     public let isOn: Bool
     public let dapps: [String: Bool]

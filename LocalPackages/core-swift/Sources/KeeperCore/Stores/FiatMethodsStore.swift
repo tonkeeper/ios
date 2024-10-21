@@ -1,6 +1,6 @@
 import Foundation
 
-public final class FiatMethodsStore: StoreV3<FiatMethodsStore.Event, FiatMethodsStore.State> {
+public final class FiatMethodsStore: Store<FiatMethodsStore.Event, FiatMethodsStore.State> {
   public enum State: Equatable {
     case none
     case loading

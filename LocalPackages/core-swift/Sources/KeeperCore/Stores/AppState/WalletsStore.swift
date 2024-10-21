@@ -1,6 +1,6 @@
 import Foundation
 
-public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State> {
+public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   public enum Error: Swift.Error {
     case noWallets
   }
