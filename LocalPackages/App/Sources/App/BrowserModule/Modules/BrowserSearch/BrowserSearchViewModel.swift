@@ -97,6 +97,7 @@ private extension BrowserSearchViewModelImplementation {
       let item = BrowserSearch.Item(
         identifier: .suggestURLIdentifier,
         configuration: mapValidURLSuggestion(suggestion: urlSuggestion),
+        isHighlighted: true,
         onSelection: { [weak self] in
           guard let self, let dapp = composeDapp(urlSuggestion) else { return }
           didSelectDapp?(dapp)
@@ -107,7 +108,10 @@ private extension BrowserSearchViewModelImplementation {
     
     if !dapps.isEmpty {
       let items = dapps.map { dapp in
-        return BrowserSearch.Item(identifier: dapp.url.absoluteString, configuration: mapDapp(dapp)) { [weak self] in
+        return BrowserSearch.Item(
+          identifier: dapp.url.absoluteString,
+          configuration: mapDapp(dapp),
+          isHighlighted: false) { [weak self] in
         self?.didSelectDapp?(dapp)
       }}
       snapshot.appendItems(items, toSection: .dapps)
@@ -127,6 +131,7 @@ private extension BrowserSearchViewModelImplementation {
         guard let url = suggest.url else { return nil }
         return BrowserSearch.Item(identifier: url.absoluteString,
                                   configuration: mapSuggestion(suggest),
+                                  isHighlighted: false,
                                   onSelection: { [weak self] in
           guard let self, let dapp = composeDapp(suggest) else { return }
           didSelectDapp?(dapp)

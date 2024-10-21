@@ -177,6 +177,7 @@ private extension BrowserSearchViewController {
         using: listCellRegistration,
         for: indexPath,
         item: itemIdentifier.configuration)
+      cell.isHighlighted = itemIdentifier.isHighlighted
       return cell
     }
 

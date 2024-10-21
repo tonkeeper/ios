@@ -10,6 +10,7 @@ enum BrowserSearch {
   struct Item: Hashable {
     let identifier: String
     let configuration: TKListItemCell.Configuration
+    let isHighlighted: Bool
     let onSelection: () -> Void
     
     static func ==(lhs: Item, rhs: Item) -> Bool {
