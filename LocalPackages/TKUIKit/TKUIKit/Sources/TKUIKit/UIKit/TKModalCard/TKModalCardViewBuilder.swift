@@ -8,20 +8,24 @@ enum TKModalCardActionState {
 
 struct TKModalCardViewBuilder {
   static func buildContentViews(contentItems: [TKModalCardViewController.Configuration.ContentItem],
-                                viewController: UIViewController) -> [UIView] {
+                                viewController: UIViewController,
+                                copyToastConfiguration: ToastPresenter.Configuration) -> [UIView] {
     return contentItems.map { contentItem in
       switch contentItem {
       case .item(let item):
-        return buildViews(items: [item], viewController: viewController)
+        return buildViews(items: [item],
+                          viewController: viewController)
       case .list(let items):
-        return buildList(items: items)
+        return buildList(items: items, copyToastConfiguration: copyToastConfiguration)
       }
     }
     .flatMap { $0 }
   }
   
-  static func buildList(items: [TKModalCardViewController.Configuration.ListItem]) -> [UIView] {
+  static func buildList(items: [TKModalCardViewController.Configuration.ListItem],
+                        copyToastConfiguration: ToastPresenter.Configuration) -> [UIView] {
     let view = TKModalCardListView()
+    view.copyToastConfiguration = copyToastConfiguration
     view.configure(model: items)
     return [view, TKSpacingView(verticalSpacing: .constant(32))]
   }

@@ -812,7 +812,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openURL(_ url: URL, title: String?) {
-    let viewController = TKBridgeWebViewController(initialURL: url, initialTitle: nil, jsInjection: nil)
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default)
     router.present(viewController)
   }
   

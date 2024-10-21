@@ -43,7 +43,8 @@ private extension DappViewController {
       let bridgeWebViewController = TKBridgeWebViewController(
         initialURL: url,
         initialTitle: title,
-        jsInjection: self.viewModel.jsInjection
+        jsInjection: self.viewModel.jsInjection,
+        configuration: .default
       )
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
         self?.viewModel.didLoadInitialRequest()

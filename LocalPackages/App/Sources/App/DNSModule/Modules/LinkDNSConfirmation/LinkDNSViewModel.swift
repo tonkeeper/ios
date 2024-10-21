@@ -83,7 +83,7 @@ private extension LinkDNSViewModelImplementation {
         .list(
           items
         )
-      ]
+      ], copyToastConfiguration: .copied
     )
     
     return TKModalCardViewController.Configuration(

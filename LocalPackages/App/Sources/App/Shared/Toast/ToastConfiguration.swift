@@ -1,3 +1,4 @@
+import TKUIKit
 import TKLocalize
 
 public extension ToastPresenter.Configuration {
