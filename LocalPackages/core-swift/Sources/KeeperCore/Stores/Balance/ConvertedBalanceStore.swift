@@ -67,7 +67,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
       let walletsState = self.calculateState(wallets: wallets)
       let updatedState = state.merging(walletsState, uniquingKeysWith: { $1 })
       return StateUpdate(newState: updatedState)
-    } completion: { [weak self] state in
+    } completion: { [weak self] _ in
       wallets.forEach { self?.sendEvent(.didUpdateConvertedBalance(wallet: $0)) }
     }
   }
