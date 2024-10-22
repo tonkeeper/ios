@@ -47,9 +47,9 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
       observer.didGetBackgroundUpdateStoreEvent(event)
     }
 
-    walletStateLoader.addObserver(self) { observer, event in
-      observer.didGetWalletStateLoaderEvent(event)
-    }
+//    walletStateLoader.addObserver(self) { observer, event in
+//      observer.didGetWalletStateLoaderEvent(event)
+//    }
 
     walletNFTManagedStore.addObserver(self) { observer, event in
       observer.didGetWalletNFTStoreEvent(event)
@@ -64,16 +64,16 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   private let wallet: Wallet
   private let walletNFTManagedStore: WalletNFTsManagedStore
   private let backgroundUpdateStore: BackgroundUpdateStore
-  private let walletStateLoader: WalletStateLoader
+  private let walletBalanceLoader: WalletBalanceLoader
   
   init(wallet: Wallet,
        walletNFTManagedStore: WalletNFTsManagedStore,
        backgroundUpdateStore: BackgroundUpdateStore,
-       walletStateLoader: WalletStateLoader) {
+       walletBalanceLoader: WalletBalanceLoader) {
     self.wallet = wallet
     self.walletNFTManagedStore = walletNFTManagedStore
     self.backgroundUpdateStore = backgroundUpdateStore
-    self.walletStateLoader = walletStateLoader
+    self.walletBalanceLoader = walletBalanceLoader
   }
 }
 
@@ -88,21 +88,21 @@ private extension CollectiblesViewModelImplementation {
     }
   }
   
-  func didGetWalletStateLoaderEvent(_ event: WalletStateLoader.Event) {
-    switch event {
-    case .didStartLoadNFT(let wallet):
-      guard wallet == self.wallet else { return }
-      DispatchQueue.main.async {
-        self.update()
-      }
-    case .didEndLoadNFT(let wallet):
-      guard wallet == self.wallet else { return }
-      DispatchQueue.main.async {
-        self.update()
-      }
-    default: break
-    }
-  }
+//  func didGetWalletStateLoaderEvent(_ event: WalletBalanceLoader.Event) {
+//    switch event {
+//    case .didStartLoadNFT(let wallet):
+//      guard wallet == self.wallet else { return }
+//      DispatchQueue.main.async {
+//        self.update()
+//      }
+//    case .didEndLoadNFT(let wallet):
+//      guard wallet == self.wallet else { return }
+//      DispatchQueue.main.async {
+//        self.update()
+//      }
+//    default: break
+//    }
+//  }
   
   func didGetWalletNFTStoreEvent(_ event: WalletNFTsManagedStore.Event) {
     switch event {
@@ -125,7 +125,8 @@ private extension CollectiblesViewModelImplementation {
         isBackgroundUpdate = true
       }
       
-      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
+//      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
+      let isLoadingNft = false
       
       return isLoadingNft || isBackgroundUpdate
     }()

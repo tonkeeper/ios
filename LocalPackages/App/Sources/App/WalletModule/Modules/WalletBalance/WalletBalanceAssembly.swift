@@ -7,6 +7,9 @@ typealias WalletBalanceModule = MVVMModule<WalletBalanceViewController, WalletBa
 struct WalletBalanceAssembly {
   private init() {}
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly, coreAssembly: TKCore.CoreAssembly) -> WalletBalanceModule {
+    
+    let queue = DispatchQueue(label: "WalletBalanceUpdateQueue")
+    
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
@@ -25,7 +28,8 @@ struct WalletBalanceAssembly {
         totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
         backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
-        stateLoader: keeperCoreMainAssembly.loadersAssembly.walletStateLoader
+        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+        updateQueue: queue
       ),
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,

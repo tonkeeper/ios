@@ -52,7 +52,7 @@ public final class MainAssembly {
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DeeplinkParser(),
-      walletStateLoader: loadersAssembly.walletStateLoader,
+      balanceLoader: loadersAssembly.balanceLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }

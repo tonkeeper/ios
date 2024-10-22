@@ -160,6 +160,7 @@ private extension TonConnectConnectCoordinator {
     
     let module = WalletsListAssembly.module(
       model: model,
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,

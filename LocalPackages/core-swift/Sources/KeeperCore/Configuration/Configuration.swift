@@ -100,8 +100,9 @@ public final class Configuration {
       }
     }
     set {
-      let observers = [UUID: () -> Void]()
+      var observers = [UUID: () -> Void]()
       lock.withLock {
+        observers = self.observers
         _configuration = newValue
       }
       observers.forEach { $0.value() }

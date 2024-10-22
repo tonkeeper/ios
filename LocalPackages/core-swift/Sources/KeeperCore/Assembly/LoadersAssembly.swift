@@ -85,27 +85,42 @@ public final class LoadersAssembly {
       nftService: servicesAssembly.nftService()
     )
   }
-  
-  private weak var _walletStateLoader: WalletStateLoader?
-  public var walletStateLoader: WalletStateLoader {
-    if let _walletStateLoader {
-      return _walletStateLoader
+
+  private weak var _balanceLoader: BalanceLoader?
+  public var balanceLoader: BalanceLoader {
+    if let _balanceLoader {
+      return _balanceLoader
     }
-    let loader = WalletStateLoader(
-      balanceStore: storesAssembly.balanceStore,
+    let loader = BalanceLoader(
+      walletStore: storesAssembly.walletsStore,
       currencyStore: storesAssembly.currencyStore,
-      walletsStore: storesAssembly.walletsStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      ratesService: servicesAssembly.ratesService(),
+      walletStateLoaderProvider: { self.walletBalanceLoaders(wallet: $0) }
+    )
+    _balanceLoader = loader
+    return loader
+  }
+  
+  private var _walletBalanceLoaders = [Wallet: Weak<WalletBalanceLoader>]()
+  public func walletBalanceLoaders(wallet: Wallet) -> WalletBalanceLoader {
+    if let weakWrapper = _walletBalanceLoaders[wallet],
+       let store = weakWrapper.value {
+      return store
+    }
+    let store = WalletBalanceLoader(
+      wallet: wallet,
+      balanceStore: storesAssembly.balanceStore,
+      stakingPoolsStore: storesAssembly.stackingPoolsStore,
       walletNFTSStore: storesAssembly.walletNFTsStore,
       ratesStore: storesAssembly.tonRatesStore,
-      stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),
       accountNFTService: servicesAssembly.accountNftService(),
-      ratesService: servicesAssembly.ratesService(),
-      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater
+      ratesService: servicesAssembly.ratesService()
     )
-    _walletStateLoader = loader
-    return loader
+    _walletBalanceLoaders[wallet] = Weak(value: store)
+    return store
   }
   
   // TODO: Rename and move to provider assembly

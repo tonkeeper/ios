@@ -14,20 +14,20 @@ public final class MainController {
   private let tonConnectService: TonConnectService
   private let deeplinkParser: DeeplinkParser
   
-  private let walletStateLoader: WalletStateLoader
+  private let balanceLoader: BalanceLoader
   private let internalNotificationsLoader: InternalNotificationsLoader
   
   init(backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
-       walletStateLoader: WalletStateLoader,
+       balanceLoader: BalanceLoader,
        internalNotificationsLoader: InternalNotificationsLoader) {
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
     self.tonConnectEventsStore = tonConnectEventsStore
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
-    self.walletStateLoader = walletStateLoader
+    self.balanceLoader = balanceLoader
     self.internalNotificationsLoader = internalNotificationsLoader
   }
   
@@ -42,7 +42,8 @@ public final class MainController {
   
   public func startUpdates() {
     guard !updatesStarted else { return }
-    walletStateLoader.startStateReload()
+    balanceLoader.loadActiveWalletBalance()
+    balanceLoader.startActiveWalletBalanceReload()
     Task {
       await backgroundUpdateUpdater.start()
       await tonConnectEventsStore.addObserver(self)
@@ -54,7 +55,7 @@ public final class MainController {
   }
   
   public func stopUpdates() {
-    walletStateLoader.stopStateReload()
+    balanceLoader.stopActiveWalletBalanceReload()
     Task {
       await backgroundUpdateUpdater.stop()
       await tonConnectEventsStore.stop()

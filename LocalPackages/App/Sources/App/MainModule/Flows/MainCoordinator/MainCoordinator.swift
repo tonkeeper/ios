@@ -501,6 +501,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       model: WalletsPickerListModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,

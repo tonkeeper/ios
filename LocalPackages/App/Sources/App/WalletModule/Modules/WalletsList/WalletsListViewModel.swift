@@ -39,6 +39,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   
   func viewDidLoad() {
+    balanceLoader.loadAllWalletsBalance()
     didUpdateHeaderItem?(createHeaderItem())
     setupInitialState()
     startObservations()
@@ -68,6 +69,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Dependencies
   
   private let model: WalletsListModel
+  private let balanceLoader: BalanceLoader
   private let totalBalancesStore: TotalBalanceStore
   private let appSettingsStore: AppSettingsStore
   private let decimalAmountFormatter: DecimalAmountFormatter
@@ -76,11 +78,13 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Init
   
   init(model: WalletsListModel,
+       balanceLoader: BalanceLoader,
        totalBalancesStore: TotalBalanceStore,
        appSettingsStore: AppSettingsStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
+    self.balanceLoader = balanceLoader
     self.totalBalancesStore = totalBalancesStore
     self.appSettingsStore = appSettingsStore
     self.decimalAmountFormatter = decimalAmountFormatter
