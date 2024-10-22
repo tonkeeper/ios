@@ -19,3 +19,15 @@ extension String {
       .replacingOccurrences(of: "=", with: "")
   }
 }
+
+extension String {
+  func fixBase64() -> String {
+    var result = self
+      .replacingOccurrences(of: "-", with: "+")
+      .replacingOccurrences(of: "_", with: "/")
+    if result.count % 4 != 0 {
+      result.append(String(repeating: "=", count: 4 - result.count % 4))
+    }
+    return result
+  }
+}
