@@ -146,7 +146,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let totalBalanceModel: WalletTotalBalanceModel
   private let walletsStore: WalletsStore
   private let notificationStore: InternalNotificationsStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let appSettingsStore: AppSettingsStore
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
@@ -158,7 +158,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
        totalBalanceModel: WalletTotalBalanceModel,
        walletsStore: WalletsStore,
        notificationStore: InternalNotificationsStore,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        appSettingsStore: AppSettingsStore,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
@@ -169,7 +169,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     self.totalBalanceModel = totalBalanceModel
     self.walletsStore = walletsStore
     self.notificationStore = notificationStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.appSettingsStore = appSettingsStore
     self.listMapper = listMapper
     self.headerMapper = headerMapper
@@ -211,15 +211,12 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
       }
     }
-    configurationStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateConfiguration:
-        observer.syncQueue.async {
-          guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else { return }
-          let model = observer.createHeaderModel(state: totalBalanceModelState)
-          DispatchQueue.main.async {
-            observer.didUpdateHeader?(model)
-          }
+    configuration.addUpdateObserver(self) { observer in
+      observer.syncQueue.async {
+        guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else { return }
+        let model = observer.createHeaderModel(state: totalBalanceModelState)
+        DispatchQueue.main.async {
+          observer.didUpdateHeader?(model)
         }
       }
     }
@@ -405,19 +402,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = configuration
         sectionItems.append(notificationsItem)
       case .telegramChannel:
-      let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
+        let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
           guard let self else {
             return
           }
-
-          Task {
-            guard let telegramChannelURL = await self.configurationStore.getConfiguration().tonkeeperNewsUrl else {
-              return
-            }
-            await MainActor.run {
-              self.urlOpener.open(url: telegramChannelURL)
-            }
+          guard let telegramChannelURL = self.configuration.tonkeeperNewsUrl else {
+            return
           }
+          self.urlOpener.open(url: telegramChannelURL)
         })
 
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
@@ -759,7 +751,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
-    let flags = configurationStore.getConfiguration().flags
+    let flags = configuration.flags
     let sendButton: WalletBalanceHeaderButtonsView.Model.Button = {
       WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.send,

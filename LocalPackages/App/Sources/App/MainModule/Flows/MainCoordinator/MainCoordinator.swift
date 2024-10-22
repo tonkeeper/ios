@@ -944,7 +944,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     module.output.didTapOpenTransactionInTonviewer = { [weak self, keeperCoreMainAssembly] in
-      guard let url = TonviewerLinkBuilder(configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore)
+      guard let url = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
         .buildLink(context: .eventDetails(eventID: event.accountEvent.eventId), isTestnet: wallet.isTestnet) else { return }
       self?.openDapp(title: "Tonviewer", url: url)
     }

@@ -42,7 +42,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let currencyStore: CurrencyStore
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -53,7 +53,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        currencyStore: CurrencyStore,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -61,7 +61,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.currencyStore = currencyStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -426,11 +426,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.question, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .faqUrl else {
             return
           }
@@ -453,11 +452,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .directSupportUrl else {
             return
           }
@@ -480,11 +478,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .tonkeeperNewsUrl else {
             return
           }
@@ -507,11 +504,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.messageBubble, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .supportLink else {
             return
           }

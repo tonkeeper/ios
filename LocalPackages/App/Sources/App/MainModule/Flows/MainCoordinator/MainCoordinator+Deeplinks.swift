@@ -214,14 +214,14 @@ extension MainCoordinator {
     
     let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
+    let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.activeWallet
-        let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret
-        let currency = await currencyStore.getState()
+        let wallet = try walletsStore.activeWallet
+        let mercuryoSecret = await configuration.mercuryoSecret
+        let currency = currencyStore.getState()
         
         let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
         guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),

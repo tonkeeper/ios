@@ -6,20 +6,20 @@ public final class BuyListController {
   private let wallet: Wallet
   private let buySellMethodsService: BuySellMethodsService
   private let locationService: LocationService
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let currencyStore: CurrencyStore
   private let isMarketRegionPickerAvailable: Bool
   
   init(wallet: Wallet,
        buySellMethodsService: BuySellMethodsService,
        locationService: LocationService,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        currencyStore: CurrencyStore,
        isMarketRegionPickerAvailable: Bool) {
     self.wallet = wallet
     self.buySellMethodsService = buySellMethodsService
     self.locationService = locationService
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.currencyStore = currencyStore
     self.isMarketRegionPickerAvailable = isMarketRegionPickerAvailable
   }
@@ -66,7 +66,7 @@ private extension BuyListController {
   }
   
   func mapFiatMethods(_ fiatMethods: FiatMethods) async -> [[BuySellItemModel]] {
-    let currency = await currencyStore.getState()
+    let currency = currencyStore.getState()
     var sections = [[BuySellItemModel]]()
     for category in fiatMethods.categories {
       var items = [BuySellItemModel]()
@@ -119,7 +119,7 @@ private extension BuyListController {
                             walletAddress: String) async {
     urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: "mercuryo_\(UUID().uuidString)")
     
-    let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret ?? ""
+    let mercuryoSecret = await configuration.mercuryoSecret ?? ""
 
     guard let signature = (walletAddress + mercuryoSecret).data(using: .utf8)?.sha256().hexString() else { return }
     urlString += "&signature=\(signature)"

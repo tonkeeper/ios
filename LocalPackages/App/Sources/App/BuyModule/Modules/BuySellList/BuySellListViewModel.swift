@@ -135,7 +135,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   private let fiatMethodsStore: FiatMethodsStore
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let regionStore: RegionStore
   private let appSettings: AppSettings
   
@@ -146,14 +146,14 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        regionStore: RegionStore,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        appSettings: AppSettings) {
     self.wallet = wallet
     self.fiatMethodsStore = fiatMethodsStore
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.regionStore = regionStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.appSettings = appSettings
   }
 }
@@ -437,7 +437,7 @@ private extension BuySellListViewModelImplementation {
           do {
             let currency = await self.currencyStore.getState()
             let walletAddress = try self.wallet.friendlyAddress
-            let mercuryoSecret = try? await self.configurationStore.getConfiguration().mercuryoSecret
+            let mercuryoSecret = try? await self.configuration.mercuryoSecret
             guard let url = item.actionURL(
               walletAddress: walletAddress,
               currency: currency,

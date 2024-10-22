@@ -124,8 +124,7 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
-      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
+      let linkBuilder = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }

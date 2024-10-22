@@ -6,20 +6,20 @@ public final class RootController {
     case main(wallets: [Wallet], activeWallet: Wallet)
   }
 
-  private let remoteConfigurationStore: ConfigurationLoader
+  private let configuration: Configuration
   private let knownAccountsStore: KnownAccountsStore
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
   private let mnemonicsRepository: MnemonicsRepository
   private let fiatMethodsLoader: FiatMethodsLoader
   
-  init(remoteConfigurationStore: ConfigurationLoader,
+  init(configuration: Configuration,
        knownAccountsStore: KnownAccountsStore,
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
        mnemonicsRepository: MnemonicsRepository,
        fiatMethodsLoader: FiatMethodsLoader) {
-    self.remoteConfigurationStore = remoteConfigurationStore
+    self.configuration = configuration
     self.knownAccountsStore = knownAccountsStore
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
@@ -33,10 +33,7 @@ public final class RootController {
   
   public func loadConfigurations() {
     Task {
-      await remoteConfigurationStore.load()
-    }
-    Task {
-      await remoteConfigurationStore.load()
+      await configuration.loadConfiguration()
     }
     Task {
       try await knownAccountsStore.load()

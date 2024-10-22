@@ -169,7 +169,7 @@ public final class MainAssembly {
       wallet: wallet,
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
-      configurationStore: configurationAssembly.configurationStore,
+      configuration: configurationAssembly.configuration,
       currencyStore: storesAssembly.currencyStore,
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )

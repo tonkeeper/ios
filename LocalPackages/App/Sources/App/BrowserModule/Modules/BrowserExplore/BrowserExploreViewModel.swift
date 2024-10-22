@@ -35,6 +35,11 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
+    configuration.addUpdateObserver(self) { observer in
+      Task {
+        await observer.reloadContent()
+      }
+    }
     Task {
       bindRegion()
       await reloadContent()
@@ -85,23 +90,23 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   private let browserExploreController: BrowserExploreController
   private let regionStore: RegionStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
 
   // MARK: - Init
   
   init(browserExploreController: BrowserExploreController, 
        regionStore: RegionStore,
-       configurationStore: ConfigurationStore) {
+       configuration: Configuration) {
     self.browserExploreController = browserExploreController
     self.regionStore = regionStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
   }
 }
 
 private extension BrowserExploreViewModelImplementation {
 
   func reloadContent() async {
-    let flags = await configurationStore.getConfiguration().flags
+    let flags = configuration.flags
     guard !flags.isDappsDisable else {
       await setEmptyState()
       return 

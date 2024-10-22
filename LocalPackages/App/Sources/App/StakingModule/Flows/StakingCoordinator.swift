@@ -59,14 +59,10 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       self?.didFinish?()
     }
     module.view.setupLeftButton(image: .TKUIKit.Icons.Size16.informationCircle) { [keeperCoreMainAssembly, coreAssembly] in
-      Task {
-        guard let url = await keeperCoreMainAssembly.configurationAssembly.configurationStore.getConfiguration().stakingInfoUrl else {
-          return
-        }
-        await MainActor.run {
-          coreAssembly.urlOpener().open(url: url)
-        }
+      guard let url = keeperCoreMainAssembly.configurationAssembly.configuration.stakingInfoUrl else {
+        return
       }
+      coreAssembly.urlOpener().open(url: url)
     }
     
     module.output.didConfirm = { [weak self] item in
