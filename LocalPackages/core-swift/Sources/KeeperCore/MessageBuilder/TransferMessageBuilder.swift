@@ -121,12 +121,12 @@ public enum TransferData {
   public struct TonConnect {
     public struct Payload {
       public let value: BigInt
-      public let recipientAddress: FriendlyAddress
+      public let recipientAddress: AnyAddress
       public let stateInit: String?
       public let payload: String?
       
       public init(value: BigInt,
-                  recipientAddress: FriendlyAddress,
+                  recipientAddress: AnyAddress,
                   stateInit: String?,
                   payload: String?) {
         self.value = value
@@ -465,12 +465,12 @@ public struct TonConnectTransferMessageBuilder {
   
   public struct Payload {
     let value: BigInt
-    let recipientAddress: FriendlyAddress
+    let recipientAddress: AnyAddress
     let stateInit: String?
     let payload: String?
     
     public init(value: BigInt,
-                recipientAddress: FriendlyAddress,
+                recipientAddress: AnyAddress,
                 stateInit: String?,
                 payload: String?) {
       self.value = value
@@ -502,7 +502,12 @@ public struct TonConnectTransferMessageBuilder {
       return MessageRelaxed.internal(
         to: payload.recipientAddress.address,
         value: payload.value.magnitude,
-        bounce: payload.recipientAddress.isBounceable,
+        bounce: {
+          switch payload.recipientAddress {
+          case .address: return true
+          case .friendlyAddress(let friendlyAddress): return friendlyAddress.isBounceable
+          }
+        }(),
         stateInit: stateInit,
         body: body)
     }

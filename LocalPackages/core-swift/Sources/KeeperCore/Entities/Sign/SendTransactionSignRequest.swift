@@ -26,7 +26,7 @@ public struct SendTransactionParam: Decodable {
   }
   
   public struct Message: Decodable {
-    let address: FriendlyAddress
+    let address: AnyAddress
     let amount: Int64
     let stateInit: String?
     let payload: String?
@@ -40,7 +40,7 @@ public struct SendTransactionParam: Decodable {
     
     public init(from decoder: Decoder) throws {
       let container = try decoder.container(keyedBy: CodingKeys.self)
-      address = try FriendlyAddress(string: try container.decode(String.self, forKey: .address))
+      address = try container.decode(AnyAddress.self, forKey: .address)
       if let amountString = try? container.decode(String.self, forKey: .amount) {
         amount = Int64(amountString) ?? 0
       } else {
@@ -51,7 +51,7 @@ public struct SendTransactionParam: Decodable {
       payload = try container.decodeIfPresent(String.self, forKey: .payload)
     }
     
-    public init(address: FriendlyAddress, amount: Int64, stateInit: String?, payload: String?) {
+    public init(address: AnyAddress, amount: Int64, stateInit: String?, payload: String?) {
       self.address = address
       self.amount = amount
       self.stateInit = stateInit
