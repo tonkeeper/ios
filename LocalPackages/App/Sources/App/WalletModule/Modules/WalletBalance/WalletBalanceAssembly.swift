@@ -27,7 +27,7 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
         totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-        backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
+        backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
         balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
         updateQueue: queue
       ),

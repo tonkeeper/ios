@@ -127,7 +127,9 @@ public final class Configuration {
         return loadTask
       }
       let task = Task<RemoteConfiguration, Swift.Error> {
-        try await remoteConfigurationService.loadConfiguration()
+        let configuration = try await remoteConfigurationService.loadConfiguration()
+        self.configuration = configuration
+        return configuration
       }
       self.loadTask = task
       return task
@@ -135,7 +137,6 @@ public final class Configuration {
     
     do {
       let configuration = try await task.value
-      self.configuration = configuration
       return configuration
     } catch {
       return self.configuration

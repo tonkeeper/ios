@@ -579,7 +579,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [WalletBalanceBalanceModel.Item]) async {
     let listModel = await self.listModel
-    let isSecure = await self.appSettingsStore.getState().isSecureMode
+    let isSecure = self.appSettingsStore.state.isSecureMode
     var listItemsConfigurations = listModel.listItemsConfigurations
     var items = [WalletBalanceListItem: WalletBalanceListCell.Configuration]()
     
@@ -696,7 +696,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       balanceModel: balanceModel,
       addressButtonConfiguration: addressButtonConfiguration,
       connectionStatusModel: self.createConnectionStatusModel(
-        backgroundUpdateState: state.backgroundUpdateState,
+        backgroundUpdateState: state.backgroundUpdateConnectionState,
         isLoading: state.isLoadingBalance
       ),
       tags: state.wallet.balanceTagConfigurations(),
@@ -719,7 +719,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStore.ConnectionState, isLoading: Bool) -> ConnectionStatusView.Model? {
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> ConnectionStatusView.Model? {
     switch (backgroundUpdateState, isLoading) {
     case (.connecting, _):
       return ConnectionStatusView.Model(

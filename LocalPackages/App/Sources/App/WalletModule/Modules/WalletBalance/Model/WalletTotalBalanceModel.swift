@@ -10,7 +10,7 @@ final class WalletTotalBalanceModel {
     let address: FriendlyAddress
     let totalBalanceState: TotalBalanceState?
     let isSecure: Bool
-    let backgroundUpdateState: BackgroundUpdateStore.ConnectionState
+    let backgroundUpdateConnectionState: BackgroundUpdateConnectionState
     let isLoadingBalance: Bool
   }
   
@@ -19,20 +19,20 @@ final class WalletTotalBalanceModel {
   private let walletsStore: WalletsStore
   private let totalBalanceStore: TotalBalanceStore
   private let appSettingsStore: AppSettingsStore
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdate: BackgroundUpdate
   private let balanceLoader: BalanceLoader
   private let updateQueue: DispatchQueue
   
   init(walletsStore: WalletsStore,
        totalBalanceStore: TotalBalanceStore,
        appSettingsStore: AppSettingsStore,
-       backgroundUpdateStore: BackgroundUpdateStore,
+       backgroundUpdate: BackgroundUpdate,
        balanceLoader: BalanceLoader,
        updateQueue: DispatchQueue) {
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
     self.appSettingsStore = appSettingsStore
-    self.backgroundUpdateStore = backgroundUpdateStore
+    self.backgroundUpdate = backgroundUpdate
     self.balanceLoader = balanceLoader
     self.updateQueue = updateQueue
     
@@ -48,8 +48,8 @@ final class WalletTotalBalanceModel {
       observer.didGetAppSettingsStoreEvent(event)
     }
     
-    backgroundUpdateStore.addObserver(self) { observer, event in
-      observer.didGetBackgroundUpdateStoreEvent(event)
+    backgroundUpdate.addStateObserver(self) { observer, wallet, state in
+      observer.didGetBackgroundUpdateEvent(wallet: wallet, connection: state)
     }
     
     balanceLoader.addUpdateObserver(self) { observer, wallet in
@@ -61,13 +61,13 @@ final class WalletTotalBalanceModel {
     let activeWallet = try walletsStore.activeWallet
     let isSecureMode = appSettingsStore.state.isSecureMode
     let totalBalanceState = totalBalanceStore.state[activeWallet]
-//    let backgroundUpdateState = backgroundUpdateStore.state[activeWallet] ?? .connecting
+    let backgroundUpdateState = backgroundUpdate.getState(wallet: activeWallet)
     let isLoadingBalance = balanceLoader.isLoadingBalance(wallet: activeWallet)
     return try createState(
       wallet: activeWallet,
       isSecureMode: isSecureMode,
       totalBalanceState: totalBalanceState,
-      backgroundUpdateState: .connected,
+      backgroundUpdateState: backgroundUpdateState,
       isLoadingBalance: isLoadingBalance
     )
   }
@@ -107,8 +107,10 @@ final class WalletTotalBalanceModel {
     }
   }
   
-  private func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
+  private func didGetBackgroundUpdateEvent(wallet: Wallet, connection: BackgroundUpdateConnectionState) {
     updateQueue.async { [weak self] in
+      guard let activeWallet = try? self?.walletsStore.activeWallet,
+      wallet == activeWallet else { return }
       self?.updateModel()
     }
   }
@@ -121,14 +123,14 @@ final class WalletTotalBalanceModel {
   private func createState(wallet: Wallet,
                            isSecureMode: Bool,
                            totalBalanceState: TotalBalanceState?,
-                           backgroundUpdateState: BackgroundUpdateStore.ConnectionState,
+                           backgroundUpdateState: BackgroundUpdateConnectionState,
                            isLoadingBalance: Bool) throws -> State {
     return State(
       wallet: wallet,
       address: try wallet.friendlyAddress,
       totalBalanceState: totalBalanceState,
       isSecure: isSecureMode,
-      backgroundUpdateState: backgroundUpdateState,
+      backgroundUpdateConnectionState: backgroundUpdateState,
       isLoadingBalance: isLoadingBalance
     )
   }

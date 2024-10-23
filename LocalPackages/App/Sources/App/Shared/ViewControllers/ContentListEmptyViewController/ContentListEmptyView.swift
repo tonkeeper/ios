@@ -48,7 +48,7 @@ private extension ContentListEmptyView {
     backgroundColor = .Background.page
     addSubview(emptyViewContainer)
     addSubview(listViewContainer)
-    addSubview(navigationBarView)
+//    addSubview(navigationBarView)
     
     setupConstraints()
   }
@@ -60,8 +60,8 @@ private extension ContentListEmptyView {
     listViewContainer.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
-    navigationBarView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
-    }
+//    navigationBarView.snp.makeConstraints { make in
+//      make.top.left.right.equalTo(self)
+//    }
   }
 }

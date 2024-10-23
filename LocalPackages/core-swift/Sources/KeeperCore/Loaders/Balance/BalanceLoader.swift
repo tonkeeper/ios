@@ -5,7 +5,8 @@ public final class BalanceLoader {
   private var observers = [UUID: (Wallet) -> Void]()
   private let lock = NSLock()
   
-  private var balanceLoadTask: Task<Void, Never>?
+  private var balanceLoadTasks = [Wallet: Task<Void, Never>]()
+  private var allWalletsBalanceLoadTask: Task<Void, Never>?
   private var reloadTask: Task<Void, Never>?
   
   private var walletBalanceLoaders = [Wallet: WalletBalanceLoader]()
@@ -38,21 +39,24 @@ public final class BalanceLoader {
     walletBalanceLoaders[wallet]?.isLoading ?? false
   }
   
-  public func loadActiveWalletBalance() {
-    guard let activeWallet = try? walletStore.activeWallet else { return }
-    balanceLoadTask?.cancel()
-    
-    let walletBalanceLoader = walletBalanceLoaders[activeWallet]
+  public func loadWalletBalance(wallet: Wallet) {
+    balanceLoadTasks[wallet]?.cancel()
+    let walletBalanceLoader = walletBalanceLoaders[wallet]
     let task = Task {
       let currency = currencyStore.state
       await loadRates(currency: currency)
       await walletBalanceLoader?.reloadBalance(currency: currency)
     }
-    balanceLoadTask = task
+    balanceLoadTasks[wallet] = task
+  }
+  
+  public func loadActiveWalletBalance() {
+    guard let activeWallet = try? walletStore.activeWallet else { return }
+    loadWalletBalance(wallet: activeWallet)
   }
   
   public func loadAllWalletsBalance() {
-    balanceLoadTask?.cancel()
+    allWalletsBalanceLoadTask?.cancel()
     let loaders = walletStore.wallets.compactMap { walletBalanceLoaders[$0] }
     let task = Task {
       let currency = currencyStore.state
@@ -69,7 +73,7 @@ public final class BalanceLoader {
         }
       }
     }
-    balanceLoadTask = task
+    allWalletsBalanceLoadTask = task
   }
   
   public func startActiveWalletBalanceReload() {

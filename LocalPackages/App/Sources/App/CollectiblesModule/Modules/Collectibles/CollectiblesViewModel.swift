@@ -43,9 +43,9 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   }
 
   private func configureBindings() {
-    backgroundUpdateStore.addObserver(self) { observer, event in
-      observer.didGetBackgroundUpdateStoreEvent(event)
-    }
+//    backgroundUpdateStore.addObserver(self) { observer, event in
+//      observer.didGetBackgroundUpdateStoreEvent(event)
+//    }
 
 //    walletStateLoader.addObserver(self) { observer, event in
 //      observer.didGetWalletStateLoaderEvent(event)
@@ -63,30 +63,30 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   private let wallet: Wallet
   private let walletNFTManagedStore: WalletNFTsManagedStore
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdate: BackgroundUpdate
   private let walletBalanceLoader: WalletBalanceLoader
   
   init(wallet: Wallet,
        walletNFTManagedStore: WalletNFTsManagedStore,
-       backgroundUpdateStore: BackgroundUpdateStore,
+       backgroundUpdate: BackgroundUpdate,
        walletBalanceLoader: WalletBalanceLoader) {
     self.wallet = wallet
     self.walletNFTManagedStore = walletNFTManagedStore
-    self.backgroundUpdateStore = backgroundUpdateStore
+    self.backgroundUpdate = backgroundUpdate
     self.walletBalanceLoader = walletBalanceLoader
   }
 }
 
 private extension CollectiblesViewModelImplementation {
-  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
-    switch event {
-    case .didUpdateConnectionState(_, let wallet):
-      guard wallet == self.wallet else { return }
-      DispatchQueue.main.async {
-        self.update()
-      }
-    }
-  }
+//  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
+//    switch event {
+//    case .didUpdateConnectionState(_, let wallet):
+//      guard wallet == self.wallet else { return }
+//      DispatchQueue.main.async {
+//        self.update()
+//      }
+//    }
+//  }
   
 //  func didGetWalletStateLoaderEvent(_ event: WalletBalanceLoader.Event) {
 //    switch event {
@@ -116,19 +116,20 @@ private extension CollectiblesViewModelImplementation {
   
   func update() {
     let isLoading = {
-      let updateState = backgroundUpdateStore.getState()[wallet] ?? .connecting
-      let isBackgroundUpdate: Bool
-      switch updateState {
-      case .connected:
-        isBackgroundUpdate = false
-      default:
-        isBackgroundUpdate = true
-      }
-      
-//      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
-      let isLoadingNft = false
-      
-      return isLoadingNft || isBackgroundUpdate
+      return false
+//      let updateState = backgroundUpdateStore.getState()[wallet] ?? .connecting
+//      let isBackgroundUpdate: Bool
+//      switch updateState {
+//      case .connected:
+//        isBackgroundUpdate = false
+//      default:
+//        isBackgroundUpdate = true
+//      }
+//      
+////      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
+//      let isLoadingNft = false
+//      
+//      return isLoadingNft || isBackgroundUpdate
     }()
     
     let isEmpty = walletNFTManagedStore.getState().isEmpty

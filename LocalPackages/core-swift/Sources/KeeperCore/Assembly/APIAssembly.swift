@@ -56,7 +56,7 @@ final class APIAssembly {
   
   private var _streamingAPI: StreamingAPI?
   public var streamingAPI: StreamingAPI {
-    let isRealtimeHost = false
+    let isRealtimeHost = true
     if let _streamingAPI {
       return _streamingAPI
     }

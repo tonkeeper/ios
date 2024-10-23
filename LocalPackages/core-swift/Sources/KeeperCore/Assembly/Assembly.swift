@@ -21,6 +21,11 @@ public final class Assembly {
     tonkeeperApiAssembly: tonkeeperApiAssembly,
     coreAssembly: coreAssembly
   )
+  private lazy var backgroundUpdateAssembly = BackgroundUpdateAssembly(
+    apiAssembly: apiAssembly,
+    storesAssembly: storesAssembly,
+    coreAssembly: coreAssembly
+  )
   private lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
   private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
@@ -86,6 +91,7 @@ public extension Assembly {
       passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
+      backgroundUpdateAssembly: backgroundUpdateAssembly,
       rnAssembly: rnAssembly
     )
   }

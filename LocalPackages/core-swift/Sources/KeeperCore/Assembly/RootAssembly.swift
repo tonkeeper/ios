@@ -13,6 +13,7 @@ public final class RootAssembly {
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
+  public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
 
   init(appInfoProvider: AppInfoProvider,
@@ -27,6 +28,7 @@ public final class RootAssembly {
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
+       backgroundUpdateAssembly: BackgroundUpdateAssembly,
        rnAssembly: RNAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
@@ -40,6 +42,7 @@ public final class RootAssembly {
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
   }
   
@@ -90,7 +93,8 @@ public final class RootAssembly {
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
-      loadersAssembly: loadersAssembly
+      loadersAssembly: loadersAssembly,
+      backgroundUpdateAssembly: backgroundUpdateAssembly
     )
   }
 }

@@ -9,7 +9,7 @@ public final class MainController {
   private var backgroundUpdateStoreObservationToken: ObservationToken?
   private var updatesStarted = false
   
-  private let backgroundUpdateUpdater: BackgroundUpdateUpdater
+  private let backgroundUpdate: BackgroundUpdate
   private let tonConnectEventsStore: TonConnectEventsStore
   private let tonConnectService: TonConnectService
   private let deeplinkParser: DeeplinkParser
@@ -17,18 +17,24 @@ public final class MainController {
   private let balanceLoader: BalanceLoader
   private let internalNotificationsLoader: InternalNotificationsLoader
   
-  init(backgroundUpdateUpdater: BackgroundUpdateUpdater,
+  init(backgroundUpdate: BackgroundUpdate,
        tonConnectEventsStore: TonConnectEventsStore,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
        balanceLoader: BalanceLoader,
        internalNotificationsLoader: InternalNotificationsLoader) {
-    self.backgroundUpdateUpdater = backgroundUpdateUpdater
+    self.backgroundUpdate = backgroundUpdate
     self.tonConnectEventsStore = tonConnectEventsStore
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
     self.balanceLoader = balanceLoader
     self.internalNotificationsLoader = internalNotificationsLoader
+    
+    backgroundUpdate.addEventObserver(self) { [weak self] observer, wallet, event in
+      DispatchQueue.main.async {
+        self?.balanceLoader.loadWalletBalance(wallet: wallet)
+      }
+    }
   }
   
   public func start() {
@@ -44,8 +50,8 @@ public final class MainController {
     guard !updatesStarted else { return }
     balanceLoader.loadActiveWalletBalance()
     balanceLoader.startActiveWalletBalanceReload()
+    backgroundUpdate.start()
     Task {
-      await backgroundUpdateUpdater.start()
       await tonConnectEventsStore.addObserver(self)
       await tonConnectEventsStore.start()
       await MainActor.run {
@@ -56,8 +62,8 @@ public final class MainController {
   
   public func stopUpdates() {
     balanceLoader.stopActiveWalletBalanceReload()
+    backgroundUpdate.stop()
     Task {
-      await backgroundUpdateUpdater.stop()
       await tonConnectEventsStore.stop()
       await tonConnectEventsStore.removeObserver(self)
       await MainActor.run {

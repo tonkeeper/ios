@@ -260,33 +260,7 @@ public final class StoresAssembly {
       return walletNotificationStore
     }
   }
-  
-  private weak var _backgroundUpdateStore: BackgroundUpdateStore?
-  public var backgroundUpdateStore: BackgroundUpdateStore {
-    if let backgroundUpdateStore = _backgroundUpdateStore {
-      return backgroundUpdateStore
-    } else {
-      let backgroundUpdateStore = BackgroundUpdateStore()
-      _backgroundUpdateStore = backgroundUpdateStore
-      return backgroundUpdateStore
-    }
-  }
-  
-  private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
-  public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
-    if let backgroundUpdateUpdater = _backgroundUpdateUpdater {
-      return backgroundUpdateUpdater
-    } else {
-      let backgroundUpdateUpdater = BackgroundUpdateUpdater(
-        backgroundUpdateStore: backgroundUpdateStore,
-        walletsStore: walletsStore,
-        streamingAPI: apiAssembly.streamingAPI
-      )
-      _backgroundUpdateUpdater = backgroundUpdateUpdater
-      return backgroundUpdateUpdater
-    }
-  }
-  
+
   private weak var _appSettingsStore: AppSettingsStore?
   public var appSettingsStore: AppSettingsStore {
     if let appSettingsStore = _appSettingsStore {

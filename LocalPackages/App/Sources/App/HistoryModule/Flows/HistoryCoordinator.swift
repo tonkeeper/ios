@@ -67,8 +67,9 @@ private extension HistoryCoordinator {
         }
       }
       
+      weak var historyInput = historyModule.input
       listModule.output.didUpdateState = { hasEvents in
-        historyModule.input.setHasEvents(hasEvents)
+        historyInput?.setHasEvents(hasEvents)
       }
       
       listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in

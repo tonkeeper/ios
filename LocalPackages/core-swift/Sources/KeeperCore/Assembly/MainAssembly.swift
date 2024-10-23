@@ -14,6 +14,7 @@ public final class MainAssembly {
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
+  public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
   
   init(appInfoProvider: AppInfoProvider,
@@ -27,7 +28,8 @@ public final class MainAssembly {
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
-       loadersAssembly: LoadersAssembly) {
+       loadersAssembly: LoadersAssembly,
+       backgroundUpdateAssembly: BackgroundUpdateAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -40,6 +42,7 @@ public final class MainAssembly {
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.backgroundUpdateAssembly = backgroundUpdateAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -48,7 +51,7 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
+      backgroundUpdate: backgroundUpdateAssembly.backgroundUpdate,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DeeplinkParser(),

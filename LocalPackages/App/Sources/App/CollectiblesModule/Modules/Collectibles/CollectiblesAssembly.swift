@@ -11,7 +11,7 @@ struct CollectiblesAssembly {
     let viewModel = CollectiblesViewModelImplementation(
       wallet: wallet,
       walletNFTManagedStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet),
-      backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
+      backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
       walletBalanceLoader: keeperCoreMainAssembly.loadersAssembly.walletBalanceLoaders(wallet: wallet)
     )
     let viewController = CollectiblesViewController(
