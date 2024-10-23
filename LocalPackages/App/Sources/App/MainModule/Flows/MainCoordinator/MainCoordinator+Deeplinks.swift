@@ -6,6 +6,7 @@ import BigInt
 import TKLocalize
 
 extension MainCoordinator {
+  
   func openSendDeeplink(recipient: String,
                         amount: BigUInt?,
                         comment: String?,
@@ -31,7 +32,6 @@ extension MainCoordinator {
     let deeplinkHandleTask = Task {
       do {
         let wallet = try await walletsStore.getActiveWallet()
-        
         let token: Token
         if let jettonAddress {
           let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)

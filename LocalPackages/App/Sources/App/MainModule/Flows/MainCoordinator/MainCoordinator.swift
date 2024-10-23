@@ -1037,14 +1037,19 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
+
+    var okButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    okButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
+    okButtonConfiguration.action = {[weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+
     let configuration = configurationBuilder.insufficientTokenConfiguration(
       tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
       tokenFractionalDigits: jettonInfo.fractionDigits,
       required: requiredAmount,
       available: availableAmount,
-      okAction: { [weak bottomSheetViewController] in
-        bottomSheetViewController?.dismiss()
-      }
+      buttons: [okButtonConfiguration]
     )
     viewController.configuration = configuration
     router.dismiss(animated: true) { [router] in

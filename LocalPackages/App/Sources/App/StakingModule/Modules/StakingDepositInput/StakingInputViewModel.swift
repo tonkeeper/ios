@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import BigInt
+import TKLocalize
 
 protocol StakingInputDetailsModuleInput: AnyObject {
   func configureWith(stackingPoolInfo: StackingPoolInfo,
@@ -208,12 +209,13 @@ private extension StakingInputViewModelImplementation {
         lineBreakMode: .byTruncatingTail
       )
     case .insufficient:
-      string = "Insufficient balance".withTextStyle(
-        .body2,
-        color: .Accent.red,
-        alignment: .right,
-        lineBreakMode: .byTruncatingTail
-      )
+      string = TKLocales.InsufficientFunds.insufficientBalance
+        .withTextStyle(
+          .body2,
+          color: .Accent.red,
+          alignment: .right,
+          lineBreakMode: .byTruncatingTail
+        )
     }
     didUpdateRemaining?(string)
   }

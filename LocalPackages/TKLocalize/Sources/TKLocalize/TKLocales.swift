@@ -586,6 +586,23 @@ public enum TKLocales {
     /// Enter recovery phrase
     public static let title = TKLocales.tr("Localizable", "import_wallet.title", fallback: "Enter recovery phrase")
   }
+  public enum InsufficientFunds {
+    /// Buy %@
+    public static func buyTokenTitle(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "insufficientFunds.buy_token_title", String(describing: p1), fallback: "Buy %@")
+    }
+    /// Insufficient balance
+    public static let insufficientBalance = TKLocales.tr("Localizable", "insufficientFunds.insufficient_balance", fallback: "Insufficient balance")
+    /// Recharge Wallet
+    public static let rechargeWallet = TKLocales.tr("Localizable", "insufficientFunds.recharge_wallet", fallback: "Recharge Wallet")
+    /// Insufficient Funds
+    public static let title = TKLocales.tr("Localizable", "insufficientFunds.title", fallback: "Insufficient Funds")
+    /// To be paid: %@.
+    /// Your balance: %@.
+    public static func toBePaidYourBalance(_ p1: Any, _ p2: Any) -> String {
+      return TKLocales.tr("Localizable", "insufficientFunds.to_be_paid_your_balance", String(describing: p1), String(describing: p2), fallback: "To be paid: %@.\nYour balance: %@.")
+    }
+  }
   public enum LedgerConfirm {
     /// Confirm Action
     public static let title = TKLocales.tr("Localizable", "ledger_confirm.title", fallback: "Confirm Action")
@@ -1107,6 +1124,8 @@ public enum TKLocales {
     public static let unverified = TKLocales.tr("Localizable", "token.unverified", fallback: "Unverified token")
   }
   public enum TonConnect {
+    /// Allow notifications
+    public static let allowNotifications = TKLocales.tr("Localizable", "ton_connect.allow_notifications", fallback: "Allow notifications")
     /// Connect wallet
     public static let connectWallet = TKLocales.tr("Localizable", "ton_connect.connect_wallet", fallback: "Connect wallet")
     /// Be sure to check the service address before connecting the wallet.

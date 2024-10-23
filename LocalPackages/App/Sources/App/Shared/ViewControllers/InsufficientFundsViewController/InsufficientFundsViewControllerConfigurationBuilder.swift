@@ -17,7 +17,7 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
     tokenFractionalDigits: Int,
     required: BigUInt,
     available: BigUInt,
-    okAction: @escaping () -> Void) -> InsufficientFundsViewController.Configuration {
+    buttons: [TKButton.Configuration]) -> InsufficientFundsViewController.Configuration {
       let requiredFormattedAmount = amountFormatter.formatAmount(
         required,
         fractionDigits: tokenFractionalDigits,
@@ -31,19 +31,27 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
         maximumFractionDigits: 2,
         symbol: tokenSymbol
       )
-      
-      let caption = """
-    To be paid: \(requiredFormattedAmount)
-    Your balance: \(availableFormattedAmount)
-    """
-      
-      var okButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-      okButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
-      okButtonConfiguration.action = okAction
-      
+
+      let title = TKLocales.InsufficientFunds.title
+        .withTextStyle(
+          .h2,
+          color: .Text.primary,
+          alignment: .center
+        )
+
+      let caption = TKLocales.InsufficientFunds.toBePaidYourBalance(
+        requiredFormattedAmount, availableFormattedAmount
+      ).withTextStyle(
+        .body1,
+        color: .Text.secondary,
+        alignment: .center
+      )
+
       return InsufficientFundsViewController.Configuration(
+        title: title,
         caption: caption,
-        buttons: [okButtonConfiguration]
+        buttons: buttons
       )
     }
 }
+

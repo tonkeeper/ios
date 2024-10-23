@@ -83,6 +83,7 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControlle
 }
 
 private extension TonConnectConnectCoordinator {
+
   func openTonConnectConnect() {
     let module = TonConnectConnectAssembly.module(
       parameters: parameters,

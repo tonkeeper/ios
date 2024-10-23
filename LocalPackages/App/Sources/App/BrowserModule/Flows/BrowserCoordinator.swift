@@ -83,6 +83,16 @@ private extension BrowserCoordinator {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
+    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+      Task {
+        guard let wallet = try? await self?.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
+          return
+        }
+
+        await self?.openBuySell(wallet: wallet)
+      }
+    }
 
     addChild(coordinator)
     coordinator.start()
@@ -122,4 +132,19 @@ private extension BrowserCoordinator {
 
     fromViewController.present(navigationController, animated: true)
   }
+
+  @MainActor
+  func openBuySell(wallet: Wallet) {
+      let coordinator = BuyCoordinator(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly,
+        router: ViewControllerRouter(rootViewController: router.rootViewController)
+      )
+
+      router.dismiss(animated: true) { [weak self] in
+        self?.addChild(coordinator)
+        coordinator.start()
+      }
+    }
 }

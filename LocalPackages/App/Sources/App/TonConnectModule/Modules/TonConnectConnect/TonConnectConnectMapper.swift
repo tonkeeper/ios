@@ -68,7 +68,7 @@ struct TonConnectConnectMapper {
   private static func tickComponent(isOn: Bool, action: @escaping (Bool) -> Void) -> TKPopUp.Item {
     TonConnectConnectNotificationTickComponent(
       configuration: TonConnectConnectNotificationTickView.Configuration(
-        text: "Allow Notifications".withTextStyle(.label1, color: .Text.primary),
+        text: TKLocales.TonConnect.allowNotifications.withTextStyle(.label1, color: .Text.primary),
         isOn: isOn,
         action: action
       ),
