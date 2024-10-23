@@ -39,6 +39,7 @@ extension MainCoordinator {
             await MainActor.run {
               ToastPresenter.hideAll()
               self.openInsufficientFundsPopup(
+                wallet: wallet,
                 jettonInfo: jettonBalance.item.jettonInfo,
                 requiredAmount: amount,
                 availableAmount: jettonBalance.quantity
@@ -81,6 +82,7 @@ extension MainCoordinator {
           self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self?.openInsufficientFundsPopup(
+            wallet: try? walletsStore.getActiveWallet(),
             jettonInfo: jettonInfo,
             requiredAmount: amount ?? 0,
             availableAmount: balance

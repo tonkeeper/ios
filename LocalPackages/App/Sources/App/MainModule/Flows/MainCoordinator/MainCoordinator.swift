@@ -1030,7 +1030,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     coordinator.start()
   }
   
-  func openInsufficientFundsPopup(jettonInfo: JettonInfo, requiredAmount: BigUInt, availableAmount: BigUInt) {
+  func openInsufficientFundsPopup(
+    wallet: Wallet?,
+    jettonInfo: JettonInfo,
+    requiredAmount: BigUInt,
+    availableAmount: BigUInt
+  ) {
     let viewController = InsufficientFundsViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
     
@@ -1038,18 +1043,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
 
-    var okButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    okButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
-    okButtonConfiguration.action = {[weak bottomSheetViewController] in
+    let tokenSymbol = jettonInfo.symbol ?? jettonInfo.name
+    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.InsufficientFunds.buyTokenTitle(tokenSymbol)))
+    buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss()
+      if let self, let wallet {
+        self.openBuy(wallet: wallet)
+      }
     }
 
     let configuration = configurationBuilder.insufficientTokenConfiguration(
-      tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
+      tokenSymbol: tokenSymbol,
       tokenFractionalDigits: jettonInfo.fractionDigits,
       required: requiredAmount,
       available: availableAmount,
-      buttons: [okButtonConfiguration]
+      buttons: [buyButtonConfiguration]
     )
     viewController.configuration = configuration
     router.dismiss(animated: true) { [router] in

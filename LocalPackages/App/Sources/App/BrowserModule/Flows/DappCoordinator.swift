@@ -167,7 +167,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       let transactionAvailabilityModel = try await confirmTransactionController.confirmTransactionAvailability(param: appRequest.params.first)
       if let transactionAvailabilityModel,
           transactionAvailabilityModel.requiredAmount > transactionAvailabilityModel.availableAmount {
-        
+
         ToastPresenter.hideAll()
         await startInsufficientFlow(model: transactionAvailabilityModel)
         completion(.error(.userDeclinedTransaction))
