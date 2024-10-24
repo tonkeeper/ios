@@ -198,14 +198,8 @@ private extension TKNavigationBar {
   }
   
   func didUpdateConfiguration() {
-    rightButtonsStackView.arrangedSubviews.forEach {
-      rightButtonsStackView.removeArrangedSubview($0)
-      $0.removeFromSuperview()
-    }
-    largeBarRightButtonsStackView.arrangedSubviews.forEach {
-      largeBarRightButtonsStackView.removeArrangedSubview($0)
-      $0.removeFromSuperview()
-    }
+    rightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    largeBarRightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
 
     configuration.rightButtonItems.forEach {
       let button = TKUIHeaderIconButton()
