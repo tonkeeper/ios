@@ -66,7 +66,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       migrateIfNeed(deeplink: deeplink)
     case .main:
       migrateTonConnectVaultIfNeeded()
-      openMain(deeplink: deeplink)
+      handlePasscodeFlowIfNeeded { self.openMain(deeplink: deeplink) }
     }
   }
   
@@ -85,9 +85,58 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       return false
     }
   }
+
+  private func handlePasscodeFlowIfNeeded(completion: @escaping (() -> Void)) {
+    guard dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen else {
+      completion()
+      return
+    }
+
+    let router = NavigationControllerRouter(rootViewController: TKNavigationController())
+    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+
+    let validator = PasscodeConfirmationValidator(
+      mnemonicsRepository: mnemonicsRepository
+    )
+    let securityStore = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore
+    let passcodeBiometry = PasscodeBiometryProvider(
+      biometryProvider: BiometryProvider(),
+      securityStore: securityStore
+    )
+    let coordinator = PasscodeInputCoordinator(
+      router: router,
+      context: .entry,
+      validator: validator,
+      biometryProvider: passcodeBiometry,
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
+    )
+
+    coordinator.didInputPasscode = { [weak self, weak coordinator] _ in
+      self?.removeChild(coordinator)
+      completion()
+    }
+
+    coordinator.didLogout = { [dependencies, weak coordinator] in
+      guard let coordinator else { return }
+      let deleteController = dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
+      Task {
+        await deleteController.deleteAll()
+        await MainActor.run {
+          self.removeChild(coordinator)
+        }
+      }
+    }
+
+    coordinator.start()
+    addChild(coordinator)
+    
+    showViewController(coordinator.router.rootViewController, animated: false)
+  }
 }
 
 private extension RootCoordinator {
+
   func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
     removeChild(mainCoordinator)
     removeChild(onboardingCoordinator)
@@ -193,14 +242,6 @@ private extension RootCoordinator {
     
     if animated {
       UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
-    }
-  }
-  
-  func logout() async throws {
-    try await self.rootController.logout()
-    await MainActor.run {
-      self.mainCoordinator = nil
-      self.start(deeplink: nil)
     }
   }
 }

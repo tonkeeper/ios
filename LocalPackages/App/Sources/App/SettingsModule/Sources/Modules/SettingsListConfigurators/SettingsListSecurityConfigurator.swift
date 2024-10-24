@@ -180,7 +180,15 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
         )
       )
     )
-    
+
+    let isEnabled = self.securityStore.getState().isLockScreen
+    let action: (Bool) -> Void = { [weak self] isOn in
+      guard let self else { return }
+      Task {
+        await self.securityStore.setIsLockScreen(isOn)
+      }
+    }
+
     return SettingsListItem(
       id: .locksreenItemIdentifier,
       cellConfiguration: cellConfiguration,
@@ -188,12 +196,13 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
         TKListItemSwitchAccessoryView.Configuration(
           isOn: securityStore.getState().isLockScreen,
           isEnable: true,
-          action: { _ in
-            
+          action: { isEnabled in
+            action(isEnabled)
           }
         )
       ),
       onSelection: { _ in
+        action(!isEnabled)
       }
     )
   }

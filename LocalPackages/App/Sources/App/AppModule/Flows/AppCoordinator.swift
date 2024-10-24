@@ -47,6 +47,7 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
 }
 
 private extension AppCoordinator {
+  
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
     let rootCoordinator = RootCoordinator(
       router: ViewControllerRouter(rootViewController: UIViewController()),

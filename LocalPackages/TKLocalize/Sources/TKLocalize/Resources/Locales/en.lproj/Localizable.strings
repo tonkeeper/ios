@@ -244,6 +244,9 @@
 "passcode.create" = "Create passcode";
 "passcode.reenter" = "Re-enter passcode";
 "passcode.enter" = "Enter passcode";
+"passcode.logout" = "Log Out";
+"passcode.logout_confirmation_title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
+"passcode.logout_confirmation_description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
 "import_wallet.title" = "Enter recovery phrase";
 "import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
