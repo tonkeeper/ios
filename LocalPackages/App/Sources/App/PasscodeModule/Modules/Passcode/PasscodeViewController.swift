@@ -53,3 +53,15 @@ private extension PasscodeViewController {
     }
   }
 }
+
+extension PasscodeViewController {
+
+  func setupLogoutButton(title: String?, _ action: @escaping (() -> Void)) {
+    let button = TKUIHeaderTitleIconButton()
+    button.configure(
+      model: TKUIButtonTitleIconContentView.Model(title: title)
+    )
+    button.addTapAction(action)
+    navigationItem.rightBarButtonItem = UIBarButtonItem(customView: button)
+  }
+}

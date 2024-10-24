@@ -13,20 +13,29 @@ protocol PasscodeInputBiometryProvider {
 }
 
 final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  
+
+  enum Context {
+    case entry
+    case confirmation
+  }
+
   var didInputPasscode: ((String) -> Void)?
   var didCancel: (() -> Void)?
-  
+  var didLogout: (() -> Void)?
+
   private let validator: PasscodeInputValidator
   private let biometryProvider: PasscodeInputBiometryProvider
   private let mnemonicsRepository: MnemonicsRepository
   private let securityStore: SecurityStore
-    
+  private let context: Context
+
   init(router: NavigationControllerRouter,
+       context: Context,
        validator: PasscodeInputValidator,
        biometryProvider: PasscodeInputBiometryProvider,
        mnemonicsRepository: MnemonicsRepository,
        securityStore: SecurityStore) {
+    self.context = context
     self.validator = validator
     self.biometryProvider = biometryProvider
     self.mnemonicsRepository = mnemonicsRepository
@@ -42,6 +51,7 @@ final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRout
 }
 
 private extension PasscodeInputCoordinator {
+
   func openPasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
@@ -90,19 +100,42 @@ private extension PasscodeInputCoordinator {
     passcodeModule.output.biometryProvider = { [weak self] in
       await self?.biometryProvider.getBiometryState() ?? .none
     }
-    
-    passcodeModule.view.setupLeftCloseButton { [weak self] in
-      self?.didCancel?()
+
+    switch context {
+    case .entry:
+      passcodeModule.view.setupLogoutButton(title: TKLocales.Passcode.logout) { [weak self] in
+        self?.showLogoutConfirmationAlert { self?.didLogout?() }
+      }
+    case .confirmation:
+      passcodeModule.view.setupLeftCloseButton { [weak self] in
+        self?.didCancel?()
+      }
     }
     
     navigationController.pushViewController(passcodeInputModule.viewController, animated: false)
     
     router.push(viewController: passcodeModule.view)
   }
+
+  func showLogoutConfirmationAlert(completion: @escaping (() -> Void)) {
+    let alertController = UIAlertController(
+      title: TKLocales.Passcode.logoutConfirmationTitle,
+      message: TKLocales.Passcode.logoutConfirmationDescription,
+      preferredStyle: .alert
+    )
+    let cancelAction = UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
+    let logoutAction = UIAlertAction(title: TKLocales.SignOutWarning.title, style: .destructive) { _ in
+      completion()
+    }
+    alertController.addAction(cancelAction)
+    alertController.addAction(logoutAction)
+    router.rootViewController.present(alertController, animated: true)
+  }
 }
 
 extension PasscodeInputCoordinator {
-  static func confirmationCoordinator(router: NavigationControllerRouter, 
+
+  static func confirmationCoordinator(router: NavigationControllerRouter,
                                       mnemonicsRepository: MnemonicsRepository,
                                       securityStore: SecurityStore) -> PasscodeInputCoordinator {
     let validator = PasscodeConfirmationValidator(
@@ -110,6 +143,7 @@ extension PasscodeInputCoordinator {
     )
     return PasscodeInputCoordinator(
       router: router,
+      context: .confirmation,
       validator: validator,
       biometryProvider: PasscodeBiometryProvider(
         biometryProvider: BiometryProvider(),
@@ -122,6 +156,7 @@ extension PasscodeInputCoordinator {
 }
 
 extension PasscodeInputCoordinator {
+
   static func present<ParentRouterViewController: UIViewController>(parentCoordinator: Coordinator,
                                                                     parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
                                                                     mnemonicsRepository: MnemonicsRepository,
