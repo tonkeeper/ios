@@ -141,6 +141,9 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
           },
           shouldPaste: { [weak self] text in
             self?.shouldPaste(text: text, index: index) ?? false
+          },
+          didTapReturn: { [weak self] in
+            self?.checkForApplyingSuggestion(index: index)
           }
         )
       }
@@ -207,7 +210,29 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     
     return false
   }
-  
+
+  func checkForApplyingSuggestion(index: Int) {
+    dispatchQueue.async {
+      guard let input = self.phrase[safe: index] else {
+        return
+      }
+
+      let suggests = self.suggestsProvider.suggestsFor(input: input)
+      guard let _ = suggests.firstIndex(of: input) else {
+        return
+      }
+
+      DispatchQueue.main.async {
+        self.didUpdateText?(index, input)
+        if index < .wordsCount - 1 {
+          self.didPaste?(index + 1)
+        } else {
+          self.didPastePhrase?()
+        }
+      }
+    }
+  }
+
   func didTapContinueButton() {
     continueButtonConfiguration.showsLoader = true
     dispatchQueue.async { [weak self, phrase] in
