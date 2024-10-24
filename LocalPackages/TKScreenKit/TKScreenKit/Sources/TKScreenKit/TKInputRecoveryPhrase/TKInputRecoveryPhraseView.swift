@@ -88,6 +88,7 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
       public let didBeignEditing: () -> Void
       public let didEndEditing: () -> Void
       public let shouldPaste: (String) -> Bool
+      public let didTapReturn: (() -> Void)?
     }
 
     public let titleDescriptionModel: TKTitleDescriptionView.Model
@@ -122,7 +123,10 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
         textField.shouldPaste = { text in
           inputModel.shouldPaste(text)
         }
-        
+        textField.didTapReturn = {
+          inputModel.didTapReturn?()
+        }
+
         contentStackView.addArrangedSubview(textField)
         if index == inputTextFields.count - 1 {
           contentStackView.setCustomSpacing(.afterWordInputSpacing + 16, after: textField)
