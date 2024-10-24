@@ -117,13 +117,14 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       completion()
     }
 
-    coordinator.didLogout = { [weak self] in
-      guard let self else {
-        return
-      }
-      let deleteController = self.dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
+    coordinator.didLogout = { [dependencies, weak coordinator] in
+      guard let coordinator else { return }
+      let deleteController = dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
       Task {
         await deleteController.deleteAll()
+        await MainActor.run {
+          self.removeChild(coordinator)
+        }
       }
     }
 
