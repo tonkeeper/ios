@@ -66,6 +66,7 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   }
   
   private var suggestionsTask: Task<(), Error>?
+  private var cachedMetaData = [URL: String]()
 
   // MARK: - Dependencies
   
@@ -94,8 +95,9 @@ private extension BrowserSearchViewModelImplementation {
     }
     
     if let urlSuggestion {
+      let identifier: String = .suggestURLIdentifier + (urlSuggestion.url?.absoluteString ?? "") + (urlSuggestion.title ?? "")
       let item = BrowserSearch.Item(
-        identifier: .suggestURLIdentifier,
+        identifier: identifier,
         configuration: mapValidURLSuggestion(suggestion: urlSuggestion),
         isHighlighted: true,
         onSelection: { [weak self] in
@@ -170,32 +172,56 @@ private extension BrowserSearchViewModelImplementation {
     suggestionsTask?.cancel()
     suggestionsTask = Task { [weak self] in
       guard let self else { return }
-      if input.isValidURL, let inputURL = URL(string: input) {
-        await MainActor.run {
-          self.urlSuggestion = .init(title: nil, url: inputURL)
-        }
-        //-wait for parse title and compose url-//
+      
+      async let searchSuggestionsTask: () = searchSuggestions(input: input)
+      async let searchSuggestURLTask: () = searchSuggestURL(input: input)
+      
+      await searchSuggestionsTask
+      await searchSuggestURLTask
+    }
+  }
 
-        if !Task.isCancelled, let searchEngineTitle = await searchEngineService.parseTitleFrom(stringURL: input) {
-          await MainActor.run {
-            self.urlSuggestion = .init(title: searchEngineTitle.title, url: searchEngineTitle.url)
-          }
-        }
-      } else {
-        await MainActor.run {
-          self.urlSuggestion = nil
-        }
+  func searchSuggestURL(input: String) async {
+    guard let urlInput = updateURLInput(input: input),
+    urlInput.isValidURL else {
+      await MainActor.run {
+        self.urlSuggestion = nil
       }
+      return
+    }
 
-      let searchEngine = await appSettingsStore.getState().searchEngine
+    let needLoadMeta = await MainActor.run {
+      if let cachedTitle = cachedMetaData[urlInput] {
+        self.urlSuggestion = .init(title: cachedTitle, url: urlInput)
+        return false
+      } else {
+        self.urlSuggestion = .init(title: nil, url: urlInput)
+        return true
+      }
+    }
+    guard needLoadMeta else {
+      return
+    }
+    guard let searchEngineMeta = await searchEngineService.parseMetaFrom(url: urlInput) else { return }
+    guard !Task.isCancelled else { return }
+    await MainActor.run {
+      cachedMetaData[urlInput] = searchEngineMeta.title
+      self.urlSuggestion = .init(title: searchEngineMeta.title, url: urlInput)
+    }
+  }
+  
+  func searchSuggestions(input: String) async {
+    try? await Task.sleep(nanoseconds: 500_000_000)
+    guard !Task.isCancelled else { return }
+    let searchEngine = await appSettingsStore.getState().searchEngine
+    do {
       let suggestions = try await searchEngineService.loadSuggestions(
         searchText: input,
         searchEngine: searchEngine)
         .removingDuplicates()
         .prefix(4)
-
       guard !Task.isCancelled else { return }
-
+      
       await MainActor.run {
         self.searchSuggestions = suggestions.compactMap {
           SearchEngineSuggestion(
@@ -203,6 +229,10 @@ private extension BrowserSearchViewModelImplementation {
             url: self.searchEngineService.composeSearchURL(input: $0, searchEngine: searchEngine)
           )
         }
+      }
+    } catch {
+      await MainActor.run {
+        self.searchSuggestions = []
       }
     }
   }
@@ -297,6 +327,16 @@ private extension BrowserSearchViewModelImplementation {
     )
     return dapp
   }
+  
+  private func updateURLInput(input: String) -> URL? {
+    let httpsPrefix = "https://"
+    let httpPrefix = "http://"
+    var input = input
+    if !input.hasPrefix(httpsPrefix) && !input.hasPrefix(httpPrefix) {
+      input = httpsPrefix + input
+    }
+    return URL(string: input)
+  }
 }
 
 extension SearchEngine {
@@ -311,17 +351,18 @@ extension SearchEngine {
   }
 }
 
+extension URL {
+  var isValidURL: Bool {
+    absoluteString.isValidURL
+  }
+}
 
 extension String {
-
   var isValidURL: Bool {
-    let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
-    if let match = detector?.firstMatch(in: self, options: [], range: NSRange(location: 0, length: self.utf16.count)) {
-      // it is a link, if the match covers the whole string
-      return match.range.length == self.utf16.count
-    } else {
-      return false
-    }
+    guard let url = URL(string: self) else { return false }
+    guard let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+    let host = components.host else { return false }
+    return host.components(separatedBy: ".").filter { !$0.isEmpty }.count > 1
   }
 }
 

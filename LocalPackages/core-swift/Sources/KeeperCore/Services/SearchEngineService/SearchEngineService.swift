@@ -1,11 +1,12 @@
 import Foundation
+import LinkPresentation
 
 public protocol SearchEngineServiceProtocol {
   func loadSuggestions(searchText: String, searchEngine: SearchEngine) async throws -> [String]
   func composeSearchURL(input: String, searchEngine: SearchEngine) -> URL?
 
   typealias SearchEngineTitle = (title: String?, url: URL)
-  func parseTitleFrom(stringURL: String) async -> SearchEngineTitle?
+  func parseMetaFrom(url: URL) async -> SearchEngineTitle?
 }
 
 public final class SearchEngineService: SearchEngineServiceProtocol {
@@ -71,24 +72,13 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
     return mappedStringValues
   }
 
-  public func parseTitleFrom(stringURL: String) async -> SearchEngineTitle? {
-    await withCheckedContinuation { continuation in
-      let httpPrefix = "https://"
-      var input = stringURL
-      if !input.hasPrefix(httpPrefix) {
-        input = "\(httpPrefix)\(input)"
-      }
-      guard let url = URL(string: input),
-            let content = try? String(contentsOf: url, encoding: .utf8) else {
-        continuation.resume(returning: nil)
-        return
-      }
-
-      var title: String?
-      if let range = content.range(of: "<title>.*?</title>", options: .regularExpression, range: nil, locale: nil) {
-        title = content[range].replacingOccurrences(of: "</?title>", with: "", options: .regularExpression, range: nil)
-      }
-      continuation.resume(returning: (title, url))
+  public func parseMetaFrom(url: URL) async -> SearchEngineTitle? {
+    let provider = LPMetadataProvider()
+    do {
+      let meta = try await provider.startFetchingMetadata(for: url)
+      return (meta.title, meta.url ?? url)
+    } catch {
+      return (nil, url)
     }
   }
 }
