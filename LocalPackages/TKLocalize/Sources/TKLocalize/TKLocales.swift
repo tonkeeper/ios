@@ -689,6 +689,13 @@ public enum TKLocales {
     public static let create = TKLocales.tr("Localizable", "passcode.create", fallback: "Create passcode")
     /// Enter passcode
     public static let enter = TKLocales.tr("Localizable", "passcode.enter", fallback: "Enter passcode")
+    /// Log Out
+    public static let logout = TKLocales.tr("Localizable", "passcode.logout", fallback: "Log Out")
+    /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
+    public static let logoutConfirmationDescription = TKLocales.tr("Localizable", "passcode.logout_confirmation_description", fallback: "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.")
+    /// 🚧 🚨🚨🚨 🚧
+    /// Sign Out of All Wallets?
+    public static let logoutConfirmationTitle = TKLocales.tr("Localizable", "passcode.logout_confirmation_title", fallback: "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?")
     /// Re-enter passcode
     public static let reenter = TKLocales.tr("Localizable", "passcode.reenter", fallback: "Re-enter passcode")
   }
