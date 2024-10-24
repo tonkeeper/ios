@@ -72,6 +72,7 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
     return mappedStringValues
   }
 
+  @MainActor
   public func parseMetaFrom(url: URL) async -> SearchEngineTitle? {
     let provider = LPMetadataProvider()
     do {
