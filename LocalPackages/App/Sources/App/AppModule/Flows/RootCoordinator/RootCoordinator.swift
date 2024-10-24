@@ -66,7 +66,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       migrateIfNeed(deeplink: deeplink)
     case .main:
       migrateTonConnectVaultIfNeeded()
-      openMain(deeplink: deeplink)
+      handlePasscodeFlowIfNeeded { self.openMain(deeplink: deeplink) }
     }
   }
   
@@ -84,6 +84,43 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     } catch {
       return false
     }
+  }
+
+  private func handlePasscodeFlowIfNeeded(completion: @escaping (() -> Void)) {
+    guard dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen else {
+      completion()
+      return
+    }
+
+    let router = NavigationControllerRouter(rootViewController: TKNavigationController())
+    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+
+    let validator = PasscodeConfirmationValidator(
+      mnemonicsRepository: mnemonicsRepository
+    )
+    let securityStore = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore
+    let passcodeBiometry = PasscodeBiometryProvider(
+      biometryProvider: BiometryProvider(),
+      securityStore: securityStore
+    )
+    let coordinator = PasscodeInputCoordinator(
+      router: router,
+      context: .entry,
+      validator: validator,
+      biometryProvider: passcodeBiometry,
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
+    )
+
+    coordinator.didInputPasscode = { [weak self, weak coordinator] _ in
+      self?.removeChild(coordinator)
+      completion()
+    }
+
+    coordinator.start()
+    addChild(coordinator)
+    
+    showViewController(coordinator.router.rootViewController, animated: false)
   }
 }
 
