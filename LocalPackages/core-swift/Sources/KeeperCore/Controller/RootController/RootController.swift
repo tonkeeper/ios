@@ -46,9 +46,4 @@ public final class RootController {
   public func parseDeeplink(string: String?) throws -> Deeplink {
     try deeplinkParser.parse(string: string)
   }
-  
-  public func logout() async throws {
-    try await mnemonicsRepository.deleteAll()
-    try keeperInfoRepository.removeKeeperInfo()
-  }
 }

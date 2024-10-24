@@ -117,6 +117,16 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       completion()
     }
 
+    coordinator.didLogout = { [weak self] in
+      guard let self else {
+        return
+      }
+      let deleteController = self.dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
+      Task {
+        await deleteController.deleteAll()
+      }
+    }
+
     coordinator.start()
     addChild(coordinator)
     
@@ -125,6 +135,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
 }
 
 private extension RootCoordinator {
+
   func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
     removeChild(mainCoordinator)
     removeChild(onboardingCoordinator)
@@ -230,14 +241,6 @@ private extension RootCoordinator {
     
     if animated {
       UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
-    }
-  }
-  
-  func logout() async throws {
-    try await self.rootController.logout()
-    await MainActor.run {
-      self.mainCoordinator = nil
-      self.start(deeplink: nil)
     }
   }
 }
