@@ -218,17 +218,9 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
       }
 
       let suggests = self.suggestsProvider.suggestsFor(input: input)
-      guard let _ = suggests.firstIndex(of: input) else {
-        return
-      }
-
+      guard let suggest = suggests.first else { return }
       DispatchQueue.main.async {
-        self.didUpdateText?(index, input)
-        if index < .wordsCount - 1 {
-          self.didPaste?(index + 1)
-        } else {
-          self.didPastePhrase?()
-        }
+        self.setSuggest(suggest: suggest, index: index)
       }
     }
   }
@@ -274,18 +266,22 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
         suggests: suggests.map { suggestText in
           TKInputRecoveryPhraseSuggestsButton.Model(text: suggestText) { [weak self] in
             guard let activeIndex = self?.activeIndex else { return }
-            self?.phrase[activeIndex] = suggestText
-            self?.didUpdateText?(activeIndex, suggestText)
-            if index < .wordsCount - 1 {
-              self?.didPaste?(index + 1)
-            } else {
-              self?.didPastePhrase?()
-            }
+            self?.setSuggest(suggest: suggestText, index: activeIndex)
         }}
       )
       DispatchQueue.main.async {
         self.didUpdateSuggests?(model)
       }
+    }
+  }
+  
+  func setSuggest(suggest: String, index: Int) {
+    phrase[index] = suggest
+    didUpdateText?(index, suggest)
+    if index < .wordsCount - 1 {
+      didPaste?(index + 1)
+    } else {
+      didPastePhrase?()
     }
   }
 }
