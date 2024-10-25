@@ -309,6 +309,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON staked";
 "balance_list.staking_item.comment.unstaked" = "%@ TON unstaked";
 "balance_list.staking_item.comment.time_estimate" = "in %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "after the end of the cycle";
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";

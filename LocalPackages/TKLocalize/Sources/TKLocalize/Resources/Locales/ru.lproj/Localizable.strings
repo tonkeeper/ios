@@ -307,6 +307,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON будет зачислено";
 "balance_list.staking_item.comment.unstaked" = "%@ TON будет выведено";
 "balance_list.staking_item.comment.time_estimate" = "через %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "после окончания цикла";
 
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";

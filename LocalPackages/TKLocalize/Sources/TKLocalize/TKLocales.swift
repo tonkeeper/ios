@@ -231,6 +231,8 @@ public enum TKLocales {
       /// Staked
       public static let title = TKLocales.tr("Localizable", "balance_list.staking_item.title", fallback: "Staked")
       public enum Comment {
+        /// after the end of the cycle
+        public static let afterEndOfCycle = TKLocales.tr("Localizable", "balance_list.staking_item.comment.after_end_of_cycle", fallback: "after the end of the cycle")
         /// %@ TON ready.
         /// Tap to collect.
         public static func ready(_ p1: Any) -> String {
