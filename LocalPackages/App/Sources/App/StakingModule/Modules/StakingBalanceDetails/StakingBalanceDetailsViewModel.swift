@@ -126,8 +126,11 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
 
 private extension StakingBalanceDetailsViewModelImplementation {
   func updateList() {
-    let profitablePool = stakingPoolsStore.getState()[wallet]?.profitablePool
-    let model = self.listViewModelBuilder.build(stakingPoolInfo: stakingPoolInfo, isMaxAPY: profitablePool?.address == self.stakingPoolInfo.address)
+    let profitablePools = stakingPoolsStore.getState()[wallet]?.profitablePools
+    let model = self.listViewModelBuilder.build(
+      stakingPoolInfo: stakingPoolInfo,
+      isMaxAPY:  profitablePools?.contains(where: { $0.address == self.stakingPoolInfo.address }) == true
+    )
     DispatchQueue.main.async {
       self.didUpdateListViewModel?(model)
     }

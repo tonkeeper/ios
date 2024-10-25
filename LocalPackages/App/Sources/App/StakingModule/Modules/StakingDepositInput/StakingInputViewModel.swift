@@ -35,7 +35,6 @@ protocol StakingInputViewModel: AnyObject {
   func didEditAmountInput(_ input: String)
   func didToggleInputMode()
   func didToggleIsMax()
-  func didTapInfoView()
   func didTapContinue()
 }
 
@@ -131,14 +130,6 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
     model.toggleIsMax()
   }
   
-  func didTapInfoView() {
-    model.getPickerSections { model in
-      DispatchQueue.main.async {
-        self.didTapPoolPicker?(model)
-      }
-    }
-  }
-  
   func didTapContinue() {
     model.getStakingConfirmationItem { item in
       DispatchQueue.main.async {
@@ -219,76 +210,6 @@ private extension StakingInputViewModelImplementation {
   }
 }
 
-private extension StakingInputViewModelImplementation {
-
-  func mapStakingPoolItem(_ item: StackingPoolInfo, isMostProfitable: Bool, profit: BigUInt) -> TKUIListItemView.Configuration {
-    let tagText: String? = isMostProfitable ? .mostProfitableTag : nil
-    let percentFormatted = decimalFormatter.format(amount: item.apy, maximumFractionDigits: 2)
-    var subtitle = "\(String.apy) ≈ \(percentFormatted)%"
-    if profit >= BigUInt(stringLiteral: "1000000000") {
-      let formatted = amountFormatter.formatAmount(
-        profit,
-        fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: TonInfo.symbol
-      )
-      subtitle += " · \(formatted)"
-    }
-    
-    let title = item.name.withTextStyle(
-      .label1,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byTruncatingTail
-    )
-    
-    var tagViewModel: TKUITagView.Configuration?
-    if let tagText {
-      tagViewModel = TKUITagView.Configuration(
-        text: tagText,
-        textColor: .Accent.green,
-        backgroundColor: .Accent.green.withAlphaComponent(0.16)
-      )
-    }
-    
-    return TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: TKUIListItemImageIconView.Configuration.Image.image(item.implementation.icon),
-            tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 22
-          )
-        ),
-        alignment: .center
-      ),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-          title: title,
-          tagViewModel: tagViewModel,
-          subtitle: subtitle.withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          description: nil
-        ),
-        rightItemConfiguration: nil
-      ),
-      accessoryConfiguration: .image(
-        TKUIListItemImageAccessoryView.Configuration(
-          image: .TKUIKit.Icons.Size16.switch,
-          tintColor: .Icon.tertiary,
-          padding: .zero
-        )
-      )
-    )
-  }
-}
-
 extension StackingPoolInfo.Implementation {
   var icon: UIImage {
     switch type {
@@ -298,8 +219,8 @@ extension StackingPoolInfo.Implementation {
     }
   }
 }
-
-private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
-}
+//
+//private extension String {
+//  static let mostProfitableTag = "MAX APY"
+//  static let apy = "APY"
+//}

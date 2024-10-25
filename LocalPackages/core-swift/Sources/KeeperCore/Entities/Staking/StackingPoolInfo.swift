@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import BigInt
 
-public struct StackingPoolInfo: Codable, Equatable {
+public struct StackingPoolInfo: Codable, Equatable, Hashable {
   public struct Implementation: Codable, Hashable {
     public enum Kind: String, CaseIterable, Codable {
       case liquidTF
@@ -67,8 +67,21 @@ public struct StackingPoolInfo: Codable, Equatable {
 }
 
 public extension Array where Element == StackingPoolInfo {
-  var profitablePool: Element? {
-    self.max(by: { $0.apy < $1.apy })
+  var profitablePools: [Element] {
+    guard !isEmpty else { return [] }
+    var max = self[0]
+    var result = [max]
+    forEach { element in
+      if element.apy == max.apy {
+        result.append(element)
+        return
+      }
+      if element.apy > max.apy {
+        result = [element]
+        max = element
+      }
+    }
+    return result
   }
   
   func filterByPoolKind(_ kind: StackingPoolInfo.Implementation.Kind) -> [StackingPoolInfo] {

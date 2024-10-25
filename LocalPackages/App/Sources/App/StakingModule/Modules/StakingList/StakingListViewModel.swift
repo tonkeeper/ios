@@ -32,6 +32,7 @@ struct StakingListGroup {
   let image: UIImage
   let apy: Decimal
   let minAmount: BigUInt
+  let isMaxAPY: Bool
   let items: [StakingListPool]
 }
 
@@ -182,6 +183,7 @@ private extension StakingListViewModelImplementation {
   func mapGroup(_ group: StakingListGroup) -> TKUIListItemCell.Configuration {
     let percentFormatted = decimalFormatter.format(amount: group.apy, maximumFractionDigits: 2)
     let subtitle = "\(String.apy) ≈ \(percentFormatted)%"
+    let tagText: String? = group.isMaxAPY ? .mostProfitableTag : nil
     
     let title = group.name.withTextStyle(
       .label1,
@@ -189,6 +191,15 @@ private extension StakingListViewModelImplementation {
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
+    
+    var tagViewModel: TKUITagView.Configuration?
+    if let tagText {
+      tagViewModel = TKUITagView.Configuration(
+        text: tagText,
+        textColor: .Accent.green,
+        backgroundColor: .Accent.green.withAlphaComponent(0.16)
+      )
+    }
     
     let itemView = TKUIListItemView.Configuration(
       iconConfiguration: TKUIListItemIconView.Configuration(
@@ -206,7 +217,7 @@ private extension StakingListViewModelImplementation {
       contentConfiguration: TKUIListItemContentView.Configuration(
         leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
           title: title,
-          tagViewModel: nil,
+          tagViewModel: tagViewModel,
           subtitle: subtitle.withTextStyle(
             .body2,
             color: .Text.secondary,
