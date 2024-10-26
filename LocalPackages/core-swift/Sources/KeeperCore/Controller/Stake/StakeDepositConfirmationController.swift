@@ -69,7 +69,6 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
     do {
       let transactionBoc = try await createTransactionBoc()
       try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
       Task { @MainActor in
         didGetError?(.failedToSendTransaction)

@@ -6,7 +6,6 @@ import TKLocalize
 import TonSwift
 
 protocol StakingConfirmationModuleOutput: AnyObject {
-  var didSendTransaction: (() -> Void)? { get set }
   var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)? { get set }
 }
 
@@ -25,8 +24,6 @@ protocol StakingConfirmationViewModel: AnyObject {
 final class StakingConfirmationViewModelImplementation: StakingConfirmationViewModel, StakingConfirmationModuleOutput, StakingConfirmationModuleInput {
   
   // MARK: - StakingConfirmationModuleOutput
-  
-  var didSendTransaction: (() -> Void)?
   
   var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)?
   
@@ -51,17 +48,20 @@ final class StakingConfirmationViewModelImplementation: StakingConfirmationViewM
     
   }
   
-  // MARK: - Dependencies
-  
-  private let stakingConfirmationController: StakeConfirmationController
-  
   // MARK: - Mapper
   
   private let mapper = StakingConfirmationMapper()
   
+  // MARK: - Dependencies
+  
+  private let wallet: Wallet
+  private let stakingConfirmationController: StakeConfirmationController
+  
   // MARK: - Init
   
-  init(stakingConfirmationController: StakeConfirmationController) {
+  init(wallet: Wallet,
+       stakingConfirmationController: StakeConfirmationController) {
+    self.wallet = wallet
     self.stakingConfirmationController = stakingConfirmationController
   }
 }
@@ -90,9 +90,9 @@ private extension StakingConfirmationViewModelImplementation {
             isSuccessClosure(isSuccess)
           }
         }
-      } completionAction: { [weak self] isSuccess in
-        guard let self, isSuccess else { return }
-        self.didSendTransaction?()
+      } completionAction: { [wallet] isSuccess in
+        guard isSuccess else { return }
+        NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
       }
   }
   

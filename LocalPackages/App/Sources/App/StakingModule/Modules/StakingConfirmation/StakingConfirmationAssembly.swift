@@ -4,8 +4,10 @@ import KeeperCore
 
 struct StakingConfirmationAssembly {
   private init() {}
-  static func module(stakingConfirmationController: StakeConfirmationController) -> MVVMModule<StakingConfirmationViewController, StakingConfirmationModuleOutput, StakingConfirmationModuleInput> {
+  static func module(wallet: Wallet,
+                     stakingConfirmationController: StakeConfirmationController) -> MVVMModule<StakingConfirmationViewController, StakingConfirmationModuleOutput, StakingConfirmationModuleInput> {
     let viewModel = StakingConfirmationViewModelImplementation(
+      wallet: wallet,
       stakingConfirmationController: stakingConfirmationController
     )
     let viewController = StakingConfirmationViewController(viewModel: viewModel)

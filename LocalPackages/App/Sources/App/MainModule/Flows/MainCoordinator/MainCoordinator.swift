@@ -777,7 +777,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       isCollect: true
     )
     
-    let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
+    let module = StakingConfirmationAssembly.module(wallet: wallet,
+                                                    stakingConfirmationController: controller)
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureDefaultAppearance()
@@ -1079,6 +1080,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private func openHistoryTab() {
     guard let historyViewController = historyCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }
+    router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
   }

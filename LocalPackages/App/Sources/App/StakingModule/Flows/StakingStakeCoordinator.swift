@@ -85,7 +85,8 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
       return
     }
     
-    let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
+    let module = StakingConfirmationAssembly.module(wallet: wallet,
+                                                    stakingConfirmationController: controller)
 
     module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
