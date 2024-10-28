@@ -46,6 +46,7 @@ final class TonConnectConfirmationViewController: UIViewController, TKBottomShee
 // MARK: - Private
 
 private extension TonConnectConfirmationViewController {
+
   func setup() {
     addChild(modalCardViewController)
     view.addSubview(modalCardViewController.view)

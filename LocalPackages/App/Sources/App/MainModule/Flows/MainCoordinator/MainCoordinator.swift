@@ -1125,28 +1125,39 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 // MARK: - Ton Connect
 
 private extension MainCoordinator {
+
   func handleTonConnectRequest(_ request: TonConnect.AppRequest,
                                wallet: Wallet,
                                app: TonConnectApp) {
+    Task {
+      try await openTonConnectModule(request, wallet: wallet, app: app)
+    }
+  }
+
+  @MainActor
+  func openTonConnectModule(_ request: TonConnect.AppRequest,
+                            wallet: Wallet,
+                            app: TonConnectApp) async throws {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
-    let coordinator = TonConnectModule(
+
+    let coordinator = try await TonConnectModule(
       dependencies: TonConnectModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
     ).createConfirmationCoordinator(window: window, wallet: wallet, appRequest: request, app: app)
-    
+
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
     coordinator.didConfirm = { [weak self, weak coordinator] in
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
     addChild(coordinator)
     coordinator.start()
   }

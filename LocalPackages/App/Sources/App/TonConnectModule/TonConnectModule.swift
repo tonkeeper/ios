@@ -31,8 +31,15 @@ struct TonConnectModule {
     wallet: Wallet,
     appRequest: TonConnect.AppRequest,
     app: TonConnectApp
-  ) -> SignTransactionConfirmationCoordinator {
-    SignTransactionConfirmationCoordinator(
+  ) async throws -> SignTransactionConfirmationCoordinator {
+    let confirmController = dependencies.keeperCoreMainAssembly.confirmTransactionController(
+      wallet: wallet,
+      bocProvider: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+        signTransactionParams: appRequest.params
+      )
+    )
+    let confirmModel = try await confirmController.createRequestModel()
+    return SignTransactionConfirmationCoordinator(
       router: WindowRouter(window: window),
       wallet: wallet,
       confirmator: DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator(
@@ -41,12 +48,7 @@ struct TonConnectModule {
         sendService: dependencies.keeperCoreMainAssembly.servicesAssembly.sendService(),
         tonConnectService: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
       ),
-      confirmTransactionController: dependencies.keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: appRequest.params
-        )
-      ),
+      confirmModel: confirmModel,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly
     )

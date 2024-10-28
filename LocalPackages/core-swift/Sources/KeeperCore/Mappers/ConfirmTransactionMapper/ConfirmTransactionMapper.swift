@@ -20,7 +20,10 @@ struct ConfirmTransactionMapper {
                           tonRates: Rates.Rate?,
                           currency: Currency,
                           nftsCollection: NFTsCollection,
-                          wallet: Wallet) throws -> ConfirmTransactionModel {
+                          wallet: Wallet,
+                          confirmModel: ConfirmTransactionController.ConfirmModel?
+  ) throws -> ConfirmTransactionModel {
+
     let descriptionProvider = TonConnectConfirmationAccountEventRightTopDescriptionProvider(
       rates: tonRates,
       currency: currency,
@@ -64,7 +67,8 @@ struct ConfirmTransactionMapper {
     return ConfirmTransactionModel(
       event: eventModel,
       fee: feeFormatted,
-      wallet: wallet
+      wallet: wallet,
+      confirmModel: confirmModel
     )
   }
 }

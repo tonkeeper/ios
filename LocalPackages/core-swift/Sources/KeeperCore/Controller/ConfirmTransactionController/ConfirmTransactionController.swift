@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import BigInt
+import TonAPI
 
 public protocol ConfirmTransactionControllerBocProvider {
   func createBoc(wallet: Wallet, seqno: UInt64, timeout: UInt64) async throws -> String
@@ -8,10 +9,12 @@ public protocol ConfirmTransactionControllerBocProvider {
 
 public final class ConfirmTransactionController {
 
-  public struct ConfirmTransactionAvailabilityModel {
-    public let requiredAmount: UInt64
-    public let availableAmount: UInt64
-    public let token: Token
+  public typealias TransactionTokenInfo = (token: Token, availableBalance: BigUInt)
+  public struct ConfirmModel {
+    public let fee: Int64
+    public let tonBalance: UInt64
+    public let requiredAmount: Int64
+    public let token: TransactionTokenInfo
   }
 
   private let wallet: Wallet
@@ -21,6 +24,7 @@ public final class ConfirmTransactionController {
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let balanceStore: ConvertedBalanceStore
+  private let jettonBalanceResolver: JettonBalanceResolver
   private let confirmTransactionMapper: ConfirmTransactionMapper
   
   init(wallet: Wallet,
@@ -30,6 +34,7 @@ public final class ConfirmTransactionController {
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        balanceStore: ConvertedBalanceStore,
+       jettonBalanceResolver: JettonBalanceResolver,
        confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
     self.bocProvider = bocProvider
@@ -38,55 +43,13 @@ public final class ConfirmTransactionController {
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.balanceStore = balanceStore
+    self.jettonBalanceResolver = jettonBalanceResolver
     self.confirmTransactionMapper = confirmTransactionMapper
   }
   
   public func createRequestModel() async throws -> ConfirmTransactionModel {
     let model = try await emulate()
     return model
-  }
-
-  public func confirmTransactionAvailability(param: SendTransactionParam?) async throws -> ConfirmTransactionAvailabilityModel? {
-    let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-    let boc = try await bocProvider.createBoc(
-      wallet: wallet,
-      seqno: seqno,
-      timeout: timeout
-    )
-
-    let currency = await currencyStore.getState()
-    let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
-    let event = try AccountEvent(accountEvent: transactionInfo.event)
-    let nfts = try await loadEventNFTs(event: event)
-
-    let fee = UInt64(abs(event.fee))
-    let tonRisk = transactionInfo.risk.ton
-    let jettonsRisk = transactionInfo.risk.jettons
-
-    guard let param,
-          let balance = await balanceStore.getState()[wallet]?.balance,
-          !jettonsRisk.isEmpty || tonRisk > 0 else {
-      return nil
-    }
-
-    if !jettonsRisk.isEmpty, !nfts.nfts.isEmpty {
-      let availableTonBalance = balance.tonBalance.tonBalance.amount
-
-      return ConfirmTransactionAvailabilityModel(
-        requiredAmount: fee,
-        availableAmount: UInt64(availableTonBalance),
-        token: .ton
-      )
-    } else {
-      let requiredAmount = fee + UInt64(tonRisk)
-      let availableTonBalance = balance.tonBalance.tonBalance.amount
-      return ConfirmTransactionAvailabilityModel(
-        requiredAmount: requiredAmount,
-        availableAmount: UInt64(availableTonBalance),
-        token: .ton
-      )
-    }
   }
 }
 
@@ -105,13 +68,15 @@ private extension ConfirmTransactionController {
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)
-    
+    let confirmModel = await createConfirmModel(transactionInfo: transactionInfo, event: event)
+
     return try confirmTransactionMapper.mapTransactionInfo(
       transactionInfo,
       tonRates: rates,
       currency: currency,
       nftsCollection: nfts,
-      wallet: wallet
+      wallet: wallet,
+      confirmModel: confirmModel
     )
   }
   
@@ -134,5 +99,76 @@ private extension ConfirmTransactionController {
     }
     
     return NFTsCollection(nfts: nfts)
+  }
+
+  private func createConfirmModel(
+    transactionInfo: MessageConsequences,
+    event: AccountEvent
+  ) async -> ConfirmModel? {
+
+    let fee = Int64(abs(event.fee))
+    let tonRisk = transactionInfo.risk.ton
+
+    guard let balance = await balanceStore.getState()[wallet]?.balance else {
+      return nil
+    }
+    let tonBalance = UInt64(balance.tonBalance.tonBalance.amount)
+
+    var requiredAmount: Int64?
+    var token: Token?
+    var availableBalance: BigUInt?
+
+    await event.actions.asyncForEach { action in
+      token = .ton
+
+      switch action.type {
+      case .tonTransfer(let tonTransfer):
+        requiredAmount = tonTransfer.amount + Int64(fee)
+        availableBalance = BigUInt(integerLiteral: tonBalance)
+      case .jettonTransfer:
+        requiredAmount = Int64(fee) + tonRisk
+        availableBalance = BigUInt(tonBalance)
+      case .nftItemTransfer:
+        requiredAmount = Int64(fee)
+        availableBalance = BigUInt(tonBalance)
+      case .nftPurchase(let purchase):
+        requiredAmount = Int64(purchase.price)
+        availableBalance = BigUInt(tonBalance)
+      case .jettonSwap(let jettonSwap):
+        if let address = jettonSwap.jettonInfoIn?.address, let jettonBalance = try? await self.jettonBalanceResolver.resolveJetton(
+          jettonAddress: address,
+          wallet: self.wallet
+        ) {
+          requiredAmount = Int64(jettonSwap.amountIn)
+          token = .jetton(jettonBalance.item)
+          availableBalance = jettonBalance.quantity
+        } else if let tonIn = jettonSwap.tonIn {
+          requiredAmount = Int64(fee) + tonIn
+          availableBalance = BigUInt(tonBalance)
+        } else {
+          requiredAmount = Int64(fee) + tonRisk
+          availableBalance = BigUInt(tonBalance)
+        }
+      case .unknown:
+        requiredAmount = Int64(fee) + tonRisk
+        availableBalance = BigUInt(tonBalance)
+      default:
+        return
+      }
+    }
+
+    guard let requiredAmount, let token, let availableBalance else {
+      return nil
+    }
+
+    return ConfirmModel(
+      fee: fee,
+      tonBalance: tonBalance,
+      requiredAmount: requiredAmount,
+      token: TransactionTokenInfo(
+        token: token,
+        availableBalance: availableBalance
+      )
+    )
   }
 }

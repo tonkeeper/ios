@@ -200,6 +200,7 @@ public final class MainAssembly {
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       balanceStore: storesAssembly.convertedBalanceStore,
+      jettonBalanceResolver: loadersAssembly.jettonBalanceResolver(),
       confirmTransactionMapper: ConfirmTransactionMapper(
         nftService: servicesAssembly.nftService(),
         accountEventMapper: AccountEventMapper(

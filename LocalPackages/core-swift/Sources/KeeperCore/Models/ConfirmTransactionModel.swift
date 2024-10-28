@@ -4,4 +4,5 @@ public struct ConfirmTransactionModel {
   public let event: AccountEventModel
   public let fee: String
   public let wallet: Wallet
+  public let confirmModel: ConfirmTransactionController.ConfirmModel?
 }

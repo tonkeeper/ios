@@ -36,40 +36,46 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   
   override func start() {
     guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: router,
+    let confirmController = keeperCoreMainAssembly.confirmTransactionController(
       wallet: wallet,
-      confirmator: RenewDNSSignTransactionConfirmationCoordinatorConfirmator(
+      bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
         nft: nft,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
-          nft: nft,
-          sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-          signClosure: { transfer in
-            try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-          }
-        )
-      ),
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+        signClosure: { transfer in
+          try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+        }
+      )
     )
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-      self?.didCancel?()
+    Task {
+      let confirmModel = try await confirmController.createRequestModel()
+      let coordinator = SignTransactionConfirmationCoordinator(
+        router: router,
+        wallet: wallet,
+        confirmator: RenewDNSSignTransactionConfirmationCoordinatorConfirmator(
+          nft: nft,
+          sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
+        ),
+        confirmModel: confirmModel,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+
+      coordinator.didCancel = { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+        self?.didCancel?()
+      }
+
+      coordinator.didConfirm = { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+        self?.didFinish?()
+      }
+
+      self.signTransactionConfirmationCoordinator = coordinator
+
+      await MainActor.run {
+        addChild(coordinator)
+        coordinator.start()
+      }
     }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-      self?.didFinish?()
-    }
-    
-    self.signTransactionConfirmationCoordinator = coordinator
-    
-    addChild(coordinator)
-    coordinator.start()
   }
 }

@@ -56,10 +56,10 @@ private extension WebSwapCoordinator {
       messageHandler: messageHandler
     )
     
-    messageHandler.send = {
-      [weak self] request, completion in
-      guard let self else { return }
-      self.openSend(signRequest: request, completion: completion)
+    messageHandler.send = { [weak self] request, completion in
+      Task {
+        try await self?.openSend(signRequest: request, completion: completion)
+      }
     }
     
     messageHandler.close = {
@@ -72,15 +72,24 @@ private extension WebSwapCoordinator {
     module.view.modalPresentationStyle = .fullScreen
     router.push(viewController: module.view)
   }
-  
+
+  @MainActor
   func openSend(signRequest: SendTransactionSignRequest,
-                completion: @escaping (SendTransactionSignResult) -> Void) {
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
+                completion: @escaping (SendTransactionSignResult) -> Void) async throws {
+    guard let wallet = try? await keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
       return
     }
 
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
+    let confirmController = keeperCoreMainAssembly.confirmTransactionController(
+      wallet: wallet,
+      bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+        signTransactionParams: signRequest.params
+      )
+    )
+
+    let confirmModel = try await confirmController.createRequestModel()
     let coordinator = SignTransactionConfirmationCoordinator(
       router: WindowRouter(window: window),
       wallet: wallet,
@@ -92,28 +101,23 @@ private extension WebSwapCoordinator {
           completion(result)
         }
       ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: signRequest.params
-        )
-      ),
+      confirmModel: confirmModel,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
-    
+
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
     coordinator.didConfirm = { [weak self, weak coordinator] in
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
     self.signTransactionConfirmationCoordinator = coordinator
-    
+
     addChild(coordinator)
     coordinator.start()
   }
