@@ -141,6 +141,44 @@ public final class MainAssembly {
     )
   }
   
+  public func stakingWithdrawTransactionConfirmationController(wallet: Wallet,
+                                                               stakingPool: StackingPoolInfo,
+                                                               amount: BigUInt,
+                                                               isMax: Bool,
+                                                               isCollect: Bool) -> TransactionConfirmationController {
+    return StakingWithdrawTransactionConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      isCollect: isCollect,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore
+    )
+  }
+  
+  public func stakingDepositTransactionConfirmationController(wallet: Wallet,
+                                                               stakingPool: StackingPoolInfo,
+                                                               amount: BigUInt,
+                                                               isMax: Bool,
+                                                               isCollect: Bool) -> TransactionConfirmationController {
+    return StakingDepositTransactionConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      isCollect: isCollect,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore
+    )
+  }
+  
   public func stakingWithdrawConfirmationController(wallet: Wallet,
                                                     stakingPool: StackingPoolInfo,
                                                     amount: BigUInt,

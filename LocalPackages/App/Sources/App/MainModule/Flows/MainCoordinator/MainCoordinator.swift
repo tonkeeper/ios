@@ -832,7 +832,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingStakeCoordinator(
       wallet: wallet,
@@ -843,6 +843,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
@@ -859,7 +864,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingUnstakeCoordinator(
       wallet: wallet,
@@ -870,6 +875,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
@@ -900,7 +910,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openStake(wallet: Wallet) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingCoordinator(
       wallet: wallet,
@@ -910,6 +920,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }

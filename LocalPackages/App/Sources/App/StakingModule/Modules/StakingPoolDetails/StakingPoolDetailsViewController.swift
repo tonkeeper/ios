@@ -22,12 +22,29 @@ final class StakingPoolDetailsViewController: GenericViewViewController<StakingP
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.navigationBar.layoutIfNeeded()
+    customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
+    customView.scrollView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
+  }
 }
 
 private extension StakingPoolDetailsViewController {
 
   func setup() {
-    navigationItem.title = viewModel.title
+    customView.titleView.configure(
+      model: TKUINavigationBarTitleView.Model(
+        title: viewModel.title.withTextStyle(
+          .h3,
+          color: .Text.primary,
+          alignment: .center,
+          lineBreakMode: .byTruncatingTail
+        )
+      )
+    )
     
     var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     configuration.content = TKButton.Configuration.Content(title: .plainString(viewModel.buttonTitle))
@@ -39,6 +56,26 @@ private extension StakingPoolDetailsViewController {
     customView.listView.configure(model: viewModel.listViewModel)
     customView.descriptionLabel.attributedText = viewModel.description
     customView.linksView.configure(model: viewModel.linksViewModel)
+  }
+  
+  func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    if navigationController.viewControllers.count > 1 {
+      customView.navigationBar.leftViews = [
+        TKUINavigationBar.createBackButton {
+          navigationController.popViewController(animated: true)
+        }
+      ]
+    }
+    
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createCloseButton { [weak self] in
+        self?.viewModel.didTapCloseButton()
+      }
+    ]
   }
   
   func setupBindings() {

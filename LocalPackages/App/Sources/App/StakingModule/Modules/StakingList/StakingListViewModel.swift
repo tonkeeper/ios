@@ -7,6 +7,7 @@ import TKLocalize
 protocol StakingListModuleOutput: AnyObject {
   var didSelectPool: ((StakingListPool) -> Void)? { get set }
   var didSelectGroup: ((StakingListGroup) -> Void)? { get set }
+  var didClose: (() -> Void)? { get set }
 }
 
 protocol StakingListViewModel: AnyObject {
@@ -14,6 +15,7 @@ protocol StakingListViewModel: AnyObject {
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<StakingListCollectionSection, TKUIListItemCell.Configuration>) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapCloseButton()
 }
 
 struct StakingListModel {
@@ -50,6 +52,7 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
   
   var didSelectPool: ((StakingListPool) -> Void)?
   var didSelectGroup: ((StakingListGroup) -> Void)?
+  var didClose: (() -> Void)?
   
   // MARK: - StakingListViewModel
   
@@ -62,6 +65,10 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
   func viewDidLoad() {
     let snapshot = createSnapshot()
     didUpdateSnapshot?(snapshot)
+  }
+  
+  func didTapCloseButton() {
+    didClose?()
   }
 
   private let model: StakingListModel

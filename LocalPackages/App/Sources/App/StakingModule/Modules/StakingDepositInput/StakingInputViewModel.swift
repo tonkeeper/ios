@@ -13,6 +13,7 @@ protocol StakingInputDetailsModuleInput: AnyObject {
 protocol StakingInputModuleOutput: AnyObject {
   var didTapPoolPicker: ((_ model: StakingListModel) -> Void)? { get set }
   var didConfirm: ((StakingConfirmationItem) -> Void)? { get set }
+  var didClose: (() -> Void)? { get set }
 }
 
 protocol StakingInputModuleInput: AnyObject {
@@ -36,26 +37,35 @@ protocol StakingInputViewModel: AnyObject {
   func didToggleInputMode()
   func didToggleIsMax()
   func didTapContinue()
+  func didTapCloseButton()
+  func didTapStakingInfoButton()
 }
 
 final class StakingInputViewModelImplementation: StakingInputViewModel, StakingInputModuleOutput, StakingInputModuleInput {
   
   private let model: StakingInputModel
+  private let configurationStore: ConfigurationStore
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
+  private let urlOpener: URLOpener
   
   init(model: StakingInputModel,
+       configurationStore: ConfigurationStore,
        decimalFormatter: DecimalAmountFormatter,
-       amountFormatter: AmountFormatter) {
+       amountFormatter: AmountFormatter,
+       urlOpener: URLOpener) {
     self.model = model
+    self.configurationStore = configurationStore
     self.decimalFormatter = decimalFormatter
     self.amountFormatter = amountFormatter
+    self.urlOpener = urlOpener
   }
   
   // MARK: - StakingInputModuleOutput
   
   var didTapPoolPicker: ((_ model: StakingListModel) -> Void)?
   var didConfirm: ((StakingConfirmationItem) -> Void)?
+  var didClose: (() -> Void)?
   
   // MARK: - StakingInputModuleInput
   
@@ -136,6 +146,16 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
         self.didConfirm?(item)
       }
     }
+  }
+  
+  func didTapCloseButton() {
+    didClose?()
+  }
+  
+  func didTapStakingInfoButton() {
+    let configuration = configurationStore.getConfiguration()
+    guard let url = configuration.stakingInfoUrl else { return }
+    urlOpener.open(url: url)
   }
 }
 

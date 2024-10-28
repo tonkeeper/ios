@@ -7,12 +7,15 @@ struct StakingInputAssembly {
   
   static func module(model: StakingInputModel,
                      detailsViewController: UIViewController,
-                     keeperCoreMainAssembly: KeeperCore.MainAssembly)
+                     keeperCoreMainAssembly: KeeperCore.MainAssembly,
+                     coreAssembly: TKCore.CoreAssembly)
   -> MVVMModule<StakingInputViewController, StakingInputModuleOutput, StakingInputModuleInput> {
     let viewModel = StakingInputViewModelImplementation(
       model: model,
+      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+      urlOpener: coreAssembly.urlOpener()
     )
     
     let viewController = StakingInputViewController(

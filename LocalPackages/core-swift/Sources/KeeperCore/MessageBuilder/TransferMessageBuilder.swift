@@ -641,6 +641,7 @@ public struct ExternalMessageTransferBuilder {
       timeout: timeout)
     let contract = try wallet.contract
     let transfer = try contract.createTransfer(args: transferData, messageType: .ext)
+    
     let signedTransfer = try await signClosure(transfer)
     let body = Builder()
     
@@ -659,6 +660,6 @@ public struct ExternalMessageTransferBuilder {
                                            stateInit: seqno == 0 ? contract.stateInit : nil,
                                            body: transferCell)
     let cell = try Builder().store(externalMessage).endCell()
-    return try cell.toBoc().base64EncodedString()
+    return try cell.toBoc().hexString()
   }
 }
