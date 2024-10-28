@@ -70,13 +70,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private let confirmationController: TransactionConfirmationController
   private let amountFormatter: AmountFormatter
+  private let decimalFormatter: DecimalAmountFormatter
   
   // MARK: - Init
   
   init(confirmationController: TransactionConfirmationController,
-       amountFormatter: AmountFormatter) {
+       amountFormatter: AmountFormatter,
+       decimalFormatter: DecimalAmountFormatter) {
     self.confirmationController = confirmationController
     self.amountFormatter = amountFormatter
+    self.decimalFormatter = decimalFormatter
   }
   
   // MARK: - Private
@@ -92,7 +95,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         padding: UIEdgeInsets(top: 0, left: 32, bottom: 32, right: 32),
         items: [
           TKPopUp.Component.LabelComponent(
-            text: "Confirm action".withTextStyle(
+            text: TKLocales.TransactionConfirmation.confirmAction.withTextStyle(
               .body1,
               color: .Text.secondary,
               alignment: .center,
@@ -125,9 +128,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       case .staking(let staking):
         switch staking.flow {
         case .withdraw:
-          return "Unstake"
+          return TKLocales.TransactionConfirmation.unstake
         case .deposit:
-          return "Withdraw"
+          return TKLocales.TransactionConfirmation.deposit
         }
       }
     }()
@@ -169,6 +172,11 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     items.append(
       createAmountItem(transaction: transaction)
     )
+    if let apyItem = createAPYItem(transaction: transaction) {
+      items.append(
+        apyItem
+      )
+    }
     items.append(
       createFeeListItem(transaction: transaction)
     )
@@ -185,7 +193,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private func createWalletItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
     return TKListContainerItemView.Model(
-      title: "Wallet",
+      title: TKLocales.TransactionConfirmation.wallet,
       value: .value(
         TransactionConfirmationListContainerItemWalletValueView.Configuration(
           wallet: transaction.wallet
@@ -203,13 +211,30 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
     
     return TKListContainerItemView.Model(
-      title: "Recipient",
+      title: TKLocales.TransactionConfirmation.recipient,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: recipient)
         )
       ),
-      action: nil
+      action: .copy(copyValue: recipient)
+    )
+  }
+  
+  private func createAPYItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model? {
+    guard case let .staking(staking) = transaction.transaction,
+          case .deposit = staking.flow else { return nil }
+    
+    let apyPercents = decimalFormatter.format(amount: staking.pool.apy, maximumFractionDigits: 2)
+    let value = "\(String.almostEqual) \(apyPercents)%"
+    return TKListContainerItemView.Model(
+      title: TKLocales.TransactionConfirmation.apy,
+      value: .value(
+        TKListContainerItemDefaultValueView.Model(
+          topValue: TKListContainerItemDefaultValueView.Model.Value(value: value)
+        )
+      ),
+      action: .copy(copyValue: apyPercents)
     )
   }
   
@@ -219,9 +244,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     case .staking(let staking):
       switch staking.flow {
       case .withdraw:
-        title = TKLocales.EventDetails.unstakeAmount
+        title = TKLocales.TransactionConfirmation.unstakeAmount
       case .deposit:
-        title = TKLocales.EventDetails.unstakeAmount
+        title = TKLocales.TransactionConfirmation.amount
       }
     }
     
@@ -250,11 +275,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     return TKListContainerItemView.Model(
       title: title,
       value: value,
-      action: nil
+      action: .copy(copyValue: valueFormatted)
     )
   }
   
   private func createFeeListItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
+    var copyValue: String?
     let value: TKListContainerItemView.Model.Value
     switch transaction.fee {
     case .loading:
@@ -268,6 +294,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           maximumFractionDigits: feeValue.decimals,
           currency: feeValue.currency
         )
+        copyValue = feeValueFormatted
         var feeConvertedFormatted: String?
         if let feeConverted {
           let formatted = amountFormatter.formatAmount(
@@ -292,7 +319,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     return TKListContainerItemView.Model(
       title: TKLocales.EventDetails.fee,
       value: value,
-      action: nil
+      action: .copy(copyValue: copyValue)
     )
   }
   
@@ -302,12 +329,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       case .staking(let staking):
         switch staking.flow {
         case .deposit:
-          return "Confirm and Stake"
+          return TKLocales.TransactionConfirmation.Buttons.confirmAndStake
         case let .withdraw(isCollect):
           if isCollect {
-            return "Confirm and Unstake"
+            return TKLocales.TransactionConfirmation.Buttons.confirmAndUnstake
           } else {
-            return "Confirm and Collect"
+            return TKLocales.TransactionConfirmation.Buttons.confirmAndCollect
           }
         }
       }

@@ -54,7 +54,7 @@ struct WalletBalanceListStakingMapper {
           return amountFormatter.formatAmount(
             BigUInt(item.info.pendingDeposit),
             fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
+            maximumFractionDigits: 4)
         }
       }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.staked(amount))\(estimate)"
@@ -69,7 +69,7 @@ struct WalletBalanceListStakingMapper {
           return amountFormatter.formatAmount(
             BigUInt(item.info.pendingWithdraw),
             fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
+            maximumFractionDigits: 4)
         }
       }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.unstaked(amount))\(estimate)"
@@ -84,7 +84,7 @@ struct WalletBalanceListStakingMapper {
           return amountFormatter.formatAmount(
             BigUInt(item.info.readyWithdraw),
             fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
+            maximumFractionDigits: 4)
         }
       }()
       

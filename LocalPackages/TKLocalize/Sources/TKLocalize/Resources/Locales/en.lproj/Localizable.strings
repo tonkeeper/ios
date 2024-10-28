@@ -459,14 +459,6 @@
 "staking_balance_details.stake" = "Stake";
 "staking_balance_details.unstake" = "Unstake";
 
-"staking_confirmation_mapper.wallet" = "Wallet";
-"staking_confirmation_mapper.recipient" = "Recipient";
-"staking_confirmation_mapper.amount" = "Amount";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Fee";
-"staking_confirmation_mapper.stake" = "Stake";
-"staking_confirmation_mapper.confirm_action" = "Confirm action";
-
 "staking.title" = "Stake";
 
 "unstaking.title" = "Unstake";
@@ -517,3 +509,16 @@
 "decrypt_comment_popup.button" = "Decrypt the comment";
 
 "tick.do_not_show_again" = "Do not show again";
+
+"transaction_confirmation.confirm_action" = "Confirm action";
+"transaction_confirmation.wallet" = "Wallet";
+"transaction_confirmation.recipient" = "Recipient";
+"transaction_confirmation.fee" = "Fee";
+"transaction_confirmation.amount" = "Amount";
+"transaction_confirmation.unstake_amount" = "Unstake amount";
+"transaction_confirmation.unstake" = "Unstake";
+"transaction_confirmation.deposit" = "Deposit";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
+"transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";

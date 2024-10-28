@@ -111,4 +111,15 @@ public extension StackingPoolInfo.Implementation {
       return BigUInt(integerLiteral: 200_000_000)
     }
   }
+  
+  var depositExtraFee: BigUInt {
+    switch self.type {
+    case .liquidTF:
+      return BigUInt(integerLiteral: 1_000_000_000)
+    case .tf:
+      return 0
+    case .whales:
+      return 0
+    }
+  }
 }

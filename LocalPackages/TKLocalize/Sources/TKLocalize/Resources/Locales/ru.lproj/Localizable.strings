@@ -444,14 +444,6 @@
 "staking_balance_details.stake" = "Внести";
 "staking_balance_details.unstake" = "Вывести";
 
-"staking_confirmation_mapper.wallet" = "Кошелёк";
-"staking_confirmation_mapper.recipient" = "Получатель";
-"staking_confirmation_mapper.amount" = "Сумма";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Комиссия";
-"staking_confirmation_mapper.stake" = "Депозит";
-"staking_confirmation_mapper.confirm_action" = "Подтвердить действие";
-
 "staking.title" = "Стейкинг";
 
 "unstaking.title" = "Получить вывод";
@@ -503,3 +495,17 @@
 "decrypt_comment_popup.button" = "Расшифровать комментарий";
 
 "tick.do_not_show_again" = "Не показывать снова";
+
+"transaction_confirmation.confirm_action" = "Подтвердить действие";
+"transaction_confirmation.wallet" = "Кошелёк";
+"transaction_confirmation.recipient" = "Получатель";
+"transaction_confirmation.fee" = "Комиссия";
+"transaction_confirmation.amount" = "Сумма";
+"transaction_confirmation.unstake_amount" = "Сумма вывода";
+"transaction_confirmation.unstake" = "Вывод";
+"transaction_confirmation.deposit" = "Депозит";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.buttons.confirm_and_stake" = "Подтвердить и внести";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
+"transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";
+

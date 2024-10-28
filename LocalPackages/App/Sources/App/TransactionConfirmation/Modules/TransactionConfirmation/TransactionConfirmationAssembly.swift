@@ -11,7 +11,8 @@ struct TransactionConfirmationAssembly {
   ) -> MVVMModule<TransactionConfirmationViewController, TransactionConfirmationOutput, Void> {
     let viewModel = TransactionConfirmationViewModelImplementation(
       confirmationController: transactionConfirmationController,
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+      decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
     )
     let viewController = TransactionConfirmationViewController(viewModel: viewModel)
     

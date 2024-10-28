@@ -77,7 +77,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
       transaction: .staking(
         TransactionConfirmationModel.Transaction.Staking(
           pool: stakingPool,
-          flow: .withdraw(isCollect: isCollect)
+          flow: .deposit
         )
       ),
       amount: getAmountValue(),
@@ -107,20 +107,13 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
 
     let transferMessageBuilder = TransferMessageBuilder(
       transferData: .stake(
-        .withdraw(
-          TransferData.StakeWithdraw(
+        .deposit(
+          TransferData.StakeDeposit(
             seqno: seqno,
             pool: stakingPool,
-            amount: convertAmount(amount: amount),
+            amount: updateAmount(amount: amount),
             isBouncable: true,
-            timeout: timeout,
-            jettonWalletAddress: { [blockchainService] wallet, jettonMasterAddress in
-              try await blockchainService.getWalletAddress(
-                jettonMaster: jettonMasterAddress?.toRaw() ?? "",
-                owner: wallet.address.toRaw(),
-                isTestnet: wallet.isTestnet
-              )
-            }
+            timeout: timeout
           )
         )
       )
@@ -184,30 +177,8 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     )
   }
   
-  private func convertAmount(amount: BigUInt) -> BigUInt {
-    guard stakingPool.implementation.type == .liquidTF else {
-      return amount
-    }
-    
-    guard let jettonMasterAddress = stakingPool.liquidJettonMaster else {
-      return amount
-    }
-    
-    guard let balance = balanceStore.getState()[wallet]?.walletBalance.balance,
-    let jettonBalance = balance.jettonsBalance
-      .first(where: { $0.item.jettonInfo.address == jettonMasterAddress }),
-          let rate = jettonBalance.rates.first(where: { $0.key == .TON })?.value else {
-      return 0
-    }
-    
-    let rateConverter = RateConverter()
-    let converted = rateConverter.convertFromCurrency(
-      amount: amount,
-      amountFractionLength: TonInfo.fractionDigits,
-      rate: rate
-    )
-    
-    return converted
+  private func updateAmount(amount: BigUInt) -> BigUInt {
+    return amount + stakingPool.implementation.depositExtraFee
   }
   
   func signTransfer(_ transferBuilder: TransferMessageBuilder) async throws -> String {
