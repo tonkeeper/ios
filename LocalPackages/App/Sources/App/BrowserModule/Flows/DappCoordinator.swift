@@ -5,6 +5,7 @@ import KeeperCore
 import TKScreenKit
 import TKUIKit
 
+@MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
   private let dapp: Dapp
@@ -107,7 +108,6 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       }
     }
 
-    @Sendable
     func handleLoadedManifest(parameters: TonConnectParameters,
                               manifest: TonConnectManifest,
                               router: ViewControllerRouter,

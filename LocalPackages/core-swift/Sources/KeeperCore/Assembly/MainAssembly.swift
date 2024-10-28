@@ -121,26 +121,6 @@ public final class MainAssembly {
     )
   }
   
-  public func stakingDepositConfirmationController(wallet: Wallet,
-                                                   stakingPool: StackingPoolInfo,
-                                                   amount: BigUInt,
-                                                   isMax: Bool) -> StakeConfirmationController {
-    StakeDepositConfirmationController(
-      wallet: wallet,
-      stakingPool: stakingPool,
-      amount: amount,
-      isMax: isMax,
-      sendService: servicesAssembly.sendService(),
-      accountService: servicesAssembly.accountService(),
-      blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalFormatter: formattersAssembly.decimalAmountFormatter
-    )
-  }
-  
   public func stakingWithdrawTransactionConfirmationController(wallet: Wallet,
                                                                stakingPool: StackingPoolInfo,
                                                                amount: BigUInt,
@@ -178,29 +158,7 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore
     )
   }
-  
-  public func stakingWithdrawConfirmationController(wallet: Wallet,
-                                                    stakingPool: StackingPoolInfo,
-                                                    amount: BigUInt,
-                                                    isMax: Bool,
-                                                    isCollect: Bool) -> StakeConfirmationController {
-    StakeWithdrawConfirmationController(
-      wallet: wallet,
-      stakingPool: stakingPool,
-      amount: amount,
-      isMax: isMax,
-      isCollect: isCollect,
-      sendService: servicesAssembly.sendService(),
-      accountService: servicesAssembly.accountService(),
-      blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalFormatter: formattersAssembly.decimalAmountFormatter
-    )
-  }
-  
+
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: Bool) -> BuyListController {
     BuyListController(

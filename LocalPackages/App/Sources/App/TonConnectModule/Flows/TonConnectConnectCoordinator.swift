@@ -5,6 +5,7 @@ import TKUIKit
 import TKScreenKit
 import TKCore
 
+@MainActor
 public protocol TonConnectConnectCoordinatorConnector {
   func connect(wallet: Wallet,
                passcode: String,
@@ -12,6 +13,7 @@ public protocol TonConnectConnectCoordinatorConnector {
                manifest: TonConnectManifest) async throws
 }
 
+@MainActor
 public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   
@@ -29,6 +31,7 @@ public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoo
   }
 }
 
+@MainActor
 public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   private let connectionResponseHandler: (TonConnectAppsStore.ConnectResult) -> Void
@@ -49,6 +52,7 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
   }
 }
 
+@MainActor
 public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   public var didConnect: (() -> Void)?

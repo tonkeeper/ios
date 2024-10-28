@@ -41,11 +41,13 @@ private extension TransactionConfirmationViewController {
           !navigationController.viewControllers.isEmpty else {
       return
     }
-    customView.navigationBar.leftViews = [
-      TKUINavigationBar.createBackButton {
-        navigationController.popViewController(animated: true)
-      }
-    ]
+    if navigationController.viewControllers.count > 1 {
+      customView.navigationBar.leftViews = [
+        TKUINavigationBar.createBackButton {
+          navigationController.popViewController(animated: true)
+        }
+      ]
+    }
     customView.navigationBar.rightViews = [
       TKUINavigationBar.createCloseButton { [weak self] in
         self?.viewModel.didTapCloseButton()

@@ -32,13 +32,10 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
-    Task {
-      await openConfirmation(wallet: wallet, item: item)
-    }
+    openConfirmation(wallet: wallet, item: item)
   }
   
-  @MainActor func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {
-    
+  func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {
     let transactionConfirmationController: TransactionConfirmationController
     switch item.operation {
     case .deposit(let stackingPoolInfo):

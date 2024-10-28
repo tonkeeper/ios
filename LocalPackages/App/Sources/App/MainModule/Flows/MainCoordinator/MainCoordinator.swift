@@ -768,47 +768,28 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   func openStakingCollect(wallet: Wallet,
                           stakingPoolInfo: StackingPoolInfo,
                           accountStackingInfo: AccountStackingInfo) {
+    let navigationController = TKNavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
-    let controller = keeperCoreMainAssembly.stakingWithdrawConfirmationController(
+    let coordinator = StakingConfirmationCoordinator(
       wallet: wallet,
-      stakingPool: stakingPoolInfo,
-      amount: BigUInt(accountStackingInfo.readyWithdraw),
-      isMax: false,
-      isCollect: true
+      item: StakingConfirmationItem(operation: .withdraw(stakingPoolInfo), amount: BigUInt(accountStackingInfo.readyWithdraw), isMax: false),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    let module = StakingConfirmationAssembly.module(wallet: wallet,
-                                                    stakingConfirmationController: controller)
-    
-    let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureDefaultAppearance()
-    
-    module.output.didRequireSign = { [weak self, weak navigationController, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
-      guard let self = self, let navigationController else { return nil }
-      let coordinator = await WalletTransferSignCoordinator(
-        router: ViewControllerRouter(rootViewController: navigationController),
-        wallet: wallet,
-        transferMessageBuilder: walletTransfer,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly)
-      
-      self.walletTransferSignCoordinator = coordinator
-      
-      let result = await coordinator.handleSign(parentCoordinator: self)
-      
-      switch result {
-      case .signed(let data):
-        return data
-      case .cancel:
-        return nil
-      case .failed(let error):
-        throw error
-      }
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
     }
     
-    module.view.setupRightCloseButton { [weak self] in
-      self?.router.dismiss()
+    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      self?.removeChild(coordinator)
     }
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
     
     router.present(navigationController)
   }
