@@ -48,11 +48,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         completion: completion)
     }
 
-    messageHandler.reconnect = {
-      [weak self] dapp,
-      completion in
+    messageHandler.reconnect = { [weak self] dapp, completion in
       guard let self,
-      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+            let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
 
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
@@ -70,7 +68,11 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     messageHandler.send = { [weak self] app, request, completion in
       Task {
-        try await self?.openSend(dapp: dapp, appRequest: request, completion: completion)
+        guard let wallet = try? await self?.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
+          return
+        }
+
+        try await self?.openSend(wallet: wallet, dapp: dapp, appRequest: request, completion: completion)
       }
     }
 
@@ -147,6 +149,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
   @MainActor
   private func openSend(
+    wallet: Wallet,
     dapp: Dapp,
     appRequest: TonConnect.AppRequest,
     completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void
@@ -182,7 +185,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       }
 
       guard isConfirmFlowAvailable else {
-        startInsufficientFlow(model: confirmModel)
+        startInsufficientFlow(wallet: wallet, model: confirmModel)
         completion(.error(.userDeclinedTransaction))
         return
       }
@@ -198,7 +201,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   @MainActor
-  private func startInsufficientFlow(model: ConfirmTransactionController.ConfirmModel) {
+  private func startInsufficientFlow(wallet: Wallet, model: ConfirmTransactionController.ConfirmModel) {
     let viewController = InsufficientFundsViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
     let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
@@ -215,6 +218,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       }
     }
     let configuration = configurationBuilder.insufficientTokenConfiguration(
+      walletLabel: wallet.metaData.label,
       tokenSymbol: model.token.token.symbol,
       tokenFractionalDigits: model.token.token.fractionDigits,
       required: BigUInt(integerLiteral: UInt64(model.requiredAmount)),

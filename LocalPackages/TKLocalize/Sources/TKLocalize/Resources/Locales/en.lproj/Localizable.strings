@@ -521,6 +521,7 @@
 // MARK: -  Insufficient Funds
 
 "insufficientFunds.title" = "Insufficient Funds";
+"insufficientFunds.Wallet.title" = "Insufficient Funds in\U00A0wallet %@";
 "insufficientFunds.to_be_paid_your_balance" = "To be paid: %@.\nYour balance: %@.";
 "insufficientFunds.recharge_wallet" = "Recharge Wallet";
 "insufficientFunds.insufficient_balance" = "Insufficient balance";

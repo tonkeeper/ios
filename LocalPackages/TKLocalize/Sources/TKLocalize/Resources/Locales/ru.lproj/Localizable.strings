@@ -507,6 +507,7 @@
 // MARK: -  Insufficient Funds
 
 "insufficientFunds.title" = "Недостаточно средств";
+"insufficientFunds.Wallet.title" = "Недостаточно средств на\U00A0кошельке %@";
 "insufficientFunds.to_be_paid_your_balance" = "Необходимо: %@.\nВаш баланс: %@.";
 "insufficientFunds.recharge_wallet" = "Пополнить кошелёк";
 "insufficientFunds.insufficient_balance" = "Недостаточный баланс";

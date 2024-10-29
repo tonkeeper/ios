@@ -602,6 +602,12 @@ public enum TKLocales {
     public static func toBePaidYourBalance(_ p1: Any, _ p2: Any) -> String {
       return TKLocales.tr("Localizable", "insufficientFunds.to_be_paid_your_balance", String(describing: p1), String(describing: p2), fallback: "To be paid: %@.\nYour balance: %@.")
     }
+    public enum Wallet {
+      /// Insufficient Funds in wallet %@
+      public static func title(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "insufficientFunds.Wallet.title", String(describing: p1), fallback: "Insufficient Funds in wallet %@")
+      }
+    }
   }
   public enum LedgerConfirm {
     /// Confirm Action

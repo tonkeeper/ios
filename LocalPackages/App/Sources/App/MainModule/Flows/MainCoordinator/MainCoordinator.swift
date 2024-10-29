@@ -1047,6 +1047,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let tokenSymbol = jettonInfo.symbol ?? jettonInfo.name
 
     let configuration = configurationBuilder.insufficientTokenConfiguration(
+      walletLabel: wallet?.metaData.label,
       tokenSymbol: tokenSymbol,
       tokenFractionalDigits: jettonInfo.fractionDigits,
       required: requiredAmount,

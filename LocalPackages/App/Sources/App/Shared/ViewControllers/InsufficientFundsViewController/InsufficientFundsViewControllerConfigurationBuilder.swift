@@ -13,6 +13,7 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
   }
   
   func insufficientTokenConfiguration(
+    walletLabel: String?,
     tokenSymbol: String,
     tokenFractionalDigits: Int,
     required: BigUInt,
@@ -32,12 +33,18 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
         symbol: tokenSymbol
       )
 
-      let title = TKLocales.InsufficientFunds.title
-        .withTextStyle(
-          .h2,
-          color: .Text.primary,
-          alignment: .center
-        )
+      let title: String
+      if let walletLabel {
+        title = TKLocales.InsufficientFunds.Wallet.title(walletLabel)
+      } else {
+        title = TKLocales.InsufficientFunds.title
+      }
+
+      let attributedTitle = title.withTextStyle(
+        .h2,
+        color: .Text.primary,
+        alignment: .center
+      )
 
       let caption = TKLocales.InsufficientFunds.toBePaidYourBalance(
         requiredFormattedAmount, availableFormattedAmount
@@ -48,7 +55,7 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
       )
 
       return InsufficientFundsViewController.Configuration(
-        title: title,
+        title: attributedTitle,
         caption: caption,
         buttons: buttons
       )
