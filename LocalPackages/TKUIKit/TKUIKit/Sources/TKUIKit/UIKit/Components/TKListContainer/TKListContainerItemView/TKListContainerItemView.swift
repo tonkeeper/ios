@@ -77,7 +77,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     let stackView = UIStackView()
     stackView.axis = .horizontal
     stackView.alignment = .top
-    stackView.distribution = .fillProportionally
+    stackView.distribution = .fill
     stackView.spacing = 4
     return stackView
   }()
@@ -108,7 +108,6 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     
     titleIconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     
-    titleLabel.setContentHuggingPriority(.required, for: .horizontal)
     titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     stackView.addArrangedSubview(titleContainerView)
@@ -123,6 +122,10 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
   }
   
   private func setupConstraints() {
+    titleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    valueStackView.setContentHuggingPriority(.required, for: .horizontal)
+    valueViewContainer.setContentHuggingPriority(.required, for: .horizontal)
+    
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self).inset(UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16))
     }

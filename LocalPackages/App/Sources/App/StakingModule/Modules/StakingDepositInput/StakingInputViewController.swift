@@ -38,6 +38,13 @@ final class StakingInputViewController: GenericViewViewController<StakingInputVi
     unregisterFromKeyboardEvents()
   }
   
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.navigationBar.layoutIfNeeded()
+    customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
+  }
+  
   public func keyboardWillShow(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration,
     let keyboardHeight = notification.keyboardSize?.height else { return }
@@ -59,6 +66,10 @@ final class StakingInputViewController: GenericViewViewController<StakingInputVi
 private extension StakingInputViewController {
 
   func setup() {
+    setupNavigationBar()
+    
+    customView.scrollView.contentInsetAdjustmentBehavior = .never
+    
     addChild(amountInputViewController)
     customView.setAmountInputView(amountInputViewController.customView)
     amountInputViewController.didMove(toParent: self)
@@ -74,9 +85,40 @@ private extension StakingInputViewController {
     }
   }
   
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createButton(
+        icon: .TKUIKit.Icons.Size16.informationCircle,
+        action: { [weak self] _ in
+          self?.viewModel.didTapStakingInfoButton()
+        }
+      )
+    ]
+    
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createCloseButton { [weak self] in
+        self?.viewModel.didTapCloseButton()
+      }
+    ]
+  }
+  
   func setupBindings() {
     viewModel.didUpdateTitle = { [weak self] title in
-      self?.title = title
+      self?.customView.titleView.configure(
+        model: TKUINavigationBarTitleView.Model(
+          title: title.withTextStyle(
+            .h3,
+            color: .Text.primary,
+            alignment: .center,
+            lineBreakMode: .byTruncatingTail
+          )
+        )
+      )
     }
     
     viewModel.didUpdateInputValue = { [weak self] value in
@@ -127,10 +169,6 @@ private extension StakingInputViewController {
     amountInputViewController.didToggle = { [weak viewModel] in
       viewModel?.didToggleInputMode()
     }
-    
-//    customView.infoView.addAction(UIAction(handler: { [weak viewModel] _ in
-//      viewModel?.didTapInfoView()
-//    }), for: .touchUpInside)
   }
   
   func createMaxButtonConfiguration() -> TKButton.Configuration {

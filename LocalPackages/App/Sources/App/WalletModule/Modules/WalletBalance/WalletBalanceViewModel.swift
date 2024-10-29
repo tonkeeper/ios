@@ -336,6 +336,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           item,
           isSecure: balanceListItems.isSecure,
           isPinned: balanceListItem.isPinned,
+          isStakingEnable: balanceListItems.wallet.isStakeEnable,
           stakingCollectHandler: { [weak self] in
             guard let self,
                   let poolInfo = item.poolInfo else { return }
@@ -589,6 +590,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         stakingItem,
         isSecure: isSecure,
         isPinned: item.isPinned,
+        isStakingEnable: wallet.isStakeEnable,
         stakingCollectHandler: { [weak self] in
           guard let poolInfo = stakingItem.poolInfo else { return }
           self?.didSelectCollectStakingItem?(wallet, poolInfo, stakingItem.info)

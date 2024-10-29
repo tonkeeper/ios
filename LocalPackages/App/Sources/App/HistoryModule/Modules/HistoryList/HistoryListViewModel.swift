@@ -205,6 +205,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
           self.eventHandler?(.snapshotUpdate(snapshot))
         }
       }
+    default: break
     }
   }
   

@@ -126,8 +126,11 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
 
 private extension StakingBalanceDetailsViewModelImplementation {
   func updateList() {
-    let profitablePool = stakingPoolsStore.getState()[wallet]?.profitablePool
-    let model = self.listViewModelBuilder.build(stakingPoolInfo: stakingPoolInfo, isMaxAPY: profitablePool?.address == self.stakingPoolInfo.address)
+    let profitablePools = stakingPoolsStore.getState()[wallet]?.profitablePools
+    let model = self.listViewModelBuilder.build(
+      stakingPoolInfo: stakingPoolInfo,
+      isMaxAPY: profitablePools?.contains(where: { $0.address == self.stakingPoolInfo.address }) == true
+    )
     DispatchQueue.main.async {
       self.didUpdateListViewModel?(model)
     }
@@ -247,6 +250,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     didUpdateJettonItemView?(
       TKListItemButton.Configuration(
         listItemConfiguration: configuration,
+        isEnable: true,
         tapClosure: { [weak self] in
           guard let self else { return }
           self.openJettonDetails?(self.wallet, jettonBalanceItem.jetton)
@@ -363,6 +367,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
           )
         )
       ),
+      isEnable: wallet.isStakeEnable,
       tapClosure: tapClosure
     )
     
@@ -377,6 +382,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
             image: .TKUIKit.Icons.Size28.plusOutline,
             title: .stakeTitle
           ),
+          isEnabled: wallet.isStakeEnable,
           action: { [weak self, wallet, stakingPoolInfo] in
             self?.didTapStake?(wallet, stakingPoolInfo)
           }
@@ -386,6 +392,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
             image: .TKUIKit.Icons.Size28.minusOutline,
             title: .unstakeTitle
           ),
+          isEnabled: wallet.isStakeEnable,
           action: { [weak self, wallet, stakingPoolInfo] in
             self?.didTapUnstake?(wallet, stakingPoolInfo)
           }

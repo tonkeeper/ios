@@ -9,6 +9,7 @@ import TonSwift
 final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didFinish: (() -> Void)?
+  var didClose: (() -> Void)?
   
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
@@ -52,24 +53,22 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
       ),
       detailsViewController: stakingDepositInputPoolPicker.view,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
     )
-    
-    module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
-    }
-    module.view.setupLeftButton(image: .TKUIKit.Icons.Size16.informationCircle) { [keeperCoreMainAssembly, coreAssembly] in
-      guard let url = keeperCoreMainAssembly.configurationAssembly.configuration.stakingInfoUrl else {
-        return
-      }
-      coreAssembly.urlOpener().open(url: url)
-    }
     
     module.output.didConfirm = { [weak self] item in
       guard let self else { return }
-      self.openConfirmation(wallet: self.wallet, item: item)
+      Task {
+        await MainActor.run {
+          self.openConfirmation(wallet: self.wallet, item: item)
+        }
+      }
     }
     
+    module.output.didClose = { [weak self] in
+      self?.didClose?()
+    }
     
     stakingDepositInputPoolPicker.view.didTapPicker = { [weak self, module] model in
       self?.openStakingList(model: model, poolSelectionClosure: { pool in
@@ -87,12 +86,6 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
-    }
-    
-    module.view.setupBackButton()
-    
     module.output.didSelectGroup = { [weak self] group in
       let model = StakingListModel(
         title: group.name,
@@ -106,6 +99,10 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       self?.openStakingPoolDetails(pool: pool, poolSelectionClosure: { selectedPool in
         poolSelectionClosure(selectedPool)
       })
+    }
+    
+    module.output.didClose = { [weak self] in
+      self?.didFinish?()
     }
     
     router.push(viewController: module.view)
@@ -132,59 +129,41 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       self?.openURL(url, title: title)
     }
     
+    module.output.didClose = { [weak self] in
+      self?.didClose?()
+    }
+    
     router.push(viewController: module.view)
   }
   
   func openURL(_ url: URL, title: String?) {
-    let viewController = TKBridgeWebViewController(initialURL: url, initialTitle: nil, jsInjection: nil)
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default)
     router.present(viewController)
   }
   
-  func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {
-    let controller: StakeConfirmationController
-    switch item.operation {
-    case .deposit(let stackingPoolInfo):
-      controller = keeperCoreMainAssembly.stakingDepositConfirmationController(
-        wallet: wallet,
-        stakingPool: stackingPoolInfo,
-        amount: item.amount,
-        isMax: item.isMax
-      )
-    case .withdraw(let stackingPoolInfo):
-      return
+  @MainActor func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {
+    let coordinator = StakingConfirmationCoordinator(
+      wallet: wallet,
+      item: item,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: router
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
     }
     
-    let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
-
-    module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
-      guard let self = self else { return nil }
-      let coordinator = await WalletTransferSignCoordinator(
-        router: ViewControllerRouter(rootViewController: router.rootViewController),
-        wallet: wallet,
-        transferMessageBuilder: walletTransfer,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly)
-      
-      self.walletTransferSignCoordinator = coordinator
-      
-      let result = await coordinator.handleSign(parentCoordinator: self)
-    
-      switch result {
-      case .signed(let data):
-        return data
-      case .cancel:
-        return nil
-      case .failed(let error):
-        throw error
-      }
+    coordinator.didClose = { [weak self, weak coordinator] in
+      self?.didClose?()
+      self?.removeChild(coordinator)
     }
     
-    module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
-    }
-    
-    module.view.setupBackButton()
-    
-    router.push(viewController: module.view)
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
   }
 }

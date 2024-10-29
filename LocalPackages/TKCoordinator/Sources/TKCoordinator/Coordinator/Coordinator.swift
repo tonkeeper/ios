@@ -1,5 +1,6 @@
 import UIKit
 
+@MainActor
 public protocol Coordinator: AnyObject {
   func addChild(_ child: Coordinator)
   func removeChild(_ child: Coordinator?)

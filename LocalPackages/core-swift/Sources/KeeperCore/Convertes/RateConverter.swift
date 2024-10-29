@@ -29,6 +29,19 @@ public struct RateConverter {
     return (amount: converted, fractionLength: fractionLength)
   }
   
+  public func convertFromCurrency(amount: BigUInt,
+                                  amountFractionLength: Int,
+                                  rate: Rates.Rate) -> BigUInt {
+    let amountDecimalNumber = NSDecimalNumber(string: String(amount))
+    let rateDecimalNumber = NSDecimalNumber(decimal: rate.rate)
+    let converted = amountDecimalNumber.dividing(by: rateDecimalNumber)
+    guard let convertedIntegerPart = converted.stringValue.components(separatedBy: ".").first,
+    let result = BigUInt(convertedIntegerPart) else {
+      return 0
+    }
+    return result
+  }
+  
   public func convertToDecimal(amount: BigUInt,
                                amountFractionLength: Int,
                                rate: Rates.Rate) -> Decimal {

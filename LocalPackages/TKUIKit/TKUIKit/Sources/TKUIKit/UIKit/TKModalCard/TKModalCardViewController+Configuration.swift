@@ -171,9 +171,12 @@ public extension TKModalCardViewController.Configuration {
   
   struct Content {
     public let items: [ContentItem]
+    public let copyToastConfiguration: ToastPresenter.Configuration
     
-    public init(items: [ContentItem]) {
+    public init(items: [ContentItem],
+                copyToastConfiguration: ToastPresenter.Configuration) {
       self.items = items
+      self.copyToastConfiguration = copyToastConfiguration
     }
   }
 }

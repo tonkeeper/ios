@@ -69,6 +69,5 @@ protocol StakingInputModel: AnyObject {
   func toggleInputMode()
   func toggleIsMax()
   func setSelectedStackingPool(_ pool: StackingPoolInfo)
-  func getPickerSections(completion: @escaping (StakingListModel) -> Void)
   func getStakingConfirmationItem(completion: @escaping (StakingConfirmationItem) -> Void)
 }

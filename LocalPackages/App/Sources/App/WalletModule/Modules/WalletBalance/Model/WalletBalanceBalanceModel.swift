@@ -90,6 +90,8 @@ final class WalletBalanceBalanceModel {
       switch event {
       case .didChangeActiveWallet:
         await self.actor.addTask(block: { await self.updateItems() })
+      case .didUpdateWalletMetaData:
+        await self.actor.addTask(block: { await self.updateItems() })
       default: break
       }
     }

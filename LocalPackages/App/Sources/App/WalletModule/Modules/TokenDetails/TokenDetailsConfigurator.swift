@@ -19,16 +19,22 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
   }
   
   func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
-    guard let balance else {
-      return TokenDetailsModel(
-        title: TonInfo.name,
-        isVerified: true,
-        image: .ton,
-        tokenAmount: "0",
-        convertedAmount: "0",
-        buttons: [.send(.ton), .receive(.ton), .buySell]
+    let tonAmount = balance?.tonBalance.tonBalance.amount ?? 0
+    
+    let buttons = [
+      TokenDetailsModel.Button(
+        iconButton: .send(.ton),
+        isEnable: wallet.isSendAvailable && tonAmount > 0
+      ),
+      TokenDetailsModel.Button(
+        iconButton: .receive(.ton),
+        isEnable: true
+      ),
+      TokenDetailsModel.Button(
+        iconButton: .swap(.ton),
+        isEnable: wallet.isSwapEnable
       )
-    }
+    ]
     
     let tokenAmount: String
     let convertedAmount: String?
@@ -36,7 +42,7 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
       tokenAmount = .secureModeValueShort
       convertedAmount = .secureModeValueShort
     } else {
-      let amount = mapper.mapTonBalance(tonBalance: balance.tonBalance, currency: balance.currency)
+      let amount = mapper.mapTonBalance(tonBalance: balance?.tonBalance, currency: balance?.currency)
       tokenAmount = amount.tokenAmount
       convertedAmount = amount.convertedAmount
     }
@@ -47,7 +53,7 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
       image: .ton,
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
-      buttons: [.send(.ton), .receive(.ton), .buySell]
+      buttons: buttons
     )
   }
   
@@ -81,37 +87,41 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
       isVerified = false
     }
     
-    guard let balance else {
-      return TokenDetailsModel(
-        title: jettonItem.jettonInfo.name,
-        isVerified: isVerified,
-        image: .url(jettonItem.jettonInfo.imageURL),
-        tokenAmount: isSecureMode ? .secureModeValueShort : "0",
-        convertedAmount: isSecureMode ? .secureModeValueShort : "0",
-        buttons: [.send(.jetton(jettonItem), enabled: false),
-                  .receive(.jetton(jettonItem))]
-      )
-    }
+    let jettonBalance = balance?.jettonsBalance.first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo })?.jettonBalance
+    let jettonAmount = jettonBalance?.quantity ?? 0
+    let currency = balance?.currency ?? .defaultCurrency
     
+    let buttons = [
+      TokenDetailsModel.Button(
+        iconButton: .send(.jetton(jettonItem)),
+        isEnable: wallet.isSendAvailable && jettonItem.jettonInfo.isTransferable && jettonAmount > 0
+      ),
+      TokenDetailsModel.Button(
+        iconButton: .receive(.jetton(jettonItem)),
+        isEnable: true
+      ),
+      TokenDetailsModel.Button(
+        iconButton: .swap(.jetton(jettonItem)),
+        isEnable: wallet.isSwapEnable
+      )
+    ]
+
     let tokenAmount: String
     var convertedAmount: String?
     if isSecureMode {
       tokenAmount = .secureModeValueShort
       convertedAmount = .secureModeValueShort
-    } else if let jettonBalance = balance.jettonsBalance.first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo }) {
-      (tokenAmount, convertedAmount) = mapper.mapJettonBalance(jettonBalance: jettonBalance, currency: balance.currency)
     } else {
-      tokenAmount = "0"
-      convertedAmount = nil
+      (tokenAmount, convertedAmount) = mapper.mapJettonBalance(jettonBalance: jettonBalance, currency: currency)
     }
+    
     return TokenDetailsModel(
       title: jettonItem.jettonInfo.name,
       isVerified: isVerified,
       image: .url(jettonItem.jettonInfo.imageURL),
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
-      buttons: [.send(.jetton(jettonItem), enabled: jettonItem.jettonInfo.isTransferable),
-                      .receive(.jetton(jettonItem))]
+      buttons: buttons
     )
   }
   

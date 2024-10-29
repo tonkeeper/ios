@@ -21,6 +21,7 @@ public struct KeeperInfo: Equatable {
   ///
   let assetsPolicy: AssetsPolicy
   let appCollection: AppCollection
+
 }
 
 extension KeeperInfo: Codable {
@@ -45,7 +46,7 @@ extension KeeperInfo: Codable {
     if let appSettings = try container.decodeIfPresent(AppSettings.self, forKey: .appSettings) {
       self.appSettings = appSettings
     } else {
-      self.appSettings = AppSettings(isSecureMode: false)
+      self.appSettings = AppSettings(isSecureMode: false, searchEngine: .duckduckgo)
     }
     
     self.assetsPolicy = try container.decode(AssetsPolicy.self, forKey: .assetsPolicy)

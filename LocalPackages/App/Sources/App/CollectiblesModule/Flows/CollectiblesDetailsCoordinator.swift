@@ -12,7 +12,8 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   var didClose: (() -> Void)?
   var didPerformTransaction: (() -> Void)?
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-  
+  var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var linkDNSCoordinator: LinkDNSCoordinator?
   private weak var renewDNSCoordinator: RenewDNSCoordinator?
@@ -98,6 +99,16 @@ private extension CollectiblesDetailsCoordinator {
         onCancel: { },
         onInput: { passcode in
           Task {
+            let deeplinkParser = DeeplinkParser()
+
+            if let deeplink = try? deeplinkParser.parse(string: url.absoluteString) {
+              await MainActor.run {
+                self.didRequestDeeplinkHandling?(deeplink)
+              }
+
+              return
+            }
+
             let proofProvider = TonConnectNFTProofProvider(
               wallet: self.wallet,
               nft: self.nft,

@@ -231,6 +231,8 @@ public enum TKLocales {
       /// Staked
       public static let title = TKLocales.tr("Localizable", "balance_list.staking_item.title", fallback: "Staked")
       public enum Comment {
+        /// after the end of the cycle
+        public static let afterEndOfCycle = TKLocales.tr("Localizable", "balance_list.staking_item.comment.after_end_of_cycle", fallback: "after the end of the cycle")
         /// %@ TON ready.
         /// Tap to collect.
         public static func ready(_ p1: Any) -> String {
@@ -275,10 +277,20 @@ public enum TKLocales {
       public static let all = TKLocales.tr("Localizable", "browser.list.all", fallback: "All")
     }
     public enum Search {
+      /// Open link
+      public static let openLinkPlaceholder = TKLocales.tr("Localizable", "browser.search.open_link_placeholder", fallback: "Open link")
       /// Enter an address or search the web
       public static let placeholder = TKLocales.tr("Localizable", "browser.search.placeholder", fallback: "Enter an address or search the web")
       /// Browser
       public static let title = TKLocales.tr("Localizable", "browser.search.title", fallback: "Browser")
+      public enum DuckgoSearch {
+        /// DuckDuckGo Search
+        public static let title = TKLocales.tr("Localizable", "browser.search.duckgo_search.title", fallback: "DuckDuckGo Search")
+      }
+      public enum GoogleSearch {
+        /// Google Search
+        public static let title = TKLocales.tr("Localizable", "browser.search.google_search.title", fallback: "Google Search")
+      }
     }
     public enum SearchField {
       /// Search or enter address
@@ -679,6 +691,13 @@ public enum TKLocales {
     public static let create = TKLocales.tr("Localizable", "passcode.create", fallback: "Create passcode")
     /// Enter passcode
     public static let enter = TKLocales.tr("Localizable", "passcode.enter", fallback: "Enter passcode")
+    /// Log Out
+    public static let logout = TKLocales.tr("Localizable", "passcode.logout", fallback: "Log Out")
+    /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
+    public static let logoutConfirmationDescription = TKLocales.tr("Localizable", "passcode.logout_confirmation_description", fallback: "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.")
+    /// 🚧 🚨🚨🚨 🚧
+    /// Sign Out of All Wallets?
+    public static let logoutConfirmationTitle = TKLocales.tr("Localizable", "passcode.logout_confirmation_title", fallback: "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?")
     /// Re-enter passcode
     public static let reenter = TKLocales.tr("Localizable", "passcode.reenter", fallback: "Re-enter passcode")
   }
@@ -799,6 +818,8 @@ public enum TKLocales {
       public static func rate(_ p1: Any) -> String {
         return TKLocales.tr("Localizable", "settings.items.rate", String(describing: p1), fallback: "Rate %@")
       }
+      /// Search
+      public static let search = TKLocales.tr("Localizable", "settings.items.search", fallback: "Search")
       /// Security
       public static let security = TKLocales.tr("Localizable", "settings.items.security", fallback: "Security")
       /// Edit name and color
@@ -986,22 +1007,6 @@ public enum TKLocales {
     /// Unstake ready
     public static let unstakeReady = TKLocales.tr("Localizable", "staking_balance_details.unstake_ready", fallback: "Unstake ready")
   }
-  public enum StakingConfirmationMapper {
-    /// Amount
-    public static let amount = TKLocales.tr("Localizable", "staking_confirmation_mapper.amount", fallback: "Amount")
-    /// APY
-    public static let apy = TKLocales.tr("Localizable", "staking_confirmation_mapper.apy", fallback: "APY")
-    /// Confirm action
-    public static let confirmAction = TKLocales.tr("Localizable", "staking_confirmation_mapper.confirm_action", fallback: "Confirm action")
-    /// Fee
-    public static let fee = TKLocales.tr("Localizable", "staking_confirmation_mapper.fee", fallback: "Fee")
-    /// Recipient
-    public static let recipient = TKLocales.tr("Localizable", "staking_confirmation_mapper.recipient", fallback: "Recipient")
-    /// Stake
-    public static let stake = TKLocales.tr("Localizable", "staking_confirmation_mapper.stake", fallback: "Stake")
-    /// Wallet
-    public static let wallet = TKLocales.tr("Localizable", "staking_confirmation_mapper.wallet", fallback: "Wallet")
-  }
   public enum StakingDepositInput {
     /// Continue
     public static let continueTitle = TKLocales.tr("Localizable", "staking_deposit_input.continue_title", fallback: "Continue")
@@ -1106,6 +1111,34 @@ public enum TKLocales {
     /// %@ is requesting access to your wallet address%@
     public static func requestingCapture(_ p1: Any, _ p2: Any) -> String {
       return TKLocales.tr("Localizable", "ton_connect_mapper.requesting_capture", String(describing: p1), String(describing: p2), fallback: "%@ is requesting access to your wallet address%@")
+    }
+  }
+  public enum TransactionConfirmation {
+    /// Amount
+    public static let amount = TKLocales.tr("Localizable", "transaction_confirmation.amount", fallback: "Amount")
+    /// APY
+    public static let apy = TKLocales.tr("Localizable", "transaction_confirmation.apy", fallback: "APY")
+    /// Confirm action
+    public static let confirmAction = TKLocales.tr("Localizable", "transaction_confirmation.confirm_action", fallback: "Confirm action")
+    /// Deposit
+    public static let deposit = TKLocales.tr("Localizable", "transaction_confirmation.deposit", fallback: "Deposit")
+    /// Fee
+    public static let fee = TKLocales.tr("Localizable", "transaction_confirmation.fee", fallback: "Fee")
+    /// Recipient
+    public static let recipient = TKLocales.tr("Localizable", "transaction_confirmation.recipient", fallback: "Recipient")
+    /// Unstake
+    public static let unstake = TKLocales.tr("Localizable", "transaction_confirmation.unstake", fallback: "Unstake")
+    /// Unstake amount
+    public static let unstakeAmount = TKLocales.tr("Localizable", "transaction_confirmation.unstake_amount", fallback: "Unstake amount")
+    /// Wallet
+    public static let wallet = TKLocales.tr("Localizable", "transaction_confirmation.wallet", fallback: "Wallet")
+    public enum Buttons {
+      /// Confirm and Collect
+      public static let confirmAndCollect = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_collect", fallback: "Confirm and Collect")
+      /// Confirm and Stake
+      public static let confirmAndStake = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_stake", fallback: "Confirm and Stake")
+      /// Confirm and Unstake
+      public static let confirmAndUnstake = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_unstake", fallback: "Confirm and Unstake")
     }
   }
   public enum UglyBuyList {

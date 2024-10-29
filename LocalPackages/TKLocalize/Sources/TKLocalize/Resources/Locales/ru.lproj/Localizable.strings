@@ -60,9 +60,13 @@
 "browser.tab.explore" = "Витрина";
 "browser.tab.connected" = "Подключенные";
 "browser.list.all" = "Все";
+
 "browser.search_field.placeholder" = "Поиск";
 "browser.search.title" = "Браузер";
 "browser.search.placeholder" = "Введите адрес или начните поиск";
+"browser.search.duckgo_search.title" = "Поиск в DuckDuckGo";
+"browser.search.google_search.title" = "Поиск в Google";
+"browser.search.open_link_placeholder" = "Открыть ссылку";
 
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";
@@ -78,6 +82,7 @@
 "settings.items.backup" = "Резервная копия";
 "settings.items.currency" = "Валюта";
 "settings.items.theme" = "Тема";
+"settings.items.search" = "Поиск";
 "settings.items.logout" = "Выйти";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Поддержка";
@@ -237,6 +242,9 @@
 "passcode.create" = "Задайте новый пин-код";
 "passcode.reenter" = "Введите пин-код ещё раз";
 "passcode.enter" = "Введите пин-код";
+"passcode.logout" = "Выйти";
+"passcode.logout_confirmation_title" = "🚧 🚨🚨🚨 🚧\nВыйти из всех кошельков?";
+"passcode.logout_confirmation_description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
 
 "import_wallet.title" = "Введите секретный ключ";
 "import_wallet.description" = "Чтобы восстановить доступ, введите 24 секретных слова, которые вы получили при создании кошелька.";
@@ -299,6 +307,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON будет зачислено";
 "balance_list.staking_item.comment.unstaked" = "%@ TON будет выведено";
 "balance_list.staking_item.comment.time_estimate" = "через %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "после окончания цикла";
 
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
@@ -435,14 +444,6 @@
 "staking_balance_details.stake" = "Внести";
 "staking_balance_details.unstake" = "Вывести";
 
-"staking_confirmation_mapper.wallet" = "Кошелёк";
-"staking_confirmation_mapper.recipient" = "Получатель";
-"staking_confirmation_mapper.amount" = "Сумма";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Комиссия";
-"staking_confirmation_mapper.stake" = "Депозит";
-"staking_confirmation_mapper.confirm_action" = "Подтвердить действие";
-
 "staking.title" = "Стейкинг";
 
 "unstaking.title" = "Получить вывод";
@@ -494,3 +495,17 @@
 "decrypt_comment_popup.button" = "Расшифровать комментарий";
 
 "tick.do_not_show_again" = "Не показывать снова";
+
+"transaction_confirmation.confirm_action" = "Подтвердить действие";
+"transaction_confirmation.wallet" = "Кошелёк";
+"transaction_confirmation.recipient" = "Получатель";
+"transaction_confirmation.fee" = "Комиссия";
+"transaction_confirmation.amount" = "Сумма";
+"transaction_confirmation.unstake_amount" = "Сумма вывода";
+"transaction_confirmation.unstake" = "Вывод";
+"transaction_confirmation.deposit" = "Депозит";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.buttons.confirm_and_stake" = "Подтвердить и внести";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
+"transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";
+

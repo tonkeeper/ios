@@ -121,12 +121,12 @@ public enum TransferData {
   public struct TonConnect {
     public struct Payload {
       public let value: BigInt
-      public let recipientAddress: Address
+      public let recipientAddress: AnyAddress
       public let stateInit: String?
       public let payload: String?
       
       public init(value: BigInt,
-                  recipientAddress: Address,
+                  recipientAddress: AnyAddress,
                   stateInit: String?,
                   payload: String?) {
         self.value = value
@@ -204,6 +204,7 @@ public enum TransferData {
     public let seqno: UInt64
     public let pool: StackingPoolInfo
     public let amount: BigUInt
+    public let isMax: Bool
     public let isBouncable: Bool
     public let timeout: UInt64?
   }
@@ -353,6 +354,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure
@@ -364,6 +366,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             forwardAmount: 100_000,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
@@ -376,6 +379,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure
@@ -465,12 +469,12 @@ public struct TonConnectTransferMessageBuilder {
   
   public struct Payload {
     let value: BigInt
-    let recipientAddress: Address
+    let recipientAddress: AnyAddress
     let stateInit: String?
     let payload: String?
     
     public init(value: BigInt,
-                recipientAddress: Address,
+                recipientAddress: AnyAddress,
                 stateInit: String?,
                 payload: String?) {
       self.value = value
@@ -497,12 +501,17 @@ public struct TonConnectTransferMessageBuilder {
       }
       var body: Cell = .empty
       if let messagePayload = payload.payload {
-        body = try Cell.fromBase64(src: messagePayload)
+        body = try Cell.fromBase64(src: messagePayload.fixBase64())
       }
       return MessageRelaxed.internal(
-        to: payload.recipientAddress,
+        to: payload.recipientAddress.address,
         value: payload.value.magnitude,
-        bounce: false,
+        bounce: {
+          switch payload.recipientAddress {
+          case .address: return true
+          case .friendlyAddress(let friendlyAddress): return friendlyAddress.isBounceable
+          }
+        }(),
         stateInit: stateInit,
         body: body)
     }
@@ -636,6 +645,7 @@ public struct ExternalMessageTransferBuilder {
       timeout: timeout)
     let contract = try wallet.contract
     let transfer = try contract.createTransfer(args: transferData, messageType: .ext)
+    
     let signedTransfer = try await signClosure(transfer)
     let body = Builder()
     
@@ -654,6 +664,6 @@ public struct ExternalMessageTransferBuilder {
                                            stateInit: seqno == 0 ? contract.stateInit : nil,
                                            body: transferCell)
     let cell = try Builder().store(externalMessage).endCell()
-    return try cell.toBoc().base64EncodedString()
+    return try cell.toBoc().hexString()
   }
 }

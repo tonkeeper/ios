@@ -1,11 +1,12 @@
 import UIKit
 import TKUIKit
-import SnapKit
 
-final class StakingConfirmationView: UIView {
-  
+final class TransactionConfirmationView: UIView {
+  let navigationBar = TKUINavigationBar()
   private let modalContentContainer = UIView()
   
+  // MARK: - Init
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -15,28 +16,30 @@ final class StakingConfirmationView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  // MARK: - Content
+  
   func embedContent(_ view: UIView) {
     modalContentContainer.addSubview(view)
-    
     view.snp.makeConstraints { make in
       make.edges.equalTo(modalContentContainer)
     }
   }
 }
 
-private extension StakingConfirmationView {
+// MARK: - Private
+
+private extension TransactionConfirmationView {
   func setup() {
-    backgroundColor = .Background.page
-    
     addSubview(modalContentContainer)
+    addSubview(navigationBar)
+        
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+    }
     
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
     modalContentContainer.snp.makeConstraints { make in
-      make.top.equalTo(safeAreaLayoutGuide)
-      make.left.bottom.right.equalTo(self).priority(.high)
+      make.top.equalTo(navigationBar.snp.bottom)
+      make.left.bottom.right.equalTo(self)
     }
   }
 }

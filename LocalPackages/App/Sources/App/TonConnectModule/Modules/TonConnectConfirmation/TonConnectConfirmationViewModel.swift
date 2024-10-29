@@ -87,7 +87,7 @@ private extension TonConnectConfirmationViewModelImplementation {
     ]
     let configuration = TKModalCardViewController.Configuration(
       header: nil,
-      content: .init(items: contentItems),
+      content: .init(items: contentItems, copyToastConfiguration: .copied),
       actionBar: .init(items: actionBarItems)
     )
     didUpdateConfiguration?(configuration)

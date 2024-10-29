@@ -2,6 +2,8 @@ import UIKit
 import TKUIKit
 
 final class StakingListView: TKView {
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override func setup() {
@@ -9,7 +11,10 @@ final class StakingListView: TKView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     
+    navigationBar.centerView = titleView
+    
     addSubview(collectionView)
+    addSubview(navigationBar)
     
     setupConstraints()
   }
@@ -17,6 +22,9 @@ final class StakingListView: TKView {
   override func setupConstraints() {
     collectionView.snp.makeConstraints { make in
       make.edges.equalTo(self)
+    }
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
     }
   }
 }

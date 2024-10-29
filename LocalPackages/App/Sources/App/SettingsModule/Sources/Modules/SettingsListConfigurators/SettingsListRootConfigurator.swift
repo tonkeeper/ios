@@ -40,6 +40,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private var wallet: Wallet
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
+  private let appSettingsStore: AppSettingsStore
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configuration: Configuration
@@ -51,6 +52,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   init(wallet: Wallet,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
+       appSettingsStore: AppSettingsStore,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configuration: Configuration,
@@ -59,6 +61,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.wallet = wallet
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
+    self.appSettingsStore = appSettingsStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configuration = configuration
@@ -95,6 +98,16 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           let state = observer.createState()
           observer.didUpdateState?(state)
         }
+      }
+    }
+    appSettingsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateSearchEngine:
+        DispatchQueue.main.async {
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
+      default: break
       }
     }
     TKThemeManager.shared.addEventObserver(self) { observer, _ in
@@ -164,7 +177,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       items.append(securityItem)
     }
     items.append(createThemeItem())
+    items.append(createSearchItem())
+
     guard !items.isEmpty else { return nil }
+
     return SettingsListSection.listItems(
       SettingsListItemsSection(
         items: items,
@@ -377,7 +393,48 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       }
     )
   }
-  
+
+  private func createSearchItem() -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.search)
+        )))
+
+    let searchEngine = appSettingsStore.state.searchEngine
+    return SettingsListItem(
+      id: .searchItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .text(
+        TKListItemTextAccessoryView.Configuration(
+          text: searchEngine.rawValue,
+          color: .Accent.blue,
+          textStyle: .label1
+        )
+      ),
+      onSelection: { [weak self] view in
+        guard let self, let view else { return }
+
+        let items = SearchEngine.allCases.map { item in
+          TKPopupMenuItem(title: item.rawValue,
+                          value: nil,
+                          description: nil,
+                          icon: nil) {
+            self.appSettingsStore.setSearchEngine(item)
+          }
+        }
+
+        let selectedIndex = SearchEngine.allCases.firstIndex(of: searchEngine)
+        TKPopupMenuController.show(
+          sourceView: view,
+          position: .topRight,
+          width: 0,
+          items: items,
+          selectedIndex: selectedIndex)
+      }
+    )
+  }
+
   private func createThemeItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
@@ -724,6 +781,7 @@ private extension String {
   static let currencyItemIdentifier = "CurrencyItem"
   static let walletW5ItemIdentifier = "walletW5ItemIdentifier"
   static let walletV4ItemIdentifier = "walletV4ItemIdentifier"
+  static let searchItemIdentifier = "SearchItem"
   static let themeItemIdentifier = "ThemeItem"
   static let FAQItemIdentifier = "FAQItem"
   static let supportItemIdentifier = "SupportItem"

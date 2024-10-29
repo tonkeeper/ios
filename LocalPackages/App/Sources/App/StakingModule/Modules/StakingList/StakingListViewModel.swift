@@ -7,6 +7,7 @@ import TKLocalize
 protocol StakingListModuleOutput: AnyObject {
   var didSelectPool: ((StakingListPool) -> Void)? { get set }
   var didSelectGroup: ((StakingListGroup) -> Void)? { get set }
+  var didClose: (() -> Void)? { get set }
 }
 
 protocol StakingListViewModel: AnyObject {
@@ -14,6 +15,7 @@ protocol StakingListViewModel: AnyObject {
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<StakingListCollectionSection, TKUIListItemCell.Configuration>) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapCloseButton()
 }
 
 struct StakingListModel {
@@ -32,6 +34,7 @@ struct StakingListGroup {
   let image: UIImage
   let apy: Decimal
   let minAmount: BigUInt
+  let isMaxAPY: Bool
   let items: [StakingListPool]
 }
 
@@ -49,6 +52,7 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
   
   var didSelectPool: ((StakingListPool) -> Void)?
   var didSelectGroup: ((StakingListGroup) -> Void)?
+  var didClose: (() -> Void)?
   
   // MARK: - StakingListViewModel
   
@@ -61,6 +65,10 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
   func viewDidLoad() {
     let snapshot = createSnapshot()
     didUpdateSnapshot?(snapshot)
+  }
+  
+  func didTapCloseButton() {
+    didClose?()
   }
 
   private let model: StakingListModel
@@ -182,6 +190,7 @@ private extension StakingListViewModelImplementation {
   func mapGroup(_ group: StakingListGroup) -> TKUIListItemCell.Configuration {
     let percentFormatted = decimalFormatter.format(amount: group.apy, maximumFractionDigits: 2)
     let subtitle = "\(String.apy) ≈ \(percentFormatted)%"
+    let tagText: String? = group.isMaxAPY ? .mostProfitableTag : nil
     
     let title = group.name.withTextStyle(
       .label1,
@@ -189,6 +198,15 @@ private extension StakingListViewModelImplementation {
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
+    
+    var tagViewModel: TKUITagView.Configuration?
+    if let tagText {
+      tagViewModel = TKUITagView.Configuration(
+        text: tagText,
+        textColor: .Accent.green,
+        backgroundColor: .Accent.green.withAlphaComponent(0.16)
+      )
+    }
     
     let itemView = TKUIListItemView.Configuration(
       iconConfiguration: TKUIListItemIconView.Configuration(
@@ -206,7 +224,7 @@ private extension StakingListViewModelImplementation {
       contentConfiguration: TKUIListItemContentView.Configuration(
         leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
           title: title,
-          tagViewModel: nil,
+          tagViewModel: tagViewModel,
           subtitle: subtitle.withTextStyle(
             .body2,
             color: .Text.secondary,

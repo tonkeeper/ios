@@ -6,6 +6,7 @@ import KeeperCore
 import TonSwift
 import TonTransport
 
+@MainActor
 struct AddWalletModule {
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {

@@ -278,7 +278,7 @@ private extension TonConnectServiceImplementation {
       for message in messages {
         let jettonsBalance = try walletBalanceRepository.getWalletBalance(wallet: wallet).balance.jettonsBalance
         
-        let foundJetton = jettonsBalance.first(where: { $0.item.walletAddress == message.address })
+        let foundJetton = jettonsBalance.first(where: { $0.item.walletAddress == message.address.address })
 
         guard let jetton = foundJetton else {
           rebuildedMessages.append(message)

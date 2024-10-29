@@ -1,7 +1,11 @@
+import TKUIKit
+import TKLocalize
+
 public extension ToastPresenter.Configuration {
+
   static var copied: ToastPresenter.Configuration {
     .init(
-      title: "Copied",
+      title: TKLocales.Toast.copied,
       backgroundColor: .Background.contentTint,
       foregroundColor: .Text.primary
     )
@@ -9,7 +13,7 @@ public extension ToastPresenter.Configuration {
   
   static var loading: ToastPresenter.Configuration {
     .init(
-      title: "Loading",
+      title: TKLocales.Toast.loading,
       shape: .oval,
       isActivity: true,
       backgroundColor: .Background.contentTint,
@@ -20,7 +24,7 @@ public extension ToastPresenter.Configuration {
   
   static var failed: ToastPresenter.Configuration {
     .init(
-      title: "Failed",
+      title: TKLocales.Toast.failed,
       backgroundColor: .Background.contentTint,
       foregroundColor: .Text.primary
     )
