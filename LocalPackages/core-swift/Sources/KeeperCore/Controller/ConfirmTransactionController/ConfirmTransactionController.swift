@@ -125,7 +125,10 @@ private extension ConfirmTransactionController {
       case .tonTransfer(let tonTransfer):
         requiredAmount = tonTransfer.amount + Int64(fee)
         availableBalance = BigUInt(integerLiteral: tonBalance)
-      case .jettonTransfer:
+      case .jettonTransfer(let jettonTransfer):
+        guard event.account.address == jettonTransfer.sender?.address else {
+          return
+        }
         requiredAmount = Int64(fee) + tonRisk
         availableBalance = BigUInt(tonBalance)
       case .nftItemTransfer:
