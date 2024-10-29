@@ -151,6 +151,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     appRequest: TonConnect.AppRequest,
     completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void
   ) async throws {
+    ToastPresenter.showToast(configuration: .loading)
 
     guard let wallet = try? await self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet(),
           let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
@@ -159,7 +160,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       completion(.error(.unknownApp))
       return
     }
-    ToastPresenter.showToast(configuration: .loading)
+
     let confirmTransactionController = keeperCoreMainAssembly.confirmTransactionController(
       wallet: wallet,
       bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
@@ -171,7 +172,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     if let confirmModel = model.confirmModel {
       let (token, balance) = confirmModel.token
       var isConfirmFlowAvailable: Bool
-      
+
       switch token {
       case .ton:
         isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount

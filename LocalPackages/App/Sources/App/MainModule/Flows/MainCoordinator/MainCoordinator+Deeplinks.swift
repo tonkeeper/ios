@@ -38,11 +38,20 @@ extension MainCoordinator {
           if let amount, jettonBalance.quantity < amount {
             await MainActor.run {
               ToastPresenter.hideAll()
+
+              var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+              let tokenTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonBalance.item.jettonInfo.symbol ?? jettonBalance.item.jettonInfo.name)
+              buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(tokenTitle))
+              buyButtonConfiguration.action = { [weak self] in
+                self?.router.dismiss(animated: true) {
+                  self?.openBuy(wallet: wallet)
+                }
+              }
               self.openInsufficientFundsPopup(
                 wallet: wallet,
                 jettonInfo: jettonBalance.item.jettonInfo,
                 requiredAmount: amount,
-                availableAmount: jettonBalance.quantity
+                availableAmount: jettonBalance.quantity, buttons: [buyButtonConfiguration]
               )
             }
             return
@@ -81,11 +90,26 @@ extension MainCoordinator {
         await MainActor.run { [weak self, jettonInfo] in
           self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
+
+          let walletsStore = self?.keeperCoreMainAssembly.storesAssembly.walletsStore
+          guard let wallet = try? walletsStore?.getActiveWallet() else {
+            return
+          }
+          var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+          let tokenTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonInfo.symbol ?? jettonInfo.name)
+          buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(tokenTitle))
+          buyButtonConfiguration.action = { [weak self] in
+            self?.router.dismiss(animated: true) {
+              self?.openBuy(wallet: wallet)
+            }
+          }
+
           self?.openInsufficientFundsPopup(
-            wallet: try? walletsStore.getActiveWallet(),
+            wallet: wallet,
             jettonInfo: jettonInfo,
             requiredAmount: amount ?? 0,
-            availableAmount: balance
+            availableAmount: balance,
+            buttons: [buyButtonConfiguration]
           )
         }
       } catch {

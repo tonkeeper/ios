@@ -1034,7 +1034,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     wallet: Wallet?,
     jettonInfo: JettonInfo,
     requiredAmount: BigUInt,
-    availableAmount: BigUInt
+    availableAmount: BigUInt,
+    buttons: [TKButton.Configuration]
   ) {
     let viewController = InsufficientFundsViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
@@ -1044,21 +1045,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
 
     let tokenSymbol = jettonInfo.symbol ?? jettonInfo.name
-    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.InsufficientFunds.buyTokenTitle(tokenSymbol)))
-    buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
-      bottomSheetViewController?.dismiss()
-      if let self, let wallet {
-        self.openBuy(wallet: wallet)
-      }
-    }
 
     let configuration = configurationBuilder.insufficientTokenConfiguration(
       tokenSymbol: tokenSymbol,
       tokenFractionalDigits: jettonInfo.fractionDigits,
       required: requiredAmount,
       available: availableAmount,
-      buttons: [buyButtonConfiguration]
+      buttons: buttons
     )
     viewController.configuration = configuration
     router.dismiss(animated: true) { [router] in

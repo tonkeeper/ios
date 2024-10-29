@@ -35,18 +35,18 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   override func start() {
-    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
-    let confirmController = keeperCoreMainAssembly.confirmTransactionController(
-      wallet: wallet,
-      bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
-        nft: nft,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        signClosure: { transfer in
-          try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        }
-      )
-    )
     Task {
+      guard let wallet = try? await self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+      let confirmController = keeperCoreMainAssembly.confirmTransactionController(
+        wallet: wallet,
+        bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
+          nft: nft,
+          sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+          signClosure: { transfer in
+            try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+          }
+        )
+      )
       let confirmModel = try await confirmController.createRequestModel()
       let coordinator = SignTransactionConfirmationCoordinator(
         router: router,

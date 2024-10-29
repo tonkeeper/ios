@@ -2,9 +2,9 @@ import Foundation
 import TonSwift
 
 public struct SendTransactionParam: Decodable {
-  public let messages: [Message]
-  public let validUntil: TimeInterval
-  public let from: Address?
+  let messages: [Message]
+  let validUntil: TimeInterval
+  let from: Address?
 
   enum CodingKeys: String, CodingKey {
     case messages
@@ -26,10 +26,10 @@ public struct SendTransactionParam: Decodable {
   }
   
   public struct Message: Decodable {
-    public let address: AnyAddress
-    public let amount: Int64
-    public let stateInit: String?
-    public let payload: String?
+    let address: AnyAddress
+    let amount: Int64
+    let stateInit: String?
+    let payload: String?
     
     enum CodingKeys: String, CodingKey {
       case address
