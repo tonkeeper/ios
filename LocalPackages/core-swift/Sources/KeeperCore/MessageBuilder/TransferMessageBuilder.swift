@@ -204,6 +204,7 @@ public enum TransferData {
     public let seqno: UInt64
     public let pool: StackingPoolInfo
     public let amount: BigUInt
+    public let isMax: Bool
     public let isBouncable: Bool
     public let timeout: UInt64?
   }
@@ -353,6 +354,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure
@@ -364,6 +366,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             forwardAmount: 100_000,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
@@ -376,6 +379,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure

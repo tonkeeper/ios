@@ -150,7 +150,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     case .staking(let staking):
       return TKPopUp.Component.ImageComponent(
         image: TKImageView.Model(
-          image: .image(staking.pool.implementation.icon),
+          image: .image(staking.pool.implementation.bigIcon),
           size: .size(CGSize(width: 96, height: 96)),
           corners: .circle,
           padding: .zero

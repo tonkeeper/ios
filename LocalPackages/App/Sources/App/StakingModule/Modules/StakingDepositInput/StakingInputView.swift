@@ -9,7 +9,11 @@ final class StakingInputView: TKView {
         make.left.right.equalTo(self)
         make.bottom.equalTo(self).inset(keyboardHeight)
       }
-      scrollView.contentInset.bottom = keyboardHeight == 0 ? keyboardHeight : keyboardHeight + 32
+      continueButtonContainer.setNeedsLayout()
+      continueButtonContainer.layoutIfNeeded()
+      
+      scrollView.contentInset.bottom = keyboardHeight == 0 ? keyboardHeight : keyboardHeight
+      scrollView.contentInset.bottom += continueButtonContainer.frame.height
     }
   }
   

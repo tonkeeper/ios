@@ -238,9 +238,12 @@ extension StackingPoolInfo.Implementation {
     case .whales: .TKUIKit.Icons.Size44.tonWhalesLogo
     }
   }
+  
+  var bigIcon: UIImage {
+    switch type {
+    case .liquidTF: .App.Images.StakingImplementation.tonstakers
+    case .tf: .App.Images.StakingImplementation.tonNominators
+    case .whales: .App.Images.StakingImplementation.whales
+    }
+  }
 }
-//
-//private extension String {
-//  static let mostProfitableTag = "MAX APY"
-//  static let apy = "APY"
-//}

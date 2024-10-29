@@ -112,6 +112,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
             seqno: seqno,
             pool: stakingPool,
             amount: updateAmount(amount: amount),
+            isMax: isMax,
             isBouncable: true,
             timeout: timeout
           )

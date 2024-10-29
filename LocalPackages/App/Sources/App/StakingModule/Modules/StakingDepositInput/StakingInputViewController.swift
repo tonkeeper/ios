@@ -43,7 +43,6 @@ final class StakingInputViewController: GenericViewViewController<StakingInputVi
     
     customView.navigationBar.layoutIfNeeded()
     customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
-    customView.scrollView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
   }
   
   public func keyboardWillShow(_ notification: Notification) {
