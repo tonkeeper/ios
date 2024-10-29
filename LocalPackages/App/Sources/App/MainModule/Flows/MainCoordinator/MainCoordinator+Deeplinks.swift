@@ -212,7 +212,7 @@ extension MainCoordinator {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     
-    let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
+    let buySellService = keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore

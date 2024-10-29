@@ -21,6 +21,10 @@ public final class Assembly {
     tonkeeperApiAssembly: tonkeeperApiAssembly,
     coreAssembly: coreAssembly
   )
+  private lazy var buySellAssembly = BuySellAssembly(
+    tonkeeperApiAssembly: tonkeeperApiAssembly,
+    coreAssembly: coreAssembly
+  )
   private lazy var backgroundUpdateAssembly = BackgroundUpdateAssembly(
     apiAssembly: apiAssembly,
     storesAssembly: storesAssembly,
@@ -88,6 +92,7 @@ public extension Assembly {
       mappersAssembly: mappersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
+      buySellAssembly: buySellAssembly,
       passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,

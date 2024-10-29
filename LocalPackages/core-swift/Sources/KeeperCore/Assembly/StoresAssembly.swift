@@ -238,18 +238,7 @@ public final class StoresAssembly {
     _walletNFTsManagementStore[wallet] = Weak(value: store)
     return store
   }
-  
-  private weak var _fiatMethodsStore: FiatMethodsStore?
-  public var fiatMethodsStore: FiatMethodsStore {
-    if let fiatMethodsStore = _fiatMethodsStore {
-      return fiatMethodsStore
-    } else {
-      let fiatMethodsStore = FiatMethodsStore()
-      _fiatMethodsStore = fiatMethodsStore
-      return fiatMethodsStore
-    }
-  }
-  
+
   private weak var _walletNotificationStore: WalletNotificationStore?
   public var walletNotificationStore: WalletNotificationStore {
     if let walletNotificationStore = _walletNotificationStore {

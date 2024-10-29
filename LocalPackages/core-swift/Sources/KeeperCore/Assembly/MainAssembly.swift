@@ -11,6 +11,7 @@ public final class MainAssembly {
   public let formattersAssembly: FormattersAssembly
   public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
+  public let buySellAssembly: BuySellAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
@@ -25,6 +26,7 @@ public final class MainAssembly {
        formattersAssembly: FormattersAssembly,
        mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
+       buySellAssembly: BuySellAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
@@ -38,6 +40,7 @@ public final class MainAssembly {
     self.formattersAssembly = formattersAssembly
     self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
+    self.buySellAssembly = buySellAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
@@ -159,18 +162,6 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore
-    )
-  }
-
-  public func buyListController(wallet: Wallet,
-                                isMarketRegionPickerAvailable: Bool) -> BuyListController {
-    BuyListController(
-      wallet: wallet,
-      buySellMethodsService: servicesAssembly.buySellMethodsService(),
-      locationService: servicesAssembly.locationService(),
-      configuration: configurationAssembly.configuration,
-      currencyStore: storesAssembly.currencyStore,
-      isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
   

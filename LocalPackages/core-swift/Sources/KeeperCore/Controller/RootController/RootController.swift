@@ -11,27 +11,24 @@ public final class RootController {
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
   private let mnemonicsRepository: MnemonicsRepository
-  private let fiatMethodsLoader: FiatMethodsLoader
+  private let buySellProvider: BuySellProvider
   
   init(configuration: Configuration,
        knownAccountsStore: KnownAccountsStore,
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
        mnemonicsRepository: MnemonicsRepository,
-       fiatMethodsLoader: FiatMethodsLoader) {
+       buySellProvider: BuySellProvider) {
     self.configuration = configuration
     self.knownAccountsStore = knownAccountsStore
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
     self.mnemonicsRepository = mnemonicsRepository
-    self.fiatMethodsLoader = fiatMethodsLoader
+    self.buySellProvider = buySellProvider
   }
-  
-  public func loadFiatMethods(isMarketRegionPickerAvailable: Bool) {
-    fiatMethodsLoader.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
-  }
-  
+
   public func loadConfigurations() {
+    buySellProvider.load()
     Task {
       await configuration.loadConfiguration()
     }

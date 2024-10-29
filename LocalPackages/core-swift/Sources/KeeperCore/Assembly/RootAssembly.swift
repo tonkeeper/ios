@@ -10,6 +10,7 @@ public final class RootAssembly {
   public let mappersAssembly: MappersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
+  private let buySellAssembly: BuySellAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
@@ -25,6 +26,7 @@ public final class RootAssembly {
        mappersAssembly: MappersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
+       buySellAssembly: BuySellAssembly,
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -39,6 +41,7 @@ public final class RootAssembly {
     self.mappersAssembly = mappersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
+    self.buySellAssembly = buySellAssembly
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
@@ -57,7 +60,7 @@ public final class RootAssembly {
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()
+        buySellProvider: buySellAssembly.buySellProvider
       )
       self._rootController = rootController
       return rootController
@@ -90,6 +93,7 @@ public final class RootAssembly {
       formattersAssembly: formattersAssembly,
       mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
+      buySellAssembly: buySellAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,

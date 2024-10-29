@@ -46,13 +46,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
     pushNotificationsManager.setup()
-    
-    featureFlagsProvider.didUpdateIsMarketRegionPickerAvailable = { [weak self, weak featureFlagsProvider] in
-      guard let isMarketRegionPickerAvailable = featureFlagsProvider?.isMarketRegionPickerAvailable else { return }
-      self?.rootController.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
-    }
-    rootController.loadFiatMethods(isMarketRegionPickerAvailable: featureFlagsProvider.isMarketRegionPickerAvailable)
-    
     rootController.loadConfigurations()
     
     stateManager.didUpdateState = { [weak self] state in

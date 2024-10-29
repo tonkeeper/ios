@@ -50,7 +50,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
         self.selectedCountry = selectedCountry
         updateCountryPickerButton()
         categoryExpandStates = [:]
-        switch fiatMethodsState {
+        switch buySellProviderState {
         case .loading:
           break
         case .none:
@@ -70,17 +70,14 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   var didUpdateHeaderLeftButton: ((TKPullCardHeaderItem.LeftButton) -> Void)?
   
   func viewDidLoad() {
-    fiatMethodsStore.addObserver(self) { observer, event in
+    buySellProvider.addUpdateObserver(self) { observer in
       DispatchQueue.main.async {
-        switch event {
-        case .didUpdateState(let state):
-          observer.fiatMethodsState = state
-        }
+        observer.buySellProviderState = observer.buySellProvider.state
       }
     }
-    
-    selectedCountry = regionStore.getState()
-    fiatMethodsState = fiatMethodsStore.getState()
+    selectedCountry = regionStore.state
+    buySellProviderState = buySellProvider.state
+    buySellProvider.load()
     updateCountryPickerButton()
   }
 
@@ -111,9 +108,13 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     }
   }
   private var cellModels = [String: TKUIListItemCell.Configuration]()
-  private var fiatMethodsState: FiatMethodsStore.State = .none {
+  private var buySellProviderState: BuySellProvider.State = .none {
     didSet {
-      didUpdateFiatMethodsStoreState(fiatMethodsState)
+      if case .fiatMethods = oldValue,
+         case .loading = buySellProviderState {
+        return
+      }
+      didUpdateBuySellProviderState(buySellProviderState)
     }
   }
   private var fiatMethods: FiatMethods?
@@ -132,7 +133,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let fiatMethodsStore: FiatMethodsStore
+  private let buySellProvider: BuySellProvider
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let configuration: Configuration
@@ -142,14 +143,14 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Init
   
   init(wallet: Wallet,
-       fiatMethodsStore: FiatMethodsStore,
+       buySellProvider: BuySellProvider,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        regionStore: RegionStore,
        configuration: Configuration,
        appSettings: AppSettings) {
     self.wallet = wallet
-    self.fiatMethodsStore = fiatMethodsStore
+    self.buySellProvider = buySellProvider
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.regionStore = regionStore
@@ -183,7 +184,7 @@ private extension BuySellListViewModelImplementation {
   }
   
   func didChangeTab() {
-    switch fiatMethodsState {
+    switch buySellProviderState {
     case .loading:
       break
     case .none:
@@ -193,7 +194,7 @@ private extension BuySellListViewModelImplementation {
     }
   }
   
-  func didUpdateFiatMethodsStoreState(_ state: FiatMethodsStore.State) {
+  func didUpdateBuySellProviderState(_ state: BuySellProvider.State) {
     categoryExpandStates = [:]
     switch state {
     case .loading:
