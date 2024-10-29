@@ -72,6 +72,7 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
             tintColor: .Icon.tertiary
           )
         ),
+        isEnable: true,
         tapClosure: {
           [weak self] in
           self?.getPickerSections(completion: { model in

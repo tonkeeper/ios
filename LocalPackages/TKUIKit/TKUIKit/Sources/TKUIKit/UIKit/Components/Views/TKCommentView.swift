@@ -29,15 +29,22 @@ public final class TKCommentView: UIControl, ConfigurableView, ReusableView {
   
   public struct Model {
     let comment: NSAttributedString
+    let isEnable: Bool
     let tapClosure: (() -> Void)?
     
-    public init(comment: NSAttributedString, tapClosure: (() -> Void)? = nil) {
+    public init(comment: NSAttributedString,
+                isEnable: Bool,
+                tapClosure: (() -> Void)? = nil) {
       self.comment = comment
+      self.isEnable = isEnable
       self.tapClosure = tapClosure
     }
     
-    public init(comment: String, tapClosure: (() -> Void)? = nil) {
+    public init(comment: String,
+                isEnable: Bool,
+                tapClosure: (() -> Void)? = nil) {
       self.comment = comment.withTextStyle(.body2, color: .Bubble.foreground)
+      self.isEnable = isEnable
       self.tapClosure = tapClosure
     }
   }
@@ -80,7 +87,7 @@ public final class TKCommentView: UIControl, ConfigurableView, ReusableView {
   public func configure(model: Model) {
     textLabel.attributedText = model.comment
     tapClosure = model.tapClosure
-    isUserInteractionEnabled = tapClosure != nil
+    isUserInteractionEnabled = tapClosure != nil && model.isEnable
     setNeedsLayout()
   }
   

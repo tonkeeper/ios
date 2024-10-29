@@ -24,12 +24,19 @@ struct WalletBalanceListStakingMapper {
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
                       isPinned: Bool,
+                      isStakingEnable: Bool,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
     let commentConfiguration = { () -> TKCommentView.Model? in
-      guard let comment = mapStakingItemComment(item, isSecure: isSecure, stakingCollectHandler: stakingCollectHandler) else {
+      guard let comment = mapStakingItemComment(
+        item,
+        isSecure: isSecure,
+        isStakingEnable: isStakingEnable,
+        stakingCollectHandler: stakingCollectHandler) else {
         return nil
       }
-      return TKCommentView.Model(comment: comment.text, tapClosure: comment.tapHandler)
+      return TKCommentView.Model(comment: comment.text,
+                                 isEnable: isStakingEnable,
+                                 tapClosure: comment.tapHandler)
     }
     
     return WalletBalanceListCell.Configuration(
@@ -43,6 +50,7 @@ struct WalletBalanceListStakingMapper {
   
   private func mapStakingItemComment(_ item: ProcessedBalanceStakingItem,
                                      isSecure: Bool,
+                                     isStakingEnable: Bool,
                                      stakingCollectHandler: (() -> Void)?) -> StakingComment? {
     let estimate = formatEstimate(item: item)
     
@@ -58,7 +66,7 @@ struct WalletBalanceListStakingMapper {
         }
       }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.staked(amount))\(estimate)"
-      return StakingComment(text: comment, tapHandler: nil)
+      return StakingComment(text: comment, isEnable: isStakingEnable, tapHandler: nil)
     }
     
     if item.info.pendingWithdraw > 0 {
@@ -73,7 +81,7 @@ struct WalletBalanceListStakingMapper {
         }
       }()
       let comment = "\(TKLocales.BalanceList.StakingItem.Comment.unstaked(amount))\(estimate)"
-      return StakingComment(text: comment, tapHandler: nil)
+      return StakingComment(text: comment, isEnable: isStakingEnable, tapHandler: nil)
     }
     
     if item.info.readyWithdraw > 0 {
@@ -89,7 +97,7 @@ struct WalletBalanceListStakingMapper {
       }()
       
       let comment = TKLocales.BalanceList.StakingItem.Comment.ready(amount)
-      return StakingComment(text: comment, tapHandler: stakingCollectHandler)
+      return StakingComment(text: comment, isEnable: isStakingEnable, tapHandler: stakingCollectHandler)
     }
     return nil
   }
@@ -123,5 +131,6 @@ struct WalletBalanceListStakingMapper {
 
 private struct StakingComment {
   let text: String
+  let isEnable: Bool
   let tapHandler: (() -> Void)?
 }

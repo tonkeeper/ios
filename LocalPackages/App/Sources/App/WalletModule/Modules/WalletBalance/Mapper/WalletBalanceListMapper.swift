@@ -54,11 +54,13 @@ struct WalletBalanceListMapper {
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
                       isPinned: Bool,
+                      isStakingEnable: Bool,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
     return stakingMapper.mapStakingItem(
       item,
       isSecure: isSecure,
       isPinned: isPinned,
+      isStakingEnable: isStakingEnable,
       stakingCollectHandler: stakingCollectHandler
     )
   }
