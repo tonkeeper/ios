@@ -7,15 +7,18 @@ public final class LoadersAssembly {
   private let storesAssembly: StoresAssembly
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let apiAssembly: APIAssembly
+  private let knownAccountsAssembly: KnownAccountsAssembly
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
-       apiAssembly: APIAssembly) {
+       apiAssembly: APIAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.apiAssembly = apiAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
   }
   
   var chartLoader: ChartV2Loader {
@@ -109,24 +112,9 @@ public final class LoadersAssembly {
     return store
   }
   
-  // TODO: Rename and move to provider assembly
-  
-  private weak var _knownAccountsStore: KnownAccountsStore?
-  var knownAccountsStore: KnownAccountsStore {
-    if let knownAccountsStore = _knownAccountsStore {
-      return knownAccountsStore
-    } else {
-      let knownAccountsStore = KnownAccountsStore(
-        knownAccountsService: servicesAssembly.knownAccountsService()
-      )
-      _knownAccountsStore = knownAccountsStore
-      return knownAccountsStore
-    }
-  }
-  
   public func recipientResolver() -> RecipientResolver {
     RecipientResolverImplementation(
-      knownAccountsStore: knownAccountsStore,
+      knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider,
       dnsService: servicesAssembly.dnsService()
     )
   }

@@ -12,6 +12,7 @@ public final class MainAssembly {
   public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
   public let buySellAssembly: BuySellAssembly
+  public let knownAccountsAssembly: KnownAccountsAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
@@ -27,6 +28,7 @@ public final class MainAssembly {
        mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
        buySellAssembly: BuySellAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
@@ -41,6 +43,7 @@ public final class MainAssembly {
     self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
     self.buySellAssembly = buySellAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
@@ -99,7 +102,6 @@ public final class MainAssembly {
     SendV3Controller(
       wallet: wallet,
       balanceStore: storesAssembly.convertedBalanceStore,
-      knownAccountsStore: loadersAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,

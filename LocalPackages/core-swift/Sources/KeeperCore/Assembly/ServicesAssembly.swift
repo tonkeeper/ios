@@ -119,13 +119,6 @@ public final class ServicesAssembly {
     DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
-  func knownAccountsService() -> KnownAccountsService {
-    KnownAccountsServiceImplementation(
-      session: .shared,
-      knownAccountsRepository: repositoriesAssembly.knownAccountsRepository()
-    )
-  }
-  
   public func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }

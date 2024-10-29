@@ -11,6 +11,7 @@ public final class RootAssembly {
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   private let buySellAssembly: BuySellAssembly
+  private let knownAccountsAssembly: KnownAccountsAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
@@ -27,6 +28,7 @@ public final class RootAssembly {
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
        buySellAssembly: BuySellAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly,
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -42,6 +44,7 @@ public final class RootAssembly {
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
     self.buySellAssembly = buySellAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
@@ -56,11 +59,11 @@ public final class RootAssembly {
     } else {
       let rootController = RootController(
         configuration: configurationAssembly.configuration,
-        knownAccountsStore: loadersAssembly.knownAccountsStore,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        buySellProvider: buySellAssembly.buySellProvider
+        buySellProvider: buySellAssembly.buySellProvider,
+        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
       )
       self._rootController = rootController
       return rootController
@@ -94,6 +97,7 @@ public final class RootAssembly {
       mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
       buySellAssembly: buySellAssembly,
+      knownAccountsAssembly: knownAccountsAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,

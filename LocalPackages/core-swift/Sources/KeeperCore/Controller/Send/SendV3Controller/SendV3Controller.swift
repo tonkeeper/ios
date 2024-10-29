@@ -5,7 +5,6 @@ import BigInt
 public final class SendV3Controller {
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let knownAccountsStore: KnownAccountsStore
   private let dnsService: DNSService
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
@@ -14,7 +13,6 @@ public final class SendV3Controller {
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       knownAccountsStore: KnownAccountsStore,
        dnsService: DNSService,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
@@ -22,7 +20,6 @@ public final class SendV3Controller {
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.knownAccountsStore = knownAccountsStore
     self.dnsService = dnsService
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore

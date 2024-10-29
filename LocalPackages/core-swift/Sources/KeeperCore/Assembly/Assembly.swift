@@ -25,6 +25,11 @@ public final class Assembly {
     tonkeeperApiAssembly: tonkeeperApiAssembly,
     coreAssembly: coreAssembly
   )
+  private lazy var knownAccountsAssembly = KnownAccountsAssembly(
+    tonkeeperApiAssembly: tonkeeperApiAssembly,
+    coreAssembly: coreAssembly
+  )
+  
   private lazy var backgroundUpdateAssembly = BackgroundUpdateAssembly(
     apiAssembly: apiAssembly,
     storesAssembly: storesAssembly,
@@ -49,7 +54,8 @@ public final class Assembly {
     servicesAssembly: servicesAssembly,
     storesAssembly: storesAssembly,
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
-    apiAssembly: apiAssembly
+    apiAssembly: apiAssembly,
+    knownAccountsAssembly: knownAccountsAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
   private lazy var mappersAssembly = MappersAssembly(formattersAssembly: formattersAssembly)
@@ -93,6 +99,7 @@ public extension Assembly {
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
       buySellAssembly: buySellAssembly,
+      knownAccountsAssembly: knownAccountsAssembly,
       passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
