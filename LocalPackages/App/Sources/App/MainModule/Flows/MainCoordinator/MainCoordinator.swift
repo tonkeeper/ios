@@ -327,6 +327,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
+  func openSwap(wallet: Wallet, token: Token) {
+    let fromToken: String?
+    let toToken: String?
+    switch token {
+    case .ton:
+      fromToken = TonInfo.symbol
+      toToken = nil
+    case .jetton(let jetton):
+      fromToken = jetton.jettonInfo.symbol
+      toToken = TonInfo.symbol
+    }
+    
+    openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
+  }
+  
   func openSwap(wallet: Wallet,
                 fromToken: String? = nil,
                 toToken: String? = nil) {
@@ -669,6 +684,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBuy(wallet: wallet)
     }
     
+    module.output.didTapSwap = { [weak self] token in
+      self?.openSwap(wallet: wallet, token: token)
+    }
+    
     module.output.didOpenURL = { [weak self] url in
       self?.openURL(url, title: nil)
     }
@@ -717,6 +736,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     module.output.didTapSend = { [weak self] token in
       self?.openSend(wallet: wallet, token: token, recipient: nil, amount: nil, comment: nil)
+    }
+    
+    module.output.didTapSwap = { [weak self] token in
+      self?.openSwap(wallet: wallet, token: token)
     }
     
     module.output.didOpenURL = { [weak self] url in
