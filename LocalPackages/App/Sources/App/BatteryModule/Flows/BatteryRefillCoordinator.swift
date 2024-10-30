@@ -6,6 +6,8 @@ import KeeperCore
 
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
+  
   private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
   
   private let wallet: Wallet
@@ -55,7 +57,10 @@ private extension BatteryRefillCoordinator {
       case let .gift(token, rate):
         self?.openRecharge(token: token, rate: rate, isGift: true)
       }
-      
+    }
+    
+    module.output.didOpenRefundURL = { [weak self] url, title in
+      self?.didOpenRefundURL?(url, title)
     }
     
     router.push(viewController: module.view, animated: true)

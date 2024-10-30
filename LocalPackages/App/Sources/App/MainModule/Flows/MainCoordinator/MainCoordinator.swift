@@ -637,9 +637,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let coordinator = module.createSettingsCoordinator(router: router,
                                                        wallet: wallet)
-    
-    self.settingsCoordinator = coordinator
-    
+        
     coordinator.didTapBattery = { [weak self] wallet in
       self?.openBattery(wallet: wallet)
     }
@@ -1036,6 +1034,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
+    
+    coordinator.didOpenRefundURL = { [weak self] url, title in
+      self?.openDapp(title: title, url: url)
+    }
     
     self.batteryRefillCoordinator = coordinator
     

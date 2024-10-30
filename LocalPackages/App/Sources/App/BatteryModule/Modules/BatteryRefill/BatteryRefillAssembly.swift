@@ -8,6 +8,7 @@ struct BatteryRefillAssembly {
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRefillViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
     let viewModel = BatteryRefillViewModelImplementation(
+      wallet: wallet,
       inAppPurchaseModel: BatteryRefillIAPModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
@@ -25,6 +26,8 @@ struct BatteryRefillAssembly {
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         configuration: keeperCoreMainAssembly.configurationAssembly.configuration
       ),
+      tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )

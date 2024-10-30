@@ -8,6 +8,7 @@ protocol BatteryRefillModuleOutput: AnyObject {
   var didTapSupportedTransactions: (() -> Void)? { get set }
   var didTapTransactionsSettings: (() -> Void)? { get set }
   var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)? { get set }
+  var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)? { get set }
 }
 
 protocol BatteryRefillModuleInput: AnyObject {
@@ -32,6 +33,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   var didTapSupportedTransactions: (() -> Void)?
   var didTapTransactionsSettings: (() -> Void)?
   var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)?
+  var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
   
   // MARK: - BatteryRefillViewModel
 
@@ -93,22 +95,31 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
 
   // MARK: - Dependencies
   
+  private let wallet: Wallet
   private let inAppPurchaseModel: BatteryRefillIAPModel
   private let rechargeMethodsModel: BatteryRefillRechargeMethodsModel
   private let headerModel: BatteryRefillHeaderModel
+  private let tonProofTokenService: TonProofTokenService
+  private let configuration: Configuration
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
-  init(inAppPurchaseModel: BatteryRefillIAPModel,
+  init(wallet: Wallet,
+       inAppPurchaseModel: BatteryRefillIAPModel,
        rechargeMethodsModel: BatteryRefillRechargeMethodsModel,
        headerModel: BatteryRefillHeaderModel,
+       tonProofTokenService: TonProofTokenService,
+       configuration: Configuration,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
+    self.wallet = wallet
     self.inAppPurchaseModel = inAppPurchaseModel
     self.rechargeMethodsModel = rechargeMethodsModel
     self.headerModel = headerModel
+    self.tonProofTokenService = tonProofTokenService
+    self.configuration = configuration
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountFormatter = amountFormatter
   }
@@ -214,8 +225,11 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     snapshot.appendSections([.history])
     snapshot.appendItems([.listItem(BatteryRefill.ListItem(
       identifier: .historyCellIdentifier,
-      onSelection: {
-        
+      onSelection: { [weak self] in
+        guard let url = self?.createRefundURL() else {
+          return
+        }
+        self?.didOpenRefundURL?(url, "Charges history")
       }))], toSection: .history)
     listItemCellConfigurations[.historyCellIdentifier] = createHistoryCellConfiguration()
   }
@@ -371,6 +385,18 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         )
       )
     )
+  }
+  
+  private func createRefundURL() -> URL? {
+    guard let tonProof = try? tonProofTokenService.getWalletToken(wallet),
+          let batteryRefundEndpoint = configuration.configuration.batteryRefundEndpoint else { return nil }
+    
+    var components = URLComponents(url: batteryRefundEndpoint, resolvingAgainstBaseURL: true)
+    components?.queryItems = [
+      URLQueryItem(name: "token", value: tonProof),
+      URLQueryItem(name: "testnet", value: String(wallet.isTestnet)),
+    ]
+    return components?.url
   }
 }
 

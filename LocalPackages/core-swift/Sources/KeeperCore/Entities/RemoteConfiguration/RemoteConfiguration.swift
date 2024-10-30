@@ -50,6 +50,7 @@ public struct RemoteConfiguration: Equatable {
   public let batteryMeanPriceJetton: String?
   public let batteryMeanPriceNFT: String?
   public let batteryMaxInputAmount: String?
+  public let batteryRefundEndpoint: URL?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
@@ -78,6 +79,7 @@ public struct RemoteConfiguration: Equatable {
     case batteryMeanPriceJetton = "batteryMeanPrice_jetton"
     case batteryMeanPriceNFT = "batteryMeanPrice_nft"
     case batteryMaxInputAmount
+    case batteryRefundEndpoint
   }
 }
 
@@ -132,6 +134,7 @@ extension RemoteConfiguration {
       batteryMeanPriceJetton: nil,
       batteryMeanPriceNFT: nil,
       batteryMaxInputAmount: nil,
+      batteryRefundEndpoint: nil,
       flags: .default
     )
   }
