@@ -101,15 +101,27 @@ private extension SendTokenCoordinator {
   
   func openSendConfirmation(sendModel: SendModel) {
     guard let recipient = sendModel.recipient else { return }
-    let module = SendConfirmationAssembly.module(
-      sendConfirmationController: keeperCoreMainAssembly.sendConfirmationController(
-        wallet: sendModel.wallet,
-        recipient: recipient,
-        sendItem: sendModel.sendItem,
-        comment: sendModel.comment
-      )
+    let transactionConfirmationController: TransactionConfirmationController
+    switch sendModel.sendItem {
+    case let .token(token, amount):
+      switch token {
+      case .ton:
+        return
+      case .jetton(let jettonItem):
+        transactionConfirmationController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
+          wallet: wallet,
+          recipient: recipient,
+          jettonItem: jettonItem,
+          amount: amount,
+          comment: sendModel.comment)
+      }
+    case .nft: 
+      return
+    }
+    let module = TransactionConfirmationAssembly.module(
+      transactionConfirmationController: transactionConfirmationController,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
-
     module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
       let coordinator = WalletTransferSignCoordinator(
@@ -133,9 +145,13 @@ private extension SendTokenCoordinator {
       }
     }
     
-    module.view.setupBackButton()
+    module.output.didClose = { [weak self] in
+      self?.didFinish?()
+    }
     
-    router.push(viewController: module.view)
+    router.push(viewController: module.view, onPopClosures: { [weak self] in
+      self?.didFinish?()
+    })
   }
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {

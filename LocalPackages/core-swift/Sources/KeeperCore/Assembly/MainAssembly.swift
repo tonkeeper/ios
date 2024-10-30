@@ -132,6 +132,25 @@ public final class MainAssembly {
     )
   }
   
+  public func jettonTransferTransactionConfirmationController(wallet: Wallet,
+                                                              recipient: Recipient,
+                                                              jettonItem: JettonItem,
+                                                              amount: BigUInt,
+                                                              comment: String?) -> TransactionConfirmationController {
+    JettonTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      jettonItem: jettonItem,
+      amount: amount,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore
+    )
+  }
+  
   public func stakingWithdrawTransactionConfirmationController(wallet: Wallet,
                                                                stakingPool: StackingPoolInfo,
                                                                amount: BigUInt,

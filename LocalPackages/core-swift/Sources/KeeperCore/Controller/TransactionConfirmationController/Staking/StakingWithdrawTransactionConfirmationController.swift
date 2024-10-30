@@ -144,7 +144,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
       convertedFee = TransactionConfirmationModel.Amount(
         value: converted.amount,
         decimals: converted.fractionLength,
-        currency: currency
+        item: .currency(currency)
       )
     }
     
@@ -152,7 +152,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
       TransactionConfirmationModel.Amount(
         value: extraFee,
         decimals: TonInfo.fractionDigits,
-        currency: .TON
+        item: .currency(.TON)
       ),
       converted: convertedFee
     )
@@ -171,14 +171,14 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
       convertedAmount = TransactionConfirmationModel.Amount(
         value: converted.amount,
         decimals: converted.fractionLength,
-        currency: currency
+        item: .currency(currency)
       )
     }
     return (
       TransactionConfirmationModel.Amount(
         value: amount,
         decimals: TonInfo.fractionDigits,
-        currency: .TON
+        item: .currency(.TON)
       ),
       convertedAmount
     )

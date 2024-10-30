@@ -1,10 +1,9 @@
 import UIKit
-import TKUIKit
 
-struct HistoryEventDetailsListAddressItem: TKListContainerItem {
-  func getView() -> UIView {
-    let view = HistoryEventDetailsListAddressView(
-      configuration: HistoryEventDetailsListAddressView.Configuration(
+public struct TKListContainerFullValueItemItem: TKListContainerItem {
+  public func getView() -> UIView {
+    let view = TKListContainerFullValueItemView(
+      configuration: TKListContainerFullValueItemView.Configuration(
         title: title,
         value: value
       )
@@ -12,7 +11,7 @@ struct HistoryEventDetailsListAddressItem: TKListContainerItem {
     return view
   }
   
-  var action: TKListContainerItemAction? {
+  public var action: TKListContainerItemAction? {
     .copy(copyValue: copyValue)
   }
   
@@ -20,16 +19,16 @@ struct HistoryEventDetailsListAddressItem: TKListContainerItem {
   private let value: String
   private let copyValue: String?
 
-  init(title: String,
-       value: String,
-       copyValue: String?) {
+  public init(title: String,
+              value: String,
+              copyValue: String?) {
     self.title = title
     self.value = value
     self.copyValue = copyValue
   }
 }
 
-final class HistoryEventDetailsListAddressView: UIView {
+final class TKListContainerFullValueItemView: UIView {
   
   struct Configuration {
     let title: String

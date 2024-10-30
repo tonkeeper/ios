@@ -13,13 +13,24 @@ public struct TransactionConfirmationModel {
       public let flow: Flow
     }
     
+    public enum Transfer {
+      case ton
+      case jetton(JettonInfo)
+      case nft
+    }
+    
     case staking(Staking)
+    case transfer(Transfer)
   }
   
   public struct Amount {
+    public enum Item {
+      case currency(Currency)
+      case symbol(String)
+    }
     public let value: BigUInt
     public let decimals: Int
-    public let currency: Currency
+    public let item: Item
   }
   
   public enum Fee {
