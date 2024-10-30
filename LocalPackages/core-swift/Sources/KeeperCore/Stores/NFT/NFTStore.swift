@@ -19,11 +19,19 @@ public final class NFTStore: Store<NFTStore.Event, NFTStore.State> {
   }
   
   public func setNFT(_ nft: NFT) async {
-    await setState { [repository] _ in
+    await withCheckedContinuation { continuation in
+      setNFT(nft) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func setNFT(_ nft: NFT, completion: (() -> Void)?) {
+    updateState { [repository] _  in
       try? repository.saveNFT(nft, key: nft.address.toRaw())
       return StateUpdate(newState: Void())
-    } notify: { _ in
-      self.sendEvent(.didUpdateNFT(nft: nft))
+    } completion: { [weak self] _ in
+      self?.sendEvent(.didUpdateNFT(nft: nft))
     }
   }
 }

@@ -19,13 +19,17 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
     walletsStore.addObserver(self) { observer, event in
       switch event {
       case .didAddWallets(let wallets):
-        self.setState { state in
+        self.updateState { state in
           var updatedState = state
           for wallet in wallets {
             let walletState = tokenManagementRepository.getState(wallet: wallet)
             updatedState[wallet] = walletState
           }
           return StateUpdate(newState: updatedState)
+        } completion: { [weak self] _ in
+          for wallet in wallets {
+            self?.sendEvent(.didUpdateState(wallet: wallet))
+          }
         }
       default: break
       }

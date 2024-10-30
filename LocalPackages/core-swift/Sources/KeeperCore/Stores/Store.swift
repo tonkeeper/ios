@@ -73,15 +73,6 @@ open class Store<Event, State> {
     }
   }
 
-  public func setState(_ closure: @escaping (State) -> StateUpdate?,
-                       notify: ((State) -> Void)? = nil,
-                       completion: ((State) -> Void)? = nil) {
-  }
-  
-  public func setState(_ closure: @escaping (State) -> StateUpdate?,
-                       notify: ((State) -> Void)? = nil) async {
-  }
-  
   public func addObserver<T: AnyObject>(_ observer: T,
                                         closure: @escaping (T, Event) -> Void) {
     let operation = {
