@@ -150,7 +150,12 @@ private extension CustomizeWalletViewModelImplementation {
   }
   
   func createIconPickerItems() async -> [WalletIcon] {
-    let emojis = await emojiDataSource.loadData()
+    var emojis = await emojiDataSource.loadData()
+
+    if #unavailable(iOS 16.4) {
+      emojis = emojis.filter { $0.emojiVersion.major <= 1 }
+    }
+
     let images = WalletIcon.Image.allCases
 
     let imageItems = images.map { image in

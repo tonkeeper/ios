@@ -27,7 +27,7 @@ final class StakingInputModelImplementation: StakingInputModel {
       updateRemainingItem()
     }
   }
-  private var mostProfitableStackingPoolInfo: StackingPoolInfo?
+  private var mostProfitableStackingPools = [StackingPoolInfo]()
   private var balanceAmount: UInt64? {
     didSet {
       if isMaxAmount {
@@ -166,63 +166,6 @@ final class StakingInputModelImplementation: StakingInputModel {
     }
   }
   
-  func getPickerSections(completion: @escaping (StakingListModel) -> Void) {
-    queue.async { [wallet] in
-      guard let pools = self.stakingPoolsStore.getState()[wallet] else {
-        return
-      }
-      
-      let liquidPools = pools.filterByPoolKind(.liquidTF)
-        .sorted(by: { $0.apy > $1.apy })
-      let whalesPools = pools.filterByPoolKind(.whales)
-        .sorted(by: { $0.apy > $1.apy })
-      let tfPools = pools.filterByPoolKind(.tf)
-        .sorted(by: { $0.apy > $1.apy })
-      
-      var sections = [StakingListSection]()
-      
-      sections.append(
-        StakingListSection(
-          title: .liquidStakingTitle,
-          items: liquidPools.enumerated().map { index, pool in
-              .pool(StakingListPool(pool: pool, isMaxAPY: index == 0))
-          }
-        )
-      )
-      
-      func createGroup(_ pools: [StackingPoolInfo]) -> StakingListItem? {
-        guard !pools.isEmpty else { return nil }
-        let groupName = pools[0].implementation.name
-        let groupImage = pools[0].implementation.icon
-        let groupApy = pools[0].apy
-        let minAmount = BigUInt(UInt64(pools[0].minStake))
-        return StakingListItem.group(
-          StakingListGroup(
-            name: groupName,
-            image: groupImage,
-            apy: groupApy,
-            minAmount: minAmount,
-            items: pools.enumerated().map { StakingListPool(pool: $1, isMaxAPY: $0 == 0) }
-          )
-        )
-      }
-      
-      sections.append(
-        StakingListSection(
-          title: .otherTitle, items: [whalesPools, tfPools].compactMap { createGroup($0) }
-        )
-      )
-
-      completion(
-        StakingListModel(
-          title: TKLocales.StakingDepositInput.options,
-          sections: sections,
-          selectedPool: self.selectedStackingPoolInfo
-        )
-      )
-    }
-  }
-  
   func getStakingConfirmationItem(completion: @escaping (StakingConfirmationItem) -> Void) {
     queue.async {
       guard let item = self.configurator.getStakingConfirmationItem(
@@ -240,8 +183,8 @@ final class StakingInputModelImplementation: StakingInputModel {
       updateStakingPool()
       return
     }
-    guard let pool = stakingPoolsStore.getState()[wallet]?.profitablePool else { return }
-    self.mostProfitableStackingPoolInfo = pool
+    self.mostProfitableStackingPools = stakingPoolsStore.getState()[wallet]?.profitablePools ?? []
+    guard let pool = mostProfitableStackingPools.first else { return }
     self.selectedStackingPoolInfo = pool
     self.configurator.stakingPoolInfo = pool
   }
@@ -267,7 +210,7 @@ final class StakingInputModelImplementation: StakingInputModel {
 
   func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
     switch event {
-    case .didUpdateStakingPools(_, let wallet):
+    case .didUpdateStakingPools(let wallet):
       guard wallet == wallet else {
         return
       }
@@ -275,20 +218,20 @@ final class StakingInputModelImplementation: StakingInputModel {
         guard let self else { return }
         guard let pools = self.stakingPoolsStore.getState()[wallet],
               !pools.isEmpty else {
-          self.mostProfitableStackingPoolInfo = nil
+          self.mostProfitableStackingPools = []
           self.selectedStackingPoolInfo = nil
           self.configurator.stakingPoolInfo = nil
           return
         }
         
-        self.mostProfitableStackingPoolInfo = pools.profitablePool
+        self.mostProfitableStackingPools = pools.profitablePools
         
         if let selectedStackingPoolInfo, let updated = pools.first(where: { $0.address == selectedStackingPoolInfo.address }) {
           self.selectedStackingPoolInfo = updated
           self.configurator.stakingPoolInfo = updated
         } else {
-          self.selectedStackingPoolInfo = mostProfitableStackingPoolInfo
-          self.configurator.stakingPoolInfo = mostProfitableStackingPoolInfo
+          self.selectedStackingPoolInfo = self.mostProfitableStackingPools.first
+          self.configurator.stakingPoolInfo = self.mostProfitableStackingPools.first
         }
       }
     }
@@ -402,7 +345,7 @@ final class StakingInputModelImplementation: StakingInputModel {
     detailsInput.configureWith(
       stackingPoolInfo: selectedStackingPoolInfo,
       tonAmount: tonAmount,
-      isMostProfitable: selectedStackingPoolInfo.address == mostProfitableStackingPoolInfo?.address
+      isMostProfitable: mostProfitableStackingPools.contains(where: { $0.address == selectedStackingPoolInfo.address })
     )
     didUpdateDetailsIsHidden?(false)
   }

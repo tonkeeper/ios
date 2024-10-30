@@ -174,19 +174,19 @@ private extension AccountEventMapper {
       amountType = .income
       eventType = .spam
       leftTopDescription = action.sender.value(isTestnet: isTestnet)
-    } else if action.recipient == accountEvent.account {
-      amountType = .income
-      eventType = .receieved
-      leftTopDescription = action.sender.value(isTestnet: isTestnet)
-    } else {
+    } else if action.sender == accountEvent.account {
       amountType = .outcome
       eventType = .sent
       leftTopDescription = action.recipient.value(isTestnet: isTestnet)
+    } else {
+      amountType = .income
+      eventType = .receieved
+      leftTopDescription = action.sender.value(isTestnet: isTestnet)
     }
     
     let amount = amountMapper
       .mapAmount(
-        amount: BigUInt(integerLiteral: UInt64(action.amount)),
+        amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
         fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2,
         type: amountType,
@@ -231,14 +231,14 @@ private extension AccountEventMapper {
       eventType = .spam
       leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
       amountType = .income
-    } else if action.recipient == accountEvent.account {
-      eventType = .receieved
-      leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
-      amountType = .income
-    } else {
+    } else if action.sender == accountEvent.account {
       eventType = .sent
       leftTopDescription = action.recipient?.value(isTestnet: isTestnet) ?? nil
       amountType = .outcome
+    } else {
+      eventType = .receieved
+      leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
+      amountType = .income
     }
     
     let amount = amountMapper
@@ -326,7 +326,7 @@ private extension AccountEventMapper {
                              rightTopDescription: String?,
                              status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .outcome,
@@ -351,7 +351,7 @@ private extension AccountEventMapper {
                               rightTopDescription: String?,
                               status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount)),
+      amount: BigUInt(integerLiteral: UInt64(abs(action.amount))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .income,
@@ -376,7 +376,7 @@ private extension AccountEventMapper {
                                      rightTopDescription: String?,
                                      status: String?) -> AccountEventModel.Action {
     let amount = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(action.amount ?? 0)),
+      amount: BigUInt(integerLiteral: UInt64(abs((action.amount ?? 0)))),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: .none,
@@ -401,12 +401,12 @@ private extension AccountEventMapper {
                            isTestnet: Bool) -> AccountEventModel.Action {
     var nft: AccountEventModel.Action.ActionNFT?
     if let actionNft = action.nft {
-      let nftModel = AccountEventModel.Action.ActionNFT.Model(
+      let nftModel = AccountEventModel.Action.ActionNFT(
         nft: actionNft,
         name: actionNft.name,
         collectionName: actionNft.collection?.name ?? .singleNFT,
         image: actionNft.preview.size500)
-      nft = .model(nftModel)
+      nft = nftModel
     }
     
     return AccountEventModel.Action(eventType: .bid,
@@ -427,7 +427,7 @@ private extension AccountEventMapper {
                             status: String?,
                             isTestnet: Bool) -> AccountEventModel.Action {
     
-    let nftModel = AccountEventModel.Action.ActionNFT.Model(
+    let nftModel = AccountEventModel.Action.ActionNFT(
       nft: action.nft,
       name: action.nft.name,
       collectionName: action.nft.collection?.name ?? .singleNFT,
@@ -451,7 +451,7 @@ private extension AccountEventMapper {
       rightTopDescription: rightTopDescription,
       status: status,
       comment: nil,
-      nft: .model(nftModel)
+      nft: nftModel
     )
   }
   
@@ -486,7 +486,7 @@ private extension AccountEventMapper {
                                   isTestnet: Bool) -> AccountEventModel.Action {
     let amount = amountMapper
       .mapAmount(
-        amount: BigUInt(integerLiteral: UInt64(action.tonAttached)),
+        amount: BigUInt(integerLiteral: UInt64(abs(action.tonAttached))),
         fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2,
         type: action.executor == accountEvent.account ? .outcome : .income,
@@ -528,16 +528,14 @@ private extension AccountEventMapper {
       eventType = .receieved
     }
     
-    let actionNFT: AccountEventModel.Action.ActionNFT
+    var actionNFT: AccountEventModel.Action.ActionNFT?
     if let nft = nftProvider(action.nftAddress) {
-      let nftModel = AccountEventModel.Action.ActionNFT.Model(
+      let nftModel = AccountEventModel.Action.ActionNFT(
         nft: nft,
         name: nft.name,
         collectionName: nft.collection?.name ?? .singleNFT,
         image: nft.preview.size500)
-      actionNFT = .model(nftModel)
-    } else {
-      actionNFT = .empty(action.nftAddress)
+      actionNFT = nftModel 
     }
 
     var encryptedComment: AccountEventModel.Action.EncryptedComment?
@@ -578,7 +576,7 @@ private extension AccountEventMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonOut = action.tonOut {
-        amount = BigUInt(integerLiteral: UInt64(tonOut))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonOut)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = 2
         symbol = TonInfo.symbol
@@ -607,7 +605,7 @@ private extension AccountEventMapper {
       let maximumFractionDigits: Int
       let symbol: String?
       if let tonIn = action.tonIn {
-        amount = BigUInt(integerLiteral: UInt64(tonIn))
+        amount = BigUInt(integerLiteral: UInt64(abs(tonIn)))
         fractionDigits = TonInfo.fractionDigits
         maximumFractionDigits = 2
         symbol = TonInfo.symbol

@@ -36,7 +36,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-      router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
   }
   
@@ -64,14 +64,18 @@ private extension WalletCoordinator {
   }
   
   func openManageTokens(wallet: Wallet) {
+    let updateQueue = DispatchQueue(label: "ManageTokensQueue")
+    
     let module = ManageTokensAssembly.module(
       model: ManageTokensModel(
         wallet: wallet,
         tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
         convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
+        updateQueue: updateQueue
       ),
-      mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter)
+      mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter),
+      updateQueue: updateQueue
     )
 
     let navigationController = TKNavigationController(rootViewController: module.view)

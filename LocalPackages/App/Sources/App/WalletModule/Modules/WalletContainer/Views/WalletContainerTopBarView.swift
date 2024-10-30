@@ -52,12 +52,13 @@ private extension WalletContainerTopBarView {
     addSubview(separatorView)
     contentContainerView.addSubview(settingsButton)
     contentContainerView.addSubview(walletButton)
-    
-    
     setupConstraints()
   }
   
   func setupConstraints() {
+    settingsButton.setContentHuggingPriority(.required, for: .horizontal)
+    settingsButton.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
     blurView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
@@ -65,7 +66,7 @@ private extension WalletContainerTopBarView {
     walletButton.snp.makeConstraints { make in
       make.centerX.equalTo(contentContainerView)
       make.centerY.equalTo(contentContainerView)
-      make.width.lessThanOrEqualTo(CGFloat.walletButtonMaxWidth)
+      make.right.lessThanOrEqualTo(settingsButton.snp.left)
     }
     
     contentContainerView.snp.makeConstraints { make in
@@ -90,6 +91,5 @@ private extension WalletContainerTopBarView {
 private extension CGFloat {
   static let walletButtonTopInset: CGFloat = 12
   static let walletButtonBottomInset: CGFloat = 12
-  static let walletButtonMaxWidth: CGFloat = 200
   static let settingsButtonRightInset: CGFloat = 8
 }

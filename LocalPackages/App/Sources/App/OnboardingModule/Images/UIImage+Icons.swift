@@ -47,6 +47,19 @@ public extension UIImage {
         }
       }
     }
+    public enum Images {
+      public enum StakingImplementation {
+        public static var tonNominators: UIImage {
+          .imageWithName("Icons/StakingImplementation/ton_nominators", bundle: .module)
+        }
+        public static var tonstakers: UIImage {
+          .imageWithName("Icons/StakingImplementation/tonstakers", bundle: .module)
+        }
+        public static var whales: UIImage {
+          .imageWithName("Icons/StakingImplementation/whales", bundle: .module)
+        }
+      }
+    }
     public enum Battery {
       public static var batteryBody24: UIImage {
         .imageWithName("Icons/Battery/battery-body-24")

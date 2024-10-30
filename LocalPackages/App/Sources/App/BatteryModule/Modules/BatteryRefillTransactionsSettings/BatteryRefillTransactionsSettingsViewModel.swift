@@ -27,22 +27,22 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   
   func viewDidLoad() {
-    let configuration = configurationStore.getConfiguration()
     let batterySettins = keeperInfoStore.getState()?.batterySettings ?? BatterySettings()
     let snapshot = createSnapshot(configuration: configuration, batterySettings: batterySettins)
     didUpdateSnapshot?(snapshot)
   }
   
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let keeperInfoStore: KeeperInfoStore
   
-  init(configurationStore: ConfigurationStore,
+  init(configuration: Configuration,
        keeperInfoStore: KeeperInfoStore) {
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.keeperInfoStore = keeperInfoStore
   }
   
-  private func createSnapshot(configuration: RemoteConfiguration, batterySettings: BatterySettings) -> BatteryRefillTransactionsSettings.Snapshot {
+  private func createSnapshot(configuration: Configuration,
+                              batterySettings: BatterySettings) -> BatteryRefillTransactionsSettings.Snapshot {
     var snapshot = BatteryRefillTransactionsSettings.Snapshot()
     
     snapshot.appendSections([.title])
@@ -117,7 +117,7 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
   }
   
   private func setTransaction(_ transaction: BatterySupportedTransaction, isOn: Bool) {
-    keeperInfoStore.setState { keeperInfo in
+    keeperInfoStore.updateState({ keeperInfo in
       guard let keeperInfo else { return nil }
       let batterySettings = {
         switch transaction {
@@ -130,7 +130,7 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
         }
       }()
       return KeeperInfoStore.StateUpdate(newState: keeperInfo.updateBatterySettings(batterySettings))
-    }
+    }, completion: nil)
   }
   
   private func calculateChargesAmount(transactionPrice: NSDecimalNumber?, fee: NSDecimalNumber?) -> Int {

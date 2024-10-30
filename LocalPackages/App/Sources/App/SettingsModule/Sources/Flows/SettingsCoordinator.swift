@@ -36,10 +36,10 @@ private extension SettingsCoordinator {
       wallet: wallet,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
-      walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
       anaylticsProvider: coreAssembly.analyticsProvider
     )
@@ -80,10 +80,6 @@ private extension SettingsCoordinator {
     
     configurator.didTapDeleteRegularWallet = { [weak self] wallet in
       self?.deleteRegular(wallet: wallet, isSignOut: false)
-    }
-    
-    configurator.didTapPurchases = { [weak self] wallet in
-      self?.openPurchases(wallet: wallet)
     }
     
     configurator.didTapNotifications = { [weak self] wallet in
@@ -230,7 +226,7 @@ private extension SettingsCoordinator {
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
-      await walletsStore.setWallet(
+      await walletsStore.updateWalletMetaData(
         wallet,
         metaData: WalletMetaData(customizeWalletModel: model)
       )
@@ -425,17 +421,6 @@ private extension SettingsCoordinator {
     }
 
     router.push(viewController: module.viewController)
-  }
-  
-  func openPurchases(wallet: Wallet) {
-    let module = SettingsPurchasesAssembly.module(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-    
-    module.view.setupBackButton()
-    
-    router.push(viewController: module.view)
   }
   
   func openNotifications(wallet: Wallet) {

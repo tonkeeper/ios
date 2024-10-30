@@ -30,16 +30,11 @@ public struct AccountEventModel {
       case unknown
     }
     
-    public enum ActionNFT {
-      public struct Model {
-        public let nft: NFT
-        public let name: String?
-        public let collectionName: String?
-        public let image: URL?
-      }
-      
-      case model(Model)
-      case empty(Address)
+    public struct ActionNFT {
+      public let nft: NFT
+      public let name: String?
+      public let collectionName: String?
+      public let image: URL?
     }
     
     public enum EncryptedComment {

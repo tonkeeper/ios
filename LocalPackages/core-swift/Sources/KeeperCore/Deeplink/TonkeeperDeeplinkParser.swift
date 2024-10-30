@@ -31,6 +31,8 @@ public struct TonkeeperDeeplinkParser {
       return .externalSign(try parseExternalSign(url: url))
     case "ton-connect":
       return .tonconnect(try parseTonconnect(url: url))
+    case "dapp":
+      return .dapp(try parseDapp(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
@@ -67,12 +69,20 @@ public struct TonkeeperDeeplinkParser {
       }
       return try? Address.parse(jettonAddressParameter)
     }()
-    
+
+    let expirationTimestamp: Int64? = {
+      guard let exp = components?.queryItems?.first(where: { $0.name == "exp" })?.value else {
+        return nil
+      }
+      return Int64(exp)
+    }()
+
     return Deeplink.TransferData(
       recipient: recipient,
       amount: amount,
       comment: comment,
-      jettonAddress: jettonAddress
+      jettonAddress: jettonAddress,
+      expirationTimestamp: expirationTimestamp
     )
   }
   
@@ -154,5 +164,27 @@ public struct TonkeeperDeeplinkParser {
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: url.absoluteString)
     }
+  }
+
+  private func parseDapp(url: URL) throws -> URL {
+    let dappPrefix = "dapp/"
+    var stringURL = url.absoluteString
+
+    if stringURL.hasPrefix(dappPrefix) {
+      stringURL = String(stringURL.dropFirst(dappPrefix.count))
+    }
+
+    let httpsPrefix = "https://"
+    if !stringURL.hasPrefix(httpsPrefix) {
+      stringURL = "\(httpsPrefix)\(stringURL)"
+    }
+
+    let components = URLComponents(string: "\(stringURL)")
+
+    guard let resultURL = components?.url else {
+      throw DeeplinkParserError.unsupportedDeeplink(string: url.absoluteString)
+    }
+
+    return resultURL
   }
 }

@@ -123,6 +123,22 @@ extension KeeperInfo {
     return updateWallets(updatedWallets)
   }
   
+  func updateWalletBackupDate(_ wallet: Wallet, backupDate: Date?) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: backupDate,
+      isSetupFinished: wallet.setupSettings.isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
+  func updateWalletIsSetupFinished(_ wallet: Wallet, isSetupFinished: Bool) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: wallet.setupSettings.backupDate,
+      isSetupFinished: isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
   // MARK: - Currency
   
   func updateCurrency(_ currency: Currency) -> KeeperInfo {
@@ -153,6 +169,24 @@ extension KeeperInfo {
     )
   }
 
+  func updateSearchEngine(_ searchEngine: SearchEngine) -> KeeperInfo {
+    let appSettings = AppSettings(
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: searchEngine
+    )
+    return KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: currency,
+      securitySettings: self.securitySettings,
+      appSettings: appSettings,
+      country: self.country,
+      batterySettings: self.batterySettings,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+
   // MARK: - SecuritySettings
   
   func updateIsBiometryEnable(_ isBiometryEnable: Bool) -> KeeperInfo {
@@ -175,8 +209,8 @@ extension KeeperInfo {
   
   func updateIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSetupFinished: isSetupFinished,
-      isSecureMode: self.appSettings.isSecureMode
+      isSecureMode: self.appSettings.isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(
@@ -194,8 +228,8 @@ extension KeeperInfo {
   
   func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
     let appSettings = AppSettings(
-      isSetupFinished: self.appSettings.isSetupFinished,
-      isSecureMode: isSecureMode
+      isSecureMode: isSecureMode,
+      searchEngine: self.appSettings.searchEngine
     )
     
     return KeeperInfo(
@@ -216,7 +250,17 @@ extension KeeperInfo {
   func updateWallet(_ wallet: Wallet,
                     notificationsIsOn: Bool) -> KeeperInfo {
     let notificationSettings = NotificationSettings(
-      isOn: notificationsIsOn
+      isOn: notificationsIsOn,
+      dapps: wallet.notificationSettings.dapps
+    )
+    return updateWallet(wallet, notificationSettings: notificationSettings).keeperInfo
+  }
+  
+  func updateWallet(_ wallet: Wallet,
+                    dappsNotifications: [String: Bool]) -> KeeperInfo {
+    let notificationSettings = NotificationSettings(
+      isOn: wallet.notificationSettings.isOn,
+      dapps: dappsNotifications
     )
     return updateWallet(wallet, notificationSettings: notificationSettings).keeperInfo
   }

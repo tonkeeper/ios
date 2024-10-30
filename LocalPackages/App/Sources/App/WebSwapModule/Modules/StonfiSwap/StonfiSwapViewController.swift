@@ -38,7 +38,8 @@ private extension StonfiSwapViewController {
       let bridgeWebViewController = TKBridgeWebViewController(
         initialURL: url,
         initialTitle: title,
-        jsInjection: self.viewModel.jsInjection
+        jsInjection: self.viewModel.jsInjection,
+        configuration: .default
       )
       bridgeWebViewController.isHeaderHidden = true
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in

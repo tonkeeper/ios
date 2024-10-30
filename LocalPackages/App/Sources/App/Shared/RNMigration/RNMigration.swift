@@ -46,9 +46,10 @@ struct RNMigration {
         errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, publicKey: rnWallet.pubkey))
         continue
       }
+      guard !wallets.contains(where: { $0.identity == wallet.identity }) else { continue }
       wallets.append(wallet)
     }
-    
+
     guard !wallets.isEmpty else { return errors }
 
     let activeWallet = wallets.first(where: {
@@ -56,8 +57,8 @@ struct RNMigration {
     }) ?? wallets[0]
     
     await walletsStore.addWallets(wallets)
-    await walletsStore.setWalletActive(activeWallet)
-    try? await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
+    await walletsStore.makeWalletActive(activeWallet)
+    try? _ = await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
     await migrateCurrency()
     await migrateNotificationsSettings(wallets: wallets)
     await migrateTheme()

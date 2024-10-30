@@ -72,6 +72,8 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
       cachedWidth = bounds.width
       invalidateIntrinsicContentSize()
     }
+
+    configureMoreButtonVisibility()
   }
   
   func configure(model: Model) {
@@ -79,13 +81,15 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
     moreButton.label.attributedText = model.readMoreText
     cachedWidth = nil
     
-//    let textViewSizeThatFits = label.sizeThatFits(CGSize(width: bounds.width, height: CGFloat.greatestFiniteMagnitude))
-//    let maximumHeight = TKTextStyle.body2.lineHeight * CGFloat(numberOfLinesCollapsed)
-//    moreButton.isHidden = !(isExpanded || textViewSizeThatFits.height > maximumHeight)
-    
     setNeedsLayout()
   }
-  
+
+  private func configureMoreButtonVisibility() {
+    let textViewSizeThatFits = label.heightThatFits(.greatestFiniteMagnitude)
+    let maximumHeight = TKTextStyle.body2.lineHeight * CGFloat(numberOfLinesCollapsed)
+    moreButton.isHidden = (isExpanded || !(textViewSizeThatFits > maximumHeight))
+  }
+
   override var intrinsicContentSize: CGSize {
     let textViewSizeThatFits = label.sizeThatFits(CGSize(width: bounds.width, height: CGFloat.greatestFiniteMagnitude))
     guard !isExpanded else {

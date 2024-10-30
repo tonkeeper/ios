@@ -42,7 +42,8 @@ final class WalletsPickerListModel: WalletsListModel {
   var didUpdateState: ((WalletsListModelState) -> Void)?
   
   func getState() -> WalletsListModelState {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return WalletsListModelState(
         wallets: [],
         selectedWallet: nil
@@ -51,15 +52,15 @@ final class WalletsPickerListModel: WalletsListModel {
     
     return WalletsListModelState(
       wallets: state.wallets,
-      selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
+      selectedWallet: state.wallets.firstIndex(of: activeWallet)
     )
   }
   
   func selectWallet(wallet: Wallet) {
     Task {
       do {
-        guard try await walletsStore.getActiveWallet() != wallet else { return }
-        await walletsStore.setWalletActive(wallet)
+        guard try walletsStore.activeWallet != wallet else { return }
+        await walletsStore.makeWalletActive(wallet)
       } catch { return  }
     }
   }
@@ -71,13 +72,14 @@ final class WalletsPickerListModel: WalletsListModel {
   }
   
   private func updateState() {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return
     }
     didUpdateState?(
       WalletsListModelState(
         wallets: state.wallets,
-        selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
+        selectedWallet: state.wallets.firstIndex(of: activeWallet)
       )
     )
   }
@@ -88,9 +90,12 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didSelectWallet: ((Wallet) -> Void)?
   
   private let walletsStore: WalletsStore
+  private let selectedWallet: Wallet
   
-  init(walletsStore: WalletsStore) {
+  init(walletsStore: WalletsStore,
+       selectedWallet: Wallet) {
     self.walletsStore = walletsStore
+    self.selectedWallet = selectedWallet
   }
   
   var isEditable: Bool {
@@ -100,7 +105,8 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didUpdateState: ((WalletsListModelState) -> Void)?
   
   func getState() -> WalletsListModelState {
-    guard let state = try? walletsStore.stateWallets else {
+    let state = walletsStore.state
+    guard let activeWallet = try? state.activeWallet else {
       return WalletsListModelState(
         wallets: [],
         selectedWallet: nil
@@ -108,7 +114,7 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
     }
 
     let wallets = state.wallets.filter { $0.isTonconnectAvailable }
-    guard let activeWallet = (wallets.first(where: { $0 == state.activeWalelt }) ?? wallets.first) else {
+    guard let activeWallet = (wallets.first(where: { $0 == selectedWallet }) ?? wallets.first) else {
       return WalletsListModelState(wallets: wallets, selectedWallet: nil)
     }
     return WalletsListModelState(wallets: wallets, selectedWallet: wallets.firstIndex(of: activeWallet))

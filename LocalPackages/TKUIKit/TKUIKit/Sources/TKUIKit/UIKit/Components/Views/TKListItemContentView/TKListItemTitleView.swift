@@ -15,10 +15,10 @@ public final class TKListItemTitleView: UIView {
     }
     
     public struct Title {
-      public let text: NSAttributedString
+      public let text: NSAttributedString?
       public let numberOfLines: Int
       
-      public init(text: NSAttributedString, 
+      public init(text: NSAttributedString?, 
                   numberOfLines: Int) {
         self.text = text
         self.numberOfLines = numberOfLines
@@ -50,7 +50,7 @@ public final class TKListItemTitleView: UIView {
       self.icon = icon
     }
     
-    public init(title: NSAttributedString, numberOfLines: Int) {
+    public init(title: NSAttributedString?, numberOfLines: Int) {
       self.title = Title(text: title, numberOfLines: numberOfLines)
       self.caption = nil
       self.tags = []

@@ -39,16 +39,16 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
   
   private let wallet: Wallet
   private let balanceStore: BalanceStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let tonRatesStore: TonRatesStore
   
   init(wallet: Wallet,
        balanceStore: BalanceStore,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        tonRatesStore: TonRatesStore) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.tonRatesStore = tonRatesStore
   }
 
@@ -73,7 +73,6 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
   
   private func getItems() -> [BatteryIAPItem] {
     let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance
-    let configuration = self.configurationStore.getConfiguration()
     let tonPriceUSD: NSDecimalNumber? = {
       let rates = self.tonRatesStore.getState()
       guard let usdRates = rates.first(where: { $0.currency == .USD })?.rate else { return nil }
@@ -128,7 +127,7 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
   private func calculateChargesCount(pack: BatteryIAPPack,
                                      batteryBalance: BatteryBalance?,
                                      tonPriceUSD: NSDecimalNumber?,
-                                     configuration: RemoteConfiguration) -> Int {
+                                     configuration: Configuration) -> Int {
     guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber,
           let batteryReservedAmount = configuration.batteryReservedAmountDecimalNumber,
           let tonPriceUSD else { return 0 }

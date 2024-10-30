@@ -62,7 +62,7 @@ extension Wallet {
     }
 
     return ToastPresenter.Configuration(
-      title: TKLocales.Actions.copied,
+      title: TKLocales.Toast.copied,
       backgroundColor: backgroundColor,
       foregroundColor: foregroundColor,
       dismissRule: .default
@@ -155,6 +155,6 @@ extension Wallet {
 
   func listTagConfiguration() -> TKTagView.Configuration? {
     guard let tag = kindTag else { return nil }
-    return TKTagView.Configuration.outlintTag(text: tag)
+    return TKTagView.Configuration.tag(text: tag)
   }
 }

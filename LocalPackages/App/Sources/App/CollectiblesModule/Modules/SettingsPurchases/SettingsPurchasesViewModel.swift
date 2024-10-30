@@ -37,13 +37,12 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
   var didCopyItem: ((String?) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: TKLocales.Settings.Purchases.title))
-    
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: TKLocales.Collectibles.title))
+
     model.didUpdate = { [weak self] event in
       DispatchQueue.main.async {
         switch event {
         case .didUpdateItems(let state):
-          self?.sectionStates = [:]
           self?.state = state
         case .didUpdateManagementState(let state):
           self?.state = state
@@ -339,7 +338,10 @@ private extension SettingsPurchasesViewModelImplementation {
     
     return PurchasesManagementDetailsViewController.Configuration(
       title: title,
-      listConfiguration: TKListContainerView.Configuration(items: listItems),
+      listConfiguration: TKListContainerView.Configuration(
+        items: listItems,
+        copyToastConfiguration: .copied
+      ),
       buttonConfiguration: buttonConfiguration
     )
   }

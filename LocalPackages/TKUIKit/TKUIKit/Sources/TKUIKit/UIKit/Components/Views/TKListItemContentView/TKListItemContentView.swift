@@ -89,7 +89,7 @@ public final class TKListItemContentView: UIView {
     return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
-  func prepareForReuse() {
+  public func prepareForReuse() {
     iconView.prepareForReuse()
   }
   

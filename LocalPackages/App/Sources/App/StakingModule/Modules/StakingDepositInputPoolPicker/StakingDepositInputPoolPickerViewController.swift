@@ -72,6 +72,7 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
             tintColor: .Icon.tertiary
           )
         ),
+        isEnable: true,
         tapClosure: {
           [weak self] in
           self?.getPickerSections(completion: { model in
@@ -136,6 +137,8 @@ private extension StakingDepositInputPoolPickerViewController {
       return
     }
     
+    let maxAPYPools = Set(pools.profitablePools)
+    
     let liquidPools = pools.filterByPoolKind(.liquidTF)
       .sorted(by: { $0.apy > $1.apy })
     let whalesPools = pools.filterByPoolKind(.whales)
@@ -149,7 +152,7 @@ private extension StakingDepositInputPoolPickerViewController {
       StakingListSection(
         title: .liquidStakingTitle,
         items: liquidPools.enumerated().map { index, pool in
-            .pool(StakingListPool(pool: pool, isMaxAPY: index == 0))
+            .pool(StakingListPool(pool: pool, isMaxAPY: maxAPYPools.contains(pool)))
         }
       )
     )
@@ -160,13 +163,15 @@ private extension StakingDepositInputPoolPickerViewController {
       let groupImage = pools[0].implementation.icon
       let groupApy = pools[0].apy
       let minAmount = BigUInt(UInt64(pools[0].minStake))
+      let isMaxAPY = !maxAPYPools.intersection(Set(pools)).isEmpty
       return StakingListItem.group(
         StakingListGroup(
           name: groupName,
           image: groupImage,
           apy: groupApy,
           minAmount: minAmount,
-          items: pools.enumerated().map { StakingListPool(pool: $1, isMaxAPY: $0 == 0) }
+          isMaxAPY: isMaxAPY,
+          items: pools.map { StakingListPool(pool: $0, isMaxAPY: maxAPYPools.contains($0)) }
         )
       )
     }

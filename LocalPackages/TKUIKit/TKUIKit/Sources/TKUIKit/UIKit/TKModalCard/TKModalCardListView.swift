@@ -1,6 +1,8 @@
 import UIKit
 
 public final class TKModalCardListView: UIView, ConfigurableView {
+  
+  var copyToastConfiguration: ToastPresenter.Configuration?
 
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -27,7 +29,7 @@ public final class TKModalCardListView: UIView, ConfigurableView {
   
   public func configure(model: [TKModalCardViewController.Configuration.ListItem]) {
     stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    model.enumerated().forEach { index, item in
+    model.enumerated().forEach { [copyToastConfiguration] index, item in
       let listItemView = TKModalCardListItemView()
       listItemView.configure(model: item)
       listItemView.addAction(UIAction(handler: { _ in
@@ -36,7 +38,9 @@ public final class TKModalCardListView: UIView, ConfigurableView {
         } else {
           UIPasteboard.general.string = item.rightTop.value?.string
         }
-        ToastPresenter.showToast(configuration: .copied)
+        if let copyToastConfiguration {
+          ToastPresenter.showToast(configuration: copyToastConfiguration)
+        }
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
       }), for: .touchUpInside)
       stackView.addArrangedSubview(listItemView)

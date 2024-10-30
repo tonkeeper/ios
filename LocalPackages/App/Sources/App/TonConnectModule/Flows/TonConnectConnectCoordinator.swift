@@ -5,6 +5,7 @@ import TKUIKit
 import TKScreenKit
 import TKCore
 
+@MainActor
 public protocol TonConnectConnectCoordinatorConnector {
   func connect(wallet: Wallet,
                passcode: String,
@@ -12,6 +13,7 @@ public protocol TonConnectConnectCoordinatorConnector {
                manifest: TonConnectManifest) async throws
 }
 
+@MainActor
 public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   
@@ -29,6 +31,7 @@ public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoo
   }
 }
 
+@MainActor
 public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   private let connectionResponseHandler: (TonConnectAppsStore.ConnectResult) -> Void
@@ -49,6 +52,7 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
   }
 }
 
+@MainActor
 public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   public var didConnect: (() -> Void)?
@@ -88,6 +92,7 @@ private extension TonConnectConnectCoordinator {
       parameters: parameters,
       manifest: manifest,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
       showWalletPicker: showWalletPicker
     )
     
@@ -95,12 +100,12 @@ private extension TonConnectConnectCoordinator {
       contentViewController: module.view
     )
     
-    module.output.didTapWalletPicker = { [weak self, weak bottomSheetViewController] wallet in
+    module.output.didTapWalletPicker = { [weak self, weak bottomSheetViewController, weak input = module.input] wallet in
       guard let bottomSheetViewController else { return }
       self?.openWalletPicker(
         wallet: wallet,
         fromViewController: bottomSheetViewController,
-        didSelectWallet: { [weak input = module.input] wallet in
+        didSelectWallet: { wallet in
           input?.setWallet(wallet)
         }
       )
@@ -149,13 +154,17 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
-    let model = TonConnectWalletsPickerListModel(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
+    let model = TonConnectWalletsPickerListModel(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      selectedWallet: wallet
+    )
     model.didSelectWallet = { wallet in
       didSelectWallet(wallet)
     }
     
     let module = WalletsListAssembly.module(
       model: model,
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,

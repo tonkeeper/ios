@@ -9,17 +9,21 @@ import TKLocalize
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-  
+  var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
-  
+
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+  private let parentRouter: TabBarControllerRouter?
+
   public init(router: NavigationControllerRouter,
+              parentRouter: TabBarControllerRouter?,
               coreAssembly: TKCore.CoreAssembly,
               keeperCoreMainAssembly: KeeperCore.MainAssembly) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.parentRouter = parentRouter
     super.init(router: router)
     router.rootViewController.tabBarItem.title = TKLocales.Tabs.collectibles
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
@@ -38,6 +42,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
 }
 
 private extension CollectiblesCoordinator {
+
   func openCollectibles() {
     let module = CollectiblesContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
@@ -56,7 +61,14 @@ private extension CollectiblesCoordinator {
         collectiblesListViewController: listModule.view,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-      
+
+      collectiblesModule.output.didTapCollectiblesDetails = { [weak self] in
+        guard let self else {
+          return
+        }
+        self.openPurchases(wallet: wallet)
+      }
+
       module.view.collectiblesViewController = collectiblesModule.view
       
     }
@@ -84,7 +96,11 @@ private extension CollectiblesCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
-    
+
+    coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+      self?.didRequestDeeplinkHandling?(deeplink)
+    }
+
     self.detailsCoordinator = coordinator
     
     coordinator.start()
@@ -94,5 +110,20 @@ private extension CollectiblesCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     })
+  }
+
+  func openPurchases(wallet: Wallet) {
+    let module = SettingsPurchasesAssembly.module(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+
+    module.view.setupBackButton()
+    guard let navigationController = parentRouter?.rootViewController.navigationController else {
+      router.push(viewController: module.view)
+      return
+    }
+
+    navigationController.pushViewController(module.view, animated: true)
   }
 }

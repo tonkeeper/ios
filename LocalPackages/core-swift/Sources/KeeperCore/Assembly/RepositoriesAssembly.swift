@@ -28,11 +28,7 @@ public struct RepositoriesAssembly {
   func walletBalanceRepositoryV2() -> WalletBalanceRepositoryV2 {
     WalletBalanceRepositoryV2implementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
-  
-  func totalBalanceRepository() -> TotalBalanceRepository {
-    TotalBalanceRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
+
   func ratesRepository() -> RatesRepository {
     RatesRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
@@ -64,14 +60,6 @@ public struct RepositoriesAssembly {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }
   
-  func knownAccountsRepository() -> KnownAccountsRepository {
-    KnownAccountsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
-  func buySellMethodsRepository() -> BuySellMethodsRepository {
-    BuySellMethodsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
   func chartDataRepository() -> ChartDataRepository {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
@@ -84,6 +72,10 @@ public struct RepositoriesAssembly {
     TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func stakingPoolsInfoRepository() -> StakingPoolsInfoRepository {
+    StakingPoolsInfoRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+
   func tonProofTokenRepository() -> TonProofTokenRepository {
     TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
   }

@@ -20,8 +20,11 @@ public final class TKListContainerView: UIView {
   
   public struct Configuration {
     public let items: [TKListContainerItem]
-    public init(items: [TKListContainerItem]) {
+    public let copyToastConfiguration: ToastPresenter.Configuration
+    public init(items: [TKListContainerItem],
+                copyToastConfiguration: ToastPresenter.Configuration) {
       self.items = items
+      self.copyToastConfiguration = copyToastConfiguration
     }
   }
   
@@ -88,7 +91,7 @@ public final class TKListContainerView: UIView {
               guard let copyValue = copyValue else { return }
               UIPasteboard.general.string = copyValue
               UINotificationFeedbackGenerator().notificationOccurred(.warning)
-              ToastPresenter.showToast(configuration: .copied)
+              ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
             case .custom(let action):
               action()
             }

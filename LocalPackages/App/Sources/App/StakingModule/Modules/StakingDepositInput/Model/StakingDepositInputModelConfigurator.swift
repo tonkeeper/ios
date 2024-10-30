@@ -27,7 +27,7 @@ final class StakingDepositInputModelConfigurator: StakingInputModelConfigurator 
     
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard wallet == observer.wallet else { return }
         DispatchQueue.main.async {
           let balance = UInt64(observer.balanceStore.getState()[wallet]?.balance.tonBalance.tonBalance.amount ?? 0)

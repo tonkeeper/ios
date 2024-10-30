@@ -224,7 +224,7 @@ private extension SendConfirmationViewModelImplementation {
     
     let content = TKModalCardViewController.Configuration.Content(items: [
       .list(listItems)
-    ])
+    ], copyToastConfiguration: .copied)
     
     let actionBar = TKModalCardViewController.Configuration.ActionBar(
       items: [
@@ -264,7 +264,6 @@ private extension SendConfirmationViewModelImplementation {
   
   func sendTransaction() async -> Bool {
     do {
-      let wallet = sendConfirmationController.wallet
       try await sendConfirmationController.sendTransaction()
       return true
     } catch {

@@ -17,6 +17,7 @@ public final class TKUINavigationBar: UIView {
     didSet {
       oldValue?.removeFromSuperview()
       guard let centerView else { return }
+      centerContainer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
       centerContainer.addSubview(centerView)
       centerView.snp.makeConstraints { make in
         make.edges.equalTo(centerContainer)
@@ -29,6 +30,7 @@ public final class TKUINavigationBar: UIView {
       oldValue.forEach { $0.removeFromSuperview() }
       guard !leftViews.isEmpty else { return }
       leftViews.forEach {
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
         leftStackView.addArrangedSubview($0)
       }
     }
@@ -39,6 +41,7 @@ public final class TKUINavigationBar: UIView {
       oldValue.forEach { $0.removeFromSuperview() }
       guard !rightViews.isEmpty else { return }
       rightViews.forEach {
+        $0.setContentCompressionResistancePriority(.required, for: .horizontal)
         rightStackView.addArrangedSubview($0)
       }
     }
@@ -120,13 +123,16 @@ public final class TKUINavigationBar: UIView {
   }
   
   private func setupConstraints() {
+    rightStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    leftStackView.setContentCompressionResistancePriority(.required, for: .horizontal)
+    
     backgroundView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
     
     barView.snp.makeConstraints { make in
       make.top.equalTo(safeAreaLayoutGuide)
-      make.left.bottom.right.equalTo(self)
+      make.left.bottom.right.equalTo(self).priority(.high)
       make.height.equalTo(CGFloat.barHeight)
     }
     
@@ -144,9 +150,9 @@ public final class TKUINavigationBar: UIView {
     
     centerContainer.snp.makeConstraints { make in
       make.top.bottom.equalTo(barContentContainer)
-      make.left.equalTo(leftStackView.snp.right).offset(CGFloat.contentPadding)
-      make.right.equalTo(rightStackView.snp.left).offset(-CGFloat.contentPadding)
-      make.centerX.equalTo(barContentContainer).priority(.high)
+      make.left.greaterThanOrEqualTo(leftStackView.snp.right)
+      make.right.lessThanOrEqualTo(rightStackView.snp.left)
+      make.centerX.equalTo(barContentContainer)
     }
     
     separatorView.snp.makeConstraints { make in

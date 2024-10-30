@@ -30,7 +30,7 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: walletIdentity,
       metaData: metaData,
-      setupSettings: WalletSetupSettings(backupDate: nil)
+      setupSettings: WalletSetupSettings()
     )
     
     await tonProofTokenService.loadTokensFor(
@@ -142,7 +142,7 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
-      setupSettings: WalletSetupSettings(backupDate: nil)
+      setupSettings: WalletSetupSettings()
     )
     await walletsStore.addWallets([wallet])
   }

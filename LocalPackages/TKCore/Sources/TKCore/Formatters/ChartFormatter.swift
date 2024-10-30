@@ -55,7 +55,7 @@ public final class ChartFormatter {
   public func formatValue(coordinate: Coordinate, currency: Currency) -> String {
     decimalAmountFormatter.format(
       amount: Decimal(coordinate.y),
-      maximumFractionDigits: 4,
+      significantFractionDigits: 4,
       currency: currency)
   }
   
@@ -72,7 +72,7 @@ public final class ChartFormatter {
   public func formatCurrencyDiff(diff: Double, currency: Currency) -> String {
     decimalAmountFormatter.format(
       amount: Decimal(abs(diff)),
-      maximumFractionDigits: 2,
+      significantFractionDigits: 4,
       currency: currency)
   }
 }

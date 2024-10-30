@@ -11,9 +11,13 @@ public final class MainAssembly {
   public let formattersAssembly: FormattersAssembly
   public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
+  public let buySellAssembly: BuySellAssembly
+  public let knownAccountsAssembly: KnownAccountsAssembly
+  public let batteryAssembly: BatteryAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
+  public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
   
   init(appInfoProvider: AppInfoProvider,
@@ -24,10 +28,14 @@ public final class MainAssembly {
        formattersAssembly: FormattersAssembly,
        mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
+       buySellAssembly: BuySellAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly,
+       batteryAssembly: BatteryAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
-       loadersAssembly: LoadersAssembly) {
+       loadersAssembly: LoadersAssembly,
+       backgroundUpdateAssembly: BackgroundUpdateAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -36,10 +44,14 @@ public final class MainAssembly {
     self.formattersAssembly = formattersAssembly
     self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
+    self.buySellAssembly = buySellAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
+    self.batteryAssembly = batteryAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.backgroundUpdateAssembly = backgroundUpdateAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -48,11 +60,11 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
+      backgroundUpdate: backgroundUpdateAssembly.backgroundUpdate,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DeeplinkParser(),
-      walletStateLoader: loadersAssembly.walletStateLoader,
+      balanceLoader: loadersAssembly.balanceLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }
@@ -93,7 +105,6 @@ public final class MainAssembly {
     SendV3Controller(
       wallet: wallet,
       balanceStore: storesAssembly.convertedBalanceStore,
-      knownAccountsStore: loadersAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
@@ -121,57 +132,41 @@ public final class MainAssembly {
     )
   }
   
-  public func stakingDepositConfirmationController(wallet: Wallet,
-                                                   stakingPool: StackingPoolInfo,
-                                                   amount: BigUInt,
-                                                   isMax: Bool) -> StakeConfirmationController {
-    StakeDepositConfirmationController(
-      wallet: wallet,
-      stakingPool: stakingPool,
-      amount: amount,
-      isMax: isMax,
-      sendService: servicesAssembly.sendService(),
-      accountService: servicesAssembly.accountService(),
-      blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalFormatter: formattersAssembly.decimalAmountFormatter
-    )
-  }
-  
-  public func stakingWithdrawConfirmationController(wallet: Wallet,
-                                                    stakingPool: StackingPoolInfo,
-                                                    amount: BigUInt,
-                                                    isMax: Bool,
-                                                    isCollect: Bool) -> StakeConfirmationController {
-    StakeWithdrawConfirmationController(
+  public func stakingWithdrawTransactionConfirmationController(wallet: Wallet,
+                                                               stakingPool: StackingPoolInfo,
+                                                               amount: BigUInt,
+                                                               isMax: Bool,
+                                                               isCollect: Bool) -> TransactionConfirmationController {
+    return StakingWithdrawTransactionConfirmationController(
       wallet: wallet,
       stakingPool: stakingPool,
       amount: amount,
       isMax: isMax,
       isCollect: isCollect,
       sendService: servicesAssembly.sendService(),
-      accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalFormatter: formattersAssembly.decimalAmountFormatter
+      currencyStore: storesAssembly.currencyStore
     )
   }
   
-  public func buyListController(wallet: Wallet,
-                                isMarketRegionPickerAvailable: Bool) -> BuyListController {
-    BuyListController(
+  public func stakingDepositTransactionConfirmationController(wallet: Wallet,
+                                                               stakingPool: StackingPoolInfo,
+                                                               amount: BigUInt,
+                                                               isMax: Bool,
+                                                               isCollect: Bool) -> TransactionConfirmationController {
+    return StakingDepositTransactionConfirmationController(
       wallet: wallet,
-      buySellMethodsService: servicesAssembly.buySellMethodsService(),
-      locationService: servicesAssembly.locationService(),
-      configurationStore: configurationAssembly.configurationStore,
-      currencyStore: storesAssembly.currencyStore,
-      isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      isCollect: isCollect,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore
     )
   }
   

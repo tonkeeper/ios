@@ -77,7 +77,7 @@ final class BatteryRechargeModel {
   private let balanceStore: BalanceStore
   private let currencyStore: CurrencyStore
   private let tonRatesStore: TonRatesStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   
   init(token: Token,
        rate: NSDecimalNumber?,
@@ -85,18 +85,22 @@ final class BatteryRechargeModel {
        balanceStore: BalanceStore,
        currencyStore: CurrencyStore,
        tonRatesStore: TonRatesStore,
-       configurationStore: ConfigurationStore) {
+       configuration: Configuration) {
     self.token = token
     self.rate = rate
     self.wallet = wallet
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.tonRatesStore = tonRatesStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
+    
+    configuration.addUpdateObserver(self) { observer in
+      let state = observer.getState()
+      observer.didUpdateState?(state)
+    }
   }
   
   private func getState() -> State {
-    let configuration = configurationStore.getConfiguration()
     let currency = currencyStore.getState()
     let balance = balanceStore.getState()[wallet]?.walletBalance.balance
     let rates: Rates.Rate? = {

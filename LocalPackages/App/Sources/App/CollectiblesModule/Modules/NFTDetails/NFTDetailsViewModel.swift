@@ -55,13 +55,13 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private var nft: NFT
   private let wallet: Wallet
   private let dnsService: DNSService
-  private let appSetttingsStore: AppSettingsV3Store
+  private let appSetttingsStore: AppSettingsStore
   private let walletNftManagementStore: WalletNFTsManagementStore
 
   init(nft: NFT,
        wallet: Wallet,
        dnsService: DNSService,
-       appSetttingsStore: AppSettingsV3Store,
+       appSetttingsStore: AppSettingsStore,
        walletNftManagementStore: WalletNFTsManagementStore) {
     self.nft = nft
     self.wallet = wallet
@@ -279,7 +279,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     ))
   
     let listViewConfiguration = TKListContainerView.Configuration(
-      items: items
+      items: items,
+      copyToastConfiguration: .copied
     )
     
     return NFTDetailsDetailsView.Model(
@@ -448,7 +449,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       action = { [weak self, wallet, nft] in
         self?.didTapUnlinkDomain?(wallet, nft)
       }
-    case .failure(let failure):
+    case .failure:
       title = TKLocales.NftDetails.linkedDomain
       action = { [weak self, wallet, nft] in
         self?.didTapLinkDomain?(wallet, nft)

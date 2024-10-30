@@ -3,6 +3,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 public struct BrowserModule {
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {

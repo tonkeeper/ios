@@ -1,4 +1,3 @@
-"actions.copied" = "Copied";
 "actions.delete" = "Delete";
 "actions.cancel" = "Cancel";
 "actions.save" = "Save";
@@ -9,15 +8,20 @@
 "actions.copy" = "Copy";
 "actions.sign_out" = "Sign Out";
 "actions.more" = "More";
-"actions.loading" = "Loading";
-"actions.failed" = "Failed";
 "actions.ok" = "OK";
-"actions.service_unavailable" = "Service unavailable";
 "actions.open" = "Open";
 "actions.hide_nft" = "Hide NFT";
 "actions.hide_collection" = "Hide Collection";
 "actions.hide_and_report_spam" = "Hide and Report Spam";
 "actions.view_on_tonviewier" = "View on Tonviewer";
+
+"state.failed" = "Failed";
+
+"toast.copied" = "Copied";
+"toast.loading" = "Loading";
+"toast.link_expired" = "Expired link";
+"toast.service_unavailable" = "Service unavailable";
+"toast.failed" = "Failed";
 
 "errors.unknown" = "Error";
 "errors.multiaccount_error" = "Please use Tonkeeper Desktop for Multi-Wallet Account";
@@ -55,9 +59,13 @@
 "browser.tab.explore" = "Explore";
 "browser.tab.connected" = "Connected";
 "browser.list.all" = "All";
+
 "browser.search_field.placeholder" = "Search or enter address";
 "browser.search.title" = "Browser";
 "browser.search.placeholder" = "Enter an address or search the web";
+"browser.search.duckgo_search.title" = "DuckDuckGo Search";
+"browser.search.google_search.title" = "Google Search";
+"browser.search.open_link_placeholder" = "Open link";
 
 "event_details.received" = "Received";
 "event_details.sent" = "Sent";
@@ -76,6 +84,7 @@
 "settings.items.backup" = "Backup";
 "settings.items.currency" = "Currency";
 "settings.items.theme" = "Theme";
+"settings.items.search" = "Search";
 "settings.items.logout" = "Sign out";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Support";
@@ -235,6 +244,9 @@
 "passcode.create" = "Create passcode";
 "passcode.reenter" = "Re-enter passcode";
 "passcode.enter" = "Enter passcode";
+"passcode.logout" = "Log Out";
+"passcode.logout_confirmation_title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
+"passcode.logout_confirmation_description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
 "import_wallet.title" = "Enter recovery phrase";
 "import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
@@ -297,6 +309,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON staked";
 "balance_list.staking_item.comment.unstaked" = "%@ TON unstaked";
 "balance_list.staking_item.comment.time_estimate" = "in %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "after the end of the cycle";
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
@@ -446,14 +459,6 @@
 "staking_balance_details.stake" = "Stake";
 "staking_balance_details.unstake" = "Unstake";
 
-"staking_confirmation_mapper.wallet" = "Wallet";
-"staking_confirmation_mapper.recipient" = "Recipient";
-"staking_confirmation_mapper.amount" = "Amount";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Fee";
-"staking_confirmation_mapper.stake" = "Stake";
-"staking_confirmation_mapper.confirm_action" = "Confirm action";
-
 "staking.title" = "Stake";
 
 "unstaking.title" = "Unstake";
@@ -504,6 +509,19 @@
 "decrypt_comment_popup.button" = "Decrypt the comment";
 
 "tick.do_not_show_again" = "Do not show again";
+
+"transaction_confirmation.confirm_action" = "Confirm action";
+"transaction_confirmation.wallet" = "Wallet";
+"transaction_confirmation.recipient" = "Recipient";
+"transaction_confirmation.fee" = "Fee";
+"transaction_confirmation.amount" = "Amount";
+"transaction_confirmation.unstake_amount" = "Unstake amount";
+"transaction_confirmation.unstake" = "Unstake";
+"transaction_confirmation.deposit" = "Deposit";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
+"transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";
 
 "battery.refill.charges.zero" = "charges";
 "battery.refill.charges.one" = "charge";

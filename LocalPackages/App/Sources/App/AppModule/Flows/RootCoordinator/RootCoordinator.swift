@@ -46,13 +46,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
     pushNotificationsManager.setup()
-    
-    featureFlagsProvider.didUpdateIsMarketRegionPickerAvailable = { [weak self, weak featureFlagsProvider] in
-      guard let isMarketRegionPickerAvailable = featureFlagsProvider?.isMarketRegionPickerAvailable else { return }
-      self?.rootController.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
-    }
-    rootController.loadFiatMethods(isMarketRegionPickerAvailable: featureFlagsProvider.isMarketRegionPickerAvailable)
-    
     rootController.loadConfigurations()
     
     stateManager.didUpdateState = { [weak self] state in
@@ -65,7 +58,8 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       openLaunchScreen()
       migrateIfNeed(deeplink: deeplink)
     case .main:
-      openMain(deeplink: deeplink)
+      migrateTonConnectVaultIfNeeded()
+      handlePasscodeFlowIfNeeded { self.openMain(deeplink: deeplink) }
     }
   }
   
@@ -84,9 +78,58 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       return false
     }
   }
+
+  private func handlePasscodeFlowIfNeeded(completion: @escaping (() -> Void)) {
+    guard dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen else {
+      completion()
+      return
+    }
+
+    let router = NavigationControllerRouter(rootViewController: TKNavigationController())
+    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+
+    let validator = PasscodeConfirmationValidator(
+      mnemonicsRepository: mnemonicsRepository
+    )
+    let securityStore = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore
+    let passcodeBiometry = PasscodeBiometryProvider(
+      biometryProvider: BiometryProvider(),
+      securityStore: securityStore
+    )
+    let coordinator = PasscodeInputCoordinator(
+      router: router,
+      context: .entry,
+      validator: validator,
+      biometryProvider: passcodeBiometry,
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
+    )
+
+    coordinator.didInputPasscode = { [weak self, weak coordinator] _ in
+      self?.removeChild(coordinator)
+      completion()
+    }
+
+    coordinator.didLogout = { [dependencies, weak coordinator] in
+      guard let coordinator else { return }
+      let deleteController = dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
+      Task {
+        await deleteController.deleteAll()
+        await MainActor.run {
+          self.removeChild(coordinator)
+        }
+      }
+    }
+
+    coordinator.start()
+    addChild(coordinator)
+    
+    showViewController(coordinator.router.rootViewController, animated: false)
+  }
 }
 
 private extension RootCoordinator {
+
   func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
     removeChild(mainCoordinator)
     removeChild(onboardingCoordinator)
@@ -147,6 +190,15 @@ private extension RootCoordinator {
     showViewController(navigationController, animated: true)
   }
   
+  // TODO: Delete after open beta
+  
+  func migrateTonConnectVaultIfNeeded() {
+    guard !dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault else { return }
+    let wallets = dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore.wallets
+    dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectService().migrateTonConnectAppsVault(wallets: wallets)
+    dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault = true
+  }
+  
   func migrateIfNeed(deeplink: CoordinatorDeeplink?) {
     let rnMigration = RNMigration(
       rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
@@ -183,14 +235,6 @@ private extension RootCoordinator {
     
     if animated {
       UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
-    }
-  }
-  
-  func logout() async throws {
-    try await self.rootController.logout()
-    await MainActor.run {
-      self.mainCoordinator = nil
-      self.start(deeplink: nil)
     }
   }
 }

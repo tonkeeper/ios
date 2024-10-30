@@ -3,16 +3,16 @@ import UIKit
 public final class TKUINavigationBarTitleView: UIView, ConfigurableView {
   
   public struct Model {
-    public let title: NSAttributedString
+    public let title: NSAttributedString?
     public let caption: TKPlainButton.Model?
     
-    public init(title: NSAttributedString, caption: TKPlainButton.Model? = nil) {
+    public init(title: NSAttributedString?, caption: TKPlainButton.Model? = nil) {
       self.title = title
       self.caption = caption
     }
     
-    public init(title: String, caption: TKPlainButton.Model? = nil) {
-      self.title = title.withTextStyle(.h3, color: .Text.primary, alignment: .center, lineBreakMode: .byTruncatingTail)
+    public init(title: String?, caption: TKPlainButton.Model? = nil) {
+      self.title = title?.withTextStyle(.h3, color: .Text.primary, alignment: .center, lineBreakMode: .byTruncatingTail)
       self.caption = caption
     }
   }
@@ -47,8 +47,6 @@ public final class TKUINavigationBarTitleView: UIView, ConfigurableView {
   }
   
   private func setup() {
-    topLabel.minimumScaleFactor = 0.3
-    topLabel.adjustsFontSizeToFitWidth = true
     
     addSubview(stackView)
     stackView.addArrangedSubview(topLabel)

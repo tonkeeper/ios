@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class BrowserCategoryView: UIView {
   
@@ -28,6 +29,8 @@ private extension BrowserCategoryView {
     collectionView.backgroundColor = .Background.page
     
     searchBar.blurView.isHidden = true
+    searchBar.textField.isUserInteractionEnabled = false
+    searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
     
     addSubview(collectionView)
     addSubview(blurView)

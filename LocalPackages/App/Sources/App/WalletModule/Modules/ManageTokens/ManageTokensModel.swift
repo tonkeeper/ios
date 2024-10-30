@@ -16,22 +16,23 @@ final class ManageTokensModel {
   }
   
   var didUpdateState: ((State) -> Void)?
-  
-  private let actor = SerialActor<Void>()
 
   private let wallet: Wallet
   private let convertedBalanceStore: ConvertedBalanceStore
   private let tokenManagementStore: TokenManagementStore
   private let stackingPoolsStore: StakingPoolsStore
+  private let updateQueue: DispatchQueue
   
   init(wallet: Wallet,
        tokenManagementStore: TokenManagementStore,
        convertedBalanceStore: ConvertedBalanceStore,
-       stackingPoolsStore: StakingPoolsStore) {
+       stackingPoolsStore: StakingPoolsStore,
+       updateQueue: DispatchQueue) {
     self.wallet = wallet
     self.tokenManagementStore = tokenManagementStore
     self.convertedBalanceStore = convertedBalanceStore
     self.stackingPoolsStore = stackingPoolsStore
+    self.updateQueue = updateQueue
     
     convertedBalanceStore.addObserver(self) { observer, event in
       observer.didGetBalanceStateEvent(event)
@@ -40,36 +41,15 @@ final class ManageTokensModel {
     tokenManagementStore.addObserver(self) { observer, event in
       observer.didGetTokenManagmentStoreEvent(event)
     }
-    
-//    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-//      Task {
-//        await observer.didUpdateTokenManagementState(newState: newState, oldState: oldState)
-//      }
-//    }
   }
   
   func getState() -> State {
-    guard let balance = convertedBalanceStore.getState()[wallet]?.balance else {
+    guard let balance = convertedBalanceStore.state[wallet]?.balance else {
       return State(pinnedItems: [], unpinnedItems: [])
     }
     
-    let tokenManagementState = tokenManagementStore.getState()[wallet]
-    let stackingPools = stackingPoolsStore.getState()[wallet] ?? []
-    
-    return createState(
-      balance: balance,
-      tokenManagementState: tokenManagementState,
-      stackingPools: stackingPools
-    )
-  }
-  
-  func getState() async -> State {
-    guard let balance = await convertedBalanceStore.getState()[wallet]?.balance else {
-      return State(pinnedItems: [], unpinnedItems: [])
-    }
-    
-    let tokenManagementState = await tokenManagementStore.getState()[wallet]
-    let stackingPools = await stackingPoolsStore.getState()[wallet] ?? []
+    let tokenManagementState = tokenManagementStore.state[wallet]
+    let stackingPools = stackingPoolsStore.state[wallet] ?? []
     
     return createState(
       balance: balance,
@@ -79,75 +59,62 @@ final class ManageTokensModel {
   }
   
   func pinItem(identifier: String) {
-    Task {
-      await tokenManagementStore.pinItem(identifier: identifier, wallet: wallet)
-    }
+    tokenManagementStore.pinItem(identifier: identifier, wallet: wallet)
   }
   
   func unpinItem(identifier: String) {
-    Task {
-      await tokenManagementStore.unpinItem(identifier: identifier, wallet: wallet)
-    }
+    tokenManagementStore.unpinItem(identifier: identifier, wallet: wallet)
   }
   
   func hideItem(identifier: String) {
-    Task {
-      await tokenManagementStore.hideItem(identifier: identifier, wallet: wallet)
-    }
+    tokenManagementStore.hideItem(identifier: identifier, wallet: wallet)
   }
   
   func unhideItem(identifier: String) {
-    Task {
-      await tokenManagementStore.unhideItem(identifier: identifier, wallet: wallet)
-    }
+    tokenManagementStore.unhideItem(identifier: identifier, wallet: wallet)
   }
   
   func movePinnedItem(from: Int, to: Int) {
-    Task {
-      await tokenManagementStore.movePinnedItem(from: from, to: to, wallet: wallet)
-    }
+    tokenManagementStore.movePinnedItem(from: from, to: to, wallet: wallet)
   }
   
   private func didGetBalanceStateEvent(_ event: ConvertedBalanceStore.Event) {
-    switch event {
-    case .didUpdateConvertedBalance(_, let wallet):
-      guard wallet == self.wallet else { return }
-      Task {
-        await actor.addTask { [wallet] in
-          guard let balance = await self.convertedBalanceStore.getState()[wallet]?.balance else { return }
-          let tokenManagementState = await self.tokenManagementStore.getState()[wallet]
-          let stackingPools = await self.stackingPoolsStore.getState()[wallet] ?? []
-          
-          let state = self.createState(
-            balance: balance,
-            tokenManagementState: tokenManagementState,
-            stackingPools: stackingPools
-          )
-          self.didUpdateState?(state)
-        }
+    updateQueue.async { [weak self] in
+      guard let self else { return }
+      switch event {
+      case .didUpdateConvertedBalance(let wallet):
+        guard wallet == self.wallet else { return }
+        self.update()
       }
     }
   }
   
   private func didGetTokenManagmentStoreEvent(_ event: TokenManagementStore.Event) {
-    switch event {
-    case .didUpdateState(let wallet):
-      guard wallet == self.wallet else { return }
-      Task {
-        await actor.addTask { [wallet] in
-          guard let balance = await self.convertedBalanceStore.getState()[wallet]?.balance else { return }
-          let tokenManagementState = await self.tokenManagementStore.getState()[wallet]
-          let stackingPools = await self.stackingPoolsStore.getState()[wallet] ?? []
-          
-          let state = self.createState(
-            balance: balance,
-            tokenManagementState: tokenManagementState,
-            stackingPools: stackingPools
-          )
-          self.didUpdateState?(state)
-        }
+    updateQueue.async { [weak self] in
+      guard let self else { return }
+      switch event {
+      case .didUpdateState(let wallet):
+        guard wallet == self.wallet else { return }
+        self.update()
       }
     }
+  }
+  
+  private func update() {
+    guard let balance = self.convertedBalanceStore.state[wallet]?.balance else { 
+      self.didUpdateState?(State(pinnedItems: [], unpinnedItems: []))
+      return
+    }
+    let tokenManagementState = tokenManagementStore.state[wallet]
+    let stackingPools = stackingPoolsStore.state[wallet] ?? []
+    
+    let state = createState(
+      balance: balance,
+      tokenManagementState: tokenManagementState,
+      stackingPools: stackingPools
+    )
+    
+    didUpdateState?(state)
   }
 
   private func createState(balance: ConvertedBalance, 
@@ -160,15 +127,20 @@ final class ManageTokensModel {
     )
     
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
-    let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
+    let stateHiddenItems = tokenManagementState?.hiddenState ?? [:]
     var pinnedItems = [BalanceItem]()
     var unpinnedItems = [UnpinnedItem]()
-    
     for item in balanceItems.items {
+      if case .ton(_) = item {
+        continue
+      }
       if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
-        let isHidden = stateHiddenItems.contains(item.identifier)
+        let isHidden = {
+          stateHiddenItems[item.identifier] == true || (stateHiddenItems[item.identifier] == nil && item.isZeroBalance)
+        }()
+        
         unpinnedItems.append(UnpinnedItem(item: item, isHidden: isHidden))
       }
     }
@@ -205,7 +177,11 @@ final class ManageTokensModel {
         }
         switch (lModel.jetton.jettonInfo.verification, rModel.jetton.jettonInfo.verification) {
         case (.whitelist, .whitelist):
-          return lModel.converted > rModel.converted
+          if lModel.converted == rModel.converted {
+            return lModel.amount > rModel.amount  
+          } else {
+            return lModel.converted > rModel.converted
+          }
         case (.whitelist, _):
           return true
         case (_, .whitelist):
@@ -229,6 +205,17 @@ extension BalanceItem {
       return jetton.jetton.jettonInfo.address.toRaw()
     case .staking(let staking):
       return staking.info.pool.toRaw()
+    }
+  }
+  
+  var isZeroBalance: Bool {
+    switch self {
+    case .ton(let ton):
+      return ton.amount == 0
+    case .jetton(let jetton):
+      return jetton.amount.isZero
+    case .staking(let staking):
+      return staking.info.amount == 0
     }
   }
 }

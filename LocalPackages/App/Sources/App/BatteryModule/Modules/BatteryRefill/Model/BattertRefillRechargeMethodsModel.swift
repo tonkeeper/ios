@@ -57,16 +57,16 @@ final class BatteryRefillRechargeMethodsModel {
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let batteryService: BatteryService
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        batteryService: BatteryService) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.batteryService = batteryService
   }
   

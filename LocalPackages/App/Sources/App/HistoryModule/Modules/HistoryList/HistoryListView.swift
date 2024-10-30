@@ -24,6 +24,7 @@ private extension HistoryListView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     collectionView.showsVerticalScrollIndicator = false
+//    collectionView.contentInsetAdjustmentBehavior = .never
 
     addSubview(collectionView)
     

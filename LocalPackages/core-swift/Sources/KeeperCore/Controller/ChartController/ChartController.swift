@@ -36,13 +36,13 @@ public final class ChartController {
   
   public func loadChartData(period: Period) async throws -> [Coordinate] {
     loadChartDataTask?.cancel()
-    let currency = await currencyStore.getState()
+    let currency = currencyStore.state
     let task = Task {
       async let coordinatesTask = self.chartService.loadChartData(
         period: period,
         token: "ton",
         currency: currency, isTestnet: false)
-      let rates = await tonRatesStore.getState()
+      let rates = tonRatesStore.state
       let coordinates = try await coordinatesTask
       
       try Task.checkCancellation()
@@ -66,7 +66,7 @@ public final class ChartController {
         diff: .init(percent: "", fiat: "", direction: .none),
         date: "")
     }
-    let currency = await currencyStore.getState()
+    let currency = currencyStore.state
     let coordinate = coordinates[index]
     
     let percentageValue = calculatePercentageDiff(at: index)

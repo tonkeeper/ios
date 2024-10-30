@@ -7,7 +7,7 @@ struct BatteryRefillTransactionsSettingsAssembly {
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRefillTransactionsSettingsViewController, BatteryRefillTransactionsSettingsModuleOutput, BatteryRefillTransactionsSettingsModuleInput> {
     let viewModel = BatteryRefillTransactionsSettingsViewModelImplementation(
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       keeperInfoStore: keeperCoreMainAssembly.storesAssembly.keeperInfoStore
     )
     

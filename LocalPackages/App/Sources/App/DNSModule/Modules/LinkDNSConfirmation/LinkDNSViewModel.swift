@@ -50,7 +50,7 @@ final class LinkDNSViewModelImplementation: LinkDNSViewModel, LinkDNSModuleOutpu
     self.dnsLink = dnsLink
     self.amountFormatter = amountFormatter
     switch dnsLink {
-    case .link(let address):
+    case .link:
       title = "Confirm Transaction"
     case .unlink:
       title = "Confirm unlink"
@@ -83,7 +83,7 @@ private extension LinkDNSViewModelImplementation {
         .list(
           items
         )
-      ]
+      ], copyToastConfiguration: .copied
     )
     
     return TKModalCardViewController.Configuration(

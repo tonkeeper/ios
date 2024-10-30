@@ -4,7 +4,7 @@ import TKUIKit
 final class TonConnectConnectViewController: UIViewController, TKBottomSheetScrollContentViewController {
   private let viewModel: TonConnectConnectViewModel
   
-  private let modalCardViewController = TKModalCardViewController()
+  private let modalCardViewController = TKPopUp.ViewController()
   
   // MARK: - Init
   
@@ -51,24 +51,20 @@ private extension TonConnectConnectViewController {
     view.addSubview(modalCardViewController.view)
     modalCardViewController.didMove(toParent: self)
     
-    modalCardViewController.view.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      modalCardViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
-      modalCardViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
-      modalCardViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-      modalCardViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor)
-    ])
+    modalCardViewController.view.snp.makeConstraints { make in
+      make.edges.equalTo(view)
+    }
   }
 
   func setupBindings() {
-    viewModel.headerView = { address, iconUrl in
-      let headerView = TonConnectModalHeaderView()
-      headerView.configure(
-        model: TonConnectModalHeaderView.Model(walletAddress: address ?? "", appImage: iconUrl)
-      )
-      return headerView
-    }
-    
+//    viewModel.headerView = { address, iconUrl in
+//      let headerView = TonConnectModalHeaderView()
+//      headerView.configure(
+//        model: TonConnectModalHeaderView.Model(walletAddress: address ?? "", appImage: iconUrl)
+//      )
+//      return headerView
+//    }
+//    
     viewModel.walletPickerView = { model in
       let view = TonConnectConnectWalletButton()
       view.contentView.configure(

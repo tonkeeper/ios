@@ -3,11 +3,13 @@ import TonSwift
 import BigInt
 
 public enum Deeplink: Equatable {
+
   public struct TransferData: Equatable {
     public let recipient: String
     public let amount: BigUInt?
     public let comment: String?
     public let jettonAddress: Address?
+    public let expirationTimestamp: Int64?
   }
   
   public struct SwapData: Equatable {
@@ -25,6 +27,7 @@ public enum Deeplink: Equatable {
   case publish(sign: Data)
   case externalSign(ExternalSignDeeplink)
   case tonconnect(TonConnectParameters)
+  case dapp(URL)
 }
 
 public enum ExternalSignDeeplink: Equatable {

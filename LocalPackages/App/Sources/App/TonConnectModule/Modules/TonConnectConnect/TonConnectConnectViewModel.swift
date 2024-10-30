@@ -26,7 +26,7 @@ protocol TonConnectConnectModuleInput: AnyObject {
 protocol TonConnectConnectViewModel: AnyObject {
   var headerView: ((String?, URL?) -> UIView)? { get set }
   var walletPickerView: ((TonConnectConnectWalletButton.Model) -> UIControl)? { get set }
-  var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
+  var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -50,7 +50,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   
   var headerView: ((String?, URL?) -> UIView)?
   var walletPickerView: ((TonConnectConnectWalletButton.Model) -> UIControl)?
-  var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
+  var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
  
   func viewDidLoad() {
     prepareContent()
@@ -59,12 +59,19 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   // MARK: - State
   
   private var selectedWallet: Wallet?
+  private var isNotificationsOn: Bool = true
+  private var connectingState: TKProcessContainerView.State = .idle {
+    didSet {
+      prepareContent()
+    }
+  }
   
   // MARK: - Dependencies
   
   private let parameters: TonConnectParameters
   private let manifest: TonConnectManifest
   private let walletsStore: WalletsStore
+  private let walletNotificationStore: WalletNotificationStore
   private let showWalletPicker: Bool
     
   // MARK: - Init
@@ -72,13 +79,15 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   init(parameters: TonConnectParameters,
        manifest: TonConnectManifest,
        walletsStore: WalletsStore,
+       walletNotificationStore: WalletNotificationStore,
        showWalletPicker: Bool) {
     self.parameters = parameters
     self.manifest = manifest
     self.walletsStore = walletsStore
+    self.walletNotificationStore = walletNotificationStore
     self.showWalletPicker = showWalletPicker
     
-    self.selectedWallet = try? walletsStore.getActiveWallet()
+    self.selectedWallet = try? walletsStore.activeWallet
   }
 }
 
@@ -89,30 +98,45 @@ private extension TonConnectConnectViewModelImplementation {
       wallet: selectedWallet,
       manifest: manifest,
       showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
-      headerView: {
-        headerView?($0, $1)
-      },
-      walletPickerView: { [showWalletPicker] in
-        guard showWalletPicker else { return nil }
-        return walletPickerView?($0)
+      isNotificationOn: isNotificationsOn,
+      connectingState: connectingState,
+      tickAction: { [weak self] isOn in
+        self?.isNotificationsOn = isOn
       },
       walletPickerAction: { [weak self] in
-        guard let self,
-        let selectedWallet = self.selectedWallet else { return }
-        self.didTapWalletPicker?(selectedWallet)
+        self?.didTapWalletPicker?(selectedWallet)
       },
-      connectAction: { [weak self] in
-        guard let self, let connect else { return false }
-        return await connect(
-          TonConnectConnectParameters(
-            parameters: parameters,
-            manifest: manifest,
-            wallet: selectedWallet
+      connectAction: { [weak self, walletNotificationStore, manifest] in
+        guard let self, let connect else { return }
+        connectingState = .process
+        Task {
+          let isSuccess = await connect(
+            TonConnectConnectParameters(
+              parameters: self.parameters,
+              manifest: self.manifest,
+              wallet: selectedWallet
+            )
           )
-        )
-      },
-      completionAction: { [weak self] in
-        self?.didConnect?()
+          if isSuccess && self.isNotificationsOn {
+            await walletNotificationStore.setNotificationsIsOn(true, wallet: selectedWallet, dappHost: manifest.host)
+          }
+          
+          await MainActor.run {
+            if isSuccess {
+              self.connectingState = .success
+            } else {
+              self.connectingState = .failed
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+              self.connectingState = .idle
+              guard isSuccess else {
+                return
+              }
+              self.didConnect?()
+            }
+          }
+        }
       }
     )
     didUpdateConfiguration?(configuration)

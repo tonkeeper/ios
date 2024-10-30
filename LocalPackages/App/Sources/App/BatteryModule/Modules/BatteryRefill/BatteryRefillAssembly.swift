@@ -11,19 +11,19 @@ struct BatteryRefillAssembly {
       inAppPurchaseModel: BatteryRefillIAPModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-        configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore
       ),
       rechargeMethodsModel: BatteryRefillRechargeMethodsModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
-        batteryService: keeperCoreMainAssembly.servicesAssembly.batteryService()
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
+        batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService()
       ),
       headerModel: BatteryRefillHeaderModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-        configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
       ),
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter

@@ -3,11 +3,11 @@ import TKUIKit
 import TKCoordinator
 import TKLocalize
 
-protocol ContentListEmptyViewControllerListViewController: UIViewController {
+protocol ContentListEmptyViewControllerListViewController: UIViewController, ScrollViewController {
   var scrollView: UIScrollView { get }
 }
 
-class ContentListEmptyViewController: GenericViewViewController<ContentListEmptyView> {
+class ContentListEmptyViewController: GenericViewViewController<ContentListEmptyView>, ScrollViewController {
   enum State {
     case empty
     case list
@@ -76,6 +76,10 @@ class ContentListEmptyViewController: GenericViewViewController<ContentListEmpty
     DispatchQueue.main.async {
       self.customView.navigationBarView.scrollView = self.listViewController?.scrollView
     }
+  }
+  
+  func scrollToTop() {
+    listViewController?.scrollToTop()
   }
 }
 

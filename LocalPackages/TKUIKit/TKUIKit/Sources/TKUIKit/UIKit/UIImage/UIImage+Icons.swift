@@ -128,6 +128,18 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-block-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var refresh: UIImage {
+          .imageWithName("Icons/16/ic-refresh-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var sliders: UIImage {
+          .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var linkSmall: UIImage {
+          .imageWithName("Icons/16/ic-link-small-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var flash: UIImage {
           .imageWithName("Icons/16/ic-flash-16")
           .withRenderingMode(.alwaysTemplate)

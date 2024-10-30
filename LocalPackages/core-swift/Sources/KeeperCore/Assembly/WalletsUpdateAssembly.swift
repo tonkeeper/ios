@@ -31,11 +31,7 @@ public final class WalletsUpdateAssembly {
   public func walletImportController() -> WalletImportController {
     WalletImportController(activeWalletService: servicesAssembly.activeWalletsService(), currencyService: servicesAssembly.currencyService())
   }
-  
-  public func walletUpdateController() -> WalletEditController {
-    WalletEditController(walletsStore: storesAssembly.walletsStore)
-  }
-  
+
   public func watchOnlyWalletAddressInputController() -> WatchOnlyWalletAddressInputController {
     WatchOnlyWalletAddressInputController(addressResolver: AddressResolver(dnsService: servicesAssembly.dnsService()))
   }

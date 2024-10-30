@@ -34,18 +34,17 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
       )
     )
     
-    let configuration = configurationStore.getConfiguration()
     let snapshot = createSnapshot(configuration: configuration)
     didUpdateSnapshot?(snapshot)
   }
   
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   
-  init(configurationStore: ConfigurationStore) {
-    self.configurationStore = configurationStore
+  init(configuration: Configuration) {
+    self.configuration = configuration
   }
   
-  private func createSnapshot(configuration: RemoteConfiguration) -> BatteryRefillSupportedTransactions.Snapshot {
+  private func createSnapshot(configuration: Configuration) -> BatteryRefillSupportedTransactions.Snapshot {
     var snapshot = BatteryRefillSupportedTransactions.Snapshot()
     
     snapshot.appendSections([.listItems])

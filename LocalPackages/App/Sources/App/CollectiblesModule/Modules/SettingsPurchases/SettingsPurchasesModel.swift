@@ -33,50 +33,40 @@ final class SettingsPurchasesModel {
   var didUpdate: ((Event) -> Void)?
   
   var state: State {
-    queue.sync {
-      if let _state {
-        return _state
-      } else {
-        let state = getState()
-        _state = state
-        return state
-      }
-    }
+    getState()
   }
-  private var _state: State?
-  
-  private let queue = DispatchQueue(label: "SettingsPurchasesModelQueue")
   
   private let wallet: Wallet
   private let walletNFTStore: WalletNFTStore
   private let accountNFTsManagementStore: WalletNFTsManagementStore
+  private let updateQueue: DispatchQueue
   
   init(wallet: Wallet, 
        walletNFTStore: WalletNFTStore,
-       accountNFTsManagementStore: WalletNFTsManagementStore) {
+       accountNFTsManagementStore: WalletNFTsManagementStore,
+       updateQueue: DispatchQueue) {
     self.wallet = wallet
     self.walletNFTStore = walletNFTStore
     self.accountNFTsManagementStore = accountNFTsManagementStore
+    self.updateQueue = updateQueue
     
     walletNFTStore.addObserver(self) { observer, event in
-      observer.queue.async {
+      observer.updateQueue.async {
         switch event {
         case .didUpdateNFTs(let wallet):
           guard wallet == self.wallet else { return }
           let state = observer.getState()
-          observer._state = state
           observer.didUpdate?(.didUpdateItems(state))
         }
       }
     }
     
     accountNFTsManagementStore.addObserver(self) { observer, event in
-      observer.queue.async {
+      observer.updateQueue.async {
         switch event {
         case .didUpdateState(let wallet):
           guard wallet == self.wallet else { return }
           let state = observer.getState()
-          observer._state = state
           observer.didUpdate?(.didUpdateManagementState(state))
         }
       }
@@ -84,24 +74,20 @@ final class SettingsPurchasesModel {
   }
   
   func hideItem(_ item: Item) {
-    Task {
-      await accountNFTsManagementStore.hideItem(item.nftManagementItem)
-    }
+    accountNFTsManagementStore.hideItem(item.nftManagementItem)
   }
   
   func showItem(_ item: Item) {
-    Task {
-      await accountNFTsManagementStore.showItem(item.nftManagementItem)
-    }
+    accountNFTsManagementStore.showItem(item.nftManagementItem)
   }
   
   func isMarkedAsSpam(item: Item) -> Bool {
-    let nftStates = accountNFTsManagementStore.getState().nftStates
+    let nftStates = accountNFTsManagementStore.state.nftStates
     return nftStates[item.nftManagementItem] == .spam
   }
   
   private func getState() -> State {
-    guard let nfts = walletNFTStore.getState()[wallet] else {
+    guard let nfts = walletNFTStore.state[wallet] else {
       return State(
         visible: [],
         hidden: [],

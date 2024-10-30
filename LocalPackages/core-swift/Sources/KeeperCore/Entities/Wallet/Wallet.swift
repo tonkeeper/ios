@@ -37,7 +37,7 @@ public struct Wallet: Codable, Hashable {
        identity: WalletIdentity,
        metaData: WalletMetaData,
        setupSettings: WalletSetupSettings,
-       notificationSettings: NotificationSettings = NotificationSettings(isOn: false),
+       notificationSettings: NotificationSettings = NotificationSettings(isOn: false, dapps: [:]),
        backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
        addressBook: [AddressBookEntry] = []) {
     self.id = id
@@ -50,7 +50,7 @@ public struct Wallet: Codable, Hashable {
   }
   
   public static func == (lhs: Wallet, rhs: Wallet) -> Bool {
-    lhs.identity == rhs.identity
+    lhs.id == rhs.id
   }
   
   public func isIdentityEqual(wallet: Wallet) -> Bool {
@@ -58,6 +58,6 @@ public struct Wallet: Codable, Hashable {
   }
   
   public func hash(into hasher: inout Hasher) {
-    hasher.combine(identity)
+    hasher.combine(id)
   }
 }

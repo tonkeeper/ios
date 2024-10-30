@@ -21,7 +21,8 @@ public final class TKPopupMenuController {
     guard let sourceWindow = sourceView.window else { return }
     
     let menuViewController = TKPopupMenuViewController()
-    menuViewController.didSelectItem = { 
+    menuViewController.didSelectItem = {
+      UINotificationFeedbackGenerator().notificationOccurred(.warning)
       self.dismiss()
     }
 

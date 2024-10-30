@@ -16,19 +16,18 @@ final class BatteryRefillHeaderModel {
   
   private let wallet: Wallet
   private let balanceStore: BalanceStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
 
   init(wallet: Wallet,
        balanceStore: BalanceStore,
-       configurationStore: ConfigurationStore) {
+       configuration: Configuration) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
   }
   
   func getState() -> State {
-    let configuration = configurationStore.getConfiguration()
-    let isBeta = configurationStore.getConfiguration().isBatteryBeta
+    let isBeta = configuration.isBatteryBeta
     let charge: State.Charge
     if let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance, !batteryBalance.isBalanceZero {
       let chargesCount: Int = {

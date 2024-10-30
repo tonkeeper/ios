@@ -46,8 +46,8 @@ private extension ConfirmTransactionController {
       seqno: seqno,
       timeout: timeout
     )
-    let currency = await currencyStore.getState()
-    let rates = await tonRatesStore.getState().first(where: { $0.currency == currency })
+    let currency = currencyStore.state
+    let rates = tonRatesStore.state.first(where: { $0.currency == currency })
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)

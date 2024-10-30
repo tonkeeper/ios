@@ -3,19 +3,34 @@ import TKUIKit
 import KeeperCore
 import TonSwift
 import BigInt
+import TKLocalize
 
 extension MainCoordinator {
-  func openSendDeeplink(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?) {
+  func openSendDeeplink(recipient: String,
+                        amount: BigUInt?,
+                        comment: String?,
+                        jettonAddress: Address?,
+                        expirationTimestamp: Int64?) {
     deeplinkHandleTask?.cancel()
-    
+
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
-    
+
+    if let expirationTimestamp {
+      let expirationDate = Date(timeIntervalSince1970: TimeInterval(expirationTimestamp))
+      guard Date() <= expirationDate else {
+        let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.linkExpired)
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(configuration: configuration)
+        return
+      }
+    }
+
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
         
         let token: Token
         if let jettonAddress {
@@ -86,14 +101,14 @@ extension MainCoordinator {
   func openBuyDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openBuy(wallet: wallet)
   }
   
   func openStakingDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openStake(wallet: wallet)
   }
   
@@ -109,7 +124,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
         let stakingPools = try await stakingService.loadStakingPools(wallet: wallet)
         await stakingStore.setStackingPools(stakingPools, wallet: wallet)
         guard let stakingPool = stakingPools.first(where: { $0.address == poolAddress }) else {
@@ -142,23 +157,71 @@ extension MainCoordinator {
     
     self.deeplinkHandleTask = deeplinkHandleTask
   }
-  
+
+  func handleDappDeeplink(url: URL) -> Bool {
+    @Sendable func produceFailingFlow() {
+      ToastPresenter.hideAll()
+      ToastPresenter.showToast(configuration: .failed)
+    }
+
+    deeplinkHandleTask?.cancel()
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+
+    let task = Task {
+      let browserController = keeperCoreMainAssembly.browserExploreController()
+      let lang = Locale.current.languageCode ?? "en"
+
+      guard let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang) else {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          produceFailingFlow()
+        }
+
+        return
+      }
+
+      var isDappHandlingApproved = false
+      if let _ = popularAppsResponse.apps.first(with: url.host, at: \.url.host) {
+        isDappHandlingApproved = true
+      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url.host, at: \.url.host) }) {
+        isDappHandlingApproved = true
+      }
+
+      guard isDappHandlingApproved, !Task.isCancelled else {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          produceFailingFlow()
+        }
+        return
+      }
+
+      await MainActor.run {
+        ToastPresenter.hideAll()
+        self.openDapp(title: "", url: url)
+      }
+    }
+
+    deeplinkHandleTask = task
+    return true
+  }
+
   func openExchangeDeeplink(provider: String) {
     deeplinkHandleTask?.cancel()
     
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     
-    let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
+    let buySellService = keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
+    let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
-        let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret
-        let currency = await currencyStore.getState()
+        let wallet = try walletsStore.activeWallet
+        let mercuryoSecret = await configuration.mercuryoSecret
+        let currency = currencyStore.getState()
         
         let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
         guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
@@ -197,7 +260,7 @@ extension MainCoordinator {
   func openSwapDeeplink(fromToken: String?, toToken: String?) {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
   
@@ -213,7 +276,7 @@ extension MainCoordinator {
   
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
         let event = try await service.loadEvent(wallet: wallet, eventId: eventId)
         guard let action = event.actions.first else {
           await MainActor.run {

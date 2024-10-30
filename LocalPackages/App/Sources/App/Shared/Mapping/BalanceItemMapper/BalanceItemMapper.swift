@@ -5,9 +5,7 @@ import TKLocalize
 import TKCore
 import BigInt
 
-struct BalanceItemMapper {
-  private let imageLoader = ImageLoader()
-  
+struct BalanceItemMapper {  
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   
@@ -49,17 +47,16 @@ struct BalanceItemMapper {
       price: item.price,
       currency: item.currency,
       diff: item.diff,
-      verification: .whitelist
+      verification: item.jetton.jettonInfo.verification
     )
-    
     return TKListItemContentView.Configuration(
       iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
         isPinned: isPinned,
         caption: caption,
-        amount: BigUInt(item.amount),
-        amountFractionDigits: TonInfo.fractionDigits,
+        amount: item.amount,
+        amountFractionDigits: item.fractionalDigits,
         convertedAmount: item.converted,
         currency: item.currency,
         isSecure: isSecure

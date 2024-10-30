@@ -38,8 +38,8 @@ public struct InfoProvider {
     self.value(key: .aptabaseEndpoint)
   }
   
-  public static func buildVersion() -> String? {
-    self.value(key: .buildVersion)
+  public static func buildVersion() -> String {
+    self.value(key: .buildVersion) ?? ""
   }
   
   public static func appGroupName() -> String? {

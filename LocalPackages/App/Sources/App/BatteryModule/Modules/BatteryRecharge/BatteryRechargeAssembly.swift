@@ -18,7 +18,7 @@ struct BatteryRechargeAssembly {
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
       ),
       configuration: configuration,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,

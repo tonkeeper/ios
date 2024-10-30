@@ -64,6 +64,17 @@ public final class AppSettings {
       userDefaults.setValue(newValue, forKey: .addressCopyCount)
     }
   }
+  
+  // TODO: Delete after open beta
+  
+  public var didMigrateTonConnectAppVault: Bool {
+    get {
+      userDefaults.bool(forKey: .didMigrateTonConnectAppVaultKey)
+    }
+    set {
+      userDefaults.setValue(newValue, forKey: .didMigrateTonConnectAppVaultKey)
+    }
+  }
 }
 
 private extension String {
@@ -74,4 +85,5 @@ private extension String {
   static let installDeviceId = "install_device_id"
   static let fcmToken = "fcm_token"
   static let addressCopyCount = "address_copy_count"
+  static let didMigrateTonConnectAppVaultKey = "did_migrate_ton_connect_apps_vault"
 }

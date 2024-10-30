@@ -25,11 +25,16 @@ final class CollectiblesViewController: ContentListEmptyViewController {
     
     viewModel.viewDidLoad()
   }
+  
+  override func scrollToTop() {
+    collectiblesListViewController.scrollToTop()
+  }
 }
 
 private extension CollectiblesViewController {
+
   func setup() {
-    customView.navigationBarView.title = TKLocales.Collectibles.title
+    configureNavigationBar()
 
     emptyViewController.configure(model: TKEmptyViewController.Model(
       title: TKLocales.Purchases.emptyPlaceholder,
@@ -41,7 +46,11 @@ private extension CollectiblesViewController {
 
     setupBindings()
   }
-  
+
+  func configureNavigationBar() {
+    customView.navigationBarView.title = TKLocales.Collectibles.title
+  }
+
   func setupBindings() {
     viewModel.didUpdateIsLoading = { [weak self] isLoading in
       self?.customView.navigationBarView.isConnecting = isLoading
@@ -53,6 +62,10 @@ private extension CollectiblesViewController {
       } else {
         self?.setState(.list, animated: false)
       }
+    }
+
+    viewModel.didUpdateNavigationBarButtons = { [weak self] buttons in
+      self?.customView.navigationBarView.configuration = .init(rightButtonItems: buttons)
     }
   }
 }

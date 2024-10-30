@@ -150,7 +150,7 @@ extension BrowserViewModelImplementation: BrowserModuleInput {
     }
 
     Task {
-      await regionStore.updateRegion(selectedCountry)
+      await regionStore.setRegion(selectedCountry)
 
       await MainActor.run {
         self.selectedCountry = selectedCountry

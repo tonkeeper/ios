@@ -41,17 +41,32 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
   }
   
   private let wallet: Wallet
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdate: BackgroundUpdate
   
   init(wallet: Wallet,
-       backgroundUpdateStore: BackgroundUpdateStore) {
+       backgroundUpdate: BackgroundUpdate) {
     self.wallet = wallet
-    self.backgroundUpdateStore = backgroundUpdateStore
+    self.backgroundUpdate = backgroundUpdate
   }
   
   func viewDidLoad() {
     setupEmpty(wallet: wallet)
     didUpdateState?(state)
+    
+    backgroundUpdate.addStateObserver(self) { observer, wallet, state in
+      DispatchQueue.main.async {
+        guard wallet == observer.wallet else { return }
+        observer.didUpdateIsConnecting?(observer.isConnecting(state))
+      }
+    }
+    didUpdateIsConnecting?(isConnecting(backgroundUpdate.getState(wallet: wallet)))
+  }
+  
+  private func isConnecting(_ backgroundUpdateState: BackgroundUpdateConnectionState) -> Bool {
+    switch backgroundUpdateState {
+    case .connected: return false
+    default: return true
+    }
   }
 }
 

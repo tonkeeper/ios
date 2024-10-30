@@ -120,6 +120,8 @@ private extension TKPopupMenuItemView {
   }
   
   func setupConstraints() {
+    rightIconImageView.setContentHuggingPriority(.required, for: .horizontal)
+    
     highlightView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }

@@ -39,6 +39,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   
   func viewDidLoad() {
+    balanceLoader.loadAllWalletsBalance()
     didUpdateHeaderItem?(createHeaderItem())
     setupInitialState()
     startObservations()
@@ -68,19 +69,22 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Dependencies
   
   private let model: WalletsListModel
+  private let balanceLoader: BalanceLoader
   private let totalBalancesStore: TotalBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(model: WalletsListModel,
+       balanceLoader: BalanceLoader,
        totalBalancesStore: TotalBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
+    self.balanceLoader = balanceLoader
     self.totalBalancesStore = totalBalancesStore
     self.appSettingsStore = appSettingsStore
     self.decimalAmountFormatter = decimalAmountFormatter
@@ -241,7 +245,7 @@ private extension WalletsListViewModelImplementation {
   
   func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStore.Event) {
     switch event {
-    case .didUpdateTotalBalance(_, let wallet):
+    case .didUpdateTotalBalance(let wallet):
       syncQueue.async {
         let totalBalanceState = self.totalBalancesStore.getState()[wallet]
         let isSecure = self.appSettingsStore.getState().isSecureMode
@@ -250,7 +254,7 @@ private extension WalletsListViewModelImplementation {
     }
   }
   
-  func didAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  func didAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     switch event {
     case .didUpdateIsSecureMode:
       syncQueue.async {
@@ -261,8 +265,7 @@ private extension WalletsListViewModelImplementation {
           self.didUpdateTotalBalancesState(state: totalBalanceState[wallet], wallet: wallet, isSecure: isSecure)
         }
       }
-    case .didUpdateIsSetupFinished:
-      break
+    default: break
     }
   }
   
@@ -279,10 +282,14 @@ private extension WalletsListViewModelImplementation {
     let leftButtonModel = TKUIHeaderTitleIconButton.Model(
       title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
     )
-    let leftButton = TKPullCardHeaderItem.LeftButton(
-      model: leftButtonModel) { [weak self] in
-        self?.isEditing.toggle()
-      }
+    var leftButton: TKPullCardHeaderItem.LeftButton?
+    if model.isEditable {
+      leftButton = TKPullCardHeaderItem.LeftButton(
+        model: leftButtonModel) { [weak self] in
+          self?.isEditing.toggle()
+        }
+    }
+    
     return TKPullCardHeaderItem(
       title: .title(title: TKLocales.WalletsList.title, subtitle: nil),
       leftButton: leftButton)

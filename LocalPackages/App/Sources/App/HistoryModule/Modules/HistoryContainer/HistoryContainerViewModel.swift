@@ -30,7 +30,7 @@ final class HistoryContainerViewModelImplementation: HistoryContainerViewModel, 
       }
     }
     
-    guard let wallet = try? walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? walletsStore.activeWallet else { return }
     didChangeWallet?(wallet)
   }
   

@@ -13,12 +13,12 @@ actor AddressResolver {
     self.dnsService = dnsService
   }
   
-  func resolveRecipient(input: String) async throws -> ResolvableAddress {
+  func resolveRecipient(input: String, addTonPostfix: Bool) async throws -> ResolvableAddress {
     if let address = try? Address.parse(input) {
       return ResolvableAddress.Resolved(address)
     }
     
-    if let domain = try? await dnsService.resolveDomainName(input, isTestnet: false) {
+    if let domain = try? await dnsService.resolveDomainName(input, addTonPostfix: addTonPostfix, isTestnet: false) {
       return ResolvableAddress.Domain(domain.domain, domain.friendlyAddress.address)
     }
     

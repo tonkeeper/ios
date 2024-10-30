@@ -19,7 +19,7 @@ struct TokenManagementRepositoryImplementation: TokenManagementRepository {
       return try fileSystemVault.loadItem(key: wallet.friendlyAddress)
     } catch {
       return TokenManagementState(pinnedItems: [],
-                                  hiddenItems: [])
+                                  hiddenState: [:])
     }
   }
   

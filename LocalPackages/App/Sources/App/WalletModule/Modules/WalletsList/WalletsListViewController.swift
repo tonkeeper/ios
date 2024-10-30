@@ -9,8 +9,8 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
   
   private let viewModel: WalletsListViewModel
   
-  private lazy var reorderGesture: UILongPressGestureRecognizer = {
-    let gesture = UILongPressGestureRecognizer(
+  private lazy var reorderGesture: UIPanGestureRecognizer = {
+    let gesture = UIPanGestureRecognizer(
       target: self,
       action: #selector(handleReorderGesture(gesture:))
     )
@@ -115,7 +115,6 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
           )
           view.configuration = footerConfiguration
           return view
-        default: return nil
         }
       default:
         return nil

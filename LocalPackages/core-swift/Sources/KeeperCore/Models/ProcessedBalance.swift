@@ -38,6 +38,17 @@ public enum ProcessedBalanceItem: Equatable, Codable {
       return staking.info.pool.toRaw()
     }
   }
+  
+  public var isZeroBalance: Bool {
+    switch self {
+    case .ton(let ton):
+      return ton.amount == 0
+    case .jetton(let jetton):
+      return jetton.amount.isZero
+    case .staking(let staking):
+      return staking.info.amount == 0
+    }
+  }
 }
 
 public struct ProcessedBalanceTonItem: Equatable, Codable {
