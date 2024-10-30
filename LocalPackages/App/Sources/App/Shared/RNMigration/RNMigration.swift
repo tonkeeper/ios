@@ -54,7 +54,7 @@ struct RNMigration {
     for rnWallet in rnWallets {
       let backupDate = try? await rnService.getWalletBackupDate(walletId: rnWallet.identifier)
       guard let wallet = try? rnWallet.getWallet(backupDate: backupDate) else {
-        errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, publicKey: rnWallet.pubkey))
+        errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, label: rnWallet.identifier, publicKey: rnWallet.pubkey))
         continue
       }
       guard !wallets.contains(where: { $0.identity == wallet.identity }) else { continue }
