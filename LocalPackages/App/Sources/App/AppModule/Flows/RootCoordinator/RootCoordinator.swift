@@ -209,7 +209,18 @@ private extension RootCoordinator {
     )
     Task {
       if await rnMigration.checkIfNeedToMigrate() {
-        _ = await rnMigration.performMigration()
+        let errors = await rnMigration.performMigration()
+        if !errors.isEmpty {
+          await MainActor.run {
+            openOnboarding(deeplink: deeplink)
+            let alertController = UIAlertController(title: "Failed migrate",
+                                                    message: errors.map { $0.alertValue }.joined(separator: "\n"),
+                                                    preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .cancel))
+            router.rootViewController.present(alertController, animated: true)
+          }
+        }
+        
       } else {
         await MainActor.run {
           openOnboarding(deeplink: deeplink)

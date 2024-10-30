@@ -6,7 +6,18 @@ struct RNMigration {
   
   enum MigrateError: Swift.Error {
     case noWallets
-    case failedMigrateWallet(identifier: String, publicKey: String)
+    case failedMigrateWallet(identifier: String,
+                             label: String,
+                             publicKey: String)
+    
+    var alertValue: String {
+      switch self {
+      case .noWallets:
+        return "No wallets to migrate"
+      case .failedMigrateWallet(let identifier, let label, let publicKey):
+        return "Failed migrate wallet \(label), \(publicKey)"
+      }
+    }
   }
   
   private let rnService: RNService
