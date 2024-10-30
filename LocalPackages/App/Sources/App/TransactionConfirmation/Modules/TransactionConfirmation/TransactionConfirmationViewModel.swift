@@ -91,12 +91,30 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     items.append(createHeaderImageItem(transaction: model))
     
+    let caption: String = {
+      switch model.transaction {
+      case .staking(let staking):
+        return TKLocales.TransactionConfirmation.confirmAction
+      case .transfer(let transfer):
+        switch transfer {
+        case .jetton, .ton:
+          return TKLocales.TransactionConfirmation.confirmAction
+        case .nft(let nft):
+          var result = nft.notNilName
+          if let collectionName = nft.collection?.notEmptyName {
+            result += " · "
+            result += collectionName
+          }
+          return result
+        }
+      }
+    }()
     items.append(
       TKPopUp.Component.GroupComponent(
         padding: UIEdgeInsets(top: 0, left: 32, bottom: 32, right: 32),
         items: [
           TKPopUp.Component.LabelComponent(
-            text: TKLocales.TransactionConfirmation.confirmAction.withTextStyle(
+            text: caption.withTextStyle(
               .body1,
               color: .Text.secondary,
               alignment: .center,
@@ -140,7 +158,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         case .ton:
           return "\(TonInfo.symbol) transfer"
         case .nft:
-          return "NFT name"
+          return "NFT transfer"
         }
       }
     }()
@@ -189,8 +207,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           ),
           bottomSpace: 20
         )
-      case .nft:
-        return TKPopUp.Component.LabelComponent(text: "dsd".withTextStyle(.body3, color: .red))
+      case .nft(let nft):
+        return TKPopUp.Component.ImageComponent(
+          image: TKImageView.Model(
+            image: .urlImage(nft.imageURL),
+            size: .size(CGSize(width: 96, height: 96)),
+            corners: .cornerRadius(cornerRadius: 12),
+            padding: .zero
+          ),
+          bottomSpace: 20
+        )
       }
     }
   }
@@ -315,15 +341,17 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       }
     }
     
+    guard let amount = transaction.amount else { return nil }
+    
     let value: TKListContainerItemView.Model.Value
     let valueFormatted = formatValueItem(
-      amount: transaction.amount.amount.value,
-      fractionDigits: transaction.amount.amount.decimals,
-      maximumFractionDigits: transaction.amount.amount.decimals,
-      item: transaction.amount.amount.item
+      amount: amount.amount.value,
+      fractionDigits: amount.amount.decimals,
+      maximumFractionDigits: amount.amount.decimals,
+      item: amount.amount.item
     )
     var convertedFormatted: String?
-    if let converted = transaction.amount.converted {
+    if let converted = amount.converted {
       let formatted = formatValueItem(
         amount: converted.value,
         fractionDigits: converted.decimals,

@@ -169,6 +169,23 @@ public final class MainAssembly {
     )
   }
   
+  public func nftTransferTransactionConfirmationController(wallet: Wallet,
+                                                           recipient: Recipient,
+                                                           nft: NFT,
+                                                           comment: String?) -> TransactionConfirmationController {
+    NFTTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      nft: nft,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
   func transferTransaction() -> TransferTransaction {
     TransferTransaction(
       tonProofTokenService: servicesAssembly.tonProofTokenService(),

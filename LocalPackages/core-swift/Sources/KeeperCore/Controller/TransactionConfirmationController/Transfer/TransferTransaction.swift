@@ -11,7 +11,7 @@ final class TransferTransaction {
   enum Transfer {
     case ton(amount: BigUInt)
     case jetton(JettonItem, amount: BigUInt)
-    case nft
+    case nft(NFT, transferAmount: BigUInt)
   }
   
   struct TransferPayload {
@@ -208,8 +208,18 @@ final class TransferTransaction {
         timeout: timeout,
         signClosure: signClosure
       )
-    case .nft:
-      return ""
+    case .nft(let nft, let transferAmount):
+      return try await createNFTTransferBoc(
+        wallet: wallet,
+        nft: nft,
+        recipient: recipient,
+        comment: comment,
+        responseAddress: responseAddress,
+        transferAmount: transferAmount,
+        seqno: seqno,
+        timeout: timeout,
+        signClosure: signClosure
+      )
     }
   }
   
@@ -282,6 +292,36 @@ final class TransferTransaction {
       )
     )
     
+    return try await transferMessageBuilder.createBoc(signClosure: signClosure)
+  }
+  
+  private func createNFTTransferBoc(wallet: Wallet,
+                                    nft: NFT,
+                                    recipient: Recipient,
+                                    comment: String?,
+                                    responseAddress: Address?,
+                                    transferAmount: BigUInt,
+                                    seqno: UInt64,
+                                    timeout: UInt64,
+                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
+    
+    let transferMessageBuilder = TransferMessageBuilder(
+      transferData: .nft(
+        TransferData.NFT(
+          seqno: seqno,
+          nftAddress: nft.address,
+          recipient: recipient.recipientAddress.address,
+          isBouncable: recipient.recipientAddress.isBouncable,
+          transferAmount: transferAmount.magnitude,
+          timeout: timeout,
+          forwardPayload: commentCell
+        )
+      )
+    )
     return try await transferMessageBuilder.createBoc(signClosure: signClosure)
   }
 }

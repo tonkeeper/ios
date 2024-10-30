@@ -16,7 +16,7 @@ public struct TransactionConfirmationModel {
     public enum Transfer {
       case ton
       case jetton(JettonInfo)
-      case nft
+      case nft(NFT)
     }
     
     case staking(Staking)
@@ -43,7 +43,7 @@ public struct TransactionConfirmationModel {
   public let recipient: String?
   public let recipientAddress: String?
   public let transaction: Transaction
-  public let amount: (amount: Amount, converted: Amount?)
+  public let amount: (amount: Amount, converted: Amount?)?
   public let fee: Fee
   public let comment: String?
   
@@ -51,7 +51,7 @@ public struct TransactionConfirmationModel {
        recipient: String?,
        recipientAddress: String?,
        transaction: Transaction,
-       amount: (amount: Amount, converted: Amount?),
+       amount: (amount: Amount, converted: Amount?)?,
        fee: Fee,
        comment: String? = nil) {
     self.wallet = wallet

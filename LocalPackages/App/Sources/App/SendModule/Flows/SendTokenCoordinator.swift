@@ -120,9 +120,15 @@ private extension SendTokenCoordinator {
           amount: amount,
           comment: sendModel.comment)
       }
-    case .nft: 
-      return
-    }
+      case .nft(let nft):
+        transactionConfirmationController = keeperCoreMainAssembly.nftTransferTransactionConfirmationController(
+          wallet: wallet,
+          recipient: recipient,
+          nft: nft,
+          comment: sendModel.comment
+        )
+      }
+    
     let module = TransactionConfirmationAssembly.module(
       transactionConfirmationController: transactionConfirmationController,
       keeperCoreMainAssembly: keeperCoreMainAssembly
