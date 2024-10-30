@@ -16,7 +16,7 @@ let package = Package(
     .package(path: "../Ledger"),
     .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.19")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
-    .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.0")),
+    .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.2")),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
