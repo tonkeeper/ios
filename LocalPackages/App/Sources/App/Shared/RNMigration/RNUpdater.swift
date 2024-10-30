@@ -26,7 +26,7 @@ actor RNUpdater {
   }
 
   private func updateWalletsStore() async {
-    guard let keeperInfo = await keeperInfoStore.getState() else {
+    guard let keeperInfo = keeperInfoStore.state else {
       try? await rnService.setWallets([])
       return
     }

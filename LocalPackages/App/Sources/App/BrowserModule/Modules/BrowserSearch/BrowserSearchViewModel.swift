@@ -213,7 +213,7 @@ private extension BrowserSearchViewModelImplementation {
   func searchSuggestions(input: String) async {
     try? await Task.sleep(nanoseconds: 500_000_000)
     guard !Task.isCancelled else { return }
-    let searchEngine = await appSettingsStore.getState().searchEngine
+    let searchEngine = appSettingsStore.state.searchEngine
     do {
       let suggestions = try await searchEngineService.loadSuggestions(
         searchText: input,

@@ -316,8 +316,6 @@ private extension TonConnectServiceImplementation {
                                    parameters: SendTransactionParam,
                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
     
-    let walletBalance = try walletBalanceRepository.getWalletBalance(wallet: wallet)
-    
     let rebuildedMessages = try await rebuildJettonPayloads(wallet: wallet, messages: parameters.messages)
     
     let payloads = rebuildedMessages.map { message in

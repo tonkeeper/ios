@@ -30,7 +30,7 @@ public struct JettonBalanceResolverImplementation: JettonBalanceResolver {
       throw JettonBalanceResolverError.unknownJetton
     }
 
-    guard let balance = await balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
+    guard let balance = balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
       throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, balance: 0, wallet: wallet)
     }
     

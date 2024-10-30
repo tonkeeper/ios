@@ -436,9 +436,9 @@ private extension BuySellListViewModelImplementation {
         guard let self else { return }
         Task {
           do {
-            let currency = await self.currencyStore.getState()
+            let currency = self.currencyStore.state
             let walletAddress = try self.wallet.friendlyAddress
-            let mercuryoSecret = try? await self.configuration.mercuryoSecret
+            let mercuryoSecret = await self.configuration.mercuryoSecret
             guard let url = item.actionURL(
               walletAddress: walletAddress,
               currency: currency,

@@ -293,7 +293,7 @@ private extension SignTransactionConfirmationCoordinator {
   }
   
   func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
-    let coordinator = await WalletTransferSignCoordinator(
+    let coordinator = WalletTransferSignCoordinator(
       router: ViewControllerRouter(rootViewController: fromViewController),
       wallet: wallet,
       transferMessageBuilder: transferMessageBuilder,

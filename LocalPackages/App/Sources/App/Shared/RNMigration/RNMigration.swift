@@ -58,7 +58,7 @@ struct RNMigration {
     
     await walletsStore.addWallets(wallets)
     await walletsStore.makeWalletActive(activeWallet)
-    try? await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
+    try? _ = await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
     await migrateCurrency()
     await migrateNotificationsSettings(wallets: wallets)
     await migrateTheme()

@@ -59,7 +59,7 @@ final class WalletsPickerListModel: WalletsListModel {
   func selectWallet(wallet: Wallet) {
     Task {
       do {
-        guard try await walletsStore.activeWallet != wallet else { return }
+        guard try walletsStore.activeWallet != wallet else { return }
         await walletsStore.makeWalletActive(wallet)
       } catch { return  }
     }

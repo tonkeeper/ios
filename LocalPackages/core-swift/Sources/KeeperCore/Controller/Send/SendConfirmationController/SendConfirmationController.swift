@@ -93,8 +93,8 @@ private extension SendConfirmationController {
         symbol: TonInfo.symbol
       )
       feeItem = .value(feeFormatted)
-      let rates = await ratesStore.getState()
-      let currency = await currencyStore.getState()
+      let rates = ratesStore.state
+      let currency = currencyStore.state
       if let rates = rates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
@@ -140,8 +140,8 @@ private extension SendConfirmationController {
           maximumFractionDigits: TonInfo.fractionDigits,
           symbol: TonInfo.symbol
         )
-        let rates = await ratesStore.getState()
-        let currency = await currencyStore.getState()
+        let rates = ratesStore.state
+        let currency = currencyStore.state
         if let rates = rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
@@ -286,7 +286,7 @@ private extension SendConfirmationController {
       let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
       
       let isMax: Bool
-      if let balance = await balanceStore.getState()[wallet]?.walletBalance {
+      if let balance = balanceStore.state[wallet]?.walletBalance {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
       } else {
         isMax = false

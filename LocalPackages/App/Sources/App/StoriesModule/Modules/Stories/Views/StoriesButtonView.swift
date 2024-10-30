@@ -37,7 +37,7 @@ final class StoriesButtonView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     storiesButton.configuration.content = .init(title: .plainString(model.title))
-    storiesButton.configuration.action = { [weak self] in
+    storiesButton.configuration.action = { 
       model.action()
     }
   }

@@ -63,7 +63,7 @@ final class WalletBalanceSetupModel {
   
   func finishSetup() {
     Task {
-      guard let wallet = try? await walletsStore.activeWallet else {
+      guard let wallet = try? walletsStore.activeWallet else {
         return
       }
       await walletsStore.setWalletIsSetupFinished(wallet: wallet, isSetupFinished: true)
@@ -85,7 +85,7 @@ final class WalletBalanceSetupModel {
   }
   
   func turnOnNotifications() async {
-    guard let wallet = try? await walletsStore.activeWallet else { return }
+    guard let wallet = try? walletsStore.activeWallet else { return }
     await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
   }
   

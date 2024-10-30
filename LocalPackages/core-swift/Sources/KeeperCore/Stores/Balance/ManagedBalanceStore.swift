@@ -45,7 +45,6 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
   
   public override func createInitialState() -> State {
     let balanceStates = balanceStore.state
-    let tokenManagementState = tokenManagementStore.state
     let state = calculateState(wallets: balanceStates.keys.map { $0 as Wallet })
     return state
   }

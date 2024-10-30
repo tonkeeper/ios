@@ -78,7 +78,7 @@ final class PushNotificationManager {
       } else {
         unsubscribePushNotifications(wallet: wallet)
       }
-    case .didUpdateDappNotificationsIsOn(wallet: let wallet):
+    case .didUpdateDappNotificationsIsOn:
       // TODO: send notification
       break
     }

@@ -449,7 +449,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       action = { [weak self, wallet, nft] in
         self?.didTapUnlinkDomain?(wallet, nft)
       }
-    case .failure(let failure):
+    case .failure:
       title = TKLocales.NftDetails.linkedDomain
       action = { [weak self, wallet, nft] in
         self?.didTapLinkDomain?(wallet, nft)

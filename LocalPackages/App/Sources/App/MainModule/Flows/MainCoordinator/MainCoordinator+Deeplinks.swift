@@ -30,7 +30,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.activeWallet
+        let wallet = try walletsStore.activeWallet
         
         let token: Token
         if let jettonAddress {
@@ -124,7 +124,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.activeWallet
+        let wallet = try walletsStore.activeWallet
         let stakingPools = try await stakingService.loadStakingPools(wallet: wallet)
         await stakingStore.setStackingPools(stakingPools, wallet: wallet)
         guard let stakingPool = stakingPools.first(where: { $0.address == poolAddress }) else {
@@ -276,7 +276,7 @@ extension MainCoordinator {
   
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.activeWallet
+        let wallet = try walletsStore.activeWallet
         let event = try await service.loadEvent(wallet: wallet, eventId: eventId)
         guard let action = event.actions.first else {
           await MainActor.run {
