@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TonAPI
 import TKBatteryAPI
 import BigInt
 
@@ -8,6 +9,7 @@ public protocol BatteryService {
   func loadRechargeMethods(wallet: Wallet,
                            includeRechargeOnly: Bool) async throws -> [BatteryRechargeMethod]
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
+  func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
 }
 
 final class BatteryServiceImplementation: BatteryService {
@@ -23,7 +25,6 @@ final class BatteryServiceImplementation: BatteryService {
     let batteryBalance = try await batteryAPIProvider
       .api(wallet.isTestnet)
       .getBalance(tonProofToken: tonProofToken)
-        
     return batteryBalance
   }
   
@@ -40,5 +41,14 @@ final class BatteryServiceImplementation: BatteryService {
     try await batteryAPIProvider
       .api(wallet.isTestnet)
       .getBatteryConfig()
+  }
+  
+  func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool) {
+    let response = try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .emulate(tonProofToken: tonProofToken, boc: boc)
+    
+    let result = try JSONDecoder().decode(MessageConsequences.self, from: response.responseData)
+    return (result, response.isBatteryAvailable)
   }
 }

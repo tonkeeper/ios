@@ -83,4 +83,22 @@ extension BatteryAPI {
     let response = try await request.execute().body
     return response.methods.compactMap { BatteryRechargeMethod(method: $0) }
   }
+  
+  func emulate(tonProofToken: String, boc: String) async throws -> (responseData: Data, isBatteryAvailable: Bool) {
+    let request = try await createRequest {
+      return EmulationAPI.emulateMessageToWalletWithRequestBuilder(
+        xTonConnectAuth: tonProofToken,
+        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc)
+      )
+    }
+    let response = try await request.execute()
+    let header = response.header
+    let isAllowedByBattery = header["allowed-by-battery"] == "true"
+    let isSupportedByBattery = header["supported-by-battery"] == "true"
+    let isBatteryAvailable = isAllowedByBattery && isSupportedByBattery
+    
+    let responseData = try JSONEncoder().encode(response.body)
+
+    return (responseData, isBatteryAvailable)
+  }
 }
