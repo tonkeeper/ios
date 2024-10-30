@@ -1134,6 +1134,10 @@ public enum TKLocales {
     public static let amount = TKLocales.tr("Localizable", "transaction_confirmation.amount", fallback: "Amount")
     /// APY
     public static let apy = TKLocales.tr("Localizable", "transaction_confirmation.apy", fallback: "APY")
+    /// Will be paid with Battery
+    public static let battery = TKLocales.tr("Localizable", "transaction_confirmation.battery", fallback: "Will be paid with Battery")
+    /// Comment
+    public static let comment = TKLocales.tr("Localizable", "transaction_confirmation.comment", fallback: "Comment")
     /// Confirm action
     public static let confirmAction = TKLocales.tr("Localizable", "transaction_confirmation.confirm_action", fallback: "Confirm action")
     /// Deposit
@@ -1151,6 +1155,8 @@ public enum TKLocales {
     public enum Buttons {
       /// Confirm and Collect
       public static let confirmAndCollect = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_collect", fallback: "Confirm and Collect")
+      /// Confirm and Send
+      public static let confirmAndSend = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_send", fallback: "Confirm and Send")
       /// Confirm and Stake
       public static let confirmAndStake = TKLocales.tr("Localizable", "transaction_confirmation.buttons.confirm_and_stake", fallback: "Confirm and Stake")
       /// Confirm and Unstake

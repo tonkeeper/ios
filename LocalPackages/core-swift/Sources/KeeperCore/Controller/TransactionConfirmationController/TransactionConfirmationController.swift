@@ -45,6 +45,23 @@ public struct TransactionConfirmationModel {
   public let transaction: Transaction
   public let amount: (amount: Amount, converted: Amount?)
   public let fee: Fee
+  public let comment: String?
+  
+  init(wallet: Wallet, 
+       recipient: String?,
+       recipientAddress: String?,
+       transaction: Transaction,
+       amount: (amount: Amount, converted: Amount?),
+       fee: Fee,
+       comment: String? = nil) {
+    self.wallet = wallet
+    self.recipient = recipient
+    self.recipientAddress = recipientAddress
+    self.transaction = transaction
+    self.amount = amount
+    self.fee = fee
+    self.comment = comment
+  }
 }
 
 public enum TransactionConfirmationError: Swift.Error {

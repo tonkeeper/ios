@@ -85,6 +85,8 @@ final class WalletTotalBalanceModel {
       switch event {
       case .didChangeActiveWallet:
         self?.updateModel()
+      case .didUpdateWalletBatterySettings:
+        self?.updateModel()
       default: break
       }
     }

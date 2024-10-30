@@ -9,7 +9,7 @@ final class TransferTransaction {
   }
   
   enum Transfer {
-    case ton
+    case ton(amount: BigUInt)
     case jetton(JettonItem, amount: BigUInt)
     case nft
   }
@@ -20,6 +20,15 @@ final class TransferTransaction {
       case battery(excessAddress: Address)
     }
     
+    var isBattery: Bool {
+      switch self.type {
+      case .default:
+        return false
+      case .battery:
+        return true
+      }
+    }
+    
     let type: TransferType
     let fee: UInt64
   }
@@ -27,15 +36,21 @@ final class TransferTransaction {
   private let tonProofTokenService: TonProofTokenService
   private let sendService: SendService
   private let batteryService: BatteryService
+  private let balanceStore: BalanceStore
+  private let accountService: AccountService
   private let configuration: Configuration
   
   init(tonProofTokenService: TonProofTokenService,
        sendService: SendService,
        batteryService: BatteryService,
+       balanceStore: BalanceStore,
+       accountService: AccountService,
        configuration: Configuration) {
     self.tonProofTokenService = tonProofTokenService
     self.sendService = sendService
     self.batteryService = batteryService
+    self.balanceStore = balanceStore
+    self.accountService = accountService
     self.configuration = configuration
   }
   
@@ -122,7 +137,7 @@ final class TransferTransaction {
     do {
       let transactionInfo = try await batteryService.loadTransactionInfo(wallet: wallet, boc: boc, tonProofToken: tonProofToken)
       if transactionInfo.isBatteryAvailable {
-        return TransferPayload(type: .battery(excessAddress: excessAddress), fee: 0)
+        return TransferPayload(type: .battery(excessAddress: excessAddress), fee: UInt64(abs(transactionInfo.info.event.extra)))
       } else {
         return try await calculateDefaultFee(wallet: wallet, transfer: transfer, recipient: recipient, comment: comment)
       }
@@ -147,7 +162,7 @@ final class TransferTransaction {
       }
     
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
-    return TransferPayload(type: .default, fee: 0)
+    return TransferPayload(type: .default, fee: UInt64(abs(transactionInfo.event.extra)))
   }
   
   private func isRelayerAvailable(wallet: Wallet, transfer: Transfer) -> Bool {
@@ -171,8 +186,16 @@ final class TransferTransaction {
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
   
     switch transfer {
-    case .ton:
-      return ""
+    case .ton(let amount):
+      return try await createTonTransferBoc(
+        wallet: wallet,
+        amount: amount,
+        recipient: recipient,
+        comment: comment,
+        seqno: seqno,
+        timeout: timeout,
+        signClosure: signClosure
+      )
     case .jetton(let jettonItem, let amount):
       return try await createJettonTransferBoc(
         wallet: wallet,
@@ -188,6 +211,39 @@ final class TransferTransaction {
     case .nft:
       return ""
     }
+  }
+  
+  private func createTonTransferBoc(wallet: Wallet, 
+                                    amount: BigUInt,
+                                    recipient: Recipient,
+                                    comment: String?,
+                                    seqno: UInt64,
+                                    timeout: UInt64,
+                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+    let account = try? await accountService.loadAccount(isTestnet: wallet.isTestnet, address: recipient.recipientAddress.address)
+    let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
+    
+    let isMax: Bool
+    if let balance = balanceStore.state[wallet]?.walletBalance {
+      isMax = BigUInt(balance.balance.tonBalance.amount) == amount
+    } else {
+      isMax = false
+    }
+
+    let transferMessageBuilder = TransferMessageBuilder(
+      transferData: .ton(
+        TransferData.Ton(
+          seqno: seqno,
+          amount: amount,
+          isMax: isMax,
+          recipient: recipient.recipientAddress.address,
+          isBouncable: shouldForceBounceFalse ? false : recipient.recipientAddress.isBouncable,
+          comment: comment,
+          timeout: timeout
+        )
+      )
+    )
+    return try await transferMessageBuilder.createBoc(signClosure: signClosure)
   }
   
   private func createJettonTransferBoc(wallet: Wallet,

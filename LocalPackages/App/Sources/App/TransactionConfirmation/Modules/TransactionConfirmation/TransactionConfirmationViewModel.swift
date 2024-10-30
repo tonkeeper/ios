@@ -218,6 +218,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     items.append(
       createFeeListItem(transaction: transaction)
     )
+    if let commentItem = createCommentItem(transaction: transaction) {
+      items.append(commentItem)
+    }
     
     let configuration = TKListContainerView.Configuration(
       items: items,
@@ -260,6 +263,19 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       title: TKLocales.TransactionConfirmation.recipient,
       value: recipientAddress,
       copyValue: recipientAddress
+    )
+  }
+  
+  private func createCommentItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
+    guard let comment = transaction.comment, !comment.isEmpty else { return nil }
+    return TKListContainerItemView.Model(
+      title: TKLocales.TransactionConfirmation.comment,
+      value: .value(
+        TKListContainerItemDefaultValueView.Model(
+          topValue: TKListContainerItemDefaultValueView.Model.Value(value: comment)
+        )
+      ),
+      action: .copy(copyValue: comment)
     )
   }
   
@@ -330,6 +346,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private func createFeeListItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
     var copyValue: String?
+    var caption: NSAttributedString?
     let value: TKListContainerItemView.Model.Value
     switch transaction.fee {
     case .loading:
@@ -364,10 +381,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
         ))
       }
+      caption = isBattery ? TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary) : nil
     }
     
     return TKListContainerItemView.Model(
       title: TKLocales.EventDetails.fee,
+      caption: caption,
       value: value,
       action: .copy(copyValue: copyValue)
     )
@@ -388,7 +407,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           }
         }
       case .transfer:
-        return "Confirm and Send"
+        return TKLocales.TransactionConfirmation.Buttons.confirmAndSend
       }
     }()
     

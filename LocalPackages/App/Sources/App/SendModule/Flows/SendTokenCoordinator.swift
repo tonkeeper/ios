@@ -106,7 +106,12 @@ private extension SendTokenCoordinator {
     case let .token(token, amount):
       switch token {
       case .ton:
-        return
+        transactionConfirmationController = keeperCoreMainAssembly.tonTransferTransactionConfirmationController(
+          wallet: wallet,
+          recipient: recipient,
+          amount: amount,
+          comment: sendModel.comment
+        )
       case .jetton(let jettonItem):
         transactionConfirmationController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
           wallet: wallet,

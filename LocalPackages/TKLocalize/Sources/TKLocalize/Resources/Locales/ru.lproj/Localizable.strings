@@ -504,7 +504,10 @@
 "transaction_confirmation.unstake_amount" = "Сумма вывода";
 "transaction_confirmation.unstake" = "Вывод";
 "transaction_confirmation.deposit" = "Депозит";
+"transaction_confirmation.comment" = "Комментарий";
 "transaction_confirmation.apy" = "APY";
+"transaction_confirmation.battery" = "Будет оплачена батарейкой";
+"transaction_confirmation.buttons.confirm_and_send" = "Подтвердить и отправить";
 "transaction_confirmation.buttons.confirm_and_stake" = "Подтвердить и внести";
 "transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
 "transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";

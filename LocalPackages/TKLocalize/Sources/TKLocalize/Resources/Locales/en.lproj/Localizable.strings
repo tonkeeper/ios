@@ -518,7 +518,10 @@
 "transaction_confirmation.unstake_amount" = "Unstake amount";
 "transaction_confirmation.unstake" = "Unstake";
 "transaction_confirmation.deposit" = "Deposit";
+"transaction_confirmation.comment" = "Comment";
 "transaction_confirmation.apy" = "APY";
+"transaction_confirmation.battery" = "Will be paid with Battery";
+"transaction_confirmation.buttons.confirm_and_send" = "Confirm and Send";
 "transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
 "transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
 "transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";

@@ -3,7 +3,7 @@ import TonSwift
 import BigInt
 import TonAPI
 
-final class JettonTransferTransactionConfirmationController: TransactionConfirmationController {
+final class TonTransferTransactionConfirmationController: TransactionConfirmationController {
   func getModel() -> TransactionConfirmationModel {
     createModel()
   }
@@ -12,7 +12,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     do {
       let payload = try await transferTransaction.calculateFee(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount),
+        transfer: .ton(amount: amount),
         recipient: recipient,
         comment: comment
       )
@@ -30,7 +30,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     do {
       try await transferTransaction.sendTransaction(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount),
+        transfer: .ton(amount: amount),
         recipient: recipient,
         comment: comment,
         transferType: transferPayload?.type ?? .default,
@@ -54,35 +54,29 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   private let wallet: Wallet
   private let recipient: Recipient
-  private let jettonItem: JettonItem
   private let amount: BigUInt
   private let comment: String?
   private let sendService: SendService
   private let blockchainService: BlockchainService
-  private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let transferTransaction: TransferTransaction
   
   init(wallet: Wallet,
        recipient: Recipient,
-       jettonItem: JettonItem,
        amount: BigUInt,
        comment: String?,
        sendService: SendService,
        blockchainService: BlockchainService,
-       balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        transferTransaction: TransferTransaction) {
     self.wallet = wallet
     self.recipient = recipient
-    self.jettonItem = jettonItem
     self.amount = amount
     self.comment = comment
     self.sendService = sendService
     self.blockchainService = blockchainService
-    self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
     self.transferTransaction = transferTransaction
@@ -93,7 +87,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       wallet: wallet,
       recipient: recipient.recipientAddress.name,
       recipientAddress: recipient.recipientAddress.addressString,
-      transaction: .transfer(.jetton(jettonItem.jettonInfo)),
+      transaction: .transfer(.ton),
       amount: getAmountValue(),
       fee: fee,
       comment: comment
@@ -129,8 +123,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         decimals: TonInfo.fractionDigits,
         item: .currency(.TON)
       ),
-      converted: convertedFee,
-      isBattery: payload.isBattery
+      converted: convertedFee
     )
   }
   
@@ -138,12 +131,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     let currency = currencyStore.state
     var convertedAmount: TransactionConfirmationModel.Amount?
     
-    if let balance = balanceStore.state[wallet]?.walletBalance.balance.jettonsBalance.first(where: { $0.item.jettonInfo.address == jettonItem.jettonInfo.address }),
-       let rate = balance.rates.first(where: { $0.value.currency == currency })?.value {
+    if let rate = ratesStore.state.first(where: { $0.currency == currency }) {
       let rateConverter = RateConverter()
       let converted = rateConverter.convert(
         amount: amount,
-        amountFractionLength: jettonItem.jettonInfo.fractionDigits,
+        amountFractionLength: TonInfo.fractionDigits,
         rate: rate
       )
       convertedAmount = TransactionConfirmationModel.Amount(
@@ -155,8 +147,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     return (
       TransactionConfirmationModel.Amount(
         value: amount,
-        decimals: jettonItem.jettonInfo.fractionDigits,
-        item: .symbol(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)
+        decimals: TonInfo.fractionDigits,
+        item: .currency(.TON)
       ),
       convertedAmount
     )

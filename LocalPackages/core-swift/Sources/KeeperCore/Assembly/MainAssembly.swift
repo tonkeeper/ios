@@ -152,11 +152,30 @@ public final class MainAssembly {
     )
   }
   
+  public func tonTransferTransactionConfirmationController(wallet: Wallet,
+                                                           recipient: Recipient,
+                                                           amount: BigUInt,
+                                                           comment: String?) -> TransactionConfirmationController {
+    TonTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      amount: amount,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
   func transferTransaction() -> TransferTransaction {
     TransferTransaction(
       tonProofTokenService: servicesAssembly.tonProofTokenService(),
       sendService: servicesAssembly.sendService(),
       batteryService: batteryAssembly.batteryService(),
+      balanceStore: storesAssembly.balanceStore,
+      accountService: servicesAssembly.accountService(),
       configuration: configurationAssembly.configuration
     )
   }
