@@ -2,12 +2,13 @@ import Foundation
 import StoreKit
 import KeeperCore
 
-final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
+final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymentTransactionObserver {
 
   var eventHandler: ((Event) -> Void)?
   
   enum Event {
     case didUpdateItems(items: [BatteryIAPItem])
+    case didPerformTransaction
   }
   
   var items: [BatteryIAPItem] {
@@ -38,18 +39,26 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
   private var request: SKProductsRequest?
   
   private let wallet: Wallet
+  private let batteryService: BatteryService
+  private let tonProofService: TonProofTokenService
   private let balanceStore: BalanceStore
   private let configuration: Configuration
   private let tonRatesStore: TonRatesStore
   
   init(wallet: Wallet,
+       batteryService: BatteryService,
+       tonProofService: TonProofTokenService,
        balanceStore: BalanceStore,
        configuration: Configuration,
        tonRatesStore: TonRatesStore) {
     self.wallet = wallet
+    self.batteryService = batteryService
+    self.tonProofService = tonProofService
     self.balanceStore = balanceStore
     self.configuration = configuration
     self.tonRatesStore = tonRatesStore
+    super.init()
+    SKPaymentQueue.default().add(self)
   }
 
   func loadProducts() {
@@ -64,11 +73,15 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
     self.request = productRequest
   }
   
-  func startProcessing() {
-    state = .processing
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .idle
-    }
+  func startProcessing(identifier: String) {
+    guard SKPaymentQueue.canMakePayments(),
+    let product = products.first(where: { $0.productIdentifier == identifier }) else { return }
+    let payment = SKPayment(product: product)
+    SKPaymentQueue.default().add(payment)
+  }
+  
+  func restorePurchases() {
+    SKPaymentQueue.default().restoreCompletedTransactions()
   }
   
   private func getItems() -> [BatteryIAPItem] {
@@ -121,6 +134,46 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate {
       self.products = response.products
       self.state = .idle
       self.request = nil
+    }
+  }
+  
+  func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+    for transaction in transactions {
+      switch transaction.transactionState {
+      case .purchasing:
+        state = .processing
+      case .purchased:
+        SKPaymentQueue.default().finishTransaction(transaction)
+        makePurchase(transaction: transaction)
+        state = .idle
+      case .failed:
+        SKPaymentQueue.default().finishTransaction(transaction)
+        state = .idle
+      case .restored:
+        SKPaymentQueue.default().finishTransaction(transaction)
+        makePurchase(transaction: transaction)
+        state = .idle
+      case .deferred:
+        state = .idle
+      @unknown default:
+        break
+      }
+    }
+  }
+  
+  func paymentQueueRestoreCompletedTransactionsFinished(_ queue: SKPaymentQueue) {}
+  
+  func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: any Error) {}
+
+  
+  private func makePurchase(transaction: SKPaymentTransaction) {
+    guard let id = transaction.transactionIdentifier,
+    let tonProof = try? tonProofService.getWalletToken(wallet)  else { return }
+    Task {
+      _ = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id)
+      await MainActor.run {
+        eventHandler?(.didPerformTransaction)
+      }
     }
   }
   

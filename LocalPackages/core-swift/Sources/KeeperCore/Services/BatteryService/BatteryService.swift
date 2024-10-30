@@ -11,6 +11,7 @@ public protocol BatteryService {
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
+  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String) async throws -> IOSBatteryPurchaseStatus
 }
 
 final class BatteryServiceImplementation: BatteryService {
@@ -57,5 +58,11 @@ final class BatteryServiceImplementation: BatteryService {
     try await batteryAPIProvider
       .api(wallet.isTestnet)
       .sendMessage(tonProofToken: tonProofToken, boc: boc)
+  }
+  
+  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String) async throws -> IOSBatteryPurchaseStatus {
+    try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .makePurchase(tonProofToken: tonProofToken, transactionId: transactionId)
   }
 }

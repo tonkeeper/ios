@@ -1039,6 +1039,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openDapp(title: title, url: url)
     }
     
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
     self.batteryRefillCoordinator = coordinator
     
     addChild(coordinator)

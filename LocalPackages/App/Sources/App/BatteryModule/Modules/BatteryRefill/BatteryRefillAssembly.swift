@@ -11,6 +11,8 @@ struct BatteryRefillAssembly {
       wallet: wallet,
       inAppPurchaseModel: BatteryRefillIAPModel(
         wallet: wallet,
+        batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
+        tonProofService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore

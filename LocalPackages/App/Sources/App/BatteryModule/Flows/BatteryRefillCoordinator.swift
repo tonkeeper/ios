@@ -7,6 +7,7 @@ import KeeperCore
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
+  var didFinish: (() -> Void)?
   
   private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
   
@@ -48,6 +49,10 @@ private extension BatteryRefillCoordinator {
     
     module.output.didTapTransactionsSettings = { [weak self] in
       self?.openTransactionsSettings()
+    }
+    
+    module.output.didFinish = { [weak self] in
+      self?.didFinish?()
     }
     
     module.output.didTapRecharge = { [weak self] rechargeMethod in

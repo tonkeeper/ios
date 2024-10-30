@@ -107,6 +107,7 @@ private extension BatteryRechargeViewController {
     radioButton.tintColors = [.selected: .Button.primaryBackground, .deselected: .Icon.tertiary]
     radioButton.isEnabled = isEnable
     radioButton.isSelected = isSelected
+    radioButton.isUserInteractionEnabled = false
     return radioButton
   }
   

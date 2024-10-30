@@ -9,6 +9,7 @@ protocol BatteryRefillModuleOutput: AnyObject {
   var didTapTransactionsSettings: (() -> Void)? { get set }
   var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)? { get set }
   var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)? { get set }
+  var didFinish: (() -> Void)? { get set }
 }
 
 protocol BatteryRefillModuleInput: AnyObject {
@@ -34,6 +35,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   var didTapTransactionsSettings: (() -> Void)?
   var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)?
   var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
+  var didFinish: (() -> Void)?
   
   // MARK: - BatteryRefillViewModel
 
@@ -47,6 +49,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       case .didUpdateItems(let items):
         self?.iapItems = items
         self?.updateList()
+      case .didPerformTransaction:
+        self?.didFinish?()
       }
     }
     rechargeMethodsModelState = rechargeMethodsModel.state
@@ -78,7 +82,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   }
   
   func purchaseItem(productIdentifier: String) {
-    inAppPurchaseModel.startProcessing()
+    inAppPurchaseModel.startProcessing(identifier: productIdentifier)
   }
   
   // MARK: - State
@@ -241,8 +245,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     footerCellConfiguration = BatteryRefillFooterView.Configuration(
       description: "One charge covers the average transaction fee. Some transactions may cost more.",
       restoreButtonTitle: "Restore purchases",
-      restoreButtonAction: {
-        
+      restoreButtonAction: { [weak self] in
+        self?.inAppPurchaseModel.restorePurchases()
       }
     )
   }
