@@ -92,7 +92,7 @@ private extension SendTokenCoordinator {
       })
     }
     
-    module.view.setupRightCloseButton { [weak self] in
+    module.output.didTapClose = { [weak self] in
       self?.didFinish?()
     }
     
@@ -149,9 +149,7 @@ private extension SendTokenCoordinator {
       self?.didFinish?()
     }
     
-    router.push(viewController: module.view, onPopClosures: { [weak self] in
-      self?.didFinish?()
-    })
+    router.push(viewController: module.view)
   }
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {

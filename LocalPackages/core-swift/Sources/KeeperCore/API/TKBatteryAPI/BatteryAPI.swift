@@ -101,4 +101,16 @@ extension BatteryAPI {
 
     return (responseData, isBatteryAvailable)
   }
+  
+  func sendMessage(tonProofToken: String, boc: String) async throws {
+    let request = try await createRequest {
+      return DefaultAPI.sendMessageWithRequestBuilder(
+        xTonConnectAuth: tonProofToken,
+        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(
+          boc: boc
+        )
+      )
+    }
+    try await request.execute()
+  }
 }

@@ -147,7 +147,17 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
+  func transferTransaction() -> TransferTransaction {
+    TransferTransaction(
+      tonProofTokenService: servicesAssembly.tonProofTokenService(),
+      sendService: servicesAssembly.sendService(),
+      batteryService: batteryAssembly.batteryService(),
+      configuration: configurationAssembly.configuration
     )
   }
   

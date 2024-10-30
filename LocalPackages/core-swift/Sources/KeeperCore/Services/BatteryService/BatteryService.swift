@@ -10,6 +10,7 @@ public protocol BatteryService {
                            includeRechargeOnly: Bool) async throws -> [BatteryRechargeMethod]
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
+  func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
 }
 
 final class BatteryServiceImplementation: BatteryService {
@@ -50,5 +51,11 @@ final class BatteryServiceImplementation: BatteryService {
     
     let result = try JSONDecoder().decode(MessageConsequences.self, from: response.responseData)
     return (result, response.isBatteryAvailable)
+  }
+  
+  func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws {
+    try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .sendMessage(tonProofToken: tonProofToken, boc: boc)
   }
 }

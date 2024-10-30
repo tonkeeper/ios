@@ -27,21 +27,30 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   
   func viewDidLoad() {
-    let batterySettins = keeperInfoStore.getState()?.batterySettings ?? BatterySettings()
-    let snapshot = createSnapshot(configuration: configuration, batterySettings: batterySettins)
-    didUpdateSnapshot?(snapshot)
+    if let wallet = try? walletsStore.activeWallet {
+      let batterySettings = wallet.batterySettings
+      let snapshot = createSnapshot(
+        wallet: wallet,
+        configuration: configuration,
+        batterySettings: batterySettings)
+      didUpdateSnapshot?(snapshot)
+    }
   }
   
+  private let walletsStore: WalletsStore
   private let configuration: Configuration
   private let keeperInfoStore: KeeperInfoStore
   
-  init(configuration: Configuration,
+  init(walletsStore: WalletsStore,
+       configuration: Configuration,
        keeperInfoStore: KeeperInfoStore) {
+    self.walletsStore = walletsStore
     self.configuration = configuration
     self.keeperInfoStore = keeperInfoStore
   }
   
-  private func createSnapshot(configuration: Configuration,
+  private func createSnapshot(wallet: Wallet,
+                              configuration: Configuration,
                               batterySettings: BatterySettings) -> BatteryRefillTransactionsSettings.Snapshot {
     var snapshot = BatteryRefillTransactionsSettings.Snapshot()
     
@@ -102,7 +111,7 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
             TKListItemSwitchAccessoryView.Configuration(
               isOn: isOn,
               action: { [weak self] isOn in
-                self?.setTransaction(transaction, isOn: isOn)
+                self?.setTransaction(wallet: wallet, transaction: transaction, isOn: isOn)
               }
             )
           ),
@@ -116,21 +125,23 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
     return snapshot
   }
   
-  private func setTransaction(_ transaction: BatterySupportedTransaction, isOn: Bool) {
-    keeperInfoStore.updateState({ keeperInfo in
-      guard let keeperInfo else { return nil }
-      let batterySettings = {
-        switch transaction {
-        case .swap:
-          keeperInfo.batterySettings.setIsSwapTransactionEnable(isEnable: isOn)
-        case .jetton:
-          keeperInfo.batterySettings.setIsJettonTransactionEnable(isEnable: isOn)
-        case .nft:
-          keeperInfo.batterySettings.setIsNFTTransactionEnable(isEnable: isOn)
-        }
-      }()
-      return KeeperInfoStore.StateUpdate(newState: keeperInfo.updateBatterySettings(batterySettings))
-    }, completion: nil)
+  private func setTransaction(wallet: Wallet, transaction: BatterySupportedTransaction, isOn: Bool) {
+    let batterySettings = {
+      switch transaction {
+      case .swap:
+        wallet.batterySettings.setIsSwapTransactionEnable(isEnable: isOn)
+      case .jetton:
+        wallet.batterySettings.setIsJettonTransactionEnable(isEnable: isOn)
+      case .nft:
+        wallet.batterySettings.setIsNFTTransactionEnable(isEnable: isOn)
+      }
+    }()
+
+    walletsStore.setWalletBatterySettings(
+      wallet: wallet,
+      batterySettings: batterySettings,
+      completion: nil
+    )
   }
   
   private func calculateChargesAmount(transactionPrice: NSDecimalNumber?, fee: NSDecimalNumber?) -> Int {

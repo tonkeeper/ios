@@ -118,6 +118,18 @@ public final class Configuration {
     }
   }
   
+  public var isBatteryEnable: Bool {
+    get async {
+      await !loadConfiguration().disableBattery
+    }
+  }
+  
+  public var isBatterySendEnable: Bool {
+    get async {
+      await !loadConfiguration().disableBatterySend
+    }
+  }
+  
   public var isBatteryBeta: Bool {
     configuration.isBatteryBeta
   }

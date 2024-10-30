@@ -9,34 +9,48 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   }
   
   func emulate() async -> Result<Void, TransactionConfirmationError> {
-    return .success(())
-//    do {
-//      let boc = try await createEmulateBoc()
-//      let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
-//      updateFee(transactionInfo: transactionInfo)
-//      return .success(())
-//    } catch {
-//      fee = .value(nil, converted: nil)
-//      return .failure(.failedToCalculateFee)
-//    }
+    do {
+      let payload = try await transferTransaction.calculateFee(
+        wallet: wallet,
+        transfer: .jetton(jettonItem, amount: amount),
+        recipient: recipient,
+        comment: comment
+      )
+      self.transferPayload = payload
+      updateFee(payload: transferPayload)
+      return .success(())
+    } catch {
+      self.transferPayload = nil
+      updateFee(payload: nil)
+      return .failure(.failedToCalculateFee)
+    }
   }
   
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
-    return .success(())
-//    do {
-//      let transactionBoc = try await createSignedBoc()
-//      try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-//      return .success(())
-//    } catch TransactionConfirmationError.failedToSign {
-//      return .failure(.failedToSign)
-//    } catch {
-//      return .failure(.failedToSendTransaction)
-//    }
+    do {
+      try await transferTransaction.sendTransaction(
+        wallet: wallet,
+        transfer: .jetton(jettonItem, amount: amount),
+        recipient: recipient,
+        comment: comment,
+        transferType: transferPayload?.type ?? .default,
+        signClosure: { [weak self, wallet] transferMessageBuilder in
+          guard let signed = try? await self?.signHandler?(transferMessageBuilder, wallet) else {
+            throw TransactionConfirmationError.failedToSign
+          }
+          return signed
+        }
+      )
+      return .success(())
+    } catch {
+      return .failure(.failedToSendTransaction)
+    }
   }
   
   public var signHandler: ((TransferMessageBuilder, Wallet) async throws -> String?)?
-
-  private var fee: TransactionConfirmationModel.Fee = .loading
+  
+  @Atomic private var transferPayload: TransferTransaction.TransferPayload?
+  @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
   
   private let wallet: Wallet
   private let recipient: Recipient
@@ -48,6 +62,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
+  private let transferTransaction: TransferTransaction
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -58,7 +73,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
-       currencyStore: CurrencyStore) {
+       currencyStore: CurrencyStore,
+       transferTransaction: TransferTransaction) {
     self.wallet = wallet
     self.recipient = recipient
     self.jettonItem = jettonItem
@@ -69,6 +85,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
+    self.transferTransaction = transferTransaction
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -82,73 +99,37 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     )
   }
   
-  private func createEmulateBoc() async throws -> String {
-    let transferMessageBuilder = try await createTransferMessageBuilder()
-    return try await transferMessageBuilder.createBoc { transfer in
-      try await transferMessageBuilder.externalSign(wallet: wallet) { transfer in
-        try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-      }
+  private func updateFee(payload: TransferTransaction.TransferPayload?) {
+    guard let payload else {
+      fee = .value(nil, converted: nil, isBattery: false)
+      return
     }
-  }
-  
-  private func createSignedBoc() async throws -> String {
-    let transferMessageBuilder = try await createTransferMessageBuilder()
-    return try await transferMessageBuilder.createBoc { transfer in
-      return try await signTransfer(transfer)
+    let fee = BigUInt(payload.fee)
+    
+    var convertedFee: TransactionConfirmationModel.Amount?
+    let currency = currencyStore.getState()
+    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
+      let rateConverter = RateConverter()
+      let converted = rateConverter.convert(
+        amount: fee,
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: rates
+      )
+      convertedFee = TransactionConfirmationModel.Amount(
+        value: converted.amount,
+        decimals: converted.fractionLength,
+        item: .currency(currency)
+      )
     }
-  }
-  
-  private func createTransferMessageBuilder() async throws -> TransferMessageBuilder {
-    fatalError()
-//    let seqno = try await sendService.loadSeqno(wallet: wallet)
-//    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-//
-//    let transferMessageBuilder = TransferMessageBuilder(
-//      transferData: .stake(
-//        .deposit(
-//          TransferData.StakeDeposit(
-//            seqno: seqno,
-//            pool: stakingPool,
-//            amount: updateAmount(amount: amount),
-//            isMax: isMax,
-//            isBouncable: true,
-//            timeout: timeout
-//          )
-//        )
-//      )
-//    )
-//    return transferMessageBuilder
-  }
-  
-  private func updateFee(transactionInfo: MessageConsequences) {
-    fatalError()
-//    let fee = BigUInt(abs(transactionInfo.event.extra))
-//    let extraFee = fee + stakingPool.implementation.extraFee
-//    
-//    var convertedFee: TransactionConfirmationModel.Amount?
-//    let currency = currencyStore.getState()
-//    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
-//      let rateConverter = RateConverter()
-//      let converted = rateConverter.convert(
-//        amount: extraFee,
-//        amountFractionLength: TonInfo.fractionDigits,
-//        rate: rates
-//      )
-//      convertedFee = TransactionConfirmationModel.Amount(
-//        value: converted.amount,
-//        decimals: converted.fractionLength,
-//        currency: currency
-//      )
-//    }
-//    
-//    self.fee = .value(
-//      TransactionConfirmationModel.Amount(
-//        value: extraFee,
-//        decimals: TonInfo.fractionDigits,
-//        currency: .TON
-//      ),
-//      converted: convertedFee
-//    )
+    
+    self.fee = .value(
+      TransactionConfirmationModel.Amount(
+        value: fee,
+        decimals: TonInfo.fractionDigits,
+        item: .currency(.TON)
+      ),
+      converted: convertedFee
+    )
   }
   
   private func getAmountValue() -> (amount: TransactionConfirmationModel.Amount, converted: TransactionConfirmationModel.Amount?) {
@@ -178,10 +159,6 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       convertedAmount
     )
   }
-//  
-//  private func updateAmount(amount: BigUInt) -> BigUInt {
-//    return amount + stakingPool.implementation.depositExtraFee
-//  }
   
   func signTransfer(_ transferBuilder: TransferMessageBuilder) async throws -> String {
     guard let signHandler,

@@ -328,6 +328,7 @@ private extension SendConfirmationController {
             jettonAddress: jettonItem.walletAddress,
             amount: amount,
             recipient: recipient.recipientAddress.address,
+            responseAddress: nil,
             isBouncable: recipient.recipientAddress.isBouncable,
             comment: comment,
             timeout: timeout,

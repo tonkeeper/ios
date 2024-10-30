@@ -292,7 +292,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil, amount: BigUInt?, comment: String?) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let sendTokenCoordinator = SendModule(
       dependencies: SendModule.Dependencies(

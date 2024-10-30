@@ -48,12 +48,27 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
       self.customView.scrollView.contentInset.bottom = 0
     }
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.navigationBar.layoutIfNeeded()
+    customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
+    customView.scrollView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
+  }
 }
 
 private extension SendV3ViewController {
   func setup() {
     title = TKLocales.Send.title
+    customView.titleView.configure(
+      model: TKUINavigationBarTitleView.Model(
+        title: TKLocales.Send.title.withTextStyle(.h3, color: .Text.primary)
+      )
+    )
     view.backgroundColor = .Background.page
+    
+    setupNavigationBar()
     
     customView.amountInputView.textInputControl.delegate = viewModel.sendAmountTextFieldFormatter
     
@@ -121,6 +136,25 @@ private extension SendV3ViewController {
       customView.continueButton.configuration.showsLoader = model.button.isActivity
       customView.continueButton.configuration.action = model.button.action
     }
+  }
+  
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    if navigationController.viewControllers.count > 1 {
+      customView.navigationBar.leftViews = [
+        TKUINavigationBar.createBackButton {
+          navigationController.popViewController(animated: true)
+        }
+      ]
+    }
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createCloseButton { [weak self] in
+        self?.viewModel.didTapCloseButton()
+      }
+    ]
   }
   
   func setupViewEvents() {

@@ -35,7 +35,7 @@ public struct TransactionConfirmationModel {
   
   public enum Fee {
     case loading
-    case value(Amount?, converted: Amount?)
+    case value(Amount?, converted: Amount?, isBattery: Bool = false)
   }
 
   

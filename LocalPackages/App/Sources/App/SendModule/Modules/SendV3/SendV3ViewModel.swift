@@ -8,6 +8,7 @@ protocol SendV3ModuleOutput: AnyObject {
   var didContinueSend: ((SendModel) -> Void)? { get set }
   var didTapPicker: ((Wallet, Token) -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
+  var didTapClose: (() -> Void)? { get set }
 }
 
 protocol SendV3ModuleInput: AnyObject {
@@ -31,6 +32,7 @@ protocol SendV3ViewModel: AnyObject {
   func didTapRecipientPasteButton()
   func didTapCommentPasteButton()
   func didTapRecipientScanButton()
+  func didTapCloseButton()
 }
 
 struct Model {
@@ -93,6 +95,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   var didContinueSend: ((SendModel) -> Void)?
   var didTapPicker: ((Wallet, Token) -> Void)?
   var didTapScan: (() -> Void)?
+  var didTapClose: (() -> Void)?
   
   // MARK: - SendV3ModuleInput
   
@@ -259,6 +262,10 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   func didTapRecipientScanButton() {
     didTapScan?()
+  }
+  
+  func didTapCloseButton() {
+    didTapClose?()
   }
   
   // MARK: - State

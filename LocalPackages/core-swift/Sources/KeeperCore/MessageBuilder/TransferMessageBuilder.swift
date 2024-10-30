@@ -35,6 +35,7 @@ public enum TransferData {
     public let jettonAddress: Address
     public let amount: BigUInt
     public let recipient: Address
+    public let responseAddress: Address?
     public let isBouncable: Bool
     public let comment: String?
     public let timeout: UInt64?
@@ -45,6 +46,7 @@ public enum TransferData {
                 jettonAddress: Address,
                 amount: BigUInt,
                 recipient: Address,
+                responseAddress: Address?,
                 isBouncable: Bool = true,
                 comment: String?,
                 timeout: UInt64?,
@@ -55,6 +57,7 @@ public enum TransferData {
       self.jettonAddress = jettonAddress
       self.amount = amount
       self.recipient = recipient
+      self.responseAddress = responseAddress
       self.isBouncable = isBouncable
       self.comment = comment
       self.timeout = timeout
@@ -277,6 +280,7 @@ public struct TransferMessageBuilder {
         tokenAddress: jetton.jettonAddress,
         value: jetton.amount,
         recipientAddress: jetton.recipient,
+        responseAddress: jetton.responseAddress,
         isBounceable: jetton.isBouncable,
         comment: jetton.comment,
         timeout: jetton.timeout,
@@ -538,6 +542,7 @@ public struct TokenTransferMessageBuilder {
                                        tokenAddress: Address,
                                        value: BigUInt,
                                        recipientAddress: Address,
+                                       responseAddress: Address?,
                                        isBounceable: Bool = true,
                                        comment: String?,
                                        timeout: UInt64?,
@@ -554,7 +559,7 @@ public struct TokenTransferMessageBuilder {
             amount: BigInt(value),
             bounce: isBounceable,
             to: recipientAddress,
-            from: sender,
+            from: responseAddress ?? sender,
             comment: comment,
             customPayload: customPayload,
             stateInit: stateInit
@@ -668,6 +673,6 @@ public struct ExternalMessageTransferBuilder {
                                            stateInit: seqno == 0 ? contract.stateInit : nil,
                                            body: transferCell)
     let cell = try Builder().store(externalMessage).endCell()
-    return try cell.toBoc().hexString()
+    return try cell.toBoc().base64EncodedString()
   }
 }

@@ -169,7 +169,7 @@ private extension CollectiblesDetailsCoordinator {
 
   func openTransfer(nft: NFT) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let sendTokenCoordinator = SendModule(
       dependencies: SendModule.Dependencies(

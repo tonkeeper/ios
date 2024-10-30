@@ -30,7 +30,8 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: walletIdentity,
       metaData: metaData,
-      setupSettings: WalletSetupSettings()
+      setupSettings: WalletSetupSettings(),
+      batterySettings: BatterySettings()
     )
     
     await tonProofTokenService.loadTokensFor(
@@ -73,7 +74,8 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: newWalletIdentity,
       metaData: wallet.metaData,
-      setupSettings: wallet.setupSettings
+      setupSettings: wallet.setupSettings,
+      batterySettings: BatterySettings()
     )
     
     await tonProofTokenService.loadTokensFor(
@@ -117,7 +119,8 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: walletIdentity,
         metaData: revisionMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     
     await tonProofTokenService.loadTokensFor(
@@ -142,7 +145,8 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
-      setupSettings: WalletSetupSettings()
+      setupSettings: WalletSetupSettings(),
+      batterySettings: BatterySettings()
     )
     await walletsStore.addWallets([wallet])
   }
@@ -179,7 +183,8 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: identity,
         metaData: revisionMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     await walletsStore.addWallets(wallets)
   }
@@ -209,7 +214,8 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: identity,
         metaData: accountMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     await walletsStore.addWallets(wallets)
   }

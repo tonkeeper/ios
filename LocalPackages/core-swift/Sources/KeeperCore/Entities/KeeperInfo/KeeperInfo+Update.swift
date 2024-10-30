@@ -58,7 +58,8 @@ extension KeeperInfo {
       setupSettings: wallet.setupSettings,
       notificationSettings: wallet.notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }
@@ -72,7 +73,8 @@ extension KeeperInfo {
       setupSettings: setupSettings,
       notificationSettings: wallet.notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }
@@ -86,7 +88,23 @@ extension KeeperInfo {
       setupSettings: wallet.setupSettings,
       notificationSettings: notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
+    )
+    return (updateWallet(updatedWallet), updatedWallet)
+  }
+  
+  func updateWallet(_ wallet: Wallet,
+                    batterySettings: BatterySettings) -> (keeperInfo: KeeperInfo, wallet: Wallet) {
+    let updatedWallet = Wallet(
+      id: wallet.id,
+      identity: wallet.identity,
+      metaData: wallet.metaData,
+      setupSettings: wallet.setupSettings,
+      notificationSettings: wallet.notificationSettings,
+      backupSettings: wallet.backupSettings,
+      addressBook: wallet.addressBook,
+      batterySettings: batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }

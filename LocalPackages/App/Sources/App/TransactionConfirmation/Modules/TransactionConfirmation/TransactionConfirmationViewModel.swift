@@ -335,7 +335,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     case .loading:
       value = .loading
     case let .value(feeValue,
-                    feeConverted):
+                    feeConverted,
+                    isBattery):
       if let feeValue {
         let feeValueFormatted = formatValueItem(
           amount: feeValue.value,
