@@ -31,6 +31,10 @@ public extension Wallet {
     }
   }
   
+  var isLedger: Bool {
+    return kind == .ledger
+  }
+  
   var isTestnet: Bool {
     switch identity.network {
     case .testnet: return true
@@ -164,7 +168,7 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return false
+      return true
     }
   }
   
@@ -179,7 +183,7 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return false
+      return true
     }
   }
   

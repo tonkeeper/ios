@@ -5,18 +5,18 @@ import TonTransport
 import BleTransport
 import KeeperCore
 
-enum LedgerConfirmError: Error {
+enum LedgerProofError: Error {
   case versionTooLow(version: String, requiredVersion: String)
 }
 
-protocol LedgerConfirmModuleOutput: AnyObject {
+protocol LedgerProofModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
   var didSign: ((Data) -> Void)? { get set }
-  var didError: ((_ error: LedgerConfirmError) -> Void)? { get set }
+  var didError: ((_ error: LedgerProofError) -> Void)? { get set }
 }
 
-protocol LedgerConfirmViewModel: AnyObject {
-  var didUpdateModel: ((LedgerConfirmView.Model) -> Void)? { get set }
+protocol LedgerProofViewModel: AnyObject {
+  var didUpdateModel: ((LedgerProofView.Model) -> Void)? { get set }
   var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
   var didShowTurnOnBluetoothAlert: (() -> Void)? { get set }
   var didShowBluetoothAuthorisationAlert: (() -> Void)? { get set }
@@ -25,7 +25,7 @@ protocol LedgerConfirmViewModel: AnyObject {
   func stopTasks()
 }
 
-final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, LedgerConfirmModuleOutput {
+final class LedgerProofViewModelImplementation: LedgerProofViewModel, LedgerProofModuleOutput {
   enum Error: Swift.Error {
     case invalidDeviceId
   }
@@ -41,11 +41,11 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   var didCancel: (() -> Void)?
   var didSign: ((Data) -> Void)?
-  var didError: ((_ error: LedgerConfirmError) -> Void)?
+  var didError: ((_ error: LedgerProofError) -> Void)?
   
   // MARK: - LedgerConnectViewModel
   
-  var didUpdateModel: ((LedgerConfirmView.Model) -> Void)?
+  var didUpdateModel: ((LedgerProofView.Model) -> Void)?
   var showToast: ((ToastPresenter.Configuration) -> Void)?
   var didShowTurnOnBluetoothAlert: (() -> Void)?
   var didShowBluetoothAuthorisationAlert: (() -> Void)?
@@ -82,20 +82,20 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
-  private let transaction: Transaction
+  private let proofParameters: LedgerProofParameters
   private let ledgerDevice: Wallet.LedgerDevice
   private let wallet: Wallet
   
   // MARK: - Init
   
-  init(transaction: Transaction, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
-    self.transaction = transaction
+  init(proofParameters: LedgerProofParameters, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
+    self.proofParameters = proofParameters
     self.wallet = wallet
     self.ledgerDevice = ledgerDevice
   }
 }
 
-private extension LedgerConfirmViewModelImplementation {
+private extension LedgerProofViewModelImplementation {
   func listenBluetoothState() {
     transport.bluetoothStateCallback { state in
       switch state {
@@ -152,19 +152,11 @@ private extension LedgerConfirmViewModelImplementation {
     }
   }
   
-  func checkVersion(version: String) -> Result<Void, LedgerConfirmError> {
-    if (transaction.payload == nil) {
-      return .success(())
+  func checkVersion(version: String) -> Result<Void, LedgerProofError> {
+    guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
+      return .failure(LedgerProofError.versionTooLow(version: version, requiredVersion: "2.1.0"))
     }
-    switch transaction.payload {
-    case .jettonTransfer(_):
-      return .success(())
-    default:
-      guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
-        return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
-      }
-      return .success(())
-    }
+    return .success(())
   }
   
   func waitForAppOpen() {
@@ -187,7 +179,7 @@ private extension LedgerConfirmViewModelImplementation {
         case .success:
           await MainActor.run {
             self.setTonAppOpened()
-            self.signTransaction(tonTransport: tonTransport)
+            self.signProof(tonTransport: tonTransport)
           }
         case .failure(let error):
           await MainActor.run {
@@ -200,12 +192,17 @@ private extension LedgerConfirmViewModelImplementation {
     startPollTask()
   }
   
-  func signTransaction(tonTransport: TonTransport) {
+  func signProof(tonTransport: TonTransport) {
     let accountPath = AccountPath(index: ledgerDevice.accountIndex)
     
     Task {
       do {
-        let signature = try await tonTransport.signTransaction(path: accountPath, transaction: transaction)
+        let signature = try await tonTransport.signAddressProof(
+          path: accountPath,
+          domain: proofParameters.domain,
+          timestamp: proofParameters.timestamp,
+          payload: proofParameters.payload
+        )
         
         await MainActor.run {
           self.setConfirmed()
@@ -242,7 +239,7 @@ private extension LedgerConfirmViewModelImplementation {
   }
   
   func updateModel() {
-    let model = LedgerConfirmView.Model(
+    let model = LedgerProofView.Model(
       contentViewModel: LedgerContentView.Model(
         bluetoothViewModel: createBluetoothModel(),
         stepModels: [
@@ -335,7 +332,7 @@ private extension LedgerConfirmViewModelImplementation {
       stepState = .done
     }
     return LedgerStepView.Model(
-      content: TKLocales.LedgerConfirm.Steps.Confirm.description,
+      content: TKLocales.LedgerConfirm.Steps.ConfirmProof.description,
       linkButton: nil,
       state: stepState
     )

@@ -5,6 +5,7 @@ import TKUIKit
 import KeeperCore
 import TonSwift
 import TKLocalize
+import TonTransport
 
 enum WalletTransferSignError: Swift.Error {
   case incorrectWalletKind
@@ -122,14 +123,21 @@ private extension WalletTransferSignCoordinator {
       }
     case .Ledger(_, _, let ledgerDevice):
       Task {
-        guard let signedBoc = await handleLedgerSign(
-          transferMessageBuilder: transferMessageBuilder,
-          ledgerDevice: ledgerDevice
-        ) else {
+        do {
+          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
+            let transaction = try Transaction.from(transfer: transfer)
+            guard let data = await handleLedgerSign(
+              transaction: transaction[0],
+              ledgerDevice: ledgerDevice
+            ) else {
+              throw ExtenalSignError.cancelled
+            }
+            return data
+          })
+          self.didSign?(signedBoc)
+        } catch {
           self.didCancel?()
-          return
         }
-        self.didSign?(signedBoc)
       }
     case .Lockup, .Watchonly:
       didFail?(.incorrectWalletKind)
@@ -167,10 +175,10 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleLedgerSign(transferMessageBuilder: TransferMessageBuilder, ledgerDevice: Wallet.LedgerDevice) async -> String? {
+  func handleLedgerSign(transaction: Transaction, ledgerDevice: Wallet.LedgerDevice) async -> Data? {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async {
-        let module = LedgerConfirmAssembly.module(transferMessageBuilder: transferMessageBuilder,
+        let module = LedgerConfirmAssembly.module(transaction: transaction,
                                                   wallet: self.wallet,
                                                   ledgerDevice: ledgerDevice,
                                                   coreAssembly: self.coreAssembly)
@@ -190,9 +198,9 @@ private extension WalletTransferSignCoordinator {
           })
         }
         
-        module.output.didSign = { [weak bottomSheetViewController] boc in
+        module.output.didSign = { [weak bottomSheetViewController] signature in
           bottomSheetViewController?.dismiss(completion: {
-            continuation.resume(returning: boc)
+            continuation.resume(returning: signature)
           })
         }
         

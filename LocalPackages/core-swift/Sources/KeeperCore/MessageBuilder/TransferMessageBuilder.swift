@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import BigInt
+import TonTransport
 
 
 public enum TransferData {
@@ -241,7 +242,7 @@ public struct TransferMessageBuilder {
     
     var randomBytes = [UInt8](repeating: 0, count: 4)
     arc4random_buf(&randomBytes, 4)
-
+    
     let hexString = Data(tonkeeperSignature + randomBytes).hexString()
     return BigUInt(hexString, radix: 16) ?? BigUInt(0)
   }
@@ -642,14 +643,17 @@ public struct ExternalMessageTransferBuilder {
     let contract = try wallet.contract
     let transfer = try contract.createTransfer(args: transferData, messageType: .ext)
     let signedTransfer = try await signClosure(transfer)
+    
+    let signingMessage = wallet.isLedger ? try TonTransport.buildTransfer(transaction: try Transaction.from(transfer: transfer)[0]).signingMessage : transfer.signingMessage
+    
     let body = Builder()
     
     switch transfer.signaturePosition {
     case .front:
       try body.store(data: signedTransfer)
-      try body.store(transfer.signingMessage)
+      try body.store(signingMessage)
     case .tail:
-      try body.store(transfer.signingMessage)
+      try body.store(signingMessage)
       try body.store(data: signedTransfer)
       
     }
