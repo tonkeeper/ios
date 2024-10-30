@@ -188,7 +188,9 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
   private let confirmTransactionController: ConfirmTransactionController
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
-  
+
+  private var infoWindowRouter: WindowRouter?
+
   init(router: WindowRouter,
        wallet: Wallet,
        confirmator: SignTransactionConfirmationCoordinatorConfirmator,
@@ -235,18 +237,34 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
 }
 
 private extension SignTransactionConfirmationCoordinator {
+
   func openConfirmation(model: ConfirmTransactionModel) {
     let rootViewController = UIViewController()
     router.window.rootViewController = rootViewController
     router.window.makeKeyAndVisible()
     
     let keyWindow = UIApplication.keyWindow
-    
+
+    let balanceModel = WalletTotalBalanceModel(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+      updateQueue: .main
+    )
     let module = TonConnectConfirmationAssembly.module(
       model: model,
+      tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      totalBalanceModel: balanceModel,
+      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: TonConnectConfirmationAccountEventActionContentProvider())
     )
-    
+    module.output.didTapRiskInfo = { [weak self] title, caption in
+      self?.openInfoPopup(title: title, caption: caption)
+    }
+
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     bottomSheetViewController.didClose = { [weak self] isInteractivly in
@@ -291,7 +309,35 @@ private extension SignTransactionConfirmationCoordinator {
     
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
-  
+
+  func openInfoPopup(title: String, caption: String) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+
+    let rootViewController = UIViewController()
+    let windowRouter = WindowRouter(window: window)
+    windowRouter.window.rootViewController = rootViewController
+    windowRouter.window.makeKeyAndVisible()
+
+    let viewController = InsufficientFundsViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+
+    bottomSheetViewController.didClose = { [weak router, weak infoWindowRouter] isInteractivly in
+      guard isInteractivly else { return }
+      infoWindowRouter?.window.removeFromSuperview()
+      router?.window.makeKeyAndVisible()
+    }
+
+    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    let configuration = configurationBuilder.commonConfiguration(title: title, caption: caption)
+    viewController.configuration = configuration
+
+    infoWindowRouter = windowRouter
+    bottomSheetViewController.present(fromViewController: rootViewController)
+  }
+
   func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
     let coordinator = WalletTransferSignCoordinator(
       router: ViewControllerRouter(rootViewController: fromViewController),

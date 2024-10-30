@@ -64,7 +64,8 @@ struct ConfirmTransactionMapper {
     return ConfirmTransactionModel(
       event: eventModel,
       fee: feeFormatted,
-      wallet: wallet
+      wallet: wallet,
+      risk: info.risk
     )
   }
 }
