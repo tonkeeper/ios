@@ -246,20 +246,9 @@ private extension SignTransactionConfirmationCoordinator {
     
     let keyWindow = UIApplication.keyWindow
 
-    let balanceModel = WalletTotalBalanceModel(
-      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-      backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
-      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-      updateQueue: .main
-    )
     let module = TonConnectConfirmationAssembly.module(
       model: model,
-      tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-      totalBalanceModel: balanceModel,
-      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
       historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: TonConnectConfirmationAccountEventActionContentProvider())
     )
     module.output.didTapRiskInfo = { [weak self] title, caption in
