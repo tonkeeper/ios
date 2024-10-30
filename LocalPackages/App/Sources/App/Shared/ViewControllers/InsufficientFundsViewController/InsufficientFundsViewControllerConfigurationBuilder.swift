@@ -51,13 +51,18 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
       )
     }
 
-  func commonConfiguration(title: String, caption: String) -> InsufficientFundsViewController.Configuration {
-    return InsufficientFundsViewController.Configuration(
+  func commonConfiguration(
+    title: String,
+    caption: String,
+    buttons: [TKButton.Configuration]
+  ) -> InsufficientFundsViewController.Configuration {
+
+    InsufficientFundsViewController.Configuration(
       image: nil,
       imageTintColor: nil,
       title: title,
       caption: caption,
-      buttons: []
+      buttons: buttons
     )
   }
 }

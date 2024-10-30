@@ -4,6 +4,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import TonSwift
+import TKLocalize
 
 enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
   case failedToSign
@@ -320,22 +321,38 @@ private extension SignTransactionConfirmationCoordinator {
     windowRouter.window.makeKeyAndVisible()
 
     let viewController = InsufficientFundsViewController()
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    let sheetViewController = TKBottomSheetViewController(contentViewController: viewController)
 
-    bottomSheetViewController.didClose = { [weak router, weak infoWindowRouter] isInteractivly in
+    sheetViewController.didClose = { [weak router, weak infoWindowRouter] isInteractivly in
       guard isInteractivly else { return }
       infoWindowRouter?.window.removeFromSuperview()
       router?.window.makeKeyAndVisible()
     }
 
+    var button = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    button.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
+    button.action =  { [weak sheetViewController] in
+      sheetViewController?.dismiss() { [weak self] in
+        guard let self else {
+          return
+        }
+
+        self.infoWindowRouter?.window.removeFromSuperview()
+
+        self.router.window.makeKeyAndVisible()
+      }
+    }
+
     let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
-    let configuration = configurationBuilder.commonConfiguration(title: title, caption: caption)
+    let configuration = configurationBuilder.commonConfiguration(
+      title: title, caption: caption, buttons: [button]
+    )
     viewController.configuration = configuration
 
     infoWindowRouter = windowRouter
-    bottomSheetViewController.present(fromViewController: rootViewController)
+    sheetViewController.present(fromViewController: rootViewController)
   }
 
   func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
