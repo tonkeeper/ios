@@ -32,7 +32,7 @@ final class BatteryRefillHeaderModel {
     if let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance, !batteryBalance.isBalanceZero {
       let chargesCount: Int = {
         guard let meanFees = configuration.batteryMeanFeesDecimaNumber else { return 0 }
-        return (batteryBalance.balanceDecimalNumber?.dividing(by: meanFees, withBehavior: NSDecimalNumberHandler.roundBehaviour))?.intValue ?? 0
+        return batteryBalance.balanceDecimalNumber.dividing(by: meanFees, withBehavior: NSDecimalNumberHandler.roundBehaviour).intValue
       }()
       charge = .charged(chargesCount: chargesCount, batteryPercent: batteryBalance.batteryState.percents)
     } else {

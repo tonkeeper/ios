@@ -29,9 +29,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
-  
-  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
-  
+  private weak var batteryRefillCoordinator: BatteryRefillCoordinator?
+    
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   let recipientResolver: RecipientResolver
@@ -424,6 +423,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
          webSwapCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
         return true
       }
+      if let batteryRefillCoordinator,
+         batteryRefillCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
+        return true
+      }
       return false
     case .externalSign(let data):
       return handleSignerDeeplink(data)
@@ -634,6 +637,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let coordinator = module.createSettingsCoordinator(router: router,
                                                        wallet: wallet)
+    
+    self.settingsCoordinator = coordinator
     
     coordinator.didTapBattery = { [weak self] wallet in
       self?.openBattery(wallet: wallet)
@@ -1031,6 +1036,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
+    
+    self.batteryRefillCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start(deeplink: nil)

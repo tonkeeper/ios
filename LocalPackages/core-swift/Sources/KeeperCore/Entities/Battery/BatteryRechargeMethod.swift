@@ -11,9 +11,20 @@ public struct BatteryRechargeMethod {
     NSDecimalNumber.number(stringValue: minBootstrapValue)
   }
   
-  public enum Token {
+  public enum Token: Equatable {
     case ton
     case jetton(Jetton)
+    
+    public static func ==(lhs: Token, rhs: Token) -> Bool {
+      switch (lhs, rhs) {
+      case (.ton, .ton):
+        return true
+      case (.jetton(let lJetton), .jetton(let rJetton)):
+        return lJetton.jettonMasterAddress == rJetton.jettonMasterAddress
+      default:
+        return false
+      }
+    }
   }
   
   public struct Jetton {

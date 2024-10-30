@@ -218,6 +218,10 @@ public enum TransferData {
     public let jettonWalletAddress: (_ wallet: Wallet, _ jettonMasterAddress: Address?) async throws -> Address
   }
   
+  public struct BatteryRecharge {
+    public let seqno: UInt64
+  }
+  
   case ton(Ton)
   case jetton(Jetton)
   case nft(NFT)
@@ -237,7 +241,7 @@ public struct TransferMessageBuilder {
     self.queryId = TransferMessageBuilder.newWalletQueryId()
   }
   
-  static func newWalletQueryId() -> BigUInt {
+  public static func newWalletQueryId() -> BigUInt {
     let tonkeeperSignature: [UInt8] = [0x54, 0x6d, 0xe4, 0xef]
     
     var randomBytes = [UInt8](repeating: 0, count: 4)

@@ -21,6 +21,10 @@ public struct RemoteConfiguration: Equatable {
   public var batteryMeanFeesPriceNFTDecimaNumber: NSDecimalNumber? {
     NSDecimalNumber.number(stringValue: batteryMeanPriceNFT)
   }
+  
+  public var batteryMaxInputAmountDecimaNumber: NSDecimalNumber {
+    NSDecimalNumber.number(stringValue: batteryMaxInputAmount) ?? 3
+  }
 
   public let tonapiV2Endpoint: String
   public let tonapiTestnetHost: String
@@ -45,6 +49,7 @@ public struct RemoteConfiguration: Equatable {
   public let batteryMeanPriceSwap: String?
   public let batteryMeanPriceJetton: String?
   public let batteryMeanPriceNFT: String?
+  public let batteryMaxInputAmount: String?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
@@ -72,6 +77,7 @@ public struct RemoteConfiguration: Equatable {
     case batteryMeanPriceSwap = "batteryMeanPrice_swap"
     case batteryMeanPriceJetton = "batteryMeanPrice_jetton"
     case batteryMeanPriceNFT = "batteryMeanPrice_nft"
+    case batteryMaxInputAmount
   }
 }
 
@@ -125,6 +131,7 @@ extension RemoteConfiguration {
       batteryMeanPriceSwap: nil,
       batteryMeanPriceJetton: nil,
       batteryMeanPriceNFT: nil,
+      batteryMaxInputAmount: nil,
       flags: .default
     )
   }

@@ -6,7 +6,7 @@ import TKLocalize
 import BigInt
 
 protocol BatteryRechargeModuleOutput: AnyObject {
-  
+  var didTapContinue: ((_ payload: BatteryRechargePayload) -> Void)? { get set }
 }
 
 protocol BatteryRechargeModuleInput: AnyObject {
@@ -23,6 +23,10 @@ protocol BatteryRechargeViewModel: AnyObject {
 }
 
 final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, BatteryRechargeModuleOutput, BatteryRechargeModuleInput {
+  
+  // MARK: - BatteryRechargeModuleOutput
+  
+  var didTapContinue: ((BatteryRechargePayload) -> Void)?
   
   // MARK: - BatteryRechargeViewModel
   
@@ -84,14 +88,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     
     didUpdateSnapshot?(snapshot)
   }
-  
-//  private func createSnapshot() -> BatteryRecharge.Snapshot {
-//    createOptionsSection(snapshot: &snapshot)
-//    createContinueButtonSection(snapshot: &snapshot)
-//    
-//    return snapshot
-//  }
-  
+
   func createOptionsSection(snapshot: inout BatteryRecharge.Snapshot) {
     snapshot.deleteSections([.options])
     var snapshotItems = [BatteryRecharge.SnapshotItem]()
@@ -103,11 +100,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     
     snapshot.appendSections([.options])
     snapshot.appendItems(snapshotItems, toSection: .options)
-//    if #available(iOS 15.0, *) {
-//      snapshot.reconfigureItems(snapshotItems)
-//    } else {
-      snapshot.reloadItems(snapshotItems)
-//    }
+    snapshot.reloadItems(snapshotItems)
   }
   
   func createOptionSnapshotItem(option: BatteryRechargeModel.OptionItem) -> BatteryRecharge.SnapshotItem {
@@ -188,6 +181,11 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
     buttonConfiguration.isEnabled = modelState.isContinueButtonEnable
+    buttonConfiguration.action = { [weak self] in
+      guard let self else { return }
+      let payload = model.getConfirmationPayload()
+      didTapContinue?(payload)
+    }
     
     continueButtonCellConfiguration = TKButtonCell.Model(
       id: "continue_button",

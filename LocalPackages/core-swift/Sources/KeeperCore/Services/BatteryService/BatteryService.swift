@@ -7,6 +7,7 @@ public protocol BatteryService {
   func loadBatteryBalance(wallet: Wallet, tonProofToken: String) async throws -> BatteryBalance
   func loadRechargeMethods(wallet: Wallet,
                            includeRechargeOnly: Bool) async throws -> [BatteryRechargeMethod]
+  func loadBatteryConfig(wallet: Wallet) async throws -> Config
 }
 
 final class BatteryServiceImplementation: BatteryService {
@@ -33,5 +34,11 @@ final class BatteryServiceImplementation: BatteryService {
       .getRechargeMethos(includeRechargeOnly: includeRechargeOnly)
     
     return methods
+  }
+  
+  func loadBatteryConfig(wallet: Wallet) async throws -> Config {
+    try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .getBatteryConfig()
   }
 }

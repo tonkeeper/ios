@@ -6,6 +6,8 @@ import KeeperCore
 
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
+  
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -22,6 +24,11 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
   
   public override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
     openBatteryRefill()
+  }
+  
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+    guard let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator else { return false }
+    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
   }
 }
 
@@ -82,6 +89,56 @@ private extension BatteryRefillCoordinator {
       coreAssembly: coreAssembly
     )
     
+    module.output.didTapContinue = { [weak self] payload in
+      self?.openConfirmation(payload: payload)
+    }
+    
     router.present(module.view)
+  }
+  
+  func openConfirmation(payload: BatteryRechargePayload) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+    
+    let bocBuilder = BatteryRechargeBocBuilder(
+      wallet: wallet,
+      payload: payload,
+      batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
+      sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+      tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+    )
+    
+    let coordinator = SignTransactionConfirmationCoordinator(
+      router: WindowRouter(window: window),
+      wallet: wallet,
+      confirmator: BatteryRechargeSignTransactionConfirmationCoordinatorConfirmator(
+        bocBuilder: bocBuilder,
+        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
+      ),
+      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
+        wallet: wallet,
+        bocProvider: BatteryRechargeConfirmTransactionControllerBocProvider(
+          bocBuilder: bocBuilder
+        )
+      ),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+//      self?.didCancel?()
+    }
+    
+    coordinator.didConfirm = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+//      self?.didFinish?()
+    }
+    
+    self.signTransactionConfirmationCoordinator = coordinator
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }

@@ -112,6 +112,12 @@ public final class Configuration {
     configuration.batteryMeanFeesPriceNFTDecimaNumber
   }
   
+  public var batteryMaxInputAmount: NSDecimalNumber {
+    get async {
+      await loadConfiguration().batteryMaxInputAmountDecimaNumber
+    }
+  }
+  
   public var isBatteryBeta: Bool {
     configuration.isBatteryBeta
   }

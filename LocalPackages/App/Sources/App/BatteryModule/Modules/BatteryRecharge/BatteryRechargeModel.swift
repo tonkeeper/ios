@@ -100,6 +100,10 @@ final class BatteryRechargeModel {
     }
   }
   
+  func getConfirmationPayload() -> BatteryRechargePayload {
+    BatteryRechargePayload(token: token, amount: amount)
+  }
+  
   private func getState() -> State {
     let currency = currencyStore.getState()
     let balance = balanceStore.getState()[wallet]?.walletBalance.balance
