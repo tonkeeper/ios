@@ -43,7 +43,7 @@ final class BatteryView: UIView {
       case .size34:
         return .TKUIKit.Icons.Size16.flash
       case .size44:
-        return nil
+        return .TKUIKit.Icons.Size16.flash
       case .size128:
         return .TKUIKit.Icons.Size16.flash
       }
@@ -56,7 +56,7 @@ final class BatteryView: UIView {
       case .size34:
         return CGSize(width: 9, height: 13)
       case .size44:
-        return .zero
+        return CGSize(width: 9, height: 13)
       case .size128:
         return CGSize(width: 28, height: 40)
       }

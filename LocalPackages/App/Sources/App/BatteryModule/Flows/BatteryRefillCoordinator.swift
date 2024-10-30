@@ -41,6 +41,16 @@ private extension BatteryRefillCoordinator {
       self?.openTransactionsSettings()
     }
     
+    module.output.didTapRecharge = { [weak self] rechargeMethod in
+      switch rechargeMethod {
+      case let .token(token, _, rate):
+        self?.openRecharge(token: token, rate: rate, isGift: false)
+      case let .gift(token, rate):
+        self?.openRecharge(token: token, rate: rate, isGift: true)
+      }
+      
+    }
+    
     router.push(viewController: module.view, animated: true)
   }
   
@@ -60,5 +70,18 @@ private extension BatteryRefillCoordinator {
     )
     
     router.push(viewController: module.view)
+  }
+  
+  func openRecharge(token: Token, rate: NSDecimalNumber?, isGift: Bool) {
+    let module = BatteryRechargeAssembly.module(
+      wallet: wallet,
+      token: token,
+      rate: rate,
+      configuration: BatteryRechargeViewModelConfiguration(isGift: isGift),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    router.present(module.view)
   }
 }

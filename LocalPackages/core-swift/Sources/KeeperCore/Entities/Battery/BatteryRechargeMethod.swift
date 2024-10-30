@@ -28,4 +28,13 @@ public struct BatteryRechargeMethod {
   public let decimals: Int
   public let supportGasless: Bool
   public let supportRecharge: Bool
+  
+  public var jettonMasterAddress: Address? {
+    switch token {
+    case .ton:
+      nil
+    case .jetton(let jetton):
+      jetton.jettonMasterAddress
+    }
+  }
 }

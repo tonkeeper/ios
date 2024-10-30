@@ -7,6 +7,7 @@ import TKLocalize
 protocol BatteryRefillModuleOutput: AnyObject {
   var didTapSupportedTransactions: (() -> Void)? { get set }
   var didTapTransactionsSettings: (() -> Void)? { get set }
+  var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)? { get set }
 }
 
 protocol BatteryRefillModuleInput: AnyObject {
@@ -30,6 +31,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   
   var didTapSupportedTransactions: (() -> Void)?
   var didTapTransactionsSettings: (() -> Void)?
+  var didTapRecharge: ((_ rechargeMethod: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> Void)?
   
   // MARK: - BatteryRefillViewModel
 
@@ -257,8 +259,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   private func createRechargeMethodSnapshotItem(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> BatteryRefill.SnapshotItem {
     let listItem = BatteryRefill.ListItem(
       identifier: item.identifier,
-      onSelection: {
-        
+      onSelection: { [weak self] in
+        self?.didTapRecharge?(item)
       }
     )
     return .listItem(listItem)
@@ -290,7 +292,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     let caption: String
     let iconViewConfiguration: TKListItemIconView.Configuration
     switch item {
-    case .token(let token, let amount):
+    case .token(let token, let amount, _):
       title = "Recharge with \(token.symbol)"
       
       switch token {

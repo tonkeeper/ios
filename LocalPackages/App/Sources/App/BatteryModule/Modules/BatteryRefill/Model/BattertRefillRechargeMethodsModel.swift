@@ -6,19 +6,37 @@ import TonSwift
 final class BatteryRefillRechargeMethodsModel {
   
   enum RechargeMethodItem {
-    case token(token: Token, amount: BigUInt)
-    case gift
+    case token(token: Token, amount: BigUInt, rate: NSDecimalNumber?)
+    case gift(token: Token, rate: NSDecimalNumber?)
     
     var identifier: String {
       switch self {
-      case .token(let token, _):
+      case .token(let token, _, _):
         return token.identifier
       case .gift:
         return "gift_identifier"
       }
     }
+    
+    var token: Token {
+      switch self {
+      case .token(let token, _, _):
+        return token
+      case .gift(let token, _):
+        return token
+      }
+    }
+    
+    var rate: NSDecimalNumber? {
+      switch self {
+      case .token(_, _, let rate):
+        return rate
+      case .gift(_, let rate):
+        return rate
+      }
+    }
   }
-
+  
   enum State {
     case loading
     case idle(items: [RechargeMethodItem])
@@ -36,12 +54,12 @@ final class BatteryRefillRechargeMethodsModel {
   private var isLoading: Bool {
     loadingTask == nil
   }
-
+  
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
   private let configurationStore: ConfigurationStore
   private let batteryService: BatteryService
-
+  
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
        configurationStore: ConfigurationStore,
@@ -91,25 +109,31 @@ final class BatteryRefillRechargeMethodsModel {
       }
     }
     
-    let jettonItems = balance.jettonsBalance
+    let balanceJettonItems = balance.jettonsBalance
       .filter { balanceJetton in
         balanceJetton.jettonBalance.quantity > 0 &&
         jettonMasterAddresses.contains(balanceJetton.jettonBalance.item.jettonInfo.address)
       }
-      .sorted(by: { $0.converted > $1.converted })
-      .map {
-        RechargeMethodItem.token(token: .jetton($0.jettonBalance.item), amount: $0.jettonBalance.quantity)
+    
+    let items = jettonRechargeMethods.compactMap { rechargeMethod -> RechargeMethodItem? in
+      guard let jettonBalance = balanceJettonItems.first(where: { $0.jettonBalance.item.jettonInfo.address == rechargeMethod.jettonMasterAddress  }) else {
+        return nil
       }
+      return RechargeMethodItem.token(
+        token: .jetton(jettonBalance.jettonBalance.item),
+        amount: jettonBalance.jettonBalance.quantity,
+        rate: rechargeMethod.rateDecimalNumber
+      )
+    }
     
-    var result = jettonItems
+    var result = items
     if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount)))
+      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount), rate: tonRechargeMethods.first?.rateDecimalNumber))
     }
-    
     if !result.isEmpty {
-      result.append(.gift)
+      let giftItem = result[0]
+      result.append(.gift(token: giftItem.token, rate: giftItem.rate))
+      self.state = .idle(items: result)
     }
-
-    self.state = .idle(items: result)
   }
 }
