@@ -67,7 +67,7 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   private let model: ConfirmTransactionModel
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let totalBalanceModel: WalletTotalBalanceModel
+  private let totalBalanceStore: TotalBalanceStore
   private let historyEventMapper: HistoryEventMapper
 
   private let decimalAmountFormatter: DecimalAmountFormatter
@@ -75,14 +75,14 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   init(model: ConfirmTransactionModel,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       totalBalanceModel: WalletTotalBalanceModel,
+       totalBalanceStore: TotalBalanceStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        historyEventMapper: HistoryEventMapper
   ) {
     self.model = model
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
-    self.totalBalanceModel = totalBalanceModel
+    self.totalBalanceStore = totalBalanceStore
     self.decimalAmountFormatter = decimalAmountFormatter
     self.historyEventMapper = historyEventMapper
   }
@@ -157,16 +157,17 @@ private extension TonConnectConfirmationViewModelImplementation {
     let tonRates = tonRatesStore.state
     let tonRisk = model.risk.ton
     let currency = currencyStore.state
+    let totalRisk = tonRisk + model.fee
 
-    guard let totalBalanceState = try? totalBalanceModel.getState(),
-          let totalBalance = totalBalanceState.totalBalanceState?.totalBalance,
+    guard let totalBalanceState = totalBalanceStore.state[model.wallet],
+          let totalBalance = totalBalanceState.totalBalance,
           let rate = tonRates.first(with: currency, at: \.currency)
     else {
       return nil
     }
 
     let convertedTonRisk = RateConverter().convertToDecimal(
-      amount: BigUInt(tonRisk),
+      amount: BigUInt(totalRisk),
       amountFractionLength: TonInfo.fractionDigits,
       rate: rate
     )
@@ -190,7 +191,7 @@ private extension TonConnectConfirmationViewModelImplementation {
 
     let riskView = TonConnectRiskView()
     riskView.configure(model: TonConnectRiskView.Model(
-      title: TKLocales.ConfirmSend.Risk.total(totalFormatted),
+      title: formattedTitle,
       isRisk: isRisk
     ) { [weak self] in
       self?.didTapRiskInfo?(formattedTitle, caption)
@@ -202,7 +203,7 @@ private extension TonConnectConfirmationViewModelImplementation {
   func contentItem() -> TKModalCardViewController.Configuration.Item? {
     let model = TonConnectConfirmationContentView.Model(
       actionsConfiguration: mapEvent(model.event),
-      feeModel: .init(title: TKLocales.ConfirmSend.fee, fee: model.fee)
+      feeModel: .init(title: TKLocales.ConfirmSend.fee, fee: model.formattedFee)
     )
     guard let view = contentView?(model) else { return nil }
     return .customView(view, bottomSpacing: 32)

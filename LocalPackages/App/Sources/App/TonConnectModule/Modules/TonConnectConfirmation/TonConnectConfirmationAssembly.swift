@@ -8,20 +8,11 @@ struct TonConnectConfirmationAssembly {
                      keeperCoreMainAssembly: MainAssembly,
                      historyEventMapper: HistoryEventMapper
   ) -> MVVMModule<TonConnectConfirmationViewController, TonConnectConfirmationModuleOutput, Void> {
-    let balanceModel = WalletTotalBalanceModel(
-      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-      backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
-      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-      updateQueue: .main
-    )
-
     let viewModel = TonConnectConfirmationViewModelImplementation(
       model: model,
       tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-      totalBalanceModel: balanceModel,
+      totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       historyEventMapper: historyEventMapper
     )

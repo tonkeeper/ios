@@ -38,9 +38,10 @@ struct ConfirmTransactionMapper {
         }, decryptedCommentProvider: { _ in return nil }
       )
 
+    let fee = Int64(abs(info.event.extra))
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
     + amountFormatter.formatAmount(
-      BigUInt(integerLiteral: UInt64(abs(info.event.extra))),
+      BigUInt(fee),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       currency: .TON)
@@ -63,7 +64,8 @@ struct ConfirmTransactionMapper {
     
     return ConfirmTransactionModel(
       event: eventModel,
-      fee: feeFormatted,
+      formattedFee: feeFormatted,
+      fee: fee,
       wallet: wallet,
       risk: info.risk
     )
