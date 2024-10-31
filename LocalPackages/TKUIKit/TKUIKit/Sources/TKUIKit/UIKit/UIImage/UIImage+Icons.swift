@@ -294,6 +294,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-signer-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var keystone: UIImage {
+          .imageWithName("Icons/28/ic-keystone-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var eyeClosedOutline: UIImage {
           .imageWithName("Icons/28/ic-eye-closed-outline-28")
           .withRenderingMode(.alwaysTemplate)

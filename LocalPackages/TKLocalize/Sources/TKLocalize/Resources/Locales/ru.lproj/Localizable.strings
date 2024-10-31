@@ -427,6 +427,14 @@
 "signer_sign.step_three_description" = "Отсканируйте QR-код подписанной транзакции Signer";
 "signer_sign.transaction" = "Транзакция";
 
+"keystone_sign.step_one" = "Шаг 1";
+"keystone_sign.step_one_description" = "Отсканируйте QR-код с помощью Keystone";
+"keystone_sign.step_two" = "Шаг 2";
+"keystone_sign.step_two_description" = "Подтвердите транзакцию в Keystone";
+"keystone_sign.step_three" = "Шаг 3";
+"keystone_sign.step_three_description" = "Отсканируйте QR-код подписанной транзакции Keystone";
+"keystone_sign.transaction" = "Транзакция";
+
 "apy" = "APY";
 "max_apy" = "MAX APY";
 

@@ -282,6 +282,9 @@
 "add_wallet.items.pair_signer.title" = "Pair Signer";
 "add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
 
+"add_wallet.items.pair_keystone.title" = "Pair with Keystone";
+"add_wallet.items.pair_keystone.subtitle" = "A high level of security with an AIR-GAP hardware wallet";
+
 "add_wallet.items.pair_ledger.title" = "Pair with Ledger";
 "add_wallet.items.pair_ledger.subtitle" = "Hardware module, Bluetooth, limited TON features";
 
@@ -289,6 +292,10 @@
 
 "signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";
 "signer.scan.open_signer_button" = "Open Signer on this device";
+
+"keystone.scan.subtitle" = "Open Keystone » Connect Software Wallet » Tonkeeper";
+"keystone.scan.about_keystone_button" = "About Keystone";
+
 
 "chart.price" = "Price";
 
@@ -441,6 +448,14 @@
 "signer_sign.step_three" = "Step 3";
 "signer_sign.step_three_description" = "Scan signed transaction QR code from Signer";
 "signer_sign.transaction" = "Transaction";
+
+"keystone_sign.step_one" = "Step 1";
+"keystone_sign.step_one_description" = "Scan the QR code with Keystone";
+"keystone_sign.step_two" = "Step 2";
+"keystone_sign.step_two_description" = "Confirm your transaction in Keystone";
+"keystone_sign.step_three" = "Step 3";
+"keystone_sign.step_three_description" = "Scan signed transaction QR code from Keystone";
+"keystone_sign.transaction" = "Transaction";
 
 "apy" = "APY";
 "max_apy" = "MAX APY";

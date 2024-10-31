@@ -28,6 +28,8 @@ extension Wallet {
       return "SIGNER"
     case .ledger:
       return "LEDGER"
+    case .keystone:
+      return "KEYSTONE"
     }
   }
   
@@ -90,6 +92,8 @@ extension Wallet {
           .Accent.purple
       case .ledger:
           .Accent.green
+      case .keystone:
+          .Accent.green
       }
     }()
     guard let kindTag, let color else { return nil }
@@ -122,6 +126,9 @@ extension Wallet {
       textColor = .Accent.purple
       backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     case .ledger:
+      textColor = .Accent.purple
+      backgroundColor = .Accent.purple.withAlphaComponent(0.16)
+    case .keystone:
       textColor = .Accent.purple
       backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     }
