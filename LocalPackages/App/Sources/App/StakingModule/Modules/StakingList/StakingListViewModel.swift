@@ -143,7 +143,7 @@ private extension StakingListViewModelImplementation {
       iconConfiguration: TKUIListItemIconView.Configuration(
         iconConfiguration: .image(
           TKUIListItemImageIconView.Configuration(
-            image: TKUIListItemImageIconView.Configuration.Image.image(pool.pool.implementation.icon),
+            image: TKUIListItemImageIconView.Configuration.Image.image(pool.pool.icon),
             tintColor: .clear,
             backgroundColor: .clear,
             size: CGSize(width: 44, height: 44),

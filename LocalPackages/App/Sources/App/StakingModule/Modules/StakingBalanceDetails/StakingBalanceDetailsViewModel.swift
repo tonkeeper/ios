@@ -202,7 +202,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
       }
     }()
     
-    let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolInfo.implementation.icon)
+    let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolInfo.icon)
     let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
       image: badgeImage,
       tintColor: .Icon.primary,
