@@ -56,7 +56,7 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
   }
   
   var buttonTitle: String {
-    "Choose"
+    TKLocales.StakingPoolDetails.choose
   }
   
   var listViewModel: StakingDetailsListView.Model {
@@ -79,9 +79,7 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
     )
   }
   
-  func viewDidLoad() {
-    
-  }
+  func viewDidLoad() {}
   
   func didTapCloseButton() {
     didClose?()
@@ -90,9 +88,6 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
   func didTapChooseButton() {
     didSelectPool?(pool.pool)
   }
-}
-
-private extension StakingPoolDetailsViewModelImplementation {
 }
 
 private extension String {

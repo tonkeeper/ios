@@ -18,8 +18,6 @@ final class StakingPoolDetailsViewController: GenericViewViewController<StakingP
     super.viewDidLoad()
     
     setup()
-    setupViewEvents()
-    setupBindings()
     viewModel.viewDidLoad()
   }
   
@@ -56,6 +54,8 @@ private extension StakingPoolDetailsViewController {
     customView.listView.configure(model: viewModel.listViewModel)
     customView.descriptionLabel.attributedText = viewModel.description
     customView.linksView.configure(model: viewModel.linksViewModel)
+    
+    setupNavigationBar()
   }
   
   func setupNavigationBar() {
@@ -76,13 +76,5 @@ private extension StakingPoolDetailsViewController {
         self?.viewModel.didTapCloseButton()
       }
     ]
-  }
-  
-  func setupBindings() {
-    
-  }
-  
-  func setupViewEvents() {
-  
   }
 }
