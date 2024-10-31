@@ -93,7 +93,7 @@ extension Wallet {
       case .ledger:
           .Accent.green
       case .keystone:
-          .Accent.green
+          .Accent.purple
       }
     }()
     guard let kindTag, let color else { return nil }
