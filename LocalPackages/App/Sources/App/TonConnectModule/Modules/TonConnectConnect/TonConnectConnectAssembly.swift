@@ -3,13 +3,16 @@ import TKCore
 import KeeperCore
 
 struct TonConnectConnectAssembly {
+
   private init() {}
+
   static func module(
     parameters: TonConnectParameters,
     manifest: TonConnectManifest,
     walletsStore: WalletsStore,
     walletNotificationStore: WalletNotificationStore,
-    showWalletPicker: Bool
+    showWalletPicker: Bool,
+    coordinatorFlow: TonConnectConnectCoordinator.Flow
   ) -> MVVMModule<
     TonConnectConnectViewController,
     TonConnectConnectViewModuleOutput,
@@ -20,7 +23,8 @@ struct TonConnectConnectAssembly {
       manifest: manifest,
       walletsStore: walletsStore,
       walletNotificationStore: walletNotificationStore,
-      showWalletPicker: showWalletPicker
+      showWalletPicker: showWalletPicker,
+      coordinatorFlow: coordinatorFlow
     )
     let viewController = TonConnectConnectViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

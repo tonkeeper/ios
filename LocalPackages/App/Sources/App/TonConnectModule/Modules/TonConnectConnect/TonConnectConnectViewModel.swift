@@ -73,33 +73,40 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   private let walletsStore: WalletsStore
   private let walletNotificationStore: WalletNotificationStore
   private let showWalletPicker: Bool
-    
+  private let coordinatorFlow: TonConnectConnectCoordinator.Flow
+
   // MARK: - Init
   
   init(parameters: TonConnectParameters,
        manifest: TonConnectManifest,
        walletsStore: WalletsStore,
        walletNotificationStore: WalletNotificationStore,
-       showWalletPicker: Bool) {
+       showWalletPicker: Bool,
+       coordinatorFlow: TonConnectConnectCoordinator.Flow
+  ) {
     self.parameters = parameters
     self.manifest = manifest
     self.walletsStore = walletsStore
     self.walletNotificationStore = walletNotificationStore
     self.showWalletPicker = showWalletPicker
-    
+    self.coordinatorFlow = coordinatorFlow
+
     self.selectedWallet = try? walletsStore.activeWallet
   }
 }
 
 private extension TonConnectConnectViewModelImplementation {
+
   func prepareContent() {
     guard let selectedWallet else { return }
+
     let configuration = TonConnectConnectMapper.modalCardConfiguration(
       wallet: selectedWallet,
       manifest: manifest,
       showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
       isNotificationOn: isNotificationsOn,
       connectingState: connectingState,
+      coordinatorFlow: coordinatorFlow,
       tickAction: { [weak self] isOn in
         self?.isNotificationsOn = isOn
       },
@@ -140,21 +147,5 @@ private extension TonConnectConnectViewModelImplementation {
       }
     )
     didUpdateConfiguration?(configuration)
-  }
-}
-
-private extension String {
-  static let buttonTitle = TKLocales.TonConnect.connectWallet
-}
-
-private extension NSAttributedString {
-  static var footerText: NSAttributedString {
-    TKLocales.TonConnect.sureCheckServiceAddress
-      .withTextStyle(
-        .body2,
-        color: .Text.tertiary,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      )
   }
 }

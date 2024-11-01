@@ -445,6 +445,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
+            flow: .deeplink,
             connector: DefaultTonConnectConnectCoordinatorConnector(
               tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
             ),

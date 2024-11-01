@@ -118,6 +118,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
       let coordinator = TonConnectConnectCoordinator(
         router: router,
+        flow: .common,
         connector: connector,
         parameters: parameters,
         manifest: manifest,
