@@ -85,7 +85,8 @@ struct TonConnectConnectMapper {
     coordinatorFlow: TonConnectConnectCoordinator.Flow,
     tickAction: @escaping (Bool) -> Void,
     walletPickerAction: @escaping () -> Void,
-    connectAction: @escaping () -> Void
+    connectAction: @escaping () -> Void,
+    openBrowserAndConnectAction: @escaping () -> Void
   ) -> TKPopUp.Configuration {
     
     var items = [TKPopUp.Item]()
@@ -129,9 +130,16 @@ struct TonConnectConnectMapper {
       }
     }()
 
-    var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    btnConf.content = .init(title: .plainString(buttonTitle))
-    btnConf.action = connectAction
+    var primaryButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    primaryButton.content = .init(title: .plainString(buttonTitle))
+    primaryButton.action = {
+      switch coordinatorFlow {
+      case .common:
+        connectAction()
+      case .deeplink:
+        openBrowserAndConnectAction()
+      }
+    }
 
     let footerText: NSAttributedString = {
       let text: String
@@ -149,12 +157,27 @@ struct TonConnectConnectMapper {
       )
     }()
 
+    let secondaryButton = TKButton.Configuration(
+      content: .init(title: .attributedString(footerText)),
+      padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
+      textNumberOfLines: 0,
+      action: {
+        switch coordinatorFlow {
+        case .common:
+          return
+        case .deeplink:
+          connectAction()
+        }
+      }
+    )
+
     items.append(TKPopUp.Component.Process(items: [
       TKPopUp.Component.ButtonGroupComponent(buttons: [
-        TKPopUp.Component.ButtonComponent(buttonConfiguration: btnConf)
+        TKPopUp.Component.ButtonComponent(buttonConfiguration: primaryButton)
       ]),
-      TKPopUp.Component.GroupComponent(padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
-                                       items: [TKPopUp.Component.LabelComponent(text: footerText, numberOfLines: 0)])
+      TKPopUp.Component.ButtonGroupComponent(buttons: [
+        TKPopUp.Component.ButtonComponent(buttonConfiguration: secondaryButton)
+      ])
     ], state: connectingState))
     
     return TKPopUp.Configuration(items: items)

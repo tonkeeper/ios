@@ -62,7 +62,8 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControlle
 
   public var didConnect: (() -> Void)?
   public var didCancel: (() -> Void)?
-  
+  public var didRequestOpeningBrowser: ((_ manifest: TonConnectManifest) -> Void)?
+
   private let connector: TonConnectConnectCoordinatorConnector
   private let parameters: TonConnectParameters
   private let manifest: TonConnectManifest
@@ -121,7 +122,14 @@ private extension TonConnectConnectCoordinator {
         }
       )
     }
-    
+
+    module.output.didTapOpenBrowserAndConnect = { [weak bottomSheetViewController] manifest in
+      bottomSheetViewController?.dismiss() { [weak self] in
+        self?.didRequestOpeningBrowser?(manifest)
+        self?.didCancel?()
+      }
+    }
+
     module.output.connect = { [weak self, weak bottomSheetViewController] connectParameters in
       guard let self, let bottomSheetViewController else { return false }
       return await self.connect(parameters: connectParameters, fromViewController: bottomSheetViewController)

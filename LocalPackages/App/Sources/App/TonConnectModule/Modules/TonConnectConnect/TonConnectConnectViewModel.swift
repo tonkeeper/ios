@@ -16,6 +16,7 @@ struct TonConnectConnectParameters {
 protocol TonConnectConnectViewModuleOutput: AnyObject {
   var didConnect: (() -> Void)? { get set }
   var didTapWalletPicker: ((Wallet) -> Void)? { get set }
+  var didTapOpenBrowserAndConnect: ((_ manifest: TonConnectManifest) -> Void)? { get set }
   var connect: ((TonConnectConnectParameters) async -> Bool)? { get set }
 }
 
@@ -37,6 +38,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   
   var didConnect: (() -> Void)?
   var didTapWalletPicker: ((Wallet) -> Void)?
+  var didTapOpenBrowserAndConnect: ((_ manifest: TonConnectManifest) -> Void)?
   var connect: ((TonConnectConnectParameters) async -> Bool)?
   
   // MARK: - TonConnectConnectModuleInput
@@ -144,6 +146,12 @@ private extension TonConnectConnectViewModelImplementation {
             }
           }
         }
+      },
+      openBrowserAndConnectAction: { [weak self] in
+        guard let self else {
+          return
+        }
+        self.didTapOpenBrowserAndConnect?(self.manifest)
       }
     )
     didUpdateConfiguration?(configuration)
