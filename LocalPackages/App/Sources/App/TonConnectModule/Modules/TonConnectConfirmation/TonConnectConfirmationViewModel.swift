@@ -154,47 +154,16 @@ private extension TonConnectConfirmationViewModelImplementation {
   }
 
   func createRiskItem() -> UIView? {
-    let tonRates = tonRatesStore.state
-    let tonRisk = model.risk.ton
-    let currency = currencyStore.state
-    let totalRisk = tonRisk + model.fee
-
-    guard let totalBalanceState = totalBalanceStore.state[model.wallet],
-          let totalBalance = totalBalanceState.totalBalance,
-          let rate = tonRates.first(with: currency, at: \.currency)
-    else {
+    guard let risk = model.formattedRisk else {
       return nil
-    }
-
-    let convertedTonRisk = RateConverter().convertToDecimal(
-      amount: BigUInt(totalRisk),
-      amountFractionLength: TonInfo.fractionDigits,
-      rate: rate
-    )
-    let riskLowMark = totalBalance.amount * 0.2
-    let isRisk = convertedTonRisk >= riskLowMark
-    let totalFormatted = decimalAmountFormatter.format(
-      amount: convertedTonRisk,
-      maximumFractionDigits: 2,
-      currency: currency
-    )
-
-    let formattedTitle: String
-    let caption: String
-    if model.risk.nfts.isEmpty {
-      formattedTitle = TKLocales.ConfirmSend.Risk.total(totalFormatted)
-      caption = TKLocales.ConfirmSend.Risk.captionWithoutNft
-    } else {
-      formattedTitle = TKLocales.ConfirmSend.Risk.totalNft(totalFormatted, model.risk.nfts.count)
-      caption = TKLocales.ConfirmSend.Risk.nftCaption
     }
 
     let riskView = TonConnectRiskView()
     riskView.configure(model: TonConnectRiskView.Model(
-      title: formattedTitle,
-      isRisk: isRisk
+      title: risk.title,
+      isRisk: risk.isRisk
     ) { [weak self] in
-      self?.didTapRiskInfo?(formattedTitle, caption)
+      self?.didTapRiskInfo?(risk.title, risk.caption)
     })
 
     return riskView

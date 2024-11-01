@@ -191,6 +191,7 @@ public final class MainAssembly {
       nftService: servicesAssembly.nftService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
+      totalBalanceStore: storesAssembly.totalBalanceStore,
       confirmTransactionMapper: ConfirmTransactionMapper(
         nftService: servicesAssembly.nftService(),
         accountEventMapper: AccountEventMapper(
@@ -198,7 +199,8 @@ public final class MainAssembly {
           amountFormatter: formattersAssembly.amountFormatter,
           amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
         ),
-        amountFormatter: formattersAssembly.amountFormatter
+        amountFormatter: formattersAssembly.amountFormatter,
+        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
       )
     )
   }
