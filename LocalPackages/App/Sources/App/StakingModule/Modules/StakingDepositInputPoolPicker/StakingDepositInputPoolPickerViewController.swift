@@ -112,7 +112,7 @@ private extension StakingDepositInputPoolPickerViewController {
       iconViewConfiguration: TKListItemIconView.Configuration(
         content: .image(
           TKImageView.Model(
-            image: .image(item.implementation.icon),
+            image: .image(item.icon),
             tintColor: .clear,
             size: .size(CGSize(width: 44, height: 44)),
             corners: .circle

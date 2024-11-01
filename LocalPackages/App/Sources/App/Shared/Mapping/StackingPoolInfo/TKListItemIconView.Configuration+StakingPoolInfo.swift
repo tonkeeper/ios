@@ -14,7 +14,7 @@ extension TKListItemIconView.Configuration {
       badge: Badge(
         configuration: TKListItemBadgeView.Configuration.imageView(
           TKImageView.Model(
-            image: .image(poolInfo?.implementation.icon),
+            image: .image(poolInfo?.icon),
             tintColor: .clear,
             size: .size(CGSize(width: 18, height: 18)),
             corners: .circle,

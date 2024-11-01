@@ -370,6 +370,9 @@ public extension UIImage {
         public static var tonWhalesLogo: UIImage {
           .imageWithName("Icons/44/ic-tonwhales-44")
         }
+        public static var tonkeeperLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonkeeper-44")
+        }
       }
       public enum Size56 {
         public static var flashlightOff: UIImage {

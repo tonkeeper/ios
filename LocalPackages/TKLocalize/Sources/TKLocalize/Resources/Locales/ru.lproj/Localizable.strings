@@ -473,6 +473,7 @@
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Минимальный депозит";
 "staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+"staking_pool_details.choose" = "Выбрать";
 
 "ton_connect_mapper.connect_to" = "Войти в ";
 "ton_connect_mapper.requesting_capture" = "%@ запрашивает доступ к адресу вашего кошелька%@";
