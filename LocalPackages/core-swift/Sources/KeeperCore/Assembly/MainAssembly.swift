@@ -200,13 +200,11 @@ public final class MainAssembly {
   public func stakingWithdrawTransactionConfirmationController(wallet: Wallet,
                                                                stakingPool: StackingPoolInfo,
                                                                amount: BigUInt,
-                                                               isMax: Bool,
                                                                isCollect: Bool) -> TransactionConfirmationController {
     return StakingWithdrawTransactionConfirmationController(
       wallet: wallet,
       stakingPool: stakingPool,
       amount: amount,
-      isMax: isMax,
       isCollect: isCollect,
       sendService: servicesAssembly.sendService(),
       blockchainService: servicesAssembly.blockchainService(),
@@ -219,17 +217,15 @@ public final class MainAssembly {
   public func stakingDepositTransactionConfirmationController(wallet: Wallet,
                                                                stakingPool: StackingPoolInfo,
                                                                amount: BigUInt,
-                                                               isMax: Bool,
                                                                isCollect: Bool) -> TransactionConfirmationController {
     return StakingDepositTransactionConfirmationController(
       wallet: wallet,
       stakingPool: stakingPool,
       amount: amount,
-      isMax: isMax,
       isCollect: isCollect,
       sendService: servicesAssembly.sendService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
+      tonBalanceService: servicesAssembly.tonBalanceService(),
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore
     )

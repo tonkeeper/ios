@@ -482,6 +482,7 @@
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Minimal Deposit";
 "staking_pool_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_pool_details.choose" = "Choose";
 
 "ton_connect_mapper.connect_to" = "Connect to ";
 "ton_connect_mapper.requesting_capture" = "%@ is requesting access to your wallet address%@";

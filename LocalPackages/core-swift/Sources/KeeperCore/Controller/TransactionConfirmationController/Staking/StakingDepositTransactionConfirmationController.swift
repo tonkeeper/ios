@@ -39,32 +39,29 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   private let wallet: Wallet
   private let stakingPool: StackingPoolInfo
   private let amount: BigUInt
-  private let isMax: Bool
   private let isCollect: Bool
   private let sendService: SendService
   private let blockchainService: BlockchainService
-  private let balanceStore: BalanceStore
+  private let tonBalanceService: TonBalanceService
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
   init(wallet: Wallet,
        stakingPool: StackingPoolInfo,
        amount: BigUInt,
-       isMax: Bool,
        isCollect: Bool,
        sendService: SendService,
        blockchainService: BlockchainService,
-       balanceStore: BalanceStore,
+       tonBalanceService: TonBalanceService,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore) {
     self.wallet = wallet
     self.stakingPool = stakingPool
     self.amount = amount
-    self.isMax = isMax
     self.isCollect = isCollect
     self.sendService = sendService
     self.blockchainService = blockchainService
-    self.balanceStore = balanceStore
+    self.tonBalanceService = tonBalanceService
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
   }
@@ -104,6 +101,14 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   private func createTransferMessageBuilder() async throws -> TransferMessageBuilder {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    let isMax = await {
+      do {
+        let balance = try await tonBalanceService.loadBalance(wallet: wallet)
+        return amount == BigUInt(integerLiteral: UInt64(balance.amount))
+      } catch {
+        return false
+      }
+    }()
 
     let transferMessageBuilder = TransferMessageBuilder(
       transferData: .stake(

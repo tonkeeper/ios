@@ -1060,6 +1060,8 @@ public enum TKLocales {
   public enum StakingPoolDetails {
     /// APY
     public static let apy = TKLocales.tr("Localizable", "staking_pool_details.apy", fallback: "APY")
+    /// Choose
+    public static let choose = TKLocales.tr("Localizable", "staking_pool_details.choose", fallback: "Choose")
     /// Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.
     public static let description = TKLocales.tr("Localizable", "staking_pool_details.description", fallback: "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.")
     /// MAX APY

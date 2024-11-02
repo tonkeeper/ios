@@ -33,29 +33,32 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   func openStakingDepositInput() {
-    let stakingDepositInputPoolPicker = StakingDepositInputPoolPickerAssembly.module(
+    let profitableStakingPool = keeperCoreMainAssembly.storesAssembly.stackingPoolsStore.state[wallet]?
+      .profitablePools
+      .first
+    
+    let poolPickerModule = StakingDepositInputPoolPickerAssembly.module(
       wallet: wallet,
+      selectedStakingPool: profitableStakingPool,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    let configurator = StakingDepositInputModelConfigurator(
+    let configurator = DepositStakingInputViewModelConfiguration(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
+      stakingPool: profitableStakingPool,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
     )
 
     let module = StakingInputAssembly.module(
-      model: StakingInputModelImplementation(
-        wallet: wallet,
-        detailsInput: stakingDepositInputPoolPicker.input,
-        configurator: configurator,
-        stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-        tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
-      ),
-      detailsViewController: stakingDepositInputPoolPicker.view,
+      configuration: configurator,
+      detailsViewController: poolPickerModule.view,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
+    
+    module.output.didUpdateInputAmount = { inputAmount in
+      poolPickerModule.input.setInputAmount(inputAmount)
+    }
     
     module.output.didConfirm = { [weak self] item in
       guard let self else { return }
@@ -70,9 +73,12 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       self?.didClose?()
     }
     
-    stakingDepositInputPoolPicker.view.didTapPicker = { [weak self, module] model in
+    weak var moduleInput = module.input
+    weak var poolPickerModuleInput = poolPickerModule.input
+    poolPickerModule.output.didTapPicker = { [weak self] model in
       self?.openStakingList(model: model, poolSelectionClosure: { pool in
-        module.input.setPool(pool)
+        moduleInput?.setPool(pool)
+        poolPickerModuleInput?.setStakingPool(pool)
         self?.router.popToRoot()
       })
     }

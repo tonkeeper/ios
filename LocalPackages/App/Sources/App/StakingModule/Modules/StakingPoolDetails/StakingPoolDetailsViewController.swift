@@ -3,7 +3,6 @@ import TKUIKit
 
 final class StakingPoolDetailsViewController: GenericViewViewController<StakingPoolDetailsView>, KeyboardObserving {
   private let viewModel: StakingPoolDetailsViewModel
-  private let amountInputViewController = AmountInputViewController()
   
   init(viewModel: StakingPoolDetailsViewModel) {
     self.viewModel = viewModel
@@ -18,8 +17,6 @@ final class StakingPoolDetailsViewController: GenericViewViewController<StakingP
     super.viewDidLoad()
     
     setup()
-    setupViewEvents()
-    setupBindings()
     viewModel.viewDidLoad()
   }
   
@@ -56,6 +53,8 @@ private extension StakingPoolDetailsViewController {
     customView.listView.configure(model: viewModel.listViewModel)
     customView.descriptionLabel.attributedText = viewModel.description
     customView.linksView.configure(model: viewModel.linksViewModel)
+    
+    setupNavigationBar()
   }
   
   func setupNavigationBar() {
@@ -76,13 +75,5 @@ private extension StakingPoolDetailsViewController {
         self?.viewModel.didTapCloseButton()
       }
     ]
-  }
-  
-  func setupBindings() {
-    
-  }
-  
-  func setupViewEvents() {
-  
   }
 }

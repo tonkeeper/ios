@@ -36,30 +36,28 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
   }
   
   func openStakingDepositInput() {
-    let stakingDepositInputAPY = StakingDepositInputAPYAssembly.module(
+    let stakingDepositInputAPYModule = StakingDepositInputAPYAssembly.module(
       wallet: wallet,
+      stakingPool: stakingPoolInfo,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    let configurator = StakingDepositInputModelConfigurator(
+    let configurator = DepositStakingInputViewModelConfiguration(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
+      stakingPool: stakingPoolInfo,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
     )
-    
+
     let module = StakingInputAssembly.module(
-      model: StakingInputModelImplementation(
-        wallet: wallet,
-        stakingPoolInfo: stakingPoolInfo,
-        detailsInput: stakingDepositInputAPY.input,
-        configurator: configurator,
-        stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-        tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
-      ),
-      detailsViewController: stakingDepositInputAPY.view,
+      configuration: configurator,
+      detailsViewController: stakingDepositInputAPYModule.view,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
+    
+    module.output.didUpdateInputAmount = {
+      stakingDepositInputAPYModule.input.setInputAmount($0)
+    }
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()

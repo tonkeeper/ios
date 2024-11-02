@@ -5,10 +5,14 @@ import KeeperCore
 struct StakingDepositInputAPYAssembly {
   private init() {}
   
-  static func module(wallet: Wallet, keeperCoreMainAssembly: KeeperCore.MainAssembly)
-  -> MVVMModule<StakingDepositInputAPYViewController, Void, StakingInputDetailsModuleInput> {
+  static func module(wallet: Wallet,
+                     stakingPool: StackingPoolInfo,
+                     keeperCoreMainAssembly: KeeperCore.MainAssembly)
+  -> MVVMModule<StakingDepositInputAPYViewController, Void, StakingDepositInputAPYModuleInput> {
     let viewController = StakingDepositInputAPYViewController(
       wallet: wallet,
+      stakingPool: stakingPool,
+      stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter

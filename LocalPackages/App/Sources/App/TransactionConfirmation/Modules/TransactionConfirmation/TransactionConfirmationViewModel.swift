@@ -37,13 +37,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     let model = confirmationController.getModel()
     update(with: model)
     Task {
-      do {
-        try await confirmationController.emulate().get()
-        let model = confirmationController.getModel()
-        update(with: model)
-      } catch {
-        ToastPresenter.showToast(configuration: .failed)
+      let result = await confirmationController.emulate()
+      if case let .failure(error) = result {
+       handleError(error)
       }
+      let model = confirmationController.getModel()
+      update(with: model)
     }
   }
   
@@ -178,7 +177,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     case .staking(let staking):
       return TKPopUp.Component.ImageComponent(
         image: TKImageView.Model(
-          image: .image(staking.pool.implementation.bigIcon),
+          image: .image(staking.pool.bigIcon),
           size: .size(CGSize(width: 96, height: 96)),
           corners: .circle,
           padding: .zero
@@ -256,6 +255,20 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       configuration: configuration,
       bottomSpace: 16
     )
+  }
+  
+  private func handleError(_ error: TransactionConfirmationError) {
+    let text: String
+    switch error {
+    case .failedToCalculateFee:
+      text = "Failed to calculate fee"
+    case .failedToSendTransaction:
+      text = "Failed to send transaction"
+    case .failedToSign:
+      text = "Failed to sign"
+    }
+    
+    ToastPresenter.showToast(configuration: .defaultConfiguration(text: text))
   }
   
   private func createWalletItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
@@ -445,12 +458,14 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       Task { [weak self] in
         guard let self else { return }
         self.state = .processing
-        do {
-          try await self.confirmationController.sendTransaction().get()
+        let result = await self.confirmationController.sendTransaction()
+        switch result {
+        case .success:
           self.state = .success
+          try await Task.sleep(nanoseconds: 1_000_000_000)
           NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
-        } catch {
-          ToastPresenter.showToast(configuration: .failed)
+        case .failure(let error):
+          handleError(error)
           self.state = .failed
           try? await Task.sleep(nanoseconds: 1_500_000_000)
           self.state = .idle
