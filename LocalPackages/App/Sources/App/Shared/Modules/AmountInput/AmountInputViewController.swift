@@ -25,6 +25,10 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
     fatalError("init(coder:) has not been implemented")
   }
   
+  override func becomeFirstResponder() -> Bool {
+    return customView.valueView.inputControl.inputTextField.becomeFirstResponder()
+  }
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     

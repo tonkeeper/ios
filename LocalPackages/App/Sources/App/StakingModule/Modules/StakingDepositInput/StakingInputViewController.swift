@@ -30,7 +30,7 @@ final class StakingInputViewController: GenericViewViewController<StakingInputVi
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     registerForKeyboardEvents()
-    customView.becomeFirstResponder()
+    amountInputViewController.becomeFirstResponder()
   }
 
   override func viewWillDisappear(_ animated: Bool) {
