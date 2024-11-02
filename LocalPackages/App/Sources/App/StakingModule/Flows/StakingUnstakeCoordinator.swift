@@ -40,23 +40,15 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
       wallet: wallet,
       stakingPoolInfo: stakingPoolInfo
     )
-    
-    let configurator = StakingWithdrawInputModelConfigurator(
+
+    let configurator = WithdrawStakingInputViewModelConfiguration(
       wallet: wallet,
-      poolInfo: stakingPoolInfo,
+      stakingPool: stakingPoolInfo,
       balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
     )
-    
+
     let module = StakingInputAssembly.module(
-      model: StakingInputModelImplementation(
-        wallet: wallet,
-        stakingPoolInfo: stakingPoolInfo,
-        detailsInput: stakingWithdrawEstimateViewController,
-        configurator: configurator,
-        stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-        tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
-      ),
+      configuration: configurator,
       detailsViewController: stakingWithdrawEstimateViewController,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly

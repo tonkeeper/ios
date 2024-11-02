@@ -797,7 +797,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let coordinator = StakingConfirmationCoordinator(
       wallet: wallet,
-      item: StakingConfirmationItem(operation: .withdraw(stakingPoolInfo), amount: BigUInt(accountStackingInfo.readyWithdraw), isMax: false),
+      item: StakingConfirmationItem(operation: .withdraw(stakingPoolInfo), 
+                                    amount: BigUInt(accountStackingInfo.readyWithdraw)),
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,
       router: NavigationControllerRouter(rootViewController: navigationController)

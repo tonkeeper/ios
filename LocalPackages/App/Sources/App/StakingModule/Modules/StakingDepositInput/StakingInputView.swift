@@ -40,7 +40,6 @@ final class StakingInputView: TKView {
     )
   )
   let continueButtonContainer = TKPaddingContainerView()
-  let balanceView = StakingInputBalanceView()
   let detailsViewContainer = TKPaddingContainerView()
   private let detailsContainer = UIView()
   private let amountInputContainer = UIView()
@@ -65,7 +64,6 @@ final class StakingInputView: TKView {
     
     navigationBar.centerView = titleView
     
-    detailsViewContainer.isHidden = true
     detailsViewContainer.padding.top = 16
     detailsViewContainer.setViews([detailsContainer])
     
@@ -80,8 +78,6 @@ final class StakingInputView: TKView {
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(amountInputContainer)
     contentStackView.setCustomSpacing(16, after: amountInputContainer)
-    contentStackView.addArrangedSubview(balanceView)
-    contentStackView.setCustomSpacing(16, after: balanceView)
     contentStackView.addArrangedSubview(detailsViewContainer)
     
     setupConstraints()
@@ -102,11 +98,7 @@ final class StakingInputView: TKView {
       make.left.right.bottom.equalTo(self.scrollView).priority(.high)
       make.width.equalTo(scrollView)
     }
-    
-    amountInputContainer.snp.makeConstraints { make in
-      make.height.greaterThanOrEqualTo(CGFloat.amountInputHeight)
-    }
-    
+
     continueButtonContainer.snp.makeConstraints { make in
       make.left.right.equalTo(self)
       make.bottom.equalTo(self).inset(keyboardHeight)

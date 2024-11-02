@@ -43,7 +43,6 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
         wallet: wallet,
         stakingPool: stackingPoolInfo,
         amount: item.amount,
-        isMax: item.isMax,
         isCollect: false
       )
     case .withdraw(let stackingPoolInfo):
@@ -51,7 +50,6 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
         wallet: wallet,
         stakingPool: stackingPoolInfo,
         amount: item.amount,
-        isMax: item.isMax,
         isCollect: false
       )
     }

@@ -39,7 +39,6 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
   private let wallet: Wallet
   private let stakingPool: StackingPoolInfo
   private let amount: BigUInt
-  private let isMax: Bool
   private let isCollect: Bool
   private let sendService: SendService
   private let blockchainService: BlockchainService
@@ -50,7 +49,6 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
   init(wallet: Wallet,
        stakingPool: StackingPoolInfo,
        amount: BigUInt,
-       isMax: Bool,
        isCollect: Bool,
        sendService: SendService,
        blockchainService: BlockchainService,
@@ -60,7 +58,6 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     self.wallet = wallet
     self.stakingPool = stakingPool
     self.amount = amount
-    self.isMax = isMax
     self.isCollect = isCollect
     self.sendService = sendService
     self.blockchainService = blockchainService

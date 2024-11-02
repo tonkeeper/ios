@@ -4,25 +4,67 @@ import KeeperCore
 import BigInt
 import TKLocalize
 
-final class StakingDepositInputPoolPickerViewController: UIViewController, StakingInputDetailsModuleInput {
+protocol StakingDepositInputPoolPickerModuleInput: AnyObject {
+  func setStakingPool(_ stakingPool: StackingPoolInfo)
+  func setInputAmount(_ amount: BigUInt)
+}
+
+protocol StakingDepositInputPoolPickerModuleOutput: AnyObject {
+  var didTapPicker: ((_ model: StakingListModel) -> Void)? { get set }
+}
+
+final class StakingDepositInputPoolPickerViewController: UIViewController, StakingDepositInputPoolPickerModuleInput, StakingDepositInputPoolPickerModuleOutput {
   
-  var didTapPicker: ((_ model: StakingListModel) -> Void)?
+  // MARK: - StakingDepositInputPoolPickerModuleInput
   
-  private var selectedStackingPoolInfo: StackingPoolInfo?
+  func setStakingPool(_ stakingPool: StackingPoolInfo) {
+    self.stakingPool = stakingPool
+    
+  }
+  
+  func setInputAmount(_ amount: BigUInt) {
+    self.inputAmount = amount
+  }
+  
+  // MARK: - StakingDepositInputPoolPickerModuleOutput
+  
+  var didTapPicker: ((StakingListModel) -> Void)?
   
   private let listItemButton = TKListItemButton()
   
+  private var stakingPool: StackingPoolInfo? {
+    get {
+      selectedStakingPool
+    }
+    set {
+      selectedStakingPool = newValue
+      reconfigure()
+    }
+  }
+  
+  private var inputAmount: BigUInt = 0 {
+    didSet {
+      reconfigure()
+    }
+  }
+  
   private let wallet: Wallet
+  private var selectedStakingPool: StackingPoolInfo?
   private let stakingPoolsStore: StakingPoolsStore
+  private let processedBalanceStore: ProcessedBalanceStore
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
+       selectedStakingPool: StackingPoolInfo?,
        stakingPoolsStore: StakingPoolsStore,
+       processedBalanceStore: ProcessedBalanceStore,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
+    self.selectedStakingPool = selectedStakingPool
     self.stakingPoolsStore = stakingPoolsStore
+    self.processedBalanceStore = processedBalanceStore
     self.decimalFormatter = decimalFormatter
     self.amountFormatter = amountFormatter
     super.init(nibName: nil, bundle: nil)
@@ -40,47 +82,52 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
     listItemButton.snp.makeConstraints { make in
       make.edges.equalTo(self.view)
     }
+    
+    reconfigure()
   }
   
-  func configureWith(stackingPoolInfo: StackingPoolInfo,
-                     tonAmount: BigUInt,
-                     isMostProfitable: Bool) {
-    self.selectedStackingPoolInfo = stackingPoolInfo
+  private func reconfigure() {
+    guard let selectedStakingPool else {
+      listItemButton.isHidden = true
+      return
+    }
+    listItemButton.isHidden = false
     let profit: BigUInt = {
-      let apy = stackingPoolInfo.apy
+      let apy = selectedStakingPool.apy
       let apyFractionLength = max(Int(-apy.exponent), 0)
       let apyPlain = NSDecimalNumber(decimal: apy).multiplying(byPowerOf10: Int16(apyFractionLength))
       let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
       
       let scalingFactor = BigUInt(100) * BigUInt(10).power(apyFractionLength)
       
-      return tonAmount * apyBigInt / scalingFactor
+      return inputAmount * apyBigInt / scalingFactor
+    }()
+    let isMostProfitable = {
+      (stakingPoolsStore.state[wallet] ?? []).profitablePools.contains(where: { $0.address == selectedStakingPool.address })
     }()
     
     let configuration = mapStakingPoolItem(
-      stackingPoolInfo,
+      selectedStakingPool,
       isMostProfitable: isMostProfitable,
       profit: profit
     )
     
-    DispatchQueue.main.async {
-      self.listItemButton.configuration = TKListItemButton.Configuration(
-        listItemConfiguration: configuration,
-        accessory: .icon(
-          TKListItemIconAccessoryView.Configuration(
-            icon: .TKUIKit.Icons.Size16.switch,
-            tintColor: .Icon.tertiary
-          )
-        ),
-        isEnable: true,
-        tapClosure: {
-          [weak self] in
-          self?.getPickerSections(completion: { model in
-            self?.didTapPicker?(model)
-          })
-        }
-      )
-    }
+    self.listItemButton.configuration = TKListItemButton.Configuration(
+      listItemConfiguration: configuration,
+      accessory: .icon(
+        TKListItemIconAccessoryView.Configuration(
+          icon: .TKUIKit.Icons.Size16.switch,
+          tintColor: .Icon.tertiary
+        )
+      ),
+      isEnable: true,
+      tapClosure: {
+        [weak self] in
+        self?.getPickerSections(completion: { model in
+          self?.didTapPicker?(model)
+        })
+      }
+    )
   }
 }
 
@@ -186,7 +233,7 @@ private extension StakingDepositInputPoolPickerViewController {
       StakingListModel(
         title: TKLocales.StakingDepositPoolPicker.options,
         sections: sections,
-        selectedPool: self.selectedStackingPoolInfo
+        selectedPool: selectedStakingPool
       )
     )
   }
