@@ -16,10 +16,9 @@ protocol BatteryRechargeModuleInput: AnyObject {
 protocol BatteryRechargeViewModel: AnyObject {
   var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)? { get set }
   var didUpdateTitle: ((String) -> Void)? { get set }
+  var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
-  func listCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
-  var continueButtonCellConfiguration: TKButtonCell.Model? { get }
 }
 
 final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, BatteryRechargeModuleOutput, BatteryRechargeModuleInput {
@@ -32,75 +31,104 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   
   var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)?
   var didUpdateTitle: ((String) -> Void)?
+  var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)?
   
   func viewDidLoad() {
-    numberFormatter.maximumFractionDigits = 2
     didUpdateTitle?(configuration.title)
-    modelState = model.state
-    updateList(updateItems: true, updateButton: true)
-    model.didUpdateState = { [weak self] state in
-      self?.modelState = state
+    
+    model.didUpdateIsContinueEnable = { [weak self] in
+      self?.updateContinueButton()
     }
-  }
-  
-  func listCellConfiguration(identifier: String) -> TKListItemCell.Configuration? {
-    listCellConfigurations[identifier]
-  }
-  
-  private var modelState = BatteryRechargeModel.State(items: [], isContinueButtonEnable: false) {
-    didSet {
-      let updateItems = modelState.items != oldValue.items
-      let updateButton = modelState.isContinueButtonEnable != oldValue.isContinueButtonEnable
-      updateList(updateItems: updateItems, updateButton: updateButton)
+    model.didUpdateOptionItems = { [weak self] in
+      self?.updateList()
     }
+    model.didUpdateIsCustomInputEnable = { [weak self] in
+      guard let self else { return }
+      if !model.isCustomInputEnable {
+        amountInputModuleInput.reset()
+      }
+      updateList()
+    }
+    model.didUpdateToken = { [weak self] in
+      guard let self else { return }
+      amountInputModuleInput.sourceUnit = model.token
+      amountInputModuleInput.sourceBalance = model.balance
+      amountInputModuleInput.destinationUnit = ChargeItem()
+    }
+    
+    model.didUpdateRate = { [weak self] in
+      guard let self else { return }
+      amountInputModuleInput.rate = model.tonChargeRate
+    }
+    model.didUpdateBalance = { [weak self] in
+      guard let self else { return }
+      amountInputModuleInput.sourceBalance = model.balance
+    }
+
+    amountInputModuleOutput.didUpdateSourceAmount = { [weak self] in
+      guard let self else { return }
+      model.amount = $0
+    }
+    
+    model.start()
   }
-  
-  private var listCellConfigurations = [String: TKListItemCell.Configuration]()
-  private(set) var continueButtonCellConfiguration: TKButtonCell.Model?
-  
+ 
   private var snapshot = BatteryRecharge.Snapshot()
   
   private let model: BatteryRechargeModel
   private let configuration: BatteryRechargeViewModelConfiguration
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
-  private let numberFormatter = NumberFormatter()
+  private let amountInputModuleInput: AmountInputModuleInput
+  private let amountInputModuleOutput: AmountInputModuleOutput
   
   init(model: BatteryRechargeModel, 
        configuration: BatteryRechargeViewModelConfiguration,
        amountFormatter: AmountFormatter,
-       decimalAmountFormatter: DecimalAmountFormatter) {
+       decimalAmountFormatter: DecimalAmountFormatter,
+       amountInputModuleInput: AmountInputModuleInput,
+       amountInputModuleOutput: AmountInputModuleOutput) {
     self.model = model
     self.configuration = configuration
     self.amountFormatter = amountFormatter
     self.decimalAmountFormatter = decimalAmountFormatter
+    self.amountInputModuleInput = amountInputModuleInput
+    self.amountInputModuleOutput = amountInputModuleOutput
   }
   
-  private func updateList(updateItems: Bool, updateButton: Bool) {
-    var snapshot = self.snapshot
-    if updateItems {
-      createOptionsSection(snapshot: &snapshot)
-    }
-    if updateButton {
-      createContinueButtonSection(snapshot: &snapshot)
-    }
-    self.snapshot = snapshot
+  private func updateList() {
+    var snapshot = BatteryRecharge.Snapshot()
     
+    setupOptionsSection(snapshot: &snapshot)
+    setupCustomInputSection(snapshot: &snapshot)
+    setupContinueButtonSection(snapshot: &snapshot)
+
     didUpdateSnapshot?(snapshot)
   }
 
-  func createOptionsSection(snapshot: inout BatteryRecharge.Snapshot) {
-    snapshot.deleteSections([.options])
+  func setupOptionsSection(snapshot: inout BatteryRecharge.Snapshot) {
     var snapshotItems = [BatteryRecharge.SnapshotItem]()
     
-    for item in modelState.items {
+    for item in model.optionsItems {
       let snapshotItem = createOptionSnapshotItem(option: item)
       snapshotItems.append(snapshotItem)
     }
     
     snapshot.appendSections([.options])
     snapshot.appendItems(snapshotItems, toSection: .options)
-    snapshot.reloadItems(snapshotItems)
+  }
+  
+  func setupCustomInputSection(snapshot: inout BatteryRecharge.Snapshot) {
+    guard model.isCustomInputEnable else {
+      return
+    }
+    snapshot.appendSections([.customInput])
+    snapshot.appendItems([.customInput], toSection: .customInput)
+  }
+  
+  func setupContinueButtonSection(snapshot: inout BatteryRecharge.Snapshot) {
+    snapshot.appendSections([.continueButton])
+    snapshot.appendItems([.continueButton], toSection: .continueButton)
   }
   
   func createOptionSnapshotItem(option: BatteryRechargeModel.OptionItem) -> BatteryRecharge.SnapshotItem {
@@ -153,49 +181,29 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
       )
     )
     
-    listCellConfigurations[option.identifier] = cellConfiguration
-    
-    
-    return BatteryRecharge.SnapshotItem.listItem(
-      BatteryRecharge.ListItem(
+    return BatteryRecharge.SnapshotItem.rechargeOption(
+      BatteryRecharge.RechargeOptionItem(
         identifier: option.identifier,
+        listCellConfiguration: cellConfiguration,
         isEnable: option.isEnable,
         batteryViewState: batteryViewState,
         onSelection: { [weak self] in
-          self?.model.amount = {
-            switch option {
-            case .prefilled(let prefilled):
-              return prefilled.tokenAmount
-            case .custom:
-              return 0
-            }
-          }()
+          self?.model.selectedOptionItem = option
         }
       )
     )
   }
   
-  func createContinueButtonSection(snapshot: inout BatteryRecharge.Snapshot) {
-    snapshot.deleteSections([.continueButton])
-    
+  func updateContinueButton() {
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
-    buttonConfiguration.isEnabled = modelState.isContinueButtonEnable
+    buttonConfiguration.isEnabled = model.isContinueEnable
     buttonConfiguration.action = { [weak self] in
       guard let self else { return }
       let payload = model.getConfirmationPayload()
       didTapContinue?(payload)
     }
     
-    continueButtonCellConfiguration = TKButtonCell.Model(
-      id: "continue_button",
-      configuration: buttonConfiguration,
-      padding: .zero,
-      mode: .full
-    )
-
-    snapshot.appendSections([.continueButton])
-    snapshot.appendItems([.continueButton])
-    snapshot.reloadItems([.continueButton])
+    didUpdateContinueButtonConfiguration?(buttonConfiguration)
   }
 }

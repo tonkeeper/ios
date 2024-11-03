@@ -4,36 +4,35 @@ import TKUIKit
 enum BatteryRecharge {
   enum SnapshotSection: Hashable {
     case options
+    case customInput
     case continueButton
   }
   
   enum SnapshotItem: Hashable {
-    case listItem(ListItem)
+    case rechargeOption(RechargeOptionItem)
+    case customInput
     case continueButton
   }
 
-  struct ListItem: Hashable {
+  struct RechargeOptionItem: Hashable {
     let identifier: String
+    let listCellConfiguration: TKListItemCell.Configuration
     let isEnable: Bool
     let batteryViewState: BatteryView.State
     let onSelection: () -> Void
     
-    static func == (lhs: ListItem, rhs: ListItem) -> Bool {
+    static func == (lhs: RechargeOptionItem, rhs: RechargeOptionItem) -> Bool {
       lhs.identifier == rhs.identifier
+      && lhs.listCellConfiguration == rhs.listCellConfiguration
+      && lhs.isEnable == rhs.isEnable
+      && lhs.batteryViewState == rhs.batteryViewState
     }
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(identifier)
-    }
-    
-    init(identifier: String,
-         isEnable: Bool,
-         batteryViewState: BatteryView.State,
-         onSelection: @escaping () -> Void) {
-      self.identifier = identifier
-      self.isEnable = isEnable
-      self.batteryViewState = batteryViewState
-      self.onSelection = onSelection
+      hasher.combine(listCellConfiguration)
+      hasher.combine(isEnable)
+      hasher.combine(batteryViewState)
     }
   }
   

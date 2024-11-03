@@ -4,7 +4,7 @@ import TKUIKit
 final class BatteryRechargeView: TKView {
   let navigationBar = TKUINavigationBar()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
-  
+
   public override func layoutSubviews() {
     super.layoutSubviews()
    

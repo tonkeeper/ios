@@ -74,6 +74,7 @@ private extension BatteryRefillViewController {
       case .listItem(let listItem):
         let configuration = viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
         let cell = collectionView.dequeueConfiguredReusableCell(using: listCellRegistration, for: indexPath, item: configuration)
+        cell.leftAccessoryViews = []
         cell.defaultAccessoryViews = [TKListItemAccessory.chevron.view]
         return cell
       case .inAppPurchase(let purhaseItem):

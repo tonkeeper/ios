@@ -8,6 +8,7 @@ public protocol BatteryService {
   func loadBatteryBalance(wallet: Wallet, tonProofToken: String) async throws -> BatteryBalance
   func loadRechargeMethods(wallet: Wallet,
                            includeRechargeOnly: Bool) async throws -> [BatteryRechargeMethod]
+  func getRechargeMethods(includeRechargeOnly: Bool) -> [BatteryRechargeMethod]
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
@@ -17,9 +18,12 @@ public protocol BatteryService {
 final class BatteryServiceImplementation: BatteryService {
   
   private let batteryAPIProvider: BatteryAPIProvider
+  private let rechargeMethodsRepository: BatteryRechargeMethodsRepository
   
-  init(batteryAPIProvider: BatteryAPIProvider) {
+  init(batteryAPIProvider: BatteryAPIProvider,
+       rechargeMethodsRepository: BatteryRechargeMethodsRepository) {
     self.batteryAPIProvider = batteryAPIProvider
+    self.rechargeMethodsRepository = rechargeMethodsRepository
   }
   
   func loadBatteryBalance(wallet: Wallet,
@@ -35,8 +39,12 @@ final class BatteryServiceImplementation: BatteryService {
     let methods = try await batteryAPIProvider
       .api(wallet.isTestnet)
       .getRechargeMethos(includeRechargeOnly: includeRechargeOnly)
-    
+    try? rechargeMethodsRepository.saveRechargeMethods(_methods: methods, rechargeOnly: includeRechargeOnly)
     return methods
+  }
+  
+  func getRechargeMethods(includeRechargeOnly: Bool) -> [BatteryRechargeMethod] {
+    rechargeMethodsRepository.getRechargeMethods(rechargeOnly: includeRechargeOnly)
   }
   
   func loadBatteryConfig(wallet: Wallet) async throws -> Config {

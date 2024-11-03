@@ -2,6 +2,9 @@ import TKUIKit
 import UIKit
 
 final class AmountInputViewController: GenericViewViewController<AmountInputView> {
+  
+  var isInputEditing: Bool = false
+  
   private let viewModel: AmountInputViewModel
   
   private let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
@@ -48,6 +51,12 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
       let unformatted = sendAmountTextFieldFormatter.unformatString(text)
       viewModel.didEditText(unformatted)
     }), for: .editingChanged)
+    customView.valueView.inputControl.inputTextField.addAction(UIAction(handler: { [weak self] _ in
+      self?.isInputEditing = true
+    }), for: .editingDidBegin)
+    customView.valueView.inputControl.inputTextField.addAction(UIAction(handler: { [weak self] _ in
+      self?.isInputEditing = false
+    }), for: .editingDidEnd)
   }
   
   private func setupBindings() {
@@ -59,7 +68,6 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
     }
     viewModel.didUpdateInputText = { [weak self] in
       guard let self else { return }
-//      let unformatted = sendAmountTextFieldFormatter.unformatString($0)
       customView.valueView.inputControl.setInputValue(string: $0)
     }
     viewModel.didUpdateBalanceViewConfiguration = { [weak self] in

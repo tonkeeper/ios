@@ -122,13 +122,13 @@ final class BatteryRefillRechargeMethodsModel {
       return RechargeMethodItem.token(
         token: .jetton(jettonBalance.jettonBalance.item),
         amount: jettonBalance.jettonBalance.quantity,
-        rate: rechargeMethod.rateDecimalNumber
+        rate: rechargeMethod.rate
       )
     }
     
     var result = items
     if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount), rate: tonRechargeMethods.first?.rateDecimalNumber))
+      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount), rate: tonRechargeMethods.first?.rate))
     }
     if !result.isEmpty {
       let giftItem = result[0]

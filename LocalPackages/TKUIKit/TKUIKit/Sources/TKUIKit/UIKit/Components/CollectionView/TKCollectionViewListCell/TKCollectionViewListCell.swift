@@ -131,6 +131,14 @@ open class TKCollectionViewListCell: UICollectionViewCell {
     onSelection?(state.isSelected)
   }
   
+  open override func prepareForReuse() {
+    super.prepareForReuse()
+    defaultAccessoryViews = []
+    selectionAccessoryViews = []
+    editingAccessoryViews = []
+    leftAccessoryViews = []
+  }
+  
   open func didUpdateCellOrderInSection() {
     updateSeparatorVisibility()
   }

@@ -138,9 +138,8 @@ struct BatteryRechargeBocBuilder {
   
   private func getRechargeMethodMaxInputAmount(rechargeMethod: BatteryRechargeMethod?,
                                                batteryMaxInputAmount: NSDecimalNumber) -> NSDecimalNumber {
-    guard let rechargeMethod,
-          let rate = rechargeMethod.rateDecimalNumber else { return 0 }
-    return batteryMaxInputAmount.dividing(by: rate)
+    guard let rechargeMethod else { return 0 }
+    return batteryMaxInputAmount.dividing(by: rechargeMethod.rate)
   }
   
   private func getBatteryBalance(wallet: Wallet) async -> BatteryBalance {
@@ -180,7 +179,7 @@ struct BatteryRechargeBocBuilder {
     case .jetton:
       if batteryBalance.balanceDecimalNumber.compare(0) == .orderedDescending {
         return true
-      } else if let minBootstrapValue = rechargeMethod?.minBootstrapValueDecimalNumber {
+      } else if let minBootstrapValue = rechargeMethod?.minBootstrapValue {
         return minBootstrapValue.compare(amount) == .orderedAscending
       } else {
         return false

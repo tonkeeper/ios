@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class BatteryRechargeViewController: GenericViewViewController<BatteryRechargeView> {
+final class BatteryRechargeViewController: GenericViewViewController<BatteryRechargeView>, KeyboardObserving {
   private let viewModel: BatteryRechargeViewModel
   
   // MARK: - List
@@ -13,10 +13,17 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
   
   private let titleLabel = UILabel()
   
+  // MARK: - Custom input
+  
+  private let amountInputViewController: AmountInputViewController
+  private let continueButton = TKButton()
+  
   // MARK: - Init
   
-  init(viewModel: BatteryRechargeViewModel) {
+  init(viewModel: BatteryRechargeViewModel,
+       amountInputViewController: AmountInputViewController) {
     self.viewModel = viewModel
+    self.amountInputViewController = amountInputViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -32,25 +39,59 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+  }
+
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
+  public func keyboardWillShow(_ notification: Notification) {
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
+    customView.collectionView.contentInset.bottom = keyboardHeight
+    if amountInputViewController.isInputEditing {
+      let inputFrame = amountInputViewController.view.frame
+      let convertedInputFrame = customView.collectionView.convert(inputFrame, from: amountInputViewController.view.superview)
+      let maxContentOffsetY: CGFloat = customView.collectionView.contentSize.height
+      + customView.collectionView.contentInset.bottom
+      - customView.collectionView.bounds.height
+      let contentOffsetY = min(maxContentOffsetY, convertedInputFrame.minY)
+      customView.collectionView.setContentOffset(CGPoint(x: 0, y: contentOffsetY), animated: true)
+    }
+  }
+  
+  public func keyboardWillHide(_ notification: Notification) {
+    customView.collectionView.contentInset.bottom = 0
+  }
 }
 
 private extension BatteryRechargeViewController {
   func setup() {
-    customView.navigationBar.apperance = .transparent
     setupNavigationBar()
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.register(TKButtonCell.self, forCellWithReuseIdentifier: "ButtonCell")
+    customView.collectionView.register(
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+    )
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      guard let self else { return }
-      self.dataSource.apply(snapshot, animatingDifferences: false)
+      self?.dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     viewModel.didUpdateTitle = { [weak self] title in
       self?.titleLabel.attributedText = title.withTextStyle(.h3, color: .Text.primary)
+    }
+    
+    viewModel.didUpdateContinueButtonConfiguration = { [weak self] in
+      self?.continueButton.configuration = $0
     }
   }
   
@@ -62,7 +103,6 @@ private extension BatteryRechargeViewController {
         self?.dismiss(animated: true)
       }
     ]
-    
   }
   
   func createDataSource() -> BatteryRecharge.DataSource {
@@ -74,26 +114,32 @@ private extension BatteryRechargeViewController {
       collectionView, indexPath, itemIdentifier -> UICollectionViewCell? in
       guard let self else { return nil }
       switch itemIdentifier {
-      case .listItem(let listItem):
-        guard let cellConfiguration = self.viewModel.listCellConfiguration(identifier: listItem.identifier) else {
-          return nil
-        }
-        
+      case .rechargeOption(let item):
         let cell = collectionView.dequeueConfiguredReusableCell(
           using: listCellRegistration,
           for: indexPath,
-          item: cellConfiguration)
-        cell.defaultAccessoryViews = [createRadioButtonAccessoryView(isEnable: listItem.isEnable,
+          item: item.listCellConfiguration)
+        cell.defaultAccessoryViews = [createRadioButtonAccessoryView(isEnable: item.isEnable,
                                                                      isSelected: false)]
-        cell.selectionAccessoryViews = [createRadioButtonAccessoryView(isEnable: listItem.isEnable,
+        cell.selectionAccessoryViews = [createRadioButtonAccessoryView(isEnable: item.isEnable,
                                                                        isSelected: true)]
-        cell.leftAccessoryViews = [self.createAccessoryBatteryView(item: listItem)]
+        cell.leftAccessoryViews = [self.createAccessoryBatteryView(item: item)]
+        return cell
+      case .customInput:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier, 
+          for: indexPath
+        )
+        self.addChild(amountInputViewController)
+        (cell as? TKContainerCollectionViewCell)?.setContentView(amountInputViewController.view)
+        amountInputViewController.didMove(toParent: self)
         return cell
       case .continueButton:
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ButtonCell", for: indexPath)
-        if let configuration = viewModel.continueButtonCellConfiguration {
-          (cell as? TKButtonCell)?.configure(model: configuration)
-        }
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        (cell as? TKContainerCollectionViewCell)?.setContentView(continueButton)
         return cell
       }
     }
@@ -145,7 +191,7 @@ private extension BatteryRechargeViewController {
     return layout
   }
   
-  private func createAccessoryBatteryView(item: BatteryRecharge.ListItem) -> UIView  {
+  private func createAccessoryBatteryView(item: BatteryRecharge.RechargeOptionItem) -> UIView  {
     let batteryView = BatteryView(size: .size44)
     batteryView.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 0)
     batteryView.state = item.batteryViewState
@@ -159,19 +205,21 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case .listItem(let listItem):
-      listItem.onSelection()
+    case .rechargeOption(let item):
+      item.onSelection()
     default: break
     }
   }
-  
+
   func collectionView(_ collectionView: UICollectionView,
                       shouldSelectItemAt indexPath: IndexPath) -> Bool {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case .listItem(let listItem):
-      return listItem.isEnable
+    case .rechargeOption(let item):
+      return item.isEnable
+    case .customInput:
+      return false
     case .continueButton:
       return false
     }
@@ -182,10 +230,22 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case .listItem(let listItem):
-      return listItem.isEnable
+    case .rechargeOption(let item):
+      return item.isEnable
+    case .customInput:
+      return false
     case .continueButton:
       return false
     }
+  }
+}
+
+extension NSDiffableDataSourceSnapshot {
+  func getItem(at indexPath: IndexPath) -> ItemIdentifierType? {
+    guard sectionIdentifiers.count > indexPath.section else { return nil }
+    let section = sectionIdentifiers[indexPath.section]
+    let sectionItemIdentifiers = itemIdentifiers(inSection: section)
+    guard sectionItemIdentifiers.count > indexPath.item else { return nil }
+    return sectionItemIdentifiers[indexPath.item]
   }
 }

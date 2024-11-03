@@ -102,7 +102,7 @@ final class BatteryView: UIView {
     }
   }
   
-  enum State {
+  enum State: Hashable {
     case fill(CGFloat)
     case emptyTinted
     case empty

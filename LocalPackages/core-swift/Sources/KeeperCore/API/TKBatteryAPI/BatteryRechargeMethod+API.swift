@@ -20,11 +20,11 @@ extension BatteryRechargeMethod {
       return URL(string: image)
     }()
     
-    rate = method.rate
+    rate = NSDecimalNumber(string: method.rate)
     symbol = method.symbol
     decimals = method.decimals
     supportGasless = method.supportGasless
     supportRecharge = method.supportRecharge
-    minBootstrapValue = method.minBootstrapValue
+    minBootstrapValue = NSDecimalNumber(string: method.minBootstrapValue)
   }
 }

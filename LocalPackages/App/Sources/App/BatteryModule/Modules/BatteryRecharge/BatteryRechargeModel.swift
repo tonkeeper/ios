@@ -48,55 +48,115 @@ final class BatteryRechargeModel {
     }
   }
 
-  struct State {
-    let items: [OptionItem]
-    let isContinueButtonEnable: Bool
+  var didUpdateOptionItems: (() -> Void)?
+  private(set) var optionsItems = [OptionItem]() {
+    didSet { didUpdateOptionItems?() }
   }
   
-  var didUpdateState: ((State) -> Void)?
+  var didUpdateIsContinueEnable: (() -> Void)?
+  private(set) var isContinueEnable = false {
+    didSet { didUpdateIsContinueEnable?() }
+  }
   
-  var state: State {
-    getState()
+  var didUpdateIsCustomInputEnable: (() -> Void)?
+  private(set) var isCustomInputEnable = false {
+    didSet { didUpdateIsCustomInputEnable?() }
+  }
+  
+  var didUpdateToken: (() -> Void)?
+  var didUpdateRate: (() -> Void)?
+  
+  var selectedOptionItem: OptionItem? {
+    didSet {
+      switch selectedOptionItem {
+      case .prefilled(let prefilled):
+        isCustomInputEnable = false
+        amount = prefilled.tokenAmount
+      case .custom:
+        isCustomInputEnable = true
+        amount = 0
+      case nil:
+        isCustomInputEnable = false
+        amount = 0
+      }
+    }
+  }
+  
+  var didUpdateBalance: (() -> Void)?
+  var balance: BigUInt {
+    let balance = balanceStore.getState()[wallet]?.walletBalance.balance
+    switch token {
+    case .ton:
+      return BigUInt(balance?.tonBalance.amount ?? 0)
+    case .jetton(let jettonItem):
+      return (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0)
+    }
   }
   
   var amount: BigUInt = 0 {
     didSet {
-      didUpdateAmount()
+      updateIsContinueEnable()
     }
   }
   
-  var selectedOption: OptionItem? {
+  private(set) var token: Token {
     didSet {
-      didUpdateAmount()
+      didUpdateToken?()
+      
     }
   }
+  private(set) var tonChargeRate: NSDecimalNumber = 1 {
+    didSet {
+      didUpdateRate?()
+    }
+  }
+  private(set) var chargeTonRate: NSDecimalNumber = 1
   
-  private var token: Token
-  private var rate: NSDecimalNumber?
   private let wallet: Wallet
   private let balanceStore: BalanceStore
   private let currencyStore: CurrencyStore
   private let tonRatesStore: TonRatesStore
+  private let batteryService: BatteryService
   private let configuration: Configuration
   
   init(token: Token,
-       rate: NSDecimalNumber?,
        wallet: Wallet,
        balanceStore: BalanceStore,
        currencyStore: CurrencyStore,
        tonRatesStore: TonRatesStore,
+       batteryService: BatteryService,
        configuration: Configuration) {
     self.token = token
-    self.rate = rate
     self.wallet = wallet
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.tonRatesStore = tonRatesStore
+    self.batteryService = batteryService
     self.configuration = configuration
     
     configuration.addUpdateObserver(self) { observer in
-      let state = observer.getState()
-      observer.didUpdateState?(state)
+      DispatchQueue.main.async {
+        observer.updateOptionsItems()
+      }
+    }
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateBalanceState(let wallet):
+        guard wallet == observer.wallet else { return }
+        DispatchQueue.main.async {
+          observer.updateOptionsItems()
+          observer.didUpdateBalance?()
+        }
+      }
+    }
+    tonRatesStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateTonRates:
+        guard wallet == observer.wallet else { return }
+        DispatchQueue.main.async {
+          observer.updateOptionsItems()
+        }
+      }
     }
   }
   
@@ -104,7 +164,67 @@ final class BatteryRechargeModel {
     BatteryRechargePayload(token: token, amount: amount)
   }
   
-  private func getState() -> State {
+  func start() {
+    calculateTonChargeRate()
+    updateOptionsItems()
+    updateIsContinueEnable()
+    didUpdateToken?()
+    didUpdateRate?()
+  }
+  
+  private func calculateTonChargeRate() {
+    let methods = batteryService.getRechargeMethods(includeRechargeOnly: false)
+    guard let method: BatteryRechargeMethod = {
+      switch token {
+      case .ton:
+        return methods.first(where: { $0.token == .ton })
+      case .jetton(let jettonItem):
+        return methods.first(where: { $0.jettonMasterAddress == jettonItem.jettonInfo.address })
+      }
+    }(), let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber else {
+      tonChargeRate = 1
+      return
+    }
+    
+    let methodRate = method.rate
+    let chargeTonRate = batteryMeanFees
+      .dividing(by: methodRate, 
+                withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour)
+    let tonChargeRate = NSDecimalNumber(1)
+      .dividing(by: chargeTonRate,
+                withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour)
+    self.tonChargeRate = tonChargeRate
+    self.chargeTonRate = chargeTonRate
+  }
+
+  private func calculateTokenAmount(chargesCount: Int) -> BigUInt {
+    let value = chargeTonRate
+      .multiplying(by: NSDecimalNumber(value: chargesCount))
+      .multiplying(byPowerOf10: Int16(token.fractionDigits))
+      .rounding(accordingToBehavior: NSDecimalNumberHandler.zeroRoundBehaviour)
+      .uint64Value
+    
+    return BigUInt(value)
+  }
+  
+  private func calculateFiatAmount(tokenAmount: BigUInt, currency: Currency, rates: Rates.Rate?) -> Decimal {
+    guard let rates else { return 0 }
+    return RateConverter().convertToDecimal(amount: tokenAmount, amountFractionLength: token.fractionDigits, rate: rates)
+  }
+  
+  private func updateIsContinueEnable() {
+    let balance = balanceStore.getState()[wallet]?.walletBalance.balance
+    let isAmountAvailable: Bool
+    switch token {
+    case .ton:
+      isAmountAvailable = (balance?.tonBalance.amount ?? 0) >= amount
+    case .jetton(let jettonItem):
+      isAmountAvailable = (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0) >= amount
+    }
+    self.isContinueEnable = isAmountAvailable && amount > 0
+  }
+  
+  private func updateOptionsItems() {
     let currency = currencyStore.getState()
     let balance = balanceStore.getState()[wallet]?.walletBalance.balance
     let rates: Rates.Rate? = {
@@ -123,9 +243,7 @@ final class BatteryRechargeModel {
     
     var items = BatteryRechargeItem.allCases.map { rechargeItem -> OptionItem in
       let tokenAmount = calculateTokenAmount(
-        chargesCount: rechargeItem.chargesCount,
-        rate: rate,
-        batteryMeanFees: configuration.batteryMeanFeesDecimaNumber
+        chargesCount: rechargeItem.chargesCount
       )
       
       let isEnable = {
@@ -136,6 +254,10 @@ final class BatteryRechargeModel {
           (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0) >= tokenAmount
         }
       }()
+      
+      if rechargeItem.rawValue == selectedOptionItem?.identifier, !isEnable {
+        self.selectedOptionItem = nil
+      }
 
       let fiatAmount = calculateFiatAmount(tokenAmount: tokenAmount, currency: currency, rates: rates)
       
@@ -143,9 +265,7 @@ final class BatteryRechargeModel {
         OptionItem.Prefilled(
           identifier: rechargeItem.rawValue,
           chargesCount: rechargeItem.chargesCount,
-          tokenAmount: calculateTokenAmount(chargesCount: rechargeItem.chargesCount,
-                                            rate: rate,
-                                            batteryMeanFees: configuration.batteryMeanFeesDecimaNumber),
+          tokenAmount: calculateTokenAmount(chargesCount: rechargeItem.chargesCount),
           tokenSymbol: token.symbol,
           tokenDigits: token.fractionDigits,
           fiatAmount: fiatAmount,
@@ -156,47 +276,7 @@ final class BatteryRechargeModel {
       )
     }
     items.append(.custom)
-    return State(items: items, isContinueButtonEnable: isContinueButtonEnabled())
-  }
-  
-  private func isContinueButtonEnabled() -> Bool {
-    let balance = balanceStore.getState()[wallet]?.walletBalance.balance
-    let isAmountAvailable = {
-      switch token {
-      case .ton:
-        (balance?.tonBalance.amount ?? 0) >= amount
-      case .jetton(let jettonItem):
-        (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0) >= amount
-      }
-    }()
-    return isAmountAvailable && amount > 0
-  }
-  
-  private func calculateTokenAmount(chargesCount: Int,
-                                    rate: NSDecimalNumber?,
-                                    batteryMeanFees: NSDecimalNumber?) -> BigUInt {
-    guard let rate, let batteryMeanFees else { return 0 }
-    let amount = NSDecimalNumber(integerLiteral: chargesCount)
-      .multiplying(by: batteryMeanFees, withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour)
-      .dividing(by: rate, withBehavior: NSDecimalNumberHandler.multiplyingRoundBehaviour)
-      .rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour)
-      .multiplying(byPowerOf10: Int16(token.fractionDigits))
-      .uint64Value
-    return BigUInt(integerLiteral: amount)
-  }
-  
-  private func calculateFiatAmount(tokenAmount: BigUInt, currency: Currency, rates: Rates.Rate?) -> Decimal {
-    guard let rates else { return 0 }
-    return RateConverter().convertToDecimal(amount: tokenAmount, amountFractionLength: token.fractionDigits, rate: rates)
-  }
-  
-  private func didUpdateAmount() {
-    let state = getState()
-    didUpdateState?(state)
-  }
-  
-  private func didUpdateSelectedOption() {
-    
+    self.optionsItems = items
   }
 }
 
@@ -217,6 +297,17 @@ private extension NSDecimalNumberHandler {
     return NSDecimalNumberHandler(
       roundingMode: .plain,
       scale: 2,
+      raiseOnExactness: false,
+      raiseOnOverflow: false,
+      raiseOnUnderflow: false,
+      raiseOnDivideByZero: false
+    )
+  }
+  
+  static var zeroRoundBehaviour: NSDecimalNumberHandler {
+    return NSDecimalNumberHandler(
+      roundingMode: .plain,
+      scale: 0,
       raiseOnExactness: false,
       raiseOnOverflow: false,
       raiseOnUnderflow: false,
