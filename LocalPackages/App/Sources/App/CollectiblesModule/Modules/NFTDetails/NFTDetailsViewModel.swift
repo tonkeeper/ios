@@ -120,6 +120,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     } else {
       hideNftTitle = TKLocales.Actions.hideNft
     }
+    
+    var menuItems: [TKPopupMenuItem] = []
 
     let hideNftITem = TKPopupMenuItem(
       title: hideNftTitle,
@@ -132,6 +134,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         }
       }
     )
+    
+    menuItems.append(hideNftITem)
 
     let tonViewerItem = TKPopupMenuItem(
       title: TKLocales.Actions.viewOnTonviewier,
@@ -144,6 +148,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       }
     )
     
+    menuItems.append(tonViewerItem)
+
     let burnItem = TKPopupMenuItem(
       title: TKLocales.Actions.burnNft,
       icon: .TKUIKit.Icons.Size16.fireBadge,
@@ -154,8 +160,12 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         self.didTapBurn?(self.nft)
       }
     )
+    
+    if (isNFTOwner) {
+      menuItems.append(burnItem)
+    }
 
-    return [hideNftITem, tonViewerItem, burnItem]
+    return menuItems
   }
 
   private func createTitleViewModel(isSecureMode: Bool) -> TKUINavigationBarTitleView.Model {
