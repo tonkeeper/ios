@@ -58,10 +58,16 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
     setup()
     batteryPromocodeStore.addObserver(self) { observer, _ in
       DispatchQueue.main.async {
-        observer.resolvingState = observer.batteryPromocodeStore.state
+        let state = observer.batteryPromocodeStore.state
+        guard observer.resolvingState != state else { return }
+        observer.resolvingState = state
       }
     }
     resolvingState = batteryPromocodeStore.state
+  }
+  
+  func endEditing() {
+    promocodeTextInputControl.resignFirstResponder()
   }
   
   private func setup() {
@@ -75,12 +81,10 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
     promocodeTextField.didEndEditing = { [weak self] in
       guard let self else { return }
       self.isInputEditing = false
-      let text = self.promocodeTextField.text
-      resolve(text: text)
     }
-    promocodeTextField.didUpdateText = { [weak self] _ in
+    promocodeTextField.didUpdateText = { [weak self] text in
       self?.promocodeTextField.isValid = true
-      self?.resolvingState = .none
+      self?.resolve(text: text)
     }
     updateTextFieldRightItems()
     
@@ -90,6 +94,7 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
       guard let pasteboardString = UIPasteboard.general.string else { return }
       self?.promocodeTextField.text = pasteboardString
       self?.promocodeTextField.resignFirstResponder()
+      self?.resolve(text: pasteboardString)
     }
     promocodePasteButton.configuration = configuration
     
@@ -112,14 +117,17 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
     
     resolvingTask = Task { @MainActor [weak self] in
       guard let self else { return }
-      await batteryPromocodeStore.setResolveState(.resolving(promocode: text))
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
+      try? await Task.sleep(nanoseconds: 500_000_000)
       guard !Task.isCancelled else { return }
+      self.resolvingState = .resolving(promocode: text)
+      await batteryPromocodeStore.setResolveState(.resolving(promocode: text))
       do {
         try await batteryService.verifyPromocode(wallet: wallet, promocode: text)
+        self.resolvingState = .success(promocode: text)
         await batteryPromocodeStore.setResolveState(.success(promocode: text))
       } catch {
-        await batteryPromocodeStore.setResolveState(.failed)
+        self.resolvingState = .failed(promocode: text)
+        await batteryPromocodeStore.setResolveState(.failed(promocode: text))
       }
     }
   }
@@ -131,11 +139,14 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
     case .success(let promocode):
       promocodeTextField.isValid = true
       promocodeTextField.text = promocode
-    case .failed:
+    case .failed(let promocode):
       promocodeTextField.isValid = false
+      promocodeTextField.text = promocode
     case .resolving(let promocode):
       promocodeTextField.isValid = true
-      promocodeTextField.text = promocode
+      if promocodeTextField.text.isEmpty {
+        promocodeTextField.text = promocode
+      }
     }
     updateTextFieldRightItems()
   }
@@ -155,7 +166,7 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
           mode: .nonEmpty,
           padding: UIEdgeInsets(
             top: 0,
-            left: 8,
+            left: 0,
             bottom: 0,
             right: 8
           )
@@ -168,9 +179,9 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
           mode: .nonEmpty,
           padding: UIEdgeInsets(
             top: 0,
-            left: 8,
+            left: 2,
             bottom: 0,
-            right: 8
+            right: 18
           )
         )
       )

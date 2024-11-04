@@ -50,12 +50,19 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     customView.collectionView.contentInset.bottom = keyboardHeight + 16
     if promocodeViewController.isInputEditing {
-      customView.collectionView.scrollToView(promocodeViewController.view, animated: true)
+      customView.collectionView.scrollVerticallyToView(promocodeViewController.view, animated: true)
     }
   }
   
   public func keyboardWillHide(_ notification: Notification) {
     customView.collectionView.contentInset.bottom = view.safeAreaInsets.bottom + 16
+  }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.navigationBar.layoutIfNeeded()
+    customView.collectionView.contentInset.top = customView.navigationBar.bounds.height
   }
 }
 
@@ -197,6 +204,7 @@ extension BatteryRefillViewController: UICollectionViewDelegate {
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
     case .listItem(let item):
+      promocodeViewController.endEditing()
       item.onSelection?()
     default: break
     }
@@ -210,9 +218,5 @@ extension BatteryRefillViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
     let snapshot = dataSource.snapshot()
     return snapshot.sectionIdentifiers[indexPath.section].isSelectable
-  }
-  
-  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-    promocodeViewController.view.endEditing(true)
   }
 }

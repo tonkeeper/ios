@@ -5,14 +5,6 @@ final class BatteryRefillView: TKView {
   let navigationBar = TKUINavigationBar()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
-  public override func layoutSubviews() {
-    super.layoutSubviews()
-   
-    navigationBar.layoutIfNeeded()
-    collectionView.contentInset.top = navigationBar.bounds.height
-    collectionView.contentInset.bottom = safeAreaInsets.bottom + 16
-  }
-
   override func setup() {
     super.setup()
     

@@ -1,9 +1,9 @@
 import Foundation
 
-public enum BatteryPromocodeResolveState {
+public enum BatteryPromocodeResolveState: Equatable {
   case none
   case success(promocode: String)
-  case failed
+  case failed(promocode: String)
   case resolving(promocode: String)
 }
 

@@ -64,9 +64,9 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     customView.collectionView.contentInset.bottom = keyboardHeight
     if amountInputViewController.isInputEditing {
-      customView.collectionView.scrollToView(amountInputViewController.view, animated: true)
+      customView.collectionView.scrollVerticallyToView(amountInputViewController.view, animated: true)
     } else if promocodeViewController.isInputEditing {
-      customView.collectionView.scrollToView(promocodeViewController.view, animated: true)
+      customView.collectionView.scrollVerticallyToView(promocodeViewController.view, animated: true)
     }
   }
   
@@ -260,10 +260,6 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     case .customInput, .continueButton, .promocode:
       return false
     }
-  }
-  
-  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
-    view.endEditing(true)
   }
 }
 
