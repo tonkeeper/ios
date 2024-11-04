@@ -16,17 +16,14 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let parentRouter: TabBarControllerRouter?
-  private let recipientResolver: RecipientResolver
 
   public init(router: NavigationControllerRouter,
               parentRouter: TabBarControllerRouter?,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly,
-              recipientResolver: RecipientResolver) {
+              keeperCoreMainAssembly: KeeperCore.MainAssembly) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.parentRouter = parentRouter
-    self.recipientResolver = recipientResolver
     super.init(router: router)
     router.rootViewController.tabBarItem.title = TKLocales.Tabs.collectibles
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
@@ -87,8 +84,7 @@ private extension CollectiblesCoordinator {
       nft: nft,
       wallet: wallet,
       coreAssembly: coreAssembly,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      recipientResolver: recipientResolver
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
     coordinator.didOpenDapp = { [weak self] url, title in
