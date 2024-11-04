@@ -14,6 +14,7 @@
 "actions.hide_collection" = "Скрыть коллекцию";
 "actions.hide_and_report_spam" = "Скрыть и пожаловаться";
 "actions.view_on_tonviewier" = "Открыть в Tonviewer";
+"actions.burn_nft" = "Сжечь NFT";
 
 "state.failed" = "Неуспешно";
 

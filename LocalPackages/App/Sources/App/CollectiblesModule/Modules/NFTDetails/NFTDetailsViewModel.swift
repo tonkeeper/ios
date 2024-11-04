@@ -7,6 +7,7 @@ import TKLocalize
 protocol NFTDetailsModuleOutput: AnyObject {
   var didClose: (() -> Void)? { get set }
   var didTapTransfer: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
+  var didTapBurn: ((_ nft: NFT) -> Void)? { get set }
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
@@ -73,6 +74,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   // MARK: - NFTDetailsModuleOutput
   
   var didClose: (() -> Void)?
+  var didTapBurn: ((NFT) -> Void)?
   var didTapTransfer: ((Wallet, NFT) -> Void)?
   var didTapLinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
@@ -118,6 +120,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     } else {
       hideNftTitle = TKLocales.Actions.hideNft
     }
+    
+    var menuItems: [TKPopupMenuItem] = []
 
     let hideNftITem = TKPopupMenuItem(
       title: hideNftTitle,
@@ -130,6 +134,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         }
       }
     )
+    
+    menuItems.append(hideNftITem)
 
     let tonViewerItem = TKPopupMenuItem(
       title: TKLocales.Actions.viewOnTonviewier,
@@ -141,8 +147,25 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         self.didTapOpenInTonviewer?(.nftHistory(nft: self.nft))
       }
     )
+    
+    menuItems.append(tonViewerItem)
 
-    return [hideNftITem, tonViewerItem]
+    let burnItem = TKPopupMenuItem(
+      title: TKLocales.Actions.burnNft,
+      icon: .TKUIKit.Icons.Size16.fireBadge,
+      selectionHandler: { [weak self] in
+        guard let self else {
+          return
+        }
+        self.didTapBurn?(self.nft)
+      }
+    )
+    
+    if (isNFTOwner) {
+      menuItems.append(burnItem)
+    }
+
+    return menuItems
   }
 
   private func createTitleViewModel(isSecureMode: Bool) -> TKUINavigationBarTitleView.Model {
