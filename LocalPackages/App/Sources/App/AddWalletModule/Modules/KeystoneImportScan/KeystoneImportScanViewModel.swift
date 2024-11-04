@@ -42,11 +42,9 @@ final class KeystoneImportScanViewModelImplementation: KeystoneImportScanViewMod
         }
       }
       
-      if let note = cryptoHDKey.note, note == "ton" {
-        if let keyData = cryptoHDKey.keyData {
-          let publicKey = TonSwift.PublicKey(data: keyData)
-          self?.didScanQRCode?(publicKey, xfp, path, name)
-        }
+      if let keyData = cryptoHDKey.keyData {
+        let publicKey = TonSwift.PublicKey(data: keyData)
+        self?.didScanQRCode?(publicKey, xfp, path, name)
       }
     }
   }
