@@ -103,6 +103,13 @@ private extension BatteryRefillCoordinator {
       self?.openConfirmation(payload: payload)
     }
     
+    weak var moduleInput = module.input
+    module.output.didSelectTokenPicker = { [weak self] in
+      self?.openTokenPicker(token: $0, completion: { token in
+        moduleInput?.setToken(token: token)
+      })
+    }
+    
     router.present(module.view)
   }
   
@@ -150,5 +157,33 @@ private extension BatteryRefillCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openTokenPicker(token: Token, completion: @escaping (Token) -> Void) {
+    let model = BatteryTokenPickerModel(
+      wallet: wallet,
+      selectedToken: token,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService()
+    )
+    
+    let module = TokenPickerAssembly.module(
+      wallet: wallet,
+      model: model,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didSelectToken = { token in
+      completion(token)
+    }
+    
+    module.output.didFinish = {  [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
   }
 }

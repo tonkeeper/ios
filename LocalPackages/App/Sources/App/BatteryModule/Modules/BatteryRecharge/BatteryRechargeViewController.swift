@@ -13,6 +13,10 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
   
   private let titleLabel = UILabel()
   
+  // MARK: - TokenPicker
+  
+  private let tokenPickerButton = TokenPickerButton()
+  
   // MARK: - Custom input
   
   private let amountInputViewController: AmountInputViewController
@@ -71,10 +75,12 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
 
 private extension BatteryRechargeViewController {
   func setup() {
+    tokenPickerButton.contentPadding = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 8)
+    tokenPickerButton.category = .secondary
+    
     setupNavigationBar()
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
-    customView.collectionView.register(TKButtonCell.self, forCellWithReuseIdentifier: "ButtonCell")
     customView.collectionView.register(
       TKContainerCollectionViewCell.self,
       forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
@@ -93,12 +99,21 @@ private extension BatteryRechargeViewController {
     viewModel.didUpdateContinueButtonConfiguration = { [weak self] in
       self?.continueButton.configuration = $0
     }
+    viewModel.didUpdateTokenPickerButtonConfiguration = { [weak self] in
+      self?.tokenPickerButton.configuration = $0
+    }
+    viewModel.didUpdateTokenPickerAction = { [weak self] action in
+      self?.tokenPickerButton.didTap = {
+        action()
+      }
+    }
   }
   
   private func setupNavigationBar() {
     customView.navigationBar.leftViews = [titleLabel]
     
     customView.navigationBar.rightViews = [
+      tokenPickerButton,
       TKUINavigationBar.createCloseButton { [weak self] in
         self?.dismiss(animated: true)
       }

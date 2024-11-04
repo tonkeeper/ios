@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import KeeperCore
 import TKCore
 import BigInt
@@ -43,19 +44,10 @@ struct Model {
   }
   
   struct Amount {
-    struct Token {
-      enum Image {
-        case image(UIImage)
-        case asyncImage(ImageDownloadTask)
-      }
-      let image: Image
-      let title: String
-    }
-    
     let placeholder: String
     let text: String
     let fractionDigits: Int
-    let token: Token
+    let token: TokenPickerButton.Configuration
   }
   
   struct Comment {
@@ -340,7 +332,6 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
   private let balanceStore: ConvertedBalanceStore
   private let appSettingsStore: AppSettingsStore
@@ -487,29 +478,10 @@ private extension SendV3ViewModelImplementation {
       placeholder: TKLocales.Send.Amount.placeholder,
       text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
       fractionDigits: tokenFractionalDigits(token: token),
-      token: createTokenModel(token: token)
+      token: TokenPickerButton.Configuration.createConfiguration(token: token)
     )
   }
   
-  func createTokenModel(token: Token) -> Model.Amount.Token {
-    let title: String
-    let image: Model.Amount.Token.Image
-    switch token {
-    case .ton:
-      title = "TON"
-      image = .image(.TKCore.Icons.Size44.tonLogo)
-    case .jetton(let item):
-      title = item.jettonInfo.symbol ?? ""
-      image = .asyncImage(ImageDownloadTask(closure: { [weak self] imageView, size, cornerRadius in
-        self?.imageLoader.loadImage(url: item.jettonInfo.imageURL, imageView: imageView, size: size, cornerRadius: cornerRadius)
-      }))
-    }
-    
-    return Model.Amount.Token(
-      image: image,
-      title: title
-    )
-  }
   
   func update() {
     let model = createModel()

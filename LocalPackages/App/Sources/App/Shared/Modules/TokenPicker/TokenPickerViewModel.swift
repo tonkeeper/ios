@@ -61,7 +61,7 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
 }
 
 private extension TokenPickerViewModelImplementation {
-  func didUpdateState(state: TokenPickerModel.State?) {
+  func didUpdateState(state: TokenPickerModelState?) {
     syncQueue.async {
       guard let state else {
         DispatchQueue.main.async {

@@ -5,15 +5,11 @@ import KeeperCore
 struct TokenPickerAssembly {
   private init() {}
   static func module(wallet: Wallet,
-                     selectedToken: Token,
+                     model: TokenPickerModel,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<TokenPickerViewController, TokenPickerModuleOutput, Void> {
     let viewModel = TokenPickerViewModelImplementation(
-      tokenPickerModel: TokenPickerModel(
-        wallet: wallet,
-        selectedToken: selectedToken,
-        balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
-      ),
+      tokenPickerModel: model,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )

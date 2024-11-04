@@ -8,7 +8,7 @@ public protocol BatteryService {
   func loadBatteryBalance(wallet: Wallet, tonProofToken: String) async throws -> BatteryBalance
   func loadRechargeMethods(wallet: Wallet,
                            includeRechargeOnly: Bool) async throws -> [BatteryRechargeMethod]
-  func getRechargeMethods(includeRechargeOnly: Bool) -> [BatteryRechargeMethod]
+  func getRechargeMethods(wallet: Wallet, includeRechargeOnly: Bool) -> [BatteryRechargeMethod]
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
@@ -39,12 +39,20 @@ final class BatteryServiceImplementation: BatteryService {
     let methods = try await batteryAPIProvider
       .api(wallet.isTestnet)
       .getRechargeMethos(includeRechargeOnly: includeRechargeOnly)
-    try? rechargeMethodsRepository.saveRechargeMethods(_methods: methods, rechargeOnly: includeRechargeOnly)
+    try? rechargeMethodsRepository.saveRechargeMethods(
+      _methods: methods,
+      rechargeOnly: includeRechargeOnly,
+      isTestnet: wallet.isTestnet
+    )
     return methods
   }
   
-  func getRechargeMethods(includeRechargeOnly: Bool) -> [BatteryRechargeMethod] {
-    rechargeMethodsRepository.getRechargeMethods(rechargeOnly: includeRechargeOnly)
+  func getRechargeMethods(wallet: Wallet,
+                          includeRechargeOnly: Bool) -> [BatteryRechargeMethod] {
+    rechargeMethodsRepository.getRechargeMethods(
+      rechargeOnly: includeRechargeOnly,
+      isTestnet: wallet.isTestnet
+    )
   }
   
   func loadBatteryConfig(wallet: Wallet) async throws -> Config {
@@ -53,7 +61,9 @@ final class BatteryServiceImplementation: BatteryService {
       .getBatteryConfig()
   }
   
-  func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool) {
+  func loadTransactionInfo(wallet: Wallet,
+                           boc: String,
+                           tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool) {
     let response = try await batteryAPIProvider
       .api(wallet.isTestnet)
       .emulate(tonProofToken: tonProofToken, boc: boc)

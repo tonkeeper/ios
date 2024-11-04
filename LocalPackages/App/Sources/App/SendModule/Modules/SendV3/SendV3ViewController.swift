@@ -106,8 +106,7 @@ private extension SendV3ViewController {
         customView.amountInputView.isHidden = false
         customView.amountInputView.amountTextField.placeholder = amountModel.placeholder
         customView.amountInputView.amountTextField.text = amountModel.text
-        customView.amountInputView.tokenView.label.text = amountModel.token.title
-        customView.amountInputView.tokenView.image = amountModel.token.image
+        customView.amountInputView.tokenView.configuration = amountModel.token
         
       } else {
         customView.amountInputView.isHidden = true

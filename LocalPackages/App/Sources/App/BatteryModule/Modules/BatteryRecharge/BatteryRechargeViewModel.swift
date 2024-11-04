@@ -7,16 +7,19 @@ import BigInt
 
 protocol BatteryRechargeModuleOutput: AnyObject {
   var didTapContinue: ((_ payload: BatteryRechargePayload) -> Void)? { get set }
+  var didSelectTokenPicker: ((Token) -> Void)? { get set }
 }
 
 protocol BatteryRechargeModuleInput: AnyObject {
-  
+  func setToken(token: Token)
 }
 
 protocol BatteryRechargeViewModel: AnyObject {
   var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)? { get set }
   var didUpdateTitle: ((String) -> Void)? { get set }
   var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)? { get set }
+  var didUpdateTokenPickerButtonConfiguration: ((TokenPickerButton.Configuration) -> Void)? { get set }
+  var didUpdateTokenPickerAction: (( @escaping () -> Void ) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -26,15 +29,28 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   // MARK: - BatteryRechargeModuleOutput
   
   var didTapContinue: ((BatteryRechargePayload) -> Void)?
+  var didSelectTokenPicker: ((Token) -> Void)?
+  
+  // MARK: - BatteryRechargeModuleInput
+  
+  func setToken(token: Token) {
+    model.token = token
+  }
   
   // MARK: - BatteryRechargeViewModel
   
   var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)?
   var didUpdateTitle: ((String) -> Void)?
   var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)?
+  var didUpdateTokenPickerButtonConfiguration: ((TokenPickerButton.Configuration) -> Void)?
+  var didUpdateTokenPickerAction: (( @escaping () -> Void ) -> Void)?
   
   func viewDidLoad() {
     didUpdateTitle?(configuration.title)
+    didUpdateTokenPickerAction?({ [weak self] in
+      guard let self else { return }
+      didSelectTokenPicker?(model.token)
+    })
     
     model.didUpdateIsContinueEnable = { [weak self] in
       self?.updateContinueButton()
@@ -54,6 +70,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
       amountInputModuleInput.sourceUnit = model.token
       amountInputModuleInput.sourceBalance = model.balance
       amountInputModuleInput.destinationUnit = ChargeItem()
+      didUpdateTokenPickerButtonConfiguration?(.createConfiguration(token: model.token))
     }
     
     model.didUpdateRate = { [weak self] in

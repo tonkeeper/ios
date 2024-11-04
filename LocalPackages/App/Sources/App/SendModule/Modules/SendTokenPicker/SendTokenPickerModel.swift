@@ -2,22 +2,15 @@ import Foundation
 import KeeperCore
 import TonSwift
 
-final class TokenPickerModel {
-  
-  struct State {
-    let tonBalance: ConvertedTonBalance
-    let jettonBalances: [ConvertedJettonBalance]
-    let selectedToken: Token
-    let scrollToSelected: Bool
-  }
-  
-  var didUpdateState: ((State?) -> Void)?
-  
+final class SendTokenPickerModel: TokenPickerModel {
+
+  var didUpdateState: ((TokenPickerModelState?) -> Void)?
+
   private let wallet: Wallet
   private let selectedToken: Token
   private let balanceStore: ConvertedBalanceStore
   
-  init(wallet: Wallet, 
+  init(wallet: Wallet,
        selectedToken: Token,
        balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
@@ -26,7 +19,7 @@ final class TokenPickerModel {
     
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(let wallet): 
+      case .didUpdateConvertedBalance(let wallet):
         guard wallet == observer.wallet else { return }
         Task {
           await observer.didUpdateBalanceState()
@@ -35,23 +28,23 @@ final class TokenPickerModel {
     }
   }
   
-  func getState() -> State? {
+  func getState() -> TokenPickerModelState? {
     let balanceState = balanceStore.state[wallet]
     let state = getState(balanceState: balanceState, scrollToSelected: false)
     return state
   }
 }
 
-private extension TokenPickerModel {
+private extension SendTokenPickerModel {
   func didUpdateBalanceState() async {
     let balanceState = balanceStore.state[wallet]
     let state = getState(balanceState: balanceState, scrollToSelected: false)
     self.didUpdateState?(state)
   }
   
-  func getState(balanceState: ConvertedBalanceState?, scrollToSelected: Bool) -> State? {
+  func getState(balanceState: ConvertedBalanceState?, scrollToSelected: Bool) -> TokenPickerModelState? {
     guard let balance = balanceState?.balance else { return nil}
-    return State(
+    return TokenPickerModelState(
       tonBalance: balance.tonBalance,
       jettonBalances: balance.jettonsBalance.filter { !$0.jettonBalance.quantity.isZero },
       selectedToken: selectedToken,

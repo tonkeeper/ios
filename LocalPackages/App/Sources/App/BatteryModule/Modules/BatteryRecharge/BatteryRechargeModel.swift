@@ -99,9 +99,9 @@ final class BatteryRechargeModel {
     }
   }
   
-  private(set) var token: Token {
+  var token: Token {
     didSet {
-      didUpdateToken?()
+      start()
       
     }
   }
@@ -173,7 +173,7 @@ final class BatteryRechargeModel {
   }
   
   private func calculateTonChargeRate() {
-    let methods = batteryService.getRechargeMethods(includeRechargeOnly: false)
+    let methods = batteryService.getRechargeMethods(wallet: wallet, includeRechargeOnly: false)
     guard let method: BatteryRechargeMethod = {
       switch token {
       case .ton:

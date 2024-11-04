@@ -3,8 +3,8 @@ import TonSwift
 import CoreComponents
 
 public protocol BatteryRechargeMethodsRepository {
-  func getRechargeMethods(rechargeOnly: Bool) -> [BatteryRechargeMethod]
-  func saveRechargeMethods(_methods: [BatteryRechargeMethod], rechargeOnly: Bool) throws
+  func getRechargeMethods(rechargeOnly: Bool, isTestnet: Bool) -> [BatteryRechargeMethod]
+  func saveRechargeMethods(_methods: [BatteryRechargeMethod], rechargeOnly: Bool, isTestnet: Bool) throws
 }
 
 struct BatteryRechargeMethodsRepositoryImplementation: BatteryRechargeMethodsRepository {
@@ -14,20 +14,23 @@ struct BatteryRechargeMethodsRepositoryImplementation: BatteryRechargeMethodsRep
     self.fileSystemVault = fileSystemVault
   }
   
-  func getRechargeMethods(rechargeOnly: Bool) -> [BatteryRechargeMethod] {
+  func getRechargeMethods(rechargeOnly: Bool,
+                          isTestnet: Bool) -> [BatteryRechargeMethod] {
     do {
-      return try fileSystemVault.loadItem(key: key(rechargeOnly: rechargeOnly))
+      return try fileSystemVault.loadItem(key: key(rechargeOnly: rechargeOnly, isTestnet: isTestnet))
     } catch {
       return []
     }
   }
   
-  func saveRechargeMethods(_methods: [BatteryRechargeMethod], rechargeOnly: Bool) throws {
-    try fileSystemVault.saveItem(_methods, key: key(rechargeOnly: rechargeOnly))
+  func saveRechargeMethods(_methods: [BatteryRechargeMethod],
+                           rechargeOnly: Bool,
+                           isTestnet: Bool) throws {
+    try fileSystemVault.saveItem(_methods, key: key(rechargeOnly: rechargeOnly, isTestnet: isTestnet))
   }
   
-  private func key(rechargeOnly: Bool) -> String {
-    let key = "recharge_methods\(rechargeOnly ? "_recharge_only" : "")"
+  private func key(rechargeOnly: Bool, isTestnet: Bool) -> String {
+    let key = "recharge_methods\(rechargeOnly ? "_recharge_only" : "")\(isTestnet ? "_testnet" : "")"
     return key
   }
 }

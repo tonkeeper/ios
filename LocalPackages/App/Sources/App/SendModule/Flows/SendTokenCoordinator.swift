@@ -164,9 +164,15 @@ private extension SendTokenCoordinator {
   }
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
-    let module = TokenPickerAssembly.module(
+    let model = SendTokenPickerModel(
       wallet: wallet,
       selectedToken: token,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
+    )
+    
+    let module = TokenPickerAssembly.module(
+      wallet: wallet,
+      model: model,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
