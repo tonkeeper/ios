@@ -22,20 +22,17 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  private let recipientResolver: RecipientResolver
 
   public init(router: NavigationControllerRouter,
               nft: NFT,
               wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly,
-              recipientResolver: RecipientResolver
+              keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) {
     self.nft = nft
     self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
-    self.recipientResolver = recipientResolver
     super.init(router: router)
   }
   
@@ -79,15 +76,14 @@ private extension CollectiblesDetailsCoordinator {
     }
     
     module.output.didTapBurn = { [weak self] nft in
-      guard let self = self else {
+      guard let self = self, let burnAddress = try? Address.burnAddress else {
         return
       }
-      Task { @MainActor in
-        do {
-          try await
-          self.openTransfer(nft: nft, recipient: self.recipientResolver.resolverRecipient(string: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c", isTestnet: false))
-        } catch {}
-      }
+      
+      openTransfer(
+        nft: nft,
+        recipient: Recipient(recipientAddress: .raw(burnAddress), isMemoRequired: false)
+      )
     }
     
     module.output.didTapLinkDomain = { [weak self] wallet, nft in
@@ -310,4 +306,8 @@ private extension CollectiblesDetailsCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+}
+
+private extension Address {
+  static var burnAddress: Address? = try? Address.parse(raw: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
 }

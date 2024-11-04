@@ -155,8 +155,7 @@ private extension HistoryCoordinator {
         nft: nft,
         wallet: wallet,
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        recipientResolver: recipientResolver
+        keeperCoreMainAssembly: keeperCoreMainAssembly
       )
       
       coordinator.didOpenDapp = { [weak self] url, title in
