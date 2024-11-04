@@ -18,12 +18,16 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+  private let recipientResolver: RecipientResolver
   
   init(router: NavigationControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
-       keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+       keeperCoreMainAssembly: KeeperCore.MainAssembly,
+       recipientResolver: RecipientResolver
+  ) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.recipientResolver = recipientResolver
     super.init(router: router)
     router.rootViewController.tabBarItem.title = TKLocales.Tabs.history
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.clock
@@ -151,7 +155,8 @@ private extension HistoryCoordinator {
         nft: nft,
         wallet: wallet,
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        recipientResolver: recipientResolver
       )
       
       coordinator.didOpenDapp = { [weak self] url, title in

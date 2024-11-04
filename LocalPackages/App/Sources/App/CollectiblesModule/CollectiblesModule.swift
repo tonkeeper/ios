@@ -19,7 +19,8 @@ public struct CollectiblesModule {
       router: NavigationControllerRouter(rootViewController: navigationController),
       parentRouter: parentRouter,
       coreAssembly: dependencies.coreAssembly,
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver()
     )
     return coordinator
   }

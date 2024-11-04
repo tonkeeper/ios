@@ -21,7 +21,8 @@ struct HistoryModule {
         rootViewController: navigationController
       ),
       coreAssembly: dependencies.coreAssembly,
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver()
     )
     return coordinator
   }

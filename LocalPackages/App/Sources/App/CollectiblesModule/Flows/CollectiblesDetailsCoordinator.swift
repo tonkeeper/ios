@@ -22,16 +22,20 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+  private let recipientResolver: RecipientResolver
+
   public init(router: NavigationControllerRouter,
               nft: NFT,
               wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+              keeperCoreMainAssembly: KeeperCore.MainAssembly,
+              recipientResolver: RecipientResolver
+  ) {
     self.nft = nft
     self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.recipientResolver = recipientResolver
     super.init(router: router)
   }
   
@@ -72,6 +76,18 @@ private extension CollectiblesDetailsCoordinator {
     
     module.output.didTapTransfer = { [weak self] _, nft in
       self?.openTransfer(nft: nft)
+    }
+    
+    module.output.didTapBurn = { [weak self] nft in
+      guard let self = self else {
+        return
+      }
+      Task { @MainActor in
+        do {
+          try await
+          self.openTransfer(nft: nft, recipient: self.recipientResolver.resolverRecipient(string: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c", isTestnet: false))
+        } catch {}
+      }
     }
     
     module.output.didTapLinkDomain = { [weak self] wallet, nft in
@@ -167,7 +183,7 @@ private extension CollectiblesDetailsCoordinator {
     router.push(viewController: module.view)
   }
 
-  func openTransfer(nft: NFT) {
+  func openTransfer(nft: NFT, recipient: Optional<Recipient> = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -179,7 +195,8 @@ private extension CollectiblesDetailsCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .nft(nft)
+      sendItem: .nft(nft),
+      recipient: recipient
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
