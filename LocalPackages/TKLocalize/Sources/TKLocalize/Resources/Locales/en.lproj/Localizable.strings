@@ -61,6 +61,9 @@
 "browser.tab.connected" = "Connected";
 "browser.list.all" = "All";
 
+"browser.connected_apps.empty_title" = "Connected apps will be\U00A0shown here";
+"browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Tonkeeper browser.";
+
 "browser.search_field.placeholder" = "Search or enter address";
 "browser.search.title" = "Browser";
 "browser.search.placeholder" = "Enter an address or search the web";

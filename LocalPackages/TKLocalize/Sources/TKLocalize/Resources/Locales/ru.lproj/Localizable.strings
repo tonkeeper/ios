@@ -62,6 +62,9 @@
 "browser.tab.connected" = "Подключенные";
 "browser.list.all" = "Все";
 
+"browser.connected_apps.empty_title" = "Ваши приложения будут здесь";
+"browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Tonkeeper.";
+
 "browser.search_field.placeholder" = "Поиск";
 "browser.search.title" = "Браузер";
 "browser.search.placeholder" = "Введите адрес или начните поиск";

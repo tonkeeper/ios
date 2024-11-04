@@ -274,6 +274,12 @@ public enum TKLocales {
     }
   }
   public enum Browser {
+    public enum ConnectedApps {
+      /// Explore apps and services in Tonkeeper browser.
+      public static let emptyDescription = TKLocales.tr("Localizable", "browser.connected_apps.empty_description", fallback: "Explore apps and services in Tonkeeper browser.")
+      /// Connected apps will be shown here
+      public static let emptyTitle = TKLocales.tr("Localizable", "browser.connected_apps.empty_title", fallback: "Connected apps will be shown here")
+    }
     public enum List {
       /// All
       public static let all = TKLocales.tr("Localizable", "browser.list.all", fallback: "All")
