@@ -10,6 +10,14 @@ enum BrowserConnected {
   struct Item: Hashable {
     let identifier: String
     let configuration: BrowserConnectedAppCell.Configuration
+
+    static func ==(lhs: Item, rhs: Item) -> Bool {
+      lhs.identifier == rhs.identifier
+    }
+
+    func hash(into hasher: inout Hasher) {
+      hasher.combine(identifier)
+    }
   }
 
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
