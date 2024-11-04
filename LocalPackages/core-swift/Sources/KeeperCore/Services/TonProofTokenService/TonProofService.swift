@@ -4,6 +4,11 @@ import TonSwift
 public struct WalletPrivateKeyPair {
   public let wallet: Wallet
   public let privateKey: PrivateKey
+  
+  public init(wallet: Wallet, privateKey: PrivateKey) {
+    self.wallet = wallet
+    self.privateKey = privateKey
+  }
 }
 
 public protocol TonProofTokenService {

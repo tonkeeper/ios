@@ -3,6 +3,7 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import TonSwift
 
 final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   struct Dependencies {
@@ -80,11 +81,46 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   private func handlePasscodeFlowIfNeeded(completion: @escaping (() -> Void)) {
-    guard dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen else {
+    
+    let isLockScreen = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen
+    let tonProofTokenService = dependencies.keeperCoreRootAssembly.mainAssembly().servicesAssembly.tonProofTokenService()
+    let mnemonicRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+    let missedTonProofWallets = tonProofTokenService.getWalletsWithMissedToken()
+    
+    guard isLockScreen || !missedTonProofWallets.isEmpty else {
       completion()
       return
     }
-
+    
+    showPasscode { passcode in
+      guard !missedTonProofWallets.isEmpty else {
+        completion()
+        return
+      }
+      Task {
+        for wallet in missedTonProofWallets {
+          do {
+            let mnemonic = try await mnemonicRepository.getMnemonic(wallet: wallet, password: passcode)
+            let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+              mnemonicArray: mnemonic.mnemonicWords
+            )
+            let pair = WalletPrivateKeyPair(
+              wallet: wallet,
+              privateKey: keyPair.privateKey
+            )
+            await tonProofTokenService.loadTokensFor(pairs: [pair])
+            await MainActor.run {
+              completion()
+            }
+          } catch {
+            continue
+          }
+        }
+      }
+    }
+  }
+  
+  private func showPasscode(completion: ((String) -> Void)?) {
     let router = NavigationControllerRouter(rootViewController: TKNavigationController())
     let mnemonicsRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
 
@@ -105,9 +141,9 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       securityStore: securityStore
     )
 
-    coordinator.didInputPasscode = { [weak self, weak coordinator] _ in
+    coordinator.didInputPasscode = { [weak self, weak coordinator] passcode in
       self?.removeChild(coordinator)
-      completion()
+      completion?(passcode)
     }
 
     coordinator.didLogout = { [dependencies, weak coordinator] in
