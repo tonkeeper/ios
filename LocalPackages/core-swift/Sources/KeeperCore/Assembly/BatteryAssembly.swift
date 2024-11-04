@@ -18,6 +18,10 @@ public final class BatteryAssembly {
     )
   }
   
+  public func batteryPromocodeStore() -> BatteryPromocodeStore {
+    BatteryPromocodeStore()
+  }
+  
   public func rechargeMethodsRepository() -> BatteryRechargeMethodsRepository {
     BatteryRechargeMethodsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }

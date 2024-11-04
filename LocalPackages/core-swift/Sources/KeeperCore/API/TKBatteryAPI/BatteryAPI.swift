@@ -114,15 +114,22 @@ extension BatteryAPI {
     try await request.execute()
   }
   
-  func makePurchase(tonProofToken: String, transactionId: String) async throws -> IOSBatteryPurchaseStatus {
+  func makePurchase(tonProofToken: String, transactionId: String, promocode: String?) async throws -> IOSBatteryPurchaseStatus {
     let request = try await createRequest {
       return DefaultAPI.iosBatteryPurchaseWithRequestBuilder(
         xTonConnectAuth: tonProofToken,
         iosBatteryPurchaseRequest: IosBatteryPurchaseRequest(
-          transactions: [IosBatteryPurchaseRequestTransactionsInner(id: transactionId)]
+          transactions: [IosBatteryPurchaseRequestTransactionsInner(id: transactionId, promo: promocode)]
         )
       )
     }
     return try await request.execute().body
+  }
+  
+  func verifyPromocode(promocode: String) async throws {
+    let request = try await createRequest {
+      return DefaultAPI.verifyPurchasePromoWithRequestBuilder(promo: promocode)
+    }
+    try await request.execute()
   }
 }

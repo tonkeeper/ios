@@ -12,7 +12,8 @@ public protocol BatteryService {
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
-  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String) async throws -> IOSBatteryPurchaseStatus
+  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String, promocode: String?) async throws -> IOSBatteryPurchaseStatus
+  func verifyPromocode(wallet: Wallet, promocode: String) async throws
 }
 
 final class BatteryServiceImplementation: BatteryService {
@@ -78,9 +79,15 @@ final class BatteryServiceImplementation: BatteryService {
       .sendMessage(tonProofToken: tonProofToken, boc: boc)
   }
   
-  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String) async throws -> IOSBatteryPurchaseStatus {
+  func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String, promocode: String?) async throws -> IOSBatteryPurchaseStatus {
     try await batteryAPIProvider
       .api(wallet.isTestnet)
-      .makePurchase(tonProofToken: tonProofToken, transactionId: transactionId)
+      .makePurchase(tonProofToken: tonProofToken, transactionId: transactionId, promocode: promocode)
+  }
+  
+  func verifyPromocode(wallet: Wallet, promocode: String) async throws {
+    try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .verifyPromocode(promocode: promocode)
   }
 }

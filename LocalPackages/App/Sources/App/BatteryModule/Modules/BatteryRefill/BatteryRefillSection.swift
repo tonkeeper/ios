@@ -9,10 +9,11 @@ enum BatteryRefill {
     case rechargeMethods
     case history
     case footer
+    case promocode
     
     var isSelectable: Bool {
       switch self {
-      case .inAppPurchases, .header, .footer:
+      case .inAppPurchases, .header, .footer, .promocode:
         false
       case .rechargeMethods, .history, .settings:
         true
@@ -25,6 +26,7 @@ enum BatteryRefill {
     case inAppPurchase(InAppPurchaseItem)
     case listItem(ListItem)
     case footer
+    case promocode
   }
   
   struct InAppPurchaseItem: Hashable {

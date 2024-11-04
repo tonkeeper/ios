@@ -5,8 +5,17 @@ import KeeperCore
 struct BatteryRefillAssembly {
   private init() {}
   static func module(wallet: Wallet,
+                     promocodeStore: BatteryPromocodeStore,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRefillViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
+    
+    let promocodeInput = BatteryPromocodeInputAssembly.module(
+      wallet: wallet,
+      promocodeStore: promocodeStore,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
     let viewModel = BatteryRefillViewModelImplementation(
       wallet: wallet,
       inAppPurchaseModel: BatteryRefillIAPModel(
@@ -31,10 +40,14 @@ struct BatteryRefillAssembly {
       tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+      promocodeOutput: promocodeInput.output
     )
     
-    let viewController = BatteryRefillViewController(viewModel: viewModel)
+    let viewController = BatteryRefillViewController(
+      viewModel: viewModel,
+      promocodeViewController: promocodeInput.view
+    )
     
     return MVVMModule(
       view: viewController,

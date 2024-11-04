@@ -105,6 +105,9 @@ final class BatteryRechargeModel {
       
     }
   }
+  
+  var promocode: String?
+  
   private(set) var tonChargeRate: NSDecimalNumber = 1 {
     didSet {
       didUpdateRate?()
@@ -161,7 +164,7 @@ final class BatteryRechargeModel {
   }
   
   func getConfirmationPayload() -> BatteryRechargePayload {
-    BatteryRechargePayload(token: token, amount: amount)
+    BatteryRechargePayload(token: token, amount: amount, promocode: promocode)
   }
   
   func start() {

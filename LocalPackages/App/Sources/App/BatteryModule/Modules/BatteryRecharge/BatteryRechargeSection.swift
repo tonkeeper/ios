@@ -6,12 +6,14 @@ enum BatteryRecharge {
     case options
     case customInput
     case continueButton
+    case promocode
   }
   
   enum SnapshotItem: Hashable {
     case rechargeOption(RechargeOptionItem)
     case customInput
     case continueButton
+    case promocode
   }
 
   struct RechargeOptionItem: Hashable {

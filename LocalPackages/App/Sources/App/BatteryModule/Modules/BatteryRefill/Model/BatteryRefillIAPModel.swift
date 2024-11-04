@@ -15,6 +15,8 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
     getItems()
   }
   
+  var promocode: String?
+  
   private enum State {
     case idle
     case loading
@@ -169,11 +171,9 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
   private func makePurchase(transaction: SKPaymentTransaction) {
     guard let id = transaction.transactionIdentifier,
     let tonProof = try? tonProofService.getWalletToken(wallet)  else { return }
-    Task {
-      _ = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id)
-      await MainActor.run {
-        eventHandler?(.didPerformTransaction)
-      }
+    Task { @MainActor in
+      _ = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id, promocode: promocode)
+      eventHandler?(.didPerformTransaction)
     }
   }
   

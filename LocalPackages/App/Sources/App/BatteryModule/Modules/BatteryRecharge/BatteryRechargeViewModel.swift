@@ -51,6 +51,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
       guard let self else { return }
       didSelectTokenPicker?(model.token)
     })
+    setupPromocode()
     
     model.didUpdateIsContinueEnable = { [weak self] in
       self?.updateContinueButton()
@@ -98,19 +99,22 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountInputModuleInput: AmountInputModuleInput
   private let amountInputModuleOutput: AmountInputModuleOutput
+  private let promocodeOutput: BatteryPromocodeInputModuleOutput
   
   init(model: BatteryRechargeModel, 
        configuration: BatteryRechargeViewModelConfiguration,
        amountFormatter: AmountFormatter,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountInputModuleInput: AmountInputModuleInput,
-       amountInputModuleOutput: AmountInputModuleOutput) {
+       amountInputModuleOutput: AmountInputModuleOutput,
+       promocodeOutput: BatteryPromocodeInputModuleOutput) {
     self.model = model
     self.configuration = configuration
     self.amountFormatter = amountFormatter
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountInputModuleInput = amountInputModuleInput
     self.amountInputModuleOutput = amountInputModuleOutput
+    self.promocodeOutput = promocodeOutput
   }
   
   private func updateList() {
@@ -118,6 +122,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     
     setupOptionsSection(snapshot: &snapshot)
     setupCustomInputSection(snapshot: &snapshot)
+    setupPromocodeInputSection(snapshot: &snapshot)
     setupContinueButtonSection(snapshot: &snapshot)
 
     didUpdateSnapshot?(snapshot)
@@ -133,6 +138,11 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     
     snapshot.appendSections([.options])
     snapshot.appendItems(snapshotItems, toSection: .options)
+  }
+  
+  func setupPromocodeInputSection(snapshot: inout BatteryRecharge.Snapshot) {
+    snapshot.appendSections([.promocode])
+    snapshot.appendItems([.promocode], toSection: .promocode)
   }
   
   func setupCustomInputSection(snapshot: inout BatteryRecharge.Snapshot) {
@@ -222,5 +232,16 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
     }
     
     didUpdateContinueButtonConfiguration?(buttonConfiguration)
+  }
+  
+  func setupPromocode() {
+    promocodeOutput.didUpdateResolvingState = { [weak self] in
+      switch $0 {
+      case .success(let promocode):
+        self?.model.promocode = promocode
+      default:
+        self?.model.promocode = nil
+      }
+    }
   }
 }

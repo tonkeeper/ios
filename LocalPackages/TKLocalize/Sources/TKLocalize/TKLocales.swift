@@ -255,6 +255,8 @@ public enum TKLocales {
   }
   public enum Battery {
     public enum Refill {
+      /// Promo Code
+      public static let promocode = TKLocales.tr("Localizable", "battery.refill.promocode", fallback: "Promo Code")
       public enum Charges {
         /// charges
         public static let few = TKLocales.tr("Localizable", "battery.refill.charges.few", fallback: "charges")

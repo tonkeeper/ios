@@ -37,8 +37,11 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
 
 private extension BatteryRefillCoordinator {
   func openBatteryRefill() {
+    let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
+    
     let module = BatteryRefillAssembly.module(
       wallet: wallet,
+      promocodeStore: promocodeStore,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
@@ -58,9 +61,13 @@ private extension BatteryRefillCoordinator {
     module.output.didTapRecharge = { [weak self] rechargeMethod in
       switch rechargeMethod {
       case let .token(token, _, rate):
-        self?.openRecharge(token: token, rate: rate, isGift: false)
+        self?.openRecharge(token: token,
+                           rate: rate,
+                           isGift: false,
+                           promocodeStore: promocodeStore)
       case let .gift(token, rate):
-        self?.openRecharge(token: token, rate: rate, isGift: true)
+        self?.openRecharge(token: token, rate: rate, isGift: true,
+                           promocodeStore: promocodeStore)
       }
     }
     
@@ -89,12 +96,16 @@ private extension BatteryRefillCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openRecharge(token: Token, rate: NSDecimalNumber?, isGift: Bool) {
+  func openRecharge(token: Token,
+                    rate: NSDecimalNumber?,
+                    isGift: Bool,
+                    promocodeStore: BatteryPromocodeStore) {
     let module = BatteryRechargeAssembly.module(
       wallet: wallet,
       token: token,
       rate: rate,
       configuration: BatteryRechargeViewModelConfiguration(isGift: isGift),
+      promocodeStore: promocodeStore,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )

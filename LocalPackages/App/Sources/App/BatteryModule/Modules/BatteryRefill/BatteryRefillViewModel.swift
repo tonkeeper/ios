@@ -18,6 +18,7 @@ protocol BatteryRefillModuleInput: AnyObject {
 
 protocol BatteryRefillViewModel: AnyObject {
   var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)? { get set }
+  var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)? { get set }
   
   func viewDidLoad()
   func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
@@ -40,8 +41,11 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   // MARK: - BatteryRefillViewModel
 
   var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)?
+  var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)?
   
   func viewDidLoad() {
+    setupPromocode()
+    
     iapItems = inAppPurchaseModel.items
     inAppPurchaseModel.loadProducts()
     inAppPurchaseModel.eventHandler = { [weak self] event in
@@ -91,6 +95,11 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   private var headerState: BatteryRefillHeaderModel.State?
   private var iapItems = [BatteryIAPItem]()
   private var rechargeMethodsModelState: BatteryRefillRechargeMethodsModel.State = .loading
+  private var promocode: String? {
+    didSet {
+      inAppPurchaseModel.promocode = promocode
+    }
+  }
 
   private var purchasesCellConfigurations = [String: TKListItemCell.Configuration]()
   private var listItemCellConfigurations = [String: TKListItemCell.Configuration]()
@@ -107,6 +116,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   private let configuration: Configuration
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
+  private let promocodeOutput: BatteryPromocodeInputModuleOutput
   
   // MARK: - Init
   
@@ -117,7 +127,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
        tonProofTokenService: TonProofTokenService,
        configuration: Configuration,
        decimalAmountFormatter: DecimalAmountFormatter,
-       amountFormatter: AmountFormatter) {
+       amountFormatter: AmountFormatter,
+       promocodeOutput: BatteryPromocodeInputModuleOutput) {
     self.wallet = wallet
     self.inAppPurchaseModel = inAppPurchaseModel
     self.rechargeMethodsModel = rechargeMethodsModel
@@ -126,6 +137,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     self.configuration = configuration
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountFormatter = amountFormatter
+    self.promocodeOutput = promocodeOutput
   }
   
   private func updateList() {
@@ -137,6 +149,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     var snapshot = BatteryRefill.Snapshot()
 
     createHeaderSections(snapshot: &snapshot)
+    createPromoSnapshotSection(snapshot: &snapshot)
     createInAppPurchasesSnapshotSection(snapshot: &snapshot)
     createRechargeMethodsSnapshotSection(snapshot: &snapshot)
     createHistorySnapshotSection(snapshot: &snapshot)
@@ -192,6 +205,11 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       caption: caption,
       informationButtonModel: informationButtonModel
     )
+  }
+  
+  private func createPromoSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
+    snapshot.appendSections([.promocode])
+    snapshot.appendItems([.promocode], toSection: .promocode)
   }
   
   private func createInAppPurchasesSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
@@ -401,6 +419,17 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       URLQueryItem(name: "testnet", value: String(wallet.isTestnet)),
     ]
     return components?.url
+  }
+  
+  private func setupPromocode() {
+    promocodeOutput.didUpdateResolvingState = { [weak self] state in
+      switch state {
+      case .failed, .none, .resolving:
+        self?.promocode = nil
+      case .success(let promocode):
+        self?.promocode = promocode
+      }
+    }
   }
 }
 

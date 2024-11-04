@@ -532,3 +532,4 @@
 "battery.refill.charges.few" = "charges";
 "battery.refill.charges.many" = "charges";
 "battery.refill.charges.other" = "charges";
+"battery.refill.promocode" = "Promo Code";

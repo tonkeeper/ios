@@ -518,3 +518,4 @@
 "battery.refill.in_app_purchase.caption.charges.few" = "заряда";
 "battery.refill.in_app_purchase.caption.charges.many" = "зарядов";
 "battery.refill.in_app_purchase.caption.charges.other" = "зарядов";
+"battery.refill.promocode" = "Промокод";

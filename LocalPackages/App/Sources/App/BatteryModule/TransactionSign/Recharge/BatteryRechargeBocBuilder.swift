@@ -50,7 +50,11 @@ struct BatteryRechargeBocBuilder {
       amount: amountDecimalNumber
     )
     
-    let payloads = try createPayloads(toAddress: toAddress, validUntil: validUntil)
+    let batteryPayload = createBatteryPayload(promocode: payload.promocode)
+    
+    let payloads = try createPayloads(toAddress: toAddress,
+                                      validUntil: validUntil,
+                                      batteryPayload: batteryPayload)
     
     return try await TransferMessageBuilder(
       transferData: .tonConnect(
@@ -64,25 +68,32 @@ struct BatteryRechargeBocBuilder {
     ).createBoc(signClosure: signClosure)
   }
   
-  private func createPayloads(toAddress: KeeperCore.AnyAddress, validUntil: UInt64) throws -> [TransferData.TonConnect.Payload] {
+  private func createPayloads(toAddress: KeeperCore.AnyAddress, 
+                              validUntil: UInt64,
+                              batteryPayload: Cell?) throws -> [TransferData.TonConnect.Payload] {
     switch payload.token {
     case .ton:
-      try createTonPayloads(toAddress: toAddress, validUntil: validUntil)
+      try createTonPayloads(toAddress: toAddress,
+                            validUntil: validUntil,
+                            batteryPayload: batteryPayload)
     case .jetton(let jettonItem):
       try createJettonPayloads(jettonItem: jettonItem,
                                toAddress: toAddress,
-                               validUntil: validUntil)
+                               validUntil: validUntil,
+                               batteryPayload: batteryPayload)
     }
   }
   
-  private func createTonPayloads(toAddress: KeeperCore.AnyAddress, validUntil: UInt64) throws -> [TransferData.TonConnect.Payload] {
+  private func createTonPayloads(toAddress: KeeperCore.AnyAddress,
+                                 validUntil: UInt64,
+                                 batteryPayload: Cell?) throws -> [TransferData.TonConnect.Payload] {
     let param = SendTransactionParam(
       messages: [
         SendTransactionParam.Message(
           address: toAddress,
           amount: Int64(payload.amount),
           stateInit: nil,
-          payload: nil
+          payload: try? batteryPayload?.toBoc().base64EncodedString()
         )
       ],
       validUntil: TimeInterval(validUntil),
@@ -101,7 +112,8 @@ struct BatteryRechargeBocBuilder {
   
   private func createJettonPayloads(jettonItem: JettonItem,
                                     toAddress: KeeperCore.AnyAddress,
-                                    validUntil: UInt64) throws -> [TransferData.TonConnect.Payload] {
+                                    validUntil: UInt64,
+                                    batteryPayload: Cell?) throws -> [TransferData.TonConnect.Payload] {
     
     let jettonTransferData = JettonTransferData(
       queryId: UInt64(TransferMessageBuilder.newWalletQueryId()),
@@ -109,7 +121,7 @@ struct BatteryRechargeBocBuilder {
       toAddress: toAddress.address,
       responseAddress: try wallet.address,
       forwardAmount: BigUInt(stringLiteral: "1"),
-      forwardPayload: nil,
+      forwardPayload: batteryPayload,
       customPayload: nil
     )
     
@@ -186,4 +198,37 @@ struct BatteryRechargeBocBuilder {
       }
     }
   }
+  
+  private func createBatteryPayload(recipientAddress: KeeperCore.AnyAddress? = nil,
+                                    promocode: String? = nil) -> Cell? {
+    let address: TonSwift.AnyAddress = {
+      switch recipientAddress {
+      case .address(let address):
+        return TonSwift.AnyAddress.internalAddr(address)
+      case .friendlyAddress(let friendlyAddress):
+        return TonSwift.AnyAddress.internalAddr(friendlyAddress.address)
+      case .none:
+        return TonSwift.AnyAddress.none
+      }
+    }()
+    
+    do {
+      let builder = Builder()
+      try builder.store(uint: Int32.batteryPayloadOpcode, bits: 32)
+      try builder.store(address)
+      if let promocode, !promocode.isEmpty, let promocodeData = promocode.data(using: .utf8) {
+        try builder.store(bit: true)
+        try builder.store(data: promocodeData)
+      } else {
+        try builder.store(bit: false)
+      }
+      return try builder.endCell()
+    } catch {
+      return nil
+    }
+  }
+}
+
+private extension Int32 {
+  static let batteryPayloadOpcode = 0xb7b2515f
 }

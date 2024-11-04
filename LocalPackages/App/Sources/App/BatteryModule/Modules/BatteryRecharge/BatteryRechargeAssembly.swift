@@ -8,8 +8,16 @@ struct BatteryRechargeAssembly {
                      token: Token,
                      rate: NSDecimalNumber?,
                      configuration: BatteryRechargeViewModelConfiguration,
+                     promocodeStore: BatteryPromocodeStore,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRechargeViewController, BatteryRechargeModuleOutput, BatteryRechargeModuleInput> {
+    
+    let promocodeInput = BatteryPromocodeInputAssembly.module(
+      wallet: wallet,
+      promocodeStore: promocodeStore,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
     
     let amountInput = AmountInputAssembly.module(
       sourceUnit: token,
@@ -31,11 +39,15 @@ struct BatteryRechargeAssembly {
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountInputModuleInput: amountInput.input,
-      amountInputModuleOutput: amountInput.output 
+      amountInputModuleOutput: amountInput.output,
+      promocodeOutput: promocodeInput.output
     )
     
-    let viewController = BatteryRechargeViewController(viewModel: viewModel,
-                                                       amountInputViewController: amountInput.view)
+    let viewController = BatteryRechargeViewController(
+      viewModel: viewModel,
+      amountInputViewController: amountInput.view,
+      promocodeViewController: promocodeInput.view
+    )
     
     return MVVMModule(
       view: viewController,

@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
-final class BatteryRefillViewController: GenericViewViewController<BatteryRefillView> {
+final class BatteryRefillViewController: GenericViewViewController<BatteryRefillView>, KeyboardObserving {
   private let viewModel: BatteryRefillViewModel
   
   // MARK: - List
@@ -9,10 +10,16 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
   private lazy var layout = createLayout()
   private lazy var dataSource = createDataSource()
   
+  // MARK: - Promocode
+  
+  private let promocodeViewController: BatteryPromocodeInputViewController
+  
   // MARK: - Init
   
-  init(viewModel: BatteryRefillViewModel) {
+  init(viewModel: BatteryRefillViewModel,
+       promocodeViewController: BatteryPromocodeInputViewController) {
     self.viewModel = viewModel
+    self.promocodeViewController = promocodeViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -28,6 +35,28 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+  }
+
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
+  public func keyboardWillShow(_ notification: Notification) {
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
+    customView.collectionView.contentInset.bottom = keyboardHeight + 16
+    if promocodeViewController.isInputEditing {
+      customView.collectionView.scrollToView(promocodeViewController.view, animated: true)
+    }
+  }
+  
+  public func keyboardWillHide(_ notification: Notification) {
+    customView.collectionView.contentInset.bottom = view.safeAreaInsets.bottom + 16
+  }
 }
 
 private extension BatteryRefillViewController {
@@ -35,6 +64,10 @@ private extension BatteryRefillViewController {
     customView.navigationBar.apperance = .transparent
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
+    customView.collectionView.register(
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+    )
     
     setupNavigationBar()
   }
@@ -86,6 +119,15 @@ private extension BatteryRefillViewController {
       case .footer:
         guard let headerCellConfiguration = viewModel.getFooterCellConfiguration() else { return nil }
         let cell = collectionView.dequeueConfiguredReusableCell(using: footerCellRegistration, for: indexPath, item: headerCellConfiguration)
+        return cell
+      case .promocode:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        self.addChild(promocodeViewController)
+        (cell as? TKContainerCollectionViewCell)?.setContentView(promocodeViewController.view)
+        promocodeViewController.didMove(toParent: self)
         return cell
       }
     }
@@ -168,5 +210,9 @@ extension BatteryRefillViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
     let snapshot = dataSource.snapshot()
     return snapshot.sectionIdentifiers[indexPath.section].isSelectable
+  }
+  
+  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    promocodeViewController.view.endEditing(true)
   }
 }

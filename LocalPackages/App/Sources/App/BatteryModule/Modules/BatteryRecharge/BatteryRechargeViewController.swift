@@ -22,12 +22,18 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
   private let amountInputViewController: AmountInputViewController
   private let continueButton = TKButton()
   
+  // MARK: - Promocode
+  
+  private let promocodeViewController: BatteryPromocodeInputViewController
+  
   // MARK: - Init
   
   init(viewModel: BatteryRechargeViewModel,
-       amountInputViewController: AmountInputViewController) {
+       amountInputViewController: AmountInputViewController,
+       promocodeViewController: BatteryPromocodeInputViewController) {
     self.viewModel = viewModel
     self.amountInputViewController = amountInputViewController
+    self.promocodeViewController = promocodeViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -58,18 +64,15 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     customView.collectionView.contentInset.bottom = keyboardHeight
     if amountInputViewController.isInputEditing {
-      let inputFrame = amountInputViewController.view.frame
-      let convertedInputFrame = customView.collectionView.convert(inputFrame, from: amountInputViewController.view.superview)
-      let maxContentOffsetY: CGFloat = customView.collectionView.contentSize.height
-      + customView.collectionView.contentInset.bottom
-      - customView.collectionView.bounds.height
-      let contentOffsetY = min(maxContentOffsetY, convertedInputFrame.minY)
-      customView.collectionView.setContentOffset(CGPoint(x: 0, y: contentOffsetY), animated: true)
+      customView.collectionView.scrollToView(amountInputViewController.view, animated: true)
+    } else if promocodeViewController.isInputEditing {
+      customView.collectionView.scrollToView(promocodeViewController.view, animated: true)
     }
   }
   
   public func keyboardWillHide(_ notification: Notification) {
     customView.collectionView.contentInset.bottom = 0
+    customView.collectionView.contentInset.bottom = view.safeAreaInsets.bottom + 16
   }
 }
 
@@ -156,6 +159,15 @@ private extension BatteryRechargeViewController {
         )
         (cell as? TKContainerCollectionViewCell)?.setContentView(continueButton)
         return cell
+      case .promocode:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        self.addChild(promocodeViewController)
+        (cell as? TKContainerCollectionViewCell)?.setContentView(promocodeViewController.view)
+        promocodeViewController.didMove(toParent: self)
+        return cell
       }
     }
     return dataSource
@@ -233,9 +245,7 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     switch item {
     case .rechargeOption(let item):
       return item.isEnable
-    case .customInput:
-      return false
-    case .continueButton:
+    case .customInput, .continueButton, .promocode:
       return false
     }
   }
@@ -247,11 +257,13 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     switch item {
     case .rechargeOption(let item):
       return item.isEnable
-    case .customInput:
-      return false
-    case .continueButton:
+    case .customInput, .continueButton, .promocode:
       return false
     }
+  }
+  
+  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    view.endEditing(true)
   }
 }
 
