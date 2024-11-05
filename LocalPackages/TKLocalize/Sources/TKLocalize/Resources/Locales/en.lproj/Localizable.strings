@@ -356,6 +356,7 @@
 "action_types.future.send" = "Send";
 "action_types.future.receive" = "Receive";
 "action_types.sent" = "Sent";
+"action_types.burned" = "Burned";
 "action_types.received" = "Received";
 "action_types.stake" = "Stake";
 "action_types.unstake" = "Unstake";

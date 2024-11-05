@@ -340,6 +340,7 @@
 "action_types.future.send" = "Отправить";
 "action_types.future.receive" = "Получить";
 "action_types.sent" = "Отправлено";
+"action_types.burned" = "Сожжено";
 "action_types.received" = "Получено";
 "action_types.stake" = "Депозит";
 "action_types.unstake" = "Вывод";
