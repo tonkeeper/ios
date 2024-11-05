@@ -1128,10 +1128,16 @@ public enum TKLocales {
   public enum TonConnect {
     /// Connect wallet
     public static let connectWallet = TKLocales.tr("Localizable", "ton_connect.connect_wallet", fallback: "Connect wallet")
+    /// Open Browser and Connect
+    public static let openBrowserAndConnect = TKLocales.tr("Localizable", "ton_connect.open_browser_and_connect", fallback: "Open Browser and Connect")
     /// Be sure to check the service address before connecting the wallet.
     public static let sureCheckServiceAddress = TKLocales.tr("Localizable", "ton_connect.sure_check_service_address", fallback: "Be sure to check the service address before connecting the wallet.")
+    /// Be sure to check the service address before connecting · Connect without additional check in Browser
+    public static let sureCheckServiceAddressConnectWithoutChecking = TKLocales.tr("Localizable", "ton_connect.sure_check_service_address_connect_without_checking", fallback: "Be sure to check the service address before connecting · Connect without additional check in Browser")
   }
   public enum TonConnectMapper {
+    /// Allow Notifications
+    public static let allowNotifications = TKLocales.tr("Localizable", "ton_connect_mapper.allow_notifications", fallback: "Allow Notifications")
     /// Connect to 
     public static let connectTo = TKLocales.tr("Localizable", "ton_connect_mapper.connect_to", fallback: "Connect to ")
     /// %@ is requesting access to your wallet address%@

@@ -481,8 +481,11 @@
 
 "ton_connect_mapper.connect_to" = "Войти в ";
 "ton_connect_mapper.requesting_capture" = "%@ запрашивает доступ к адресу вашего кошелька%@";
+"ton_connect_mapper.allow_notifications" = "Включить уведомления";
+"ton_connect.sure_check_service_address_connect_without_checking" = "Обязательно проверьте адрес сервиса перед подключением · Подключиться без дополнительной проверки в браузере";
 
 "ton_connect.connect_wallet" = "Подключить кошелёк";
+"ton_connect.open_browser_and_connect" = "Открыть браузер и подключиться";
 "ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
 
 "wallet_balance_list.join_channel" = "Присоединяйтесь к каналу Tonkeeper";

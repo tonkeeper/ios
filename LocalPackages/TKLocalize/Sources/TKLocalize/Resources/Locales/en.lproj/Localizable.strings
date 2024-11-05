@@ -495,9 +495,12 @@
 
 "ton_connect_mapper.connect_to" = "Connect to ";
 "ton_connect_mapper.requesting_capture" = "%@ is requesting access to your wallet address%@";
+"ton_connect_mapper.allow_notifications" = "Allow Notifications";
 
 "ton_connect.connect_wallet" = "Connect wallet";
+"ton_connect.open_browser_and_connect" = "Open Browser and Connect";
 "ton_connect.sure_check_service_address" = "Be sure to check the service address before connecting the wallet.";
+"ton_connect.sure_check_service_address_connect_without_checking" = "Be sure to check the service address before connecting · Connect without additional check in Browser";
 
 "wallet_balance_list.join_channel" = "Join Tonkeeper channel";
 "wallet_balance_list.transaction_notifications" = "Enable transaction notifications";
