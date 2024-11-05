@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
+		7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -238,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
+				7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */,
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
@@ -521,6 +523,7 @@
 				C3CC74412BE11EC6006022FE /* TKCoordinator */,
 				C3CC74432BE11F08006022FE /* TKUIKitDynamic */,
 				7DF339912CB400F2003D689D /* TKStories */,
+				7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */;
@@ -1542,6 +1545,10 @@
 		50C356512BE39C0500539266 /* TKLocalize */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKLocalize;
+		};
+		7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKKeychain;
 		};
 		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;

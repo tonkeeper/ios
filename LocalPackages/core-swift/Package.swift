@@ -35,7 +35,7 @@ let package = Package(
             dependencies: [
               .product(name: "URKit", package: "URKit"),
               .product(name: "TKLocalize", package: "TKLocalize"),
-              .product(name: "TKKeychain", package: "TKKeychain"),
+//              .product(name: "TKKeychain", package: "TKKeychain"),
               .product(name: "TonTransport", package: "Ledger"),
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
