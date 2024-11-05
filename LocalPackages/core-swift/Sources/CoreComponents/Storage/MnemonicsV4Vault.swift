@@ -1,10 +1,15 @@
 import Foundation
+import TKKeychain
 import TonSwift
 import CryptoKit
 import CryptoSwift
 import TweetNacl
 
+public typealias MnemonicIdentifier = String
+public typealias Mnemonics = [MnemonicIdentifier: Mnemonic]
+
 public struct MnemonicsV4Vault {
+  
   private struct MnemonicItem: Codable {
     let identifier: String
     let mnemonic: String
@@ -25,9 +30,9 @@ public struct MnemonicsV4Vault {
     case other(Swift.Error)
   }
   
-  private let keychainVault: KeychainVault
+  private let keychainVault: TKKeychainVault
   
-  public init(keychainVault: KeychainVault) {
+  public init(keychainVault: TKKeychainVault) {
     self.keychainVault = keychainVault
   }
   
@@ -89,7 +94,7 @@ public struct MnemonicsV4Vault {
   }
   
   public func deleteAll() async throws {
-    try keychainVault.deleteItem(getMnemonicsVaultQuery())
+    try keychainVault.delete(getMnemonicsVaultQuery())
     try deletePassword()
   }
   
@@ -113,52 +118,55 @@ public struct MnemonicsV4Vault {
   
   public func savePassword(_ password: String) throws {
     let query = getPasswordQuery()
-    try keychainVault.save(password, item: query)
+    try keychainVault.set(password, query: query)
   }
   
   public func getPassword() throws -> String {
     let query = getPasswordQuery()
-    return try keychainVault.read(query)
+    return try keychainVault.get(query: query)
   }
   
   public func deletePassword() throws {
     let query = getPasswordQuery()
-    try keychainVault.deleteItem(query)
+    try keychainVault.delete(query)
   }
 }
 
 private extension MnemonicsV4Vault {
-  func getChunksCountQuery() -> KeychainQueryable {
-    return KeychainGenericPasswordItem(service: .mnemonicsVaultKey,
-                                       account: .encryptedMnemonicsChunksCountKey,
-                                       accessGroup: nil,
-                                       accessible: .whenUnlocked)
-  }
-  
-  func getChunkQuery(index: Int) -> KeychainQueryable {
-    let key = "\(String.encryptedMnemonicsChunkKey)\(index)"
-    return KeychainGenericPasswordItem(service: .mnemonicsVaultKey,
-                                       account: key,
-                                       accessGroup: nil,
-                                       accessible: .whenUnlocked)
-  }
-  
-  func getMnemonicsVaultQuery() -> KeychainQueryable {
-    return KeychainGenericPasswordItem(
-      service: .mnemonicsVaultKey,
-      account: nil,
+  func getChunksCountQuery() -> TKKeychainQuery {
+    TKKeychainQuery(
+      item: .genericPassword(service: .mnemonicsVaultKey, account: .encryptedMnemonicsChunksCountKey),
       accessGroup: nil,
+      biometry: .none,
+      accessible: .whenUnlocked
+    )
+  }
+  
+  func getChunkQuery(index: Int) -> TKKeychainQuery {
+    let key = "\(String.encryptedMnemonicsChunkKey)\(index)"
+    return TKKeychainQuery(
+      item: .genericPassword(service: .mnemonicsVaultKey, account: key),
+      accessGroup: nil,
+      biometry: .none,
+      accessible: .whenUnlocked
+    )
+  }
+  
+  func getMnemonicsVaultQuery() -> TKKeychainQuery {
+    return TKKeychainQuery(
+      item: .genericPassword(service: .mnemonicsVaultKey, account: nil),
+      accessGroup: nil,
+      biometry: .none,
       accessible: .whenUnlockedThisDeviceOnly
     )
   }
   
-  func getPasswordQuery() -> KeychainQueryable {
-    return KeychainGenericPasswordItem(
-      service: .passwordVaultKey,
-      account: .passwordKey,
+  func getPasswordQuery() -> TKKeychainQuery {
+    return TKKeychainQuery(
+      item: .genericPassword(service: .passwordVaultKey, account: .passwordKey),
       accessGroup: nil,
-      accessible: .whenUnlockedThisDeviceOnly,
-      isBiometry: true
+      biometry: .any,
+      accessible: .whenUnlockedThisDeviceOnly
     )
   }
   
@@ -221,10 +229,10 @@ private extension MnemonicsV4Vault {
     do {
       try chunks.enumerated().forEach { index, chunk in
         let query = getChunkQuery(index: index)
-        try keychainVault.save(Data(chunk), item: query)
+        try keychainVault.set(Data(chunk), query: query)
       }
       let countQuery = getChunksCountQuery()
-      try keychainVault.saveValue(chunks.count, to: countQuery)
+      try keychainVault.set(chunks.count, query: countQuery)
     } catch {
       throw Error.other(error)
     }
@@ -234,8 +242,8 @@ private extension MnemonicsV4Vault {
     let count: Int
     do {
       let countQuery = getChunksCountQuery()
-      count = try keychainVault.readValue(countQuery)
-    } catch KeychainVaultError.noItemFound {
+      count = try keychainVault.get(query: countQuery)
+    } catch TKKeychainError.noItem {
       throw Error.noMnemonic
     }
 
@@ -243,7 +251,7 @@ private extension MnemonicsV4Vault {
       let encryptedMnemonicsData = try (0..<count)
         .map {
           let query = getChunkQuery(index: $0)
-          let chunk: Data = try keychainVault.read(query)
+          let chunk: Data = try keychainVault.get(query: query)
           return chunk
         }
         .reduce(into: Data()) { $0 = $0 + $1 }
@@ -252,6 +260,48 @@ private extension MnemonicsV4Vault {
     } catch {
       throw Error.mnemonicsCorrupted
     }
+  }
+}
+
+public struct ScryptHashBox {
+  private init() {}
+
+  public static func encrypt(data: Data, salt: [UInt8],  N: Int, r: Int, p: Int, password: String) async throws -> String {
+    let passwordHash = Data(try Scrypt(
+      password: [UInt8](password.utf8),
+      salt: salt,
+      dkLen: .passwordKeyLength,
+      N: .N,
+      r: .r,
+      p: .p
+    ).calculate())
+    
+    let nonce = Data(salt[0..<24])
+    let secretBox = try TweetNacl.NaclSecretBox.secretBox(
+      message: data,
+      nonce: nonce,
+      key: passwordHash
+    )
+    
+    return secretBox.toHexString()
+  }
+  
+  public static func decrypt(string: String, salt: String, N: Int, r: Int, p: Int, password: String) async throws -> Data {
+    let passwordHash = Data(try Scrypt(
+      password: [UInt8](password.utf8),
+      salt: [UInt8](Data(hex: salt)),
+      dkLen: .passwordKeyLength,
+      N: N,
+      r: r,
+      p: p
+    ).calculate())
+    
+    let nonce = Data([UInt8](Data(hex: salt))[0..<24])
+    
+    let data = try TweetNacl.NaclSecretBox.open(box: Data(hex: string),
+                                                     nonce: nonce,
+                                                     key: Data(passwordHash))
+    return data
   }
 }
 

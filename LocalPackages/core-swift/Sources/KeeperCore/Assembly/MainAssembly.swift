@@ -14,7 +14,6 @@ public final class MainAssembly {
   public let configurationAssembly: ConfigurationAssembly
   public let buySellAssembly: BuySellAssembly
   public let knownAccountsAssembly: KnownAccountsAssembly
-  public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
@@ -30,7 +29,6 @@ public final class MainAssembly {
        configurationAssembly: ConfigurationAssembly,
        buySellAssembly: BuySellAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
-       passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -45,7 +43,6 @@ public final class MainAssembly {
     self.configurationAssembly = configurationAssembly
     self.buySellAssembly = buySellAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
-    self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly

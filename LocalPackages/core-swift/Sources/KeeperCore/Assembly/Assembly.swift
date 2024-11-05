@@ -68,10 +68,6 @@ public final class Assembly {
       rnAssembly: rnAssembly
     )
   }
-  private lazy var passcodeAssembly = PasscodeAssembly(
-    repositoriesAssembly: repositoriesAssembly,
-    storesAssembly: storesAssembly
-  )
   private lazy var rnAssembly = RNAssembly(coreAssembly: coreAssembly)
   
   private let dependencies: Dependencies
@@ -100,7 +96,6 @@ public extension Assembly {
       configurationAssembly: configurationAssembly,
       buySellAssembly: buySellAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
-      passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
@@ -117,7 +112,6 @@ public extension Assembly {
       formattersAssembly: formattersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
-      passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly
     )
