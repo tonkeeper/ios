@@ -31,6 +31,9 @@ struct AddWalletModule {
         return createPairSignerCoordinator(router: router)
       }, pairLedgerCoordinatorProvider: { router in
         return createLedgerPairCoordinator(router: router)
+      },
+      pairKeystoneCoordinatorProvider: { router in
+        return createPairKeystoneCoordinator(router: router)
       }
     )
     
@@ -100,6 +103,29 @@ struct AddWalletModule {
       configurator: configurator
     )
   }
+    
+  public func createKeystoneImportCoordinator(publicKey: TonSwift.PublicKey,
+                                              xfp: String?,
+                                              path: String?,
+                                              name: String,
+                                              router: NavigationControllerRouter) -> KeystoneImportCoordinator {
+    KeystoneImportCoordinator(
+      publicKey: publicKey,
+      xfp: xfp,
+      path: path,
+      name: name,
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: {
+        self.createCustomizeWalletModule(
+          name: name,
+          tintColor: nil,
+          icon: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
+      }
+    )
+  }
   
   public func createPublicKeyImportCoordinator(publicKey: TonSwift.PublicKey,
                                                name: String,
@@ -128,6 +154,18 @@ struct AddWalletModule {
       router: router,
       publicKeyImportCoordinatorProvider: { router, publicKey, name in
         self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
+      }
+    )
+  }
+  
+  public func createPairKeystoneCoordinator(router: NavigationControllerRouter) -> PairKeystoneCoordinator {
+    PairKeystoneCoordinator(
+      scannerAssembly: dependencies.scannerAssembly,
+      walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router,
+      keystoneImportCoordinatorProvider: { router, publicKey, xfp, path, name in
+        self.createKeystoneImportCoordinator(publicKey: publicKey, xfp: xfp, path: path, name: name, router: router)
       }
     )
   }

@@ -565,7 +565,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .signer, .ledger, .importWatchOnly, .importTestnet, ],
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .signer, .keystone, .ledger, .importWatchOnly, .importTestnet, ],
                                                         router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.addWalletCoordinator = nil

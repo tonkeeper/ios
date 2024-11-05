@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import BigInt
+import URKit
 
 public final class MainAssembly {
   public let appInfoProvider: AppInfoProvider
@@ -165,6 +166,10 @@ public final class MainAssembly {
   
   public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
     SignerSignController(url: url, wallet: wallet)
+  }
+  
+  public func keystoneSignController(transaction: UR, wallet: Wallet) -> KeystoneSignController {
+    KeystoneSignController(transaction: transaction, wallet: wallet)
   }
   
   public func browserExploreController() -> BrowserExploreController {

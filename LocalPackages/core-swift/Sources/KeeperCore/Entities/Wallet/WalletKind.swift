@@ -7,6 +7,7 @@ public enum WalletKind: Codable, Equatable, Hashable {
   case Watchonly(ResolvableAddress)
   case Signer(TonSwift.PublicKey, WalletContractVersion)
   case SignerDevice(TonSwift.PublicKey, WalletContractVersion)
+  case Keystone(TonSwift.PublicKey, String?, String?, WalletContractVersion)
   case Ledger(TonSwift.PublicKey, WalletContractVersion, Wallet.LedgerDevice)
   
   public static func == (lhs: WalletKind, rhs: WalletKind) -> Bool {
@@ -64,6 +65,23 @@ extension WalletKind: CellCodable {
       try publicKey.storeTo(builder: builder)
       try contractVersion.storeTo(builder: builder)
       try device.storeTo(builder: builder)
+    case let .Keystone(publicKey, xfp, path, contractVersion):
+      try builder.store(uint: 6, bits: 5)
+      try publicKey.storeTo(builder: builder)
+      if let xfp = xfp {
+        let xfpNum: UInt64 = UInt64(xfp)!
+        try builder.store(bit: true)
+        try xfpNum.storeTo(builder: builder)
+      } else {
+        try builder.store(bit: false)
+      }
+      try contractVersion.storeTo(builder: builder)
+      if let path = path {
+        try builder.store(bit: true)
+        try builder.store(slice: Builder().writeSnakeString(path).endCell().beginParse())
+      } else {
+        try builder.store(bit: false)
+      }
     }
   }
   
@@ -95,6 +113,24 @@ extension WalletKind: CellCodable {
         let contractVersion: WalletContractVersion = try s.loadType()
         let device: Wallet.LedgerDevice = try s.loadType()
         return .Ledger(publicKey, contractVersion, device)
+      case 6:
+        let publicKey: TonSwift.PublicKey = try s.loadType()
+        
+        var xfp: String? = nil
+
+        let hasXfp: Bool = try s.loadType()
+        if (hasXfp) {
+          xfp = String(try s.loadUint(bits: 64))
+        }
+        let contractVersion: WalletContractVersion = try s.loadType()
+        
+        var path: String? = nil
+        
+        let hasPath: Bool = try s.loadType()
+        if (hasPath) {
+          path = try s.loadSnakeString()
+        }
+        return .Keystone(publicKey, xfp, path, contractVersion)
       default:
         throw TonError.custom("Invalid WalletKind type");
       }
