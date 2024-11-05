@@ -105,7 +105,14 @@ private extension TonConnectConnectCoordinator {
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
       showWalletPicker: showWalletPicker,
-      coordinatorFlow: flow
+      isSafeMode: {
+        switch flow {
+        case .common:
+          return false
+        case .deeplink:
+          return true
+        }
+      }()
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(

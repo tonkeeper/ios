@@ -12,7 +12,7 @@ struct TonConnectConnectAssembly {
     walletsStore: WalletsStore,
     walletNotificationStore: WalletNotificationStore,
     showWalletPicker: Bool,
-    coordinatorFlow: TonConnectConnectCoordinator.Flow
+    isSafeMode: Bool
   ) -> MVVMModule<
     TonConnectConnectViewController,
     TonConnectConnectViewModuleOutput,
@@ -24,7 +24,7 @@ struct TonConnectConnectAssembly {
       walletsStore: walletsStore,
       walletNotificationStore: walletNotificationStore,
       showWalletPicker: showWalletPicker,
-      coordinatorFlow: coordinatorFlow
+      isSafeMode: isSafeMode
     )
     let viewController = TonConnectConnectViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

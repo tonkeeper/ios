@@ -82,7 +82,7 @@ struct TonConnectConnectMapper {
     showWalletPicker: Bool,
     isNotificationOn: Bool,
     connectingState: TKProcessContainerView.State,
-    coordinatorFlow: TonConnectConnectCoordinator.Flow,
+    isSafeMode: Bool,
     tickAction: @escaping (Bool) -> Void,
     walletPickerAction: @escaping () -> Void,
     connectAction: @escaping () -> Void,
@@ -121,63 +121,54 @@ struct TonConnectConnectMapper {
     
     items.append(tickComponent(isOn: isNotificationOn, action: tickAction))
 
-    let buttonTitle: String = {
-      switch coordinatorFlow {
-      case .common:
-        return TKLocales.TonConnect.connectWallet
-      case .deeplink:
-        return TKLocales.TonConnect.openBrowserAndConnect
-      }
-    }()
+    let buttonTitle: String = isSafeMode ? TKLocales.TonConnect.openBrowserAndConnect : TKLocales.TonConnect.connectWallet
 
     var primaryButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     primaryButton.content = .init(title: .plainString(buttonTitle))
     primaryButton.action = {
-      switch coordinatorFlow {
-      case .common:
-        connectAction()
-      case .deeplink:
-        openBrowserAndConnectAction()
-      }
+      isSafeMode ? openBrowserAndConnectAction() : connectAction()
     }
 
-    let footerText: NSAttributedString = {
+    let footerButtonConfiguration: TKPlainButton.Model = {
       let text: String
-      switch coordinatorFlow {
-      case .common:
-        text = TKLocales.TonConnect.sureCheckServiceAddress
-      case .deeplink:
+      let isEnable: Bool
+      let action: (() -> Void)?
+      
+      if isSafeMode {
         text = TKLocales.TonConnect.sureCheckServiceAddressConnectWithoutChecking
+        isEnable = true
+        action = {
+          connectAction()
+        }
+      } else {
+        text = TKLocales.TonConnect.sureCheckServiceAddress
+        isEnable = false
+        action = nil
       }
-      return text.withTextStyle(
+      let title = text.withTextStyle(
         .body2,
         color: .Text.tertiary,
         alignment: .center,
         lineBreakMode: .byWordWrapping
       )
+      
+      return TKPlainButton.Model(
+        title: title,
+        numberOfLines: 0,
+        isEnable: isEnable,
+        action: action
+      )
     }()
-
-    let secondaryButton = TKButton.Configuration(
-      content: .init(title: .attributedString(footerText)),
-      padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
-      textNumberOfLines: 0,
-      action: {
-        switch coordinatorFlow {
-        case .common:
-          return
-        case .deeplink:
-          connectAction()
-        }
-      }
-    )
 
     items.append(TKPopUp.Component.Process(items: [
       TKPopUp.Component.ButtonGroupComponent(buttons: [
         TKPopUp.Component.ButtonComponent(buttonConfiguration: primaryButton)
       ]),
-      TKPopUp.Component.ButtonGroupComponent(buttons: [
-        TKPopUp.Component.ButtonComponent(buttonConfiguration: secondaryButton)
-      ])
+      TKPopUp.Component.GroupComponent(
+        padding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+        items: [
+          TKPopUp.Component.PlainButtonComponent(buttonConfiguration: footerButtonConfiguration)
+        ])
     ], state: connectingState))
     
     return TKPopUp.Configuration(items: items)

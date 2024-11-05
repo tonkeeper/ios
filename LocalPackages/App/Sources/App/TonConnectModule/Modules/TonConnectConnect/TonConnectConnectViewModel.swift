@@ -75,7 +75,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   private let walletsStore: WalletsStore
   private let walletNotificationStore: WalletNotificationStore
   private let showWalletPicker: Bool
-  private let coordinatorFlow: TonConnectConnectCoordinator.Flow
+  private let isSafeMode: Bool
 
   // MARK: - Init
   
@@ -84,14 +84,14 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
        walletsStore: WalletsStore,
        walletNotificationStore: WalletNotificationStore,
        showWalletPicker: Bool,
-       coordinatorFlow: TonConnectConnectCoordinator.Flow
+       isSafeMode: Bool
   ) {
     self.parameters = parameters
     self.manifest = manifest
     self.walletsStore = walletsStore
     self.walletNotificationStore = walletNotificationStore
     self.showWalletPicker = showWalletPicker
-    self.coordinatorFlow = coordinatorFlow
+    self.isSafeMode = isSafeMode
 
     self.selectedWallet = try? walletsStore.activeWallet
   }
@@ -108,7 +108,7 @@ private extension TonConnectConnectViewModelImplementation {
       showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
       isNotificationOn: isNotificationsOn,
       connectingState: connectingState,
-      coordinatorFlow: coordinatorFlow,
+      isSafeMode: isSafeMode,
       tickAction: { [weak self] isOn in
         self?.isNotificationsOn = isOn
       },
