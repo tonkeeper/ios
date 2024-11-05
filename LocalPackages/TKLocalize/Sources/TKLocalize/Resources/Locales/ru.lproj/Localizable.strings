@@ -227,6 +227,11 @@
 "confirm_send.recipient.address" = "Адрес получателя";
 "confirm_send.confirm_button" = "Подтвердить и отправить";
 "confirm_send.confirm" = "Подтвердить";
+"confirm_send.risk.total" = "Всего: %@";
+"confirm_send.risk.total_nft" = "Всего: %@ + %ld NFT";
+"confirm_send.risk.caption_without_nft" = "Общая стоимость токенов, которые будут отправлены с вашего кошелька. Возвраты не учитываются в общей стоимости.";
+"confirm_send.risk.nft_caption" = "Общая стоимость токенов, за исключением стоимости NFT, которые будут отправлены с вашего кошелька. Возвраты не учитываются в общей стоимости.";
+"confirm_send.risk.action_button_title = Понятно";
 
 "customize_wallet.title" = "Кастомизируйте свой кошелёк";
 "customize_wallet.description" = "Имя и иконка кошелька хранятся локально на вашем устройстве.";

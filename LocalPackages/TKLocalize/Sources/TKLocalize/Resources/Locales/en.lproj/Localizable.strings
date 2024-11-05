@@ -229,6 +229,11 @@
 "confirm_send.recipient.address" = "Recipient address";
 "confirm_send.confirm_button" = "Confirm and send";
 "confirm_send.confirm" = "Confirm";
+"confirm_send.risk.total" = "Total: %@";
+"confirm_send.risk.total_nft" = "Total: %@ + %ld NFT";
+"confirm_send.risk.caption_without_nft" = "The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.";
+"confirm_send.risk.nft_caption" = "The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.";
+"confirm_send.risk.action_button_title = OK";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

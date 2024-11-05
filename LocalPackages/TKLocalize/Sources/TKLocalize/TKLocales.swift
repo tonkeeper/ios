@@ -368,6 +368,22 @@ public enum TKLocales {
       /// Recipient
       public static let title = TKLocales.tr("Localizable", "confirm_send.recipient.title", fallback: "Recipient")
     }
+    public enum Risk {
+      /// confirm_send.risk.action_button_title = OK
+      public static let actionButtonTitleOK = TKLocales.tr("Localizable", "confirm_send.risk.action_button_title = OK", fallback: "confirm_send.risk.action_button_title = OK")
+      /// The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.
+      public static let captionWithoutNft = TKLocales.tr("Localizable", "confirm_send.risk.caption_without_nft", fallback: "The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.")
+      /// The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.
+      public static let nftCaption = TKLocales.tr("Localizable", "confirm_send.risk.nft_caption", fallback: "The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.")
+      /// Total: %@
+      public static func total(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "confirm_send.risk.total", String(describing: p1), fallback: "Total: %@")
+      }
+      /// Total: %@ + %ld NFT
+      public static func totalNft(_ p1: Any, _ p2: Int) -> String {
+        return TKLocales.tr("Localizable", "confirm_send.risk.total_nft", String(describing: p1), p2, fallback: "Total: %@ + %ld NFT")
+      }
+    }
     public enum TokenTransfer {
       /// Confirm action
       public static let title = TKLocales.tr("Localizable", "confirm_send.token_transfer.title", fallback: "Confirm action")

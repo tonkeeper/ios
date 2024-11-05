@@ -4,6 +4,9 @@ import TKUIKit
 final class InsufficientFundsViewController: UIViewController, TKBottomSheetScrollContentViewController {
   
   struct Configuration {
+    let image: UIImage?
+    let imageTintColor: UIColor?
+    let title: String
     let caption: String
     let buttons: [TKButton.Configuration]
   }
@@ -47,14 +50,7 @@ final class InsufficientFundsViewController: UIViewController, TKBottomSheetScro
   
   var configuration: Configuration? {
     didSet {
-      captionLabel.attributedText = configuration?.caption.withTextStyle(.body1, color: .Text.secondary, alignment: .center)
-      
-      let buttons = (configuration?.buttons ?? []).map { configuration in
-        let button = TKButton()
-        button.configuration = configuration
-        return button
-      }
-      buttonsPaddingContainer.setViews(buttons)
+      updateConfiguration()
     }
   }
   
@@ -67,11 +63,7 @@ final class InsufficientFundsViewController: UIViewController, TKBottomSheetScro
   private func setup() {
     titleLabel.numberOfLines = 0
     captionLabel.numberOfLines = 0
-    
-    imageView.image = .TKUIKit.Icons.Size84.exclamationmarkCircle
-    imageView.tintColor = .Icon.secondary
-    titleLabel.attributedText = "Insufficient Funds".withTextStyle(.h2, color: .Text.primary, alignment: .center)
-    
+
     view.addSubview(scrollView)
     scrollView.addSubview(stackView)
     
@@ -98,5 +90,21 @@ final class InsufficientFundsViewController: UIViewController, TKBottomSheetScro
     buttonsPaddingContainer.snp.makeConstraints { make in
       make.width.equalTo(stackView)
     }
+  }
+
+  private func updateConfiguration() {
+    titleLabel.attributedText = configuration?.title.withTextStyle(.h2, color: .Text.primary, alignment: .center)
+    captionLabel.attributedText = configuration?.caption.withTextStyle(.body1, color: .Text.secondary, alignment: .center)
+
+    imageView.isHidden = configuration?.image == nil
+    imageView.image = configuration?.image
+    imageView.tintColor = configuration?.imageTintColor
+
+    let buttons = (configuration?.buttons ?? []).map { configuration in
+      let button = TKButton()
+      button.configuration = configuration
+      return button
+    }
+    buttonsPaddingContainer.setViews(buttons)
   }
 }
