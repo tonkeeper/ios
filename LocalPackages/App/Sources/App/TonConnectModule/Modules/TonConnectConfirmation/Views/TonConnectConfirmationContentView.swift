@@ -32,6 +32,7 @@ final class TonConnectConfirmationContentView: UIView, ConfigurableView {
 }
 
 private extension TonConnectConfirmationContentView {
+
   func setup() {
     actionsView.isUserInteractionEnabled = false
     
@@ -58,6 +59,7 @@ private extension TonConnectConfirmationContentView {
 }
 
 extension UIView {
+  
   func findViewController() -> UIViewController? {
     if let nextResponder = self.next as? UIViewController {
       return nextResponder

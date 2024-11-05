@@ -68,7 +68,7 @@ struct TonConnectConnectMapper {
   private static func tickComponent(isOn: Bool, action: @escaping (Bool) -> Void) -> TKPopUp.Item {
     TonConnectConnectNotificationTickComponent(
       configuration: TonConnectConnectNotificationTickView.Configuration(
-        text: "Allow Notifications".withTextStyle(.label1, color: .Text.primary),
+        text: TKLocales.TonConnectMapper.allowNotifications.withTextStyle(.label1, color: .Text.primary),
         isOn: isOn,
         action: action
       ),
@@ -82,9 +82,11 @@ struct TonConnectConnectMapper {
     showWalletPicker: Bool,
     isNotificationOn: Bool,
     connectingState: TKProcessContainerView.State,
+    isSafeMode: Bool,
     tickAction: @escaping (Bool) -> Void,
     walletPickerAction: @escaping () -> Void,
-    connectAction: @escaping () -> Void
+    connectAction: @escaping () -> Void,
+    openBrowserAndConnectAction: @escaping () -> Void
   ) -> TKPopUp.Configuration {
     
     var items = [TKPopUp.Item]()
@@ -118,35 +120,57 @@ struct TonConnectConnectMapper {
     }
     
     items.append(tickComponent(isOn: isNotificationOn, action: tickAction))
-    
-    var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    btnConf.content = .init(title: .plainString(.connectButtonTitle))
-    btnConf.action = connectAction
-    
-    items.append(TKPopUp.Component.Process(items: [
-      TKPopUp.Component.ButtonGroupComponent(buttons: [
-        TKPopUp.Component.ButtonComponent(buttonConfiguration: btnConf)
-      ]),
-      TKPopUp.Component.GroupComponent(padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
-                                       items: [TKPopUp.Component.LabelComponent(text: .footerText, numberOfLines: 0)])
-    ], state: connectingState))
-    
-    return TKPopUp.Configuration(items: items)
-  }
-}
 
-private extension String {
-  static let connectButtonTitle = TKLocales.TonConnect.connectWallet
-}
+    let buttonTitle: String = isSafeMode ? TKLocales.TonConnect.openBrowserAndConnect : TKLocales.TonConnect.connectWallet
 
-private extension NSAttributedString {
-  static var footerText: NSAttributedString {
-    TKLocales.TonConnect.sureCheckServiceAddress
-      .withTextStyle(
+    var primaryButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    primaryButton.content = .init(title: .plainString(buttonTitle))
+    primaryButton.action = {
+      isSafeMode ? openBrowserAndConnectAction() : connectAction()
+    }
+
+    let footerButtonConfiguration: TKPlainButton.Model = {
+      let text: String
+      let isEnable: Bool
+      let action: (() -> Void)?
+      
+      if isSafeMode {
+        text = TKLocales.TonConnect.sureCheckServiceAddressConnectWithoutChecking
+        isEnable = true
+        action = {
+          connectAction()
+        }
+      } else {
+        text = TKLocales.TonConnect.sureCheckServiceAddress
+        isEnable = false
+        action = nil
+      }
+      let title = text.withTextStyle(
         .body2,
         color: .Text.tertiary,
         alignment: .center,
         lineBreakMode: .byWordWrapping
       )
+      
+      return TKPlainButton.Model(
+        title: title,
+        numberOfLines: 0,
+        isEnable: isEnable,
+        action: action
+      )
+    }()
+
+    items.append(TKPopUp.Component.Process(items: [
+      TKPopUp.Component.ButtonGroupComponent(buttons: [
+        TKPopUp.Component.ButtonComponent(buttonConfiguration: primaryButton)
+      ]),
+      TKPopUp.Component.GroupComponent(
+        padding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+        items: [
+          TKPopUp.Component.PlainButtonComponent(buttonConfiguration: footerButtonConfiguration)
+        ])
+    ], state: connectingState))
+    
+    return TKPopUp.Configuration(items: items)
   }
 }

@@ -4,11 +4,13 @@ import TKCore
 import UIKit
 import TKUIKit
 import TKLocalize
+import BigInt
 
 protocol TonConnectConfirmationModuleOutput: AnyObject {
   var didTapConfirmButton: (() async -> Bool)? { get set }
   var didTapCancelButton: (() -> Void)?  { get set }
   var didConfirm: (() -> Void)? { get set }
+  var didTapRiskInfo: ((_ total: String, _ caption: String) -> Void)? { get set }
 }
 
 protocol TonConnectConfirmationViewModel: AnyObject {
@@ -26,7 +28,8 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   var didTapConfirmButton: (() async -> Bool)?
   var didTapCancelButton: (() -> Void)?
   var didConfirm: (() -> Void)?
-  
+  var didTapRiskInfo: ((_ title: String, _ caption: String) -> Void)?
+
   // MARK: - TonConnectConfirmationViewModel
   
   var contentView: ((TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView)?
@@ -62,11 +65,25 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   // MARK: - Dependencies
   
   private let model: ConfirmTransactionModel
+  private let tonRatesStore: TonRatesStore
+  private let currencyStore: CurrencyStore
+  private let totalBalanceStore: TotalBalanceStore
   private let historyEventMapper: HistoryEventMapper
-  
+
+  private let decimalAmountFormatter: DecimalAmountFormatter
+
   init(model: ConfirmTransactionModel,
-       historyEventMapper: HistoryEventMapper) {
+       tonRatesStore: TonRatesStore,
+       currencyStore: CurrencyStore,
+       totalBalanceStore: TotalBalanceStore,
+       decimalAmountFormatter: DecimalAmountFormatter,
+       historyEventMapper: HistoryEventMapper
+  ) {
     self.model = model
+    self.tonRatesStore = tonRatesStore
+    self.currencyStore = currencyStore
+    self.totalBalanceStore = totalBalanceStore
+    self.decimalAmountFormatter = decimalAmountFormatter
     self.historyEventMapper = historyEventMapper
   }
 }
@@ -79,12 +96,17 @@ private extension TonConnectConfirmationViewModelImplementation {
       contentItems.append(.item(contentItem))
     }
     
-    let actionBarItems: [TKModalCardViewController.Configuration.Item] = [
+    var actionBarItems: [TKModalCardViewController.Configuration.Item] = [
       .buttonsRow(.init(buttons: [
         cancelButton(),
         confirmButton()
-      ]), bottomSpacing: 16, itemSpacing: 8)
+      ]), bottomSpacing: 8, itemSpacing: 8)
     ]
+
+    if let riskItem = createRiskItem() {
+      actionBarItems.append(.customView(riskItem, bottomSpacing: 8))
+    }
+
     let configuration = TKModalCardViewController.Configuration(
       header: nil,
       content: .init(items: contentItems, copyToastConfiguration: .copied),
@@ -92,7 +114,7 @@ private extension TonConnectConfirmationViewModelImplementation {
     )
     didUpdateConfiguration?(configuration)
   }
-  
+
   func confirmButton() -> TKModalCardViewController.Configuration.Button {
     TKModalCardViewController.Configuration.Button(
       title: TKLocales.ConfirmSend.confirm,
@@ -130,11 +152,27 @@ private extension TonConnectConfirmationViewModelImplementation {
         self?.didTapCancelButton?()
       })
   }
-  
+
+  func createRiskItem() -> UIView? {
+    guard let risk = model.formattedRisk else {
+      return nil
+    }
+
+    let riskView = TonConnectRiskView()
+    riskView.configure(model: TonConnectRiskView.Model(
+      title: risk.title,
+      isRisk: risk.isRisk
+    ) { [weak self] in
+      self?.didTapRiskInfo?(risk.title, risk.caption)
+    })
+
+    return riskView
+  }
+
   func contentItem() -> TKModalCardViewController.Configuration.Item? {
     let model = TonConnectConfirmationContentView.Model(
       actionsConfiguration: mapEvent(model.event),
-      feeModel: .init(title: TKLocales.ConfirmSend.fee, fee: model.fee)
+      feeModel: .init(title: TKLocales.ConfirmSend.fee, fee: model.formattedFee)
     )
     guard let view = contentView?(model) else { return nil }
     return .customView(view, bottomSpacing: 32)

@@ -452,6 +452,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
+            flow: .deeplink,
             connector: DefaultTonConnectConnectCoordinatorConnector(
               tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
             ),
@@ -469,7 +470,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             guard let coordinator else { return }
             self?.removeChild(coordinator)
           }
-          
+
+          coordinator.didRequestOpeningBrowser = { [weak self] manifest in
+            self?.openDapp(title: manifest.name, url: manifest.url)
+          }
+
           addChild(coordinator)
           coordinator.start()
         }
