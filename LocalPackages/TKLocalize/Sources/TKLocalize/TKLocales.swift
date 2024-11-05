@@ -19,6 +19,8 @@ public enum TKLocales {
     public static let bid = TKLocales.tr("Localizable", "action_types.bid", fallback: "Bid")
     /// Bounced
     public static let bounced = TKLocales.tr("Localizable", "action_types.bounced", fallback: "Bounced")
+    /// Burned
+    public static let burned = TKLocales.tr("Localizable", "action_types.burned", fallback: "Burned")
     /// Call contract
     public static let contractExec = TKLocales.tr("Localizable", "action_types.contract_exec", fallback: "Call contract")
     /// Renew Domain
