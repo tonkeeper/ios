@@ -127,15 +127,16 @@ final class BrowserExploreFeaturedView: UIView {
 }
 
 private extension BrowserExploreFeaturedView {
-  private func indexOfMostVisibleCell() -> Int {
-    let itemWidth = calculateItemSize(width: collectionView.bounds.width)
-    let proportionalOffset = collectionView.contentOffset.x / itemWidth
-    let index = Int(round(proportionalOffset))
-    let numberOfItems = collectionView.numberOfItems(inSection: 0)
-    let safeIndex = max(0, min(numberOfItems, index))
-    return safeIndex
+
+  func indexOfMostVisibleCell(offset: Int = 0) -> Int {
+      let itemWidth = calculateItemSize(width: collectionView.bounds.width)
+      let proportionalOffset = collectionView.contentOffset.x / itemWidth
+      let index = Int(round(proportionalOffset)) + offset
+      let numberOfItems = collectionView.numberOfItems(inSection: 0)
+      let safeIndex = max(0, min(numberOfItems - 1, index))
+      return safeIndex
   }
-  
+
   var indexOfLeftSignificantCell: Int { Int.numberOfAdditionalItems/2 * self.dapps.count }
   var indexOfRightSignificantCell: Int { indexOfLeftSignificantCell + self.dapps.count - 1 }
   
@@ -149,7 +150,7 @@ private extension BrowserExploreFeaturedView {
         self.collectionView.isScrollEnabled = false
         UIView.animate(withDuration: 0.5) {
           self.collectionView.scrollToItem(
-            at: IndexPath(item: self.indexOfMostVisibleCell() + 1, section: 0),
+            at: IndexPath(item: self.indexOfMostVisibleCell(offset: 1), section: 0),
             at: .centeredHorizontally,
             animated: true
           )
