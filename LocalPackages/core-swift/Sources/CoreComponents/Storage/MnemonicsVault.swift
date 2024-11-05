@@ -8,7 +8,7 @@ import TweetNacl
 public typealias MnemonicIdentifier = String
 public typealias Mnemonics = [MnemonicIdentifier: Mnemonic]
 
-public struct MnemonicsV4Vault {
+public struct MnemonicsVault {
   
   private struct MnemonicItem: Codable {
     let identifier: String
@@ -132,7 +132,7 @@ public struct MnemonicsV4Vault {
   }
 }
 
-private extension MnemonicsV4Vault {
+private extension MnemonicsVault {
   func getChunksCountQuery() -> TKKeychainQuery {
     TKKeychainQuery(
       item: .genericPassword(service: .mnemonicsVaultKey, account: .encryptedMnemonicsChunksCountKey),

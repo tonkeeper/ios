@@ -15,8 +15,8 @@ public struct CoreAssembly {
     self.appInfoProvider = appInfoProvider
   }
   
-  func mnemonicsV4Vault() -> MnemonicsV4Vault {
-    MnemonicsV4Vault(
+  func mnemonicsVault() -> MnemonicsVault {
+    MnemonicsVault(
       keychainVault: keychainVault
     )
   }
