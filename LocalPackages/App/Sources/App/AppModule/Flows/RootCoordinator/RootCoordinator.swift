@@ -46,13 +46,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
     pushNotificationsManager.setup()
-    
-    featureFlagsProvider.didUpdateIsMarketRegionPickerAvailable = { [weak self, weak featureFlagsProvider] in
-      guard let isMarketRegionPickerAvailable = featureFlagsProvider?.isMarketRegionPickerAvailable else { return }
-      self?.rootController.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
-    }
-    rootController.loadFiatMethods(isMarketRegionPickerAvailable: featureFlagsProvider.isMarketRegionPickerAvailable)
-    
     rootController.loadConfigurations()
     
     stateManager.didUpdateState = { [weak self] state in
@@ -216,7 +209,18 @@ private extension RootCoordinator {
     )
     Task {
       if await rnMigration.checkIfNeedToMigrate() {
-        _ = await rnMigration.performMigration()
+        let errors = await rnMigration.performMigration()
+        if !errors.isEmpty {
+          await MainActor.run {
+            openOnboarding(deeplink: deeplink)
+            let alertController = UIAlertController(title: "Failed migrate",
+                                                    message: errors.map { $0.alertValue }.joined(separator: "\n"),
+                                                    preferredStyle: .alert)
+            alertController.addAction(UIAlertAction(title: "OK", style: .cancel))
+            router.rootViewController.present(alertController, animated: true)
+          }
+        }
+        
       } else {
         await MainActor.run {
           openOnboarding(deeplink: deeplink)

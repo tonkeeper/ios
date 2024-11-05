@@ -1,6 +1,6 @@
 import Foundation
 
-public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, TokenManagementStore.State> {
+public final class TokenManagementStore: Store<TokenManagementStore.Event, TokenManagementStore.State> {
   public typealias State = [Wallet: TokenManagementState]
   
   public enum Event {
@@ -19,20 +19,24 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
     walletsStore.addObserver(self) { observer, event in
       switch event {
       case .didAddWallets(let wallets):
-        self.setState { state in
+        self.updateState { state in
           var updatedState = state
           for wallet in wallets {
             let walletState = tokenManagementRepository.getState(wallet: wallet)
             updatedState[wallet] = walletState
           }
           return StateUpdate(newState: updatedState)
+        } completion: { [weak self] _ in
+          for wallet in wallets {
+            self?.sendEvent(.didUpdateState(wallet: wallet))
+          }
         }
       default: break
       }
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in
@@ -42,8 +46,60 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
     return state
   }
   
-  public func pinItem(identifier: String, wallet: Wallet) async {
-    await setState { [tokenManagementRepository] state in
+  public func pinItem(identifier: String,
+                      wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      pinItem(identifier: identifier, wallet: wallet) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func unpinItem(identifier: String,
+                        wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      unpinItem(identifier: identifier, wallet: wallet) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func hideItem(identifier: String,
+                       wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      hideItem(identifier: identifier, wallet: wallet) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func unhideItem(identifier: String,
+                         wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      unhideItem(identifier: identifier, wallet: wallet) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func movePinnedItem(from: Int,
+                             to: Int,
+                             wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      movePinnedItem(
+        from: from,
+        to: to,
+        wallet: wallet) {
+          continuation.resume()
+        }
+    }
+  }
+  
+  
+  public func pinItem(identifier: String,
+                      wallet: Wallet,
+                      completion: (() -> Void)? = nil) {
+    updateState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -57,13 +113,16 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      self.sendEvent(.didUpdateState(wallet: wallet))
+    } completion: { [weak self] _ in
+      self?.sendEvent(.didUpdateState(wallet: wallet))
+      completion?()
     }
   }
   
-  public func unpinItem(identifier: String, wallet: Wallet) async {
-    await setState { [tokenManagementRepository] state in
+  public func unpinItem(identifier: String, 
+                        wallet: Wallet,
+                        completion: (() -> Void)? = nil) {
+    updateState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -76,13 +135,16 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
+    } completion: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
+      completion?()
     }
   }
   
-  public func hideItem(identifier: String, wallet: Wallet) async {
-    await setState { [tokenManagementRepository] state in
+  public func hideItem(identifier: String,
+                       wallet: Wallet,
+                       completion: (() -> Void)? = nil) {
+    updateState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -96,13 +158,16 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
+    } completion: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
+      completion?()
     }
   }
   
-  public func unhideItem(identifier: String, wallet: Wallet) async {
-    await setState { [tokenManagementRepository] state in
+  public func unhideItem(identifier: String,
+                         wallet: Wallet,
+                         completion: (() -> Void)? = nil) {
+    updateState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -116,13 +181,17 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
+    } completion: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
+      completion?()
     }
   }
   
-  public func movePinnedItem(from: Int, to: Int, wallet: Wallet) async {
-    await setState { [tokenManagementRepository] state in
+  public func movePinnedItem(from: Int,
+                             to: Int,
+                             wallet: Wallet,
+                             completion: (() -> Void)? = nil) {
+    updateState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -137,8 +206,9 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
+    } completion: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
+      completion?()
     }
   }
 }

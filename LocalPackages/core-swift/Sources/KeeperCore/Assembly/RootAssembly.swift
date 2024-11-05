@@ -10,9 +10,12 @@ public final class RootAssembly {
   public let mappersAssembly: MappersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
+  private let buySellAssembly: BuySellAssembly
+  private let knownAccountsAssembly: KnownAccountsAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
+  public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
 
   init(appInfoProvider: AppInfoProvider,
@@ -24,9 +27,12 @@ public final class RootAssembly {
        mappersAssembly: MappersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
+       buySellAssembly: BuySellAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly,
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
+       backgroundUpdateAssembly: BackgroundUpdateAssembly,
        rnAssembly: RNAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
@@ -37,9 +43,12 @@ public final class RootAssembly {
     self.mappersAssembly = mappersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
+    self.buySellAssembly = buySellAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
   }
   
@@ -49,12 +58,12 @@ public final class RootAssembly {
       return rootController
     } else {
       let rootController = RootController(
-        remoteConfigurationStore: configurationAssembly.configurationLoader,
-        knownAccountsStore: loadersAssembly.knownAccountsStore,
+        configuration: configurationAssembly.configuration,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()
+        buySellProvider: buySellAssembly.buySellProvider,
+        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
       )
       self._rootController = rootController
       return rootController
@@ -87,10 +96,13 @@ public final class RootAssembly {
       formattersAssembly: formattersAssembly,
       mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
+      buySellAssembly: buySellAssembly,
+      knownAccountsAssembly: knownAccountsAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
-      loadersAssembly: loadersAssembly
+      loadersAssembly: loadersAssembly,
+      backgroundUpdateAssembly: backgroundUpdateAssembly
     )
   }
 }

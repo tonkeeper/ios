@@ -5,7 +5,7 @@ import TKLocalize
 
 final class BrowserConnectedViewController: GenericViewViewController<BrowserConnectedView>, ScrollViewController {
   
-  typealias DataSource = UICollectionViewDiffableDataSource<BrowserConnectedSection, AnyHashable>
+  typealias DataSource = BrowserConnected.DataSource
   private let viewModel: BrowserConnectedViewModel
     
   private lazy var dataSource = createDataSource()
@@ -18,8 +18,8 @@ final class BrowserConnectedViewController: GenericViewViewController<BrowserCon
     cell.configure(configuration: itemIdentifier)
   }
   
-  lazy var layout = createLayout()
-  
+  private lazy var layout = createLayout()
+
   init(viewModel: BrowserConnectedViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
@@ -94,9 +94,9 @@ private extension BrowserConnectedViewController {
     return layout
   }
   
-  func appsSectionLayout(snapshot: NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>,
-                            section: BrowserConnectedSection,
-                            environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+  func appsSectionLayout(snapshot: BrowserConnected.Snapshot,
+                         section: BrowserConnected.Section,
+                         environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1/4),
       heightDimension: .absolute(104)
@@ -131,19 +131,12 @@ private extension BrowserConnectedViewController {
   }
   
   func createDataSource() -> DataSource {
-    let dataSource = DataSource(collectionView: customView.collectionView) {
-      [appCellConfiguration] collectionView,
-      indexPath,
-      itemIdentifier in
-      switch itemIdentifier {
-      case let configuration as BrowserConnectedAppCell.Configuration:
-        return collectionView.dequeueConfiguredReusableCell(
-          using: appCellConfiguration,
-          for: indexPath,
-          item: configuration
-        )
-      default: return nil
-      }
+    let dataSource = DataSource(collectionView: customView.collectionView) { [appCellConfiguration] collectionView, indexPath, itemIdentifier in
+      collectionView.dequeueConfiguredReusableCell(
+        using: appCellConfiguration,
+        for: indexPath,
+        item: itemIdentifier.configuration
+      )
     }
 
     return dataSource

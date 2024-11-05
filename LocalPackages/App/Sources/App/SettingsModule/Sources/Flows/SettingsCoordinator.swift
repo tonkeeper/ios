@@ -38,7 +38,7 @@ private extension SettingsCoordinator {
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
       anaylticsProvider: coreAssembly.analyticsProvider
     )
@@ -221,7 +221,7 @@ private extension SettingsCoordinator {
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
-      await walletsStore.setWallet(
+      await walletsStore.updateWalletMetaData(
         wallet,
         metaData: WalletMetaData(customizeWalletModel: model)
       )

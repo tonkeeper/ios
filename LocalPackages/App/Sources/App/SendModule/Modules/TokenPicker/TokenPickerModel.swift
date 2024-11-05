@@ -26,7 +26,7 @@ final class TokenPickerModel {
     
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet): 
+      case .didUpdateConvertedBalance(let wallet): 
         guard wallet == observer.wallet else { return }
         Task {
           await observer.didUpdateBalanceState()
@@ -36,7 +36,7 @@ final class TokenPickerModel {
   }
   
   func getState() -> State? {
-    let balanceState = balanceStore.getState()[wallet]
+    let balanceState = balanceStore.state[wallet]
     let state = getState(balanceState: balanceState, scrollToSelected: false)
     return state
   }
@@ -44,7 +44,7 @@ final class TokenPickerModel {
 
 private extension TokenPickerModel {
   func didUpdateBalanceState() async {
-    let balanceState = await balanceStore.getState()[wallet]
+    let balanceState = balanceStore.state[wallet]
     let state = getState(balanceState: balanceState, scrollToSelected: false)
     self.didUpdateState?(state)
   }

@@ -4,19 +4,24 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 struct TonConnectModule {
+
   private let dependencies: Dependencies
+
   init(dependencies: Dependencies) {
     self.dependencies = dependencies
   }
   
   func createConnectCoordinator(router: ViewControllerRouter,
+                                flow: TonConnectConnectCoordinator.Flow,
                                 connector: TonConnectConnectCoordinatorConnector,
                                 parameters: TonConnectParameters,
                                 manifest: TonConnectManifest,
                                 showWalletPicker: Bool) -> TonConnectConnectCoordinator {
     TonConnectConnectCoordinator(
       router: router,
+      flow: flow,
       connector: connector,
       parameters: parameters,
       manifest: manifest,

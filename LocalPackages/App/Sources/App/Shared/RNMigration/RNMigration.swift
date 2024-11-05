@@ -6,7 +6,18 @@ struct RNMigration {
   
   enum MigrateError: Swift.Error {
     case noWallets
-    case failedMigrateWallet(identifier: String, publicKey: String)
+    case failedMigrateWallet(identifier: String,
+                             label: String,
+                             publicKey: String)
+    
+    var alertValue: String {
+      switch self {
+      case .noWallets:
+        return "No wallets to migrate"
+      case .failedMigrateWallet(let identifier, let label, let publicKey):
+        return "Failed migrate wallet \(label), \(publicKey)"
+      }
+    }
   }
   
   private let rnService: RNService
@@ -43,7 +54,7 @@ struct RNMigration {
     for rnWallet in rnWallets {
       let backupDate = try? await rnService.getWalletBackupDate(walletId: rnWallet.identifier)
       guard let wallet = try? rnWallet.getWallet(backupDate: backupDate) else {
-        errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, publicKey: rnWallet.pubkey))
+        errors.append(.failedMigrateWallet(identifier: rnWallet.identifier, label: rnWallet.identifier, publicKey: rnWallet.pubkey))
         continue
       }
       guard !wallets.contains(where: { $0.identity == wallet.identity }) else { continue }
@@ -57,8 +68,8 @@ struct RNMigration {
     }) ?? wallets[0]
     
     await walletsStore.addWallets(wallets)
-    await walletsStore.setWalletActive(activeWallet)
-    try? await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
+    await walletsStore.makeWalletActive(activeWallet)
+    try? _ = await securityStore.setIsBiometryEnable(rnService.getIsBiometryEnable())
     await migrateCurrency()
     await migrateNotificationsSettings(wallets: wallets)
     await migrateTheme()

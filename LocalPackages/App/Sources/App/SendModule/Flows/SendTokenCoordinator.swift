@@ -112,7 +112,7 @@ private extension SendTokenCoordinator {
 
     module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
-      let coordinator = await WalletTransferSignCoordinator(
+      let coordinator = WalletTransferSignCoordinator(
         router: ViewControllerRouter(rootViewController: router.rootViewController),
         wallet: wallet,
         transferMessageBuilder: walletTransfer,

@@ -18,12 +18,16 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+  private let recipientResolver: RecipientResolver
   
   init(router: NavigationControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
-       keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+       keeperCoreMainAssembly: KeeperCore.MainAssembly,
+       recipientResolver: RecipientResolver
+  ) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.recipientResolver = recipientResolver
     super.init(router: router)
     router.rootViewController.tabBarItem.title = TKLocales.Tabs.history
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.clock
@@ -62,13 +66,12 @@ private extension HistoryCoordinator {
       
       listModule.output.didSelectNFT = { [weak self] wallet, nftAddress in
         guard let self else { return }
-        Task {
-          await self.openNFTDetails(wallet: wallet, address: nftAddress)
-        }
+        self.openNFTDetails(wallet: wallet, address: nftAddress)
       }
       
+      weak var historyInput = historyModule.input
       listModule.output.didUpdateState = { hasEvents in
-        historyModule.input.setHasEvents(hasEvents)
+        historyInput?.setHasEvents(hasEvents)
       }
       
       listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in

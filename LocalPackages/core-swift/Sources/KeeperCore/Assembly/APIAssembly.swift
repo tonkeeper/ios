@@ -23,25 +23,23 @@ final class APIAssembly {
   }
   
   lazy var api: API = {
-    print("VVV")
     return API(
       hostProvider: tonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.configurationStore,
+      configuration: configurationAssembly.configuration,
       requestCreationQueue: apiRequestCreationQueue
     )
   }()
   
   lazy var testnetAPI: API = {
-    print("ZZZ")
     return API(
       hostProvider: testnetTonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.configurationStore,
+      configuration: configurationAssembly.configuration,
       requestCreationQueue: apiRequestCreationQueue
     )
   }()
@@ -49,34 +47,35 @@ final class APIAssembly {
   private lazy var apiRequestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")
     
   private var tonApiHostProvider: APIHostProvider {
-    MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
+    MainnetAPIHostProvider(configuration: configurationAssembly.configuration)
   }
   
   private var testnetTonApiHostProvider: APIHostProvider {
-    TestnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
+    TestnetAPIHostProvider(configuration: configurationAssembly.configuration)
   }
   
   private var _streamingAPI: StreamingAPI?
   public var streamingAPI: StreamingAPI {
-    let isRealtimeHost = false
+    let isRealtimeHost = true
     if let _streamingAPI {
       return _streamingAPI
     }
+    let configuration = configurationAssembly.configuration
     let streamingAPI = StreamingAPI(
       configuration: streamingUrlSessionConfiguration,
-      hostProvider: { [streamingAPIURL, tonAPIURL, configurationAssembly] in
+      hostProvider: { [streamingAPIURL, tonAPIURL] in
         if isRealtimeHost {
           return streamingAPIURL
         } else {
-          let string = await configurationAssembly.configurationStore.getConfiguration().tonapiV2Endpoint
+          let string = await configuration.tonapiV2Endpoint
           guard let url = URL(string: string) else {
             return tonAPIURL
           }
           return url
         }
       },
-      tokenProvider: { [configurationAssembly] in
-        await configurationAssembly.configurationStore.getConfiguration().tonApiV2Key
+      tokenProvider: {
+        await configuration.tonApiV2Key
       }
     )
     _streamingAPI = streamingAPI

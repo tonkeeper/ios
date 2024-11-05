@@ -75,7 +75,7 @@ private extension WebSwapCoordinator {
   
   func openSend(signRequest: SendTransactionSignRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
       return
     }
 

@@ -204,6 +204,7 @@ public enum TransferData {
     public let seqno: UInt64
     public let pool: StackingPoolInfo
     public let amount: BigUInt
+    public let isMax: Bool
     public let isBouncable: Bool
     public let timeout: UInt64?
   }
@@ -353,6 +354,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure
@@ -364,6 +366,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             forwardAmount: 100_000,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
@@ -376,6 +379,7 @@ public struct TransferMessageBuilder {
             queryId: TransferMessageBuilder.newWalletQueryId(),
             poolAddress: stakeDeposit.pool.address,
             amount: stakeDeposit.amount,
+            isMax: stakeDeposit.isMax,
             bounce: stakeDeposit.isBouncable,
             timeout: stakeDeposit.timeout,
             signClosure: signClosure
@@ -641,6 +645,7 @@ public struct ExternalMessageTransferBuilder {
       timeout: timeout)
     let contract = try wallet.contract
     let transfer = try contract.createTransfer(args: transferData, messageType: .ext)
+    
     let signedTransfer = try await signClosure(transfer)
     let body = Builder()
     
@@ -659,6 +664,6 @@ public struct ExternalMessageTransferBuilder {
                                            stateInit: seqno == 0 ? contract.stateInit : nil,
                                            body: transferCell)
     let cell = try Builder().store(externalMessage).endCell()
-    return try cell.toBoc().base64EncodedString()
+    return try cell.toBoc().hexString()
   }
 }

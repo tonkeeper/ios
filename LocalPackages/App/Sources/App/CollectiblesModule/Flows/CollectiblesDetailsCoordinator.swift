@@ -22,12 +22,13 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+
   public init(router: NavigationControllerRouter,
               nft: NFT,
               wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+              keeperCoreMainAssembly: KeeperCore.MainAssembly
+  ) {
     self.nft = nft
     self.wallet = wallet
     self.coreAssembly = coreAssembly
@@ -72,6 +73,17 @@ private extension CollectiblesDetailsCoordinator {
     
     module.output.didTapTransfer = { [weak self] _, nft in
       self?.openTransfer(nft: nft)
+    }
+    
+    module.output.didTapBurn = { [weak self] nft in
+      guard let self = self, let burnAddress = try? Address.burnAddress else {
+        return
+      }
+      
+      openTransfer(
+        nft: nft,
+        recipient: Recipient(recipientAddress: .raw(burnAddress), isMemoRequired: false)
+      )
     }
     
     module.output.didTapLinkDomain = { [weak self] wallet, nft in
@@ -135,8 +147,7 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
-      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
+      let linkBuilder = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
@@ -168,7 +179,7 @@ private extension CollectiblesDetailsCoordinator {
     router.push(viewController: module.view)
   }
 
-  func openTransfer(nft: NFT) {
+  func openTransfer(nft: NFT, recipient: Optional<Recipient> = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -180,7 +191,8 @@ private extension CollectiblesDetailsCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .nft(nft)
+      sendItem: .nft(nft),
+      recipient: recipient
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
@@ -294,4 +306,8 @@ private extension CollectiblesDetailsCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+}
+
+private extension Address {
+  static var burnAddress: Address? = try? Address.parse(raw: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
 }

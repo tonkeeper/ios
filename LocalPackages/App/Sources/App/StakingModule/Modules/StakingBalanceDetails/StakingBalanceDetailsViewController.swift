@@ -3,7 +3,6 @@ import TKUIKit
 
 final class StakingBalanceDetailsViewController: GenericViewViewController<StakingBalanceDetailsView>, KeyboardObserving {
   private let viewModel: StakingBalanceDetailsViewModel
-  private let amountInputViewController = AmountInputViewController()
   
   init(viewModel: StakingBalanceDetailsViewModel) {
     self.viewModel = viewModel

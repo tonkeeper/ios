@@ -264,7 +264,6 @@ private extension SendConfirmationViewModelImplementation {
   
   func sendTransaction() async -> Bool {
     do {
-      let wallet = sendConfirmationController.wallet
       try await sendConfirmationController.sendTransaction()
       return true
     } catch {

@@ -9,29 +9,29 @@ protocol APIHostProvider {
 }
 
 struct MainnetAPIHostProvider: APIHostProvider {
-  private let remoteConfigurationStore: ConfigurationStore
+  private let configuration: Configuration
   
-  init(remoteConfigurationStore: ConfigurationStore) {
-    self.remoteConfigurationStore = remoteConfigurationStore
+  init(configuration: Configuration) {
+    self.configuration = configuration
   }
   
   var basePath: String {
     get async {
-      await remoteConfigurationStore.getConfiguration().tonapiV2Endpoint
+      await configuration.tonapiV2Endpoint
     }
   }
 }
 
 struct TestnetAPIHostProvider: APIHostProvider {
-  private let remoteConfigurationStore: ConfigurationStore
+  private let configuration: Configuration
   
-  init(remoteConfigurationStore: ConfigurationStore) {
-    self.remoteConfigurationStore = remoteConfigurationStore
+  init(configuration: Configuration) {
+    self.configuration = configuration
   }
   
   var basePath: String {
     get async {
-      await remoteConfigurationStore.getConfiguration().tonapiTestnetHost
+      await configuration.tonapiTestnetHost
     }
   }
 }
@@ -40,21 +40,21 @@ public struct API {
 
   private let hostProvider: APIHostProvider
   private let urlSession: URLSession
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let requestCreationQueue: DispatchQueue
   
   init(hostProvider: APIHostProvider,
        urlSession: URLSession,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        requestCreationQueue: DispatchQueue) {
     self.hostProvider = hostProvider
     self.urlSession = urlSession
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.requestCreationQueue = requestCreationQueue
   }
   
   private func createRequest<T>(requestCreation: () -> RequestBuilder<T>) async throws -> RequestBuilder<T> {
-    let apiKey = await configurationStore.getConfiguration().tonApiV2Key
+    let apiKey = await configuration.tonApiV2Key
     let hostUrl = await hostProvider.basePath
     return requestCreationQueue.sync {
       TonAPIAPI.basePath = hostUrl
@@ -399,8 +399,7 @@ extension API {
   }
   
   func getChart(token: String, period: Period, currency: Currency) async throws -> [Coordinate] {
-    let configuration = await configurationStore.getConfiguration()
-    guard var components = URLComponents(string: configuration.tonapiV2Endpoint) else { return [] }
+    guard var components = await URLComponents(string: configuration.tonapiV2Endpoint) else { return [] }
     components.path = "/v2/rates/chart"
     components.queryItems = [
       URLQueryItem(name: "token", value: token),
@@ -410,7 +409,7 @@ extension API {
     ]
     
     guard let url = components.url else { return [] }
-    let token = await configurationStore.getConfiguration().tonApiV2Key
+    let token = await configuration.tonApiV2Key
     var request = URLRequest(url: url)
     request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
     let (data, response) = try await urlSession.data(for: request)

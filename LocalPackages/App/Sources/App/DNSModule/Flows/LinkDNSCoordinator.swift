@@ -121,7 +121,7 @@ private extension LinkDNSCoordinator {
       try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self, keeperCoreMainAssembly, coreAssembly, wallet] transferMessageBuilder in
         
         guard let self = self else { return nil }
-        let coordinator = await WalletTransferSignCoordinator(
+        let coordinator = WalletTransferSignCoordinator(
           router: ViewControllerRouter(rootViewController: fromViewController),
           wallet: wallet,
           transferMessageBuilder: transferMessageBuilder,

@@ -14,13 +14,16 @@ struct WalletBalanceListMapper {
     return formatter
   }()
   
+  private let stakingMapper: WalletBalanceListStakingMapper
   private let amountFormatter: AmountFormatter
   private let balanceItemMapper: BalanceItemMapper
   private let rateConverter: RateConverter
   
-  init(amountFormatter: AmountFormatter,
+  init(stakingMapper: WalletBalanceListStakingMapper,
+       amountFormatter: AmountFormatter,
        balanceItemMapper: BalanceItemMapper,
        rateConverter: RateConverter) {
+    self.stakingMapper = stakingMapper
     self.amountFormatter = amountFormatter
     self.rateConverter = rateConverter
     self.balanceItemMapper = balanceItemMapper
@@ -51,80 +54,15 @@ struct WalletBalanceListMapper {
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
                       isPinned: Bool,
+                      isStakingEnable: Bool,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
-    let commentConfiguration = { () -> TKCommentView.Model? in
-      guard let comment = mapStakingItemComment(item, isSecure: isSecure, stakingCollectHandler: stakingCollectHandler) else {
-        return nil
-      }
-      return TKCommentView.Model(comment: comment.text, tapClosure: comment.tapHandler)
-    }
-    
-    return WalletBalanceListCell.Configuration(
-      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure, isPinned: isPinned),
-        commentViewConfiguration: commentConfiguration()
-      )
+    return stakingMapper.mapStakingItem(
+      item,
+      isSecure: isSecure,
+      isPinned: isPinned,
+      isStakingEnable: isStakingEnable,
+      stakingCollectHandler: stakingCollectHandler
     )
-  }
-  
-  private func mapStakingItemComment(_ item: ProcessedBalanceStakingItem,
-                                     isSecure: Bool,
-                                     stakingCollectHandler: (() -> Void)?) -> Comment? {
-    
-    let estimate: String = {
-      if let poolInfo = item.poolInfo,
-         let formattedEstimatedTime = formatCycleEnd(timestamp: poolInfo.cycleEnd) {
-        return "\n\(TKLocales.BalanceList.StakingItem.Comment.timeEstimate(formattedEstimatedTime))"
-      }
-      return ""
-    }()
-    
-    if item.info.pendingDeposit > 0 {
-      let amount: String = {
-        if isSecure {
-          return .secureModeValueShort
-        } else {
-          return amountFormatter.formatAmount(
-            BigUInt(item.info.pendingDeposit),
-            fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
-        }
-      }()
-      let comment = "\(TKLocales.BalanceList.StakingItem.Comment.staked(amount))\(estimate)"
-      return Comment(text: comment, tapHandler: nil)
-    }
-    
-    if item.info.pendingWithdraw > 0 {
-      let amount: String = {
-        if isSecure {
-          return .secureModeValueShort
-        } else {
-          return amountFormatter.formatAmount(
-            BigUInt(item.info.pendingWithdraw),
-            fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
-        }
-      }()
-      let comment = "\(TKLocales.BalanceList.StakingItem.Comment.unstaked(amount))\(estimate)"
-      return Comment(text: comment, tapHandler: nil)
-    }
-    
-    if item.info.readyWithdraw > 0 {
-      let amount: String = {
-        if isSecure {
-          return .secureModeValueShort
-        } else {
-          return amountFormatter.formatAmount(
-            BigUInt(item.info.readyWithdraw),
-            fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2)
-        }
-      }()
-      
-      let comment = TKLocales.BalanceList.StakingItem.Comment.ready(amount)
-      return Comment(text: comment, tapHandler: stakingCollectHandler)
-    }
-    return nil
   }
   
   func createTelegramChannelConfiguration() -> WalletBalanceListCell.Configuration {
@@ -212,26 +150,7 @@ struct WalletBalanceListMapper {
       )
     )
   }
-  
-  func formatCycleEnd(timestamp: TimeInterval) -> String? {
-    let now = Date()
-    var estimateDate = Date(timeIntervalSince1970: timestamp)
-    if estimateDate <= now {
-      estimateDate = now
-    }
-    let components = Calendar.current.dateComponents(
-      [.hour, .minute, .second], from: now,
-      to: estimateDate
-    )
-    return dateComponentsFormatter.string(from: components)
-  }
 }
-
-private struct Comment {
-  let text: String
-  let tapHandler: (() -> Void)?
-}
-
 private extension CGSize {
   static let iconSize = CGSize(width: 44, height: 44)
 }

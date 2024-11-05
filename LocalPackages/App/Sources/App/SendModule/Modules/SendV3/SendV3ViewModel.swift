@@ -129,7 +129,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func viewDidLoad() {
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard observer.wallet == wallet else { return }
         DispatchQueue.main.async {
           observer.updateRemaining()
@@ -336,7 +336,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
   private let balanceStore: ConvertedBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
@@ -346,7 +346,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
        comment: String?,
        sendController: SendV3Controller,
        balanceStore: ConvertedBalanceStore,
-       appSettingsStore: AppSettingsV3Store) {
+       appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient

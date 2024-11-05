@@ -10,18 +10,20 @@ final class BuySellListSegmentedControl: UIControl, ConfigurableView {
   }
   
   func configure(model: Model) {
-    stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    model.tabs.enumerated().forEach { index, tab in
-      let tabView = BuySellListSegmentedControlTabView()
-      tabView.configure(model: BuySellListSegmentedControlTabView.Model(title: tab))
-      tabView.addAction(UIAction(handler: { [weak self] _ in
-        self?.selectedIndex = index
-        self?.didSelectTab?(index)
-      }), for: .touchUpInside)
-      stackView.addArrangedSubview(tabView)
+    UIView.performWithoutAnimation {
+      stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      model.tabs.enumerated().forEach { index, tab in
+        let tabView = BuySellListSegmentedControlTabView()
+        tabView.configure(model: BuySellListSegmentedControlTabView.Model(title: tab))
+        tabView.addAction(UIAction(handler: { [weak self] _ in
+          self?.selectedIndex = index
+          self?.didSelectTab?(index)
+        }), for: .touchUpInside)
+        stackView.addArrangedSubview(tabView)
+      }
+      updateSelectedIndex(0, animated: false)
+      selectedIndex = 0
     }
-    updateSelectedIndex(0, animated: false)
-    selectedIndex = 0
   }
   
   var selectedIndex = 0 {

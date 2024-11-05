@@ -31,7 +31,8 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
         maximumFractionDigits: 2,
         symbol: tokenSymbol
       )
-      
+
+      let title = "Insufficient Funds"
       let caption = """
     To be paid: \(requiredFormattedAmount)
     Your balance: \(availableFormattedAmount)
@@ -40,10 +41,28 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
       var okButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
       okButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
       okButtonConfiguration.action = okAction
-      
+
       return InsufficientFundsViewController.Configuration(
+        image: .TKUIKit.Icons.Size84.exclamationmarkCircle,
+        imageTintColor: .Icon.secondary,
+        title: title,
         caption: caption,
         buttons: [okButtonConfiguration]
       )
     }
+
+  func commonConfiguration(
+    title: String,
+    caption: String,
+    buttons: [TKButton.Configuration]
+  ) -> InsufficientFundsViewController.Configuration {
+
+    InsufficientFundsViewController.Configuration(
+      image: nil,
+      imageTintColor: nil,
+      title: title,
+      caption: caption,
+      buttons: buttons
+    )
+  }
 }

@@ -106,8 +106,11 @@ struct TKModalCardViewBuilder {
       let completionClosure: (Bool) -> Void = { isSuccess in
         actionStateHandler?(.result(isSuccess: isSuccess))
         DispatchQueue.main.asyncAfter(deadline: .now() + .completionDelay) {
-          item.completionAction?(isSuccess)
-          actionStateHandler?(.none)
+          if isSuccess {
+            item.completionAction?(isSuccess)
+          } else {
+            actionStateHandler?(.none)
+          }
         }
       }
 

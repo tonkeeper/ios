@@ -14,6 +14,7 @@
 "actions.hide_collection" = "Hide Collection";
 "actions.hide_and_report_spam" = "Hide and Report Spam";
 "actions.view_on_tonviewier" = "View on Tonviewer";
+"actions.burn_nft" = "Burn NFT";
 
 "state.failed" = "Failed";
 
@@ -59,6 +60,9 @@
 "browser.tab.explore" = "Explore";
 "browser.tab.connected" = "Connected";
 "browser.list.all" = "All";
+
+"browser.connected_apps.empty_title" = "Connected apps will be\U00A0shown here";
+"browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Tonkeeper browser.";
 
 "browser.search_field.placeholder" = "Search or enter address";
 "browser.search.title" = "Browser";
@@ -225,6 +229,11 @@
 "confirm_send.recipient.address" = "Recipient address";
 "confirm_send.confirm_button" = "Confirm and send";
 "confirm_send.confirm" = "Confirm";
+"confirm_send.risk.total" = "Total: %@";
+"confirm_send.risk.total_nft" = "Total: %@ + %ld NFT";
+"confirm_send.risk.caption_without_nft" = "The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.";
+"confirm_send.risk.nft_caption" = "The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.";
+"confirm_send.risk.action_button_title = OK";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";
@@ -316,6 +325,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON staked";
 "balance_list.staking_item.comment.unstaked" = "%@ TON unstaked";
 "balance_list.staking_item.comment.time_estimate" = "in %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "after the end of the cycle";
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
@@ -353,6 +363,7 @@
 "action_types.future.send" = "Send";
 "action_types.future.receive" = "Receive";
 "action_types.sent" = "Sent";
+"action_types.burned" = "Burned";
 "action_types.received" = "Received";
 "action_types.stake" = "Stake";
 "action_types.unstake" = "Unstake";
@@ -473,14 +484,6 @@
 "staking_balance_details.stake" = "Stake";
 "staking_balance_details.unstake" = "Unstake";
 
-"staking_confirmation_mapper.wallet" = "Wallet";
-"staking_confirmation_mapper.recipient" = "Recipient";
-"staking_confirmation_mapper.amount" = "Amount";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Fee";
-"staking_confirmation_mapper.stake" = "Stake";
-"staking_confirmation_mapper.confirm_action" = "Confirm action";
-
 "staking.title" = "Stake";
 
 "unstaking.title" = "Unstake";
@@ -504,12 +507,16 @@
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Minimal Deposit";
 "staking_pool_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_pool_details.choose" = "Choose";
 
 "ton_connect_mapper.connect_to" = "Connect to ";
 "ton_connect_mapper.requesting_capture" = "%@ is requesting access to your wallet address%@";
+"ton_connect_mapper.allow_notifications" = "Allow Notifications";
 
 "ton_connect.connect_wallet" = "Connect wallet";
+"ton_connect.open_browser_and_connect" = "Open Browser and Connect";
 "ton_connect.sure_check_service_address" = "Be sure to check the service address before connecting the wallet.";
+"ton_connect.sure_check_service_address_connect_without_checking" = "Be sure to check the service address before connecting · Connect without additional check in Browser";
 
 "wallet_balance_list.join_channel" = "Join Tonkeeper channel";
 "wallet_balance_list.transaction_notifications" = "Enable transaction notifications";
@@ -531,3 +538,16 @@
 "decrypt_comment_popup.button" = "Decrypt the comment";
 
 "tick.do_not_show_again" = "Do not show again";
+
+"transaction_confirmation.confirm_action" = "Confirm action";
+"transaction_confirmation.wallet" = "Wallet";
+"transaction_confirmation.recipient" = "Recipient";
+"transaction_confirmation.fee" = "Fee";
+"transaction_confirmation.amount" = "Amount";
+"transaction_confirmation.unstake_amount" = "Unstake amount";
+"transaction_confirmation.unstake" = "Unstake";
+"transaction_confirmation.deposit" = "Deposit";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
+"transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";

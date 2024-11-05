@@ -52,4 +52,9 @@ public struct Recipient: Equatable {
   
   public let recipientAddress: RecipientAddress
   public let isMemoRequired: Bool
+  
+  public init(recipientAddress: RecipientAddress, isMemoRequired: Bool) {
+    self.recipientAddress = recipientAddress
+    self.isMemoRequired = isMemoRequired
+  }
 }

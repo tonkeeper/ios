@@ -108,6 +108,24 @@ public extension TKPopUp.Component {
 }
 
 public extension TKPopUp.Component {
+  struct PlainButtonComponent: TKPopUp.Item {
+    public func getView() -> UIView {
+      let button = TKPlainButton()
+      button.configure(model: buttonConfiguration)
+      return button
+    }
+    private let buttonConfiguration: TKPlainButton.Model
+    public let bottomSpace: CGFloat
+    
+    public init(buttonConfiguration: TKPlainButton.Model,
+                bottomSpace: CGFloat = 0) {
+      self.buttonConfiguration = buttonConfiguration
+      self.bottomSpace = bottomSpace
+    }
+  }
+}
+
+public extension TKPopUp.Component {
   struct ButtonGroupComponent: TKPopUp.Item {
     public func getView() -> UIView {
       let containerView = UIView()

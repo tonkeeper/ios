@@ -44,13 +44,13 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   
   func setSelectedCountry(_ selectedCountry: SelectedCountry) {
     Task {
-      await regionStore.updateRegion(selectedCountry)
+      await regionStore.setRegion(selectedCountry)
 
       await MainActor.run {
         self.selectedCountry = selectedCountry
         updateCountryPickerButton()
         categoryExpandStates = [:]
-        switch fiatMethodsState {
+        switch buySellProviderState {
         case .loading:
           break
         case .none:
@@ -70,17 +70,14 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   var didUpdateHeaderLeftButton: ((TKPullCardHeaderItem.LeftButton) -> Void)?
   
   func viewDidLoad() {
-    fiatMethodsStore.addObserver(self) { observer, event in
+    buySellProvider.addUpdateObserver(self) { observer in
       DispatchQueue.main.async {
-        switch event {
-        case .didUpdateState(let state):
-          observer.fiatMethodsState = state
-        }
+        observer.buySellProviderState = observer.buySellProvider.state
       }
     }
-    
-    selectedCountry = regionStore.getState()
-    fiatMethodsState = fiatMethodsStore.getState()
+    selectedCountry = regionStore.state
+    buySellProviderState = buySellProvider.state
+    buySellProvider.load()
     updateCountryPickerButton()
   }
 
@@ -111,9 +108,13 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     }
   }
   private var cellModels = [String: TKUIListItemCell.Configuration]()
-  private var fiatMethodsState: FiatMethodsStore.State = .none {
+  private var buySellProviderState: BuySellProvider.State = .none {
     didSet {
-      didUpdateFiatMethodsStoreState(fiatMethodsState)
+      if case .fiatMethods = oldValue,
+         case .loading = buySellProviderState {
+        return
+      }
+      didUpdateBuySellProviderState(buySellProviderState)
     }
   }
   private var fiatMethods: FiatMethods?
@@ -132,28 +133,28 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let fiatMethodsStore: FiatMethodsStore
+  private let buySellProvider: BuySellProvider
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let regionStore: RegionStore
   private let appSettings: AppSettings
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       fiatMethodsStore: FiatMethodsStore,
+       buySellProvider: BuySellProvider,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        regionStore: RegionStore,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        appSettings: AppSettings) {
     self.wallet = wallet
-    self.fiatMethodsStore = fiatMethodsStore
+    self.buySellProvider = buySellProvider
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.regionStore = regionStore
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.appSettings = appSettings
   }
 }
@@ -183,7 +184,7 @@ private extension BuySellListViewModelImplementation {
   }
   
   func didChangeTab() {
-    switch fiatMethodsState {
+    switch buySellProviderState {
     case .loading:
       break
     case .none:
@@ -193,7 +194,7 @@ private extension BuySellListViewModelImplementation {
     }
   }
   
-  func didUpdateFiatMethodsStoreState(_ state: FiatMethodsStore.State) {
+  func didUpdateBuySellProviderState(_ state: BuySellProvider.State) {
     categoryExpandStates = [:]
     switch state {
     case .loading:
@@ -435,9 +436,9 @@ private extension BuySellListViewModelImplementation {
         guard let self else { return }
         Task {
           do {
-            let currency = await self.currencyStore.getState()
+            let currency = self.currencyStore.state
             let walletAddress = try self.wallet.friendlyAddress
-            let mercuryoSecret = try? await self.configurationStore.getConfiguration().mercuryoSecret
+            let mercuryoSecret = await self.configuration.mercuryoSecret
             guard let url = item.actionURL(
               walletAddress: walletAddress,
               currency: currency,

@@ -15,7 +15,7 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
     case .mint:
       return TKLocales.ActionTypes.received
     case .burn:
-      return TKLocales.ActionTypes.sent
+      return TKLocales.ActionTypes.burned
     case .depositStake:
       return TKLocales.ActionTypes.stake
     case .withdrawStake:

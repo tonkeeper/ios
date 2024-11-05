@@ -60,14 +60,6 @@ public struct RepositoriesAssembly {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }
   
-  func knownAccountsRepository() -> KnownAccountsRepository {
-    KnownAccountsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
-  func buySellMethodsRepository() -> BuySellMethodsRepository {
-    BuySellMethodsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
-  
   func chartDataRepository() -> ChartDataRepository {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }

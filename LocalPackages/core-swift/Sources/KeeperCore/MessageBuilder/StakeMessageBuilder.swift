@@ -10,6 +10,7 @@ public struct StakeMessageBuilder {
                                           queryId: BigUInt,
                                           poolAddress: Address,
                                           amount: BigUInt,
+                                          isMax: Bool,
                                           forwardAmount: BigUInt,
                                           bounce: Bool = true,
                                           timeout: UInt64?,
@@ -17,7 +18,7 @@ public struct StakeMessageBuilder {
     return try await ExternalMessageTransferBuilder.externalMessageTransfer(
       wallet: wallet,
       sender: try wallet.address,
-      sendMode: .walletDefault(),
+      sendMode: isMax ? .sendMaxTon() : .walletDefault(),
       seqno: seqno,
       internalMessages: {
         sender in
@@ -40,13 +41,14 @@ public struct StakeMessageBuilder {
                                             queryId: BigUInt,
                                             poolAddress: Address,
                                             amount: BigUInt,
+                                            isMax: Bool,
                                             bounce: Bool = true,
                                             timeout: UInt64?,
                                             signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     return try await ExternalMessageTransferBuilder.externalMessageTransfer(
       wallet: wallet,
       sender: try wallet.address,
-      sendMode: .walletDefault(),
+      sendMode: isMax ? .sendMaxTon() : .walletDefault(),
       seqno: seqno,
       internalMessages: {
         sender in
@@ -68,13 +70,14 @@ public struct StakeMessageBuilder {
                                       queryId: BigUInt,
                                       poolAddress: Address,
                                       amount: BigUInt,
+                                      isMax: Bool,
                                       bounce: Bool = true,
                                       timeout: UInt64?,
                                       signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     return try await ExternalMessageTransferBuilder.externalMessageTransfer(
       wallet: wallet,
       sender: try wallet.address,
-      sendMode: .walletDefault(),
+      sendMode: isMax ? .sendMaxTon() : .walletDefault(),
       seqno: seqno,
       internalMessages: {
         sender in

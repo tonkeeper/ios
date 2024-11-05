@@ -7,6 +7,19 @@ typealias WalletBalanceModule = MVVMModule<WalletBalanceViewController, WalletBa
 struct WalletBalanceAssembly {
   private init() {}
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly, coreAssembly: TKCore.CoreAssembly) -> WalletBalanceModule {
+    
+    let queue = DispatchQueue(label: "WalletBalanceUpdateQueue")
+
+    let balanceItemMapper = BalanceItemMapper(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
+    )
+    
+    let stakingMappper = WalletBalanceListStakingMapper(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+      balanceItemMapper: balanceItemMapper
+    )
+    
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
@@ -16,7 +29,6 @@ struct WalletBalanceAssembly {
       ),
       setupModel: WalletBalanceSetupModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
         mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
@@ -25,22 +37,21 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
         totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-        backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
-        stateLoader: keeperCoreMainAssembly.loadersAssembly.walletStateLoader
+        backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
+        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+        updateQueue: queue
       ),
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       listMapper:
         WalletBalanceListMapper(
-        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-        balanceItemMapper: BalanceItemMapper(
+          stakingMapper: stakingMappper,
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-          decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
+          balanceItemMapper: balanceItemMapper,
+          rateConverter: RateConverter()
         ),
-        rateConverter: RateConverter()
-      ),
       headerMapper: WalletBalanceHeaderMapper(
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
         dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter

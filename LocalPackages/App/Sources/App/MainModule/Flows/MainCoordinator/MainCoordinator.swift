@@ -104,7 +104,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.openHistoryTab()
         if let wallet = notification.userInfo?["wallet"] as? Wallet {
           Task {
-            await self.keeperCoreMainAssembly.storesAssembly.walletsStore.setWalletActive(wallet)
+            await self.keeperCoreMainAssembly.storesAssembly.walletsStore.makeWalletActive(wallet)
           }
         }
     }
@@ -327,6 +327,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
+  func openSwap(wallet: Wallet, token: Token) {
+    let fromToken: String?
+    let toToken: String?
+    switch token {
+    case .ton:
+      fromToken = TonInfo.symbol
+      toToken = nil
+    case .jetton(let jetton):
+      fromToken = jetton.jettonInfo.symbol
+      toToken = TonInfo.symbol
+    }
+    
+    openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
+  }
+  
   func openSwap(wallet: Wallet,
                 fromToken: String? = nil,
                 toToken: String? = nil) {
@@ -430,6 +445,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
+            flow: .deeplink,
             connector: DefaultTonConnectConnectCoordinatorConnector(
               tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
             ),
@@ -447,7 +463,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             guard let coordinator else { return }
             self?.removeChild(coordinator)
           }
-          
+
+          coordinator.didRequestOpeningBrowser = { [weak self] manifest in
+            self?.openDapp(title: manifest.name, url: manifest.url)
+          }
+
           addChild(coordinator)
           coordinator.start()
         }
@@ -508,6 +528,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       model: WalletsPickerListModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
       totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
@@ -584,7 +605,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       guard let self else { return }
       let walletsStore = self.keeperCoreMainAssembly.storesAssembly.walletsStore
       Task {
-        await walletsStore.setWallet(
+        await walletsStore.updateWalletMetaData(
           wallet,
           metaData: WalletMetaData(customizeWalletModel: model)
         )
@@ -669,6 +690,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBuy(wallet: wallet)
     }
     
+    module.output.didTapSwap = { [weak self] token in
+      self?.openSwap(wallet: wallet, token: token)
+    }
+    
     module.output.didOpenURL = { [weak self] url in
       self?.openURL(url, title: nil)
     }
@@ -717,6 +742,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     module.output.didTapSend = { [weak self] token in
       self?.openSend(wallet: wallet, token: token, recipient: nil, amount: nil, comment: nil)
+    }
+    
+    module.output.didTapSwap = { [weak self] token in
+      self?.openSwap(wallet: wallet, token: token)
     }
     
     module.output.didOpenURL = { [weak self] url in
@@ -768,46 +797,29 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   func openStakingCollect(wallet: Wallet,
                           stakingPoolInfo: StackingPoolInfo,
                           accountStackingInfo: AccountStackingInfo) {
+    let navigationController = TKNavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
-    let controller = keeperCoreMainAssembly.stakingWithdrawConfirmationController(
+    let coordinator = StakingConfirmationCoordinator(
       wallet: wallet,
-      stakingPool: stakingPoolInfo,
-      amount: BigUInt(accountStackingInfo.readyWithdraw),
-      isMax: false,
-      isCollect: true
+      item: StakingConfirmationItem(operation: .withdraw(stakingPoolInfo), 
+                                    amount: BigUInt(accountStackingInfo.readyWithdraw)),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
-    
-    let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureDefaultAppearance()
-    
-    module.output.didRequireSign = { [weak self, weak navigationController, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
-      guard let self = self, let navigationController else { return nil }
-      let coordinator = await WalletTransferSignCoordinator(
-        router: ViewControllerRouter(rootViewController: navigationController),
-        wallet: wallet,
-        transferMessageBuilder: walletTransfer,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly)
-      
-      self.walletTransferSignCoordinator = coordinator
-      
-      let result = await coordinator.handleSign(parentCoordinator: self)
-      
-      switch result {
-      case .signed(let data):
-        return data
-      case .cancel:
-        return nil
-      case .failed(let error):
-        throw error
-      }
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
     }
     
-    module.view.setupRightCloseButton { [weak self] in
-      self?.router.dismiss()
+    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      self?.removeChild(coordinator)
     }
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
     
     router.present(navigationController)
   }
@@ -831,7 +843,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingStakeCoordinator(
       wallet: wallet,
@@ -842,6 +854,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
@@ -858,7 +875,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingUnstakeCoordinator(
       wallet: wallet,
@@ -869,6 +886,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
@@ -899,7 +921,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openStake(wallet: Wallet) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = StakingCoordinator(
       wallet: wallet,
@@ -909,6 +931,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     
     coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didClose = { [weak self, weak coordinator] in
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
@@ -955,7 +982,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     module.output.didTapOpenTransactionInTonviewer = { [weak self, keeperCoreMainAssembly] in
-      guard let url = TonviewerLinkBuilder(configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore)
+      guard let url = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
         .buildLink(context: .eventDetails(eventID: event.accountEvent.eventId), isTestnet: wallet.isTestnet) else { return }
       self?.openDapp(title: "Tonviewer", url: url)
     }
@@ -1079,6 +1106,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private func openHistoryTab() {
     guard let historyViewController = historyCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }
+    router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
   }

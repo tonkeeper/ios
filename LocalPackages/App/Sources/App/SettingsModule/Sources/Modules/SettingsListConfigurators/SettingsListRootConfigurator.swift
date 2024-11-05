@@ -40,10 +40,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private var wallet: Wallet
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -52,10 +52,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   init(wallet: Wallet,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -64,7 +64,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.appSettingsStore = appSettingsStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -401,7 +401,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.search)
         )))
 
-    let searchEngine = appSettingsStore.initialState.searchEngine
+    let searchEngine = appSettingsStore.state.searchEngine
     return SettingsListItem(
       id: .searchItemIdentifier,
       cellConfiguration: cellConfiguration,
@@ -420,7 +420,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                           value: nil,
                           description: nil,
                           icon: nil) {
-            Task { await self.appSettingsStore.updateSearchEngine(item) }
+            self.appSettingsStore.setSearchEngine(item)
           }
         }
 
@@ -483,11 +483,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.question, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .faqUrl else {
             return
           }
@@ -510,11 +509,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .directSupportUrl else {
             return
           }
@@ -537,11 +535,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .tonkeeperNewsUrl else {
             return
           }
@@ -564,11 +561,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.messageBubble, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .supportLink else {
             return
           }

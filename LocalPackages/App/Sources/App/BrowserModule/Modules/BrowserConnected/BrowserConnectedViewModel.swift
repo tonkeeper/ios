@@ -11,7 +11,7 @@ protocol BrowserConnectedModuleOutput: AnyObject {
 protocol BrowserConnectedViewModel: AnyObject {
 
   var didUpdateViewState: ((BrowserConnectedView.State) -> Void)? { get set }
-  var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>) -> Void)? { get set }
+  var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)? { get set }
   var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
   
   func viewDidLoad()
@@ -27,7 +27,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   // MARK: - BrowserConnectedViewModel
   
   var didUpdateViewState: ((BrowserConnectedView.State) -> Void)?
-  var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>) -> Void)?
+  var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)?
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
@@ -85,64 +85,72 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
 }
 
 private extension BrowserConnectedViewModelImplementation {
+
   func reloadContent() {
-    
-    self.connectedApps = browserConnectedController.getConnectedApps()
+    connectedApps = browserConnectedController.getConnectedApps()
   }
   
-  func updateSnapshot(sections: [BrowserConnectedSection]) {
-    var snapshot = NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>()
-    snapshot.appendSections(sections)
-    for section in sections {
+  func updateSnapshot(sections: [BrowserConnected.Section]) {
+    var snapshot = BrowserConnected.Snapshot()
+    sections.forEach { section in
       switch section {
-      case .apps(let items):
-        snapshot.appendItems(items, toSection: section)
+      case .apps:
+        let items = connectedApps.compactMap { app in
+          let downloadTask = TKCore.ImageDownloadTask() { [imageLoader] imageView, size, cornerRadius in
+            imageLoader.loadImage(
+              url: app.iconURL,
+              imageView: imageView,
+              size: size,
+              cornerRadius: cornerRadius
+            )
+          }
+
+          let configuration = BrowserConnectedAppCell.Configuration(
+            title: app.name,
+            iconUrl: app.iconURL,
+            iconDownloadTask: downloadTask
+          )
+
+          return BrowserConnected.Item(
+            identifier: app.url.absoluteString,
+            configuration: configuration
+          )
+        }
+
+        snapshot.appendSections([.apps])
+        snapshot.appendItems(items, toSection: .apps)
       }
     }
+
     didUpdateSnapshot?(snapshot)
   }
   
   func didUpdateConnectedApps() {
     let state: BrowserConnectedView.State
-    let sections: [BrowserConnectedSection]
-    if connectedApps.isEmpty {
-      sections = [.apps(items: [])]
+    let sections: [BrowserConnected.Section]
+
+    defer {
+      DispatchQueue.main.async {
+        self.updateSnapshot(sections: sections)
+        self.didUpdateViewState?(state)
+      }
+    }
+
+    guard !connectedApps.isEmpty else {
+      sections = []
       state = .empty(
         TKEmptyStateView.Model(
-          title: "Connected apps will be shown here",
-          caption: "Explore apps and services in Tonkeeper browser.",
+          title: TKLocales.Browser.ConnectedApps.emptyTitle,
+          caption: TKLocales.Browser.ConnectedApps.emptyDescription,
           leftButton: nil,
           rightButton: nil
         )
       )
-    } else {
-      let items = connectedApps.map { app in
-        BrowserConnectedAppCell.Configuration(
-          title: app.name,
-          iconUrl: app.iconURL,
-          iconDownloadTask: TKCore.ImageDownloadTask(
-            closure: {
-              [imageLoader] imageView,
-              size,
-              cornerRadius in
-              return imageLoader.loadImage(
-                url: app.iconURL,
-                imageView: imageView,
-                size: size,
-                cornerRadius: cornerRadius
-              )
-            }
-          )
-        )
-      }
-     
-      sections = [.apps(items: items)]
-      state = .data
+
+      return
     }
-  
-    DispatchQueue.main.async {
-      self.updateSnapshot(sections: sections)
-      self.didUpdateViewState?(state)
-    }
+
+    sections = [.apps]
+    state = .data
   }
 }

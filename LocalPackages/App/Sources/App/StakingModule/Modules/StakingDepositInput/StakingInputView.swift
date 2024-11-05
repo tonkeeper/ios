@@ -9,17 +9,23 @@ final class StakingInputView: TKView {
         make.left.right.equalTo(self)
         make.bottom.equalTo(self).inset(keyboardHeight)
       }
-      scrollView.contentInset.bottom = keyboardHeight == 0 ? keyboardHeight : keyboardHeight + 32
+      continueButtonContainer.setNeedsLayout()
+      continueButtonContainer.layoutIfNeeded()
+      
+      scrollView.contentInset.bottom = keyboardHeight == 0 ? keyboardHeight : keyboardHeight
+      scrollView.contentInset.bottom += continueButtonContainer.frame.height
     }
   }
   
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let scrollView = TKUIScrollView()
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
     stackView.isLayoutMarginsRelativeArrangement = true
     stackView.directionalLayoutMargins = .init(
-      top: .contentPadding,
+      top: 0,
       leading: .contentPadding,
       bottom: .contentPadding,
       trailing: .contentPadding
@@ -34,7 +40,6 @@ final class StakingInputView: TKView {
     )
   )
   let continueButtonContainer = TKPaddingContainerView()
-  let balanceView = StakingInputBalanceView()
   let detailsViewContainer = TKPaddingContainerView()
   private let detailsContainer = UIView()
   private let amountInputContainer = UIView()
@@ -57,7 +62,8 @@ final class StakingInputView: TKView {
     super.setup()
     backgroundColor = .Background.page
     
-    detailsViewContainer.isHidden = true
+    navigationBar.centerView = titleView
+    
     detailsViewContainer.padding.top = 16
     detailsViewContainer.setViews([detailsContainer])
     
@@ -68,17 +74,20 @@ final class StakingInputView: TKView {
     
     addSubview(scrollView)
     addSubview(continueButtonContainer)
+    addSubview(navigationBar)
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(amountInputContainer)
     contentStackView.setCustomSpacing(16, after: amountInputContainer)
-    contentStackView.addArrangedSubview(balanceView)
-    contentStackView.setCustomSpacing(16, after: balanceView)
     contentStackView.addArrangedSubview(detailsViewContainer)
     
     setupConstraints()
   }
   
   override func setupConstraints() {
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+    }
+    
     scrollView.snp.makeConstraints { make in
       make.edges.equalTo(self)
       make.width.equalTo(self).priority(.high)
@@ -89,11 +98,7 @@ final class StakingInputView: TKView {
       make.left.right.bottom.equalTo(self.scrollView).priority(.high)
       make.width.equalTo(scrollView)
     }
-    
-    amountInputContainer.snp.makeConstraints { make in
-      make.height.greaterThanOrEqualTo(CGFloat.amountInputHeight)
-    }
-    
+
     continueButtonContainer.snp.makeConstraints { make in
       make.left.right.equalTo(self)
       make.bottom.equalTo(self).inset(keyboardHeight)

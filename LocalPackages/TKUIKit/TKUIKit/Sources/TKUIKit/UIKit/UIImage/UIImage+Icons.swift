@@ -45,6 +45,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-globe-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var fireBadge: UIImage {
+          .imageWithName("Icons/16/ic-fire-badge-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var ellipses: UIImage {
           .imageWithName("Icons/16/ic-ellipsis-16")
           .withRenderingMode(.alwaysTemplate)
@@ -373,6 +377,9 @@ public extension UIImage {
         
         public static var tonWhalesLogo: UIImage {
           .imageWithName("Icons/44/ic-tonwhales-44")
+        }
+        public static var tonkeeperLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonkeeper-44")
         }
       }
       public enum Size56 {
