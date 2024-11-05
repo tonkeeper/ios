@@ -6,27 +6,34 @@
 //
 
 import UIKit
+import TKKeychain
 
 public final class CoreAssembly {
   
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
-  public let analyticsProvider: AnalyticsProvider
   public let isTonkeeperX: Bool
   
-  
-  public init(analyticsProvider: AnalyticsProvider = AnalyticsProvider(),
-              isTonkeeperX: Bool = false) {
-    self.analyticsProvider = analyticsProvider
+  public init(isTonkeeperX: Bool = false) {
     self.isTonkeeperX = isTonkeeperX
     
     print(sharedCacheURL)
     print(cacheURL)
   }
   
-  public var featureFlagsProvider: FeatureFlagsProvider {
-    FeatureFlagsProvider(firebaseConfigurator: FirebaseConfigurator.configurator)
+  public var uniqueIdProvider: UniqueIdProvider {
+    UniqueIdProvider(
+      userDefaults: UserDefaults.standard,
+      keychainVault: keychainVault
+    )
   }
+  
+  public lazy var analyticsProvider: AnalyticsProvider = {
+    AnalyticsProvider(
+      analyticsServices: AptabaseService(),
+      uniqueIdProvider: uniqueIdProvider
+    )
+  }()
   
   public var cacheURL: URL {
     documentsURL
@@ -89,6 +96,10 @@ public final class CoreAssembly {
   
   public var pushNotificationAPI: PushNotificationsAPI {
     PushNotificationsAPI(urlSession: .shared)
+  }
+  
+  public var keychainVault: TKKeychainVault {
+    TKKeychainVaultImplementation(keychain: TKKeychainImplementation())
   }
 }
 

@@ -19,7 +19,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let rootController: RootController
   
   private let stateManager: RootCoordinatorStateManager
-  private let featureFlagsProvider: FeatureFlagsProvider
   private let pushNotificationsManager: PushNotificationManager
   private let rnUpdater: RNUpdater
 
@@ -30,9 +29,9 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     self.stateManager = RootCoordinatorStateManager(
       walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore
     )
-    self.featureFlagsProvider = dependencies.coreAssembly.featureFlagsProvider
     self.pushNotificationsManager = PushNotificationManager(
       appSettings: dependencies.coreAssembly.appSettings,
+      uniqueIdProvider: dependencies.coreAssembly.uniqueIdProvider,
       pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
       pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
       walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
