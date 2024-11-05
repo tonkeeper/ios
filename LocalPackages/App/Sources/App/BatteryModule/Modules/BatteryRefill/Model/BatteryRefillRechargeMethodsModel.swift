@@ -6,12 +6,12 @@ import TonSwift
 final class BatteryRefillRechargeMethodsModel {
   
   enum RechargeMethodItem {
-    case token(token: Token, amount: BigUInt, rate: NSDecimalNumber?)
-    case gift(token: Token, rate: NSDecimalNumber?)
+    case token(token: Token, amount: BigUInt)
+    case gift(token: Token)
     
     var identifier: String {
       switch self {
-      case .token(let token, _, _):
+      case .token(let token, _):
         return token.identifier
       case .gift:
         return "gift_identifier"
@@ -20,19 +20,10 @@ final class BatteryRefillRechargeMethodsModel {
     
     var token: Token {
       switch self {
-      case .token(let token, _, _):
+      case .token(let token, _):
         return token
-      case .gift(let token, _):
+      case .gift(let token):
         return token
-      }
-    }
-    
-    var rate: NSDecimalNumber? {
-      switch self {
-      case .token(_, _, let rate):
-        return rate
-      case .gift(_, let rate):
-        return rate
       }
     }
   }
@@ -121,18 +112,17 @@ final class BatteryRefillRechargeMethodsModel {
       }
       return RechargeMethodItem.token(
         token: .jetton(jettonBalance.jettonBalance.item),
-        amount: jettonBalance.jettonBalance.quantity,
-        rate: rechargeMethod.rate
+        amount: jettonBalance.jettonBalance.quantity
       )
     }
     
     var result = items
     if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount), rate: tonRechargeMethods.first?.rate))
+      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount)))
     }
     if !result.isEmpty {
       let giftItem = result[0]
-      result.append(.gift(token: giftItem.token, rate: giftItem.rate))
+      result.append(.gift(token: giftItem.token))
       self.state = .idle(items: result)
     }
   }

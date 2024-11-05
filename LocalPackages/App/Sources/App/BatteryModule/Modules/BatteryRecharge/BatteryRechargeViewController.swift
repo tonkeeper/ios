@@ -26,14 +26,20 @@ final class BatteryRechargeViewController: GenericViewViewController<BatteryRech
   
   private let promocodeViewController: BatteryPromocodeInputViewController
   
+  // MARK: - Recipient
+  
+  private let recipientViewController: RecipientInputViewController
+  
   // MARK: - Init
   
   init(viewModel: BatteryRechargeViewModel,
        amountInputViewController: AmountInputViewController,
-       promocodeViewController: BatteryPromocodeInputViewController) {
+       promocodeViewController: BatteryPromocodeInputViewController,
+       recipientViewController: RecipientInputViewController) {
     self.viewModel = viewModel
     self.amountInputViewController = amountInputViewController
     self.promocodeViewController = promocodeViewController
+    self.recipientViewController = recipientViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -88,17 +94,19 @@ private extension BatteryRechargeViewController {
       TKContainerCollectionViewCell.self,
       forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
     )
+    
+    recipientViewController.didUpdateText = { [weak self] in
+      self?.customView.collectionView.collectionViewLayout.invalidateLayout()
+    }
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
       self?.dataSource.apply(snapshot, animatingDifferences: false)
     }
-    
     viewModel.didUpdateTitle = { [weak self] title in
       self?.titleLabel.attributedText = title.withTextStyle(.h3, color: .Text.primary)
     }
-    
     viewModel.didUpdateContinueButtonConfiguration = { [weak self] in
       self?.continueButton.configuration = $0
     }
@@ -167,6 +175,15 @@ private extension BatteryRechargeViewController {
         self.addChild(promocodeViewController)
         (cell as? TKContainerCollectionViewCell)?.setContentView(promocodeViewController.view)
         promocodeViewController.didMove(toParent: self)
+        return cell
+      case .recipient:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        self.addChild(recipientViewController)
+        (cell as? TKContainerCollectionViewCell)?.setContentView(recipientViewController.view)
+        recipientViewController.didMove(toParent: self)
         return cell
       }
     }
@@ -245,7 +262,7 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     switch item {
     case .rechargeOption(let item):
       return item.isEnable
-    case .customInput, .continueButton, .promocode:
+    case .customInput, .continueButton, .promocode, .recipient:
       return false
     }
   }
@@ -257,7 +274,7 @@ extension BatteryRechargeViewController: UICollectionViewDelegate {
     switch item {
     case .rechargeOption(let item):
       return item.isEnable
-    case .customInput, .continueButton, .promocode:
+    case .customInput, .continueButton, .promocode, .recipient:
       return false
     }
   }

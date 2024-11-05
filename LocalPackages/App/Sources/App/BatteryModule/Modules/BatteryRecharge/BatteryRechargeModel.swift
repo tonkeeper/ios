@@ -107,6 +107,11 @@ final class BatteryRechargeModel {
   }
   
   var promocode: String?
+  var recipient: Recipient? {
+    didSet {
+      updateIsContinueEnable()
+    }
+  }
   
   private(set) var tonChargeRate: NSDecimalNumber = 1 {
     didSet {
@@ -121,6 +126,7 @@ final class BatteryRechargeModel {
   private let tonRatesStore: TonRatesStore
   private let batteryService: BatteryService
   private let configuration: Configuration
+  let isGift: Bool
   
   init(token: Token,
        wallet: Wallet,
@@ -128,7 +134,8 @@ final class BatteryRechargeModel {
        currencyStore: CurrencyStore,
        tonRatesStore: TonRatesStore,
        batteryService: BatteryService,
-       configuration: Configuration) {
+       configuration: Configuration,
+       isGift: Bool) {
     self.token = token
     self.wallet = wallet
     self.balanceStore = balanceStore
@@ -136,6 +143,7 @@ final class BatteryRechargeModel {
     self.tonRatesStore = tonRatesStore
     self.batteryService = batteryService
     self.configuration = configuration
+    self.isGift = isGift
     
     configuration.addUpdateObserver(self) { observer in
       DispatchQueue.main.async {
@@ -164,7 +172,12 @@ final class BatteryRechargeModel {
   }
   
   func getConfirmationPayload() -> BatteryRechargePayload {
-    BatteryRechargePayload(token: token, amount: amount, promocode: promocode)
+    BatteryRechargePayload(
+      token: token,
+      amount: amount,
+      promocode: promocode,
+      recipient: recipient
+    )
   }
   
   func start() {
@@ -224,7 +237,7 @@ final class BatteryRechargeModel {
     case .jetton(let jettonItem):
       isAmountAvailable = (balance?.jettonsBalance.first(where: { $0.item == jettonItem })?.quantity ?? 0) >= amount
     }
-    self.isContinueEnable = isAmountAvailable && amount > 0
+    self.isContinueEnable = isAmountAvailable && amount > 0 && (!isGift || (isGift && recipient != nil) )
   }
   
   private func updateOptionsItems() {

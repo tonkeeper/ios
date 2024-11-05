@@ -5,11 +5,11 @@ public final class BalanceLoader {
   private var observers = [UUID: (Wallet) -> Void]()
   private let lock = NSLock()
   
-  private var balanceLoadTasks = [Wallet: Task<Void, Never>]()
-  private var allWalletsBalanceLoadTask: Task<Void, Never>?
-  private var reloadTask: Task<Void, Never>?
+  @Atomic private var balanceLoadTasks = [Wallet: Task<Void, Never>]()
+  @Atomic private var allWalletsBalanceLoadTask: Task<Void, Never>?
+  @Atomic private var reloadTask: Task<Void, Never>?
   
-  private var walletBalanceLoaders = [Wallet: WalletBalanceLoader]()
+  @Atomic private var walletBalanceLoaders = [Wallet: WalletBalanceLoader]()
   
   private let walletStore: WalletsStore
   private let currencyStore: CurrencyStore

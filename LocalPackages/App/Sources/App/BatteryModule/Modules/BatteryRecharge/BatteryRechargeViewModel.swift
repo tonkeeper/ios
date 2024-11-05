@@ -46,12 +46,13 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   var didUpdateTokenPickerAction: (( @escaping () -> Void ) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitle?(configuration.title)
+    didUpdateTitle?(model.isGift ? "Gift" : "Recharge")
     didUpdateTokenPickerAction?({ [weak self] in
       guard let self else { return }
       didSelectTokenPicker?(model.token)
     })
     setupPromocode()
+    setupRecipientInput()
     
     model.didUpdateIsContinueEnable = { [weak self] in
       self?.updateContinueButton()
@@ -94,32 +95,33 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   private var snapshot = BatteryRecharge.Snapshot()
   
   private let model: BatteryRechargeModel
-  private let configuration: BatteryRechargeViewModelConfiguration
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountInputModuleInput: AmountInputModuleInput
   private let amountInputModuleOutput: AmountInputModuleOutput
   private let promocodeOutput: BatteryPromocodeInputModuleOutput
+  private let recipientInputOutput: RecipientInputModuleOutput
   
   init(model: BatteryRechargeModel, 
-       configuration: BatteryRechargeViewModelConfiguration,
        amountFormatter: AmountFormatter,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountInputModuleInput: AmountInputModuleInput,
        amountInputModuleOutput: AmountInputModuleOutput,
-       promocodeOutput: BatteryPromocodeInputModuleOutput) {
+       promocodeOutput: BatteryPromocodeInputModuleOutput,
+       recipientInputOutput: RecipientInputModuleOutput) {
     self.model = model
-    self.configuration = configuration
     self.amountFormatter = amountFormatter
     self.decimalAmountFormatter = decimalAmountFormatter
     self.amountInputModuleInput = amountInputModuleInput
     self.amountInputModuleOutput = amountInputModuleOutput
     self.promocodeOutput = promocodeOutput
+    self.recipientInputOutput = recipientInputOutput
   }
   
   private func updateList() {
     var snapshot = BatteryRecharge.Snapshot()
     
+    setupRecipientSnapshotSection(snapshot: &snapshot)
     setupOptionsSection(snapshot: &snapshot)
     setupCustomInputSection(snapshot: &snapshot)
     setupPromocodeInputSection(snapshot: &snapshot)
@@ -143,6 +145,13 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   func setupPromocodeInputSection(snapshot: inout BatteryRecharge.Snapshot) {
     snapshot.appendSections([.promocode])
     snapshot.appendItems([.promocode], toSection: .promocode)
+  }
+  
+  
+  func setupRecipientSnapshotSection(snapshot: inout BatteryRecharge.Snapshot) {
+    guard model.isGift else { return }
+    snapshot.appendSections([.recipient])
+    snapshot.appendItems([.recipient], toSection: .recipient)
   }
   
   func setupCustomInputSection(snapshot: inout BatteryRecharge.Snapshot) {
@@ -242,6 +251,12 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
       default:
         self?.model.promocode = nil
       }
+    }
+  }
+  
+  func setupRecipientInput() {
+    recipientInputOutput.didResolveRecipient = { [weak self] recipient in
+      self?.model.recipient = recipient
     }
   }
 }

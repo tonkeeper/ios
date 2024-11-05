@@ -50,7 +50,9 @@ struct BatteryRechargeBocBuilder {
       amount: amountDecimalNumber
     )
     
-    let batteryPayload = createBatteryPayload(promocode: payload.promocode)
+    let batteryPayload = createBatteryPayload(
+      recipientAddress: payload.recipient?.recipientAddress.address, promocode: payload.promocode
+    )
     
     let payloads = try createPayloads(toAddress: toAddress,
                                       validUntil: validUntil,
@@ -199,14 +201,12 @@ struct BatteryRechargeBocBuilder {
     }
   }
   
-  private func createBatteryPayload(recipientAddress: KeeperCore.AnyAddress? = nil,
+  private func createBatteryPayload(recipientAddress: Address? = nil,
                                     promocode: String? = nil) -> Cell? {
     let address: TonSwift.AnyAddress = {
       switch recipientAddress {
-      case .address(let address):
+      case .some(let address):
         return TonSwift.AnyAddress.internalAddr(address)
-      case .friendlyAddress(let friendlyAddress):
-        return TonSwift.AnyAddress.internalAddr(friendlyAddress.address)
       case .none:
         return TonSwift.AnyAddress.none
       }

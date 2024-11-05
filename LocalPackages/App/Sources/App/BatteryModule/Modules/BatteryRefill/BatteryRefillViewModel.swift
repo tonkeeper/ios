@@ -328,7 +328,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     let caption: String
     let iconViewConfiguration: TKListItemIconView.Configuration
     switch item {
-    case .token(let token, let amount, _):
+    case .token(let token, let amount):
       title = "Recharge with \(token.symbol)"
       
       switch token {

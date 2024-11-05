@@ -6,8 +6,7 @@ struct BatteryRechargeAssembly {
   private init() {}
   static func module(wallet: Wallet,
                      token: Token,
-                     rate: NSDecimalNumber?,
-                     configuration: BatteryRechargeViewModelConfiguration,
+                     isGift: Bool,
                      promocodeStore: BatteryPromocodeStore,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRechargeViewController, BatteryRechargeModuleOutput, BatteryRechargeModuleInput> {
@@ -15,6 +14,12 @@ struct BatteryRechargeAssembly {
     let promocodeInput = BatteryPromocodeInputAssembly.module(
       wallet: wallet,
       promocodeStore: promocodeStore,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    let recipientInput = RecipientInputAssembly.module(
+      wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
@@ -33,20 +38,22 @@ struct BatteryRechargeAssembly {
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
         batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
-        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
+        isGift: isGift
       ),
-      configuration: configuration,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountInputModuleInput: amountInput.input,
       amountInputModuleOutput: amountInput.output,
-      promocodeOutput: promocodeInput.output
+      promocodeOutput: promocodeInput.output,
+      recipientInputOutput: recipientInput.output
     )
     
     let viewController = BatteryRechargeViewController(
       viewModel: viewModel,
       amountInputViewController: amountInput.view,
-      promocodeViewController: promocodeInput.view
+      promocodeViewController: promocodeInput.view,
+      recipientViewController: recipientInput.view
     )
     
     return MVVMModule(
