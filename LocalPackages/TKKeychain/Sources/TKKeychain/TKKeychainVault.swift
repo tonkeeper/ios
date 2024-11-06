@@ -7,7 +7,7 @@ public enum TKKeychainVaultError: Swift.Error {
 }
 
 public protocol TKKeychainVault {
-  func get(query: TKKeychainQuery) throws -> Data?
+  func get(query: TKKeychainQuery) throws -> Data
   func get(query: TKKeychainQuery) throws -> String
   func get<T: Codable>(query: TKKeychainQuery) throws -> T
   
@@ -25,8 +25,11 @@ public struct TKKeychainVaultImplementation: TKKeychainVault {
     self.keychain = keychain
   }
   
-  public func get(query: TKKeychainQuery) throws -> Data? {
-    try keychain.get(query: query)
+  public func get(query: TKKeychainQuery) throws -> Data {
+    guard let data = try keychain.get(query: query) else {
+      throw TKKeychainVaultError.unexpectedData
+    }
+    return data
   }
   
   public func get(query: TKKeychainQuery) throws -> String {
