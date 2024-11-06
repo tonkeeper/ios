@@ -1,5 +1,10 @@
 import Foundation
 
+public struct RemoteConfigurations: Codable {
+  let mainnet: RemoteConfiguration
+  let testnet: RemoteConfiguration
+}
+
 public struct RemoteConfiguration: Equatable {
 
   public let tonapiV2Endpoint: String
@@ -13,11 +18,8 @@ public struct RemoteConfiguration: Equatable {
   public let faqUrl: URL?
   public let stakingInfoUrl: URL?
   public let accountExplorer: String?
-  public let accountExplorerTestnet: String?
   public let transactionExplorer: String?
-  public let transactionExplorerTestnet: String?
   public let nftOnExplorerUrl: String?
-  public let nftOnExplorerTestnetUrl: String?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
@@ -33,11 +35,8 @@ public struct RemoteConfiguration: Equatable {
     case stakingInfoUrl
     case flags
     case accountExplorer
-    case accountExplorerTestnet
     case transactionExplorer
-    case transactionExplorerTestnet
     case nftOnExplorerUrl = "NFTOnExplorerUrl"
-    case nftOnExplorerTestnetUrl = "NFTOnExplorerTestnetUrl"
   }
 }
 
@@ -79,11 +78,8 @@ extension RemoteConfiguration {
       faqUrl: nil,
       stakingInfoUrl: nil,
       accountExplorer: nil,
-      accountExplorerTestnet: nil,
       transactionExplorer: nil,
-      transactionExplorerTestnet: nil,
       nftOnExplorerUrl: nil,
-      nftOnExplorerTestnetUrl: nil,
       flags: .default
     )
   }

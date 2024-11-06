@@ -35,6 +35,16 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
+    walletStore.addObserver(self) { observer, event in
+      switch event {
+      case .didChangeActiveWallet(let wallet):
+        Task {
+          await observer.reloadContent()
+        }
+      default:
+        break
+      }
+    }
     configuration.addUpdateObserver(self) { observer in
       Task {
         await observer.reloadContent()
@@ -85,19 +95,22 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   // MARK: - Image Loading
   
   private let imageLoader = ImageLoader()
-  
+
   // MARK: - Dependencies
-  
+
   private let browserExploreController: BrowserExploreController
+  private let walletStore: WalletsStore
   private let regionStore: RegionStore
   private let configuration: Configuration
 
   // MARK: - Init
   
-  init(browserExploreController: BrowserExploreController, 
+  init(browserExploreController: BrowserExploreController,
+       walletStore: WalletsStore,
        regionStore: RegionStore,
        configuration: Configuration) {
     self.browserExploreController = browserExploreController
+    self.walletStore = walletStore
     self.regionStore = regionStore
     self.configuration = configuration
   }
@@ -106,7 +119,8 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 private extension BrowserExploreViewModelImplementation {
 
   func reloadContent() async {
-    let flags = configuration.flags
+    let isTestnet = (try? walletStore.activeWallet.isTestnet) ?? false
+    let flags = configuration.flags(isTestnet: isTestnet)
     guard !flags.isDappsDisable else {
       await setEmptyState()
       return 
