@@ -111,7 +111,8 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
             TKListItemSwitchAccessoryView.Configuration(
               isOn: isOn,
               action: { [weak self] isOn in
-                self?.setTransaction(wallet: wallet, transaction: transaction, isOn: isOn)
+                guard let self else { return }
+                self.setTransaction(transaction: transaction, isOn: isOn)
               }
             )
           ),
@@ -125,7 +126,8 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
     return snapshot
   }
   
-  private func setTransaction(wallet: Wallet, transaction: BatterySupportedTransaction, isOn: Bool) {
+  private func setTransaction(transaction: BatterySupportedTransaction, isOn: Bool) {
+    guard let wallet = try? walletsStore.activeWallet else { return }
     let batterySettings = {
       switch transaction {
       case .swap:
