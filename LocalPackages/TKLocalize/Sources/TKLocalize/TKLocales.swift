@@ -256,6 +256,12 @@ public enum TKLocales {
     }
   }
   public enum Battery {
+    public enum Recharge {
+      public enum Toast {
+        /// Battery will charge in a few minutes
+        public static let success = TKLocales.tr("Localizable", "battery.recharge.toast.success", fallback: "Battery will charge in a few minutes")
+      }
+    }
     public enum Refill {
       /// Promo Code
       public static let promocode = TKLocales.tr("Localizable", "battery.refill.promocode", fallback: "Promo Code")

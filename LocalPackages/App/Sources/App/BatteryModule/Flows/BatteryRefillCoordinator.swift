@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import TKCore
+import TKLocalize
 import KeeperCore
 
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -154,12 +155,12 @@ private extension BatteryRefillCoordinator {
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       self?.removeChild(coordinator)
-//      self?.didCancel?()
     }
     
     coordinator.didConfirm = { [weak self, weak coordinator] in
+      ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Recharge.Toast.success))
       self?.removeChild(coordinator)
-//      self?.didFinish?()
+      self?.didFinish?()
     }
     
     self.signTransactionConfirmationCoordinator = coordinator

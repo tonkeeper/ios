@@ -134,7 +134,10 @@ private extension TonConnectConfirmationViewModelImplementation {
       },
       completionAction: { [weak self] isSuccess in
         guard isSuccess else { return }
-        self?.didConfirm?()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+          NotificationCenter.default.postTransactionSendNotification(wallet: self?.model.wallet)
+          self?.didConfirm?()
+        }
       })
   }
   
