@@ -131,18 +131,15 @@ final class ManageTokensModel {
     var pinnedItems = [BalanceItem]()
     var unpinnedItems = [UnpinnedItem]()
     for item in balanceItems.items {
-      if case .ton(_) = item, item.converted != .zero {
+      if case .ton(_) = item {
         continue
       }
       if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
         let isHidden = {
-          stateHiddenItems[item.identifier] == true ||
-          (stateHiddenItems[item.identifier] == nil && item.isZeroBalance)
+          stateHiddenItems[item.identifier] == true || (stateHiddenItems[item.identifier] == nil && item.isZeroBalance)
         }()
-
-        guard item.converted != .zero else { continue }
         
         unpinnedItems.append(UnpinnedItem(item: item, isHidden: isHidden))
       }
@@ -219,17 +216,6 @@ extension BalanceItem {
       return jetton.amount.isZero
     case .staking(let staking):
       return staking.info.amount == 0
-    }
-  }
-
-  var converted: Decimal {
-    switch self {
-    case .ton(let ton):
-      ton.converted
-    case .jetton(let jetton):
-      jetton.converted
-    case .staking(let staking):
-      staking.converted
     }
   }
 }

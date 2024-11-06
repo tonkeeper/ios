@@ -131,9 +131,7 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
           pinnedItems.append(balanceItem)
         } else {
           let isHidden = {
-            stateHiddenItems[balanceItem.identifier] == true ||
-            (stateHiddenItems[balanceItem.identifier] == nil && balanceItem.isZeroBalance) ||
-            balanceItem.converted == .zero
+            stateHiddenItems[balanceItem.identifier] == true || (stateHiddenItems[balanceItem.identifier] == nil && balanceItem.isZeroBalance)
           }()
           guard !isHidden else { continue }
           unpinnedItems.append(balanceItem)
