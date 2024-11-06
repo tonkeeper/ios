@@ -9,7 +9,7 @@ public final class Configuration {
   }
   public var tonapiTestnetHost: String {
     get async {
-      await loadConfiguration().testnet.tonapiTestnetHost
+      await loadConfiguration().testnet.tonapiV2Endpoint
     }
   }
   public var tonApiV2Key: String {
