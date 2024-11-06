@@ -137,10 +137,7 @@ final class ManageTokensModel {
       if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
-        let isHidden = {
-          stateHiddenItems[item.identifier] == true || (stateHiddenItems[item.identifier] == nil && item.isZeroBalance)
-        }()
-        
+        let isHidden = stateHiddenItems[item.identifier] == true
         unpinnedItems.append(UnpinnedItem(item: item, isHidden: isHidden))
       }
     }
