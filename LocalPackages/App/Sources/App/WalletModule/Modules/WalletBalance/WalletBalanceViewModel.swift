@@ -753,7 +753,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
-    let flags = configuration.flags
+    let flags = configuration.flags(isTestnet: wallet.isTestnet)
     let sendButton: WalletBalanceHeaderButtonsView.Model.Button = {
       WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.send,

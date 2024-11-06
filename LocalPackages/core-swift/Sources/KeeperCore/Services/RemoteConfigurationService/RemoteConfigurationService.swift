@@ -1,8 +1,8 @@
 import Foundation
 
 protocol RemoteConfigurationService {
-  func getConfiguration() throws -> RemoteConfiguration
-  func loadConfiguration() async throws -> RemoteConfiguration
+  func getConfiguration() throws -> RemoteConfigurations
+  func loadConfiguration() async throws -> RemoteConfigurations
 }
 
 final class RemoteConfigurationServiceImplementation: RemoteConfigurationService {
@@ -15,11 +15,11 @@ final class RemoteConfigurationServiceImplementation: RemoteConfigurationService
     self.repository = repository
   }
   
-  func getConfiguration() throws -> RemoteConfiguration {
+  func getConfiguration() throws -> RemoteConfigurations {
     try repository.configuration
   }
   
-  func loadConfiguration() async throws -> RemoteConfiguration {
+  func loadConfiguration() async throws -> RemoteConfigurations {
     let configuration = try await api.loadConfiguration(
       lang: .lang,
       build: .build,
