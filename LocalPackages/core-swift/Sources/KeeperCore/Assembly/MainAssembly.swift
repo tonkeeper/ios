@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import BigInt
+import URKit
 
 public final class MainAssembly {
   public let appInfoProvider: AppInfoProvider
@@ -14,7 +15,6 @@ public final class MainAssembly {
   public let buySellAssembly: BuySellAssembly
   public let knownAccountsAssembly: KnownAccountsAssembly
   public let batteryAssembly: BatteryAssembly
-  public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
@@ -31,7 +31,6 @@ public final class MainAssembly {
        buySellAssembly: BuySellAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
        batteryAssembly: BatteryAssembly,
-       passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -47,7 +46,6 @@ public final class MainAssembly {
     self.buySellAssembly = buySellAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
     self.batteryAssembly = batteryAssembly
-    self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
@@ -233,6 +231,10 @@ public final class MainAssembly {
   
   public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
     SignerSignController(url: url, wallet: wallet)
+  }
+  
+  public func keystoneSignController(transaction: UR, wallet: Wallet) -> KeystoneSignController {
+    KeystoneSignController(transaction: transaction, wallet: wallet)
   }
   
   public func browserExploreController() -> BrowserExploreController {

@@ -69,10 +69,6 @@ public final class Assembly {
       rnAssembly: rnAssembly
     )
   }
-  private lazy var passcodeAssembly = PasscodeAssembly(
-    repositoriesAssembly: repositoriesAssembly,
-    storesAssembly: storesAssembly
-  )
   private lazy var rnAssembly = RNAssembly(coreAssembly: coreAssembly)
   private lazy var batteryAssembly = BatteryAssembly(
     batteryAPIAssembly: BatteryAPIAssembly(configurationAssembly: configurationAssembly),
@@ -106,7 +102,6 @@ public extension Assembly {
       buySellAssembly: buySellAssembly,
       batteryAssembly: batteryAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
-      passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
@@ -123,7 +118,6 @@ public extension Assembly {
       formattersAssembly: formattersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
-      passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly
     )

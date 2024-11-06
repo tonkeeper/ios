@@ -54,33 +54,37 @@ final class APIAssembly {
     TestnetAPIHostProvider(configuration: configurationAssembly.configuration)
   }
   
-  private var _streamingAPI: StreamingAPI?
-  public var streamingAPI: StreamingAPI {
-    let isRealtimeHost = true
-    if let _streamingAPI {
-      return _streamingAPI
+  var streaminAPIProvider: StreamingAPIProvider {
+    StreamingAPIProvider { [testnetStreamingAPI, streamingAPI] isTestnet in
+      isTestnet ? testnetStreamingAPI : streamingAPI
     }
-    let configuration = configurationAssembly.configuration
-    let streamingAPI = StreamingAPI(
-      configuration: streamingUrlSessionConfiguration,
-      hostProvider: { [streamingAPIURL, tonAPIURL] in
-        if isRealtimeHost {
-          return streamingAPIURL
-        } else {
-          let string = await configuration.tonapiV2Endpoint
-          guard let url = URL(string: string) else {
-            return tonAPIURL
-          }
-          return url
-        }
-      },
-      tokenProvider: {
-        await configuration.tonApiV2Key
-      }
-    )
-    _streamingAPI = streamingAPI
-    return streamingAPI
   }
+  
+  private lazy var streamingAPI: StreamingAPI = {
+    let configuration = configurationAssembly.configuration
+    return StreamingAPI(
+      configuration: streamingUrlSessionConfiguration, hostProvider: { [streamingAPIURL] in
+        guard let url = await URL(string: configuration.tonAPISSEEndpoint(isTestnet: false)) else {
+          return streamingAPIURL
+        }
+        return url
+      }, tokenProvider: {
+        await configuration.tonApiV2Key
+      })
+  }()
+  
+  private lazy var testnetStreamingAPI: StreamingAPI = {
+    let configuration = configurationAssembly.configuration
+    return StreamingAPI(
+      configuration: streamingUrlSessionConfiguration, hostProvider: { [streamingAPIURL] in
+        guard let url = await URL(string: configuration.tonAPISSEEndpoint(isTestnet: true)) else {
+          return streamingAPIURL
+        }
+        return url
+      }, tokenProvider: {
+        await configuration.tonApiV2Key
+      })
+  }()
   
   private var _tonConnectAPIClient: TonConnectAPI.Client?
   func tonConnectAPIClient() -> TonConnectAPI.Client {

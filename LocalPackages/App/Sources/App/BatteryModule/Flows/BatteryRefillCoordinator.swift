@@ -48,7 +48,8 @@ private extension BatteryRefillCoordinator {
     )
     
     module.output.didTapSupportedTransactions = { [weak self] in
-      self?.openSupportedTransactions()
+      guard let self else { return }
+      openSupportedTransactions(wallet: wallet)
     }
     
     module.output.didTapTransactionsSettings = { [weak self] in
@@ -79,8 +80,9 @@ private extension BatteryRefillCoordinator {
     router.push(viewController: module.view, animated: true)
   }
   
-  func openSupportedTransactions() {
+  func openSupportedTransactions(wallet: Wallet) {
     let module = BatteryRefillSupportedTransactionsAssembly.module(
+      wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )

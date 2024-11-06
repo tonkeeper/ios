@@ -37,16 +37,6 @@ public final class AppSettings {
     }
   }
   
-  public var installDeviceID: String {
-    if let deviceId = userDefaults.string(forKey: .installDeviceId) {
-      return deviceId
-    } else {
-      let deviceID = UUID()
-      userDefaults.set(deviceID.uuidString, forKey: .installDeviceId)
-      return deviceID.uuidString
-    }
-  }
-  
   public var fcmToken: String? {
     get {
       userDefaults.string(forKey: .fcmToken)
@@ -82,7 +72,6 @@ private extension String {
   static let decryptCommentDoNotShowKey = "decrypt_comment_do_not_show_warning"
   static let isSecureModeKey = "is_secure_mode"
   static let selectedCountryCode = "selected_country_code"
-  static let installDeviceId = "install_device_id"
   static let fcmToken = "fcm_token"
   static let addressCopyCount = "address_copy_count"
   static let didMigrateTonConnectAppVaultKey = "did_migrate_ton_connect_apps_vault"

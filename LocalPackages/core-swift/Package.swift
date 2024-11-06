@@ -13,7 +13,9 @@ let package = Package(
   dependencies: [
     .package(path: "../TKLocalize"),
     .package(path: "../TKCryptoSwift"),
+    .package(path: "../TKKeychain"),
     .package(path: "../Ledger"),
+    .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.0")),
     .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.19")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
     .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.2")),
@@ -24,6 +26,7 @@ let package = Package(
             dependencies: [
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TKCryptoSwift", package: "TKCryptoSwift"),
+              .product(name: "TKKeychain", package: "TKKeychain")
             ]),
     .testTarget(name: "CoreComponentsTests",
                 dependencies: [
@@ -31,7 +34,9 @@ let package = Package(
                 ]),
     .target(name: "KeeperCore",
             dependencies: [
+              .product(name: "URKit", package: "URKit"),
               .product(name: "TKLocalize", package: "TKLocalize"),
+              .product(name: "TKKeychain", package: "TKKeychain"),
               .product(name: "TonTransport", package: "Ledger"),
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),

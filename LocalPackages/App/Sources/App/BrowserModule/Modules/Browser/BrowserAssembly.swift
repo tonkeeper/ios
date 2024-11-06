@@ -15,7 +15,8 @@ struct BrowserAssembly {
     let viewModel = BrowserViewModelImplementation(
       exploreModuleOutput: exploreModule.output,
       connectedModuleOutput: connectedModule.output,
-      regionStore: keeperCoreAssembly.storesAssembly.regionStore
+      regionStore: keeperCoreAssembly.storesAssembly.regionStore,
+      analyticsProvider: coreAssembly.analyticsProvider
     )
     let viewController = BrowserViewController(
       viewModel: viewModel,

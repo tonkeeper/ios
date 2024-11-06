@@ -197,7 +197,7 @@ final class BatteryRechargeModel {
       case .jetton(let jettonItem):
         return methods.first(where: { $0.jettonMasterAddress == jettonItem.jettonInfo.address })
       }
-    }(), let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber else {
+    }(), let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet) else {
       tonChargeRate = 1
       return
     }

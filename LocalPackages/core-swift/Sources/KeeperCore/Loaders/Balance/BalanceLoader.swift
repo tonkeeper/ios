@@ -2,9 +2,7 @@ import Foundation
 import TonSwift
 
 public final class BalanceLoader {
-  private var observers = [UUID: (Wallet) -> Void]()
-  private let lock = NSLock()
-  
+  @Atomic private var observers = [UUID: (Wallet) -> Void]()
   @Atomic private var balanceLoadTasks = [Wallet: Task<Void, Never>]()
   @Atomic private var allWalletsBalanceLoadTask: Task<Void, Never>?
   @Atomic private var reloadTask: Task<Void, Never>?
@@ -104,9 +102,7 @@ public final class BalanceLoader {
       }
       closure(observer, wallet)
     }
-    lock.withLock {
-      self.observers[id] = observerClosure
-    }
+    self.observers[id] = observerClosure
   }
   
   private func setupObservations() {
@@ -142,10 +138,7 @@ public final class BalanceLoader {
   private func createWalletBalanceLoader(wallet: Wallet) -> WalletBalanceLoader {
     let loader = walletStateLoaderProvider(wallet)
     loader.addUpdateObserver(self, closure: { observer in
-      let observers = observer.lock.withLock {
-        observer.observers
-      }
-      observers.forEach { $0.value(wallet) }
+      observer.observers.forEach { $0.value(wallet) }
     })
     return loader
   }

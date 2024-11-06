@@ -12,7 +12,7 @@ struct MainnetBatteryAPIHostProvider: APIHostProvider {
   
   var basePath: String {
     get async {
-      await configuration.batteryHost
+      await configuration.batteryHost(isTestnet: false)
     }
   }
 }
@@ -26,7 +26,7 @@ struct TestnetBatteryAPIHostProvider: APIHostProvider {
   
   var basePath: String {
     get async {
-      await configuration.batteryHost
+      await configuration.batteryHost(isTestnet: true)
     }
   }
 }

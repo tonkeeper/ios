@@ -4,137 +4,160 @@ public final class Configuration {
   
   public var tonapiV2Endpoint: String {
     get async {
-      await loadConfiguration().tonapiV2Endpoint
+      await loadConfiguration().mainnet.tonapiV2Endpoint
     }
   }
   public var tonapiTestnetHost: String {
     get async {
-      await loadConfiguration().tonapiTestnetHost
+      await loadConfiguration().testnet.tonapiV2Endpoint
     }
   }
-  public var batteryHost: String {
+  public func tonAPISSEEndpoint(isTestnet: Bool) async -> String {
+    isTestnet
+    ? await loadConfiguration().testnet.tonAPISSEEndpoint
+    : await loadConfiguration().mainnet.tonAPISSEEndpoint
+  }
+  public func batteryHost(isTestnet: Bool) async -> String {
+    isTestnet
+    ? await loadConfiguration().testnet.batteryHost
+    : await loadConfiguration().mainnet.batteryHost
+  }
+  public var testnetBatteryHost: String {
     get async {
-      await loadConfiguration().batteryHost
+      await loadConfiguration().mainnet.batteryHost
     }
   }
   public var tonApiV2Key: String {
     get async {
-      await loadConfiguration().tonApiV2Key
+      await loadConfiguration().mainnet.tonApiV2Key
     }
   }
   public var mercuryoSecret: String? {
     get async {
-      await loadConfiguration().mercuryoSecret
+      await loadConfiguration().mainnet.mercuryoSecret
     }
   }
   public var accountExplorer: String? {
     get {
-      configuration.accountExplorer
+      configuration.mainnet.accountExplorer
     }
   }
   public var accountExplorerTestnet: String? {
     get {
-      configuration.accountExplorerTestnet
+      configuration.testnet.accountExplorer
     }
   }
   public var transactionExplorer: String? {
     get {
-      configuration.transactionExplorer
+      configuration.mainnet.transactionExplorer
     }
   }
   public var transactionExplorerTestnet: String? {
     get {
-      configuration.transactionExplorerTestnet
+      configuration.testnet.transactionExplorer
     }
   }
   public var nftOnExplorerUrl: String? {
     get {
-      configuration.nftOnExplorerUrl
+      configuration.mainnet.nftOnExplorerUrl
     }
   }
   public var nftOnExplorerTestnetUrl: String?  {
     get {
-      configuration.nftOnExplorerTestnetUrl
+      configuration.testnet.nftOnExplorerUrl
     }
   }
   public var supportLink: URL?  {
     get {
-      configuration.supportLink
+      configuration.mainnet.supportLink
     }
   }
   public var directSupportUrl: URL?  {
     get {
-      configuration.directSupportUrl
+      configuration.mainnet.directSupportUrl
     }
   }
   public var tonkeeperNewsUrl: URL?  {
     get {
-      configuration.tonkeeperNewsUrl
+      configuration.mainnet.tonkeeperNewsUrl
     }
   }
   public var stonfiUrl: URL?  {
     get {
-      configuration.stonfiUrl
+      configuration.mainnet.stonfiUrl
     }
   }
   public var faqUrl: URL?  {
     get {
-      configuration.faqUrl
+      configuration.mainnet.faqUrl
     }
   }
   public var stakingInfoUrl: URL?  {
     get {
-      configuration.stakingInfoUrl
+      configuration.mainnet.stakingInfoUrl
     }
   }
-  public var flags: RemoteConfiguration.Flags {
-    get {
-      configuration.flags
-    }
-  }
-  public var batteryMeanFeesDecimaNumber: NSDecimalNumber? {
-    configuration.batteryMeanFeesDecimaNumber
+  public func batteryMeanFeesDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet 
+    ? configuration.testnet.batteryMeanFeesDecimaNumber
+    : configuration.mainnet.batteryMeanFeesDecimaNumber
   }
   
-  public var batteryReservedAmountDecimalNumber: NSDecimalNumber? {
-    configuration.batteryReservedAmountDecimalNumber
+  public func batteryReservedAmountDecimalNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryReservedAmountDecimalNumber
+    : configuration.mainnet.batteryReservedAmountDecimalNumber
   }
   
-  public var batteryMeanFeesPriceSwapDecimaNumber: NSDecimalNumber? {
-    configuration.batteryMeanFeesPriceSwapDecimaNumber
+  public func batteryMeanFeesPriceSwapDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceSwapDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceSwapDecimaNumber
   }
   
-  public var batteryMeanFeesPriceJettonDecimaNumber: NSDecimalNumber? {
-    configuration.batteryMeanFeesPriceJettonDecimaNumber
+  public func batteryMeanFeesPriceJettonDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceJettonDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceJettonDecimaNumber
   }
   
-  public var batteryMeanFeesPriceNFTDecimaNumber: NSDecimalNumber? {
-    configuration.batteryMeanFeesPriceNFTDecimaNumber
+  public func batteryMeanFeesPriceNFTDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceNFTDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceNFTDecimaNumber
   }
   
-  public var batteryMaxInputAmount: NSDecimalNumber {
-    get async {
-      await loadConfiguration().batteryMaxInputAmountDecimaNumber
-    }
+  public func batteryRefundEndpoint(isTestnet: Bool) -> URL? {
+    isTestnet ? configuration.testnet.batteryRefundEndpoint : configuration.mainnet.batteryRefundEndpoint
   }
   
-  public var isBatteryEnable: Bool {
-    get async {
-      await !loadConfiguration().disableBattery
-    }
+  public func batteryMaxInputAmount(isTestnet: Bool) async -> NSDecimalNumber {
+    await isTestnet
+    ? loadConfiguration().testnet.batteryMaxInputAmountDecimaNumber
+    : loadConfiguration().mainnet.batteryMaxInputAmountDecimaNumber
   }
   
-  public var isBatterySendEnable: Bool {
-    get async {
-      await !loadConfiguration().disableBatterySend
-    }
+  public func isBatteryEnable(isTestnet: Bool) async -> Bool {
+    await isTestnet
+    ? !loadConfiguration().testnet.disableBattery
+    : !loadConfiguration().mainnet.disableBattery
   }
   
-  public var isBatteryBeta: Bool {
-    configuration.isBatteryBeta
+  public func isBatterySendEnable(isTestnet: Bool) async -> Bool {
+    await isTestnet
+    ? !loadConfiguration().testnet.disableBatterySend
+    : !loadConfiguration().mainnet.disableBatterySend
+  }
+  
+  public func isBatteryBeta(isTestnet: Bool) -> Bool {
+    isTestnet ? configuration.testnet.isBatteryBeta : configuration.mainnet.isBatteryBeta
   }
 
-  private(set) public var configuration: RemoteConfiguration {
+  public func flags(isTestnet: Bool) -> RemoteConfiguration.Flags {
+    isTestnet ? configuration.testnet.flags : configuration.mainnet.flags
+  }
+
+  private(set) public var configuration: RemoteConfigurations {
     get {
       lock.withLock {
         if let _configuration { return _configuration }
@@ -142,7 +165,7 @@ public final class Configuration {
           _configuration = configuration
           return configuration
         }
-        return .empty
+        return RemoteConfigurations(mainnet: .empty, testnet: .empty)
       }
     }
     set {
@@ -154,9 +177,9 @@ public final class Configuration {
       observers.forEach { $0.value() }
     }
   }
-  private var _configuration: RemoteConfiguration?
-  
-  private var loadTask: Task<RemoteConfiguration, Swift.Error>?
+  private var _configuration: RemoteConfigurations?
+
+  private var loadTask: Task<RemoteConfigurations, Swift.Error>?
   private var observers = [UUID: () -> Void]()
   
   private let lock = NSLock()
@@ -167,12 +190,12 @@ public final class Configuration {
     self.remoteConfigurationService = remoteConfigurationService
   }
   
-  public func loadConfiguration() async -> RemoteConfiguration {
+  public func loadConfiguration() async -> RemoteConfigurations {
     let task = lock.withLock {
       if let loadTask {
         return loadTask
       }
-      let task = Task<RemoteConfiguration, Swift.Error> {
+      let task = Task<RemoteConfigurations, Swift.Error> {
         let configuration = try await remoteConfigurationService.loadConfiguration()
         self.configuration = configuration
         return configuration

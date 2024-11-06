@@ -411,7 +411,9 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   
   private func createRefundURL() -> URL? {
     guard let tonProof = try? tonProofTokenService.getWalletToken(wallet),
-          let batteryRefundEndpoint = configuration.configuration.batteryRefundEndpoint else { return nil }
+          let batteryRefundEndpoint = configuration.batteryRefundEndpoint(isTestnet: wallet.isTestnet) else {
+      return nil
+    }
     
     var components = URLComponents(url: batteryRefundEndpoint, resolvingAgainstBaseURL: true)
     components?.queryItems = [

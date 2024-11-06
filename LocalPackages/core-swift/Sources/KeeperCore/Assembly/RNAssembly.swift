@@ -20,6 +20,6 @@ public final class RNAssembly {
   }
   
   public var rnService: RNService {
-    RNServiceImplementation(asyncStorage: rnAsyncStorage, keychainVault: coreAssembly.keychainVault)
+    RNServiceImplementation(asyncStorage: rnAsyncStorage)
   }
 }

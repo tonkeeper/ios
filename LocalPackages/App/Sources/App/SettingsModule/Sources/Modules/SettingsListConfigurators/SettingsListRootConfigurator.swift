@@ -162,7 +162,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     if let v4Item = createV4Item() {
       items.append(v4Item)
     }
-    items.append(createBatteryItem(isBeta: configuration.isBatteryBeta))
+    items.append(createBatteryItem(isBeta: configuration.isBatteryBeta(isTestnet: wallet.isTestnet)))
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
       SettingsListItemsSection(

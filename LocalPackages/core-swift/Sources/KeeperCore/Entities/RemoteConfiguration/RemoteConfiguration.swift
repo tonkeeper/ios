@@ -1,5 +1,10 @@
 import Foundation
 
+public struct RemoteConfigurations: Codable {
+  let mainnet: RemoteConfiguration
+  let testnet: RemoteConfiguration
+}
+
 public struct RemoteConfiguration: Equatable {
   
   public var batteryMeanFeesDecimaNumber: NSDecimalNumber? {
@@ -28,6 +33,7 @@ public struct RemoteConfiguration: Equatable {
 
   public let tonapiV2Endpoint: String
   public let tonapiTestnetHost: String
+  public let tonAPISSEEndpoint: String
   public let batteryHost: String
   public let tonApiV2Key: String
   public let mercuryoSecret: String?
@@ -39,11 +45,8 @@ public struct RemoteConfiguration: Equatable {
   public let stakingInfoUrl: URL?
   public let isBatteryBeta: Bool
   public let accountExplorer: String?
-  public let accountExplorerTestnet: String?
   public let transactionExplorer: String?
-  public let transactionExplorerTestnet: String?
   public let nftOnExplorerUrl: String?
-  public let nftOnExplorerTestnetUrl: String?
   public let batteryMeanFees: String?
   public let batteryReservedAmount: String?
   public let batteryMeanPriceSwap: String?
@@ -58,6 +61,7 @@ public struct RemoteConfiguration: Equatable {
   enum CodingKeys: String, CodingKey {
     case tonapiV2Endpoint
     case tonapiTestnetHost
+    case tonAPISSEEndpoint = "tonapi_sse_endpoint"
     case batteryHost
     case tonApiV2Key
     case mercuryoSecret
@@ -70,11 +74,8 @@ public struct RemoteConfiguration: Equatable {
     case isBatteryBeta = "battery_beta"
     case flags
     case accountExplorer
-    case accountExplorerTestnet
     case transactionExplorer
-    case transactionExplorerTestnet
     case nftOnExplorerUrl = "NFTOnExplorerUrl"
-    case nftOnExplorerTestnetUrl = "NFTOnExplorerTestnetUrl"
     case batteryMeanFees
     case batteryReservedAmount
     case batteryMeanPriceSwap = "batteryMeanPrice_swap"
@@ -116,6 +117,7 @@ extension RemoteConfiguration {
     RemoteConfiguration(
       tonapiV2Endpoint: "",
       tonapiTestnetHost: "",
+      tonAPISSEEndpoint: "",
       batteryHost: "",
       tonApiV2Key: "",
       mercuryoSecret: nil,
@@ -127,11 +129,8 @@ extension RemoteConfiguration {
       stakingInfoUrl: nil,
       isBatteryBeta: true,
       accountExplorer: nil,
-      accountExplorerTestnet: nil,
       transactionExplorer: nil,
-      transactionExplorerTestnet: nil,
       nftOnExplorerUrl: nil,
-      nftOnExplorerTestnetUrl: nil,
       batteryMeanFees: nil,
       batteryReservedAmount: nil,
       batteryMeanPriceSwap: nil,

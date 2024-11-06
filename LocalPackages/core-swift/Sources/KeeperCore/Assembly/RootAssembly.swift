@@ -13,7 +13,6 @@ public final class RootAssembly {
   private let buySellAssembly: BuySellAssembly
   private let batteryAssembly: BatteryAssembly
   private let knownAccountsAssembly: KnownAccountsAssembly
-  public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
@@ -31,7 +30,6 @@ public final class RootAssembly {
        buySellAssembly: BuySellAssembly,
        batteryAssembly: BatteryAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
-       passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
@@ -48,7 +46,6 @@ public final class RootAssembly {
     self.buySellAssembly = buySellAssembly
     self.batteryAssembly = batteryAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
-    self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
@@ -76,7 +73,6 @@ public final class RootAssembly {
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(
       walletsUpdateAssembly: walletsUpdateAssembly,
-      passcodeAssembly: passcodeAssembly,
       storesAssembly: storesAssembly
     )
   }
@@ -102,7 +98,6 @@ public final class RootAssembly {
       buySellAssembly: buySellAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
       batteryAssembly: batteryAssembly,
-      passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,

@@ -19,6 +19,8 @@ public enum TKLocales {
     public static let bid = TKLocales.tr("Localizable", "action_types.bid", fallback: "Bid")
     /// Bounced
     public static let bounced = TKLocales.tr("Localizable", "action_types.bounced", fallback: "Bounced")
+    /// Burned
+    public static let burned = TKLocales.tr("Localizable", "action_types.burned", fallback: "Burned")
     /// Call contract
     public static let contractExec = TKLocales.tr("Localizable", "action_types.contract_exec", fallback: "Call contract")
     /// Renew Domain
@@ -117,6 +119,12 @@ public enum TKLocales {
         public static let subtitle = TKLocales.tr("Localizable", "add_wallet.items.new_wallet.subtitle", fallback: "Create new wallet")
         /// New Wallet
         public static let title = TKLocales.tr("Localizable", "add_wallet.items.new_wallet.title", fallback: "New Wallet")
+      }
+      public enum PairKeystone {
+        /// A high level of security with an AIR-GAP hardware wallet
+        public static let subtitle = TKLocales.tr("Localizable", "add_wallet.items.pair_keystone.subtitle", fallback: "A high level of security with an AIR-GAP hardware wallet")
+        /// Pair with Keystone
+        public static let title = TKLocales.tr("Localizable", "add_wallet.items.pair_keystone.title", fallback: "Pair with Keystone")
       }
       public enum PairLedger {
         /// Hardware module, Bluetooth, limited TON features
@@ -635,6 +643,30 @@ public enum TKLocales {
     public static let description = TKLocales.tr("Localizable", "import_wallet.description", fallback: "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.")
     /// Enter recovery phrase
     public static let title = TKLocales.tr("Localizable", "import_wallet.title", fallback: "Enter recovery phrase")
+  }
+  public enum Keystone {
+    public enum Scan {
+      /// About Keystone
+      public static let aboutKeystoneButton = TKLocales.tr("Localizable", "keystone.scan.about_keystone_button", fallback: "About Keystone")
+      /// Open Keystone » Connect Software Wallet » Tonkeeper
+      public static let subtitle = TKLocales.tr("Localizable", "keystone.scan.subtitle", fallback: "Open Keystone » Connect Software Wallet » Tonkeeper")
+    }
+  }
+  public enum KeystoneSign {
+    /// Step 1
+    public static let stepOne = TKLocales.tr("Localizable", "keystone_sign.step_one", fallback: "Step 1")
+    /// Scan the QR code with Keystone
+    public static let stepOneDescription = TKLocales.tr("Localizable", "keystone_sign.step_one_description", fallback: "Scan the QR code with Keystone")
+    /// Step 3
+    public static let stepThree = TKLocales.tr("Localizable", "keystone_sign.step_three", fallback: "Step 3")
+    /// Scan signed transaction QR code from Keystone
+    public static let stepThreeDescription = TKLocales.tr("Localizable", "keystone_sign.step_three_description", fallback: "Scan signed transaction QR code from Keystone")
+    /// Step 2
+    public static let stepTwo = TKLocales.tr("Localizable", "keystone_sign.step_two", fallback: "Step 2")
+    /// Confirm your transaction in Keystone
+    public static let stepTwoDescription = TKLocales.tr("Localizable", "keystone_sign.step_two_description", fallback: "Confirm your transaction in Keystone")
+    /// Transaction
+    public static let transaction = TKLocales.tr("Localizable", "keystone_sign.transaction", fallback: "Transaction")
   }
   public enum LedgerConfirm {
     /// Confirm Action

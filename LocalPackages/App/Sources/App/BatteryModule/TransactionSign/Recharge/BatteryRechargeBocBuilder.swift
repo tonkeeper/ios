@@ -32,7 +32,7 @@ struct BatteryRechargeBocBuilder {
     let rechargeMethod = await getRechargeMethod(wallet: wallet, token: payload.token)
     let rechargeMethodMaxInputAmount = await getRechargeMethodMaxInputAmount(
       rechargeMethod: rechargeMethod,
-      batteryMaxInputAmount: configuration.batteryMaxInputAmount
+      batteryMaxInputAmount: configuration.batteryMaxInputAmount(isTestnet: wallet.isTestnet)
     )
     
     let amountDecimalNumber = NSDecimalNumber.fromBigUInt(value: payload.amount, decimals: payload.token.fractionDigits)

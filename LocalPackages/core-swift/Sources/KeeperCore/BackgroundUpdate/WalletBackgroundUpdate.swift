@@ -20,12 +20,12 @@ public final class WalletBackgroundUpdate {
   private let jsonDecoder = JSONDecoder()
   
   private let wallet: Wallet
-  private let streamingAPI: StreamingAPI
+  private let streamingAPIProvider: StreamingAPIProvider
   
   init(wallet: Wallet, 
-       streamingAPI: StreamingAPI) {
+       streamingAPIProvider: StreamingAPIProvider) {
     self.wallet = wallet
-    self.streamingAPI = streamingAPI
+    self.streamingAPIProvider = streamingAPIProvider
   }
   
   func start() {
@@ -37,7 +37,7 @@ public final class WalletBackgroundUpdate {
         
         self.state = .connecting
         
-        let stream = try await streamingAPI.accountTransactionsStream(account: address.toRaw())
+        let stream = try await streamingAPIProvider.api(wallet.isTestnet).accountTransactionsStream(account: address.toRaw())
         try Task.checkCancellation()
         self.state = .connected
         

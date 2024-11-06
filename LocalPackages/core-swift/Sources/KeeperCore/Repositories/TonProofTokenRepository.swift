@@ -1,26 +1,28 @@
 import Foundation
-import CoreComponents
+import TKKeychain
 
 final class TonProofTokenRepository {
-  private let keychainVault: KeychainVault
+  private let keychainVault: TKKeychainVault
   
-  init(keychainVault: KeychainVault) {
+  init(keychainVault: TKKeychainVault) {
     self.keychainVault = keychainVault
   }
   
   func getTonProofToken(wallet: Wallet) throws -> String {
-    try keychainVault.read(getQuery(key: wallet.address.toRaw()))
+    try keychainVault.get(query: createKeychainQuery(key: wallet.address.toRaw()))
   }
   
   func saveTonProofToken(wallet: Wallet, token: String) throws {
-    try keychainVault.save(token, item: getQuery(key: wallet.address.toRaw()))
+    try keychainVault.set(token, query: createKeychainQuery(key: wallet.address.toRaw()))
   }
   
-  private func getQuery(key: String) -> KeychainQueryable {
-    KeychainGenericPasswordItem(service: .key,
-                                account: key,
-                                accessGroup: nil,
-                                accessible: .whenUnlockedThisDeviceOnly)
+  private func createKeychainQuery(key: String) -> TKKeychainQuery {
+    TKKeychainQuery(
+      item: .genericPassword(service: .key, account: key),
+      accessGroup: nil,
+      biometry: .none,
+      accessible: .whenUnlockedThisDeviceOnly
+    )
   }
 }
 

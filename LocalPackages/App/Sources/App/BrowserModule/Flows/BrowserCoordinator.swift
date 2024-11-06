@@ -53,9 +53,6 @@ private extension BrowserCoordinator {
         module.input.updateSelectedCountry(resultSelectedCountry)
       }
     }
-
-    self.coreAssembly.analyticsProvider.logEvent(eventKey: .openBrowser)
-    
     router.push(viewController: module.view, animated: false)
   }
   

@@ -151,6 +151,38 @@ public final class WalletAddController {
     await walletsStore.addWallets([wallet])
   }
   
+  public func importKeystoneWallet(
+    publicKey: TonSwift.PublicKey,
+    revisions: [WalletContractVersion],
+    xfp: String?,
+    path: String?,
+    metaData: WalletMetaData
+  ) async throws {
+    let addPostfix = revisions.count > 1
+    
+    let wallets = revisions.map { revision in
+      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
+      let revisionMetaData = WalletMetaData(
+        label: label,
+        tintColor: metaData.tintColor,
+        icon: metaData.icon
+      )
+      
+      let identity = WalletIdentity(
+        network: .mainnet,
+        kind: .Keystone(publicKey, xfp, path, revision)
+      )
+      
+      return Wallet(
+        id: UUID().uuidString,
+        identity: identity,
+        metaData: revisionMetaData,
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
+    }
+    await walletsStore.addWallets(wallets)
+  }
+  
   public func importSignerWallet(publicKey: TonSwift.PublicKey,
                                  revisions: [WalletContractVersion],
                                  metaData: WalletMetaData,

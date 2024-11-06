@@ -1,5 +1,6 @@
 import Foundation
 import CoreComponents
+import TKKeychain
 
 public struct CoreAssembly {
   let cacheURL: URL
@@ -14,27 +15,12 @@ public struct CoreAssembly {
     self.appInfoProvider = appInfoProvider
   }
   
-  func mnemonicVault() -> MnemonicVault {
-    MnemonicVault(keychainVault: keychainVault, accessGroup: nil)
-  }
-  
-  func mnemonicsV3Vault(seedProvider: @escaping () -> String) -> MnemonicsV3Vault {
-    MnemonicsV3Vault(
-      keychainVault: keychainVault,
-      seedProvider: seedProvider
-    )
-  }
-  
-  func mnemonicsV4Vault() -> MnemonicsV4Vault {
-    MnemonicsV4Vault(
+  func mnemonicsVault() -> MnemonicsVault {
+    MnemonicsVault(
       keychainVault: keychainVault
     )
   }
-  
-  func passcodeVault() -> PasscodeVault {
-    PasscodeVault(keychainVault: keychainVault)
-  }
-  
+
   func tonConnectAppsVault() -> TonConnectAppsVault {
     TonConnectAppsVault(keychainVault: keychainVault)
   }
@@ -51,8 +37,8 @@ public struct CoreAssembly {
     return FileSystemVault(fileManager: fileManager, directory: sharedCacheURL)
   }
   
-  public var keychainVault: KeychainVault {
-    KeychainVaultImplementation(keychain: keychain)
+  public var keychainVault: TKKeychainVault {
+    TKKeychainVaultImplementation(keychain: TKKeychainImplementation())
   }
   
   func settingsVault() -> SettingsVault<SettingsKey> {
@@ -63,10 +49,6 @@ public struct CoreAssembly {
 private extension CoreAssembly {
   var fileManager: FileManager {
     .default
-  }
-  
-  var keychain: Keychain {
-    KeychainImplementation()
   }
   
   var userDefaults: UserDefaults {

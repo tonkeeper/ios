@@ -98,8 +98,8 @@ final class TransferTransaction {
        let tonProofToken,
        let excessAccount = batteryConfig?.excessAccount,
        let excessAddress = try? Address.parse(excessAccount),
-       await configuration.isBatteryEnable,
-       await configuration.isBatterySendEnable {
+       await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
+       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
       return try await calculateBatteryFee(
         wallet: wallet,
         transfer: transfer,

@@ -181,8 +181,8 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
                                      batteryBalance: BatteryBalance?,
                                      tonPriceUSD: NSDecimalNumber?,
                                      configuration: Configuration) -> Int {
-    guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber,
-          let batteryReservedAmount = configuration.batteryReservedAmountDecimalNumber,
+    guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet),
+          let batteryReservedAmount = configuration.batteryReservedAmountDecimalNumber(isTestnet: wallet.isTestnet),
           let tonPriceUSD else { return 0 }
     let isBalanceEmpty = batteryBalance?.balanceDecimalNumber == 0 && batteryBalance?.reservedDecimalNumber == 0
     let reservedAmount: NSDecimalNumber = isBalanceEmpty ? batteryReservedAmount : 0

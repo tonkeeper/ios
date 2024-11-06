@@ -38,9 +38,12 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
     didUpdateSnapshot?(snapshot)
   }
   
+  private let wallet: Wallet
   private let configuration: Configuration
   
-  init(configuration: Configuration) {
+  init(wallet: Wallet,
+       configuration: Configuration) {
+    self.wallet = wallet
     self.configuration = configuration
   }
   
@@ -53,15 +56,16 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
       let transactionPrice: NSDecimalNumber? = {
         switch transaction {
         case .swap:
-          return configuration.batteryMeanFeesPriceSwapDecimaNumber
+          return configuration.batteryMeanFeesPriceSwapDecimaNumber(isTestnet: wallet.isTestnet)
         case .jetton:
-          return configuration.batteryMeanFeesPriceJettonDecimaNumber
+          return configuration.batteryMeanFeesPriceJettonDecimaNumber(isTestnet: wallet.isTestnet)
         case .nft:
-          return configuration.batteryMeanFeesPriceNFTDecimaNumber
+          return configuration.batteryMeanFeesPriceNFTDecimaNumber(isTestnet: wallet.isTestnet)
         }
       }()
       
-      let chargesCount = calculateChargesAmount(transactionPrice: transactionPrice, fee: configuration.batteryMeanFeesDecimaNumber)
+      let chargesCount = calculateChargesAmount(transactionPrice: transactionPrice, 
+                                                fee: configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet))
       let caption = transaction.caption(chargesCount: chargesCount)
       let cellConfiguration = TKListItemCell.Configuration(
         listItemContentViewConfiguration: TKListItemContentView.Configuration(

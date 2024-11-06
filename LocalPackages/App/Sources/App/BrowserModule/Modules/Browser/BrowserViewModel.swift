@@ -22,6 +22,7 @@ protocol BrowserViewModel: AnyObject {
   var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)? { get set }
 
   func viewDidLoad()
+  func viewWillAppear()
   func didTapSearchBar()
 }
 
@@ -51,6 +52,10 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     selectedCountry = regionStore.getState()
     updateCountryPickerButton()
   }
+  
+  func viewWillAppear() {
+    analyticsProvider.logEvent(eventKey: .openBrowser)
+  }
 
   func didTapSearchBar() {
     didTapSearch?()
@@ -61,15 +66,18 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   private let exploreModuleOutput: BrowserExploreModuleOutput
   private let connectedModuleOutput: BrowserConnectedModuleOutput
   private let regionStore: RegionStore
+  private let analyticsProvider: AnalyticsProvider
 
   // MARK: - Init
   
   init(exploreModuleOutput: BrowserExploreModuleOutput,
        connectedModuleOutput: BrowserConnectedModuleOutput,
-       regionStore: RegionStore) {
+       regionStore: RegionStore,
+       analyticsProvider: AnalyticsProvider) {
     self.exploreModuleOutput = exploreModuleOutput
     self.connectedModuleOutput = connectedModuleOutput
     self.regionStore = regionStore
+    self.analyticsProvider = analyticsProvider
   }
 }
 

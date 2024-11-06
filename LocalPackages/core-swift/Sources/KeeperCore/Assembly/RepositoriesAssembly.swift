@@ -10,7 +10,7 @@ public struct RepositoriesAssembly {
   }
   
   public func mnemonicsRepository() -> MnemonicsRepository {
-    coreAssembly.mnemonicsV4Vault()
+    coreAssembly.mnemonicsVault()
   }
   
   public func settingsRepository() -> SettingsRepository {
@@ -56,10 +56,6 @@ public struct RepositoriesAssembly {
     )
   }
   
-  public func passcodeRepository() -> PasscodeRepository {
-    PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
-  }
-  
   func chartDataRepository() -> ChartDataRepository {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
@@ -78,15 +74,5 @@ public struct RepositoriesAssembly {
 
   func tonProofTokenRepository() -> TonProofTokenRepository {
     TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
-  }
-  
-  public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {
-    let seedProvider = {
-      return self.settingsRepository().seed
-    }
-    return MnemonicV3ToV4Migration(
-      v3Vault: coreAssembly.mnemonicsV3Vault(seedProvider: seedProvider),
-      v4Vault: coreAssembly.mnemonicsV4Vault()
-    )
   }
 }

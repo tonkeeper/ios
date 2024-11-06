@@ -38,6 +38,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     openRoot(deeplink: deeplink)
     
     appStateTracker.addObserver(self)
+    
+    coreAssembly.analyticsProvider.logEvent(eventKey: .launchApp)
   }
   
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {

@@ -12,15 +12,18 @@ final class PushNotificationManager {
   private var notificationsUpdateTask = [Wallet: Task<Void, Never>]()
   
   private let appSettings: AppSettings
+  private let uniqueIdProvider: UniqueIdProvider
   private let pushNotificationTokenProvider: PushNotificationTokenProvider
   private let pushNotificationAPI: PushNotificationsAPI
   private let walletNotificationsStore: WalletNotificationStore
   
-  init(appSettings: AppSettings, 
+  init(appSettings: AppSettings,
+       uniqueIdProvider: UniqueIdProvider,
        pushNotificationTokenProvider: PushNotificationTokenProvider,
        pushNotificationAPI: PushNotificationsAPI,
        walletNotificationsStore: WalletNotificationStore) {
     self.appSettings = appSettings
+    self.uniqueIdProvider = uniqueIdProvider
     self.pushNotificationTokenProvider = pushNotificationTokenProvider
     self.pushNotificationAPI = pushNotificationAPI
     self.walletNotificationsStore = walletNotificationsStore
@@ -85,12 +88,12 @@ final class PushNotificationManager {
   }
   
   private func subscribePushNotifications(wallet: Wallet) {
-    let action: (String) -> Void = { [appSettings, pushNotificationAPI] token in
+    let action: (String) -> Void = { [uniqueIdProvider, pushNotificationAPI] token in
       Task {
         _ = try await pushNotificationAPI.subscribeNotifications(
           subscribeData: PushNotificationsAPI.SubscribeData(
             token: token,
-            device: appSettings.installDeviceID,
+            device: uniqueIdProvider.uniqueDeviceId.uuidString,
             accounts: [PushNotificationsAPI.SubscribeData.Account(address: wallet.friendlyAddress.toString())],
             locale: Locale.current.languageCode ?? "en"
           )
@@ -118,11 +121,11 @@ final class PushNotificationManager {
   }
   
   private func unsubscribePushNotifications(wallet: Wallet) {
-    let action: (String) -> Void = { [appSettings, pushNotificationAPI] token in
+    let action: (String) -> Void = { [uniqueIdProvider, pushNotificationAPI] token in
       Task {
         _ = try await pushNotificationAPI.unsubscribeNotifications(
           unsubscribeData: PushNotificationsAPI.UnsubscribeData(
-            device: appSettings.installDeviceID,
+            device: uniqueIdProvider.uniqueDeviceId.uuidString,
             accounts: [PushNotificationsAPI.UnsubscribeData.Account(address: wallet.friendlyAddress.toString())]
           )
         )

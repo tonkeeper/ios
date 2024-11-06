@@ -27,11 +27,11 @@ final class BatteryRefillHeaderModel {
   }
   
   func getState() -> State {
-    let isBeta = configuration.isBatteryBeta
+    let isBeta = configuration.isBatteryBeta(isTestnet: wallet.isTestnet)
     let charge: State.Charge
     if let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance, !batteryBalance.isBalanceZero {
       let chargesCount: Int = {
-        guard let meanFees = configuration.batteryMeanFeesDecimaNumber else { return 0 }
+        guard let meanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet) else { return 0 }
         return batteryBalance.balanceDecimalNumber.dividing(by: meanFees, withBehavior: NSDecimalNumberHandler.roundBehaviour).intValue
       }()
       charge = .charged(chargesCount: chargesCount, batteryPercent: batteryBalance.batteryState.percents)
