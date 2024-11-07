@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import UIKit
 
 public struct AccountEventModel {
   public struct Action {
@@ -53,8 +54,10 @@ public struct AccountEventModel {
     public let encryptedComment: EncryptedComment?
     public let description: String?
     public let nft: ActionNFT?
+    public let stakingImplementation: StakingPoolImplementation?
     
     init(eventType: ActionType,
+         stakingImplementation: StakingPoolImplementation? = nil,
          amount: String?,
          subamount: String?,
          leftTopDescription: String?,
@@ -76,6 +79,7 @@ public struct AccountEventModel {
       self.encryptedComment = encryptedComment
       self.description = description
       self.nft = nft
+      self.stakingImplementation = stakingImplementation
     }
   }
   

@@ -413,16 +413,21 @@ public struct TransferMessageBuilder {
             signClosure: signClosure
           )
         case .tf:
-          return try await StakeMessageBuilder.tfWithdrawMessage(
-            wallet: wallet,
-            seqno: stakeWithdraw.seqno,
-            queryId: TransferMessageBuilder.newWalletQueryId(),
-            poolAddress: stakeWithdraw.pool.address,
-            amount: stakeWithdraw.amount,
-            bounce: stakeWithdraw.isBouncable,
-            timeout: stakeWithdraw.timeout,
-            signClosure: signClosure
-          )
+          do {
+            return try await StakeMessageBuilder.tfWithdrawMessage(
+              wallet: wallet,
+              seqno: stakeWithdraw.seqno,
+              queryId: TransferMessageBuilder.newWalletQueryId(),
+              poolAddress: stakeWithdraw.pool.address,
+              forwardAmount: 1000_000_000,
+              bounce: stakeWithdraw.isBouncable,
+              timeout: stakeWithdraw.timeout,
+              signClosure: signClosure
+            )
+          } catch {
+            print(error)
+            return ""
+          }
         }
       }
     }
