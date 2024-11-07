@@ -203,19 +203,15 @@ struct BatteryRechargeBocBuilder {
   
   private func createBatteryPayload(recipientAddress: Address? = nil,
                                     promocode: String? = nil) -> Cell? {
-    let address: TonSwift.AnyAddress = {
-      switch recipientAddress {
-      case .some(let address):
-        return TonSwift.AnyAddress.internalAddr(address)
-      case .none:
-        return TonSwift.AnyAddress.none
-      }
-    }()
-    
     do {
       let builder = Builder()
       try builder.store(uint: Int32.batteryPayloadOpcode, bits: 32)
-      try builder.store(address)
+      if let recipientAddress {
+        try builder.store(bit: true)
+        try builder.store(recipientAddress)
+      } else {
+        try builder.store(bit: false)
+      }
       if let promocode, !promocode.isEmpty, let promocodeData = promocode.data(using: .utf8) {
         try builder.store(bit: true)
         try builder.store(data: promocodeData)
