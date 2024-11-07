@@ -46,19 +46,22 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
   private let balanceStore: BalanceStore
   private let configuration: Configuration
   private let tonRatesStore: TonRatesStore
+  private let balanceLoader: BalanceLoader
   
   init(wallet: Wallet,
        batteryService: BatteryService,
        tonProofService: TonProofTokenService,
        balanceStore: BalanceStore,
        configuration: Configuration,
-       tonRatesStore: TonRatesStore) {
+       tonRatesStore: TonRatesStore,
+       balanceLoader: BalanceLoader) {
     self.wallet = wallet
     self.batteryService = batteryService
     self.tonProofService = tonProofService
     self.balanceStore = balanceStore
     self.configuration = configuration
     self.tonRatesStore = tonRatesStore
+    self.balanceLoader = balanceLoader
     super.init()
     SKPaymentQueue.default().add(self)
   }
@@ -146,15 +149,19 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
         state = .processing
       case .purchased:
         SKPaymentQueue.default().finishTransaction(transaction)
-        makePurchase(transaction: transaction)
-        state = .idle
+        makePurchase(transaction: transaction) { [weak self] in
+          self?.state = .idle
+          self?.eventHandler?(.didPerformTransaction)
+        }
       case .failed:
         SKPaymentQueue.default().finishTransaction(transaction)
         state = .idle
       case .restored:
         SKPaymentQueue.default().finishTransaction(transaction)
-        makePurchase(transaction: transaction)
-        state = .idle
+        makePurchase(transaction: transaction) { [weak self] in
+          self?.state = .idle
+          self?.eventHandler?(.didPerformTransaction)
+        }
       case .deferred:
         state = .idle
       @unknown default:
@@ -168,12 +175,19 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
   func paymentQueue(_ queue: SKPaymentQueue, restoreCompletedTransactionsFailedWithError error: any Error) {}
 
   
-  private func makePurchase(transaction: SKPaymentTransaction) {
+  private func makePurchase(transaction: SKPaymentTransaction,
+                            completion: @escaping () -> Void) {
     guard let id = transaction.transactionIdentifier,
     let tonProof = try? tonProofService.getWalletToken(wallet)  else { return }
     Task { @MainActor in
-      _ = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id, promocode: promocode)
-      eventHandler?(.didPerformTransaction)
+      do {
+        _ = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id, promocode: promocode)
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        balanceLoader.loadActiveWalletBalance()
+        completion()
+      } catch {
+        completion()
+      }
     }
   }
   

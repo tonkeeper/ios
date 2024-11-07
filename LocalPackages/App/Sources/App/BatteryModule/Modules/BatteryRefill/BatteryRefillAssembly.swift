@@ -24,7 +24,8 @@ struct BatteryRefillAssembly {
         tonProofService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
-        tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore
+        tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader
       ),
       rechargeMethodsModel: BatteryRefillRechargeMethodsModel(
         wallet: wallet,
