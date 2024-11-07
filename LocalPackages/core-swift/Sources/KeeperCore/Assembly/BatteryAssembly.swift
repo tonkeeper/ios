@@ -18,8 +18,15 @@ public final class BatteryAssembly {
     )
   }
   
+  private weak var _batteryPromocodeStore: BatteryPromocodeStore?
   public func batteryPromocodeStore() -> BatteryPromocodeStore {
-    BatteryPromocodeStore(repository: promocodeRepository())
+    if let batteryPromocodeStore = _batteryPromocodeStore {
+      return batteryPromocodeStore
+    } else {
+      let batteryPromocodeStore = BatteryPromocodeStore(repository: promocodeRepository())
+      _batteryPromocodeStore = batteryPromocodeStore
+      return batteryPromocodeStore
+    }
   }
   
   public func rechargeMethodsRepository() -> BatteryRechargeMethodsRepository {

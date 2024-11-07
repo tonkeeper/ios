@@ -310,4 +310,26 @@ extension MainCoordinator {
     
     self.deeplinkHandleTask = deeplinkHandleTask
   }
+  
+  func handleBatteryDeeplink(_ payload: Deeplink.Battery) {
+    let service = keeperCoreMainAssembly.batteryAssembly.batteryService()
+    let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
+    let walletStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    
+    guard let wallet = try? walletStore.activeWallet else { return }
+    
+    if let promocode = payload.promocode {
+      Task {
+        await promocodeStore.setResolveState(.resolving(promocode: promocode))
+        do {
+          try await service.verifyPromocode(wallet: wallet, promocode: promocode)
+          await promocodeStore.setResolveState(.success(promocode: promocode))
+        } catch {
+          await promocodeStore.setResolveState(.failed(promocode: promocode))
+        }
+      }
+    }
+    
+    self.openBattery(wallet: wallet)
+  }
 }

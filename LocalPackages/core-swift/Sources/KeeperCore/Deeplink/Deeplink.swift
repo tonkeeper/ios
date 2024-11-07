@@ -17,6 +17,10 @@ public enum Deeplink: Equatable {
     public let toToken: String?
   }
   
+  public struct Battery: Equatable {
+    public let promocode: String?
+  }
+  
   case transfer(TransferData)
   case buyTon
   case staking
@@ -28,6 +32,7 @@ public enum Deeplink: Equatable {
   case externalSign(ExternalSignDeeplink)
   case tonconnect(TonConnectParameters)
   case dapp(URL)
+  case battery(Battery)
 }
 
 public enum ExternalSignDeeplink: Equatable {

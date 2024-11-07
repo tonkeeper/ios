@@ -33,6 +33,8 @@ public struct TonkeeperDeeplinkParser {
       return .tonconnect(try parseTonconnect(url: url))
     case "dapp":
       return .dapp(try parseDapp(url: url))
+    case "battery":
+      return .battery(parseBattery(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
@@ -186,5 +188,15 @@ public struct TonkeeperDeeplinkParser {
     }
 
     return resultURL
+  }
+  
+  private func parseBattery(url: URL) -> Deeplink.Battery {
+    let components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: true
+    )
+    
+    let promocode = components?.queryItems?.first(where: { $0.name == "promocode" })?.value
+    return Deeplink.Battery(promocode: promocode)
   }
 }

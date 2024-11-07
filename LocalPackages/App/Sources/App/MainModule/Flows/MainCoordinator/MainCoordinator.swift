@@ -434,6 +434,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleTonConnectDeeplink(parameters)
     case .dapp(let dappURL):
       return handleDappDeeplink(url: dappURL)
+    case .battery(let battery):
+      handleBatteryDeeplink(battery)
+      return true
     }
   }
   
@@ -1055,9 +1058,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(coordinator)
     coordinator.start(deeplink: nil)
     
-    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-    })
+    self.router.dismiss(animated: true) { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      })
+    }
   }
   
   func openRecoveryPhrase(wallet: Wallet) {
