@@ -198,7 +198,7 @@ extension AccountEventAction.DepositStake {
     self.amount = depositStake.amount
     self.staker = try WalletAccount(accountAddress: depositStake.staker)
     self.pool = try WalletAccount(accountAddress: depositStake.pool)
-    self.implementation = try StakingPoolImplementation(from: depositStake.implementation)
+    self.implementation = StakingPoolImplementation(from: depositStake.implementation)
   }
 }
 
@@ -207,7 +207,7 @@ extension AccountEventAction.WithdrawStake {
     self.amount = withdrawStake.amount
     self.staker = try WalletAccount(accountAddress: withdrawStake.staker)
     self.pool = try WalletAccount(accountAddress: withdrawStake.pool)
-    self.implementation = try StakingPoolImplementation(from: withdrawStake.implementation)
+    self.implementation = StakingPoolImplementation(from: withdrawStake.implementation)
   }
 }
 
@@ -216,7 +216,7 @@ extension AccountEventAction.WithdrawStakeRequest {
     self.amount = withdrawStakeRequest.amount
     self.staker = try WalletAccount(accountAddress: withdrawStakeRequest.staker)
     self.pool = try WalletAccount(accountAddress: withdrawStakeRequest.pool)
-    self.implementation = try StakingPoolImplementation(from: withdrawStakeRequest.implementation)
+    self.implementation = StakingPoolImplementation(from: withdrawStakeRequest.implementation)
   }
 }
 

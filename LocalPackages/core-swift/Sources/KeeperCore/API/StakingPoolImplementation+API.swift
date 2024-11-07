@@ -1,6 +1,6 @@
 import TonAPI
 extension StakingPoolImplementation {
-  public init(from: PoolImplementationType) throws {
+  public init(from: PoolImplementationType) {
     switch from {
     case .tf:
       self = .tf

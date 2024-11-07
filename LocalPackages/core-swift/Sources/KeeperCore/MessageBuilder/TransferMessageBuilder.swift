@@ -419,7 +419,7 @@ public struct TransferMessageBuilder {
               seqno: stakeWithdraw.seqno,
               queryId: TransferMessageBuilder.newWalletQueryId(),
               poolAddress: stakeWithdraw.pool.address,
-              forwardAmount: 1000_000_000,
+              forwardAmount: 1_000_000_000,
               bounce: stakeWithdraw.isBouncable,
               timeout: stakeWithdraw.timeout,
               signClosure: signClosure
