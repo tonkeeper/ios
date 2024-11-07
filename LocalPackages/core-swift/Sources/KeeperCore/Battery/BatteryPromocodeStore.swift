@@ -13,12 +13,18 @@ public final class BatteryPromocodeStore: Store<BatteryPromocodeStore.Event, Bat
     case didUpdateResolverState
   }
   
-  init() {
+  private let repository: BatteryPromocodeRepository
+
+  init(repository: BatteryPromocodeRepository) {
+    self.repository = repository
     super.init(state: .none)
   }
   
   public override func createInitialState() -> BatteryPromocodeResolveState {
-    .none
+    guard let promocode = repository.getPromocode() else {
+      return .none
+    }
+    return .success(promocode: promocode)
   }
   
   public func setResolveState(_ resolveState: BatteryPromocodeResolveState) async {
@@ -31,7 +37,17 @@ public final class BatteryPromocodeStore: Store<BatteryPromocodeStore.Event, Bat
   
   public func setResolveState(_ resolveState: BatteryPromocodeResolveState,
                               completion: (() -> Void)? = nil) {
-    updateState { _ in
+    updateState { [repository] _ in
+      switch resolveState {
+      case .none:
+        try? repository.savePromocode(nil)
+      case .success(let promocode):
+        try? repository.savePromocode(promocode)
+      case .failed(let promocode):
+        try? repository.savePromocode(nil)
+      case .resolving(let promocode):
+        try? repository.savePromocode(nil)
+      }
       return StateUpdate(newState: resolveState)
     } completion: { [weak self] _ in
       guard let self else { return }
