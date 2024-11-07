@@ -161,8 +161,6 @@ public final class WalletBalanceListCellContentView: UIView {
   private func setup() {
     addSubview(listItemContentView)
     addSubview(commentView)
-    
-    didUpdateConfiguration()
   }
   
   private func didUpdateConfiguration() {

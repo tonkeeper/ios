@@ -158,8 +158,7 @@ public final class TKImageView: UIView, ConfigurableView {
   }
   
   public func prepareForReuse() {
-    imageView.kf.cancelDownloadTask()
-    imageView.image = nil
+    image = .urlImage(nil)
   }
 
   private func setup() {
