@@ -334,6 +334,7 @@ private extension AccountEventMapper {
     
     return AccountEventModel.Action(
       eventType: .depositStake,
+      stakingImplementation: action.implementation,
       amount: amount,
       subamount: nil,
       leftTopDescription: action.pool.name,
@@ -359,6 +360,7 @@ private extension AccountEventMapper {
     
     return AccountEventModel.Action(
       eventType: .withdrawStake,
+      stakingImplementation: action.implementation,
       amount: amount,
       subamount: nil,
       leftTopDescription: action.pool.name,
@@ -383,14 +385,15 @@ private extension AccountEventMapper {
       currency: .TON)
     
     return AccountEventModel.Action(eventType: .withdrawStakeRequest,
-                               amount: amount,
-                               subamount: nil,
-                               leftTopDescription: action.pool.name,
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: nil,
-                               nft: nil)
+                                    stakingImplementation: action.implementation,
+                                    amount: amount,
+                                    subamount: nil,
+                                    leftTopDescription: action.pool.name,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: nil,
+                                    nft: nil)
   }
   
   func mapAuctionBidAction(_ action: AccountEventAction.AuctionBid,
