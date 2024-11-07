@@ -138,10 +138,14 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
       promocodeTextField.isValid = true
     case .success(let promocode):
       promocodeTextField.isValid = true
-      promocodeTextField.text = promocode
+      if promocodeTextField.text.isEmpty {
+        promocodeTextField.text = promocode
+      }
     case .failed(let promocode):
       promocodeTextField.isValid = false
-      promocodeTextField.text = promocode
+      if promocodeTextField.text.isEmpty {
+        promocodeTextField.text = promocode
+      }
     case .resolving(let promocode):
       promocodeTextField.isValid = true
       if promocodeTextField.text.isEmpty {
