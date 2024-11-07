@@ -40,12 +40,31 @@ final class BatteryServiceImplementation: BatteryService {
     let methods = try await batteryAPIProvider
       .api(wallet.isTestnet)
       .getRechargeMethos(includeRechargeOnly: includeRechargeOnly)
+    
+    var ton = [BatteryRechargeMethod]()
+    var usdt = [BatteryRechargeMethod]()
+    var other = [BatteryRechargeMethod]()
+    for method in methods {
+      switch method.token {
+      case .ton:
+        ton.append(method)
+      case .jetton(let jetton):
+        if jetton.jettonMasterAddress == JettonMasterAddress.tonUSDT {
+          usdt.append(method)
+        } else {
+          other.append(method)
+        }
+      }
+    }
+
+    let sortedMethods = usdt + other + ton
+    
     try? rechargeMethodsRepository.saveRechargeMethods(
-      _methods: methods,
+      _methods: sortedMethods,
       rechargeOnly: includeRechargeOnly,
       isTestnet: wallet.isTestnet
     )
-    return methods
+    return sortedMethods
   }
   
   func getRechargeMethods(wallet: Wallet,
