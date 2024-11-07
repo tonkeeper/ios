@@ -5,23 +5,11 @@ import CryptoKit
 import CryptoSwift
 import TweetNacl
 
-public typealias MnemonicIdentifier = String
-public typealias Mnemonics = [MnemonicIdentifier: Mnemonic]
-
-public struct MnemonicsVault {
+public struct RNMnemonicsVault {
   
   private struct MnemonicItem: Codable {
     let identifier: String
     let mnemonic: String
-  }
-  
-  public struct EncryptedMnemonics: Codable {
-    public let kind: String
-    public let N: Int
-    public let r: Int
-    public let p: Int
-    public let salt: String
-    public let ct: String
   }
   
   public enum Error: Swift.Error {
@@ -130,9 +118,14 @@ public struct MnemonicsVault {
     let query = getPasswordQuery()
     try keychainVault.delete(query)
   }
+  
+  public func getEncryptedMnemonics() throws -> EncryptedMnemonics {
+    let encryptedMnemonics = try loadEncryptedMnemonics()
+    return encryptedMnemonics
+  }
 }
 
-private extension MnemonicsVault {
+private extension RNMnemonicsVault {
   func getChunksCountQuery() -> TKKeychainQuery {
     TKKeychainQuery(
       item: .genericPassword(service: .mnemonicsVaultKey, account: .encryptedMnemonicsChunksCountKey),
@@ -177,7 +170,8 @@ private extension MnemonicsVault {
       N: encryptedMnemonics.N,
       r: encryptedMnemonics.r,
       p: encryptedMnemonics.p,
-      password: password
+      password: password,
+      dkLen: MnemonicsEncryptionParams.passwordKeyLength
     )
 
     let decrypted = try JSONDecoder().decode([String: MnemonicItem].self, from: data)
@@ -201,17 +195,18 @@ private extension MnemonicsVault {
     let ct = try await ScryptHashBox.encrypt(
       data: data,
       salt: salt,
-      N: .N,
-      r: .r,
-      p: .p,
-      password: password
+      N: MnemonicsEncryptionParams.N,
+      r: MnemonicsEncryptionParams.r,
+      p: MnemonicsEncryptionParams.p,
+      password: password,
+      dkLen: MnemonicsEncryptionParams.passwordKeyLength
     )
     
     let encryptedMnemonics = EncryptedMnemonics(
       kind: "encrypted-scrypt-tweetnacl",
-      N: .N,
-      r: .r,
-      p: .p,
+      N: MnemonicsEncryptionParams.N,
+      r: MnemonicsEncryptionParams.r,
+      p: MnemonicsEncryptionParams.p,
       salt: salt.toHexString(),
       ct: ct
     )
@@ -263,82 +258,14 @@ private extension MnemonicsVault {
   }
 }
 
-public struct ScryptHashBox {
-  private init() {}
-
-  public static func encrypt(data: Data, salt: [UInt8],  N: Int, r: Int, p: Int, password: String) async throws -> String {
-    let passwordHash = Data(try Scrypt(
-      password: [UInt8](password.utf8),
-      salt: salt,
-      dkLen: .passwordKeyLength,
-      N: .N,
-      r: .r,
-      p: .p
-    ).calculate())
-    
-    let nonce = Data(salt[0..<24])
-    let secretBox = try TweetNacl.NaclSecretBox.secretBox(
-      message: data,
-      nonce: nonce,
-      key: passwordHash
-    )
-    
-    return secretBox.toHexString()
-  }
-  
-  public static func decrypt(string: String, salt: String, N: Int, r: Int, p: Int, password: String) async throws -> Data {
-    let passwordHash = Data(try Scrypt(
-      password: [UInt8](password.utf8),
-      salt: [UInt8](Data(hex: salt)),
-      dkLen: .passwordKeyLength,
-      N: N,
-      r: r,
-      p: p
-    ).calculate())
-    
-    let nonce = Data([UInt8](Data(hex: salt))[0..<24])
-    
-    let data = try TweetNacl.NaclSecretBox.open(box: Data(hex: string),
-                                                     nonce: nonce,
-                                                     key: Data(passwordHash))
-    return data
-  }
-}
-
-private struct SecureRandom {
-  enum Error: Swift.Error {
-    case generationFailed
-  }
-  
-  private init() {}
-  
-  static func getRandomBytes(length: Int) throws -> [UInt8] {
-    var bytes = [UInt8](repeating: 0, count: length)
-    let status = SecRandomCopyBytes(
-      kSecRandomDefault,
-      length,
-      &bytes
-    )
-    if status == errSecSuccess {
-      return bytes
-    } else {
-      throw Error.generationFailed
-    }
-  }
-}
-
-private extension Int {
-  static let N = 16384
-  static let r = 8
-  static let p = 1
-  static let chunksSize = 2048
-  static let passwordKeyLength = 32
-}
-
 private extension String {
   static let mnemonicsVaultKey = "app"
   static let passwordVaultKey = "TKProtected"
   static let encryptedMnemonicsChunksCountKey = "wallets_chunks"
   static let encryptedMnemonicsChunkKey = "wallets_chunk_"
   static let passwordKey = "biometry_passcode"
+}
+
+private extension Int {
+  static let chunksSize = 2048
 }

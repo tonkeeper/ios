@@ -1130,7 +1130,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     return await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }

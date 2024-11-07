@@ -31,7 +31,7 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
-        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+        mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository()
       ),
       totalBalanceModel: WalletTotalBalanceModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,

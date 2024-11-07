@@ -18,6 +18,7 @@ public final class MainAssembly {
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
+  public let secureAssembly: SecureAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -32,7 +33,8 @@ public final class MainAssembly {
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
-       backgroundUpdateAssembly: BackgroundUpdateAssembly) {
+       backgroundUpdateAssembly: BackgroundUpdateAssembly,
+       secureAssembly: SecureAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -47,6 +49,7 @@ public final class MainAssembly {
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
+    self.secureAssembly = secureAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -67,7 +70,7 @@ public final class MainAssembly {
   public var walletDeleteController: WalletDeleteController {
     WalletDeleteController(walletStore: storesAssembly.walletsStore,
                            keeperInfoStore: storesAssembly.keeperInfoStore,
-                           mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+                           mnemonicsRepository: secureAssembly.mnemonicsRepository())
   }
   
   public func chartController() -> ChartController {

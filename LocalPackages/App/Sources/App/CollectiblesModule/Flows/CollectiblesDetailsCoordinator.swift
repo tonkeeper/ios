@@ -106,7 +106,7 @@ private extension CollectiblesDetailsCoordinator {
       PasscodeInputCoordinator.present(
         parentCoordinator: self,
         parentRouter: self.router,
-        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+        mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         onCancel: { },
         onInput: { passcode in
@@ -124,7 +124,7 @@ private extension CollectiblesDetailsCoordinator {
             let proofProvider = TonConnectNFTProofProvider(
               wallet: self.wallet,
               nft: self.nft,
-              mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+              mnemonicRepository: self.keeperCoreMainAssembly.secureAssembly.mnemonicsRepository()
             )
             guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
               await MainActor.run {

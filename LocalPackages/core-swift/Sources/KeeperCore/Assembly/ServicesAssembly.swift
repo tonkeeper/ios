@@ -7,17 +7,20 @@ public final class ServicesAssembly {
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let locationAPIAsembly: LocationAPIAssembly
   private let coreAssembly: CoreAssembly
+  private let secureAssembly: SecureAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        apiAssembly: APIAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        locationAPIAsembly: LocationAPIAssembly,
-       coreAssembly: CoreAssembly) {
+       coreAssembly: CoreAssembly,
+       secureAssembly: SecureAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.locationAPIAsembly = locationAPIAsembly
     self.coreAssembly = coreAssembly
+    self.secureAssembly = secureAssembly
   }
   
   public func walletsService() -> WalletsService {
@@ -129,7 +132,7 @@ public final class ServicesAssembly {
   }
   
   public func encryptedCommentService() -> EncryptedCommentService {
-    EncryptedCommentServiceImplementation(mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+    EncryptedCommentServiceImplementation(mnemonicsRepository: secureAssembly.mnemonicsRepository())
   }
 
   public func searchEngineService() -> SearchEngineServiceProtocol {

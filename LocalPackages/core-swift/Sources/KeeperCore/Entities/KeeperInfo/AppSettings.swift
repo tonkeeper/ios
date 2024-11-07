@@ -4,6 +4,11 @@ public extension KeeperInfo {
   struct AppSettings: Equatable {
     public let isSecureMode: Bool
     public let searchEngine: SearchEngine
+    
+    public init(isSecureMode: Bool, searchEngine: SearchEngine) {
+      self.isSecureMode = isSecureMode
+      self.searchEngine = searchEngine
+    }
   }
 }
 

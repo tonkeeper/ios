@@ -36,7 +36,7 @@ private extension SettingsCoordinator {
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
@@ -267,7 +267,7 @@ private extension SettingsCoordinator {
   func openSecurity() {
     let configuration = SettingsListSecurityConfigurator(
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       biometryProvider: BiometryProvider()
     )
     
@@ -435,7 +435,7 @@ private extension SettingsCoordinator {
     return await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }

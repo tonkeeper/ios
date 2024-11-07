@@ -20,7 +20,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   private let stateManager: RootCoordinatorStateManager
   private let pushNotificationsManager: PushNotificationManager
-  private let rnUpdater: RNUpdater
 
   init(router: ViewControllerRouter,
        dependencies: Dependencies) {
@@ -35,10 +34,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
       pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
       walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
-    )
-    self.rnUpdater = RNUpdater(
-      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
-      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
     super.init(router: router)
   }
@@ -55,10 +50,25 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     switch state {
     case .onboarding:
       openLaunchScreen()
-      migrateIfNeed(deeplink: deeplink)
+      migrateRNIfNeed(deeplink: deeplink) { [weak self] isSuccess in
+        if isSuccess {
+          self?.stateManager.didPerformRNMigration()
+        } else {
+          self?.openOnboarding(deeplink: deeplink)
+        }
+      }
     case .main:
-      migrateTonConnectVaultIfNeeded()
-      handlePasscodeFlowIfNeeded { self.openMain(deeplink: deeplink) }
+      migrateNativeIfNeed { [weak self] didNeedToMigrate, isSuccess in
+        if !isSuccess {
+          self?.openOnboarding(deeplink: deeplink)
+          return
+        }
+        if didNeedToMigrate {
+          self?.openMain(deeplink: deeplink)
+        } else {
+          self?.handlePasscodeFlowIfNeeded { self?.openMain(deeplink: deeplink) }
+        }
+      }
     }
   }
   
@@ -85,7 +95,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     let router = NavigationControllerRouter(rootViewController: TKNavigationController())
-    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicsRepository()
 
     let validator = PasscodeConfirmationValidator(
       mnemonicsRepository: mnemonicsRepository
@@ -107,6 +117,49 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     coordinator.didInputPasscode = { [weak self, weak coordinator] _ in
       self?.removeChild(coordinator)
       completion()
+    }
+
+    coordinator.didLogout = { [dependencies, weak coordinator] in
+      guard let coordinator else { return }
+      let deleteController = dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
+      Task {
+        await deleteController.deleteAll()
+        await MainActor.run {
+          self.removeChild(coordinator)
+        }
+      }
+    }
+
+    coordinator.start()
+    addChild(coordinator)
+    
+    showViewController(coordinator.router.rootViewController, animated: false)
+  }
+  
+  private func showPasscode(mnemonicsRepository: MnemonicsRepository,
+                            completion: ((String) -> Void)?) {
+    let router = NavigationControllerRouter(rootViewController: TKNavigationController())
+
+    let validator = PasscodeConfirmationValidator(
+      mnemonicsRepository: mnemonicsRepository
+    )
+    let securityStore = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore
+    let passcodeBiometry = PasscodeBiometryProvider(
+      biometryProvider: BiometryProvider(),
+      securityStore: securityStore
+    )
+    let coordinator = PasscodeInputCoordinator(
+      router: router,
+      context: .entry,
+      validator: validator,
+      biometryProvider: passcodeBiometry,
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
+    )
+
+    coordinator.didInputPasscode = { [weak self, weak coordinator] passcode in
+      self?.removeChild(coordinator)
+      completion?(passcode)
     }
 
     coordinator.didLogout = { [dependencies, weak coordinator] in
@@ -198,32 +251,93 @@ private extension RootCoordinator {
     dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault = true
   }
   
-  func migrateIfNeed(deeplink: CoordinatorDeeplink?) {
-    let rnMigration = RNMigration(
-      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
-      walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore,
-      securityStore: dependencies.keeperCoreRootAssembly.storesAssembly.securityStore,
-      currencyStore: dependencies.keeperCoreRootAssembly.storesAssembly.currencyStore,
-      walletNotificationStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
+  func handleMigrationResult(_ result: MergeMigration.MigrationResult,
+                             completion: @escaping (_ isSuccess: Bool) -> Void) {
+    let title: String
+    var description: String
+    switch result {
+    case .failedMigrateMnemonics(let error):
+      title = "Migration failed"
+      description = "Failed migrate mnemonics \(error.localizedDescription)"
+      completion(false)
+    case .failedMigrateWallets(let error):
+      title = "Migration failed"
+      description = "Failed migrate wallets \(error.localizedDescription)"
+      completion(false)
+    case .partialy(let failedWallets):
+      title = "Failed migrate some wallets"
+      description = failedWallets.map { "Name: \($0.name)\nType: \($0.type), \nPublicKey: \($0.pubkey)" }.joined(separator: "\n\n")
+      completion(true)
+    case .success:
+      completion(true)
+      return
+    }
+    
+    description += "\n\n Your seed phrases are safe!"
+    
+    let alertController = UIAlertController(title: title,
+                                            message: description,
+                                            preferredStyle: .alert)
+    alertController.addAction(UIAlertAction(title: "OK", style: .default))
+    
+    router.rootViewController.topPresentedViewController().present(alertController, animated: true)
+  }
+  
+  func migrateNativeIfNeed(completion: @escaping (_ didNeedToMigrate: Bool, _ isSuccess: Bool) -> Void) {
+    let mergeMigration = MergeMigration(
+      asyncStorage: dependencies.keeperCoreRootAssembly.rnAssembly.rnAsyncStorage,
+      appInfoProvider: dependencies.coreAssembly.appInfoProvider,
+      mnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.mnemonicsVault(),
+      rnMnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.rnMnemonicsVault(),
+      keeperInfoRepository: dependencies.keeperCoreRootAssembly.repositoriesAssembly.keeperInfoRepository(),
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
-    Task {
-      if await rnMigration.checkIfNeedToMigrate() {
-        let errors = await rnMigration.performMigration()
-        if !errors.isEmpty {
-          await MainActor.run {
-            openOnboarding(deeplink: deeplink)
-            let alertController = UIAlertController(title: "Failed migrate",
-                                                    message: errors.map { $0.alertValue }.joined(separator: "\n"),
-                                                    preferredStyle: .alert)
-            alertController.addAction(UIAlertAction(title: "OK", style: .cancel))
-            router.rootViewController.present(alertController, animated: true)
+    
+    guard mergeMigration.isNeedToMigrateFromNative() else {
+      completion(false, true)
+      return
+    }
+    
+    mergeMigration.performNativeMigration { [weak self] passcodeCompletion in
+      guard let self else { return }
+      showPasscode(mnemonicsRepository: dependencies.keeperCoreRootAssembly.secureAssembly.rnMnemonicsRepository()) { passcode in
+        passcodeCompletion(passcode)
+      }
+    } completion: { [weak self] result in
+      self?.handleMigrationResult(result, completion: { isSuccess in
+        completion(true, isSuccess)
+      })
+    }
+  }
+  
+  func migrateRNIfNeed(deeplink: CoordinatorDeeplink?, completion: @escaping (_ isSuccess: Bool) -> Void) {
+    let mergeMigration = MergeMigration(
+      asyncStorage: dependencies.keeperCoreRootAssembly.rnAssembly.rnAsyncStorage,
+      appInfoProvider: dependencies.coreAssembly.appInfoProvider,
+      mnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.mnemonicsVault(),
+      rnMnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.rnMnemonicsVault(),
+      keeperInfoRepository: dependencies.keeperCoreRootAssembly.repositoriesAssembly.keeperInfoRepository(),
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
+    )
+    
+    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.secureAssembly.rnMnemonicsRepository()
+    
+    Task { @MainActor [weak self] in
+      guard let self else { return }
+      guard await mergeMigration.isNeedToMigrateFromRN() else {
+        openOnboarding(deeplink: deeplink)
+        return
+      }
+      let result = await mergeMigration.performRNMigration { [weak self] passcodeCompletion in
+        guard let self else { return }
+        DispatchQueue.main.async {
+          self.showPasscode(mnemonicsRepository: mnemonicsRepository) { passcode in
+            passcodeCompletion(passcode)
           }
         }
-        
-      } else {
-        await MainActor.run {
-          openOnboarding(deeplink: deeplink)
-        }
+      }
+      handleMigrationResult(result) { isSuccess in
+        completion(isSuccess)
       }
     }
   }

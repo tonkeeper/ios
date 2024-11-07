@@ -66,7 +66,7 @@ struct AddWalletModule {
       revisionToAdd: revisionToAdd,
       wallet: wallet,
       securityStore: dependencies.storesAssembly.securityStore,
-      mnemonicsRepository: dependencies.walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: dependencies.walletsUpdateAssembly.secureAssembly.mnemonicsRepository(),
       addController: dependencies.walletsUpdateAssembly.walletAddController(),
       analyticsProvider: dependencies.coreAssembly.analyticsProvider
     )

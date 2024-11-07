@@ -16,6 +16,7 @@ public final class RootAssembly {
   private let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
+  public let secureAssembly: SecureAssembly
 
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -31,7 +32,8 @@ public final class RootAssembly {
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
-       rnAssembly: RNAssembly) {
+       rnAssembly: RNAssembly,
+       secureAssembly: SecureAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
@@ -47,6 +49,7 @@ public final class RootAssembly {
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
+    self.secureAssembly = secureAssembly
   }
   
   private var _rootController: RootController?
@@ -58,7 +61,7 @@ public final class RootAssembly {
         configuration: configurationAssembly.configuration,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
-        mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
+        mnemonicsRepository: secureAssembly.mnemonicsRepository(),
         buySellProvider: buySellAssembly.buySellProvider,
         knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
       )
@@ -81,7 +84,8 @@ public final class RootAssembly {
       storesAssembly: storesAssembly,
       apiAssembly: apiAssembly,
       coreAssembly: coreAssembly,
-      formattersAssembly: formattersAssembly
+      formattersAssembly: formattersAssembly,
+      secureAssembly: secureAssembly
     )
     return MainAssembly(
       appInfoProvider: appInfoProvider,
@@ -97,7 +101,8 @@ public final class RootAssembly {
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
-      backgroundUpdateAssembly: backgroundUpdateAssembly
+      backgroundUpdateAssembly: backgroundUpdateAssembly,
+      secureAssembly: secureAssembly
     )
   }
 }

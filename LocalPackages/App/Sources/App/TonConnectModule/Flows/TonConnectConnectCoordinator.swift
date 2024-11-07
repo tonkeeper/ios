@@ -163,7 +163,7 @@ private extension TonConnectConnectCoordinator {
     guard let passcode = await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: ViewControllerRouter(rootViewController: fromViewController),
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     ) else { return false }
     do {
