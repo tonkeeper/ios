@@ -11,7 +11,7 @@ public protocol TKKeychainVault {
   func get(query: TKKeychainQuery) throws -> String
   func get<T: Codable>(query: TKKeychainQuery) throws -> T
   
-  func set(_ value: Data?, query: TKKeychainQuery) throws
+  func set(_ value: Data, query: TKKeychainQuery) throws
   func set(_ value: String, query: TKKeychainQuery) throws
   func set<T: Codable>(_ value: T, query: TKKeychainQuery) throws
   
