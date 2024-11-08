@@ -15,7 +15,7 @@ let package = Package(
     .package(path: "../TKCryptoSwift"),
     .package(path: "../TKKeychain"),
     .package(path: "../Ledger"),
-    .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.21")),
+    .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.22")),
     .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.0")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
     .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.2")),
