@@ -418,6 +418,8 @@
 "nft_details.about_collection" = "Подробнее о коллекции";
 "nft_details.domain_on_sale_description" = "Домен сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
 "nft_details.nft_on_sale_description" = "NFT сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
+"nft_details.actions.report_spam" = "Пожаловаться";
+"nft_details.actions.not_spam" = "Это не спам";
 
 "buy_list_popup.do_not_show_again" = "Не показывать снова";
 "buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper.";

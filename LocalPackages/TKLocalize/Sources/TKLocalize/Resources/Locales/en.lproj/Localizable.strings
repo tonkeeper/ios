@@ -441,6 +441,8 @@
 "nft_details.about_collection" = "About collection";
 "nft_details.domain_on_sale_description" = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first.";
 "nft_details.nft_on_sale_description" = "NFT is on sale at the marketplace now. For transfer, you should remove it from sale first.";
+"nft_details.actions.report_spam" = "Report Spam";
+"nft_details.actions.not_spam" = "Not Spam";
 
 "buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Tonkeeper.";
 

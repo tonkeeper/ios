@@ -37,7 +37,16 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
     viewModel.didUpdateTitleView = { [weak self] model in
       self?.customView.titleView.configure(model: model)
     }
-    
+
+    viewModel.didUpdateReportSpamView = { [weak self] model in
+      if let model {
+        self?.customView.reportSpamButtonsView.isHidden = false
+        self?.customView.reportSpamButtonsView.configure(model: model)
+      } else {
+        self?.customView.reportSpamButtonsView.isHidden = true
+      }
+    }
+
     viewModel.didUpdateInformationView = { [weak self] model in
       self?.customView.informationView.configure(model: model)
     }

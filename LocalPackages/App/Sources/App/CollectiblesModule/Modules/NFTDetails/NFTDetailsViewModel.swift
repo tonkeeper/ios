@@ -18,6 +18,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
 
 protocol NFTDetailsViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
+  var didUpdateReportSpamView: ((NFTDetailsReportSpamButtonsView.Model?) -> Void)? { get set }
   var didUpdateInformationView: ((NFTDetailsInformationView.Model) -> Void)? { get set }
   var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)? { get set }
   var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)? { get set }
@@ -86,6 +87,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   // MARK: - NFTDetailsViewModel
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
+  var didUpdateReportSpamView: ((NFTDetailsReportSpamButtonsView.Model?) -> Void)?
   var didUpdateInformationView: ((NFTDetailsInformationView.Model) -> Void)?
   var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)?
   var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)?
@@ -106,6 +108,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private func update() {
     let isSecureMode = appSetttingsStore.getState().isSecureMode
     didUpdateTitleView?(createTitleViewModel(isSecureMode: isSecureMode))
+    didUpdateReportSpamView?(composeReportSpamViewModel())
     didUpdateInformationView?(createInformationViewModel(isSecureMode: isSecureMode))
     didUpdateButtonsView?(createButtonsViewModel())
     didUpdateDetailsView?(createDetailsViewModel())
@@ -197,7 +200,30 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       caption: captionModel
     )
   }
-  
+
+  private func composeReportSpamViewModel() -> NFTDetailsReportSpamButtonsView.Model? {
+    guard wallet.kind != .watchonly, nft.trust != .whitelist else {
+      return nil
+    }
+
+    var reportSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .medium)
+    reportSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.Actions.reportSpam))
+    reportSpamButton.backgroundColors = [
+      .normal: .Accent.orange,
+      .highlighted: .Accent.orange.withAlphaComponent(0.64)
+    ]
+    reportSpamButton.action = {
+
+    }
+    var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .medium)
+    notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.Actions.notSpam))
+    notSpamButton.action = {
+
+    }
+
+    return .init(buttonModels: [reportSpamButton, notSpamButton])
+  }
+
   private func createInformationViewModel(isSecureMode: Bool) -> NFTDetailsInformationView.Model {
     let imageViewModel: TKImageView.Model = {
       TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none)

@@ -731,6 +731,12 @@ public enum TKLocales {
     public static let unverifiedNft = TKLocales.tr("Localizable", "nft_details.unverified_nft", fallback: "Unverified NFT")
     /// View in explorer
     public static let viewInExplorer = TKLocales.tr("Localizable", "nft_details.view_in_explorer", fallback: "View in explorer")
+    public enum Actions {
+      /// Not Spam
+      public static let notSpam = TKLocales.tr("Localizable", "nft_details.actions.not_spam", fallback: "Not Spam")
+      /// Report Spam
+      public static let reportSpam = TKLocales.tr("Localizable", "nft_details.actions.report_spam", fallback: "Report Spam")
+    }
   }
   public enum Onboarding {
     /// Create a new wallet or add an existing one

@@ -10,6 +10,7 @@ final class NFTDetailsView: UIView {
     stackView.axis = .vertical
     return stackView
   }()
+  let reportSpamButtonsView = NFTDetailsReportSpamButtonsView()
   let informationView = NFTDetailsInformationView()
   let buttonsView = NFTDetailsButtonsView()
   let propertiesView = NFTDetailsPropertiesView()
@@ -42,6 +43,7 @@ final class NFTDetailsView: UIView {
     
     addSubview(scrollView)
     scrollView.addSubview(contentStackView)
+    contentStackView.addArrangedSubview(reportSpamButtonsView)
     contentStackView.addArrangedSubview(informationView)
     contentStackView.addArrangedSubview(buttonsView)
     contentStackView.addArrangedSubview(propertiesView)
