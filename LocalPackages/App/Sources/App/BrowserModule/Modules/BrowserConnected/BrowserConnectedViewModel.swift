@@ -32,14 +32,12 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   func viewDidLoad() {
     browserConnectedController.didUpdateApps = { [weak self] in
-      self?.syncQueue.async {
+      DispatchQueue.main.async {
         self?.reloadContent()
       }
     }
     browserConnectedController.start()
-    syncQueue.sync {
-      reloadContent()
-    }
+    reloadContent()
   }
   
   func selectApp(index: Int) {
@@ -67,7 +65,6 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
       }
     }
   }
-  private let syncQueue = DispatchQueue(label: "BrowserConnectedViewModelImplementationQueue")
   
   // MARK: - Image Loading
   
@@ -112,7 +109,7 @@ private extension BrowserConnectedViewModelImplementation {
           )
 
           return BrowserConnected.Item(
-            identifier: app.url.absoluteString,
+            identifier: UUID().uuidString,
             configuration: configuration
           )
         }
