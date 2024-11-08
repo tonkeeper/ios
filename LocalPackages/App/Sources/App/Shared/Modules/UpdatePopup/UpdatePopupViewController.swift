@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import SnapKit
+import TKLocalize
 
 final class UpdatePopupViewController: BasicViewController, TKBottomSheetContentViewController {
   private let viewModel: UpdatePopupViewModel
@@ -52,6 +53,9 @@ private extension UpdatePopupViewController {
       make.top.bottom.equalTo(self.view)
       make.left.right.equalTo(self.view).inset(CGFloat.horizontalPadding/2)
     }
+    
+    modalCardViewController.successTitle = TKLocales.Result.success
+    modalCardViewController.errorTitle = TKLocales.Result.failure
   }
 
   func setupBindings() {

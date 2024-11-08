@@ -169,7 +169,7 @@ struct TonConnectConnectMapper {
         items: [
           TKPopUp.Component.PlainButtonComponent(buttonConfiguration: footerButtonConfiguration)
         ])
-    ], state: connectingState))
+    ], state: connectingState, successTitle: TKLocales.Result.success, errorTitle: TKLocales.Result.failure))
     
     return TKPopUp.Configuration(items: items)
   }

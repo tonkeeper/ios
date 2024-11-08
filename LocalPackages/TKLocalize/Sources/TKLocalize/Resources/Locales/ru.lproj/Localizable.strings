@@ -18,6 +18,9 @@
 
 "state.failed" = "Неуспешно";
 
+"result.success" = "Готово";
+"result.failure" = "Ошибка";
+
 "toast.copied" = "Скопировано";
 "toast.loading" = "Загрузка";
 "toast.link_expired" = "Срок действия ссылки истёк";

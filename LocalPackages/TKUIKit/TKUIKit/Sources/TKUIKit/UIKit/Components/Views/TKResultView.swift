@@ -12,14 +12,7 @@ final class TKResultView: UIView {
       case .failure: return .Accent.red
       }
     }
-    
-    var title: String? {
-      switch self {
-      case .success: return "Done"
-      case .failure: return "Error"
-      }
-    }
-    
+
     var icon: UIImage? {
       switch self {
       case .success: return .TKUIKit.Icons.Size32.checkmarkCircle
@@ -31,6 +24,9 @@ final class TKResultView: UIView {
   var state: State {
     didSet { didChangeState() }
   }
+  
+  var successTitle: String = "Done"
+  var errorTitle: String = "Error"
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -87,7 +83,12 @@ private extension TKResultView {
     iconImageView.image = state.icon
     
     titleLabel.textColor = state.tintColor
-    titleLabel.text = state.title
+    titleLabel.text = {
+      switch state {
+      case .success: return successTitle
+      case .failure: return errorTitle
+      }
+    }()
   }
 }
 

@@ -18,6 +18,9 @@
 
 "state.failed" = "Failed";
 
+"result.success" = "Done";
+"result.failure" = "Error";
+
 "toast.copied" = "Copied";
 "toast.loading" = "Loading";
 "toast.link_expired" = "Expired link";

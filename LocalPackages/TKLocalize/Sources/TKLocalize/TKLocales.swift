@@ -910,6 +910,12 @@ public enum TKLocales {
       return TKLocales.tr("Localizable", "receive.title", String(describing: p1), fallback: "Receive %@")
     }
   }
+  public enum Result {
+    /// Error
+    public static let failure = TKLocales.tr("Localizable", "result.failure", fallback: "Error")
+    /// Done
+    public static let success = TKLocales.tr("Localizable", "result.success", fallback: "Done")
+  }
   public enum Scanner {
     /// Scan QR code
     public static let title = TKLocales.tr("Localizable", "scanner.title", fallback: "Scan QR code")

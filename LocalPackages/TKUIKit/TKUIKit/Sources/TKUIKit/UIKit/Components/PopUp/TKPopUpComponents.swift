@@ -281,7 +281,7 @@ public extension TKPopUp.Component {
         stackView.addArrangedSubview(view)
         stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
       }
-    
+      
       processView.setContent(stackView)
       processView.state = state
       return processView
@@ -291,14 +291,22 @@ public extension TKPopUp.Component {
     
     private let items: [TKPopUp.Item]
     private let state: TKProcessContainerView.State
+    private let successTitle: String
+    private let errorTitle: String
     public let bottomSpace: CGFloat
     
     public init(items: [TKPopUp.Item],
                 state: TKProcessContainerView.State,
+                successTitle: String,
+                errorTitle: String,
                 bottomSpace: CGFloat = 0) {
       self.items = items
       self.bottomSpace = bottomSpace
       self.state = state
+      self.successTitle = successTitle
+      self.errorTitle = errorTitle
+      processView.successTitle = successTitle
+      processView.errorTitle = errorTitle
     }
   }
 }
