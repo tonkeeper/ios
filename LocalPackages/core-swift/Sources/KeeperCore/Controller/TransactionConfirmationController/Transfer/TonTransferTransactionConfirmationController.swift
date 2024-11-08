@@ -34,8 +34,8 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         recipient: recipient,
         comment: comment,
         transferType: transferPayload?.type ?? .default,
-        signClosure: { [weak self, wallet] transferMessageBuilder in
-          guard let signed = try? await self?.signHandler?(transferMessageBuilder, wallet) else {
+        signClosure: { [weak self, wallet] transferData in
+          guard let signed = try? await self?.signHandler?(transferData, wallet) else {
             throw TransactionConfirmationError.failedToSign
           }
           return signed
@@ -47,7 +47,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     }
   }
   
-  public var signHandler: ((TransferMessageBuilder, Wallet) async throws -> String?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
   
   @Atomic private var transferPayload: TransferTransaction.TransferPayload?
   @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
@@ -154,9 +154,9 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  func signTransfer(_ transferBuilder: TransferMessageBuilder) async throws -> String {
+  func signTransfer(_ transferData: TransferData) async throws -> String {
     guard let signHandler,
-          let signedData = try await signHandler(transferBuilder, wallet) else { throw TransactionConfirmationError.failedToSign }
+          let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
   }
 }

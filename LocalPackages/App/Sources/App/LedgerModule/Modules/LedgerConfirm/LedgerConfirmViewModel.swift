@@ -82,14 +82,14 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
-  private let transferMessageBuilder: TransferMessageBuilder
+  private let transferData: TransferData
   private let ledgerDevice: Wallet.LedgerDevice
   private let wallet: Wallet
   
   // MARK: - Init
   
-  init(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
-    self.transferMessageBuilder = transferMessageBuilder
+  init(transferData: TransferData, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
+    self.transferData = transferData
     self.wallet = wallet
     self.ledgerDevice = ledgerDevice
   }
@@ -153,7 +153,7 @@ private extension LedgerConfirmViewModelImplementation {
   }
   
   func checkVersion(version: String) -> Result<Void, LedgerConfirmError> {
-    switch transferMessageBuilder.transferData {
+    switch transferData.transfer {
     case .nft(_), .changeDNSRecord(_):
       guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
         return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
@@ -203,7 +203,7 @@ private extension LedgerConfirmViewModelImplementation {
     Task {
       do {
         let transactionBuilder = LedgerTransactionBuilder(wallet: self.wallet,
-                                                          transferMessageBuilder: self.transferMessageBuilder,
+                                                          transferData: self.transferData,
                                                           tonTransport: tonTransport,
                                                           accountPath: accountPath)
         

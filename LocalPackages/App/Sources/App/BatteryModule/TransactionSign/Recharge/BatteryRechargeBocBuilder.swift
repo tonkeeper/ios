@@ -26,7 +26,7 @@ struct BatteryRechargeBocBuilder {
     self.configuration = configuration
   }
   
-  func getBoc(signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+  func getBoc(signClosure: (TransferData) async throws -> String) async throws -> String {
     let config = try await batteryService.loadBatteryConfig(wallet: wallet)
     let batteryBalance = await getBatteryBalance(wallet: wallet)
     let rechargeMethod = await getRechargeMethod(wallet: wallet, token: payload.token)
@@ -36,9 +36,6 @@ struct BatteryRechargeBocBuilder {
     )
     
     let amountDecimalNumber = NSDecimalNumber.fromBigUInt(value: payload.amount, decimals: payload.token.fractionDigits)
-    if amountDecimalNumber.compare(rechargeMethodMaxInputAmount) == .orderedDescending {
-      print("Error")
-    }
     
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let fundReceiver = config.fundReceiver
@@ -58,16 +55,20 @@ struct BatteryRechargeBocBuilder {
                                       validUntil: validUntil,
                                       batteryPayload: batteryPayload)
     
-    return try await TransferMessageBuilder(
-      transferData: .tonConnect(
+    let transferData = TransferData(
+      transfer: .tonConnect(
         TransferData.TonConnect(
-          seqno: seqno,
           payloads: payloads,
-          sender: try wallet.address,
-          timeout: validUntil
+          sender: try wallet.address
         )
-      )
-    ).createBoc(signClosure: signClosure)
+      ),
+      wallet: wallet,
+      messageType: .ext,
+      seqno: seqno,
+      timeout: validUntil
+    )
+    
+    return try await signClosure(transferData)
   }
   
   private func createPayloads(toAddress: KeeperCore.AnyAddress, 
@@ -118,7 +119,7 @@ struct BatteryRechargeBocBuilder {
                                     batteryPayload: Cell?) throws -> [TransferData.TonConnect.Payload] {
     
     let jettonTransferData = JettonTransferData(
-      queryId: UInt64(TransferMessageBuilder.newWalletQueryId()),
+      queryId: UInt64(UnsignedTransferBuilder.newWalletQueryId()),
       amount: payload.amount,
       toAddress: toAddress.address,
       responseAddress: try wallet.address,

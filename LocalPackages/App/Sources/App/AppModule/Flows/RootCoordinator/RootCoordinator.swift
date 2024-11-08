@@ -117,12 +117,12 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
               privateKey: keyPair.privateKey
             )
             await tonProofTokenService.loadTokensFor(pairs: [pair])
-            await MainActor.run {
-              completion()
-            }
           } catch {
             continue
           }
+        }
+        await MainActor.run {
+          completion()
         }
       }
     }

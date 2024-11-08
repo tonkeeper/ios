@@ -6,7 +6,7 @@ import BigInt
 
 @MainActor
 protocol TransactionConfirmationOutput: AnyObject {
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -22,7 +22,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   // MARK: - TransactionConfirmationOutput
   
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel
@@ -30,8 +30,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   
   func viewDidLoad() {
-    confirmationController.signHandler = { [weak self] transferBuilder, wallet in
-      try await self?.didRequireSign?(transferBuilder, wallet)
+    confirmationController.signHandler = { [weak self] transferData, wallet in
+      try await self?.didRequireSign?(transferData, wallet)
     }
     
     let model = confirmationController.getModel()

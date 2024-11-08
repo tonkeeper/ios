@@ -59,33 +59,35 @@ final class TransferTransaction {
                        recipient: Recipient,
                        comment: String?,
                        transferType: TransferPayload.TransferType,
-                       signClosure: (TransferMessageBuilder) async throws -> String) async throws {
+                       signClosure: (TransferData) async throws -> String) async throws {
     switch transferType {
     case .default:
-      let boc = try await createTransferBoc(
+      let transferData = try await createWalletTransfer(
         wallet: wallet,
         transfer: transfer,
         recipient: recipient,
         comment: comment,
         responseAddress: nil,
-        signClosure: signClosure
+        messageType: .ext
       )
+      let boc = try await signClosure(transferData)
       try await sendService.sendTransaction(boc: boc, wallet: wallet)
     case .battery(let excessAddress):
-      let boc = try await createTransferBoc(
+      let transferData = try await createWalletTransfer(
         wallet: wallet,
         transfer: transfer,
         recipient: recipient,
         comment: comment,
         responseAddress: excessAddress,
-        signClosure: signClosure
+        messageType: wallet.isW5Generation ? .int : .ext
       )
+      let boc = try await signClosure(transferData)
       let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
       try await batteryService.sendTransaction(wallet: wallet, boc: boc, tonProofToken: tonProofToken)
     }
   }
   
-  func calculateFee(wallet: Wallet, 
+  func calculateFee(wallet: Wallet,
                     transfer: Transfer,
                     recipient: Recipient,
                     comment: String?,
@@ -124,18 +126,28 @@ final class TransferTransaction {
                            comment: String?,
                            excessAddress: Address,
                            tonProofToken: String) async throws -> TransferPayload {
-    let boc = try await createTransferBoc(
+    let transferData = try await createWalletTransfer(
       wallet: wallet,
       transfer: transfer,
       recipient: recipient,
       comment: comment,
-      responseAddress: excessAddress) { transferMessageBuilder in
-        try await transferMessageBuilder.externalSign(wallet: wallet) { transfer in
-          try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        }
-      }
+      responseAddress: nil,
+      messageType: wallet.isW5Generation ? .int : .ext)
+    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+      .createUnsignedWalletTransfer(
+        wallet: wallet
+      )
+    let signed = try TransferSigner.signWalletTransfer(
+      walletTransfer,
+      wallet: wallet,
+      seqno: transferData.seqno,
+      signer: WalletTransferEmptyKeySigner()
+    )
     do {
-      let transactionInfo = try await batteryService.loadTransactionInfo(wallet: wallet, boc: boc, tonProofToken: tonProofToken)
+      let transactionInfo = try await batteryService.loadTransactionInfo(
+        wallet: wallet,
+        boc: signed.toBoc().base64EncodedString(),
+        tonProofToken: tonProofToken)
       if transactionInfo.isBatteryAvailable {
         return TransferPayload(type: .battery(excessAddress: excessAddress), fee: UInt64(abs(transactionInfo.info.event.extra)))
       } else {
@@ -150,18 +162,25 @@ final class TransferTransaction {
                            transfer: Transfer,
                            recipient: Recipient,
                            comment: String?) async throws -> TransferPayload {
-    let boc = try await createTransferBoc(
+    let transferData = try await createWalletTransfer(
       wallet: wallet,
       transfer: transfer,
       recipient: recipient,
       comment: comment,
-      responseAddress: nil) { transferMessageBuilder in
-        try await transferMessageBuilder.externalSign(wallet: wallet) { transfer in
-          try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        }
-      }
+      responseAddress: nil, 
+      messageType: .ext)
+    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+      .createUnsignedWalletTransfer(
+        wallet: wallet
+      )
+    let signed = try TransferSigner.signWalletTransfer(
+      walletTransfer,
+      wallet: wallet,
+      seqno: transferData.seqno,
+      signer: WalletTransferEmptyKeySigner()
+    )
     
-    let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
+    let transactionInfo = try await sendService.loadTransactionInfo(boc: signed.toBoc().hexString(), wallet: wallet)
     return TransferPayload(type: .default, fee: UInt64(abs(transactionInfo.event.extra)))
   }
   
@@ -176,60 +195,64 @@ final class TransferTransaction {
     }
   }
   
-  private func createTransferBoc(wallet: Wallet, 
-                                 transfer: Transfer,
-                                 recipient: Recipient,
-                                 comment: String?,
-                                 responseAddress: Address?,
-                                 signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
-    let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-  
-    switch transfer {
-    case .ton(let amount):
-      return try await createTonTransferBoc(
-        wallet: wallet,
-        amount: amount,
-        recipient: recipient,
-        comment: comment,
-        seqno: seqno,
-        timeout: timeout,
-        signClosure: signClosure
-      )
-    case .jetton(let jettonItem, let amount):
-      return try await createJettonTransferBoc(
-        wallet: wallet,
-        jettonItem: jettonItem,
-        amount: amount,
-        recipient: recipient,
-        comment: comment,
-        responseAddress: responseAddress,
-        seqno: seqno,
-        timeout: timeout,
-        signClosure: signClosure
-      )
-    case .nft(let nft, let transferAmount):
-      return try await createNFTTransferBoc(
-        wallet: wallet,
-        nft: nft,
-        recipient: recipient,
-        comment: comment,
-        responseAddress: responseAddress,
-        transferAmount: transferAmount,
-        seqno: seqno,
-        timeout: timeout,
-        signClosure: signClosure
-      )
-    }
-  }
-  
-  private func createTonTransferBoc(wallet: Wallet, 
-                                    amount: BigUInt,
+  private func createWalletTransfer(wallet: Wallet,
+                                    transfer: Transfer,
                                     recipient: Recipient,
                                     comment: String?,
-                                    seqno: UInt64,
-                                    timeout: UInt64,
-                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+                                    responseAddress: Address?,
+                                    messageType: MessageType) async throws -> TransferData {
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    let transferData: TransferData = try await {
+      switch transfer {
+      case .ton(let amount):
+        return try await createTonWalletTransfer(
+          wallet: wallet,
+          amount: amount,
+          recipient: recipient,
+          comment: comment,
+          seqno: seqno,
+          timeout: timeout,
+          messageType: messageType
+        )
+      case .jetton(let jettonItem, let amount):
+        return try await createJettonWalletTransfer(
+          wallet: wallet,
+          jettonItem: jettonItem,
+          amount: amount,
+          recipient: recipient,
+          comment: comment,
+          responseAddress: responseAddress,
+          seqno: seqno,
+          timeout: timeout,
+          messageType: messageType
+        )
+      case .nft(let nft, let transferAmount):
+        return try await createNFTWalletTransfer(
+          wallet: wallet,
+          nft: nft,
+          recipient: recipient,
+          comment: comment,
+          responseAddress: responseAddress,
+          transferAmount: transferAmount,
+          seqno: seqno,
+          timeout: timeout,
+          messageType: messageType
+        )
+      }
+    }()
+    
+    return transferData
+  }
+  
+  private func createTonWalletTransfer(wallet: Wallet,
+                                       amount: BigUInt,
+                                       recipient: Recipient,
+                                       comment: String?,
+                                       seqno: UInt64,
+                                       timeout: UInt64,
+                                       messageType: MessageType) async throws -> TransferData {
     let account = try? await accountService.loadAccount(isTestnet: wallet.isTestnet, address: recipient.recipientAddress.address)
     let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
     
@@ -239,32 +262,33 @@ final class TransferTransaction {
     } else {
       isMax = false
     }
-
-    let transferMessageBuilder = TransferMessageBuilder(
-      transferData: .ton(
+    
+    return TransferData(
+      transfer: .ton(
         TransferData.Ton(
-          seqno: seqno,
           amount: amount,
           isMax: isMax,
           recipient: recipient.recipientAddress.address,
           isBouncable: shouldForceBounceFalse ? false : recipient.recipientAddress.isBouncable,
-          comment: comment,
-          timeout: timeout
+          comment: comment
         )
-      )
+      ),
+      wallet: wallet,
+      messageType: messageType,
+      seqno: seqno,
+      timeout: timeout
     )
-    return try await transferMessageBuilder.createBoc(signClosure: signClosure)
   }
   
-  private func createJettonTransferBoc(wallet: Wallet,
-                                       jettonItem: JettonItem,
-                                       amount: BigUInt,
-                                       recipient: Recipient,
-                                       comment: String?,
-                                       responseAddress: Address?,
-                                       seqno: UInt64,
-                                       timeout: UInt64,
-                                       signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+  private func createJettonWalletTransfer(wallet: Wallet,
+                                          jettonItem: JettonItem,
+                                          amount: BigUInt,
+                                          recipient: Recipient,
+                                          comment: String?,
+                                          responseAddress: Address?,
+                                          seqno: UInt64,
+                                          timeout: UInt64, 
+                                          messageType: MessageType) async throws -> TransferData {
     var customPayload: Cell?
     var stateInit: StateInit?
     
@@ -276,52 +300,53 @@ final class TransferTransaction {
       }
     }
     
-    let transferMessageBuilder = TransferMessageBuilder(
-      transferData: .jetton(
+    return TransferData(
+      transfer: .jetton(
         TransferData.Jetton(
-          seqno: seqno,
           jettonAddress: jettonItem.walletAddress,
           amount: amount,
           recipient: recipient.recipientAddress.address,
           responseAddress: responseAddress,
           comment: comment,
-          timeout: timeout,
           customPayload: customPayload,
           stateInit: stateInit
         )
-      )
+      ),
+      wallet: wallet,
+      messageType: messageType,
+      seqno: seqno,
+      timeout: timeout
     )
-    
-    return try await transferMessageBuilder.createBoc(signClosure: signClosure)
   }
   
-  private func createNFTTransferBoc(wallet: Wallet,
-                                    nft: NFT,
-                                    recipient: Recipient,
-                                    comment: String?,
-                                    responseAddress: Address?,
-                                    transferAmount: BigUInt,
-                                    seqno: UInt64,
-                                    timeout: UInt64,
-                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+  private func createNFTWalletTransfer(wallet: Wallet,
+                                       nft: NFT,
+                                       recipient: Recipient,
+                                       comment: String?,
+                                       responseAddress: Address?,
+                                       transferAmount: BigUInt,
+                                       seqno: UInt64,
+                                       timeout: UInt64,
+                                       messageType: MessageType) async throws -> TransferData {
     var commentCell: Cell?
     if let comment = comment {
-        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+      commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
     }
     
-    let transferMessageBuilder = TransferMessageBuilder(
-      transferData: .nft(
+    return TransferData(
+      transfer: .nft(
         TransferData.NFT(
-          seqno: seqno,
           nftAddress: nft.address,
           recipient: recipient.recipientAddress.address,
+          responseAddress: responseAddress,
           isBouncable: recipient.recipientAddress.isBouncable,
           transferAmount: transferAmount.magnitude,
-          timeout: timeout,
           forwardPayload: commentCell
         )
-      )
+      ), wallet: wallet,
+      messageType: messageType,
+      seqno: seqno,
+      timeout: timeout
     )
-    return try await transferMessageBuilder.createBoc(signClosure: signClosure)
   }
 }

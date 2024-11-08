@@ -7,7 +7,7 @@ import TonSwift
 
 protocol SendConfirmationModuleOutput: AnyObject {
   var didSendTransaction: (() -> Void)? { get set }
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
 }
 
 protocol SendConfirmationModuleInput: AnyObject {
@@ -28,7 +28,7 @@ final class SendConfirmationViewModelImplementation: SendConfirmationViewModel, 
   
   var didSendTransaction: (() -> Void)?
   
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
   
   // MARK: - SendConfirmationModuleInput
   

@@ -9,20 +9,23 @@ public struct LedgerTransactionBuilder {
     case unsupportedTransaction
   }
   
-  let transferMessageBuilder: TransferMessageBuilder
+  let transferData: TransferData
   let wallet: Wallet
   let tonTransport: TonTransport
   let accountPath: AccountPath
   
-  public init(wallet: Wallet, transferMessageBuilder: TransferMessageBuilder, tonTransport: TonTransport, accountPath: AccountPath) {
+  public init(wallet: Wallet, transferData: TransferData, tonTransport: TonTransport, accountPath: AccountPath) {
     self.wallet = wallet
-    self.transferMessageBuilder = transferMessageBuilder
+    self.transferData = transferData
     self.tonTransport = tonTransport
     self.accountPath = accountPath
   }
   
   private func build() throws -> Transaction {
-    switch self.transferMessageBuilder.transferData {
+    let seqno = self.transferData.seqno
+    let timeout = self.transferData.timeout
+    let queryId = UnsignedTransferBuilder.newWalletQueryId()
+    switch self.transferData.transfer {
     case .ton(let ton):
       let payload: TonPayloadFormat?
       if let comment = ton.comment {
@@ -33,8 +36,8 @@ public struct LedgerTransactionBuilder {
       return Transaction(
         destination: ton.recipient,
         sendMode: ton.isMax ? .sendMaxTon() : .walletDefault(),
-        seqno: ton.seqno,
-        timeout: ton.timeout,
+        seqno: seqno,
+        timeout: timeout,
         bounceable: ton.isBouncable,
         coins: Coins(rawValue: ton.amount)!,
         stateInit: nil,
@@ -48,14 +51,14 @@ public struct LedgerTransactionBuilder {
       return Transaction(
         destination: jetton.jettonAddress,
         sendMode: .walletDefault(),
-        seqno: jetton.seqno,
-        timeout: jetton.timeout,
+        seqno: seqno,
+        timeout: timeout,
         bounceable: jetton.isBouncable,
         coins: Coins(rawValue: BigUInt(stringLiteral: "64000000"))!,
         stateInit: nil,
         payload: .jettonTransfer(
           TonPayloadFormat.JettonTransfer(
-            queryId: transferMessageBuilder.queryId,
+            queryId: queryId,
             coins: Coins(rawValue: jetton.amount)!,
             receiverAddress: jetton.recipient,
             excessesAddress: try wallet.address,
@@ -69,14 +72,14 @@ public struct LedgerTransactionBuilder {
       return Transaction(
         destination: nft.nftAddress,
         sendMode: .walletDefault(),
-        seqno: nft.seqno,
-        timeout: nft.timeout,
+        seqno: seqno,
+        timeout: timeout,
         bounceable: nft.isBounceable,
         coins: Coins(rawValue: nft.transferAmount)!,
         stateInit: nil,
         payload: .nftTransfer(
           TonPayloadFormat.NftTransfer(
-            queryId: transferMessageBuilder.queryId,
+            queryId: queryId,
             newOwnerAddress: nft.recipient,
             excessesAddress: try wallet.address,
             customPayload: nil,

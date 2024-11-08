@@ -41,7 +41,7 @@ final class TonProofTokenServiceImplementation: TonProofTokenService {
   
   func getWalletsWithMissedToken() -> [Wallet] {
     do {
-      let wallets = try keeperInfoRepository.getKeeperInfo().wallets
+      let wallets = try keeperInfoRepository.getKeeperInfo().wallets.filter { $0.kind == .regular }
       let walletsWithMissedToken = wallets.filter { wallet in
         return (try? tonProofTokenRepository.getTonProofToken(wallet: wallet)) == nil
       }

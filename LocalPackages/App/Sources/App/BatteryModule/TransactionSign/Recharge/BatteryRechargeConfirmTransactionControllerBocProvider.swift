@@ -11,10 +11,19 @@ final class BatteryRechargeConfirmTransactionControllerBocProvider: ConfirmTrans
   }
   
   func createBoc(wallet: Wallet, seqno: UInt64, timeout: UInt64) async throws -> String {
-    return try await bocBuilder.getBoc { transferMessageBuilder in
-      try await transferMessageBuilder.externalSign(wallet: wallet) { transfer in
-        try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-      }
+    return try await bocBuilder.getBoc { transferData in
+      let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+        .createUnsignedWalletTransfer(
+          wallet: wallet
+        )
+      let signed = try TransferSigner.signWalletTransfer(
+        walletTransfer,
+        wallet: wallet,
+        seqno: transferData.seqno,
+        signer: WalletTransferEmptyKeySigner()
+      )
+      
+      return try signed.toBoc().hexString()
     }
   }
 }

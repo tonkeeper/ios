@@ -32,7 +32,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     }
   }
   
-  public var signHandler: ((TransferMessageBuilder, Wallet) async throws -> String?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
 
   private var fee: TransactionConfirmationModel.Fee = .loading
   
@@ -83,22 +83,27 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   }
   
   private func createEmulateBoc() async throws -> String {
-    let transferMessageBuilder = try await createTransferMessageBuilder()
-    return try await transferMessageBuilder.createBoc { transfer in
-      try await transferMessageBuilder.externalSign(wallet: wallet) { transfer in
-        try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-      }
-    }
+    let transferData = try await createTransferData()
+    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+      .createUnsignedWalletTransfer(
+        wallet: wallet
+      )
+    let signed = try TransferSigner.signWalletTransfer(
+      walletTransfer,
+      wallet: wallet,
+      seqno: transferData.seqno,
+      signer: WalletTransferEmptyKeySigner()
+    )
+    
+    return try signed.toBoc().hexString()
   }
   
   private func createSignedBoc() async throws -> String {
-    let transferMessageBuilder = try await createTransferMessageBuilder()
-    return try await transferMessageBuilder.createBoc { transfer in
-      return try await signTransfer(transfer)
-    }
+    let transferData = try await createTransferData()
+    return try await signTransfer(transferData)
   }
   
-  private func createTransferMessageBuilder() async throws -> TransferMessageBuilder {
+  private func createTransferData() async throws -> TransferData {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let isMax = await {
@@ -109,22 +114,23 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
         return false
       }
     }()
-
-    let transferMessageBuilder = TransferMessageBuilder(
-      transferData: .stake(
+    
+    return TransferData(
+      transfer: .stake(
         .deposit(
           TransferData.StakeDeposit(
-            seqno: seqno,
             pool: stakingPool,
             amount: updateAmount(amount: amount),
             isMax: isMax,
-            isBouncable: true,
-            timeout: timeout
+            isBouncable: true
           )
         )
-      )
+      ),
+      wallet: wallet,
+      messageType: .ext,
+      seqno: seqno,
+      timeout: timeout
     )
-    return transferMessageBuilder
   }
   
   private func updateFee(transactionInfo: MessageConsequences) {
@@ -187,9 +193,9 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     return amount + stakingPool.implementation.depositExtraFee
   }
   
-  func signTransfer(_ transferBuilder: TransferMessageBuilder) async throws -> String {
+  func signTransfer(_ transferData: TransferData) async throws -> String {
     guard let signHandler,
-          let signedData = try await signHandler(transferBuilder, wallet) else { throw TransactionConfirmationError.failedToSign }
+          let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
   }
 }

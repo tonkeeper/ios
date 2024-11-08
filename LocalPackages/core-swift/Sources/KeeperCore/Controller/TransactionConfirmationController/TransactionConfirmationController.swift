@@ -71,7 +71,7 @@ public enum TransactionConfirmationError: Swift.Error {
 }
 
 public protocol TransactionConfirmationController: AnyObject {
-  var signHandler: ((TransferMessageBuilder, Wallet) async throws -> String?)? { get set }
+  var signHandler: ((TransferData, Wallet) async throws -> String?)? { get set }
   
   func getModel() -> TransactionConfirmationModel
   func emulate() async -> Result<Void, TransactionConfirmationError>

@@ -138,7 +138,7 @@ private extension SendTokenCoordinator {
       let coordinator = WalletTransferSignCoordinator(
         router: ViewControllerRouter(rootViewController: router.rootViewController),
         wallet: wallet,
-        transferMessageBuilder: walletTransfer,
+        transferData: walletTransfer,
         keeperCoreMainAssembly: keeperCoreMainAssembly,
         coreAssembly: coreAssembly)
       
