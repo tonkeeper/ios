@@ -46,7 +46,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   var didUpdateTokenPickerAction: (( @escaping () -> Void ) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitle?(model.isGift ? "Gift" : "Recharge")
+    didUpdateTitle?(model.isGift ? TKLocales.Battery.Recharge.giftTitle : TKLocales.Battery.Recharge.title)
     didUpdateTokenPickerAction?({ [weak self] in
       guard let self else { return }
       didSelectTokenPicker?(model.token)
@@ -173,7 +173,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
       case .prefilled(let prefilled):
         return "\(prefilled.chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: prefilled.chargesCount))"
       case .custom:
-        return "Other"
+        return TKLocales.Battery.Recharge.СustomInput.title
       }
     }()
     
@@ -193,7 +193,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
         let result = "\(tokenFormatted) · \(fiatFormatted) "
         return result
       case .custom:
-        return "Enter amount manually"
+        return TKLocales.Battery.Recharge.СustomInput.caption
       }
     }()
     
@@ -232,7 +232,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   
   func updateContinueButton() {
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
+    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continueAction))
     buttonConfiguration.isEnabled = model.isContinueEnable
     buttonConfiguration.action = { [weak self] in
       guard let self else { return }

@@ -493,6 +493,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         ])
       ],
       state: itemState,
+      successTitle: TKLocales.Result.success,
+      errorTitle: TKLocales.Result.failure,
       bottomSpace: 0
     )
     

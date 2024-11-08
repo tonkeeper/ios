@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKLocalize
 
 enum BatteryIAPPack: String, CaseIterable {
   case large = "LargePack"
@@ -13,11 +14,11 @@ enum BatteryIAPPack: String, CaseIterable {
   var name: String {
     switch self {
     case .large:
-      "Large"
+      TKLocales.Battery.Refill.Iap.Items.large
     case .medium:
-      "Medium"
+      TKLocales.Battery.Refill.Iap.Items.medium
     case .small:
-      "Small"
+      TKLocales.Battery.Refill.Iap.Items.small
     }
   }
   
