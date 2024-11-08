@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import TKLocalize
 import KeeperCore
+import CoreComponents
 import TKLocalize
 import TKStories
 
@@ -102,6 +103,10 @@ private extension SettingsCoordinator {
     }
     
     let module = SettingsListAssembly.module(configurator: configurator)
+    
+    module.output.didOpenDevMenu = { [weak self] in
+      self?.openDevMenu()
+    }
     
     module.viewController.setupBackButton()
     
@@ -438,5 +443,41 @@ private extension SettingsCoordinator {
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
+  }
+  
+  func openDevMenu() {
+    let configuration = SettingsListDevMenuConfigurator(
+      uniqueIdProvider: coreAssembly.uniqueIdProvider
+    )
+    configuration.didSelectRNWalletsSeedPhrases = {
+      Task { @MainActor [weak self] in
+        guard let self,
+        let passcode = await self.getPasscode(),
+        let rnWalletsStore: RNWalletsStore = try? await self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage.getValue(key: "walletsStore") else { return }
+        
+        let rnWallets = rnWalletsStore.wallets
+        let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
+        guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
+          return
+        }
+        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: rnWallets)
+      }
+    }
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
+  }
+  
+  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [RNWallet]) {
+    let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
+      mnemonics: mnemonics,
+      wallets: wallets
+    )
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
   }
 }

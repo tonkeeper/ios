@@ -93,6 +93,7 @@ public final class RootAssembly {
       walletUpdateAssembly: walletsUpdateAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
+      coreAssembly: coreAssembly,
       formattersAssembly: formattersAssembly,
       mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
@@ -102,7 +103,8 @@ public final class RootAssembly {
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
-      secureAssembly: secureAssembly
+      secureAssembly: secureAssembly,
+      rnAssembly: rnAssembly
     )
   }
 }

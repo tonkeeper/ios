@@ -123,6 +123,12 @@ public struct RNMnemonicsVault {
     let encryptedMnemonics = try loadEncryptedMnemonics()
     return encryptedMnemonics
   }
+  
+  public func getMnemonics(password: String) async throws -> Mnemonics {
+    let encryptedMnemonics = try loadEncryptedMnemonics()
+    let mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
+    return mnemonics
+  }
 }
 
 private extension RNMnemonicsVault {
