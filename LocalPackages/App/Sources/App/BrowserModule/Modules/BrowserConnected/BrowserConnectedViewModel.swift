@@ -112,7 +112,7 @@ private extension BrowserConnectedViewModelImplementation {
           )
 
           return BrowserConnected.Item(
-            identifier: app.url.absoluteString,
+            identifier: UUID().uuidString,
             configuration: configuration
           )
         }
