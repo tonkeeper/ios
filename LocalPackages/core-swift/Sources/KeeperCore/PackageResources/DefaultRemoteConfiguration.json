@@ -103,7 +103,7 @@
         "package_id_ios": "SmallPack"
       }
     ],
-    "disable_battery_crypto_recharge_module": false,
+    "disable_battery_crypto_recharge_module": true,
     "holdersService": "disabled",
     "web_swaps_url": "https://swap.tonkeeper.com",
     "web_swaps_referral_address": "0:f4684b10a661eaa395f87d4a660e6dfc3bec187a8b24f6f362c0c6b1d20f1b5d",
@@ -116,8 +116,8 @@
     "MultisigAboutUrlRu": "https://tonkeeperru.helpscoutdocs.com/article/124-multisig-wallets",
     "multisig_about_url": "https://tonkeeperru.helpscoutdocs.com/article/124-multisig-wallets",
     "flags": {
-      "disable_swap": false,
-      "disable_exchange_methods": false,
+      "disable_swap": true,
+      "disable_exchange_methods": true,
       "disable_feedback_button": false,
       "disable_support_button": false,
       "disable_nft_markets": false,
@@ -222,7 +222,7 @@
         "package_id_ios": "SmallPack"
       }
     ],
-    "disable_battery_crypto_recharge_module": false,
+    "disable_battery_crypto_recharge_module": true,
     "holdersService": "disabled",
     "web_swaps_url": "https://swap.tonkeeper.com",
     "web_swaps_referral_address": "0:f4684b10a661eaa395f87d4a660e6dfc3bec187a8b24f6f362c0c6b1d20f1b5d",
@@ -235,8 +235,8 @@
     "MultisigAboutUrlRu": "https://tonkeeperru.helpscoutdocs.com/article/124-multisig-wallets",
     "multisig_about_url": "https://tonkeeperru.helpscoutdocs.com/article/124-multisig-wallets",
     "flags": {
-      "disable_swap": false,
-      "disable_exchange_methods": false,
+      "disable_swap": true,
+      "disable_exchange_methods": true,
       "disable_feedback_button": false,
       "disable_support_button": false,
       "disable_nft_markets": false,

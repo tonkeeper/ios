@@ -11,17 +11,20 @@ protocol TokenDetailsConfigurator {
 struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
   private let wallet: Wallet
   private let mapper: TokenDetailsMapper
+  private let configuration: Configuration
   
   init(wallet: Wallet,
-       mapper: TokenDetailsMapper) {
+       mapper: TokenDetailsMapper,
+       configuration: Configuration) {
     self.wallet = wallet
     self.mapper = mapper
+    self.configuration = configuration
   }
   
   func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
     let tonAmount = balance?.tonBalance.tonBalance.amount ?? 0
     
-    let buttons = [
+    var buttons = [
       TokenDetailsModel.Button(
         iconButton: .send(.ton),
         isEnable: wallet.isSendAvailable && tonAmount > 0
@@ -29,12 +32,15 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
       TokenDetailsModel.Button(
         iconButton: .receive(.ton),
         isEnable: true
-      ),
-      TokenDetailsModel.Button(
-        iconButton: .swap(.ton),
-        isEnable: wallet.isSwapEnable
       )
     ]
+    
+    if !configuration.flags(isTestnet: wallet.isTestnet).isSwapDisable {
+      buttons.append(TokenDetailsModel.Button(
+        iconButton: .swap(.ton),
+        isEnable: wallet.isSwapEnable
+      ))
+    }
     
     let tokenAmount: String
     let convertedAmount: String?
@@ -69,13 +75,16 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
   private let wallet: Wallet
   private let jettonItem: JettonItem
   private let mapper: TokenDetailsMapper
+  private let configuration: Configuration
   
   init(wallet: Wallet, 
        jettonItem: JettonItem,
-       mapper: TokenDetailsMapper) {
+       mapper: TokenDetailsMapper,
+       configuration: Configuration) {
     self.wallet = wallet
     self.jettonItem = jettonItem
     self.mapper = mapper
+    self.configuration = configuration
   }
   
   func getTokenModel(balance: ConvertedBalance?, isSecureMode: Bool) -> TokenDetailsModel {
@@ -91,7 +100,7 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
     let jettonAmount = jettonBalance?.quantity ?? 0
     let currency = balance?.currency ?? .defaultCurrency
     
-    let buttons = [
+    var buttons = [
       TokenDetailsModel.Button(
         iconButton: .send(.jetton(jettonItem)),
         isEnable: wallet.isSendAvailable && jettonItem.jettonInfo.isTransferable && jettonAmount > 0
@@ -99,12 +108,16 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
       TokenDetailsModel.Button(
         iconButton: .receive(.jetton(jettonItem)),
         isEnable: true
-      ),
-      TokenDetailsModel.Button(
-        iconButton: .swap(.jetton(jettonItem)),
-        isEnable: wallet.isSwapEnable
       )
     ]
+    
+    if !configuration.flags(isTestnet: wallet.isTestnet).isSwapDisable {
+      buttons.append(
+        TokenDetailsModel.Button(
+          iconButton: .swap(.jetton(jettonItem)),
+          isEnable: wallet.isSwapEnable
+      ))
+    }
 
     let tokenAmount: String
     var convertedAmount: String?

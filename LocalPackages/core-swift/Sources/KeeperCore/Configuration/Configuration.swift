@@ -152,6 +152,10 @@ public final class Configuration {
   public func isBatteryBeta(isTestnet: Bool) -> Bool {
     isTestnet ? configuration.testnet.isBatteryBeta : configuration.mainnet.isBatteryBeta
   }
+  
+  public func isDisableBatteryCryptoRechargeModule(isTestnet: Bool) -> Bool {
+    isTestnet ? configuration.testnet.disableBatteryCryptoRechargeModule : configuration.mainnet.disableBatteryCryptoRechargeModule
+  }
 
   public func flags(isTestnet: Bool) -> RemoteConfiguration.Flags {
     isTestnet ? configuration.testnet.flags : configuration.mainnet.flags

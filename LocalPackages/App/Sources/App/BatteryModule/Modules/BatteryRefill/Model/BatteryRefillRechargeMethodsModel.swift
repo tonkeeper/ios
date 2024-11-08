@@ -80,6 +80,11 @@ final class BatteryRefillRechargeMethodsModel {
   }
   
   private func updateState() {
+    guard !configuration.isDisableBatteryCryptoRechargeModule(isTestnet: wallet.isTestnet) else {
+      state = .idle(items: [])
+      return
+    }
+    
     guard let balance = balanceStore.getState()[wallet]?.balance else {
       state = .idle(items: [])
       return

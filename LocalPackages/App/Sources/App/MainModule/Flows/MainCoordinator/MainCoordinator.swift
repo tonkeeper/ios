@@ -683,7 +683,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
           decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
           rateConverter: RateConverter()
-        )
+        ),
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
       ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
@@ -740,7 +741,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                                     amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
                                                     decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
                                                     rateConverter: RateConverter()
-                                                   )
+                                                   ),
+                                                   configuration: keeperCoreMainAssembly.configurationAssembly.configuration
                                                   ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
