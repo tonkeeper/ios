@@ -15,7 +15,7 @@ public final class ServicesAssembly {
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        locationAPIAsembly: LocationAPIAssembly,
        coreAssembly: CoreAssembly,
-       secureAssembly: SecureAssembly) {
+       secureAssembly: SecureAssembly,
        batteryAssembly: BatteryAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
@@ -148,7 +148,7 @@ public final class ServicesAssembly {
     TonProofTokenServiceImplementation(
       keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
       tonProofTokenRepository: repositoriesAssembly.tonProofTokenRepository(),
-      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: secureAssembly.mnemonicsRepository(),
       api: apiAssembly.api
     )
   }

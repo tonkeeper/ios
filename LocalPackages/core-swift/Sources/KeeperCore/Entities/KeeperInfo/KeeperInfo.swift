@@ -29,7 +29,8 @@ public struct KeeperInfo: Equatable {
               currency: Currency,
               securitySettings: SecuritySettings,
               appSettings: AppSettings,
-              country: SelectedCountry) {
+              country: SelectedCountry,
+              batterySettings: BatterySettings = BatterySettings()) {
     self.init(
       wallets: wallets,
       currentWallet: currentWallet,
@@ -37,6 +38,7 @@ public struct KeeperInfo: Equatable {
       securitySettings: securitySettings,
       appSettings: appSettings,
       country: country,
+      batterySettings: batterySettings,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )
@@ -48,6 +50,7 @@ public struct KeeperInfo: Equatable {
        securitySettings: SecuritySettings,
        appSettings: AppSettings,
        country: SelectedCountry,
+       batterySettings: BatterySettings,
        assetsPolicy: AssetsPolicy,
        appCollection: AppCollection) {
     self.wallets = wallets
@@ -56,6 +59,7 @@ public struct KeeperInfo: Equatable {
     self.securitySettings = securitySettings
     self.appSettings = appSettings
     self.country = country
+    self.batterySettings = batterySettings
     self.assetsPolicy = assetsPolicy
     self.appCollection = appCollection
   }

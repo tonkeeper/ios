@@ -9,11 +9,11 @@ final class TonProofTokenRepository {
   }
   
   func getTonProofToken(wallet: Wallet) throws -> String {
-    try keychainVault.get(query: createKeychainQuery(key: wallet.address.toRaw()))
+    try keychainVault.get(query: createKeychainQuery(key: wallet.address.toRaw() + "2"))
   }
   
   func saveTonProofToken(wallet: Wallet, token: String) throws {
-    try keychainVault.set(token, query: createKeychainQuery(key: wallet.address.toRaw()))
+    try keychainVault.set(token, query: createKeychainQuery(key: wallet.address.toRaw() + "2"))
   }
   
   private func createKeychainQuery(key: String) -> TKKeychainQuery {

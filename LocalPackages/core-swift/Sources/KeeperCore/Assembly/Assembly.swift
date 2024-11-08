@@ -52,7 +52,7 @@ public final class Assembly {
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
     locationAPIAsembly: locationAPIAssembly,
     coreAssembly: coreAssembly,
-    secureAssembly: secureAssembly
+    secureAssembly: secureAssembly,
     batteryAssembly: batteryAssembly
   )
   private lazy var storesAssembly = StoresAssembly(

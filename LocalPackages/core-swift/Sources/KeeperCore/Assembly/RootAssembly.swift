@@ -3,7 +3,7 @@ import Foundation
 public final class RootAssembly {
   public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
-  private let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly

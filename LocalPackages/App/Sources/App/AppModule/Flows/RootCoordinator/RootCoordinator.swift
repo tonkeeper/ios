@@ -90,10 +90,9 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   private func handlePasscodeFlowIfNeeded(completion: @escaping (() -> Void)) {
-    
     let isLockScreen = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore.getState().isLockScreen
     let tonProofTokenService = dependencies.keeperCoreRootAssembly.mainAssembly().servicesAssembly.tonProofTokenService()
-    let mnemonicRepository = dependencies.keeperCoreRootAssembly.repositoriesAssembly.mnemonicsRepository()
+    let mnemonicRepository = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicsRepository()
     let missedTonProofWallets = tonProofTokenService.getWalletsWithMissedToken()
     
     guard isLockScreen || !missedTonProofWallets.isEmpty else {
@@ -101,7 +100,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       return
     }
     
-    showPasscode { passcode in
+    showPasscode(mnemonicsRepository: dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicsRepository()) { passcode in
       guard !missedTonProofWallets.isEmpty else {
         completion()
         return
@@ -127,49 +126,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
       }
     }
-  }
-  
-  private func showPasscode(completion: ((String) -> Void)?) {
-    let router = NavigationControllerRouter(rootViewController: TKNavigationController())
-    let mnemonicsRepository = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicsRepository()
-
-    let validator = PasscodeConfirmationValidator(
-      mnemonicsRepository: mnemonicsRepository
-    )
-    let securityStore = dependencies.keeperCoreRootAssembly.storesAssembly.securityStore
-    let passcodeBiometry = PasscodeBiometryProvider(
-      biometryProvider: BiometryProvider(),
-      securityStore: securityStore
-    )
-    let coordinator = PasscodeInputCoordinator(
-      router: router,
-      context: .entry,
-      validator: validator,
-      biometryProvider: passcodeBiometry,
-      mnemonicsRepository: mnemonicsRepository,
-      securityStore: securityStore
-    )
-
-    coordinator.didInputPasscode = { [weak self, weak coordinator] passcode in
-      self?.removeChild(coordinator)
-      completion?(passcode)
-    }
-
-    coordinator.didLogout = { [dependencies, weak coordinator] in
-      guard let coordinator else { return }
-      let deleteController = dependencies.keeperCoreRootAssembly.mainAssembly().walletDeleteController
-      Task {
-        await deleteController.deleteAll()
-        await MainActor.run {
-          self.removeChild(coordinator)
-        }
-      }
-    }
-
-    coordinator.start()
-    addChild(coordinator)
-    
-    showViewController(coordinator.router.rootViewController, animated: false)
   }
   
   private func showPasscode(mnemonicsRepository: MnemonicsRepository,
@@ -326,7 +282,8 @@ private extension RootCoordinator {
       mnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.mnemonicsVault(),
       rnMnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.rnMnemonicsVault(),
       keeperInfoRepository: dependencies.keeperCoreRootAssembly.repositoriesAssembly.keeperInfoRepository(),
-      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore,
+      tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
     )
     
     guard mergeMigration.isNeedToMigrateFromNative() else {
@@ -353,7 +310,8 @@ private extension RootCoordinator {
       mnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.mnemonicsVault(),
       rnMnemonicsRepository: dependencies.keeperCoreRootAssembly.coreAssembly.rnMnemonicsVault(),
       keeperInfoRepository: dependencies.keeperCoreRootAssembly.repositoriesAssembly.keeperInfoRepository(),
-      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore,
+      tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
     )
     
     let mnemonicsRepository = dependencies.keeperCoreRootAssembly.secureAssembly.rnMnemonicsRepository()

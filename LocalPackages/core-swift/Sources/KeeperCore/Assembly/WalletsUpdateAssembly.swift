@@ -23,8 +23,8 @@ public final class WalletsUpdateAssembly {
   public func walletAddController() -> WalletAddController {
     WalletAddController(
       walletsStore: storesAssembly.walletsStore,
+      tonProofTokenService: servicesAssembly.tonProofTokenService(), 
       mnemonicsRepositoty: secureAssembly.mnemonicsRepository()
-      tonProofTokenService: servicesAssembly.tonProofTokenService()
     )
   }
   
