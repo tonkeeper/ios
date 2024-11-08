@@ -721,6 +721,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createBatteryButtonConfiguration(wallet: Wallet, batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
+    guard wallet.kind == .regular else { return nil }
     let state: BatteryView.State
     switch batteryBalance?.batteryState {
     case .fill(let percents):

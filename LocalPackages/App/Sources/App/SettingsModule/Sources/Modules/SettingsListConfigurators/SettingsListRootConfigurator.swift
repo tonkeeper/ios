@@ -162,7 +162,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     if let v4Item = createV4Item() {
       items.append(v4Item)
     }
-    items.append(createBatteryItem(isBeta: configuration.isBatteryBeta(isTestnet: wallet.isTestnet)))
+    if let batteryItem = createBatteryItem(isBeta: configuration.isBatteryBeta(isTestnet: wallet.isTestnet)) {
+      items.append(batteryItem)
+    }
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
       SettingsListItemsSection(
@@ -775,7 +777,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func createBatteryItem(isBeta: Bool) -> SettingsListItem {
+  private func createBatteryItem(isBeta: Bool) -> SettingsListItem? {
+    guard wallet.kind == .regular else { return nil}
     var tags = [TKTagView.Configuration]()
     if isBeta {
       tags.append(TKTagView.Configuration.tag(text: "BETA"))
