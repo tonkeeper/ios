@@ -19,6 +19,7 @@ protocol BatteryRefillModuleInput: AnyObject {
 protocol BatteryRefillViewModel: AnyObject {
   var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)? { get set }
   var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)? { get set }
+  var didUpdateHeaderView: ((BatteryRefillHeaderView.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
   func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
@@ -42,9 +43,17 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
 
   var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)?
   var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)?
+  var didUpdateHeaderView: ((BatteryRefillHeaderView.Configuration) -> Void)?
   
   func viewDidLoad() {
     setupPromocode()
+    
+    headerModel.didUpdateState = { [weak self] state in
+      self?.headerState = state
+      self?.updateHeader()
+      self?.updateList()
+    }
+    headerState = headerModel.getState()
     
     iapItems = inAppPurchaseModel.items
     inAppPurchaseModel.loadProducts()
@@ -54,7 +63,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         self?.iapItems = items
         self?.updateList()
       case .didPerformTransaction:
-        self?.didFinish?()
+        ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Refill.Toast.recharged))
       }
     }
     rechargeMethodsModelState = rechargeMethodsModel.state
@@ -64,8 +73,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     }
     rechargeMethodsModel.loadMethods()
     
-    headerState = headerModel.getState()
-    
+    updateHeader()
     updateList()
   }
   
@@ -145,6 +153,44 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     didUpdateSnapshot?(snapshot)
   }
   
+  private func updateHeader() {
+    let batteryViewState: BatteryView.State
+    let caption: String
+    let informationButtonModel: TKPlainButton.Model?
+    var tagConfiguration: TKTagView.Configuration?
+    
+    if headerState?.isBeta == true {
+      tagConfiguration = .accentTag(text: "BETA", color: .Accent.orange)
+    }
+    
+    switch headerState?.charge {
+    case let .charged(chargesCount, batteryPercent):
+      batteryViewState = .fill(batteryPercent)
+      caption = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
+      informationButtonModel = nil
+    case .notCharged:
+      batteryViewState = .emptyTinted
+      caption = "Swap via Tonkeeper, send tokens and unstake TON."
+      informationButtonModel = TKPlainButton.Model(title: "Supported transactions".withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
+                                                   icon: nil,
+                                                   action: { [weak self] in
+        self?.didTapSupportedTransactions?()
+      })
+    case .none:
+      return
+    }
+    
+    let configuration = BatteryRefillHeaderView.Configuration(
+      batteryViewState: batteryViewState,
+      tagConfiguration: tagConfiguration,
+      title: "Tonkeeper Battery",
+      caption: caption,
+      informationButtonModel: informationButtonModel
+    )
+    
+    didUpdateHeaderView?(configuration)
+  }
+  
   private func createSnapshot() -> BatteryRefill.Snapshot {
     var snapshot = BatteryRefill.Snapshot()
 
@@ -159,24 +205,18 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   }
   
   private func createHeaderSections(snapshot: inout BatteryRefill.Snapshot) {
-    let batteryViewState: BatteryView.State
-    let caption: String
-    let informationButtonModel: TKPlainButton.Model?
-    var tagConfiguration: TKTagView.Configuration?
-    
     snapshot.appendSections([.header])
     snapshot.appendItems([.header], toSection: .header)
-    
-    if headerState?.isBeta == true {
-      tagConfiguration = .accentTag(text: "BETA", color: .Accent.orange)
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems([.header])
+    } else {
+      snapshot.reloadItems([.header])
     }
+  
     
     switch headerState?.charge {
-    case let .charged(chargesCount, batteryPercent):
+    case .charged:
       listItemCellConfigurations[.settingsCellIdentifier] = createSettingsCellConfiguration()
-      batteryViewState = .fill(batteryPercent)
-      caption = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
-      informationButtonModel = nil
       
       snapshot.appendSections([.settings])
       snapshot.appendItems([.listItem(BatteryRefill.ListItem(
@@ -186,25 +226,9 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         })
       )], toSection: .settings)
       
-    case .notCharged:
-      batteryViewState = .emptyTinted
-      caption = "Swap via Tonkeeper, send tokens and unstake TON."
-      informationButtonModel = TKPlainButton.Model(title: "Supported transactions".withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
-                                                   icon: nil,
-                                                   action: { [weak self] in
-        self?.didTapSupportedTransactions?()
-      })
-    case .none:
+    case .notCharged, .none:
       return
     }
-    
-    headerCellConfiguration = BatteryRefillHeaderView.Configuration(
-      batteryViewState: batteryViewState,
-      tagConfiguration: tagConfiguration,
-      title: "Tonkeeper Battery",
-      caption: caption,
-      informationButtonModel: informationButtonModel
-    )
   }
   
   private func createPromoSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {

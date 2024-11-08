@@ -562,4 +562,6 @@
 "battery.refill.charges.other" = "charges";
 "battery.refill.promocode" = "Promo Code";
 
+"battery.refill.toast.recharged" = "Battery recharged";
+
 "battery.recharge.toast.success" = "Battery will charge in a few minutes";

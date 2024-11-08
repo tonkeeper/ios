@@ -541,4 +541,6 @@
 "battery.refill.in_app_purchase.caption.charges.other" = "зарядов";
 "battery.refill.promocode" = "Промокод";
 
+"battery.refill.toast.recharged" = "Батарейка заряжена";
+
 "battery.recharge.toast.success" = "Батарейка зарядится за пару минут";

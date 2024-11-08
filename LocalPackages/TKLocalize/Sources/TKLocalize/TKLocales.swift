@@ -285,6 +285,10 @@ public enum TKLocales {
         /// charges
         public static let zero = TKLocales.tr("Localizable", "battery.refill.charges.zero", fallback: "charges")
       }
+      public enum Toast {
+        /// Battery recharged
+        public static let recharged = TKLocales.tr("Localizable", "battery.refill.toast.recharged", fallback: "Battery recharged")
+      }
     }
   }
   public enum Bluetooth {

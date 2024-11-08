@@ -5,6 +5,8 @@ import TonSwift
 
 final class BatteryRefillHeaderModel {
   
+  var didUpdateState: ((State) -> Void)?
+  
   struct State {
     enum Charge {
       case notCharged
@@ -24,6 +26,16 @@ final class BatteryRefillHeaderModel {
     self.wallet = wallet
     self.balanceStore = balanceStore
     self.configuration = configuration
+    
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateBalanceState(let wallet):
+        DispatchQueue.main.async {
+          guard wallet == observer.wallet else { return }
+          observer.didUpdateState?(observer.getState())
+        }
+      }
+    }
   }
   
   func getState() -> State {

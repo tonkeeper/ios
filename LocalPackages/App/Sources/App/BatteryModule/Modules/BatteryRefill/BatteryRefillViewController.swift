@@ -14,6 +14,9 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
   
   private let promocodeViewController: BatteryPromocodeInputViewController
   
+  // MARK: - HeaderView
+  let headerView = BatteryRefillHeaderView()
+  
   // MARK: - Init
   
   init(viewModel: BatteryRefillViewModel,
@@ -84,6 +87,9 @@ private extension BatteryRefillViewController {
       guard let self else { return }
       self.dataSource.apply(snapshot, animatingDifferences: false)
     }
+    viewModel.didUpdateHeaderView = { [weak self] configuration in
+      self?.headerView.configuration = configuration
+    }
   }
   
   private func setupNavigationBar() {
@@ -108,8 +114,11 @@ private extension BatteryRefillViewController {
       guard let self, let viewModel else { return nil }
       switch itemIdentifier {
       case .header:
-        guard let headerCellConfiguration = viewModel.getHeaderCellConfiguration() else { return nil }
-        let cell = collectionView.dequeueConfiguredReusableCell(using: headerCellRegistration, for: indexPath, item: headerCellConfiguration)
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        (cell as? TKContainerCollectionViewCell)?.setContentView(headerView)
         return cell
       case .listItem(let listItem):
         let configuration = viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
