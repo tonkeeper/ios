@@ -170,8 +170,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       informationButtonModel = nil
     case .notCharged:
       batteryViewState = .emptyTinted
-      caption = "Swap via Tonkeeper, send tokens and unstake TON."
-      informationButtonModel = TKPlainButton.Model(title: "Supported transactions".withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
+      caption = TKLocales.Battery.Refill.emptyCaption
+      informationButtonModel = TKPlainButton.Model(title: TKLocales.Battery.Refill.supportedTransactions.withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
                                                    icon: nil,
                                                    action: { [weak self] in
         self?.didTapSupportedTransactions?()
@@ -183,7 +183,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     let configuration = BatteryRefillHeaderView.Configuration(
       batteryViewState: batteryViewState,
       tagConfiguration: tagConfiguration,
-      title: "Tonkeeper Battery",
+      title: TKLocales.Battery.Refill.title,
       caption: caption,
       informationButtonModel: informationButtonModel
     )
@@ -275,7 +275,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         guard let url = self?.createRefundURL() else {
           return
         }
-        self?.didOpenRefundURL?(url, "Charges history")
+        self?.didOpenRefundURL?(url, TKLocales.Battery.Refill.ChargesHistory.title)
       }))], toSection: .history)
     listItemCellConfigurations[.historyCellIdentifier] = createHistoryCellConfiguration()
   }
@@ -285,8 +285,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     snapshot.appendItems([.footer], toSection: .footer)
 
     footerCellConfiguration = BatteryRefillFooterView.Configuration(
-      description: "One charge covers the average transaction fee. Some transactions may cost more.",
-      restoreButtonTitle: "Restore purchases",
+      description: TKLocales.Battery.Refill.Footer.description,
+      restoreButtonTitle: TKLocales.Battery.Refill.Footer.restorePurchase,
       restoreButtonAction: { [weak self] in
         self?.inAppPurchaseModel.restorePurchases()
       }
@@ -353,7 +353,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     let iconViewConfiguration: TKListItemIconView.Configuration
     switch item {
     case .token(let token, let amount):
-      title = "Recharge with \(token.symbol)"
+      title = "\(TKLocales.Battery.Refill.Crypto.recharge) \(token.symbol)"
       
       switch token {
       case .ton:
@@ -369,8 +369,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         symbol: token.symbol
       )
     case .gift:
-      title = "Battery Gift"
-      caption = "Share with friends"
+      title = TKLocales.Battery.Refill.Gift.title
+      caption = TKLocales.Battery.Refill.Gift.caption
       iconViewConfiguration = TKListItemIconView.Configuration(
         content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Battery.gift))),
         alignment: .center,
@@ -394,8 +394,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   }
   
   private func createHistoryCellConfiguration() -> TKListItemCell.Configuration {
-    let title = "Charges history"
-    let caption = "Recharges and refunds"
+    let title = TKLocales.Battery.Refill.ChargesHistory.title
+    let caption = TKLocales.Battery.Refill.ChargesHistory.caption
     let iconViewConfiguration = TKListItemIconView.Configuration(
       content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Battery.history))),
       alignment: .center,
@@ -418,8 +418,8 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   }
   
   private func createSettingsCellConfiguration() -> TKListItemCell.Configuration {
-    let title = "Battery Settings"
-    let caption = "Will be paid: swaps via Tonkeeper, token transfers, NFT transfers."
+    let title = TKLocales.Battery.Refill.Settings.title
+    let caption = "\(TKLocales.Battery.Refill.Settings.caption) \(TKLocales.Battery.Refill.Settings.Caption.Items.swaps), \(TKLocales.Battery.Refill.Settings.Caption.Items.tokenTransfers) and \(TKLocales.Battery.Refill.Settings.Caption.Items.nftTransfers)"
    
     return TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(

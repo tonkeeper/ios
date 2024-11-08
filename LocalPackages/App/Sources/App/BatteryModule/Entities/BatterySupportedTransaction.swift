@@ -9,11 +9,11 @@ enum BatterySupportedTransaction: String, CaseIterable {
   var name: String {
     switch self {
     case .swap:
-      "Swaps via Tonkeeper"
+      TKLocales.Battery.Settings.Items.Swaps.title
     case .jetton:
-      "Token transfers"
+      TKLocales.Battery.Settings.Items.Token.title
     case .nft:
-      "NFT transfers"
+      TKLocales.Battery.Settings.Items.Nft.title
     }
   }
   
@@ -21,11 +21,11 @@ enum BatterySupportedTransaction: String, CaseIterable {
     let perPart: String
     switch self {
     case .swap:
-      perPart = "per swap"
+      perPart = TKLocales.Battery.Settings.Items.Swaps.caption
     case .jetton:
-      perPart = "per transfer"
+      perPart = TKLocales.Battery.Settings.Items.Token.caption
     case .nft:
-      perPart = "per transfer"
+      perPart = TKLocales.Battery.Settings.Items.Nft.caption
     }
     
     return "\u{2248} \(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount)) \(perPart)"

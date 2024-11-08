@@ -534,13 +534,43 @@
 "transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
 "transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";
 
-"battery.refill.in_app_purchase.caption.charges.zero" = "зарядов";
-"battery.refill.in_app_purchase.caption.charges.one" = "заряд";
-"battery.refill.in_app_purchase.caption.charges.few" = "заряда";
-"battery.refill.in_app_purchase.caption.charges.many" = "зарядов";
-"battery.refill.in_app_purchase.caption.charges.other" = "зарядов";
+"battery.refill.title" = "Батарейка Tonkeeper";
+"battery.refill.empty_caption" = "Обменивайте через Tonkeeper, отправляйте токены.";
+"battery.refill.supported_transactions" = "Поддерживаемые транзакции";
+"battery.refill.settings.title" = "Настройки батарейки";
+"battery.refill.settings.caption" = "Будут оплачены: ";
+"battery.refill.settings.caption.items.swaps" = "обмен через Tonkeeper";
+"battery.refill.settings.caption.items.token_transfers" = "отправка токенов";
+"battery.refill.settings.caption.items.NFT_transfers" = "отправка NFT";
+"battery.refill.iap.items.large" = "Большой";
+"battery.refill.iap.items.medium" = "Средний";
+"battery.refill.iap.items.small" = "Малый";
+"battery.refill.crypto.recharge" = "Зарядить за";
+"battery.refill.gift.title" = "Батарейка в подарок";
+"battery.refill.gift.caption" = "Поделись с друзьями";
+"battery.refill.charges_history.title" = "История зарядов";
+"battery.refill.charges_history.caption" = "Пополнение и возврат";
+"battery.refill.footer.description" = "Один заряд покрывает среднюю комиссию за транзакцию. Некоторые транзакции могут стоить дороже.";
+"battery.refill.footer.restore_purchase" = "Восстановить покупки";
+"battery.refill.charges.zero" = "зарядов";
+"battery.refill.charges.one" = "заряд";
+"battery.refill.charges.few" = "заряда";
+"battery.refill.charges.many" = "зарядов";
+"battery.refill.charges.other" = "зарядов";
 "battery.refill.promocode" = "Промокод";
-
 "battery.refill.toast.recharged" = "Батарейка заряжена";
 
+"battery.settings.title" = "Настройки батарейки";
+"battery.settings.caption" = "Выбранные транзакции будут оплачены батарейкой Tonkeeper.";
+"battery.settings.items.swaps.title" = "Обмен через Tonkeeper";
+"battery.settings.items.swaps.caption" = "за обмен";
+"battery.settings.items.token.title" = "Отправка токенов";
+"battery.settings.items.token.caption" = "за отправку";
+"battery.settings.items.nft.title" = "Отправка NFT";
+"battery.settings.items.nft.caption" = "за отправку";
+
+"battery.recharge.title" = "Зарядка";
+"battery.recharge.gift_title" = "Подарок";
+"battery.recharge.сustom_input.title" = "Другое количество";
+"battery.recharge.сustom_input.caption" = "Ввести вручную";
 "battery.recharge.toast.success" = "Батарейка зарядится за пару минут";

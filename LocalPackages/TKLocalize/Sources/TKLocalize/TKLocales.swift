@@ -265,14 +265,30 @@ public enum TKLocales {
   }
   public enum Battery {
     public enum Recharge {
+      /// Gift
+      public static let giftTitle = TKLocales.tr("Localizable", "battery.recharge.gift_title", fallback: "Gift")
+      /// Charge
+      public static let title = TKLocales.tr("Localizable", "battery.recharge.title", fallback: "Charge")
       public enum Toast {
         /// Battery will charge in a few minutes
         public static let success = TKLocales.tr("Localizable", "battery.recharge.toast.success", fallback: "Battery will charge in a few minutes")
       }
+      public enum СustomInput {
+        /// Enter amount manually
+        public static let caption = TKLocales.tr("Localizable", "battery.recharge.сustom_input.caption", fallback: "Enter amount manually")
+        /// Other
+        public static let title = TKLocales.tr("Localizable", "battery.recharge.сustom_input.title", fallback: "Other")
+      }
     }
     public enum Refill {
+      /// Swap via Tonkeeper, send tokens and unstake TON.
+      public static let emptyCaption = TKLocales.tr("Localizable", "battery.refill.empty_caption", fallback: "Swap via Tonkeeper, send tokens and unstake TON.")
       /// Promo Code
       public static let promocode = TKLocales.tr("Localizable", "battery.refill.promocode", fallback: "Promo Code")
+      /// Supported transactions
+      public static let supportedTransactions = TKLocales.tr("Localizable", "battery.refill.supported_transactions", fallback: "Supported transactions")
+      /// Tonkeeper Battery
+      public static let title = TKLocales.tr("Localizable", "battery.refill.title", fallback: "Tonkeeper Battery")
       public enum Charges {
         /// charges
         public static let few = TKLocales.tr("Localizable", "battery.refill.charges.few", fallback: "charges")
@@ -285,9 +301,83 @@ public enum TKLocales {
         /// charges
         public static let zero = TKLocales.tr("Localizable", "battery.refill.charges.zero", fallback: "charges")
       }
+      public enum ChargesHistory {
+        /// Recharges and refunds
+        public static let caption = TKLocales.tr("Localizable", "battery.refill.charges_history.caption", fallback: "Recharges and refunds")
+        /// Charges history
+        public static let title = TKLocales.tr("Localizable", "battery.refill.charges_history.title", fallback: "Charges history")
+      }
+      public enum Crypto {
+        /// Recharge with
+        public static let recharge = TKLocales.tr("Localizable", "battery.refill.crypto.recharge", fallback: "Recharge with")
+      }
+      public enum Footer {
+        /// One charge covers the average transaction fee. Some transactions may cost more.
+        public static let description = TKLocales.tr("Localizable", "battery.refill.footer.description", fallback: "One charge covers the average transaction fee. Some transactions may cost more.")
+        /// Restore purchases.
+        public static let restorePurchase = TKLocales.tr("Localizable", "battery.refill.footer.restore_purchase", fallback: "Restore purchases.")
+      }
+      public enum Gift {
+        /// Share with friends
+        public static let caption = TKLocales.tr("Localizable", "battery.refill.gift.caption", fallback: "Share with friends")
+        /// Battery Gift
+        public static let title = TKLocales.tr("Localizable", "battery.refill.gift.title", fallback: "Battery Gift")
+      }
+      public enum Iap {
+        public enum Items {
+          /// Large
+          public static let large = TKLocales.tr("Localizable", "battery.refill.iap.items.large", fallback: "Large")
+          /// Medium
+          public static let medium = TKLocales.tr("Localizable", "battery.refill.iap.items.medium", fallback: "Medium")
+          /// Small
+          public static let small = TKLocales.tr("Localizable", "battery.refill.iap.items.small", fallback: "Small")
+        }
+      }
+      public enum Settings {
+        /// Will be paid: 
+        public static let caption = TKLocales.tr("Localizable", "battery.refill.settings.caption", fallback: "Will be paid: ")
+        /// Battery Settings
+        public static let title = TKLocales.tr("Localizable", "battery.refill.settings.title", fallback: "Battery Settings")
+        public enum Caption {
+          public enum Items {
+            /// NFT transfers
+            public static let nftTransfers = TKLocales.tr("Localizable", "battery.refill.settings.caption.items.NFT_transfers", fallback: "NFT transfers")
+            /// swaps
+            public static let swaps = TKLocales.tr("Localizable", "battery.refill.settings.caption.items.swaps", fallback: "swaps")
+            /// token transfers
+            public static let tokenTransfers = TKLocales.tr("Localizable", "battery.refill.settings.caption.items.token_transfers", fallback: "token transfers")
+          }
+        }
+      }
       public enum Toast {
         /// Battery recharged
         public static let recharged = TKLocales.tr("Localizable", "battery.refill.toast.recharged", fallback: "Battery recharged")
+      }
+    }
+    public enum Settings {
+      /// Selected transactions will be paid by Tonkeeper Battery.
+      public static let caption = TKLocales.tr("Localizable", "battery.settings.caption", fallback: "Selected transactions will be paid by Tonkeeper Battery.")
+      /// Battery Settings
+      public static let title = TKLocales.tr("Localizable", "battery.settings.title", fallback: "Battery Settings")
+      public enum Items {
+        public enum Nft {
+          /// per transfer
+          public static let caption = TKLocales.tr("Localizable", "battery.settings.items.nft.caption", fallback: "per transfer")
+          /// NFT transfers
+          public static let title = TKLocales.tr("Localizable", "battery.settings.items.nft.title", fallback: "NFT transfers")
+        }
+        public enum Swaps {
+          /// per swap
+          public static let caption = TKLocales.tr("Localizable", "battery.settings.items.swaps.caption", fallback: "per swap")
+          /// Swaps via Tonkeeper
+          public static let title = TKLocales.tr("Localizable", "battery.settings.items.swaps.title", fallback: "Swaps via Tonkeeper")
+        }
+        public enum Token {
+          /// per transfer
+          public static let caption = TKLocales.tr("Localizable", "battery.settings.items.token.caption", fallback: "per transfer")
+          /// Token transfers
+          public static let title = TKLocales.tr("Localizable", "battery.settings.items.token.title", fallback: "Token transfers")
+        }
       }
     }
   }

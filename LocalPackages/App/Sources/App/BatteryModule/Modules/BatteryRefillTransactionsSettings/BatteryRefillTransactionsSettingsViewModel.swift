@@ -58,8 +58,8 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
     snapshot.appendItems([.title(
       TKTitleDescriptionCell.Configuration(
       model: TKTitleDescriptionView.Model(
-        title: "Battery Settings",
-        bottomDescription: "Selected transactions will be paid by Tonkeeper Battery."), 
+        title: TKLocales.Battery.Settings.title,
+        bottomDescription: TKLocales.Battery.Settings.caption), 
       padding: NSDirectionalEdgeInsets(top: 0,
                                        leading: 32,
                                        bottom: 16,
