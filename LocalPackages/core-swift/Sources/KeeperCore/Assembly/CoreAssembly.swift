@@ -6,18 +6,28 @@ public struct CoreAssembly {
   let cacheURL: URL
   let sharedCacheURL: URL
   let appInfoProvider: AppInfoProvider
+  let seedProvider: () -> String
   
   init(cacheURL: URL, 
        sharedCacheURL: URL,
-       appInfoProvider: AppInfoProvider) {
+       appInfoProvider: AppInfoProvider,
+       seedProvider: @escaping () -> String) {
     self.cacheURL = cacheURL
     self.sharedCacheURL = sharedCacheURL
     self.appInfoProvider = appInfoProvider
+    self.seedProvider = seedProvider
   }
   
-  func mnemonicsVault() -> MnemonicsVault {
-    MnemonicsVault(
+  public func rnMnemonicsVault() -> RNMnemonicsVault {
+    RNMnemonicsVault(
       keychainVault: keychainVault
+    )
+  }
+  
+  public func mnemonicsVault() -> MnemonicsVault {
+    MnemonicsVault(
+      keychainVault: keychainVault,
+      seedProvider: seedProvider
     )
   }
 

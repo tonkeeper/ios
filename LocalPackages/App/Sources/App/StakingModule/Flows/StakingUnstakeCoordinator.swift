@@ -5,6 +5,7 @@ import TKScreenKit
 import TKCore
 import KeeperCore
 import TonSwift
+import BigInt
 
 final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -32,7 +33,18 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
-    openStakingWithdrawInput()
+    if (stakingPoolInfo.implementation.type == .tf) {
+      var withdrawAmount: BigUInt {
+        BigUInt(keeperCoreMainAssembly.storesAssembly.processedBalanceStore.state[wallet]?.balance.stakingItems
+          .first(where: { $0.poolInfo?.address == stakingPoolInfo.address })?
+          .info.amount ?? 0)
+      }
+      
+      openConfirmation(wallet: wallet, item: .init(operation: .withdraw(stakingPoolInfo), amount: withdrawAmount))
+    }
+    else {
+      openStakingWithdrawInput()
+    }
   }
   
   func openStakingWithdrawInput() {

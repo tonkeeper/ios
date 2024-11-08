@@ -50,6 +50,15 @@ final class RootCoordinatorStateManager {
       }
     }
   }
+  
+  func didPerformRNMigration() {
+    walletsStore.reload { [weak self] in
+      guard let self else { return }
+      DispatchQueue.main.async {
+        self.state = self.calculateState(walletsStoreState: self.walletsStore.getState())
+      }
+    }
+  }
 
   private func calculateState(walletsStoreState: WalletsStore.State) -> State {
     switch walletsStoreState {

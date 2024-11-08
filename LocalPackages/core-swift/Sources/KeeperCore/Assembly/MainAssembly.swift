@@ -9,6 +9,7 @@ public final class MainAssembly {
   public let walletUpdateAssembly: WalletsUpdateAssembly
   public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
+  public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
   public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
@@ -19,12 +20,15 @@ public final class MainAssembly {
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
+  public let rnAssembly: RNAssembly
+  public let secureAssembly: SecureAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
        walletUpdateAssembly: WalletsUpdateAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
+       coreAssembly: CoreAssembly,
        formattersAssembly: FormattersAssembly,
        mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
@@ -34,12 +38,15 @@ public final class MainAssembly {
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
-       backgroundUpdateAssembly: BackgroundUpdateAssembly) {
+       backgroundUpdateAssembly: BackgroundUpdateAssembly,
+       secureAssembly: SecureAssembly,
+       rnAssembly: RNAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
+    self.coreAssembly = coreAssembly
     self.formattersAssembly = formattersAssembly
     self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
@@ -50,6 +57,8 @@ public final class MainAssembly {
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
+    self.secureAssembly = secureAssembly
+    self.rnAssembly = rnAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -70,7 +79,7 @@ public final class MainAssembly {
   public var walletDeleteController: WalletDeleteController {
     WalletDeleteController(walletStore: storesAssembly.walletsStore,
                            keeperInfoStore: storesAssembly.keeperInfoStore,
-                           mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+                           mnemonicsRepository: secureAssembly.mnemonicsRepository())
   }
   
   public func chartController() -> ChartController {

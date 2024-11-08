@@ -7,6 +7,7 @@ public final class ServicesAssembly {
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let locationAPIAsembly: LocationAPIAssembly
   private let coreAssembly: CoreAssembly
+  private let secureAssembly: SecureAssembly
   private let batteryAssembly: BatteryAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
@@ -14,12 +15,14 @@ public final class ServicesAssembly {
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        locationAPIAsembly: LocationAPIAssembly,
        coreAssembly: CoreAssembly,
+       secureAssembly: SecureAssembly) {
        batteryAssembly: BatteryAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.locationAPIAsembly = locationAPIAsembly
     self.coreAssembly = coreAssembly
+    self.secureAssembly = secureAssembly
     self.batteryAssembly = batteryAssembly
   }
   
@@ -134,7 +137,7 @@ public final class ServicesAssembly {
   }
   
   public func encryptedCommentService() -> EncryptedCommentService {
-    EncryptedCommentServiceImplementation(mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
+    EncryptedCommentServiceImplementation(mnemonicsRepository: secureAssembly.mnemonicsRepository())
   }
 
   public func searchEngineService() -> SearchEngineServiceProtocol {

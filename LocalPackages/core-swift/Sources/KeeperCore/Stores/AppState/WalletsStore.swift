@@ -339,6 +339,14 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         completion?(state)
       }
     }
+   }
+
+  public func reload(completion: @escaping () -> Void) {
+    updateState({ [weak self] _ in
+      guard let self else { return nil }
+      let state = getState(keeperInfo: keeperInfoStore.state)
+      return StateUpdate(newState: state)
+    }, completion: { _ in completion() })
   }
   
   private func getState(keeperInfo: KeeperInfo?) -> State {

@@ -55,8 +55,22 @@ struct HistoryEventMapper {
                  isSecureMode: Bool,
                  nftAction: @escaping (Address) -> Void,
                  encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void) -> HistoryCellActionView.Model {
+    
+    var icon: UIImage? {
+      switch action.stakingImplementation {
+      case .liquidTF:
+        return .TKUIKit.Icons.Size44.tonStakersLogo
+      case .whales:
+        return .TKUIKit.Icons.Size44.tonWhalesLogo
+      case .tf:
+          return .TKUIKit.Icons.Size44.tonNominatorsLogo
+      case .unknown, .none:
+          return action.eventType.icon
+      }
+    }
+    
     let imageModel = TKUIListItemImageIconView.Configuration(
-      image: .image(action.eventType.icon),
+      image: .image(icon),
       tintColor: .Icon.secondary,
       backgroundColor: .Background.contentTint,
       size: CGSize(width: 44, height: 44),

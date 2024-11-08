@@ -23,7 +23,43 @@ public struct KeeperInfo: Equatable {
   ///
   let assetsPolicy: AssetsPolicy
   let appCollection: AppCollection
-
+  
+  public init(wallets: [Wallet],
+              currentWallet: Wallet,
+              currency: Currency,
+              securitySettings: SecuritySettings,
+              appSettings: AppSettings,
+              country: SelectedCountry) {
+    self.init(
+      wallets: wallets,
+      currentWallet: currentWallet,
+      currency: currency,
+      securitySettings: securitySettings,
+      appSettings: appSettings,
+      country: country,
+      assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
+      appCollection: AppCollection(connected: [:], recent: [], pinned: [])
+    )
+  }
+  
+  init(wallets: [Wallet],
+       currentWallet: Wallet,
+       currency: Currency,
+       securitySettings: SecuritySettings,
+       appSettings: AppSettings,
+       country: SelectedCountry,
+       assetsPolicy: AssetsPolicy,
+       appCollection: AppCollection) {
+    self.wallets = wallets
+    self.currentWallet = currentWallet
+    self.currency = currency
+    self.securitySettings = securitySettings
+    self.appSettings = appSettings
+    self.country = country
+    self.assetsPolicy = assetsPolicy
+    self.appCollection = appCollection
+  }
+  
 }
 
 extension KeeperInfo: Codable {

@@ -9,10 +9,6 @@ public struct RepositoriesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  public func mnemonicsRepository() -> MnemonicsRepository {
-    coreAssembly.mnemonicsVault()
-  }
-  
   public func settingsRepository() -> SettingsRepository {
     SettingsRepository(settingsVault: coreAssembly.settingsVault())
   }

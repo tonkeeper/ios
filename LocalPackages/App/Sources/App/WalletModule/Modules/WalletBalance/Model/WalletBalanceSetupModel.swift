@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import UserNotifications
 import KeeperCore
 
 final class WalletBalanceSetupModel {
@@ -86,6 +88,19 @@ final class WalletBalanceSetupModel {
   
   func turnOnNotifications() async {
     guard let wallet = try? walletsStore.activeWallet else { return }
+    let current = UNUserNotificationCenter.current()
+    
+    let settings = await current.notificationSettings()
+    if settings.authorizationStatus == .denied {
+      guard let settingsUrl = await URL(string: UIApplication.openSettingsURLString) else { return }
+      
+      if await UIApplication.shared.canOpenURL(settingsUrl) {
+        DispatchQueue.main.async {
+          UIApplication.shared.open(settingsUrl)
+        }
+      }
+      return
+    }
     await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
   }
   

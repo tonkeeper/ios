@@ -21,7 +21,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
-        appInfoProvider: coreAssembly.appInfoProvider
+        appInfoProvider: coreAssembly.appInfoProvider,
+        seedProvider: { coreAssembly.uniqueIdProvider.uniqueInstallId.uuidString }
       )
     )
     self.appStateTracker = coreAssembly.appStateTracker

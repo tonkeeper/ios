@@ -161,7 +161,7 @@ public struct StakeMessageBuilder {
                                       seqno: UInt64,
                                       queryId: BigUInt,
                                       poolAddress: Address,
-                                      amount: BigUInt,
+                                      forwardAmount: BigUInt,
                                       bounce: Bool = true,
                                       timeout: UInt64?,
                                       signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
@@ -175,8 +175,9 @@ public struct StakeMessageBuilder {
         let internalMessage = try StakeDepositMessage.tfInternalMessage(
           queryId: queryId,
           poolAddress: poolAddress,
-          amount: amount,
-          bounce: bounce
+          amount: forwardAmount,
+          bounce: bounce,
+          withdrawal: true
         )
         return [internalMessage]
       },

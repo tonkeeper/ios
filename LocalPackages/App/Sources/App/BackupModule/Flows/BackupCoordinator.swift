@@ -57,7 +57,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didFinish?()
@@ -66,7 +66,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
         guard let self else { return }
         Task {
           do {
-            let mnemonic = try await keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
+            let mnemonic = try await keeperCoreMainAssembly.secureAssembly.mnemonicsRepository().getMnemonic(
               wallet: wallet,
               password: passcode
             )
