@@ -6,6 +6,11 @@ import TKLocalize
 import TKCore
 
 final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurator {
+  
+  struct WalletItem: Equatable, Hashable {
+    let name: String
+    let identifier: String
+  }
 
   // MARK: - SettingsListV2Configurator
   
@@ -18,9 +23,9 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
   }
   
   private let mnemonics: Mnemonics
-  private let wallets: [RNWallet]
+  private let wallets: [WalletItem]
   
-  init(mnemonics: Mnemonics, wallets: [RNWallet]) {
+  init(mnemonics: Mnemonics, wallets: [WalletItem]) {
     self.mnemonics = mnemonics
     self.wallets = wallets
   }

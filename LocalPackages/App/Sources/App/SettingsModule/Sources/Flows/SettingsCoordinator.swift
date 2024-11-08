@@ -449,18 +449,30 @@ private extension SettingsCoordinator {
     let configuration = SettingsListDevMenuConfigurator(
       uniqueIdProvider: coreAssembly.uniqueIdProvider
     )
+    let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
+    let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()
     configuration.didSelectRNWalletsSeedPhrases = {
       Task { @MainActor [weak self] in
         guard let self,
-        let passcode = await self.getPasscode(),
-        let rnWalletsStore: RNWalletsStore = try? await self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage.getValue(key: "walletsStore") else { return }
+        let passcode = await self.getPasscode() else { return }
         
-        let rnWallets = rnWalletsStore.wallets
+        let rnWalletsStore: RNWalletsStore? = try? await rnAsyncStorage.getValue(key: "walletsStore")
+        let rnWallets = rnWalletsStore?.wallets ?? []
+        let rnWalletsItems = rnWallets.map { SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
+          name: $0.name, identifier: $0.identifier
+        )}
+        let wallets = (try? keeperInfoRepository.getKeeperInfo().wallets) ?? []
+        let walletsItems = wallets.map {
+          SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
+            name: $0.metaData.label, identifier: $0.id
+          )
+        }
+        
         let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
         guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
           return
         }
-        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: rnWallets)
+        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: Array(Set(rnWalletsItems + walletsItems)))
       }
     }
     
@@ -470,7 +482,7 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
-  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [RNWallet]) {
+  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem]) {
     let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
       mnemonics: mnemonics,
       wallets: wallets
