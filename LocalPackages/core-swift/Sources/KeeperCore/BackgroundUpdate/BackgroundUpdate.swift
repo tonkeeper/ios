@@ -3,11 +3,10 @@ import TonAPI
 import OpenAPIRuntime
 
 public final class BackgroundUpdate {
-  private var eventObservers = [UUID: (Wallet, BackgroundUpdateEvent) -> Void]()
-  private var stateObservers = [UUID: (Wallet, BackgroundUpdateConnectionState) -> Void]()
-  private let lock = NSLock()
+  @Atomic private var eventObservers = [UUID: (Wallet, BackgroundUpdateEvent) -> Void]()
+  @Atomic private var stateObservers = [UUID: (Wallet, BackgroundUpdateConnectionState) -> Void]()
   
-  private var walletBackgroundUpdates = [Wallet: WalletBackgroundUpdate]()
+  @Atomic private var walletBackgroundUpdates = [Wallet: WalletBackgroundUpdate]()
   
   private let walletStore: WalletsStore
   private let walletBackgroundUpdateProvider: (Wallet) -> WalletBackgroundUpdate
@@ -44,9 +43,7 @@ public final class BackgroundUpdate {
       }
       closure(observer, wallet, event)
     }
-    lock.withLock {
-      self.eventObservers[id] = observerClosure
-    }
+    self.eventObservers[id] = observerClosure
   }
   
   public func addStateObserver<T: AnyObject>(_ observer: T,
@@ -60,9 +57,7 @@ public final class BackgroundUpdate {
       }
       closure(observer, wallet, state)
     }
-    lock.withLock {
-      self.stateObservers[id] = observerClosure
-    }
+    self.stateObservers[id] = observerClosure
   }
   
   private func setupObservations() {
@@ -94,19 +89,13 @@ public final class BackgroundUpdate {
     update.stateClosure = { [weak self] state in
       guard let self else { return }
       DispatchQueue.main.async {
-        let observers = self.lock.withLock {
-          self.stateObservers
-        }
-        observers.forEach { $0.value(wallet, state) }
+        self.stateObservers.forEach { $0.value(wallet, state) }
       }
     }
     update.eventClosure = { [weak self] event in
       guard let self else { return }
       DispatchQueue.main.async {
-        let observers = self.lock.withLock {
-          self.eventObservers
-        }
-        observers.forEach { $0.value(wallet, event) }
+        self.eventObservers.forEach { $0.value(wallet, event) }
       }
     }
     return update
