@@ -21,7 +21,7 @@ open class TKBridgeWebViewController: UIViewController {
   
   public var didLoadInitialURLHandler: (() -> Void)?
   private let userContentController = WKUserContentController()
-
+  
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
     let script = WKUserScript(
@@ -90,7 +90,8 @@ open class TKBridgeWebViewController: UIViewController {
   }
   
   private var bridgeMessageObservers = [String: [(Any) -> Void]]()
-  
+  private var webViewObserver: NSKeyValueObservation?
+
   // MARK: - Dependencies
   
   private let initialURL: URL
@@ -122,6 +123,23 @@ open class TKBridgeWebViewController: UIViewController {
   open override func viewDidLoad() {
     super.viewDidLoad()
     
+    webViewObserver = webView.observe(\.url, options: .new) { [weak self] webView, change in
+        guard let newURL = change.newValue as? URL else { return }
+
+        if var urlComponents = URLComponents(url: newURL, resolvingAgainstBaseURL: false) {
+            var queryItems = urlComponents.queryItems ?? []
+            if !queryItems.contains(where: { $0.name == "utm_source" }) {
+                queryItems.append(URLQueryItem(name: "utm_source", value: "tonkeeper"))
+                urlComponents.queryItems = queryItems
+
+                if let updatedURL = urlComponents.url {
+                    self?.webView.load(URLRequest(url: updatedURL))
+                }
+            }
+        }
+    }
+
+    
     navigationBar.centerView = titleView
     
     view.backgroundColor = .Background.page
@@ -150,13 +168,13 @@ open class TKBridgeWebViewController: UIViewController {
     
     navigationBar.leftViews = [backButton]
     navigationBar.rightViews = [rightPillButton]
-
+    
     backButton.isHidden = true
     canGoBack = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
       guard let canGoBack = value.newValue else { return }
       self?.backButton.isHidden = !canGoBack
     }
-  
+    
     let urlRequest = URLRequest(url: url)
     webView.load(urlRequest)
   }
@@ -238,7 +256,7 @@ open class TKBridgeWebViewController: UIViewController {
           UIPasteboard.general.string = url.absoluteString
         }
       )
-      ]
+    ]
     TKPopupMenuController.show(
       sourceView: rightPillButton,
       position: .bottomRight(inset: 8),
@@ -282,7 +300,7 @@ open class TKBridgeWebViewController: UIViewController {
         icon: icon,
         action: nil
       )
-
+      
       let titleConfiguration = TKUINavigationBarTitleView.Model(
         title: title,
         caption: caption
@@ -333,7 +351,7 @@ extension TKBridgeWebViewController: WKUIDelegate {
 }
 
 extension TKBridgeWebViewController: WKScriptMessageHandler {
-  public func userContentController(_ userContentController: WKUserContentController, 
+  public func userContentController(_ userContentController: WKUserContentController,
                                     didReceive message: WKScriptMessage) {
     let observers = bridgeMessageObservers[message.name]
     observers?.forEach { $0(message.body) }
