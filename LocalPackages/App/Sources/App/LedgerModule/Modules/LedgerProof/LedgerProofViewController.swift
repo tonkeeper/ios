@@ -12,7 +12,7 @@ final class LedgerProofViewController: GenericViewViewController<LedgerProofView
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
     TKUIKit.TKPullCardHeaderItem(
       title: .title(
-        title: TKLocales.LedgerProof.title,
+        title: "TKLocales.LedgerProof.title",
         subtitle: nil
       )
     )

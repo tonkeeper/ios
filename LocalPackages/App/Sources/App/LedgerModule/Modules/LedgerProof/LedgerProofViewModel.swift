@@ -53,7 +53,6 @@ final class LedgerProofViewModelImplementation: LedgerProofViewModel, LedgerProo
   private var pollTonAppTask: Task<Void, Swift.Error>? = nil
   private var disconnectTask: Task<Void, Never>? = nil
   
-  private var transport: BleTransportProtocol = BleTransport.shared
   private var isClosed: Bool = false
   
   func viewDidLoad() {
@@ -69,7 +68,7 @@ final class LedgerProofViewModelImplementation: LedgerProofViewModel, LedgerProo
     pollTonAppTask?.cancel()
     disconnectTask?.cancel()
     
-    transport.disconnect(completion: nil)
+    bleTransport.disconnect(completion: nil)
   }
   
   // MARK: - State
@@ -85,19 +84,24 @@ final class LedgerProofViewModelImplementation: LedgerProofViewModel, LedgerProo
   private let proofParameters: LedgerProofParameters
   private let ledgerDevice: Wallet.LedgerDevice
   private let wallet: Wallet
+  private let bleTransport: BleTransportProtocol
   
   // MARK: - Init
   
-  init(proofParameters: LedgerProofParameters, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
+  init(proofParameters: LedgerProofParameters, 
+       wallet: Wallet,
+       ledgerDevice: Wallet.LedgerDevice,
+       bleTransport: BleTransportProtocol) {
     self.proofParameters = proofParameters
     self.wallet = wallet
     self.ledgerDevice = ledgerDevice
+    self.bleTransport = bleTransport
   }
 }
 
 private extension LedgerProofViewModelImplementation {
   func listenBluetoothState() {
-    transport.bluetoothStateCallback { state in
+    bleTransport.bluetoothStateCallback { state in
       switch state {
       case .poweredOn:
         self.connect()
@@ -119,8 +123,9 @@ private extension LedgerProofViewModelImplementation {
       let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
       
       print("Connecting to \(peripheral.name)...")
-      transport.disconnect() { _ in
-        self.transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
+      bleTransport.disconnect() { [weak self] _ in
+        guard let self else { return }
+        self.bleTransport.connect(toPeripheralID: peripheral, disconnectedCallback: {
           print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
           if self.isClosed { return }
           
@@ -160,7 +165,7 @@ private extension LedgerProofViewModelImplementation {
   }
   
   func waitForAppOpen() {
-    let tonTransport = TonTransport(transport: transport)
+    let tonTransport = TonTransport(transport: bleTransport)
     
     @Sendable func startPollTask() {
       let task = Task {

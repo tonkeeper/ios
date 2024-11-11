@@ -120,10 +120,10 @@
     {
       "identity" : "hw-transport-ios-ble",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/LedgerHQ/hw-transport-ios-ble.git",
+      "location" : "https://github.com/tonkeeper/hw-transport-ios-ble",
       "state" : {
-        "revision" : "4df8fff21c1738a1dff4d2ee19175dd3263d6c5f",
-        "version" : "1.0.1"
+        "revision" : "cd0860cc94226da93cc078f45d9d6331f5cf26b5",
+        "version" : "2.0.0"
       }
     },
     {

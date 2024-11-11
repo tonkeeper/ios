@@ -11,8 +11,15 @@ struct LedgerProofParameters {
 
 struct LedgerProofAssembly {
   private init() {}
-  static func module(proofParameters: LedgerProofParameters, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice, coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerProofViewController, LedgerProofModuleOutput, Void> {
-    let viewModel = LedgerProofViewModelImplementation(proofParameters: proofParameters, wallet: wallet, ledgerDevice: ledgerDevice)
+  static func module(proofParameters: LedgerProofParameters,
+                     wallet: Wallet,
+                     ledgerDevice: Wallet.LedgerDevice,
+                     coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerProofViewController, LedgerProofModuleOutput, Void> {
+    let viewModel = LedgerProofViewModelImplementation(
+      proofParameters: proofParameters,
+      wallet: wallet,
+      ledgerDevice: ledgerDevice,
+      bleTransport: coreAssembly.ledgerAssembly.bleTransport)
     let viewController = LedgerProofViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())
   }

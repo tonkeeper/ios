@@ -8,7 +8,7 @@ let package = Package(
     .iOS(.v14)
   ],
   products: [
-    .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"])
+    .library(name: "WalletCore", targets: ["KeeperCore"])
   ],
   dependencies: [
     .package(path: "../TKLocalize"),

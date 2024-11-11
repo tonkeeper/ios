@@ -13,7 +13,7 @@ public final class CoreAssembly {
   public let reachabilityTracker = ReachabilityTracker()
   public let analyticsProvider: AnalyticsProvider
   public let isTonkeeperX: Bool
-  
+  public lazy var ledgerAssembly = LedgerAssembly()
   
   public init(analyticsProvider: AnalyticsProvider = AnalyticsProvider(),
               isTonkeeperX: Bool = false) {
