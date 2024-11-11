@@ -33,6 +33,8 @@ final class BrowserExploreFeaturedView: UIView {
       collectionView.reloadData()
       collectionView.layoutIfNeeded()
 
+      slideshowTask?.cancel()
+      slideshowTask = nil
       guard !dataSource.isEmpty else { return }
 
       DispatchQueue.main.async {
@@ -149,22 +151,20 @@ private extension BrowserExploreFeaturedView {
   
   func startSlideShowTask() {
     slideshowTask?.cancel()
-    slideshowTask = Task {
+    slideshowTask = Task { @MainActor in
       try? await Task.sleep(nanoseconds: 4_000_000_000)
       guard !Task.isCancelled else { return }
-      await MainActor.run {
-        resetCarouselIfNeeded()
-        self.collectionView.isScrollEnabled = false
-        UIView.animate(withDuration: 0.5) {
-          self.safeCollectionViewScroll(
-            at: IndexPath(item: self.indexOfMostVisibleCell(offset: 1), section: 0),
-            at: .centeredHorizontally,
-            animated: true
-          )
-        } completion: { _ in
-          self.collectionView.isScrollEnabled = true
-          self.startSlideShowTask()
-        }
+      resetCarouselIfNeeded()
+      self.collectionView.isScrollEnabled = false
+      UIView.animate(withDuration: 0.5) {
+        self.safeCollectionViewScroll(
+          at: IndexPath(item: self.indexOfMostVisibleCell(offset: 1), section: 0),
+          at: .centeredHorizontally,
+          animated: true
+        )
+      } completion: { _ in
+        self.collectionView.isScrollEnabled = true
+        self.startSlideShowTask()
       }
     }
   }
@@ -172,10 +172,9 @@ private extension BrowserExploreFeaturedView {
   func safeCollectionViewScroll(at indexPath: IndexPath,
                                 at scrollPosition: UICollectionView.ScrollPosition,
                                 animated: Bool) {
-    guard collectionView.numberOfItems(inSection: 0) > 0 else {
-      return
-    }
-
+    guard collectionView.numberOfSections > indexPath.section,
+    collectionView.numberOfItems(inSection: indexPath.section) > indexPath.item else { return }
+  
     collectionView.scrollToItem(at: indexPath, at: scrollPosition, animated: animated)
   }
 }
