@@ -227,6 +227,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
   }
   
   func resetCarouselIfNeeded() {
+    guard collectionView.numberOfItems(inSection: 0) > 0 else {
+      return
+    }
+
     let indexOfMostVisibleCell = self.indexOfMostVisibleCell()
     let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
     let indexOfRightSignificantCell = indexOfLeftSignificantCell + self.dapps.count - 1
@@ -238,7 +242,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     
     if indexOfMostVisibleCell == indexOfRightSignificantCell + 1 {
       collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
-                                       at: .centeredHorizontally, animated: false)
+                                  at: .centeredHorizontally, animated: false)
     }
   }
   
