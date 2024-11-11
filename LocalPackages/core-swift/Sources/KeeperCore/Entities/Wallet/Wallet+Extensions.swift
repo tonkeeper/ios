@@ -332,5 +332,14 @@ public extension Wallet {
       return false
     }
   }
+  
+  var isBatteryEnable: Bool {
+    switch kind {
+    case .regular:
+      return true
+    default:
+      return false
+    }
+  }
 }
 

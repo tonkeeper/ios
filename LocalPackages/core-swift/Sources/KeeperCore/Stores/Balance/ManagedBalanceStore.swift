@@ -6,6 +6,7 @@ public struct ManagedBalance {
   public let tonItems: [ProcessedBalanceTonItem]
   public let pinnedItems: [ProcessedBalanceItem]
   public let unpinnedItems: [ProcessedBalanceItem]
+  public let batteryBalance: BatteryBalance?
   public let currency: Currency
   public let date: Date
   public let isManagable: Bool
@@ -184,6 +185,7 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
       tonItems: tonItems,
       pinnedItems: sortedPinnedItems,
       unpinnedItems: sortedUnpinnedItems,
+      batteryBalance: balance.batteryBalance,
       currency: balance.currency,
       date: balance.date,
       isManagable: (balance.jettonItems.count + balance.stakingItems.count) > 0

@@ -24,6 +24,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapStake: ((Wallet) -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
+  var didTapBattery: ((Wallet) -> Void)? { get set }
   
   var didTapManage: ((Wallet) -> Void)? { get set }
   
@@ -76,6 +77,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapStake: ((Wallet) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   var didTapManage: ((Wallet) -> Void)?
   
@@ -403,7 +405,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = configuration
         sectionItems.append(notificationsItem)
       case .telegramChannel:
-        let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open, action: { [weak self] in
+        let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(title: TKLocales.Actions.open,
+                                                                              category: .tertiary,
+                                                                              action: { [weak self] in
           guard let self else {
             return
           }
@@ -647,7 +651,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     )
     
     let balanceColor: UIColor
-    let backup: BalanceHeaderAmountView.Model.Backup
+    let backup: BalanceHeaderAmountView.Configuration.Backup
     let backupWarningState = BalanceBackupWarningCheck().check(
       wallet: state.wallet,
       tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
@@ -667,9 +671,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       balanceColor = .Text.primary
       backup = .none
     }
-    
+  
     let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
-    let balanceModel = BalanceHeaderAmountView.Model(
+    let balanceConfiguration = BalanceHeaderAmountView.Configuration(
       balanceButtonModel: BalanceHeaderAmountButton.Model(
         balance: totalBalanceMapped,
         balanceColor: balanceColor,
@@ -680,6 +684,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
             await self.appSettingsStore.toggleIsSecureMode()
           }
         }
+      ),
+      batteryButtonConfiguration: createBatteryButtonConfiguration(
+        wallet: state.wallet,
+        batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance
       ),
       backup: backup
     )
@@ -695,7 +703,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let headerModel = BalanceHeaderBalanceView.Model(
-      balanceModel: balanceModel,
+      balanceConfiguration: balanceConfiguration,
       addressButtonConfiguration: addressButtonConfiguration,
       connectionStatusModel: self.createConnectionStatusModel(
         backgroundUpdateState: state.backgroundUpdateConnectionState,
@@ -710,6 +718,23 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
     )
     return model
+  }
+  
+  func createBatteryButtonConfiguration(wallet: Wallet, batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
+    guard wallet.kind == .regular else { return nil }
+    let state: BatteryView.State
+    switch batteryBalance?.batteryState {
+    case .fill(let percents):
+      state = .fill(percents)
+    case .empty, .none:
+      state = .emptyTinted
+    }
+    return BalanceHeaderBatteryButton.Configuration(
+      batteryConfiguration: state,
+      action: { [weak self] in
+        self?.didTapBattery?(wallet)
+      }
+    )
   }
   
   func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {

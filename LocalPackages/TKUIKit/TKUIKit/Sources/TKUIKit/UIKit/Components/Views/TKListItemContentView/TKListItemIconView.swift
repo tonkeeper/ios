@@ -2,8 +2,8 @@ import UIKit
 
 public final class TKListItemIconView: UIView {
   
-  public struct Configuration {
-    public struct TextContent {
+  public struct Configuration: Hashable {
+    public struct TextContent: Hashable {
       public let text: String
       public let font: UIFont
       public let color: UIColor
@@ -18,18 +18,18 @@ public final class TKListItemIconView: UIView {
       }
     }
     
-    public enum Content {
+    public enum Content: Hashable {
       case image(TKImageView.Model)
       case text(TextContent)
     }
     
-    public enum Alignment {
+    public enum Alignment: Hashable {
       case top
       case center
     }
     
-    public struct Badge {
-      public enum Position {
+    public struct Badge: Hashable {
+      public enum Position: Hashable {
         case topLeft
         case topRight
         case bottomLeft

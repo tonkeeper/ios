@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import CoreComponents
+import TonSwift
 
 struct MergeMigration {
   
@@ -36,19 +37,22 @@ struct MergeMigration {
   private let rnMnemonicsRepository: RNMnemonicsVault
   private let keeperInfoRepository: KeeperInfoRepository
   private let keeperInfoStore: KeeperInfoStore
+  private let tonProofTokenService: TonProofTokenService
   
   init(asyncStorage: RNAsyncStorage, 
        appInfoProvider: TKCore.AppInfoProvider,
        mnemonicsRepository: MnemonicsVault,
        rnMnemonicsRepository: RNMnemonicsVault,
        keeperInfoRepository: KeeperInfoRepository,
-       keeperInfoStore: KeeperInfoStore) {
+       keeperInfoStore: KeeperInfoStore,
+       tonProofTokenService: TonProofTokenService) {
     self.asyncStorage = asyncStorage
     self.appInfoProvider = appInfoProvider
     self.mnemonicsRepository = mnemonicsRepository
     self.rnMnemonicsRepository = rnMnemonicsRepository
     self.keeperInfoRepository = keeperInfoRepository
     self.keeperInfoStore = keeperInfoStore
+    self.tonProofTokenService = tonProofTokenService
   }
   
   func isNeedToMigrateFromRN() async -> Bool {
@@ -73,7 +77,7 @@ struct MergeMigration {
     let mnemonicsMigrationResult = migrateMnemonics()
     switch mnemonicsMigrationResult {
     case .success:
-      migrateBiometryPasscode(passcode: passcode) {
+      migratePasscodeRequiredItemsBiometryPasscode(passcode: passcode) {
         completion(.success)
       }
     case .failure(let failure):
@@ -88,7 +92,7 @@ struct MergeMigration {
       let walletsMigrationResult = await migrateRNWallet()
       switch walletsMigrationResult {
       case .success(let failedWallets):
-        await migrateBiometryPasscode(passcode: passcode)
+        await migratePasscodeRequiredItemsBiometryPasscode(passcode: passcode)
         if failedWallets.isEmpty {
           return .success
         } else {
@@ -119,24 +123,40 @@ struct MergeMigration {
     }
   }
   
-  private func migrateBiometryPasscode(passcode: @escaping ( @escaping (String) -> Void ) -> Void) async {
+  private func migratePasscodeRequiredItemsBiometryPasscode(passcode: @escaping ( @escaping (String) -> Void ) -> Void) async {
     await withCheckedContinuation { continuation in
-      migrateBiometryPasscode(passcode: passcode) {
+      migratePasscodeRequiredItemsBiometryPasscode(passcode: passcode) {
         continuation.resume()
       }
     }
   }
   
-  private func migrateBiometryPasscode(passcode: @escaping ( @escaping (String) -> Void ) -> Void, completion: @escaping () -> Void) {
+  private func migratePasscodeRequiredItemsBiometryPasscode(passcode: @escaping ( @escaping (String) -> Void ) -> Void, completion: @escaping () -> Void) {
     let isBiometryEnable = (try? keeperInfoRepository.getKeeperInfo().securitySettings.isBiometryEnabled) ?? false
-    guard isBiometryEnable else {
+    let missedTonProofWallets = tonProofTokenService.getWalletsWithMissedToken()
+    
+    if isBiometryEnable || !missedTonProofWallets.isEmpty {
+      passcode({ [mnemonicsRepository] passcode in
+        Task { @MainActor in
+          if isBiometryEnable {
+            try? mnemonicsRepository.savePassword(passcode)
+          }
+          for wallet in missedTonProofWallets {
+            guard let mnemonic = try? await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode),
+                  let keyPair = try? TonSwift.Mnemonic.mnemonicToPrivateKey(
+                    mnemonicArray: mnemonic.mnemonicWords) else { continue }
+            let pair = WalletPrivateKeyPair(
+              wallet: wallet,
+              privateKey: keyPair.privateKey
+            )
+            await tonProofTokenService.loadTokensFor(pairs: [pair])
+          }
+          completion()
+        }
+      })
+    } else {
       completion()
-      return
     }
-    passcode({ [mnemonicsRepository] passcode in
-      try? mnemonicsRepository.savePassword(passcode)
-      completion()
-    })
   }
   
   private func migrateRNWallet() async -> WalletsMigrationResult {

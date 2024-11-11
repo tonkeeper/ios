@@ -29,9 +29,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
-  
-  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
-  
+  private weak var batteryRefillCoordinator: BatteryRefillCoordinator?
+    
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   let recipientResolver: RecipientResolver
@@ -201,6 +200,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBackup(wallet: wallet)
     }
     
+    walletCoordinator.didTapBattery = { [weak self] wallet in
+      self?.openBattery(wallet: wallet)
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     historyCoordinator.didOpenEventDetails = { [weak self] wallet, event, isTestnet in
       self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: isTestnet)
@@ -289,7 +292,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil, amount: BigUInt?, comment: String?) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let sendTokenCoordinator = SendModule(
       dependencies: SendModule.Dependencies(
@@ -420,6 +423,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
          webSwapCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
         return true
       }
+      if let batteryRefillCoordinator,
+         batteryRefillCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
+        return true
+      }
       return false
     case .externalSign(let data):
       return handleSignerDeeplink(data)
@@ -427,6 +434,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleTonConnectDeeplink(parameters)
     case .dapp(let dappURL):
       return handleDappDeeplink(url: dappURL)
+    case .battery(let battery):
+      handleBatteryDeeplink(battery)
+      return true
     }
   }
   
@@ -635,6 +645,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let coordinator = module.createSettingsCoordinator(router: router,
                                                        wallet: wallet)
+        
+    coordinator.didTapBattery = { [weak self] wallet in
+      self?.openBattery(wallet: wallet)
+    }
+    
     coordinator.didFinish = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
@@ -668,7 +683,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
           decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
           rateConverter: RateConverter()
-        )
+        ),
+        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
       ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
@@ -725,7 +741,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                                     amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
                                                     decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
                                                     rateConverter: RateConverter()
-                                                   )
+                                                   ),
+                                                   configuration: keeperCoreMainAssembly.configurationAssembly.configuration
                                                   ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
@@ -1016,6 +1033,38 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     module.viewController.setupBackButton()
     
     navigationController.pushViewController(module.viewController, animated: true)
+  }
+  
+  func openBattery(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
+    
+    let coordinator = BatteryRefillCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    coordinator.didOpenRefundURL = { [weak self] url, title in
+      self?.openDapp(title: title, url: url)
+    }
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    self.batteryRefillCoordinator = coordinator
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.dismiss(animated: true) { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      })
+    }
   }
   
   func openRecoveryPhrase(wallet: Wallet) {

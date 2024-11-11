@@ -22,7 +22,7 @@ public final class BackgroundUpdateAssembly {
       let backgroundUpdate = BackgroundUpdate(
         walletStore: storesAssembly.walletsStore) { [apiAssembly] wallet in
           WalletBackgroundUpdate(wallet: wallet,
-                                 streamingAPI: apiAssembly.streamingAPI)
+                                 streamingAPIProvider: apiAssembly.streaminAPIProvider)
         }
       _backgroundUpdate = backgroundUpdate
       return backgroundUpdate

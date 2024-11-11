@@ -13,6 +13,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     case didUpdateWalletSetupSettings(wallet: Wallet)
     case didDeleteWallet(wallet: Wallet)
     case didDeleteAll
+    case didUpdateWalletBatterySettings(wallet: Wallet)
   }
   
   public enum State {
@@ -136,6 +137,16 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     return await withCheckedContinuation { continuation in
       setWalletIsSetupFinished(wallet: wallet,
                                isSetupFinished: isSetupFinished) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func setWalletBatterySettings(wallet: Wallet,
+                                       batterySettings: BatterySettings) async -> State {
+    return await withCheckedContinuation { continuation in
+      setWalletBatterySettings(wallet: wallet, batterySettings: batterySettings) { state in
         continuation.resume(returning: state)
       }
     }
@@ -311,6 +322,25 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     }
   }
   
+  public func setWalletBatterySettings(wallet: Wallet,
+                                       batterySettings: BatterySettings,
+                                       completion: ((State) -> Void)?) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.updateWallet(wallet, batterySettings: batterySettings).keeperInfo
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] _ in
+        self?.sendEvent(.didUpdateWalletBatterySettings(wallet: wallet))
+        completion?(state)
+      }
+    }
+   }
+
   public func reload(completion: @escaping () -> Void) {
     updateState({ [weak self] _ in
       guard let self else { return nil }
@@ -338,6 +368,7 @@ private extension KeeperInfo {
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
       appSettings: AppSettings(isSecureMode: false, searchEngine: .duckduckgo),
       country: .auto,
+      batterySettings: BatterySettings(),
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )

@@ -2,10 +2,11 @@ import UIKit
 import TKUIKit
 import TKLocalize
 import KeeperCore
+import BigInt
 
 @MainActor
 protocol TransactionConfirmationOutput: AnyObject {
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -21,7 +22,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   // MARK: - TransactionConfirmationOutput
   
-  var didRequireSign: ((TransferMessageBuilder, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel
@@ -29,8 +30,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   
   func viewDidLoad() {
-    confirmationController.signHandler = { [weak self] transferBuilder, wallet in
-      try await self?.didRequireSign?(transferBuilder, wallet)
+    confirmationController.signHandler = { [weak self] transferData, wallet in
+      try await self?.didRequireSign?(transferData, wallet)
     }
     
     let model = confirmationController.getModel()
@@ -64,7 +65,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       update(with: model)
     }
   }
-
+  
   // MARK: - Dependencies
   
   private let confirmationController: TransactionConfirmationController
@@ -89,12 +90,30 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     items.append(createHeaderImageItem(transaction: model))
     
+    let caption: String = {
+      switch model.transaction {
+      case .staking(let staking):
+        return TKLocales.TransactionConfirmation.confirmAction
+      case .transfer(let transfer):
+        switch transfer {
+        case .jetton, .ton:
+          return TKLocales.TransactionConfirmation.confirmAction
+        case .nft(let nft):
+          var result = nft.notNilName
+          if let collectionName = nft.collection?.notEmptyName {
+            result += " · "
+            result += collectionName
+          }
+          return result
+        }
+      }
+    }()
     items.append(
       TKPopUp.Component.GroupComponent(
         padding: UIEdgeInsets(top: 0, left: 32, bottom: 32, right: 32),
         items: [
           TKPopUp.Component.LabelComponent(
-            text: TKLocales.TransactionConfirmation.confirmAction.withTextStyle(
+            text: caption.withTextStyle(
               .body1,
               color: .Text.secondary,
               alignment: .center,
@@ -131,6 +150,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         case .deposit:
           return TKLocales.TransactionConfirmation.deposit
         }
+      case .transfer(let transfer):
+        switch transfer {
+        case .jetton(let jettonInfo):
+          return "\(jettonInfo.symbol ?? jettonInfo.name) transfer"
+        case .ton:
+          return "\(TonInfo.symbol) transfer"
+        case .nft:
+          return "NFT transfer"
+        }
       }
     }()
     return TKPopUp.Component.LabelComponent(
@@ -156,6 +184,39 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         ),
         bottomSpace: 20
       )
+    case .transfer(let transfer):
+      switch transfer {
+      case .jetton(let jettonInfo):
+        return TKPopUp.Component.ImageComponent(
+          image: TKImageView.Model(
+            image: .urlImage(jettonInfo.imageURL),
+            size: .size(CGSize(width: 96, height: 96)),
+            corners: .circle,
+            padding: .zero
+          ),
+          bottomSpace: 20
+        )
+      case .ton:
+        return TKPopUp.Component.ImageComponent(
+          image: TKImageView.Model(
+            image: .image(.TKUIKit.Icons.Size96.tonIcon),
+            size: .size(CGSize(width: 96, height: 96)),
+            corners: .circle,
+            padding: .zero
+          ),
+          bottomSpace: 20
+        )
+      case .nft(let nft):
+        return TKPopUp.Component.ImageComponent(
+          image: TKImageView.Model(
+            image: .urlImage(nft.imageURL),
+            size: .size(CGSize(width: 96, height: 96)),
+            corners: .cornerRadius(cornerRadius: 12),
+            padding: .zero
+          ),
+          bottomSpace: 20
+        )
+      }
     }
   }
   
@@ -165,12 +226,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     items.append(
       createWalletItem(transaction: transaction)
     )
-    items.append(
-      createRecipientItem(transaction: transaction)
-    )
-    items.append(
-      createAmountItem(transaction: transaction)
-    )
+    if let recipientItem = createRecipientItem(transaction: transaction) {
+      items.append(recipientItem)
+    }
+    if let recipientAddress = createRecipientAddresItem(transaction: transaction) {
+      items.append(recipientAddress)
+    }
+    if let amountItem = createAmountItem(transaction: transaction) {
+      items.append(amountItem)
+    }
     if let apyItem = createAPYItem(transaction: transaction) {
       items.append(
         apyItem
@@ -179,6 +243,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     items.append(
       createFeeListItem(transaction: transaction)
     )
+    if let commentItem = createCommentItem(transaction: transaction) {
+      items.append(commentItem)
+    }
     
     let configuration = TKListContainerView.Configuration(
       items: items,
@@ -216,13 +283,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
-  private func createRecipientItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
-    let recipient: String
-    switch transaction.transaction {
-    case .staking(let staking):
-      recipient = staking.pool.name
-    }
-    
+  private func createRecipientItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
+    guard let recipient = transaction.recipient else { return nil }
     return TKListContainerItemView.Model(
       title: TKLocales.TransactionConfirmation.recipient,
       value: .value(
@@ -231,6 +293,28 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         )
       ),
       action: .copy(copyValue: recipient)
+    )
+  }
+  
+  private func createRecipientAddresItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
+    guard let recipientAddress = transaction.recipientAddress else { return nil }
+    return TKListContainerFullValueItemItem(
+      title: TKLocales.TransactionConfirmation.recipient,
+      value: recipientAddress,
+      copyValue: recipientAddress
+    )
+  }
+  
+  private func createCommentItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
+    guard let comment = transaction.comment, !comment.isEmpty else { return nil }
+    return TKListContainerItemView.Model(
+      title: TKLocales.TransactionConfirmation.comment,
+      value: .value(
+        TKListContainerItemDefaultValueView.Model(
+          topValue: TKListContainerItemDefaultValueView.Model.Value(value: comment)
+        )
+      ),
+      action: .copy(copyValue: comment)
     )
   }
   
@@ -251,7 +335,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
-  private func createAmountItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
+  private func createAmountItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model? {
     let title: String
     switch transaction.transaction {
     case .staking(let staking):
@@ -261,22 +345,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       case .deposit:
         title = TKLocales.TransactionConfirmation.amount
       }
+    case .transfer(let transfer):
+      switch transfer {
+      case .jetton, .ton:
+        title = TKLocales.TransactionConfirmation.amount
+      case .nft:
+        return nil
+      }
     }
     
+    guard let amount = transaction.amount else { return nil }
+    
     let value: TKListContainerItemView.Model.Value
-    let valueFormatted = amountFormatter.formatAmount(
-      transaction.amount.amount.value,
-      fractionDigits: transaction.amount.amount.decimals,
-      maximumFractionDigits: transaction.amount.amount.decimals,
-      currency: transaction.amount.amount.currency
+    let valueFormatted = formatValueItem(
+      amount: amount.amount.value,
+      fractionDigits: amount.amount.decimals,
+      maximumFractionDigits: amount.amount.decimals,
+      item: amount.amount.item
     )
     var convertedFormatted: String?
-    if let converted = transaction.amount.converted {
-      let formatted = amountFormatter.formatAmount(
-        converted.value,
+    if let converted = amount.converted {
+      let formatted = formatValueItem(
+        amount: converted.value,
         fractionDigits: converted.decimals,
         maximumFractionDigits: 2,
-        currency: converted.currency
+        item: converted.item
       )
       convertedFormatted = formatted
     }
@@ -294,27 +387,29 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private func createFeeListItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
     var copyValue: String?
+    var caption: NSAttributedString?
     let value: TKListContainerItemView.Model.Value
     switch transaction.fee {
     case .loading:
       value = .loading
     case let .value(feeValue,
-                    feeConverted):
+                    feeConverted,
+                    isBattery):
       if let feeValue {
-        let feeValueFormatted = amountFormatter.formatAmount(
-          feeValue.value,
+        let feeValueFormatted = formatValueItem(
+          amount: feeValue.value,
           fractionDigits: feeValue.decimals,
           maximumFractionDigits: feeValue.decimals,
-          currency: feeValue.currency
+          item: feeValue.item
         )
         copyValue = feeValueFormatted
         var feeConvertedFormatted: String?
         if let feeConverted {
-          let formatted = amountFormatter.formatAmount(
-            feeConverted.value,
+          let formatted = formatValueItem(
+            amount: feeConverted.value,
             fractionDigits: feeConverted.decimals,
             maximumFractionDigits: 2,
-            currency: feeConverted.currency
+            item: feeConverted.item
           )
           feeConvertedFormatted = "\(String.almostEqual) \(formatted)"
         }
@@ -327,10 +422,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
         ))
       }
+      caption = isBattery ? TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary) : nil
     }
     
     return TKListContainerItemView.Model(
       title: TKLocales.EventDetails.fee,
+      caption: caption,
       value: value,
       action: .copy(copyValue: copyValue)
     )
@@ -350,6 +447,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             return TKLocales.TransactionConfirmation.Buttons.confirmAndCollect
           }
         }
+      case .transfer:
+        return TKLocales.TransactionConfirmation.Buttons.confirmAndSend
       }
     }()
     
@@ -394,10 +493,34 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         ])
       ],
       state: itemState,
+      successTitle: TKLocales.Result.success,
+      errorTitle: TKLocales.Result.failure,
       bottomSpace: 0
     )
-
+    
     return component
+  }
+  
+  private func formatValueItem(amount: BigUInt,
+                               fractionDigits: Int,
+                               maximumFractionDigits: Int,
+                               item: TransactionConfirmationModel.Amount.Item) -> String {
+    switch item {
+    case .currency(let currency):
+      return amountFormatter.formatAmount(
+        amount,
+        fractionDigits: fractionDigits,
+        maximumFractionDigits: maximumFractionDigits,
+        currency: currency
+      )
+    case .symbol(let string):
+      return amountFormatter.formatAmount(
+        amount,
+        fractionDigits: fractionDigits,
+        maximumFractionDigits: maximumFractionDigits,
+        symbol: string
+      )
+    }
   }
 }
 

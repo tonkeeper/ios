@@ -2,15 +2,23 @@ import Foundation
 import TonSwift
 
 public struct SendTransactionParam: Decodable {
-  let messages: [Message]
-  let validUntil: TimeInterval
-  let from: Address?
+  public let messages: [Message]
+  public let validUntil: TimeInterval
+  public let from: Address?
   
   enum CodingKeys: String, CodingKey {
     case messages
     case validUntil = "valid_until"
     case from
     case source
+  }
+  
+  public init(messages: [Message], 
+              validUntil: TimeInterval,
+              from: Address?) {
+    self.messages = messages
+    self.validUntil = validUntil
+    self.from = from
   }
   
   public init(from decoder: Decoder) throws {
@@ -26,10 +34,10 @@ public struct SendTransactionParam: Decodable {
   }
   
   public struct Message: Decodable {
-    let address: AnyAddress
-    let amount: Int64
-    let stateInit: String?
-    let payload: String?
+    public let address: AnyAddress
+    public let amount: Int64
+    public let stateInit: String?
+    public let payload: String?
     
     enum CodingKeys: String, CodingKey {
       case address

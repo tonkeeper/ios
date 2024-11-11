@@ -22,6 +22,8 @@ protocol AmountInputModuleInput: AnyObject {
   var sourceBalance: BigUInt { get set }
   var minimumSourceAmount: BigUInt? { get set }
   var isMaxButtonVisible: Bool { get set }
+  
+  func reset()
 }
 
 protocol AmountInputViewModel: AnyObject {
@@ -44,6 +46,13 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
   var didUpdateIsEnableState: ((Bool) -> Void)?
   
   // MARK: - AmountInputModuleInput
+  
+  func reset() {
+    sourceAmount = 0
+    mode = .source
+    updateBalanceView()
+    updateIsEnableState()
+  }
   
   // MARK: - AmountInputViewModel
   
@@ -296,13 +305,13 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
       amountFormatter.formatAmount(
         destinationAmount,
         fractionDigits: sourceUnit.fractionalDigits,
-        maximumFractionDigits: 2
+        maximumFractionDigits: min(destinationUnit.fractionalDigits, 2)
       )
     case .destination:
       amountFormatter.formatAmount(
         sourceAmount,
         fractionDigits: sourceUnit.fractionalDigits,
-        maximumFractionDigits: 2
+        maximumFractionDigits: min(sourceUnit.fractionalDigits, 2)
       )
     }
   }

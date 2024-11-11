@@ -11,10 +11,12 @@ public class TKTextField: UIControl {
     
     public let view: UIView
     public let mode: Mode
+    public let padding: UIEdgeInsets
     
-    public init(view: UIView, mode: Mode) {
+    public init(view: UIView, mode: Mode, padding: UIEdgeInsets = .zero) {
       self.view = view
       self.mode = mode
+      self.padding = padding
     }
   }
   
@@ -165,9 +167,14 @@ private extension TKTextField {
   func didSetRightItems() {
     rightItemsContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
     rightItems.forEach { rightItem in
+      let container = UIView()
+      container.addSubview(rightItem.view)
+      rightItem.view.snp.makeConstraints { make in
+        make.edges.equalTo(container).inset(rightItem.padding)
+      }
       rightItem.view.setContentHuggingPriority(.required, for: .horizontal)
       rightItem.view.setContentCompressionResistancePriority(.required, for: .horizontal)
-      rightItemsContainer.addArrangedSubview(rightItem.view)
+      rightItemsContainer.addArrangedSubview(container)
     }
     updateRightItemsVisibility()
   }
@@ -177,11 +184,11 @@ private extension TKTextField {
     rightItems.forEach { rightItem in
       switch rightItem.mode {
       case .always:
-        rightItem.view.isHidden = false
+        rightItem.view.superview?.isHidden = false
       case .empty:
-        rightItem.view.isHidden = !isEmpty
+        rightItem.view.superview?.isHidden = !isEmpty
       case .nonEmpty:
-        rightItem.view.isHidden = isEmpty
+        rightItem.view.superview?.isHidden = isEmpty
       }
     }
   }

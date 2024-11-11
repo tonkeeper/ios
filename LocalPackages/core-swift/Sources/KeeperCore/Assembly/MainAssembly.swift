@@ -15,6 +15,7 @@ public final class MainAssembly {
   public let configurationAssembly: ConfigurationAssembly
   public let buySellAssembly: BuySellAssembly
   public let knownAccountsAssembly: KnownAccountsAssembly
+  public let batteryAssembly: BatteryAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
@@ -33,6 +34,7 @@ public final class MainAssembly {
        configurationAssembly: ConfigurationAssembly,
        buySellAssembly: BuySellAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
+       batteryAssembly: BatteryAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -50,6 +52,7 @@ public final class MainAssembly {
     self.configurationAssembly = configurationAssembly
     self.buySellAssembly = buySellAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
+    self.batteryAssembly = batteryAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
@@ -133,6 +136,71 @@ public final class MainAssembly {
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
+  
+  public func jettonTransferTransactionConfirmationController(wallet: Wallet,
+                                                              recipient: Recipient,
+                                                              jettonItem: JettonItem,
+                                                              amount: BigUInt,
+                                                              comment: String?) -> TransactionConfirmationController {
+    JettonTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      jettonItem: jettonItem,
+      amount: amount,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
+  public func tonTransferTransactionConfirmationController(wallet: Wallet,
+                                                           recipient: Recipient,
+                                                           amount: BigUInt,
+                                                           comment: String?) -> TransactionConfirmationController {
+    TonTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      amount: amount,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
+  public func nftTransferTransactionConfirmationController(wallet: Wallet,
+                                                           recipient: Recipient,
+                                                           nft: NFT,
+                                                           comment: String?) -> TransactionConfirmationController {
+    NFTTransferTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      nft: nft,
+      comment: comment,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      ratesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      transferTransaction: transferTransaction()
+    )
+  }
+  
+  func transferTransaction() -> TransferTransaction {
+    TransferTransaction(
+      tonProofTokenService: servicesAssembly.tonProofTokenService(),
+      sendService: servicesAssembly.sendService(),
+      batteryService: batteryAssembly.batteryService(),
+      balanceStore: storesAssembly.balanceStore,
+      accountService: servicesAssembly.accountService(),
+      configuration: configurationAssembly.configuration
     )
   }
   

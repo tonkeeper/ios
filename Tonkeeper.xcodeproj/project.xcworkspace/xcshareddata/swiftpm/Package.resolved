@@ -46,6 +46,15 @@
       }
     },
     {
+      "identity" : "battery-api-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/battery-api-swift",
+      "state" : {
+        "revision" : "f0c6e89e88446000de0a81290d45cb57fb11a492",
+        "version" : "2.0.2"
+      }
+    },
+    {
       "identity" : "bcswiftdcbor",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/BlockchainCommons/BCSwiftDCBOR",
@@ -284,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "a929fc21401f884e5a99217b91735253415f7f8f",
-        "version" : "1.0.20"
+        "revision" : "89aba495771825d93c055545d3b36f08e43bcbde",
+        "version" : "1.0.22"
       }
     },
     {

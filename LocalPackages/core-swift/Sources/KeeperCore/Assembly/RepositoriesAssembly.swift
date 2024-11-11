@@ -67,4 +67,8 @@ public struct RepositoriesAssembly {
   func stakingPoolsInfoRepository() -> StakingPoolsInfoRepository {
     StakingPoolsInfoRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
+
+  func tonProofTokenRepository() -> TonProofTokenRepository {
+    TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
+  }
 }

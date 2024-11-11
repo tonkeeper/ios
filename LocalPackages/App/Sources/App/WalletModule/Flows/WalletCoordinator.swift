@@ -25,6 +25,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
                                       _ stakingPoolInfo: StackingPoolInfo,
                                       _ accountStakingInfo: AccountStackingInfo) -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -130,6 +131,10 @@ private extension WalletCoordinator {
     
     module.output.didTapBackup = { [weak self] wallet in
       self?.didTapBackup?(wallet)
+    }
+    
+    module.output.didTapBattery = { [weak self] wallet in
+      self?.didTapBattery?(wallet)
     }
 
     module.output.didTapManage = { [weak self] wallet in

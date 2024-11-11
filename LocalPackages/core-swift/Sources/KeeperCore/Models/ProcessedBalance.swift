@@ -6,6 +6,7 @@ public struct ProcessedBalance: Equatable, Codable {
   public let tonItem: ProcessedBalanceTonItem
   public let jettonItems: [ProcessedBalanceJettonItem]
   public let stakingItems: [ProcessedBalanceStakingItem]
+  public let batteryBalance: BatteryBalance?
   
   public let currency: Currency
   public let date: Date

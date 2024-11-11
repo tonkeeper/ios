@@ -57,12 +57,12 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
       transactionConfirmationController: transactionConfirmationController,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
-    module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
+    module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] transferData, wallet in
       guard let self = self else { return nil }
       let coordinator = WalletTransferSignCoordinator(
         router: ViewControllerRouter(rootViewController: router.rootViewController),
         wallet: wallet,
-        transferMessageBuilder: walletTransfer,
+        transferData: transferData,
         keeperCoreMainAssembly: keeperCoreMainAssembly,
         coreAssembly: coreAssembly)
       

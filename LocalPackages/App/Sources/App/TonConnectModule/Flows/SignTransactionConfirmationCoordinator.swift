@@ -12,7 +12,7 @@ enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
 }
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws
   func cancel(wallet: Wallet) async
 }
 
@@ -32,7 +32,7 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     self.tonConnectService = tonConnectService
   }
   
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -86,7 +86,7 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -142,7 +142,7 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
     self.responseHandler = responseHandler
   }
   
-  func confirm(wallet: KeeperCore.Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: KeeperCore.Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = signRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -279,9 +279,9 @@ private extension SignTransactionConfirmationCoordinator {
     
     module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController, wallet] in
       do {
-        try await self?.confirmator.confirm(wallet: wallet) { transferMessageBuilder in
+        try await self?.confirmator.confirm(wallet: wallet) { transferData in
           guard let self, let bottomSheetViewController else { throw Error.failedToSign }
-          return try await self.performSign(transferMessageBuilder: transferMessageBuilder,
+          return try await self.performSign(transferData: transferData,
                                             wallet: wallet,
                                             fromViewController: bottomSheetViewController)
         }
@@ -344,11 +344,11 @@ private extension SignTransactionConfirmationCoordinator {
     sheetViewController.present(fromViewController: rootViewController)
   }
 
-  func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
+  func performSign(transferData: TransferData, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
     let coordinator = WalletTransferSignCoordinator(
       router: ViewControllerRouter(rootViewController: fromViewController),
       wallet: wallet,
-      transferMessageBuilder: transferMessageBuilder,
+      transferData: transferData,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly)
     

@@ -274,6 +274,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   private func handleEvents(_ events: [AccountEvent]) {
     for event in events {
+      let isEventRepeat = eventsMap[event.eventId] != nil
       eventsMap[event.eventId] = event
       let eventPeriod = calculateEventPeriod(event: event, relativeDate: relativeDate)
       guard let sectionDate = calculateEventSectionDate(event: event, eventPeriod: eventPeriod) else { continue }
@@ -282,10 +283,17 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
          sections.count > sectionIndex {
         let section = sections[sectionIndex]
         var updatedEvents = section.events
-        if let indexToInsert = updatedEvents.firstIndex(where: { event.date > $0.date }) {
-          updatedEvents.insert(event, at: indexToInsert)
+        if isEventRepeat {
+          if let index = updatedEvents.firstIndex(where: { $0.eventId == event.eventId }) {
+            updatedEvents.remove(at: index)
+            updatedEvents.insert(event, at: index)
+          }
         } else {
-          updatedEvents.append(event)
+          if let indexToInsert = updatedEvents.firstIndex(where: { event.date > $0.date }) {
+            updatedEvents.insert(event, at: indexToInsert)
+          } else {
+            updatedEvents.append(event)
+          }
         }
         let updatedSection = HistoryList.Section(
           id: section.date,

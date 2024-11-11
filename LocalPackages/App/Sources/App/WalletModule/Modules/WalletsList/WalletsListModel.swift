@@ -13,6 +13,7 @@ protocol WalletsListModel: AnyObject {
   func getState() -> WalletsListModelState
   func selectWallet(wallet: Wallet)
   func moveWallet(fromIndex: Int, toIndex: Int)
+  func getWallet(id: String) -> Wallet?
 }
 
 final class WalletsPickerListModel: WalletsListModel {
@@ -83,6 +84,11 @@ final class WalletsPickerListModel: WalletsListModel {
       )
     )
   }
+  
+  func getWallet(id: String) -> Wallet? {
+    guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == id }) else { return nil }
+    return wallet
+  }
 }
 
 final class TonConnectWalletsPickerListModel: WalletsListModel {
@@ -127,4 +133,12 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {}
+  
+  func getWallet(id: String) -> Wallet? {
+    let wallets = walletsStore.state.wallets.filter { $0.isTonconnectAvailable }
+    guard let wallet = wallets.first(where: { $0.isTonconnectAvailable }) else {
+      return nil
+    }
+    return wallet
+  }
 }

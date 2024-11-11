@@ -20,6 +20,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     public var id: String?
     public let title: String
     public let titleIcon: Icon?
+    public let caption: NSAttributedString?
     public let value: Value
     public var action: TKListContainerItemAction?
     
@@ -36,11 +37,13 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     public init(id: String? = nil,
                 title: String,
                 titleIcon: Icon? = nil,
+                caption: NSAttributedString? = nil,
                 value: Value,
                 action: TKListContainerItemAction?) {
       self.id = id
       self.title = title
       self.titleIcon = titleIcon
+      self.caption = caption
       self.value = value
       self.action = action
     }
@@ -53,6 +56,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
+    captionLabel.attributedText = model.caption
     titleIconImageView.image = model.titleIcon?.image
     titleIconImageView.tintColor = model.titleIcon?.tintColor
     valueViewContainer.subviews.forEach { $0.removeFromSuperview() }
@@ -85,7 +89,14 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
   private let titleContainerView = UIView()
 
   private let titleLabel = UILabel()
+  private let captionLabel = UILabel()
   private let titleIconImageView = UIImageView()
+  private let titleVerticalStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    return stackView
+  }()
+  
   private let valueStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -109,8 +120,11 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     titleIconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    captionLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     
-    stackView.addArrangedSubview(titleContainerView)
+    stackView.addArrangedSubview(titleVerticalStackView)
+    titleVerticalStackView.addArrangedSubview(titleContainerView)
+    titleVerticalStackView.addArrangedSubview(captionLabel)
     titleContainerView.addSubview(titleLabel)
     titleContainerView.addSubview(titleIconImageView)
     

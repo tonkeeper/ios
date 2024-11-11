@@ -47,10 +47,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
         wallet: wallet,
         bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
           nft: nft,
-          sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-          signClosure: { transfer in
-            try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-          }
+          sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
         )
       ),
       keeperCoreMainAssembly: keeperCoreMainAssembly,

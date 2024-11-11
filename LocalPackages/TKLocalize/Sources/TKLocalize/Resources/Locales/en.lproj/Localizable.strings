@@ -18,6 +18,9 @@
 
 "state.failed" = "Failed";
 
+"result.success" = "Done";
+"result.failure" = "Error";
+
 "toast.copied" = "Copied";
 "toast.loading" = "Loading";
 "toast.link_expired" = "Expired link";
@@ -549,7 +552,51 @@
 "transaction_confirmation.unstake_amount" = "Unstake amount";
 "transaction_confirmation.unstake" = "Unstake";
 "transaction_confirmation.deposit" = "Deposit";
+"transaction_confirmation.comment" = "Comment";
 "transaction_confirmation.apy" = "APY";
+"transaction_confirmation.battery" = "Will be paid with Battery";
+"transaction_confirmation.buttons.confirm_and_send" = "Confirm and Send";
 "transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
 "transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
 "transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";
+
+"battery.refill.title" = "Tonkeeper Battery";
+"battery.refill.empty_caption" = "Swap via Tonkeeper, send tokens and unstake TON.";
+"battery.refill.supported_transactions" = "Supported transactions";
+"battery.refill.settings.title" = "Battery Settings";
+"battery.refill.settings.caption" = "Will be paid: ";
+"battery.refill.settings.caption.items.swaps" = "swaps";
+"battery.refill.settings.caption.items.token_transfers" = "token transfers";
+"battery.refill.settings.caption.items.NFT_transfers" = "NFT transfers";
+"battery.refill.iap.items.large" = "Large";
+"battery.refill.iap.items.medium" = "Medium";
+"battery.refill.iap.items.small" = "Small";
+"battery.refill.crypto.recharge" = "Recharge with";
+"battery.refill.gift.title" = "Battery Gift";
+"battery.refill.gift.caption" = "Share with friends";
+"battery.refill.charges_history.title" = "Charges history";
+"battery.refill.charges_history.caption" = "Recharges and refunds";
+"battery.refill.footer.description" = "One charge covers the average transaction fee. Some transactions may cost more.";
+"battery.refill.footer.restore_purchase" = "Restore purchases.";
+"battery.refill.charges.zero" = "charges";
+"battery.refill.charges.one" = "charge";
+"battery.refill.charges.few" = "charges";
+"battery.refill.charges.many" = "charges";
+"battery.refill.charges.other" = "charges";
+"battery.refill.promocode" = "Promo Code";
+"battery.refill.toast.recharged" = "Battery recharged";
+
+"battery.settings.title" = "Battery Settings";
+"battery.settings.caption" = "Selected transactions will be paid by Tonkeeper Battery.";
+"battery.settings.items.swaps.title" = "Swaps via Tonkeeper";
+"battery.settings.items.swaps.caption" = "per swap";
+"battery.settings.items.token.title" = "Token transfers";
+"battery.settings.items.token.caption" = "per transfer";
+"battery.settings.items.nft.title" = "NFT transfers";
+"battery.settings.items.nft.caption" = "per transfer";
+
+"battery.recharge.title" = "Charge";
+"battery.recharge.gift_title" = "Gift";
+"battery.recharge.сustom_input.title" = "Other";
+"battery.recharge.сustom_input.caption" = "Enter amount manually";
+"battery.recharge.toast.success" = "Battery will charge in a few minutes";

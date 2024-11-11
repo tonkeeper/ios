@@ -203,6 +203,7 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
       tonItem: tonItem,
       jettonItems: jettonItems,
       stakingItems: stakingItems,
+      batteryBalance: walletBalance.batteryBalance,
       currency: currency,
       date: walletBalance.date
     )

@@ -52,7 +52,8 @@ public final class Assembly {
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
     locationAPIAsembly: locationAPIAssembly,
     coreAssembly: coreAssembly,
-    secureAssembly: secureAssembly
+    secureAssembly: secureAssembly,
+    batteryAssembly: batteryAssembly
   )
   private lazy var storesAssembly = StoresAssembly(
     apiAssembly: apiAssembly,
@@ -78,6 +79,10 @@ public final class Assembly {
     )
   }
   private lazy var rnAssembly = RNAssembly()
+  private lazy var batteryAssembly = BatteryAssembly(
+    batteryAPIAssembly: BatteryAPIAssembly(configurationAssembly: configurationAssembly),
+    coreAssembly: coreAssembly
+  )
   
   private let dependencies: Dependencies
   
@@ -105,6 +110,7 @@ public extension Assembly {
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
       buySellAssembly: buySellAssembly,
+      batteryAssembly: batteryAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,

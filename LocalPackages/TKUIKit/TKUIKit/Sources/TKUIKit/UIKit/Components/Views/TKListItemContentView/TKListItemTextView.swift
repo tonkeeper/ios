@@ -2,7 +2,7 @@ import UIKit
 
 public final class TKListItemTextView: UIView {
   
-  public struct Configuration {
+  public struct Configuration: Hashable {
     public let text: NSAttributedString?
     public let numberOfLines: Int
     public let padding: UIEdgeInsets

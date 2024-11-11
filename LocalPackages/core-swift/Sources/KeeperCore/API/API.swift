@@ -500,6 +500,46 @@ extension API {
   }
 }
 
+// MARK: - TonConnect
+extension API {
+  func getTonProofToken(wallet: Wallet, tonProof: TonConnect.TonProof) async throws -> String {
+    let builder = Builder()
+    try wallet.stateInit.storeTo(builder: builder)
+    let stateInit = try builder.endCell().toBoc().base64EncodedString()
+    let signature = try tonProof.signature.signature().base64EncodedString()
+    let walletAddress = try wallet.address.toRaw()
+    
+    let request = try await createRequest {
+      return WalletAPI.tonConnectProofWithRequestBuilder(
+        tonConnectProofRequest: TonConnectProofRequest(
+          address: walletAddress,
+          proof: TonConnectProofRequestProof(
+            timestamp: Int64(tonProof.timestamp),
+            domain: TonConnectProofRequestProofDomain(
+              lengthBytes: Int(tonProof.domain.lengthBytes),
+              value: tonProof.domain.value
+            ),
+            signature: signature,
+            payload: tonProof.payload,
+            stateInit: stateInit
+          )
+        )
+      )
+    }
+
+    let response = try await request.execute().body
+    return response.token
+  }
+  
+  func getTonconnectPayload() async throws -> String {
+    let request = try await createRequest {
+      return ConnectAPI.getTonConnectPayloadWithRequestBuilder()
+    }
+    let response = try await request.execute().body
+    return response.payload
+  }
+}
+
 // MARK: - Time
 extension API {
   func getTime() async throws -> TimeInterval {

@@ -12,6 +12,21 @@ public final class Configuration {
       await loadConfiguration().testnet.tonapiV2Endpoint
     }
   }
+  public func tonAPISSEEndpoint(isTestnet: Bool) async -> String {
+    isTestnet
+    ? await loadConfiguration().testnet.tonAPISSEEndpoint
+    : await loadConfiguration().mainnet.tonAPISSEEndpoint
+  }
+  public func batteryHost(isTestnet: Bool) async -> String {
+    isTestnet
+    ? await loadConfiguration().testnet.batteryHost
+    : await loadConfiguration().mainnet.batteryHost
+  }
+  public var testnetBatteryHost: String {
+    get async {
+      await loadConfiguration().mainnet.batteryHost
+    }
+  }
   public var tonApiV2Key: String {
     get async {
       await loadConfiguration().mainnet.tonApiV2Key
@@ -81,6 +96,65 @@ public final class Configuration {
     get {
       configuration.mainnet.stakingInfoUrl
     }
+  }
+  public func batteryMeanFeesDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet 
+    ? configuration.testnet.batteryMeanFeesDecimaNumber
+    : configuration.mainnet.batteryMeanFeesDecimaNumber
+  }
+  
+  public func batteryReservedAmountDecimalNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryReservedAmountDecimalNumber
+    : configuration.mainnet.batteryReservedAmountDecimalNumber
+  }
+  
+  public func batteryMeanFeesPriceSwapDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceSwapDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceSwapDecimaNumber
+  }
+  
+  public func batteryMeanFeesPriceJettonDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceJettonDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceJettonDecimaNumber
+  }
+  
+  public func batteryMeanFeesPriceNFTDecimaNumber(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanFeesPriceNFTDecimaNumber
+    : configuration.mainnet.batteryMeanFeesPriceNFTDecimaNumber
+  }
+  
+  public func batteryRefundEndpoint(isTestnet: Bool) -> URL? {
+    isTestnet ? configuration.testnet.batteryRefundEndpoint : configuration.mainnet.batteryRefundEndpoint
+  }
+  
+  public func batteryMaxInputAmount(isTestnet: Bool) async -> NSDecimalNumber {
+    await isTestnet
+    ? loadConfiguration().testnet.batteryMaxInputAmountDecimaNumber
+    : loadConfiguration().mainnet.batteryMaxInputAmountDecimaNumber
+  }
+  
+  public func isBatteryEnable(isTestnet: Bool) async -> Bool {
+    await isTestnet
+    ? !loadConfiguration().testnet.disableBattery
+    : !loadConfiguration().mainnet.disableBattery
+  }
+  
+  public func isBatterySendEnable(isTestnet: Bool) async -> Bool {
+    await isTestnet
+    ? !loadConfiguration().testnet.disableBatterySend
+    : !loadConfiguration().mainnet.disableBatterySend
+  }
+  
+  public func isBatteryBeta(isTestnet: Bool) -> Bool {
+    isTestnet ? configuration.testnet.isBatteryBeta : configuration.mainnet.isBatteryBeta
+  }
+  
+  public func isDisableBatteryCryptoRechargeModule(isTestnet: Bool) -> Bool {
+    isTestnet ? configuration.testnet.disableBatteryCryptoRechargeModule : configuration.mainnet.disableBatteryCryptoRechargeModule
   }
 
   public func flags(isTestnet: Bool) -> RemoteConfiguration.Flags {

@@ -60,6 +60,26 @@ public extension UIImage {
         }
       }
     }
+    public enum Battery {
+      public static var batteryBody24: UIImage {
+        .imageWithName("Icons/Battery/battery-body-24")
+      }
+      public static var batteryBody34: UIImage {
+        .imageWithName("Icons/Battery/battery-body-34")
+      }
+      public static var batteryBody44: UIImage {
+        .imageWithName("Icons/Battery/battery-body-44")
+      }
+      public static var batteryBody128: UIImage {
+        .imageWithName("Icons/Battery/battery-body-128")
+      }
+      public static var gift: UIImage {
+        .imageWithName("Images/Battery/battery_gift")
+      }
+      public static var history: UIImage {
+        .imageWithName("Images/Battery/battery_history")
+      }
+    }
   }
 }
 

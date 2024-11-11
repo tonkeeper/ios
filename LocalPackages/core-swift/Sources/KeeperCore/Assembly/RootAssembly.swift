@@ -3,7 +3,7 @@ import Foundation
 public final class RootAssembly {
   public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
-  private let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
@@ -11,6 +11,7 @@ public final class RootAssembly {
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   private let buySellAssembly: BuySellAssembly
+  private let batteryAssembly: BatteryAssembly
   private let knownAccountsAssembly: KnownAccountsAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
@@ -28,6 +29,7 @@ public final class RootAssembly {
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
        buySellAssembly: BuySellAssembly,
+       batteryAssembly: BatteryAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
@@ -44,6 +46,7 @@ public final class RootAssembly {
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
     self.buySellAssembly = buySellAssembly
+    self.batteryAssembly = batteryAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
@@ -99,6 +102,7 @@ public final class RootAssembly {
       configurationAssembly: configurationAssembly,
       buySellAssembly: buySellAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
+      batteryAssembly: batteryAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
