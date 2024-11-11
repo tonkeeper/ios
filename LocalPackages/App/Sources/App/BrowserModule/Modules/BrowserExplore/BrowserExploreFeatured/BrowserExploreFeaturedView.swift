@@ -32,10 +32,17 @@ final class BrowserExploreFeaturedView: UIView {
       collectionView.alpha = 0
       collectionView.reloadData()
       collectionView.layoutIfNeeded()
+
       guard !dataSource.isEmpty else { return }
+
       DispatchQueue.main.async {
         let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
-        self.collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0), at: .centeredHorizontally, animated: false)
+        self.safeCollectionViewScroll(
+          at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
+          at: .centeredHorizontally,
+          animated: false
+        )
+
         UIView.animate(withDuration: 0.2) {
           self.collectionView.alpha = 1.0
         }
@@ -149,7 +156,7 @@ private extension BrowserExploreFeaturedView {
         resetCarouselIfNeeded()
         self.collectionView.isScrollEnabled = false
         UIView.animate(withDuration: 0.5) {
-          self.collectionView.scrollToItem(
+          self.safeCollectionViewScroll(
             at: IndexPath(item: self.indexOfMostVisibleCell(offset: 1), section: 0),
             at: .centeredHorizontally,
             animated: true
@@ -160,6 +167,16 @@ private extension BrowserExploreFeaturedView {
         }
       }
     }
+  }
+
+  func safeCollectionViewScroll(at indexPath: IndexPath,
+                                at scrollPosition: UICollectionView.ScrollPosition,
+                                animated: Bool) {
+    guard collectionView.numberOfItems(inSection: 0) > 0 else {
+      return
+    }
+
+    collectionView.scrollToItem(at: indexPath, at: scrollPosition, animated: animated)
   }
 }
 
@@ -217,7 +234,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
       
     } else {
       let indexPath = IndexPath(row: indexOfMostVisibleCell, section: 0)
-      collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+      safeCollectionViewScroll(at: indexPath, at: .centeredHorizontally, animated: true)
     }
   }
   
@@ -227,22 +244,24 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
   }
   
   func resetCarouselIfNeeded() {
-    guard collectionView.numberOfItems(inSection: 0) > 0 else {
-      return
-    }
-
     let indexOfMostVisibleCell = self.indexOfMostVisibleCell()
     let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
     let indexOfRightSignificantCell = indexOfLeftSignificantCell + self.dapps.count - 1
     
     if indexOfMostVisibleCell == indexOfLeftSignificantCell - 1 {
-      collectionView.scrollToItem(at: IndexPath(item: indexOfRightSignificantCell, section: 0),
-                                  at: .centeredHorizontally, animated: false)
+      safeCollectionViewScroll(
+        at: IndexPath(item: indexOfRightSignificantCell, section: 0),
+        at: .centeredHorizontally,
+        animated: false
+      )
     }
     
     if indexOfMostVisibleCell == indexOfRightSignificantCell + 1 {
-      collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
-                                  at: .centeredHorizontally, animated: false)
+      safeCollectionViewScroll(
+        at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
+        at: .centeredHorizontally,
+        animated: false
+      )
     }
   }
   
