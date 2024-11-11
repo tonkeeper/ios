@@ -309,7 +309,7 @@ private extension SignTransactionConfirmationCoordinator {
     windowRouter.window.rootViewController = rootViewController
     windowRouter.window.makeKeyAndVisible()
 
-    let viewController = InsufficientFundsViewController()
+    let viewController = InfoPopupBottomSheetViewController()
     let sheetViewController = TKBottomSheetViewController(contentViewController: viewController)
 
     sheetViewController.didClose = { [weak router, weak infoWindowRouter] isInteractivly in
@@ -332,7 +332,7 @@ private extension SignTransactionConfirmationCoordinator {
       }
     }
 
-    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     let configuration = configurationBuilder.commonConfiguration(

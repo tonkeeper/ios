@@ -418,6 +418,12 @@
 "nft_details.renew_until" = "Продлить до %@";
 "nft_details.expires_in_days" = "Истекает через %@ дней";
 "nft_details.unverified_nft" = "Непроверенный NFT";
+"nft_details.unverified_nft.unverified_description" = "NFT может быть небезопасным по\U00A0одной\U00A0из\U00A0следующих причин.";
+"nft_details.unverified_nft.used_for_spam_description" = "•\tИспользуется для\U00A0спама. Применяется для\U00A0отправки нерелевантных сообщений в\U00A0больших масштабах.";
+"nft_details.unverified_nft.used_for_scam_description" = "•\tИспользуется в\U00A0мошенничестве. Название NFT, информация или\U00A0изображение может вводить пользователей в\U00A0заблуждение.";
+"nft_details.unverified_nft.little_info_description" = "•\tМы пока мало знаем об\U00A0авторе и\U00A0истории этого NFT.";
+"nft_details.unverified_nft.report_spam" = "Пожаловаться на спам";
+"nft_details.unverified_nft.not_spam" = "Это не спам";
 "nft_details.about_collection" = "Подробнее о коллекции";
 "nft_details.domain_on_sale_description" = "Домен сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
 "nft_details.nft_on_sale_description" = "NFT сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";

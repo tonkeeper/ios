@@ -14,6 +14,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
   var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
   var didHideNFT: (() -> Void)? { get set }
+  var didTapUnverifiedNftDetails: (() -> Void)? { get set }
 }
 
 protocol NFTDetailsViewModel: AnyObject {
@@ -83,6 +84,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
   var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
   var didHideNFT: (() -> Void)?
+  var didTapUnverifiedNftDetails: (() -> Void)?
 
   // MARK: - NFTDetailsViewModel
   
@@ -189,8 +191,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
             tintColor: .Accent.orange,
             padding: UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 0)
           ),
-          action: {
-            
+          action: { [weak self] in
+            self?.didTapUnverifiedNftDetails?()
           })
       }
     }()

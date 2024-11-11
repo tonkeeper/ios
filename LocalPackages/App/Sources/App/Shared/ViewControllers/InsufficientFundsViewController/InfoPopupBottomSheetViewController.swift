@@ -1,13 +1,19 @@
 import UIKit
 import TKUIKit
 
-final class InsufficientFundsViewController: UIViewController, TKBottomSheetScrollContentViewController {
+final class InfoPopupBottomSheetViewController: UIViewController, TKBottomSheetScrollContentViewController {
   
   struct Configuration {
+
+    enum BodyView {
+      case textWithTabs(content: [String])
+    }
+
     let image: UIImage?
     let imageTintColor: UIColor?
     let title: String
     let caption: String
+    let bodyContent: [BodyView]?
     let buttons: [TKButton.Configuration]
   }
   
@@ -67,14 +73,7 @@ final class InsufficientFundsViewController: UIViewController, TKBottomSheetScro
     view.addSubview(scrollView)
     scrollView.addSubview(stackView)
     
-    stackView.addArrangedSubview(imageView)
-    stackView.setCustomSpacing(12, after: imageView)
-    stackView.addArrangedSubview(titleCaptionPaddingView)
-    stackView.addArrangedSubview(buttonsPaddingContainer)
-    
     titleCaptionPaddingView.addSubview(titleCaptionStackView)
-    titleCaptionStackView.addArrangedSubview(titleLabel)
-    titleCaptionStackView.addArrangedSubview(captionLabel)
     
     scrollView.snp.makeConstraints { make in
       make.edges.equalTo(self.view)
@@ -93,18 +92,53 @@ final class InsufficientFundsViewController: UIViewController, TKBottomSheetScro
   }
 
   private func updateConfiguration() {
-    titleLabel.attributedText = configuration?.title.withTextStyle(.h2, color: .Text.primary, alignment: .center)
-    captionLabel.attributedText = configuration?.caption.withTextStyle(.body1, color: .Text.secondary, alignment: .center)
+    stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    stackView.addArrangedSubview(imageView)
+    stackView.setCustomSpacing(12, after: imageView)
+    stackView.addArrangedSubview(titleCaptionPaddingView)
+
+    titleCaptionStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    titleCaptionStackView.addArrangedSubview(titleLabel)
+    titleCaptionStackView.addArrangedSubview(captionLabel)
 
     imageView.isHidden = configuration?.image == nil
     imageView.image = configuration?.image
     imageView.tintColor = configuration?.imageTintColor
 
+    titleLabel.attributedText = configuration?.title.withTextStyle(.h2, color: .Text.primary, alignment: .center)
+    captionLabel.attributedText = configuration?.caption.withTextStyle(.body1, color: .Text.secondary, alignment: .center)
+
+    updateBodyConfiguration()
+
+    stackView.addArrangedSubview(buttonsPaddingContainer)
     let buttons = (configuration?.buttons ?? []).map { configuration in
       let button = TKButton()
       button.configuration = configuration
       return button
     }
     buttonsPaddingContainer.setViews(buttons)
+  }
+
+  private func updateBodyConfiguration() {
+    guard let bodyContent = configuration?.bodyContent, !bodyContent.isEmpty else {
+      return
+    }
+
+    bodyContent.forEach { item in
+      let containerView = TKPaddingContainerView()
+      containerView.padding = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+      stackView.addArrangedSubview(containerView)
+
+      containerView.snp.makeConstraints { $0.width.equalTo(stackView) }
+
+      switch item {
+      case .textWithTabs(let content):
+        let tabView = TabLabelView()
+        tabView.configure(model: .init(content: content))
+        containerView.setViews([tabView])
+
+        tabView.snp.makeConstraints { $0.edges.equalToSuperview() }
+      }
+    }
   }
 }

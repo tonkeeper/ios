@@ -76,7 +76,7 @@ private extension CollectiblesDetailsCoordinator {
     }
     
     module.output.didTapBurn = { [weak self] nft in
-      guard let self = self, let burnAddress = try? Address.burnAddress else {
+      guard let self = self, let burnAddress = Address.burnAddress else {
         return
       }
       
@@ -176,6 +176,10 @@ private extension CollectiblesDetailsCoordinator {
       }
     }
 
+    module.output.didTapUnverifiedNftDetails = { [weak self] in
+      self?.openUnverifiedNftInfoPopup()
+    }
+
     router.push(viewController: module.view)
   }
 
@@ -210,7 +214,44 @@ private extension CollectiblesDetailsCoordinator {
     
     self.router.rootViewController.present(navigationController, animated: true)
   }
-  
+
+  func openUnverifiedNftInfoPopup() {
+    let viewController = InfoPopupBottomSheetViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    var reportSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    reportSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.reportSpam))
+    reportSpamButton.backgroundColors = [
+      .normal: .Accent.orange,
+      .highlighted: .Accent.orange.withAlphaComponent(0.64)
+    ]
+    reportSpamButton.action = {
+
+    }
+    var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.notSpam))
+    notSpamButton.action = {
+
+    }
+    let content = [
+      TKLocales.NftDetails.UnverifiedNft.usedForSpamDescription,
+      TKLocales.NftDetails.UnverifiedNft.usedForScamDescription,
+      TKLocales.NftDetails.UnverifiedNft.littleInfoDescription
+    ]
+    let configuration = configurationBuilder.commonConfiguration(
+      title: TKLocales.NftDetails.unverifiedNft,
+      caption: TKLocales.NftDetails.UnverifiedNft.unverifiedDescription,
+      body: [.textWithTabs(content: content)],
+      buttons: [reportSpamButton, notSpamButton]
+    )
+
+    viewController.configuration = configuration
+    let presented = router.rootViewController.presentedViewController ?? router.rootViewController
+    bottomSheetViewController.present(fromViewController: presented)
+  }
+
   func openLinkDomain(wallet: Wallet, nft: NFT) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
