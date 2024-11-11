@@ -439,7 +439,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return true
     }
   }
-  
+
+  // MARK: -  TODO: complete on next iteration: flow: .deeplink
   func handleTonConnectDeeplink(_ parameters: TonConnectParameters) -> Bool {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
@@ -455,7 +456,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
-            flow: .deeplink,
+            flow: .common,
             connector: DefaultTonConnectConnectCoordinatorConnector(
               tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
             ),
