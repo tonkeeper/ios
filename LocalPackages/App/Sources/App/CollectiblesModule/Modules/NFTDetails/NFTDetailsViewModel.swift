@@ -235,8 +235,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   }
 
   private func composeReportSpamViewModel() -> NFTDetailsReportSpamButtonsView.Model? {
-    let suspiciousCategories: [NFT.Trust] = [.unknown, .none]
-    guard wallet.kind != .watchonly, suspiciousCategories.contains(nft.trust), currentState != .approved else {
+    guard wallet.kind != .watchonly, nft.trust != .whitelist, currentState != .approved else {
       return nil
     }
 
