@@ -98,18 +98,21 @@ open class TKBridgeWebViewController: UIViewController {
   private let initialTitle: String?
   private let jsInjection: String
   private let configuration: Configuration
+  private let deeplinkHandler: ((_ deeplink: String) throws -> Void)?
   
   // MARK: - Init
   
   public init(initialURL: URL,
               initialTitle: String?,
               jsInjection: String?,
-              configuration: Configuration) {
+              configuration: Configuration,
+              deeplinkHandler: ((_ deeplink: String) throws -> Void)? = nil) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
     self.url = initialURL
     self.configuration = configuration
     self.jsInjection = jsInjection ?? ""
+    self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle
   }
@@ -333,9 +336,19 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
   }
   
   public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
-    if let url = navigationAction.request.url, let host = url.host,host.contains("t.me") {
-      UIApplication.shared.open(url, options: [:], completionHandler: nil)
-      return .cancel
+    if let url = navigationAction.request.url {
+      if let host = url.host,host.contains("t.me") {
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        return .cancel
+      }
+      if let handler = deeplinkHandler {
+        do {
+          try handler(url.absoluteString)
+          return .cancel
+        } catch {
+          return .allow
+        }
+      }
     }
     return .allow
   }

@@ -9,6 +9,8 @@ import TKLocalize
 
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
+
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -80,6 +82,10 @@ private extension BrowserCoordinator {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
+    
+    coordinator.didHandleDeeplink = { [weak self] deeplink in
+      _ = self?.didHandleDeeplink?(deeplink)
+    }
 
     addChild(coordinator)
     coordinator.start()
