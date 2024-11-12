@@ -3,8 +3,16 @@ import TKUIKit
 
 final class BrowserConnectedAppCell: UICollectionViewCell, ReusableView, TKConfigurableView {
   
+  var didLongPress: (() -> Void)?
+  
   let iconImageView = UIImageView()
   let titleLabel = UILabel()
+  
+  override var isHighlighted: Bool {
+    didSet {
+      alpha = isHighlighted ? 0.48 : 1
+    }
+  }
   
   private var imageDownloadTask: ImageDownloadTask?
   
@@ -82,6 +90,20 @@ private extension BrowserConnectedAppCell {
       make.top.equalTo(iconImageView.snp.bottom)
       make.left.right.equalTo(self)
       make.bottom.equalTo(self).offset(-8)
+    }
+    
+    let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(longPressGestureHandler(recognizer:)))
+    longPressGesture.minimumPressDuration = 0.5
+    addGestureRecognizer(longPressGesture)
+  }
+  
+  @objc
+  func longPressGestureHandler(recognizer: UILongPressGestureRecognizer) {
+    switch recognizer.state {
+    case .began:
+      didLongPress?()
+    default:
+      break
     }
   }
 }

@@ -4,12 +4,6 @@ public final class BrowserConnectedController {
   
   public var didUpdateApps: (() -> Void)?
   
-  public struct ConnectedApp {
-    public let url: URL
-    public let name: String
-    public let iconURL: URL?
-  }
-  
   private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
   
@@ -26,21 +20,20 @@ public final class BrowserConnectedController {
     }
   }
   
-  public func getConnectedApps() -> [ConnectedApp] {
+  public func getConnectedApps() -> [TonConnectApp] {
     do {
       let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.activeWallet)
         .apps
-        .map { item in
-          ConnectedApp(
-            url: item.manifest.url,
-            name: item.manifest.name,
-            iconURL: item.manifest.iconUrl
-          )
-        }
       return connectedApps
     } catch {
       return []
     }
+  }
+  
+  public func deleteApp(_ app: TonConnectApp) {
+    guard let wallet = try? walletsStore.activeWallet else { return }
+    tonConnectAppsStore.deleteConnectedApp(wallet: wallet, app: app)
+    didUpdateApps?()
   }
 }
 
