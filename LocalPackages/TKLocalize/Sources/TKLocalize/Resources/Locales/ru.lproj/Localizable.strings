@@ -69,6 +69,8 @@
 
 "browser.connected_apps.empty_title" = "Ваши приложения будут здесь";
 "browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Tonkeeper.";
+"browser.connected_apps.disconnect.title" = "Отключить";
+"browser.connected_apps.disconnect.button" = "Отключить";
 
 "browser.search_field.placeholder" = "Поиск";
 "browser.search.title" = "Браузер";

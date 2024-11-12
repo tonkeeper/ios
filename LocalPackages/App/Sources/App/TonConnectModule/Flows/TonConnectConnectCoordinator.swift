@@ -146,6 +146,14 @@ private extension TonConnectConnectCoordinator {
       bottomSheetViewController?.dismiss {
         self?.didConnect?()
       }
+      if let returnStrategy = self?.parameters.returnStrategy {
+        guard let url = URL(string: returnStrategy) else {
+          return
+        }
+        if UIApplication.shared.canOpenURL(url) {
+          UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        }
+      }
     }
     
     bottomSheetViewController.didClose = { [weak self] isInteractivly in

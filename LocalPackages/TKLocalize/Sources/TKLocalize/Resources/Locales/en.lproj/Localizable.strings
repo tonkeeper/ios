@@ -68,6 +68,8 @@
 
 "browser.connected_apps.empty_title" = "Connected apps will be\U00A0shown here";
 "browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Tonkeeper browser.";
+"browser.connected_apps.disconnect.title" = "Remove";
+"browser.connected_apps.disconnect.button" = "Remove";
 
 "browser.search_field.placeholder" = "Search or enter address";
 "browser.search.title" = "Browser";
@@ -399,6 +401,7 @@
 "ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
 "ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
 "ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";
+"ledger_confirm.steps.confirm_proof.description" = "Verify domain on Ledger";
 
 "ledger_version_update.title" = "Update TON app in Ledger to the %@ version";
 "ledger_version_update.caption" = "This type of transaction is not supported in your current application version.";

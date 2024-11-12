@@ -217,6 +217,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
+    browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
+      _ = self?.handleTonkeeperDeeplink(deeplink)
+    }
+    
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
@@ -847,7 +851,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       initialURL: url,
       initialTitle: nil,
       jsInjection: nil,
-      configuration: .default)
+      configuration: .default,
+      deeplinkHandler: { url in
+        let deeplinkParser = DeeplinkParser()
+        let deeplink = try deeplinkParser.parse(string: url)
+        self.handleDeeplink(deeplink: deeplink)
+      })
     router.present(viewController)
   }
   
@@ -1149,6 +1158,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
 
+    coordinator.didHandleDeeplink = { [weak self] deeplink in
+      _ = self?.handleTonkeeperDeeplink(deeplink)
+    }
+  
     addChild(coordinator)
     coordinator.start()
   }

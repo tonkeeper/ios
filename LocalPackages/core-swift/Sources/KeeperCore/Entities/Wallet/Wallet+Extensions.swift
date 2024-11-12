@@ -34,6 +34,10 @@ public extension Wallet {
     }
   }
   
+  var isLedger: Bool {
+    return kind == .ledger
+  }
+  
   var isTestnet: Bool {
     switch identity.network {
     case .testnet: return true

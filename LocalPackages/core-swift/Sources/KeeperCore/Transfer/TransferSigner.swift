@@ -26,18 +26,19 @@ public struct TransferSigner {
     return cell
   }
   
-  public static func signWalletTransfer(_ walletTransfer: WalletTransfer,
+  public static func signWalletTransfer(_ signingMessage: Builder,
+                                        signaturePosition: SignaturePosition,
                                         wallet: Wallet,
                                         seqno: UInt64,
                                         signed: Data) throws -> Cell {
     let body = Builder()
     
-    switch walletTransfer.signaturePosition {
+    switch signaturePosition {
     case .front:
       try body.store(data: signed)
-      try body.store(walletTransfer.signingMessage)
+      try body.store(signingMessage)
     case .tail:
-      try body.store(walletTransfer.signingMessage)
+      try body.store(signingMessage)
       try body.store(data: signed)
       
     }

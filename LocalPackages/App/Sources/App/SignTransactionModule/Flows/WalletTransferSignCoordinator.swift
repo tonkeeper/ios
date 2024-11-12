@@ -6,6 +6,7 @@ import KeeperCore
 import TonSwift
 import TKLocalize
 import URKit
+import TonTransport
 
 enum WalletTransferSignError: Swift.Error {
   case incorrectWalletKind
@@ -101,7 +102,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signedData
@@ -127,7 +129,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signedData
@@ -138,7 +141,7 @@ private extension WalletTransferSignCoordinator {
         }
       }
     case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
-      Task {[weak self] in
+      Task { [weak self] in
         guard let self else { return }
         do {
           let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
@@ -159,7 +162,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signature
@@ -172,15 +176,34 @@ private extension WalletTransferSignCoordinator {
     case .Ledger(_, _, let ledgerDevice):
       Task { [weak self] in
         guard let self else { return }
-        
-        guard let signedBoc = await handleLedgerSign(
-          transferData: transferData,
-          ledgerDevice: ledgerDevice
-        ) else {
+        do {
+          let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+            .createUnsignedWalletTransfer(
+              wallet: wallet
+            )
+          let transactions = try Transaction.from(transfer: walletTransfer)
+          guard !transactions.isEmpty else {
+            throw ExtenalSignError.cancelled
+          }
+          let transaction = transactions[0]
+          guard let signedData = await handleLedgerSign(
+            transaction: transaction,
+            ledgerDevice: ledgerDevice
+          ) else {
+            throw ExtenalSignError.cancelled
+          }
+          let signingMessage = try TonTransport.buildTransfer(transaction: transaction).signingMessage
+          let signedBoc = try TransferSigner.signWalletTransfer(
+            signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
+            wallet: wallet,
+            seqno: transferData.seqno,
+            signed: signedData
+          ).toBoc().base64EncodedString()
+          didSign?(signedBoc)
+        } catch {
           self.didCancel?()
-          return
         }
-        self.didSign?(signedBoc)
       }
     case .Lockup, .Watchonly:
       didFail?(.incorrectWalletKind)
@@ -225,10 +248,10 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleLedgerSign(transferData: TransferData, ledgerDevice: Wallet.LedgerDevice) async -> String? {
+  func handleLedgerSign(transaction: Transaction, ledgerDevice: Wallet.LedgerDevice) async -> Data? {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async {
-        let module = LedgerConfirmAssembly.module(transferData: transferData,
+        let module = LedgerConfirmAssembly.module(transaction: transaction,
                                                   wallet: self.wallet,
                                                   ledgerDevice: ledgerDevice,
                                                   coreAssembly: self.coreAssembly)
@@ -248,9 +271,9 @@ private extension WalletTransferSignCoordinator {
           })
         }
         
-        module.output.didSign = { [weak bottomSheetViewController] boc in
+        module.output.didSign = { [weak bottomSheetViewController] signature in
           bottomSheetViewController?.dismiss(completion: {
-            continuation.resume(returning: boc)
+            continuation.resume(returning: signature)
           })
         }
         

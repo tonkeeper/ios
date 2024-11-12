@@ -8,6 +8,8 @@ import TKUIKit
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
+  public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
+
   private let dapp: Dapp
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -31,8 +33,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
   private func openDappModule(_ dapp: Dapp) {
     let messageHandler = DefaultDappMessageHandler()
-    let module = DappAssembly.module(dapp: dapp, analyticsProvider: coreAssembly.analyticsProvider, messageHandler: messageHandler)
-
+    let module = DappAssembly.module(dapp: dapp, analyticsProvider: coreAssembly.analyticsProvider, deeplinkHandler: { deeplink in
+      self.didHandleDeeplink?(deeplink)
+    }, messageHandler: messageHandler)
+    
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else {
         completion(.error(.unknownError))
