@@ -194,7 +194,9 @@ private extension BrowserExploreViewModelImplementation {
         return true
       }
       featuredItems = filteredFeaturedItems
-      sections.append(.featured(items: [.banner]))
+      if !featuredItems.isEmpty {
+        sections.append(.featured(items: [.banner]))
+      }
     }
     
     sections.append(contentsOf: mapCategories(categories))
