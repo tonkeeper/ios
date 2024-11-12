@@ -32,6 +32,12 @@ open class TKBridgeWebViewController: UIViewController {
     userContentController.addUserScript(script)
     configuration.userContentController = userContentController
     let webView = WKWebView(frame: .zero, configuration: configuration)
+    // Set custom user agent
+    if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+       let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+        let userAgent = "Tonkeeper iOS/\(appVersion) (Build \(buildNumber))"
+        webView.customUserAgent = userAgent
+    }
     return webView
   }()
   

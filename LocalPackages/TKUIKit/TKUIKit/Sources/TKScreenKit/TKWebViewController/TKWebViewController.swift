@@ -22,6 +22,12 @@ public final class TKWebViewController: UIViewController {
     view.backgroundColor = .Background.page
     webView.backgroundColor = .Background.page
     webView.scrollView.backgroundColor = .Background.page
+    // Set custom user agent
+    if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
+      let buildNumber = Bundle.main.infoDictionary?["CFBundleVersion"] as? String {
+      let userAgent = "Tonkeeper iOS/\(appVersion) (Build \(buildNumber))"
+      webView.customUserAgent = userAgent
+    }
     webView.load(URLRequest(url: url))
     setupRightCloseButton { [weak self] in
       self?.dismiss(animated: true)
