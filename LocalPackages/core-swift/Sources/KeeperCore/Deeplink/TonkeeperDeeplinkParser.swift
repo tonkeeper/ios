@@ -33,6 +33,8 @@ public struct TonkeeperDeeplinkParser {
       return .tonconnect(try parseTonconnect(url: url))
     case "dapp":
       return .dapp(try parseDapp(url: url))
+    case "battery":
+      return .battery(parseBattery(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
@@ -120,6 +122,7 @@ public struct TonkeeperDeeplinkParser {
     guard let versionParameter = components?.queryItems?.first(where: { $0.name == "v" })?.value,
           let version = TonConnectParameters.Version(rawValue: versionParameter),
           let clientId = components?.queryItems?.first(where: { $0.name == "id" })?.value,
+          let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value,
           let requestPayloadValue = components?.queryItems?.first(where: { $0.name == "r" })?.value,
           let requestPayloadData = requestPayloadValue.data(using: .utf8),
           let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
@@ -130,7 +133,8 @@ public struct TonkeeperDeeplinkParser {
     return TonConnectParameters(
       version: version,
       clientId: clientId,
-      requestPayload: requestPayload)
+      requestPayload: requestPayload,
+      returnStrategy: returnStrategy)
   }
   
   func parsePublish(url: URL) throws -> Data {
@@ -186,5 +190,15 @@ public struct TonkeeperDeeplinkParser {
     }
 
     return resultURL
+  }
+  
+  private func parseBattery(url: URL) -> Deeplink.Battery {
+    let components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: true
+    )
+    
+    let promocode = components?.queryItems?.first(where: { $0.name == "promocode" })?.value
+    return Deeplink.Battery(promocode: promocode)
   }
 }

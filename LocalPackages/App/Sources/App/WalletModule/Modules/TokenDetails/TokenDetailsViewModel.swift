@@ -9,6 +9,7 @@ protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
   var didTapBuyOrSell: (() -> Void)? { get set }
+  var didTapSwap: ((KeeperCore.Token) -> Void)? { get set }
   var didOpenURL: ((URL) -> Void)? { get set }
 }
 
@@ -23,12 +24,16 @@ protocol TokenDetailsViewModel: AnyObject {
 }
 
 struct TokenDetailsModel {
+  struct Button {
+    let iconButton: IconButton
+    let isEnable: Bool
+  }
   let title: String
   let isVerified: Bool
   let image: TokenImage
   let tokenAmount: String
   let convertedAmount: String?
-  let buttons: [IconButton]
+  let buttons: [Button]
 }
 
 final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDetailsModuleOutput {
@@ -37,6 +42,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didTapSend: ((KeeperCore.Token) -> Void)?
   var didTapReceive: ((KeeperCore.Token) -> Void)?
   var didTapBuyOrSell: (() -> Void)?
+  var didTapSwap: ((KeeperCore.Token) -> Void)?
   var didOpenURL: ((URL) -> Void)?
   
   // MARK: - TokenDetailsViewModel
@@ -69,7 +75,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
@@ -77,7 +83,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.wallet = wallet
@@ -102,7 +108,7 @@ private extension TokenDetailsViewModelImplementation {
   func setupObservations() {
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard wallet == observer.wallet else { return }
         observer.syncQueue.async {
           let balance = observer.balanceStore.getState()[wallet]?.balance
@@ -149,25 +155,19 @@ private extension TokenDetailsViewModelImplementation {
   func setupButtonsView(model: TokenDetailsModel) {
     let mapper = IconButtonModelMapper()
     let buttons = model.buttons.map { buttonModel in
-      let isEnabled: Bool
-      switch buttonModel {
-      case .send(_, let enabled):
-        isEnabled = enabled
-      default:
-        isEnabled = true
-      }
-      
       return TokenDetailsHeaderButtonsView.Model.Button(
-        configuration: mapper.mapButton(model: buttonModel),
-        isEnabled: isEnabled,
+        configuration: mapper.mapButton(model: buttonModel.iconButton),
+        isEnabled: buttonModel.isEnable,
         action: { [weak self] in
-          switch buttonModel {
-          case .send(let token, _):
+          switch buttonModel.iconButton {
+          case .send(let token):
             self?.didTapSend?(token)
           case .receive(let token):
             self?.didTapReceive?(token)
           case .buySell:
             self?.didTapBuyOrSell?()
+          case .swap(let token):
+            self?.didTapSwap?(token)
           default:
             break
           }

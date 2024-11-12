@@ -9,3 +9,16 @@ extension TKLocales.Settings.Purchases.Token {
     }
   }
 }
+
+extension TKLocales.Battery.Refill {
+  public static func chargesCount(count: Int) -> String {
+    switch plural(count: count) {
+    case .few: return Charges.few
+    case .many: return Charges.many
+    case .one: return Charges.one
+    case .other: return Charges.other
+    case .zero: return Charges.zero
+    }
+  }
+}
+

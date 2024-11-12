@@ -15,7 +15,6 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   var window: UIWindow?
   var appCoordinator: App.AppCoordinator?
-  let appAssembly = AppAssembly()
 
   func scene(_ scene: UIScene,
              willConnectTo session: UISceneSession,
@@ -31,8 +30,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
                                          coreAssembly: CoreAssembly(
-                                          analyticsProvider: AnalyticsProvider(analyticsServices: AptabaseService()),
-                                          isTonkeeperX: isTonkeeperX)
+                                          isTonkeeperX: isTonkeeperX
+                                         )
     )
     
     if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {

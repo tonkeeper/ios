@@ -8,15 +8,13 @@ public struct TonviewerLinkBuilder {
     case eventDetails(eventID: String)
   }
 
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
 
-  public init(configurationStore: ConfigurationStore) {
-    self.configurationStore = configurationStore
+  public init(configuration: Configuration) {
+    self.configuration = configuration
   }
 
   public func buildLink(context: TonviewerURLContext, isTestnet: Bool) -> URL? {
-    let configuration = configurationStore.getConfiguration()
-
     let resultStringURL: String
     switch context {
     case .nftHistory(let nft):

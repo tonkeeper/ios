@@ -96,7 +96,12 @@ private extension BrowserExploreViewController {
     }
     
     viewModel.didUpdateFeaturedItems = { [weak self] dapps in
-      self?.featuredView.dapps = dapps
+      if dapps.isEmpty {
+        self?.featuredView.isHidden = false
+      } else {
+        self?.featuredView.isHidden = false
+        self?.featuredView.dapps = dapps
+      }
     }
     
     viewModel.didUpdateViewState = { [weak self] state in

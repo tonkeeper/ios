@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.State> {
+public final class WalletNFTStore: Store<WalletNFTStore.Event, WalletNFTStore.State> {
   public typealias State = [Wallet: [NFT]]
   public enum Event {
     case didUpdateNFTs(wallet: Wallet)
@@ -20,26 +20,17 @@ public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.
     super.init(state: [:])
     
     walletsStore.addObserver(self) { observer, event in
-      Task {
-        switch event {
-        case .didAddWallets(let wallets):
-          await observer.didAddWallets(wallets)
-        default: break
+      switch event {
+      case .didAddWallets(let wallets):
+        observer.updateState(wallets: wallets) { [weak observer] in
+          wallets.forEach { observer?.sendEvent(.didUpdateNFTs(wallet: $0)) }
         }
-      }
-    }
-    
-    nftStore.addObserver(self) { observer, event in
-      Task {
-        switch event {
-        case .didUpdateNFT(let nft):
-          await observer.didUpdateNFT(nft)
-        }
+      default: break
       }
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in
@@ -50,53 +41,37 @@ public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.
   }
   
   public func setNFTs(_ nfts: [NFT], wallet: Wallet) async {
-    await setState { state in
-      var updatedState = state
-      updatedState[wallet] = nfts
-      
-      try? self.repository.saveNFTs(nfts, wallet: wallet)
-      
-      return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      self.sendEvent(.didUpdateNFTs(wallet: wallet))
+    return await withCheckedContinuation { continuation in
+      setNFTs(nfts, wallet: wallet) {
+        continuation.resume()
+      }
     }
   }
   
-  private func didAddWallets(_ wallets: [Wallet]) async {
-    var observersActions = [(() -> Void)]()
-    await setState { [repository] state in
+  public func setNFTs(_ nfts: [NFT], wallet: Wallet, completion: @escaping () -> Void) {
+    updateState { state in
+      var updatedState = state
+      updatedState[wallet] = nfts
+      try? self.repository.saveNFTs(nfts, wallet: wallet)
+      return StateUpdate(newState: updatedState)
+    } completion: { [weak self] _ in
+      self?.sendEvent(.didUpdateNFTs(wallet: wallet))
+      completion()
+    }
+  }
+  
+  private func updateState(wallets: [Wallet], completion: @escaping () -> Void) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
       var updatedState = state
       wallets.forEach { wallet in
         guard state[wallet] == nil else { return }
-        let nfts = repository.getNFTs(wallet: wallet)
+        let nfts = self.repository.getNFTs(wallet: wallet)
         updatedState[wallet] = nfts
-        observersActions.append({
-          self.sendEvent(.didUpdateNFTs(wallet: wallet))
-        })
       }
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      observersActions.forEach { $0() }
-    }
-  }
-  
-  private func didUpdateNFT(_ nft: NFT) async {
-    var observersActions = [(() -> Void)]()
-    await setState { state in
-      var updatedState = state
-      for (wallet, nfts) in state {
-        guard let index = nfts.firstIndex(of: nft) else { continue }
-        var nfts = nfts
-        nfts.remove(at: index)
-        nfts.insert(nft, at: index)
-        updatedState[wallet] = nfts
-        observersActions.append({
-          self.sendEvent(.didUpdateNFTs(wallet: wallet))
-        })
-      }
-      return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      observersActions.forEach { $0() }
+    } completion: { _ in
+      completion()
     }
   }
 }

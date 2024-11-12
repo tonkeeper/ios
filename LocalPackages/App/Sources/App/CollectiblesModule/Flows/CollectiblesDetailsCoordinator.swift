@@ -22,12 +22,13 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+
   public init(router: NavigationControllerRouter,
               nft: NFT,
               wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+              keeperCoreMainAssembly: KeeperCore.MainAssembly
+  ) {
     self.nft = nft
     self.wallet = wallet
     self.coreAssembly = coreAssembly
@@ -74,6 +75,17 @@ private extension CollectiblesDetailsCoordinator {
       self?.openTransfer(nft: nft)
     }
     
+    module.output.didTapBurn = { [weak self] nft in
+      guard let self = self, let burnAddress = try? Address.burnAddress else {
+        return
+      }
+      
+      openTransfer(
+        nft: nft,
+        recipient: Recipient(recipientAddress: .raw(burnAddress), isMemoRequired: false)
+      )
+    }
+    
     module.output.didTapLinkDomain = { [weak self] wallet, nft in
       self?.openLinkDomain(wallet: wallet, nft: nft)
     }
@@ -94,7 +106,7 @@ private extension CollectiblesDetailsCoordinator {
       PasscodeInputCoordinator.present(
         parentCoordinator: self,
         parentRouter: self.router,
-        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+        mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         onCancel: { },
         onInput: { passcode in
@@ -112,7 +124,7 @@ private extension CollectiblesDetailsCoordinator {
             let proofProvider = TonConnectNFTProofProvider(
               wallet: self.wallet,
               nft: self.nft,
-              mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+              mnemonicRepository: self.keeperCoreMainAssembly.secureAssembly.mnemonicsRepository()
             )
             guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
               await MainActor.run {
@@ -135,8 +147,7 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
-      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
+      let linkBuilder = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
@@ -168,9 +179,9 @@ private extension CollectiblesDetailsCoordinator {
     router.push(viewController: module.view)
   }
 
-  func openTransfer(nft: NFT) {
+  func openTransfer(nft: NFT, recipient: Optional<Recipient> = nil) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let sendTokenCoordinator = SendModule(
       dependencies: SendModule.Dependencies(
@@ -180,7 +191,8 @@ private extension CollectiblesDetailsCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .nft(nft)
+      sendItem: .nft(nft),
+      recipient: recipient
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
@@ -294,4 +306,8 @@ private extension CollectiblesDetailsCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+}
+
+private extension Address {
+  static var burnAddress: Address? = try? Address.parse(raw: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
 }

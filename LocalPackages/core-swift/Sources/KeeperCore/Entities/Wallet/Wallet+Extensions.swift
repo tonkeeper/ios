@@ -12,6 +12,7 @@ public extension Wallet {
     case watchonly
     case signer
     case ledger
+    case keystone
   }
   
   var kind: Kind {
@@ -28,6 +29,8 @@ public extension Wallet {
       return .signer
     case .Ledger:
       return .ledger
+    case .Keystone:
+      return .keystone
     }
   }
   
@@ -57,6 +60,8 @@ public extension Wallet {
         return publicKey
       case .Ledger(let publicKey, _, _):
         return publicKey
+      case .Keystone(let publicKey, _, _, _):
+        return publicKey
       }
     }
   }
@@ -75,6 +80,8 @@ public extension Wallet {
       case .SignerDevice(_, let contractVersion):
         return contractVersion
       case .Ledger(_, let contractVersion, _):
+        return contractVersion
+      case .Keystone(_, _, _, let contractVersion):
         return contractVersion
       }
     }
@@ -141,6 +148,8 @@ public extension Wallet {
         return try contract.address()
       case .Ledger:
         return try contract.address()
+      case .Keystone:
+        return try contract.address()
       }
     }
   }
@@ -168,7 +177,9 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return true
+      return false
+    case .keystone:
+      return false
     }
   }
   
@@ -183,7 +194,9 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return true
+      return false
+    case .keystone:
+      return false
     }
   }
   
@@ -231,6 +244,8 @@ public extension Wallet {
       return true
     case .ledger:
       return true
+    case .keystone:
+      return true
     }
   }
   
@@ -270,7 +285,7 @@ public extension Wallet {
   
   var isSendEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger:
+    case .regular, .signer, .ledger, .keystone:
       return true
     case .watchonly, .lockup:
       return false
@@ -279,7 +294,7 @@ public extension Wallet {
   
   var isReceiveEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .watchonly:
+    case .regular, .signer, .ledger, .watchonly, .keystone:
       return true
     case .lockup:
       return false
@@ -288,7 +303,7 @@ public extension Wallet {
   
   var isScanEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger:
+    case .regular, .signer, .ledger, .keystone:
       return true
     case .watchonly, .lockup:
       return false
@@ -297,7 +312,7 @@ public extension Wallet {
   
   var isSwapEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger:
+    case .regular, .signer, .ledger, .keystone:
       return true
     case .watchonly, .lockup:
       return false
@@ -306,7 +321,7 @@ public extension Wallet {
   
   var isBuyEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger, .watchonly:
+    case .regular, .signer, .ledger, .watchonly, .keystone:
       return true
     case .lockup:
       return false
@@ -315,9 +330,18 @@ public extension Wallet {
   
   var isStakeEnable: Bool {
     switch kind {
-    case .regular, .signer, .ledger:
+    case .regular, .signer, .ledger, .keystone:
       return true
     case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isBatteryEnable: Bool {
+    switch kind {
+    case .regular:
+      return true
+    default:
       return false
     }
   }

@@ -16,6 +16,7 @@ protocol HistoryListViewModel: AnyObject {
   
   func viewDidLoad()
   func loadNextPage()
+  func reload()
   func getEventCellConfiguration(eventID: HistoryList.EventID) -> HistoryCell.Model?
   func getPaginationCellConfiguration() -> HistoryListPaginationCell.Model
   func getSectionHeaderTitle(sectionID: HistoryList.Section.ID) -> String?
@@ -37,7 +38,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   // MARK: - HistoryListViewModel
   
   var eventHandler: ((HistoryListViewModelEvent) -> Void)?
-  
+
   func viewDidLoad() {
     appSettingsStore.addObserver(self) { observer, event in
       observer.didGetAppSettingsStoreEvent(event)
@@ -48,13 +49,24 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     paginationLoader.eventHandler = { [weak self] event in
       self?.didGetPaginationLoaderEvent(event)
     }
-    paginationLoader.reload()
+
+    backgroundUpdate.addEventObserver(self) { observer, wallet, _ in
+      guard wallet == observer.wallet else { return }
+      observer.queue.async {
+        observer.paginationLoader.reload()
+      }
+    }
     setInitialState()
+    paginationLoader.reload()
   }
   
   func loadNextPage() {
     guard isLoadNextAvailable else { return }
     paginationLoader.loadNext()
+  }
+  
+  func reload() {
+    paginationLoader.reload()
   }
   
   func getEventCellConfiguration(eventID: HistoryList.EventID) -> HistoryCell.Model? {
@@ -95,7 +107,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   private let wallet: Wallet
   private let paginationLoader: HistoryPaginationLoader
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
+  private let backgroundUpdate: BackgroundUpdate
   private let decryptedCommentStore: DecryptedCommentStore
   private let nftService: NFTService
   private let cacheProvider: HistoryListCacheProvider
@@ -107,7 +120,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   init(wallet: Wallet,
        paginationLoader: HistoryPaginationLoader,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
+       backgroundUpdate: BackgroundUpdate,
        decryptedCommentStore: DecryptedCommentStore,
        nftService: NFTService,
        cacheProvider: HistoryListCacheProvider,
@@ -117,6 +131,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     self.wallet = wallet
     self.paginationLoader = paginationLoader
     self.appSettingsStore = appSettingsStore
+    self.backgroundUpdate = backgroundUpdate
     self.decryptedCommentStore = decryptedCommentStore
     self.nftService = nftService
     self.cacheProvider = cacheProvider
@@ -178,7 +193,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     switch event {
     case .didUpdateIsSecureMode:
       queue.async { [weak self] in
@@ -259,6 +274,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   private func handleEvents(_ events: [AccountEvent]) {
     for event in events {
+      let isEventRepeat = eventsMap[event.eventId] != nil
       eventsMap[event.eventId] = event
       let eventPeriod = calculateEventPeriod(event: event, relativeDate: relativeDate)
       guard let sectionDate = calculateEventSectionDate(event: event, eventPeriod: eventPeriod) else { continue }
@@ -267,10 +283,17 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
          sections.count > sectionIndex {
         let section = sections[sectionIndex]
         var updatedEvents = section.events
-        if let indexToInsert = updatedEvents.firstIndex(where: { event.date > $0.date }) {
-          updatedEvents.insert(event, at: indexToInsert)
+        if isEventRepeat {
+          if let index = updatedEvents.firstIndex(where: { $0.eventId == event.eventId }) {
+            updatedEvents.remove(at: index)
+            updatedEvents.insert(event, at: index)
+          }
         } else {
-          updatedEvents.append(event)
+          if let indexToInsert = updatedEvents.firstIndex(where: { event.date > $0.date }) {
+            updatedEvents.insert(event, at: indexToInsert)
+          } else {
+            updatedEvents.append(event)
+          }
         }
         let updatedSection = HistoryList.Section(
           id: section.date,
@@ -427,7 +450,12 @@ private extension HistoryList.Snapshot {
       let sectionIdentifier = HistoryList.SnapshotSection.events(section.date)
       snapshot.appendSections([sectionIdentifier])
       let eventIdentifiers = section.events.map { HistoryList.SnapshotItem.event($0.eventId) }
-      snapshot.appendItems(eventIdentifiers)
+      snapshot.appendItems(eventIdentifiers, toSection: sectionIdentifier)
+      if #available(iOS 15.0, *) {
+        snapshot.reconfigureItems(eventIdentifiers)
+      } else {
+        snapshot.reloadItems(eventIdentifiers)
+      }
     }
     if hasPagination {
       snapshot.appendSections([.pagination])

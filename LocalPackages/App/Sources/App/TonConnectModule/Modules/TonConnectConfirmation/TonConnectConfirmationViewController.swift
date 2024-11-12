@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class TonConnectConfirmationViewController: UIViewController, TKBottomSheetScrollContentViewController {
   private let viewModel: TonConnectConfirmationViewModel
@@ -58,6 +59,9 @@ private extension TonConnectConfirmationViewController {
       modalCardViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
       modalCardViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor)
     ])
+    
+    modalCardViewController.successTitle = TKLocales.Result.success
+    modalCardViewController.errorTitle = TKLocales.Result.failure
   }
 
   func setupBindings() {

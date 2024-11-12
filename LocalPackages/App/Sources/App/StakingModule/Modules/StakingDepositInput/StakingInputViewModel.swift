@@ -1,18 +1,14 @@
 import UIKit
 import TKUIKit
 import TKCore
+import TKLocalize
 import KeeperCore
 import BigInt
 
-protocol StakingInputDetailsModuleInput: AnyObject {
-  func configureWith(stackingPoolInfo: StackingPoolInfo,
-                     tonAmount: BigUInt,
-                     isMostProfitable: Bool)
-}
-
 protocol StakingInputModuleOutput: AnyObject {
-  var didTapPoolPicker: ((_ model: StakingListModel) -> Void)? { get set }
+  var didUpdateInputAmount: ((BigUInt) -> Void)? { get set }
   var didConfirm: ((StakingConfirmationItem) -> Void)? { get set }
+  var didClose: (() -> Void)? { get set }
 }
 
 protocol StakingInputModuleInput: AnyObject {
@@ -21,285 +17,120 @@ protocol StakingInputModuleInput: AnyObject {
 
 protocol StakingInputViewModel: AnyObject {
   var didUpdateTitle: ((String) -> Void)? { get set }
-  var didUpdateConvertedValue: ((String) -> Void)? { get set }
-  var didUpdateInputValue: ((String?) -> Void)? { get set }
-  var didUpdateInputSymbol: ((String?) -> Void)? { get set }
-  var didUpdateMaximumFractionDigits: ((Int) -> Void)? { get set }
-  var didUpdateRemaining: ((NSAttributedString) -> Void)? { get set }
-  var didUpdateSwapIcon: ((Bool) -> Void)? { get set }
-  var didUpdateIsMax: ((Bool) -> Void)? { get set }
   var didUpdateButton:((String, Bool) -> Void)? { get set }
-  var didUpdateDetailsViewIsHidden: ((Bool) -> Void)? { get set}
   
   func viewDidLoad()
-  func didEditAmountInput(_ input: String)
-  func didToggleInputMode()
-  func didToggleIsMax()
-  func didTapInfoView()
   func didTapContinue()
+  func didTapCloseButton()
+  func didTapStakingInfoButton()
 }
 
 final class StakingInputViewModelImplementation: StakingInputViewModel, StakingInputModuleOutput, StakingInputModuleInput {
+
+  private var isEnable: Bool = false {
+    didSet {
+      updateButton()
+    }
+  }
   
-  private let model: StakingInputModel
-  private let decimalFormatter: DecimalAmountFormatter
-  private let amountFormatter: AmountFormatter
+  private let amountInputModuleInput: AmountInputModuleInput
+  private let amountInputModuleOutput: AmountInputModuleOutput
+  private let viewModelConfiguration: StakingInputViewModelConfiguration
+  private let currencyStore: CurrencyStore
+  private let tonRatesStore: TonRatesStore
+  private let configuration: Configuration
+  private let urlOpener: URLOpener
   
-  init(model: StakingInputModel,
-       decimalFormatter: DecimalAmountFormatter,
-       amountFormatter: AmountFormatter) {
-    self.model = model
-    self.decimalFormatter = decimalFormatter
-    self.amountFormatter = amountFormatter
+  init(amountInputModuleInput: AmountInputModuleInput,
+       amountInputModuleOutput: AmountInputModuleOutput,
+       viewModelConfiguration: StakingInputViewModelConfiguration,
+       currencyStore: CurrencyStore,
+       tonRatesStore: TonRatesStore,
+       configuration: Configuration,
+       urlOpener: URLOpener) {
+    self.amountInputModuleInput = amountInputModuleInput
+    self.amountInputModuleOutput = amountInputModuleOutput
+    self.viewModelConfiguration = viewModelConfiguration
+    self.currencyStore = currencyStore
+    self.tonRatesStore = tonRatesStore
+    self.configuration = configuration
+    self.urlOpener = urlOpener
   }
   
   // MARK: - StakingInputModuleOutput
   
-  var didTapPoolPicker: ((_ model: StakingListModel) -> Void)?
+  var didUpdateInputAmount: ((BigUInt) -> Void)?
   var didConfirm: ((StakingConfirmationItem) -> Void)?
+  var didClose: (() -> Void)?
   
   // MARK: - StakingInputModuleInput
   
   func setPool(_ pool: StackingPoolInfo) {
-    model.setSelectedStackingPool(pool)
+    viewModelConfiguration.setStakingPool(pool)
   }
   
   // MARK: - StakingViewModel
   
   var didUpdateTitle: ((String) -> Void)?
-  var didUpdateConvertedValue: ((String) -> Void)?
-  var didUpdateInputValue: ((String?) -> Void)?
-  var didUpdateInputSymbol: ((String?) -> Void)?
-  var didUpdateMaximumFractionDigits: ((Int) -> Void)?
-  var didUpdateRemaining: ((NSAttributedString) -> Void)?
-  var didUpdateSwapIcon: ((Bool) -> Void)?
-  var didUpdateIsMax: ((Bool) -> Void)?
   var didUpdateButton: ((String, Bool) -> Void)?
   var didUpdateDetailsViewIsHidden: ((Bool) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitle?(model.title)
-    
-    model.didUpdateButtonItem = { [weak self] buttonItem in
-      DispatchQueue.main.async {
-        self?.didUpdateButtonItem(buttonItem)
-      }
-    }
-    
-    model.didUpdateDetailsIsHidden = { [weak self] isHidden in
-      DispatchQueue.main.async {
-        self?.didUpdateDetailsViewIsHidden?(isHidden)
-      }
-    }
-    
-    model.didUpdateConvertedItem = { [weak self] item in
-      DispatchQueue.main.async {
-        self?.didUpdateConvertedItem(item)
-      }
-    }
-    
-    model.didUpdateInputItem = { [weak self] item in
-      DispatchQueue.main.async {
-        self?.didUpdateInputItem(item)
-      }
-    }
-    
-    model.didUpdateRemainingItem = { [weak self] item in
-      DispatchQueue.main.async {
-        self?.didUpdateRemainingItem(item)
-      }
-    }
-    
-    model.didUpdateIsMax = { [weak self] isMax in
-      DispatchQueue.main.async {
-        self?.didUpdateIsMax?(isMax)
-      }
-    }
-    
-    model.start()
-  }
-  
-  func didEditAmountInput(_ input: String) {
-    model.didEditAmountInput(input)
-  }
-  
-  func didToggleInputMode() {
-    model.toggleInputMode()
-  }
-  
-  func didToggleIsMax() {
-    model.toggleIsMax()
-  }
-  
-  func didTapInfoView() {
-    model.getPickerSections { model in
-      DispatchQueue.main.async {
-        self.didTapPoolPicker?(model)
-      }
-    }
+    setup()
+    setupAmountInput()
+    updateButton()
   }
   
   func didTapContinue() {
-    model.getStakingConfirmationItem { item in
-      DispatchQueue.main.async {
-        self.didConfirm?(item)
-      }
+    guard let confirmationItem = viewModelConfiguration.getStakingConfirmationItem() else {
+      return
     }
-  }
-}
-
-private extension StakingInputViewModelImplementation {
-  func didUpdateButtonItem(_ item: StakingInputButtonItem) {
-    didUpdateButton?(item.title, item.isEnable)
+    didConfirm?(confirmationItem)
   }
   
-  func didUpdateInputItem(_ item: StakingInputInputItem) {
-    didUpdateInputSymbol?(item.symbol)
-    didUpdateMaximumFractionDigits?(item.maximumFractionDigits)
-    didUpdateInputValue?(
-      amountFormatter.formatAmount(
-        item.amount,
-        fractionDigits: item.fractionDigits,
-        maximumFractionDigits: item.maximumFractionDigits,
-        symbol: nil
-      )
-    )
+  func didTapCloseButton() {
+    didClose?()
   }
   
-  func didUpdateConvertedItem(_ item: StakingInputModelConvertedItem) {
-    let formatted = amountFormatter.formatAmount(
-      item.amount,
-      fractionDigits: item.fractionDigits,
-      maximumFractionDigits: 2
-    )
-    
-    let convertedValue = "\(formatted) \(item.symbol)"
-    didUpdateConvertedValue?(convertedValue)
-    didUpdateSwapIcon?(item.isIconHidden)
+  func didTapStakingInfoButton() {
+    guard let url = configuration.stakingInfoUrl else { return }
+    urlOpener.open(url: url)
   }
   
-  func didUpdateRemainingItem(_ item: StakingInputRemainingItem) {
-    let string: NSAttributedString
-    switch item {
-    case .lessThanMinDeposit(let amount, let fractionDigits):
-      let formatted = amountFormatter.formatAmount(
-        amount,
-        fractionDigits: fractionDigits,
-        maximumFractionDigits: TonInfo.fractionDigits,
-        symbol: TonInfo.symbol
-      )
-      string = "Minimum \(formatted)".withTextStyle(
-        .body2,
-        color: .Accent.red,
-        alignment: .right,
-        lineBreakMode: .byTruncatingTail
-      )
-    case .remaining(let amount, let fractionDigits):
-      let formatted = amountFormatter.formatAmount(
-        amount,
-        fractionDigits: fractionDigits,
-        maximumFractionDigits: TonInfo.fractionDigits,
-        symbol: TonInfo.symbol
-      )
-      string = "Available: \(formatted)".withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .right,
-        lineBreakMode: .byTruncatingTail
-      )
-    case .insufficient:
-      string = "Insufficient balance".withTextStyle(
-        .body2,
-        color: .Accent.red,
-        alignment: .right,
-        lineBreakMode: .byTruncatingTail
-      )
-    }
-    didUpdateRemaining?(string)
+  private func setup() {
+    didUpdateTitle?(viewModelConfiguration.title)
   }
-}
-
-private extension StakingInputViewModelImplementation {
-
-  func mapStakingPoolItem(_ item: StackingPoolInfo, isMostProfitable: Bool, profit: BigUInt) -> TKUIListItemView.Configuration {
-    let tagText: String? = isMostProfitable ? .mostProfitableTag : nil
-    let percentFormatted = decimalFormatter.format(amount: item.apy, maximumFractionDigits: 2)
-    var subtitle = "\(String.apy) ≈ \(percentFormatted)%"
-    if profit >= BigUInt(stringLiteral: "1000000000") {
-      let formatted = amountFormatter.formatAmount(
-        profit,
-        fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: TonInfo.symbol
-      )
-      subtitle += " · \(formatted)"
+  
+  private func setupAmountInput() {
+    viewModelConfiguration.didUpdateBalance = { [weak self] in
+      guard let self else { return }
+      amountInputModuleInput.sourceBalance = viewModelConfiguration.balance
+    }
+    viewModelConfiguration.didUpdateMinimumInput = { [weak self] in
+      guard let self else { return  }
+      amountInputModuleInput.minimumSourceAmount = viewModelConfiguration.minimumInput
     }
     
-    let title = item.name.withTextStyle(
-      .label1,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byTruncatingTail
-    )
-    
-    var tagViewModel: TKUITagView.Configuration?
-    if let tagText {
-      tagViewModel = TKUITagView.Configuration(
-        text: tagText,
-        textColor: .Accent.green,
-        backgroundColor: .Accent.green.withAlphaComponent(0.16)
-      )
-    }
-    
-    return TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: TKUIListItemImageIconView.Configuration.Image.image(item.implementation.icon),
-            tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 22
-          )
-        ),
-        alignment: .center
-      ),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-          title: title,
-          tagViewModel: tagViewModel,
-          subtitle: subtitle.withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          description: nil
-        ),
-        rightItemConfiguration: nil
-      ),
-      accessoryConfiguration: .image(
-        TKUIListItemImageAccessoryView.Configuration(
-          image: .TKUIKit.Icons.Size16.switch,
-          tintColor: .Icon.tertiary,
-          padding: .zero
-        )
-      )
-    )
-  }
-}
+    let currency = currencyStore.state
+    let tonRate = tonRatesStore.state.first(where: { $0.currency == currency })?.rate ?? 1
+    amountInputModuleInput.sourceUnit = Token.ton
+    amountInputModuleInput.destinationUnit = currency
+    amountInputModuleInput.rate = NSDecimalNumber(decimal: tonRate)
+    amountInputModuleInput.sourceBalance = viewModelConfiguration.balance
+    amountInputModuleInput.minimumSourceAmount = viewModelConfiguration.minimumInput
+    amountInputModuleInput.isMaxButtonVisible = true
 
-extension StackingPoolInfo.Implementation {
-  var icon: UIImage {
-    switch type {
-    case .liquidTF: .TKUIKit.Icons.Size44.tonStakersLogo
-    case .tf: .TKUIKit.Icons.Size44.tonNominatorsLogo
-    case .whales: .TKUIKit.Icons.Size44.tonWhalesLogo
+    amountInputModuleOutput.didUpdateIsEnableState = { [weak self] in
+      self?.isEnable = $0
     }
+    amountInputModuleOutput.didUpdateSourceAmount = { [weak self] in
+      self?.viewModelConfiguration.setInputAmount($0)
+      self?.didUpdateInputAmount?($0)
+    }
+    isEnable = amountInputModuleOutput.isEnable
   }
-}
-
-private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
+  
+  private func updateButton() {
+    didUpdateButton?(TKLocales.StakingDepositInput.continueTitle, isEnable)
+  }
 }

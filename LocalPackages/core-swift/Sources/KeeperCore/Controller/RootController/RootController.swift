@@ -6,40 +6,32 @@ public final class RootController {
     case main(wallets: [Wallet], activeWallet: Wallet)
   }
 
-  private let remoteConfigurationStore: ConfigurationLoader
-  private let knownAccountsStore: KnownAccountsStore
+  private let configuration: Configuration
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
   private let mnemonicsRepository: MnemonicsRepository
-  private let fiatMethodsLoader: FiatMethodsLoader
+  private let buySellProvider: BuySellProvider
+  private let knownAccountsProvider: KnownAccountsProvider
   
-  init(remoteConfigurationStore: ConfigurationLoader,
-       knownAccountsStore: KnownAccountsStore,
+  init(configuration: Configuration,
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
        mnemonicsRepository: MnemonicsRepository,
-       fiatMethodsLoader: FiatMethodsLoader) {
-    self.remoteConfigurationStore = remoteConfigurationStore
-    self.knownAccountsStore = knownAccountsStore
+       buySellProvider: BuySellProvider,
+       knownAccountsProvider: KnownAccountsProvider) {
+    self.configuration = configuration
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
     self.mnemonicsRepository = mnemonicsRepository
-    self.fiatMethodsLoader = fiatMethodsLoader
+    self.buySellProvider = buySellProvider
+    self.knownAccountsProvider = knownAccountsProvider
   }
-  
-  public func loadFiatMethods(isMarketRegionPickerAvailable: Bool) {
-    fiatMethodsLoader.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
-  }
-  
+
   public func loadConfigurations() {
+    buySellProvider.load()
+    knownAccountsProvider.load()
     Task {
-      await remoteConfigurationStore.load()
-    }
-    Task {
-      await remoteConfigurationStore.load()
-    }
-    Task {
-      try await knownAccountsStore.load()
+      await configuration.loadConfiguration()
     }
   }
   

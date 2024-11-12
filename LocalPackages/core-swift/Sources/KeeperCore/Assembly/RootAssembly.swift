@@ -3,17 +3,21 @@ import Foundation
 public final class RootAssembly {
   public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
-  private let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
   public let mappersAssembly: MappersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
-  public let passcodeAssembly: PasscodeAssembly
+  private let buySellAssembly: BuySellAssembly
+  private let batteryAssembly: BatteryAssembly
+  private let knownAccountsAssembly: KnownAccountsAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
+  public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
+  public let secureAssembly: SecureAssembly
 
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -24,10 +28,14 @@ public final class RootAssembly {
        mappersAssembly: MappersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
-       passcodeAssembly: PasscodeAssembly,
+       buySellAssembly: BuySellAssembly,
+       batteryAssembly: BatteryAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
-       rnAssembly: RNAssembly) {
+       backgroundUpdateAssembly: BackgroundUpdateAssembly,
+       rnAssembly: RNAssembly,
+       secureAssembly: SecureAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
@@ -37,10 +45,14 @@ public final class RootAssembly {
     self.mappersAssembly = mappersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
-    self.passcodeAssembly = passcodeAssembly
+    self.buySellAssembly = buySellAssembly
+    self.batteryAssembly = batteryAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
+    self.secureAssembly = secureAssembly
   }
   
   private var _rootController: RootController?
@@ -49,12 +61,12 @@ public final class RootAssembly {
       return rootController
     } else {
       let rootController = RootController(
-        remoteConfigurationStore: configurationAssembly.configurationLoader,
-        knownAccountsStore: loadersAssembly.knownAccountsStore,
+        configuration: configurationAssembly.configuration,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
-        mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()
+        mnemonicsRepository: secureAssembly.mnemonicsRepository(),
+        buySellProvider: buySellAssembly.buySellProvider,
+        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
       )
       self._rootController = rootController
       return rootController
@@ -64,7 +76,6 @@ public final class RootAssembly {
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(
       walletsUpdateAssembly: walletsUpdateAssembly,
-      passcodeAssembly: passcodeAssembly,
       storesAssembly: storesAssembly
     )
   }
@@ -76,7 +87,8 @@ public final class RootAssembly {
       storesAssembly: storesAssembly,
       apiAssembly: apiAssembly,
       coreAssembly: coreAssembly,
-      formattersAssembly: formattersAssembly
+      formattersAssembly: formattersAssembly,
+      secureAssembly: secureAssembly
     )
     return MainAssembly(
       appInfoProvider: appInfoProvider,
@@ -84,13 +96,19 @@ public final class RootAssembly {
       walletUpdateAssembly: walletsUpdateAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
+      coreAssembly: coreAssembly,
       formattersAssembly: formattersAssembly,
       mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
-      passcodeAssembly: passcodeAssembly,
+      buySellAssembly: buySellAssembly,
+      knownAccountsAssembly: knownAccountsAssembly,
+      batteryAssembly: batteryAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
-      loadersAssembly: loadersAssembly
+      loadersAssembly: loadersAssembly,
+      backgroundUpdateAssembly: backgroundUpdateAssembly,
+      secureAssembly: secureAssembly,
+      rnAssembly: rnAssembly
     )
   }
 }

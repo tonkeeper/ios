@@ -5,6 +5,7 @@ import TKUIKit
 import KeeperCore
 import TonSwift
 import TKLocalize
+import URKit
 import TonTransport
 
 enum WalletTransferSignError: Swift.Error {
@@ -32,17 +33,17 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
   var externalSignHandler: ((Data?) -> Void)?
   
   private let wallet: Wallet
-  private let transferMessageBuilder: TransferMessageBuilder
+  private let transferData: TransferData
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(router: ViewControllerRouter,
        wallet: Wallet,
-       transferMessageBuilder: TransferMessageBuilder,
+       transferData: TransferData,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
-    self.transferMessageBuilder = transferMessageBuilder
+    self.transferData = transferData
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -86,36 +87,84 @@ private extension WalletTransferSignCoordinator {
     case .Regular:
       handleRegularSign()
     case .SignerDevice(let publicKey, let walletContractVersion):
-      Task {
+      Task { [weak self] in
+        guard let self else { return }
         do {
-          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
-            guard let data = await handleSignerSignOnDevice(
-              walletTransfer: transfer,
-              publicKey: publicKey,
-              revision: walletContractVersion,
-              network: wallet.identity.network) else {
-              throw ExtenalSignError.cancelled
-            }
-            return data
-          })
+          let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+            .createUnsignedWalletTransfer(
+              wallet: wallet
+            )
+          guard let signedData = await handleSignerSignOnDevice(
+            walletTransfer: walletTransfer,
+            publicKey: publicKey,
+            revision: walletContractVersion,
+            network: wallet.identity.network) else {
+            throw ExtenalSignError.cancelled
+          }
+          let signedBoc = try TransferSigner.signWalletTransfer(
+            walletTransfer,
+            wallet: wallet,
+            seqno: transferData.seqno,
+            signed: signedData
+          ).toBoc().base64EncodedString()
           self.didSign?(signedBoc)
         } catch {
           self.didCancel?()
         }
       }
     case .Signer(let publicKey, let walletContractVersion):
-      Task {
+      Task {[weak self] in
+        guard let self else { return }
         do {
-          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
-            guard let data = await handleSignerSign(
-              walletTransfer: transfer,
-              publicKey: publicKey,
-              revision: walletContractVersion,
-              network: wallet.identity.network) else {
-              throw ExtenalSignError.cancelled
-            }
-            return data
-          })
+          let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+            .createUnsignedWalletTransfer(
+              wallet: wallet
+            )
+          guard let signedData = await handleSignerSign(
+            walletTransfer: walletTransfer,
+            publicKey: publicKey,
+            revision: walletContractVersion,
+            network: wallet.identity.network) else {
+            throw ExtenalSignError.cancelled
+          }
+          let signedBoc = try TransferSigner.signWalletTransfer(
+            walletTransfer,
+            wallet: wallet,
+            seqno: transferData.seqno,
+            signed: signedData
+          ).toBoc().base64EncodedString()
+          self.didSign?(signedBoc)
+        } catch {
+          self.didCancel?()
+        }
+      }
+    case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
+      Task {[weak self] in
+        guard let self else { return }
+        do {
+          let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+            .createUnsignedWalletTransfer(
+              wallet: wallet
+            )
+          guard let ur = await handleKeystoneSign(
+            walletTransfer: walletTransfer,
+            publicKey: publicKey,
+            path: path,
+            xfp: xfp,
+            revision: walletContractVersion,
+            network: wallet.identity.network) else {
+            throw ExtenalSignError.cancelled
+          }
+          
+          guard let signature = try TonSignature(cbor: ur.cbor).signature else {
+            throw ExtenalSignError.cancelled
+          }
+          let signedBoc = try TransferSigner.signWalletTransfer(
+            walletTransfer,
+            wallet: wallet,
+            seqno: transferData.seqno,
+            signed: signature
+          ).toBoc().base64EncodedString()
           self.didSign?(signedBoc)
         } catch {
           self.didCancel?()
@@ -148,25 +197,32 @@ private extension WalletTransferSignCoordinator {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()
       },
-      onInput: { [weak self, wallet, keeperCoreMainAssembly, transferMessageBuilder] passcode in
+      onInput: { [weak self, wallet, keeperCoreMainAssembly, transferData] passcode in
         guard let self else { return }
         Task {
           do {
-            let mnemonic = try await keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
+            let mnemonic = try await keeperCoreMainAssembly.secureAssembly.mnemonicsRepository().getMnemonic(
               wallet: wallet,
               password: passcode
             )
             let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
             let privateKey = keyPair.privateKey
-            let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet) { walletTransfer in
-              return try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-            }
-            self.didSign?(signedBoc)
+            let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+              .createUnsignedWalletTransfer(
+                wallet: wallet
+              )
+            let signed = try TransferSigner.signWalletTransfer(
+              walletTransfer,
+              wallet: wallet,
+              seqno: transferData.seqno,
+              signer: WalletTransferSecretKeySigner(secretKey: privateKey.data)
+            )
+            self.didSign?(try signed.toBoc().base64EncodedString())
           } catch {
             self.didFail?(.failedToSign(error))
           }
@@ -253,6 +309,47 @@ private extension WalletTransferSignCoordinator {
     }
   }
   
+  func handleKeystoneSign(walletTransfer: WalletTransfer,
+                          publicKey: TonSwift.PublicKey,
+                          path: String?,
+                          xfp: String?,
+                          revision: WalletContractVersion,
+                          network: Network) async -> UR? {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.main.async { [wallet] in
+        guard let ur = try? self.createKeystoneSignUR(transfer: walletTransfer.signingMessage.endCell().toBoc(),
+                                                      path: path,
+                                                      xfp: xfp,
+                                                      publicKey: publicKey,
+                                                      revision: revision,
+                                                      network: network,
+                                                      isOnDevice: false) else { return }
+        let module = KeystoneSignAssembly.module(
+          transaction: ur,
+          wallet: wallet,
+          assembly: self.keeperCoreMainAssembly,
+          coreAssembly: self.coreAssembly
+        )
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+        
+        bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+          guard isInteractivly else { return }
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(returning: nil)
+          })
+        }
+        
+        module.output.didScanSignedTransaction = { [weak bottomSheetViewController] ur in
+          bottomSheetViewController?.dismiss {
+            continuation.resume(returning: ur)
+          }
+        }
+        
+        bottomSheetViewController.present(fromViewController: self.router.rootViewController)
+      }
+    }
+  }
+  
   func handleSignerSignOnDevice(walletTransfer: WalletTransfer,
                                 publicKey: TonSwift.PublicKey,
                                 revision: WalletContractVersion,
@@ -289,6 +386,26 @@ private extension WalletTransferSignCoordinator {
       string.append("&return=\("tonkeeperx://publish".percentEncoded ?? "")")
     }
     return URL(string: string)
+  }
+  
+  func createKeystoneSignUR(transfer: Data,
+                            path: String?,
+                            xfp: String?,
+                            publicKey: TonSwift.PublicKey,
+                            revision: WalletContractVersion,
+                            network: Network,
+                            isOnDevice: Bool) throws -> UR? {
+        
+    var cryptoKeypath: CryptoKeyPath? = nil
+    if let xfp = xfp {
+      if let path = path {
+        cryptoKeypath = CryptoKeyPath(components: try CryptoPath.init(string: path), sourceFingerprint: UInt64(xfp), depth: nil)
+      }
+    }
+    
+    let tonSignRequest = try TonSignRequest(requestId: nil, signData: transfer, dataType: 1, cryptoKeypath: cryptoKeypath, address: wallet.address.toFriendly(bounceable: false).toString(), origin: "Tonkeeper")
+          
+    return try UR.init(type: "ton-sign-request", cbor: try tonSignRequest.toCBOR())
   }
   
   func handleLedgerConfirmError(_ error: LedgerConfirmError) {

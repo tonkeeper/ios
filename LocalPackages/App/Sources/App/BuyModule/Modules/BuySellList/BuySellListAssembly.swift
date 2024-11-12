@@ -9,11 +9,11 @@ struct BuySellListAssembly {
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BuySellListViewController, BuySellListModuleOutput, BuySellListModuleInput> {
     let viewModel = BuySellListViewModelImplementation(
       wallet: wallet,
-      fiatMethodsStore: keeperCoreMainAssembly.storesAssembly.fiatMethodsStore,
+      buySellProvider: keeperCoreMainAssembly.buySellAssembly.buySellProvider,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       regionStore: keeperCoreMainAssembly.storesAssembly.regionStore,
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       appSettings: coreAssembly.appSettings
     )
     

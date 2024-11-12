@@ -10,30 +10,31 @@ final class WalletTotalBalanceModel {
     let address: FriendlyAddress
     let totalBalanceState: TotalBalanceState?
     let isSecure: Bool
-    let backgroundUpdateState: BackgroundUpdateStore.ConnectionState
+    let backgroundUpdateConnectionState: BackgroundUpdateConnectionState
     let isLoadingBalance: Bool
   }
   
   var didUpdateState: ((State) -> Void)?
   
-  private let actor = SerialActor<Void>()
-  
   private let walletsStore: WalletsStore
   private let totalBalanceStore: TotalBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
-  private let backgroundUpdateStore: BackgroundUpdateStore
-  private let stateLoader: WalletStateLoader
+  private let appSettingsStore: AppSettingsStore
+  private let backgroundUpdate: BackgroundUpdate
+  private let balanceLoader: BalanceLoader
+  private let updateQueue: DispatchQueue
   
   init(walletsStore: WalletsStore,
        totalBalanceStore: TotalBalanceStore,
-       appSettingsStore: AppSettingsV3Store,
-       backgroundUpdateStore: BackgroundUpdateStore,
-       stateLoader: WalletStateLoader) {
+       appSettingsStore: AppSettingsStore,
+       backgroundUpdate: BackgroundUpdate,
+       balanceLoader: BalanceLoader,
+       updateQueue: DispatchQueue) {
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
     self.appSettingsStore = appSettingsStore
-    self.backgroundUpdateStore = backgroundUpdateStore
-    self.stateLoader = stateLoader
+    self.backgroundUpdate = backgroundUpdate
+    self.balanceLoader = balanceLoader
+    self.updateQueue = updateQueue
     
     walletsStore.addObserver(self) { observer, event in
       observer.didGetWalletsStoreEvent(event)
@@ -47,21 +48,21 @@ final class WalletTotalBalanceModel {
       observer.didGetAppSettingsStoreEvent(event)
     }
     
-    backgroundUpdateStore.addObserver(self) { observer, event in
-      observer.didGetBackgroundUpdateStoreEvent(event)
+    backgroundUpdate.addStateObserver(self) { observer, wallet, state in
+      observer.didGetBackgroundUpdateEvent(wallet: wallet, connection: state)
     }
     
-    stateLoader.addObserver(self) { observer, event in
-      observer.didGetStateLoaderEvent(event)
+    balanceLoader.addUpdateObserver(self) { observer, wallet in
+      observer.didGetBalanceLoaderEvent(wallet)
     }
   }
   
   func getState() throws -> State {
-    let activeWallet = try walletsStore.getActiveWallet()
-    let isSecureMode = appSettingsStore.getState().isSecureMode
-    let totalBalanceState = totalBalanceStore.getState()[activeWallet]
-    let backgroundUpdateState = backgroundUpdateStore.getState()[activeWallet] ?? .connecting
-    let isLoadingBalance = stateLoader.getState().balanceLoadTasks[activeWallet] != nil
+    let activeWallet = try walletsStore.activeWallet
+    let isSecureMode = appSettingsStore.state.isSecureMode
+    let totalBalanceState = totalBalanceStore.state[activeWallet]
+    let backgroundUpdateState = backgroundUpdate.getState(wallet: activeWallet)
+    let isLoadingBalance = balanceLoader.isLoadingBalance(wallet: activeWallet)
     return try createState(
       wallet: activeWallet,
       isSecureMode: isSecureMode,
@@ -71,95 +72,67 @@ final class WalletTotalBalanceModel {
     )
   }
   
+  private func didGetBalanceLoaderEvent(_ wallet: Wallet) {
+    updateQueue.async { [weak self] in
+      guard let activeWallet = try? self?.walletsStore.activeWallet,
+      wallet == activeWallet else { return }
+      self?.updateModel()
+    }
+  }
+  
   private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-    Task {
+    updateQueue.async { [weak self] in
       switch event {
       case .didChangeActiveWallet:
-        await self.actor.addTask(block: { try await self.updateModel() })
+        self?.updateModel()
+      case .didUpdateWalletBatterySettings:
+        self?.updateModel()
       default: break
       }
     }
   }
   
   private func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStore.Event) {
-    Task {
+    updateQueue.async { [weak self] in
       switch event {
-      case .didUpdateTotalBalance(_, let wallet):
-        switch await walletsStore.getState() {
-        case .empty: break
-        case .wallets(let state):
-          guard state.activeWalelt == wallet else { return }
-          await self.actor.addTask(block: { try await self.updateModel() })
-        }
+      case .didUpdateTotalBalance(let wallet):
+        guard let activeWallet = try? self?.walletsStore.activeWallet,
+        wallet == activeWallet else { return }
+        self?.updateModel()
       }
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
-    Task {
-      await self.actor.addTask(block: { try await self.updateModel() })
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
+    updateQueue.async { [weak self] in
+      self?.updateModel()
     }
   }
   
-  private func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
-    Task {
-      await self.actor.addTask(block: { try await self.updateModel() })
+  private func didGetBackgroundUpdateEvent(wallet: Wallet, connection: BackgroundUpdateConnectionState) {
+    updateQueue.async { [weak self] in
+      guard let activeWallet = try? self?.walletsStore.activeWallet,
+      wallet == activeWallet else { return }
+      self?.updateModel()
     }
   }
   
-  private func didGetStateLoaderEvent(_ event: WalletStateLoader.Event) {
-    Task {
-      switch await walletsStore.getState() {
-      case .empty: break
-      case .wallets(let state):
-        await self.actor.addTask(block: { try await self.updateModel() })
-        switch event {
-        case .didEndLoadBalance(let wallet):
-          guard state.activeWalelt == wallet else { return }
-          await self.actor.addTask(block: { try await self.updateModel() })
-        case .didStartLoadBalance(let wallet):
-          guard state.activeWalelt == wallet else { return }
-          await self.actor.addTask(block: { try await self.updateModel() })
-        default: break
-        }
-      }
-    }
-  }
-  
-  private func updateModel() async throws {
-    let walletsStoreState = await walletsStore.getState()
-    switch walletsStoreState {
-    case .empty: break
-    case .wallets(let walletsState):
-      let isSecureMode = await appSettingsStore.getState().isSecureMode
-      let totalBalance = await totalBalanceStore.getState()[walletsState.activeWalelt]
-      let backgroundUpdateState = await backgroundUpdateStore.getState()[walletsState.activeWalelt] ?? .connecting
-      let isLoadingBalance = await {
-        let state = await stateLoader.getState()
-        return state.balanceLoadTasks[walletsState.activeWalelt] != nil
-      }()
-      let state = try createState(
-        wallet: walletsState.activeWalelt,
-        isSecureMode: isSecureMode,
-        totalBalanceState: totalBalance,
-        backgroundUpdateState: backgroundUpdateState,
-        isLoadingBalance: isLoadingBalance
-      )
-      didUpdateState?(state)
-    }
+  private func updateModel() {
+    guard let state = try? getState() else { return }
+    didUpdateState?(state)
   }
   
   private func createState(wallet: Wallet,
                            isSecureMode: Bool,
                            totalBalanceState: TotalBalanceState?,
-                           backgroundUpdateState: BackgroundUpdateStore.ConnectionState,
+                           backgroundUpdateState: BackgroundUpdateConnectionState,
                            isLoadingBalance: Bool) throws -> State {
     return State(
       wallet: wallet,
       address: try wallet.friendlyAddress,
       totalBalanceState: totalBalanceState,
       isSecure: isSecureMode,
-      backgroundUpdateState: backgroundUpdateState,
+      backgroundUpdateConnectionState: backgroundUpdateState,
       isLoadingBalance: isLoadingBalance
     )
   }

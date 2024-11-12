@@ -25,6 +25,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
                                       _ stakingPoolInfo: StackingPoolInfo,
                                       _ accountStakingInfo: AccountStackingInfo) -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -35,7 +36,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-      router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
   }
   
@@ -63,14 +64,18 @@ private extension WalletCoordinator {
   }
   
   func openManageTokens(wallet: Wallet) {
+    let updateQueue = DispatchQueue(label: "ManageTokensQueue")
+    
     let module = ManageTokensAssembly.module(
       model: ManageTokensModel(
         wallet: wallet,
         tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
         convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
+        updateQueue: updateQueue
       ),
-      mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter)
+      mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter),
+      updateQueue: updateQueue
     )
 
     let navigationController = TKNavigationController(rootViewController: module.view)
@@ -127,6 +132,10 @@ private extension WalletCoordinator {
     module.output.didTapBackup = { [weak self] wallet in
       self?.didTapBackup?(wallet)
     }
+    
+    module.output.didTapBattery = { [weak self] wallet in
+      self?.didTapBattery?(wallet)
+    }
 
     module.output.didTapManage = { [weak self] wallet in
       self?.openManageTokens(wallet: wallet)
@@ -143,7 +152,7 @@ private extension WalletCoordinator {
     return await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }

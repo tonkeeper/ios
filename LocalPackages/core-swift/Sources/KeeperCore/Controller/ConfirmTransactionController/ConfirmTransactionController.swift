@@ -7,12 +7,14 @@ public protocol ConfirmTransactionControllerBocProvider {
 }
 
 public final class ConfirmTransactionController {
+
   private let wallet: Wallet
   private let bocProvider: ConfirmTransactionControllerBocProvider
   private let sendService: SendService
   private let nftService: NFTService
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
+  private let totalBalanceStore: TotalBalanceStore
   private let confirmTransactionMapper: ConfirmTransactionMapper
   
   init(wallet: Wallet,
@@ -21,6 +23,7 @@ public final class ConfirmTransactionController {
        nftService: NFTService,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
+       totalBalanceStore: TotalBalanceStore,
        confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
     self.bocProvider = bocProvider
@@ -28,6 +31,7 @@ public final class ConfirmTransactionController {
     self.nftService = nftService
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
+    self.totalBalanceStore = totalBalanceStore
     self.confirmTransactionMapper = confirmTransactionMapper
   }
   
@@ -46,8 +50,8 @@ private extension ConfirmTransactionController {
       seqno: seqno,
       timeout: timeout
     )
-    let currency = await currencyStore.getState()
-    let rates = await tonRatesStore.getState().first(where: { $0.currency == currency })
+    let currency = currencyStore.state
+    let rates = tonRatesStore.state.first(where: { $0.currency == currency })
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)
@@ -56,6 +60,7 @@ private extension ConfirmTransactionController {
       transactionInfo,
       tonRates: rates,
       currency: currency,
+      totalBalanceStore: totalBalanceStore,
       nftsCollection: nfts,
       wallet: wallet
     )

@@ -74,13 +74,13 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   private let wallet: Wallet
   private let walletNFTsManagedStore: WalletNFTsManagedStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
        walletNFTsManagedStore: WalletNFTsManagedStore,
-       appSettingsStore: AppSettingsV3Store) {
+       appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
     self.walletNFTsManagedStore = walletNFTsManagedStore
     self.appSettingsStore = appSettingsStore

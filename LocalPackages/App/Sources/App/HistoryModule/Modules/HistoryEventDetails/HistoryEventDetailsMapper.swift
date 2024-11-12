@@ -263,10 +263,11 @@ final class HistoryEventDetailsMapper {
                               isTestnet: Bool,
                               decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let transferDirection: TransferDirection = {
-      if tonTransfer.recipient == activityEvent.account {
-        return .receive
-      } else {
+
+      if tonTransfer.sender == activityEvent.account {
         return .send
+      } else {
+        return .receive
       }
     }()
     
@@ -340,10 +341,10 @@ final class HistoryEventDetailsMapper {
                          isTestnet: Bool,
                          decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let transferDirection: TransferDirection = {
-      if action.recipient == activityEvent.account {
-        return .receive
-      } else {
+      if action.sender == activityEvent.account {
         return .send
+      } else {
+        return .receive
       }
     }()
     
@@ -427,10 +428,10 @@ final class HistoryEventDetailsMapper {
                       decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     
     let transferDirection: TransferDirection = {
-      if nftTransfer.recipient == activityEvent.account {
-        return .receive
-      } else {
+      if nftTransfer.sender == activityEvent.account {
         return .send
+      } else {
+        return .receive
       }
     }()
     

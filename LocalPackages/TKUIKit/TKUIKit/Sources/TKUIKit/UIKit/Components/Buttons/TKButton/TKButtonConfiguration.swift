@@ -8,6 +8,7 @@ public extension TKButton {
     public var spacing: CGFloat
     public var textStyle: TKTextStyle
     public var textColor: UIColor
+    public var textNumberOfLines: Int
     public var iconPosition: TKButtonIconPosition
     public var iconTintColor: UIColor
     public var backgroundColors: [TKButtonState: UIColor]
@@ -25,6 +26,7 @@ public extension TKButton {
                 spacing: CGFloat = 0,
                 textStyle: TKTextStyle = .label2,
                 textColor: UIColor = .white,
+                textNumberOfLines: Int = 1,
                 iconPosition: TKButtonIconPosition = .left,
                 iconTintColor: UIColor = .white,
                 backgroundColors: [TKButtonState : UIColor] = [.normal: .clear],
@@ -41,6 +43,7 @@ public extension TKButton {
       self.spacing = spacing
       self.textStyle = textStyle
       self.textColor = textColor
+      self.textNumberOfLines = textNumberOfLines
       self.iconPosition = iconPosition
       self.iconTintColor = iconTintColor
       self.backgroundColors = backgroundColors

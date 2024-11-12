@@ -2,7 +2,7 @@ import UIKit
 
 public final class TKListItemTextContentView: UIView {
   
-  public struct Configuration {
+  public struct Configuration: Hashable {
     public let titleViewConfiguration: TKListItemTitleView.Configuration
     public let captionViewsConfigurations: [TKListItemTextView.Configuration]
     public let valueViewConfiguration: TKListItemTextView.Configuration?

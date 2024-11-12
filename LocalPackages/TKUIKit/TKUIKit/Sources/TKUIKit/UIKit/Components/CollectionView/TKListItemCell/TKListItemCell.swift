@@ -1,7 +1,7 @@
 import UIKit
 
 public final class TKListItemCell: TKCollectionViewListCell {
-  public struct Configuration {
+  public struct Configuration: Hashable {
     public let listItemContentViewConfiguration: TKListItemContentView.Configuration
     
     public init(listItemContentViewConfiguration: TKListItemContentView.Configuration) {

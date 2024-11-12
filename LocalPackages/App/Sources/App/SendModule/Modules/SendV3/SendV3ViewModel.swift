@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import KeeperCore
 import TKCore
 import BigInt
@@ -8,6 +9,7 @@ protocol SendV3ModuleOutput: AnyObject {
   var didContinueSend: ((SendModel) -> Void)? { get set }
   var didTapPicker: ((Wallet, Token) -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
+  var didTapClose: (() -> Void)? { get set }
 }
 
 protocol SendV3ModuleInput: AnyObject {
@@ -31,6 +33,7 @@ protocol SendV3ViewModel: AnyObject {
   func didTapRecipientPasteButton()
   func didTapCommentPasteButton()
   func didTapRecipientScanButton()
+  func didTapCloseButton()
 }
 
 struct Model {
@@ -41,19 +44,10 @@ struct Model {
   }
   
   struct Amount {
-    struct Token {
-      enum Image {
-        case image(UIImage)
-        case asyncImage(ImageDownloadTask)
-      }
-      let image: Image
-      let title: String
-    }
-    
     let placeholder: String
     let text: String
     let fractionDigits: Int
-    let token: Token
+    let token: TokenPickerButton.Configuration
   }
   
   struct Comment {
@@ -93,6 +87,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   var didContinueSend: ((SendModel) -> Void)?
   var didTapPicker: ((Wallet, Token) -> Void)?
   var didTapScan: (() -> Void)?
+  var didTapClose: (() -> Void)?
   
   // MARK: - SendV3ModuleInput
   
@@ -129,7 +124,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func viewDidLoad() {
     balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateConvertedBalance(_, let wallet):
+      case .didUpdateConvertedBalance(let wallet):
         guard observer.wallet == wallet else { return }
         DispatchQueue.main.async {
           observer.updateRemaining()
@@ -261,6 +256,10 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     didTapScan?()
   }
   
+  func didTapCloseButton() {
+    didTapClose?()
+  }
+  
   // MARK: - State
   
   private var recipientInput = ""
@@ -333,10 +332,9 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
   private let balanceStore: ConvertedBalanceStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
@@ -346,7 +344,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
        comment: String?,
        sendController: SendV3Controller,
        balanceStore: ConvertedBalanceStore,
-       appSettingsStore: AppSettingsV3Store) {
+       appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient
@@ -480,29 +478,10 @@ private extension SendV3ViewModelImplementation {
       placeholder: TKLocales.Send.Amount.placeholder,
       text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
       fractionDigits: tokenFractionalDigits(token: token),
-      token: createTokenModel(token: token)
+      token: TokenPickerButton.Configuration.createConfiguration(token: token)
     )
   }
   
-  func createTokenModel(token: Token) -> Model.Amount.Token {
-    let title: String
-    let image: Model.Amount.Token.Image
-    switch token {
-    case .ton:
-      title = "TON"
-      image = .image(.TKCore.Icons.Size44.tonLogo)
-    case .jetton(let item):
-      title = item.jettonInfo.symbol ?? ""
-      image = .asyncImage(ImageDownloadTask(closure: { [weak self] imageView, size, cornerRadius in
-        self?.imageLoader.loadImage(url: item.jettonInfo.imageURL, imageView: imageView, size: size, cornerRadius: cornerRadius)
-      }))
-    }
-    
-    return Model.Amount.Token(
-      image: image,
-      title: title
-    )
-  }
   
   func update() {
     let model = createModel()

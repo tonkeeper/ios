@@ -108,6 +108,24 @@ public extension TKPopUp.Component {
 }
 
 public extension TKPopUp.Component {
+  struct PlainButtonComponent: TKPopUp.Item {
+    public func getView() -> UIView {
+      let button = TKPlainButton()
+      button.configure(model: buttonConfiguration)
+      return button
+    }
+    private let buttonConfiguration: TKPlainButton.Model
+    public let bottomSpace: CGFloat
+    
+    public init(buttonConfiguration: TKPlainButton.Model,
+                bottomSpace: CGFloat = 0) {
+      self.buttonConfiguration = buttonConfiguration
+      self.bottomSpace = bottomSpace
+    }
+  }
+}
+
+public extension TKPopUp.Component {
   struct ButtonGroupComponent: TKPopUp.Item {
     public func getView() -> UIView {
       let containerView = UIView()
@@ -263,7 +281,7 @@ public extension TKPopUp.Component {
         stackView.addArrangedSubview(view)
         stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
       }
-    
+      
       processView.setContent(stackView)
       processView.state = state
       return processView
@@ -273,14 +291,22 @@ public extension TKPopUp.Component {
     
     private let items: [TKPopUp.Item]
     private let state: TKProcessContainerView.State
+    private let successTitle: String
+    private let errorTitle: String
     public let bottomSpace: CGFloat
     
     public init(items: [TKPopUp.Item],
                 state: TKProcessContainerView.State,
+                successTitle: String,
+                errorTitle: String,
                 bottomSpace: CGFloat = 0) {
       self.items = items
       self.bottomSpace = bottomSpace
       self.state = state
+      self.successTitle = successTitle
+      self.errorTitle = errorTitle
+      processView.successTitle = successTitle
+      processView.errorTitle = errorTitle
     }
   }
 }

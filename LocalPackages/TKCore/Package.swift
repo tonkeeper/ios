@@ -18,7 +18,8 @@ let package = Package(
     .package(url: "https://github.com/aptabase/aptabase-swift.git", .upToNextMajor(from: "0.3.9")),
     .package(path: "../TKUIKit"),
     .package(path: "../core-swift"),
-    .package(path: "../Ledger")
+    .package(path: "../Ledger"),
+    .package(path: "../TKKeychain")
   ],
   targets: [
     .target(
@@ -27,12 +28,12 @@ let package = Package(
         .byName(name: "Kingfisher"),
         .product(name: "FirebaseAnalyticsWithoutAdIdSupport", package: "firebase-ios-sdk"),
         .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
-        .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
         .product(name: "FirebaseMessaging", package: "firebase-ios-sdk"),
         .product(name: "Aptabase", package: "aptabase-swift"),
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "WalletCore", package: "core-swift"),
-        .product(name: "TonTransport", package: "Ledger")
+        .product(name: "TonTransport", package: "Ledger"),
+        .product(name: "TKKeychain", package: "TKKeychain"),
       ],
       resources: [.process("Resources")]),
     .testTarget(

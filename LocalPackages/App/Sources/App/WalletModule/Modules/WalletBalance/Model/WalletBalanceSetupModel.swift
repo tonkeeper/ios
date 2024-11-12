@@ -1,4 +1,6 @@
 import Foundation
+import UIKit
+import UserNotifications
 import KeeperCore
 
 final class WalletBalanceSetupModel {
@@ -20,28 +22,21 @@ final class WalletBalanceSetupModel {
   var didUpdateState: ((State?) -> Void)?
   
   private let walletsStore: WalletsStore
-  private let appSettingsStore: AppSettingsV3Store
   private let securityStore: SecurityStore
   private let walletNotificationStore: WalletNotificationStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
-       appSettingsStore: AppSettingsV3Store,
        securityStore: SecurityStore,
        walletNotificationStore: WalletNotificationStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
-    self.appSettingsStore = appSettingsStore
     self.securityStore = securityStore
     self.walletNotificationStore = walletNotificationStore
     self.mnemonicsRepository = mnemonicsRepository
     
     walletsStore.addObserver(self) { observer, event in
       observer.didGetWalletsStoreEvent(event)
-    }
-    
-    appSettingsStore.addObserver(self) { observer, event in
-      observer.didGetAppSettingsStoreEvent(event)
     }
     
     securityStore.addObserver(self) { observer, event in
@@ -54,7 +49,7 @@ final class WalletBalanceSetupModel {
   }
   
   func getState() -> State? {
-    guard let wallet = try? walletsStore.getActiveWallet() else {
+    guard let wallet = try? walletsStore.activeWallet else {
       return nil
     }
     let isSetupFinished = wallet.setupSettings.isSetupFinished
@@ -70,7 +65,7 @@ final class WalletBalanceSetupModel {
   
   func finishSetup() {
     Task {
-      guard let wallet = try? await walletsStore.getActiveWallet() else {
+      guard let wallet = try? walletsStore.activeWallet else {
         return
       }
       await walletsStore.setWalletIsSetupFinished(wallet: wallet, isSetupFinished: true)
@@ -92,7 +87,20 @@ final class WalletBalanceSetupModel {
   }
   
   func turnOnNotifications() async {
-    guard let wallet = try? await walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? walletsStore.activeWallet else { return }
+    let current = UNUserNotificationCenter.current()
+    
+    let settings = await current.notificationSettings()
+    if settings.authorizationStatus == .denied {
+      guard let settingsUrl = await URL(string: UIApplication.openSettingsURLString) else { return }
+      
+      if await UIApplication.shared.canOpenURL(settingsUrl) {
+        DispatchQueue.main.async {
+          UIApplication.shared.open(settingsUrl)
+        }
+      }
+      return
+    }
     await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
   }
   
@@ -102,16 +110,6 @@ final class WalletBalanceSetupModel {
       case .didChangeActiveWallet:
         self.updateState()
       case .didUpdateWalletSetupSettings:
-        self.updateState()
-      default: break
-      }
-    }
-  }
-  
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
-    syncQueue.async {
-      switch event {
-      case .didUpdateIsSetupFinished:
         self.updateState()
       default: break
       }

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
+		7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */ = {isa = PBXBuildFile; productRef = 7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -27,7 +28,6 @@
 		7D3F260A2AC1990C002DF1B7 /* RateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */; };
 		7D4C14642AD98E44002B2922 /* diamond.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C14632AD98E44002B2922 /* diamond.json */; };
 		7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5A18112A5406CB00793769 /* Kingfisher */; };
-		7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */; };
 		7D8A50A22AC861AE00AA396C /* BalanceWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */; };
 		7D8A50A42AC8624500AA396C /* BalanceWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A32AC8624500AA396C /* BalanceWidgetTimelineProvider.swift */; };
 		7D8A50A72AC8648200AA396C /* BalanceWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50A62AC8648200AA396C /* BalanceWidgetView.swift */; };
@@ -162,7 +162,6 @@
 		7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartView.swift; sourceTree = "<group>"; };
 		7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidgetView.swift; sourceTree = "<group>"; };
 		7D4C14632AD98E44002B2922 /* diamond.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = diamond.json; sourceTree = "<group>"; };
-		7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAssembly.swift; sourceTree = "<group>"; };
 		7D6A3DDC2CB00CB8008314E1 /* TKStories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKStories; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -184,6 +183,7 @@
 		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7DAF89E22CDAC08600D58260 /* TKKeychain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKKeychain; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
 		7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateWidgetView.swift; sourceTree = "<group>"; };
@@ -237,6 +237,7 @@
 				7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */,
 				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
 				7DCE73682CE269EF00FD4C72 /* WalletCore in Frameworks */,
+				7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */,
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
@@ -414,7 +415,6 @@
 			children = (
 				7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */,
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
-				7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
 			path = Tonkeeper;
@@ -444,6 +444,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				7DAF89E22CDAC08600D58260 /* TKKeychain */,
 				7D6A3DDC2CB00CB8008314E1 /* TKStories */,
 				E66F82AA2C2F2BB00009E7C2 /* Ledger */,
 				7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */,
@@ -518,6 +519,7 @@
 				7DF339912CB400F2003D689D /* TKStories */,
 				7DCE73652CE269EC00FD4C72 /* TKCore */,
 				7DCE73672CE269EF00FD4C72 /* WalletCore */,
+				7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */;
@@ -712,7 +714,6 @@
 			files = (
 				7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
-				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1540,6 +1541,10 @@
 		50C356512BE39C0500539266 /* TKLocalize */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKLocalize;
+		};
+		7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKKeychain;
 		};
 		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;

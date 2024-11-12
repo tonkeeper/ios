@@ -38,7 +38,7 @@ public protocol TonConnectService {
                                    seqno: UInt64,
                                    timeout: UInt64,
                                    parameters: SendTransactionParam,
-                                   signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String
+                                   signClosure: (TransferData) async throws -> String) async throws -> String
   
   func cancelRequest(appRequest: TonConnect.AppRequest,
                      app: TonConnectApp) async throws
@@ -227,10 +227,18 @@ final class TonConnectServiceImplementation: TonConnectService {
       wallet: wallet,
       seqno: seqno,
       timeout: timeout,
-      parameters: parameters) { builder in
-        try await builder.externalSign(wallet: wallet) { transfer in
-          try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        }
+      parameters: parameters) { transferData in
+        let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+          .createUnsignedWalletTransfer(
+            wallet: wallet
+          )
+        let signed = try TransferSigner.signWalletTransfer(
+          walletTransfer,
+          wallet: wallet,
+          seqno: transferData.seqno,
+          signer: WalletTransferEmptyKeySigner()
+        )
+        return try signed.toBoc().hexString()
       }
   }
   
@@ -238,7 +246,7 @@ final class TonConnectServiceImplementation: TonConnectService {
                                    seqno: UInt64,
                                    timeout: UInt64,
                                    parameters: SendTransactionParam,
-                                   signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+                                   signClosure: (TransferData) async throws -> String) async throws -> String {
     return try await createRequestTransactionBoc(
       wallet: wallet,
       seqno: seqno,
@@ -314,9 +322,7 @@ private extension TonConnectServiceImplementation {
                                    seqno: UInt64,
                                    timeout: UInt64,
                                    parameters: SendTransactionParam,
-                                   signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
-    
-    let walletBalance = try walletBalanceRepository.getWalletBalance(wallet: wallet)
+                                   signClosure: (TransferData) async throws -> String) async throws -> String {
     
     let rebuildedMessages = try await rebuildJettonPayloads(wallet: wallet, messages: parameters.messages)
     
@@ -329,15 +335,20 @@ private extension TonConnectServiceImplementation {
       )
     }
     
-    return try await TransferMessageBuilder(
-      transferData: .tonConnect(
+    let transferData = TransferData(
+      transfer: .tonConnect(
         TransferData.TonConnect(
-          seqno: seqno,
           payloads: payloads,
-          sender: parameters.from,
-          timeout: timeout
+          sender: parameters.from
         )
-      )
-    ).createBoc(signClosure: signClosure)
+      ),
+      wallet: wallet,
+      messageType: .ext,
+      seqno: seqno,
+      timeout: timeout
+    )
+    
+    let signed = try await signClosure(transferData)
+    return signed
   }
 }

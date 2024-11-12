@@ -238,18 +238,7 @@ public final class StoresAssembly {
     _walletNFTsManagementStore[wallet] = Weak(value: store)
     return store
   }
-  
-  private weak var _fiatMethodsStore: FiatMethodsStore?
-  public var fiatMethodsStore: FiatMethodsStore {
-    if let fiatMethodsStore = _fiatMethodsStore {
-      return fiatMethodsStore
-    } else {
-      let fiatMethodsStore = FiatMethodsStore()
-      _fiatMethodsStore = fiatMethodsStore
-      return fiatMethodsStore
-    }
-  }
-  
+
   private weak var _walletNotificationStore: WalletNotificationStore?
   public var walletNotificationStore: WalletNotificationStore {
     if let walletNotificationStore = _walletNotificationStore {
@@ -260,39 +249,13 @@ public final class StoresAssembly {
       return walletNotificationStore
     }
   }
-  
-  private weak var _backgroundUpdateStore: BackgroundUpdateStore?
-  public var backgroundUpdateStore: BackgroundUpdateStore {
-    if let backgroundUpdateStore = _backgroundUpdateStore {
-      return backgroundUpdateStore
-    } else {
-      let backgroundUpdateStore = BackgroundUpdateStore()
-      _backgroundUpdateStore = backgroundUpdateStore
-      return backgroundUpdateStore
-    }
-  }
-  
-  private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
-  public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
-    if let backgroundUpdateUpdater = _backgroundUpdateUpdater {
-      return backgroundUpdateUpdater
-    } else {
-      let backgroundUpdateUpdater = BackgroundUpdateUpdater(
-        backgroundUpdateStore: backgroundUpdateStore,
-        walletsStore: walletsStore,
-        streamingAPI: apiAssembly.streamingAPI
-      )
-      _backgroundUpdateUpdater = backgroundUpdateUpdater
-      return backgroundUpdateUpdater
-    }
-  }
-  
-  private weak var _appSettingsStore: AppSettingsV3Store?
-  public var appSettingsStore: AppSettingsV3Store {
+
+  private weak var _appSettingsStore: AppSettingsStore?
+  public var appSettingsStore: AppSettingsStore {
     if let appSettingsStore = _appSettingsStore {
       return appSettingsStore
     } else {
-      let appSettingsStore = AppSettingsV3Store(keeperInfoStore: keeperInfoStore)
+      let appSettingsStore = AppSettingsStore(keeperInfoStore: keeperInfoStore)
       _appSettingsStore = appSettingsStore
       return appSettingsStore
     }

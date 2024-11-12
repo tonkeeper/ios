@@ -4,6 +4,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import TonSwift
+import TKLocalize
 
 enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
   case failedToSign
@@ -11,7 +12,7 @@ enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
 }
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws
   func cancel(wallet: Wallet) async
 }
 
@@ -31,7 +32,7 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     self.tonConnectService = tonConnectService
   }
   
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -85,7 +86,7 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -141,7 +142,7 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
     self.responseHandler = responseHandler
   }
   
-  func confirm(wallet: KeeperCore.Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: KeeperCore.Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     guard let parameters = signRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -188,7 +189,9 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
   private let confirmTransactionController: ConfirmTransactionController
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
-  
+
+  private var infoWindowRouter: WindowRouter?
+
   init(router: WindowRouter,
        wallet: Wallet,
        confirmator: SignTransactionConfirmationCoordinatorConfirmator,
@@ -235,18 +238,23 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
 }
 
 private extension SignTransactionConfirmationCoordinator {
+
   func openConfirmation(model: ConfirmTransactionModel) {
     let rootViewController = UIViewController()
     router.window.rootViewController = rootViewController
     router.window.makeKeyAndVisible()
     
     let keyWindow = UIApplication.keyWindow
-    
+
     let module = TonConnectConfirmationAssembly.module(
       model: model,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
       historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: TonConnectConfirmationAccountEventActionContentProvider())
     )
-    
+    module.output.didTapRiskInfo = { [weak self] title, caption in
+      self?.openInfoPopup(title: title, caption: caption)
+    }
+
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     bottomSheetViewController.didClose = { [weak self] isInteractivly in
@@ -271,9 +279,9 @@ private extension SignTransactionConfirmationCoordinator {
     
     module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController, wallet] in
       do {
-        try await self?.confirmator.confirm(wallet: wallet) { transferMessageBuilder in
+        try await self?.confirmator.confirm(wallet: wallet) { transferData in
           guard let self, let bottomSheetViewController else { throw Error.failedToSign }
-          return try await self.performSign(transferMessageBuilder: transferMessageBuilder,
+          return try await self.performSign(transferData: transferData,
                                             wallet: wallet,
                                             fromViewController: bottomSheetViewController)
         }
@@ -291,12 +299,56 @@ private extension SignTransactionConfirmationCoordinator {
     
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
-  
-  func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
-    let coordinator = await WalletTransferSignCoordinator(
+
+  func openInfoPopup(title: String, caption: String) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+
+    let rootViewController = UIViewController()
+    let windowRouter = WindowRouter(window: window)
+    windowRouter.window.rootViewController = rootViewController
+    windowRouter.window.makeKeyAndVisible()
+
+    let viewController = InsufficientFundsViewController()
+    let sheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+
+    sheetViewController.didClose = { [weak router, weak infoWindowRouter] isInteractivly in
+      guard isInteractivly else { return }
+      infoWindowRouter?.window.removeFromSuperview()
+      router?.window.makeKeyAndVisible()
+    }
+
+    var button = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    button.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
+    button.action =  { [weak sheetViewController] in
+      sheetViewController?.dismiss() { [weak self] in
+        guard let self else {
+          return
+        }
+
+        self.infoWindowRouter?.window.removeFromSuperview()
+
+        self.router.window.makeKeyAndVisible()
+      }
+    }
+
+    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    let configuration = configurationBuilder.commonConfiguration(
+      title: title, caption: caption, buttons: [button]
+    )
+    viewController.configuration = configuration
+
+    infoWindowRouter = windowRouter
+    sheetViewController.present(fromViewController: rootViewController)
+  }
+
+  func performSign(transferData: TransferData, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
+    let coordinator = WalletTransferSignCoordinator(
       router: ViewControllerRouter(rootViewController: fromViewController),
       wallet: wallet,
-      transferMessageBuilder: transferMessageBuilder,
+      transferData: transferData,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly)
     

@@ -3,12 +3,8 @@ import TonSwift
 
 public final class RNAssembly {
   
-  private let coreAssembly: CoreAssembly
+  public init() {}
   
-  init(coreAssembly: CoreAssembly) {
-    self.coreAssembly = coreAssembly
-  }
-
   private weak var _rnAsyncStorage: RNAsyncStorage?
   public var rnAsyncStorage: RNAsyncStorage {
     if let _rnAsyncStorage {
@@ -17,9 +13,5 @@ public final class RNAssembly {
     let storage = RNAsyncStorage()
     _rnAsyncStorage = storage
     return storage
-  }
-  
-  public var rnService: RNService {
-    RNServiceImplementation(asyncStorage: rnAsyncStorage, keychainVault: coreAssembly.keychainVault)
   }
 }

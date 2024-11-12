@@ -4,6 +4,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 struct DNSModule {
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class WalletNFTsManagedStore: StoreV3<WalletNFTsManagedStore.Event, WalletNFTsManagedStore.State> {
+public final class WalletNFTsManagedStore: Store<WalletNFTsManagedStore.Event, WalletNFTsManagedStore.State> {
   public typealias State = [NFT]
   public enum Event {
     case didUpdateNFTs(wallet: Wallet)
@@ -35,23 +35,23 @@ public final class WalletNFTsManagedStore: StoreV3<WalletNFTsManagedStore.Event,
     }
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     calculateState()
   }
   
   private func update() {
-    setState { [weak self] _ in
+    updateState { [weak self] state in
       guard let self else { return nil }
       return StateUpdate(newState: calculateState())
-    } notify: { [weak self] _ in
+    } completion: { [weak self] _ in
       guard let self else { return }
-      self.sendEvent(.didUpdateNFTs(wallet: self.wallet))
+      sendEvent(.didUpdateNFTs(wallet: wallet))
     }
   }
   
   private func calculateState() -> State {
-    let managementStoreState = walletNFTsManagementStore.getState()
-    let nfts = walletNFTStore.getState()[wallet] ?? []
+    let managementStoreState = walletNFTsManagementStore.state
+    let nfts = walletNFTStore.state[wallet] ?? []
     return nfts.filter { nft in
       let state: NFTsManagementState.NFTState?
       if let collection = nft.collection {

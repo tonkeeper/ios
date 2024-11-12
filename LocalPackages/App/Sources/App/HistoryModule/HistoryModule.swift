@@ -4,6 +4,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 struct HistoryModule {
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {
@@ -20,7 +21,8 @@ struct HistoryModule {
         rootViewController: navigationController
       ),
       coreAssembly: dependencies.coreAssembly,
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver()
     )
     return coordinator
   }

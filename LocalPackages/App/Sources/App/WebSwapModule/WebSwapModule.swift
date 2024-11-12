@@ -3,6 +3,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 struct WebSwapModule {
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {

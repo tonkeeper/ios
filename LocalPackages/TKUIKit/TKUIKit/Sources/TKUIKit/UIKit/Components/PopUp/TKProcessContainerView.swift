@@ -34,6 +34,17 @@ public final class TKProcessContainerView: UIView {
     }
   }
   
+  var successTitle: String = "Done" {
+    didSet {
+      resultView.successTitle = successTitle
+    }
+  }
+  var errorTitle: String = "Error" {
+    didSet {
+      resultView.errorTitle = errorTitle
+    }
+  }
+  
   private let contentContainer = UIView()
   private let resultView = TKResultView(state: .success)
   private let loaderView = TKLoaderView(size: .medium, style: .secondary)

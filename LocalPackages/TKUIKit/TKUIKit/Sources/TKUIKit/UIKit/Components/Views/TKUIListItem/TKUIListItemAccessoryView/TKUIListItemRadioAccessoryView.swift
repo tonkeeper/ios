@@ -18,7 +18,7 @@ public final class TKUIListItemRadioButtonAccessoryView: UIView, TKConfigurableV
     public let isSelected: Bool
     public let tintColors: [TKRadioButtonState: UIColor]
     public let size: CGFloat
-    public let handler: RadioButtonHandlerClosure
+    public let handler: RadioButtonHandlerClosure?
     
     public init(
       isSelected: Bool,
@@ -27,7 +27,7 @@ public final class TKUIListItemRadioButtonAccessoryView: UIView, TKConfigurableV
         .selected: .Button.primaryBackground,
         .deselected: .Button.tertiaryBackground
       ],
-      handler: @escaping RadioButtonHandlerClosure
+      handler: RadioButtonHandlerClosure?
     ) {
       self.isSelected = isSelected
       self.tintColors = tintColors
@@ -71,20 +71,7 @@ public final class TKUIListItemRadioButtonAccessoryView: UIView, TKConfigurableV
 private extension TKUIListItemRadioButtonAccessoryView {
   func setup() {
     addSubview(radioButton)
-    
-    radioButton.addAction(
-      UIAction(
-        handler: { [weak self] _ in
-          guard let self else { return }
-          let isSelected = self.radioButton.isSelected
-          if !isSelected {
-            self.radioButton.isSelected.toggle()
-            self.radioButton.didToggle?(self.radioButton.isSelected)
-          }
-        }
-      ),
-      for: .touchUpInside
-    )
+    radioButton.isUserInteractionEnabled = false
   }
 }
 

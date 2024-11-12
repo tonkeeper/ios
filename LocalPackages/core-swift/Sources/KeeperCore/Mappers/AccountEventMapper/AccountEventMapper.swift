@@ -174,14 +174,14 @@ private extension AccountEventMapper {
       amountType = .income
       eventType = .spam
       leftTopDescription = action.sender.value(isTestnet: isTestnet)
-    } else if action.recipient == accountEvent.account {
-      amountType = .income
-      eventType = .receieved
-      leftTopDescription = action.sender.value(isTestnet: isTestnet)
-    } else {
+    } else if action.sender == accountEvent.account {
       amountType = .outcome
       eventType = .sent
       leftTopDescription = action.recipient.value(isTestnet: isTestnet)
+    } else {
+      amountType = .income
+      eventType = .receieved
+      leftTopDescription = action.sender.value(isTestnet: isTestnet)
     }
     
     let amount = amountMapper
@@ -231,14 +231,14 @@ private extension AccountEventMapper {
       eventType = .spam
       leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
       amountType = .income
-    } else if action.recipient == accountEvent.account {
-      eventType = .receieved
-      leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
-      amountType = .income
-    } else {
+    } else if action.sender == accountEvent.account {
       eventType = .sent
       leftTopDescription = action.recipient?.value(isTestnet: isTestnet) ?? nil
       amountType = .outcome
+    } else {
+      eventType = .receieved
+      leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
+      amountType = .income
     }
     
     let amount = amountMapper
@@ -334,6 +334,7 @@ private extension AccountEventMapper {
     
     return AccountEventModel.Action(
       eventType: .depositStake,
+      stakingImplementation: action.implementation,
       amount: amount,
       subamount: nil,
       leftTopDescription: action.pool.name,
@@ -359,6 +360,7 @@ private extension AccountEventMapper {
     
     return AccountEventModel.Action(
       eventType: .withdrawStake,
+      stakingImplementation: action.implementation,
       amount: amount,
       subamount: nil,
       leftTopDescription: action.pool.name,
@@ -383,14 +385,15 @@ private extension AccountEventMapper {
       currency: .TON)
     
     return AccountEventModel.Action(eventType: .withdrawStakeRequest,
-                               amount: amount,
-                               subamount: nil,
-                               leftTopDescription: action.pool.name,
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: nil,
-                               nft: nil)
+                                    stakingImplementation: action.implementation,
+                                    amount: amount,
+                                    subamount: nil,
+                                    leftTopDescription: action.pool.name,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: nil,
+                                    nft: nil)
   }
   
   func mapAuctionBidAction(_ action: AccountEventAction.AuctionBid,

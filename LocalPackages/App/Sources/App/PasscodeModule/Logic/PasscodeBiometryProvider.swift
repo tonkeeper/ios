@@ -14,7 +14,7 @@ struct PasscodeBiometryProvider: PasscodeInputBiometryProvider {
   }
   
   func getBiometryState() async -> TKUIKit.TKKeyboardView.Biometry {
-    guard await securityStore.getState().isBiometryEnable else {
+    guard securityStore.state.isBiometryEnable else {
       return .none
     }
     switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {

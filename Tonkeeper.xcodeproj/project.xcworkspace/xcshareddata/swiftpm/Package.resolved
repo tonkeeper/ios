@@ -46,6 +46,42 @@
       }
     },
     {
+      "identity" : "battery-api-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/battery-api-swift",
+      "state" : {
+        "revision" : "f0c6e89e88446000de0a81290d45cb57fb11a492",
+        "version" : "2.0.2"
+      }
+    },
+    {
+      "identity" : "bcswiftdcbor",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/BlockchainCommons/BCSwiftDCBOR",
+      "state" : {
+        "revision" : "b517aec0d29c7096d8d99872c0274eff95b2c33f",
+        "version" : "1.0.7"
+      }
+    },
+    {
+      "identity" : "bcswiftfloat16",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/blockchaincommons/BCSwiftFloat16",
+      "state" : {
+        "revision" : "71f380285d88a876f9cdf4e34e2e9e77d7ca4aef",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "bcswifttags",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/BlockchainCommons/BCSwiftTags",
+      "state" : {
+        "revision" : "edb94b337d03e01c871db895c65d8fd3b6d43c9c",
+        "version" : "0.1.2"
+      }
+    },
+    {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/attaswift/BigInt",
@@ -190,12 +226,30 @@
       }
     },
     {
+      "identity" : "swift-collections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wolfmcnally/swift-collections",
+      "state" : {
+        "revision" : "11433b688df0e0b8c3deee56c30294ed63d929eb",
+        "version" : "1.1.4"
+      }
+    },
+    {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
         "revision" : "9bee2fdb79cc740081abd8ebd80738063d632286",
         "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "swift-numberkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wolfmcnally/swift-numberkit.git",
+      "state" : {
+        "revision" : "34a26297c200489779929b7fd7d4d30b63e87e69",
+        "version" : "2.4.3"
       }
     },
     {
@@ -239,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "1a7c917c1b036f83b03bd976b5601d879af4696e",
-        "version" : "1.0.18"
+        "revision" : "89aba495771825d93c055545d3b36f08e43bcbde",
+        "version" : "1.0.22"
       }
     },
     {
@@ -250,6 +304,15 @@
       "state" : {
         "revision" : "f8fd111642bf2336b11ef9ea828510693106e954",
         "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "urkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/URKit",
+      "state" : {
+        "revision" : "4ad94f2550d6c6ae5daeb283b2168471f0d665dd",
+        "version" : "16.0.0"
       }
     }
   ],

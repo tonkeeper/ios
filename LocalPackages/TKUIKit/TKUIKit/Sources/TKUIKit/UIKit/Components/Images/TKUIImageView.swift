@@ -120,6 +120,18 @@ public final class TKImageView: UIView, ConfigurableView {
       imageView.frame = imageViewFrame
     }
     
+    switch corners {
+    case .none:
+      layer.masksToBounds = false
+      layer.cornerRadius = 0
+    case .circle:
+      layer.masksToBounds = true
+      layer.cornerRadius = bounds.height/2
+    case .cornerRadius(let cornerRadius):
+      layer.masksToBounds = true
+      layer.cornerRadius = cornerRadius
+    }
+    
     updateImage()
   }
   
@@ -146,8 +158,7 @@ public final class TKImageView: UIView, ConfigurableView {
   }
   
   public func prepareForReuse() {
-    imageView.kf.cancelDownloadTask()
-    imageView.image = nil
+    image = nil
   }
 
   private func setup() {

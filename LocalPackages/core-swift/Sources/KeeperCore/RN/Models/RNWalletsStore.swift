@@ -54,6 +54,7 @@ public struct RNWallet: Codable {
     case Signer
     case SignerDeeplink
     case Ledger
+    case Keystone
   }
   
   public enum WalletNetwork: Int, Codable {
@@ -99,6 +100,8 @@ public struct RNWallet: Codable {
   public let emoji: String
   public let color: String
   public let pubkey: String
+  public let path: String?
+  public let xfp: String?
   public let network: WalletNetwork
   public let type: WalletType
   public let version: RNContractVersion
@@ -121,18 +124,31 @@ public extension RNWallet {
       }
     }()
     switch wallet.identity.kind {
+    case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
+      self.type = .Keystone
+      self.pubkey = publicKey.data.hexString()
+      self.path = path
+      self.xfp = xfp
+      self.version = RNContractVersion(walletContractVersion: walletContractVersion)
+      self.ledger = nil
     case .Regular(let publicKey, let walletContractVersion):
       self.type = .Regular
+      self.path = nil
+      self.xfp = nil
       self.pubkey = publicKey.data.hexString()
       self.version = RNContractVersion(walletContractVersion: walletContractVersion)
       self.ledger = nil
     case .Lockup(let publicKey, _):
       self.type = .Lockup
+      self.path = nil
+      self.xfp = nil
       self.pubkey = publicKey.data.hexString()
       self.version = .LockupV1
       self.ledger = nil
     case .Watchonly(_):
       self.type = .WatchOnly
+      self.path = nil
+      self.xfp = nil
       self.version = .v3R1
       self.ledger = nil
       self.pubkey = ""
@@ -141,15 +157,21 @@ public extension RNWallet {
       self.pubkey = publicKey.data.hexString()
       self.version = RNContractVersion(walletContractVersion: walletContractVersion)
       self.ledger = nil
+      self.path = nil
+      self.xfp = nil
     case .SignerDevice(let publicKey, let walletContractVersion):
       self.type = .SignerDeeplink
       self.pubkey = publicKey.data.hexString()
       self.version = RNContractVersion(walletContractVersion: walletContractVersion)
       self.ledger = nil
+      self.path = nil
+      self.xfp = nil
     case .Ledger(let publicKey, let walletContractVersion, let ledgerDevice):
       self.type = .Ledger
       self.pubkey = publicKey.data.hexString()
       self.ledger = Ledger(deviceId: ledgerDevice.deviceId, deviceModel: ledgerDevice.deviceModel, accountIndex: ledgerDevice.accountIndex)
+      self.path = nil
+      self.xfp = nil
       self.version = RNContractVersion(walletContractVersion: walletContractVersion)
     }
     self.workchain = 0
@@ -161,7 +183,6 @@ public extension RNWallet {
         return image.rnIconString
       }
     }()
-    
   }
   
   func getWallet(backupDate: Date?) throws -> Wallet  {
@@ -252,6 +273,8 @@ public extension RNWallet {
       kind = .SignerDevice(publicKey, contractVersion)
     case .WatchOnly:
       kind = .Watchonly(.Resolved(try contract.address()))
+    case .Keystone:
+      kind = .Keystone(publicKey, xfp, path, contractVersion)
     }
     
     let icon: WalletIcon
@@ -268,7 +291,8 @@ public extension RNWallet {
       identity: WalletIdentity(network: network, kind: kind),
       metaData: WalletMetaData(label: name, tintColor: tintColor, icon: icon),
       setupSettings: WalletSetupSettings(backupDate: backupDate,
-                                         isSetupFinished: false)
+                                         isSetupFinished: false),
+      batterySettings: BatterySettings()
     )
   }
 }
