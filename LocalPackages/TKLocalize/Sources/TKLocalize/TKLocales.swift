@@ -774,6 +774,10 @@ public enum TKLocales {
         /// Confirm your transaction on Ledger
         public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.confirm.description", fallback: "Confirm your transaction on Ledger")
       }
+      public enum ConfirmProof {
+        /// Verify domain on Ledger
+        public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.confirm_proof.description", fallback: "Verify domain on Ledger")
+      }
       public enum TonApp {
         /// Unlock it and open TON App
         public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.ton_app.description", fallback: "Unlock it and open TON App")

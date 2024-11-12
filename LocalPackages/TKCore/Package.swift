@@ -10,7 +10,6 @@ let package = Package(
   products: [
     .library(
       name: "TKCore",
-      type: .dynamic,
       targets: ["TKCore"]),
   ],
   dependencies: [
@@ -18,8 +17,9 @@ let package = Package(
     .package(url: "https://github.com/firebase/firebase-ios-sdk", .upToNextMajor(from: "11.0.0")),
     .package(url: "https://github.com/aptabase/aptabase-swift.git", .upToNextMajor(from: "0.3.9")),
     .package(path: "../TKUIKit"),
-    .package(path: "../TKKeychain"),
-    .package(path: "../core-swift")
+    .package(path: "../core-swift"),
+    .package(path: "../Ledger"),
+    .package(path: "../TKKeychain")
   ],
   targets: [
     .target(
@@ -31,8 +31,9 @@ let package = Package(
         .product(name: "FirebaseMessaging", package: "firebase-ios-sdk"),
         .product(name: "Aptabase", package: "aptabase-swift"),
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
+        .product(name: "WalletCore", package: "core-swift"),
+        .product(name: "TonTransport", package: "Ledger"),
         .product(name: "TKKeychain", package: "TKKeychain"),
-        .product(name: "WalletCore", package: "core-swift")
       ],
       resources: [.process("Resources")]),
     .testTarget(

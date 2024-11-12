@@ -152,7 +152,7 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
     )
     
     let item = ChooseWalletToAddItem(
-      identifier: walletModel.address.toRaw(),
+      identifier: walletModel.id,
       isSelectionEnable: isEnable,
       cellConfiguration: cellConfiguration
     )
