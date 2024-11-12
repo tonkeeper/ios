@@ -50,19 +50,17 @@
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
 		7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */; };
+		7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE73652CE269EC00FD4C72 /* TKCore */; };
+		7DCE73682CE269EF00FD4C72 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE73672CE269EF00FD4C72 /* WalletCore */; };
+		7DCE736A2CE269FB00FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE73692CE269FB00FD4C72 /* TKCore */; };
+		7DCE736C2CE269FE00FD4C72 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE736B2CE269FE00FD4C72 /* WalletCore */; };
+		7DCE736E2CE26A0800FD4C72 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE736D2CE26A0800FD4C72 /* TKCore */; };
+		7DCE73702CE26A0C00FD4C72 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DCE736F2CE26A0C00FD4C72 /* WalletCore */; };
 		7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */; };
 		7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DF339922CB400F2003D689D /* TKStories in Frameworks */ = {isa = PBXBuildFile; productRef = 7DF339912CB400F2003D689D /* TKStories */; };
-		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
-		C34C70612BE1157200143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; };
-		C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C34C70642BE1157A00143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70632BE1157A00143AC8 /* WalletCore */; };
-		C34C70672BE1157F00143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70662BE1157F00143AC8 /* WalletCore */; };
-		C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; };
-		C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
 		C365E2712BDA6944006D33B9 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2702BDA6944006D33B9 /* TKChart */; };
 		C365E2742BDA695D006D33B9 /* App in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2732BDA695D006D33B9 /* App */; };
 		C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74412BE11EC6006022FE /* TKCoordinator */; };
@@ -111,9 +109,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				C3CC74452BE11F08006022FE /* TKUIKitDynamic in Embed Frameworks */,
-				C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */,
 				C3FC243C2BB4DA980005E952 /* TKChart in Embed Frameworks */,
-				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -225,11 +221,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				C3CC74472BE11F0F006022FE /* TKUIKitDynamic in Frameworks */,
-				C34C70642BE1157A00143AC8 /* WalletCore in Frameworks */,
 				C365E2712BDA6944006D33B9 /* TKChart in Frameworks */,
-				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
+				7DCE736A2CE269FB00FD4C72 /* TKCore in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
+				7DCE736C2CE269FE00FD4C72 /* WalletCore in Frameworks */,
 				50C356522BE39C0500539266 /* TKLocalize in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -238,7 +234,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DCE73662CE269EC00FD4C72 /* TKCore in Frameworks */,
 				7DF339922CB400F2003D689D /* TKStories in Frameworks */,
+				7DCE73682CE269EF00FD4C72 /* WalletCore in Frameworks */,
 				7D0CAB0E2CDADDAF00F1E17B /* TKKeychain in Frameworks */,
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
@@ -246,9 +244,7 @@
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
-				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
 				C3CC74442BE11F08006022FE /* TKUIKitDynamic in Frameworks */,
-				C34C70612BE1157200143AC8 /* WalletCore in Frameworks */,
 				C365E2742BDA695D006D33B9 /* App in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -257,10 +253,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DCE73702CE26A0C00FD4C72 /* WalletCore in Frameworks */,
 				7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */,
-				C34C70672BE1157F00143AC8 /* WalletCore in Frameworks */,
 				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
-				C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */,
+				7DCE736E2CE26A0800FD4C72 /* TKCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -482,11 +478,11 @@
 			);
 			name = TonkeeperWidgetExtension;
 			packageProductDependencies = (
-				C35E6C432ADFCA0500F8B524 /* TKCore */,
 				C365E2702BDA6944006D33B9 /* TKChart */,
-				C34C70632BE1157A00143AC8 /* WalletCore */,
 				C3CC74462BE11F0F006022FE /* TKUIKitDynamic */,
 				50C356512BE39C0500539266 /* TKLocalize */,
+				7DCE73692CE269FB00FD4C72 /* TKCore */,
+				7DCE736B2CE269FE00FD4C72 /* WalletCore */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -515,14 +511,14 @@
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
-				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
 				C3FC243A2BB4DA980005E952 /* TKChart */,
 				C365E2732BDA695D006D33B9 /* App */,
-				C34C70602BE1157200143AC8 /* WalletCore */,
 				C3FAB42C2BE11D4400C81547 /* TKScreenKit */,
 				C3CC74412BE11EC6006022FE /* TKCoordinator */,
 				C3CC74432BE11F08006022FE /* TKUIKitDynamic */,
 				7DF339912CB400F2003D689D /* TKStories */,
+				7DCE73652CE269EC00FD4C72 /* TKCore */,
+				7DCE73672CE269EF00FD4C72 /* WalletCore */,
 				7D0CAB0D2CDADDAF00F1E17B /* TKKeychain */,
 			);
 			productName = Tonkeeper;
@@ -544,9 +540,9 @@
 			);
 			name = TonkeeperIntents;
 			packageProductDependencies = (
-				C32C7C462BCD0D8E00785B6A /* TKCore */,
-				C34C70662BE1157F00143AC8 /* WalletCore */,
 				7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */,
+				7DCE736D2CE26A0800FD4C72 /* TKCore */,
+				7DCE736F2CE26A0C00FD4C72 /* WalletCore */,
 			);
 			productName = TonkeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */;
@@ -1569,33 +1565,33 @@
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
 		};
+		7DCE73652CE269EC00FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		7DCE73672CE269EF00FD4C72 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WalletCore;
+		};
+		7DCE73692CE269FB00FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		7DCE736B2CE269FE00FD4C72 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WalletCore;
+		};
+		7DCE736D2CE26A0800FD4C72 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		7DCE736F2CE26A0C00FD4C72 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WalletCore;
+		};
 		7DF339912CB400F2003D689D /* TKStories */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKStories;
-		};
-		C32C7C462BCD0D8E00785B6A /* TKCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKCore;
-		};
-		C34C70602BE1157200143AC8 /* WalletCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = WalletCore;
-		};
-		C34C70632BE1157A00143AC8 /* WalletCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = WalletCore;
-		};
-		C34C70662BE1157F00143AC8 /* WalletCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = WalletCore;
-		};
-		C35E6C3D2ADFC9F800F8B524 /* TKCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKCore;
-		};
-		C35E6C432ADFCA0500F8B524 /* TKCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKCore;
 		};
 		C365E2702BDA6944006D33B9 /* TKChart */ = {
 			isa = XCSwiftPackageProductDependency;

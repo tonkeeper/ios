@@ -44,11 +44,11 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
     guard connectedApps.count > index else { return }
     let connectedApp = connectedApps[index]
     let dapp = Dapp(
-      name: connectedApp.name,
+      name: connectedApp.manifest.name,
       description: nil,
-      icon: connectedApp.iconURL,
+      icon: connectedApp.manifest.iconUrl,
       poster: nil,
-      url: connectedApp.url,
+      url: connectedApp.manifest.url,
       textColor: nil,
       excludeCountries: nil,
       includeCountries: nil
@@ -58,7 +58,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - State
   
-  private var connectedApps = [BrowserConnectedController.ConnectedApp]() {
+  private var connectedApps = [TonConnectApp]() {
     didSet {
       DispatchQueue.main.async {
         self.didUpdateConnectedApps()
@@ -95,7 +95,7 @@ private extension BrowserConnectedViewModelImplementation {
         let items = connectedApps.compactMap { app in
           let downloadTask = TKCore.ImageDownloadTask() { [imageLoader] imageView, size, cornerRadius in
             imageLoader.loadImage(
-              url: app.iconURL,
+              url: app.manifest.iconUrl,
               imageView: imageView,
               size: size,
               cornerRadius: cornerRadius
@@ -103,14 +103,18 @@ private extension BrowserConnectedViewModelImplementation {
           }
 
           let configuration = BrowserConnectedAppCell.Configuration(
-            title: app.name,
-            iconUrl: app.iconURL,
+            title: app.manifest.name,
+            iconUrl: app.manifest.iconUrl,
             iconDownloadTask: downloadTask
           )
 
           return BrowserConnected.Item(
             identifier: UUID().uuidString,
-            configuration: configuration
+            title: app.manifest.name,
+            configuration: configuration,
+            deleteHandler: { [weak self] in
+              self?.browserConnectedController.deleteApp(app)
+            }
           )
         }
 

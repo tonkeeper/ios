@@ -132,13 +132,40 @@ private extension BrowserConnectedViewController {
   
   func createDataSource() -> DataSource {
     let dataSource = DataSource(collectionView: customView.collectionView) { [appCellConfiguration] collectionView, indexPath, itemIdentifier in
-      collectionView.dequeueConfiguredReusableCell(
+      let cell = collectionView.dequeueConfiguredReusableCell(
         using: appCellConfiguration,
         for: indexPath,
         item: itemIdentifier.configuration
       )
+      
+      cell.didLongPress = { [weak self] in
+        self?.showDeleteAlert(item: itemIdentifier)
+      }
+      
+      return cell
     }
 
     return dataSource
+  }
+  
+  private func showDeleteAlert(item: BrowserConnected.Item) {
+    let alertController = UIAlertController(
+      title: "\(TKLocales.Browser.ConnectedApps.Disconnect.title) \"\(item.title)\"?",
+      message: nil,
+      preferredStyle: .alert
+    )
+    
+    alertController.addAction(UIAlertAction(title: TKLocales.Actions.cancel, style: .default))
+    alertController.addAction(
+      UIAlertAction(
+        title: TKLocales.Browser.ConnectedApps.Disconnect.button,
+        style: .destructive,
+        handler: { _ in
+          item.deleteHandler?()
+        }
+      )
+    )
+    
+    present(alertController, animated: true)
   }
 }

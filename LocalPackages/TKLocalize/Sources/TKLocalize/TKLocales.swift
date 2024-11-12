@@ -405,6 +405,12 @@ public enum TKLocales {
       public static let emptyDescription = TKLocales.tr("Localizable", "browser.connected_apps.empty_description", fallback: "Explore apps and services in Tonkeeper browser.")
       /// Connected apps will be shown here
       public static let emptyTitle = TKLocales.tr("Localizable", "browser.connected_apps.empty_title", fallback: "Connected apps will be shown here")
+      public enum Disconnect {
+        /// Remove
+        public static let button = TKLocales.tr("Localizable", "browser.connected_apps.disconnect.button", fallback: "Remove")
+        /// Remove
+        public static let title = TKLocales.tr("Localizable", "browser.connected_apps.disconnect.title", fallback: "Remove")
+      }
     }
     public enum List {
       /// All
@@ -773,6 +779,10 @@ public enum TKLocales {
       public enum Confirm {
         /// Confirm your transaction on Ledger
         public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.confirm.description", fallback: "Confirm your transaction on Ledger")
+      }
+      public enum ConfirmProof {
+        /// Verify domain on Ledger
+        public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.confirm_proof.description", fallback: "Verify domain on Ledger")
       }
       public enum TonApp {
         /// Unlock it and open TON App

@@ -21,7 +21,7 @@ open class TKBridgeWebViewController: UIViewController {
   
   public var didLoadInitialURLHandler: (() -> Void)?
   private let userContentController = WKUserContentController()
-
+  
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
     let script = WKUserScript(
@@ -90,25 +90,29 @@ open class TKBridgeWebViewController: UIViewController {
   }
   
   private var bridgeMessageObservers = [String: [(Any) -> Void]]()
-  
+  private var webViewObserver: NSKeyValueObservation?
+
   // MARK: - Dependencies
   
   private let initialURL: URL
   private let initialTitle: String?
   private let jsInjection: String
   private let configuration: Configuration
+  private let deeplinkHandler: ((_ deeplink: String) throws -> Void)?
   
   // MARK: - Init
   
   public init(initialURL: URL,
               initialTitle: String?,
               jsInjection: String?,
-              configuration: Configuration) {
+              configuration: Configuration,
+              deeplinkHandler: ((_ deeplink: String) throws -> Void)? = nil) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
     self.url = initialURL
     self.configuration = configuration
     self.jsInjection = jsInjection ?? ""
+    self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle
   }
@@ -121,6 +125,23 @@ open class TKBridgeWebViewController: UIViewController {
   
   open override func viewDidLoad() {
     super.viewDidLoad()
+    
+    webViewObserver = webView.observe(\.url, options: .new) { [weak self] webView, change in
+        guard let newURL = change.newValue as? URL else { return }
+
+        if var urlComponents = URLComponents(url: newURL, resolvingAgainstBaseURL: false) {
+            var queryItems = urlComponents.queryItems ?? []
+            if !queryItems.contains(where: { $0.name == "utm_source" }) {
+                queryItems.append(URLQueryItem(name: "utm_source", value: "tonkeeper"))
+                urlComponents.queryItems = queryItems
+
+                if let updatedURL = urlComponents.url {
+                    self?.webView.load(URLRequest(url: updatedURL))
+                }
+            }
+        }
+    }
+
     
     navigationBar.centerView = titleView
     
@@ -150,13 +171,13 @@ open class TKBridgeWebViewController: UIViewController {
     
     navigationBar.leftViews = [backButton]
     navigationBar.rightViews = [rightPillButton]
-
+    
     backButton.isHidden = true
     canGoBack = webView.observe(\.canGoBack, options: .new) { [weak self] _, value in
       guard let canGoBack = value.newValue else { return }
       self?.backButton.isHidden = !canGoBack
     }
-  
+    
     let urlRequest = URLRequest(url: url)
     webView.load(urlRequest)
   }
@@ -238,7 +259,7 @@ open class TKBridgeWebViewController: UIViewController {
           UIPasteboard.general.string = url.absoluteString
         }
       )
-      ]
+    ]
     TKPopupMenuController.show(
       sourceView: rightPillButton,
       position: .bottomRight(inset: 8),
@@ -282,7 +303,7 @@ open class TKBridgeWebViewController: UIViewController {
         icon: icon,
         action: nil
       )
-
+      
       let titleConfiguration = TKUINavigationBarTitleView.Model(
         title: title,
         caption: caption
@@ -315,9 +336,19 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
   }
   
   public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
-    if let url = navigationAction.request.url, let host = url.host,host.contains("t.me") {
-      UIApplication.shared.open(url, options: [:], completionHandler: nil)
-      return .cancel
+    if let url = navigationAction.request.url {
+      if let host = url.host,host.contains("t.me") {
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+        return .cancel
+      }
+      if let handler = deeplinkHandler {
+        do {
+          try handler(url.absoluteString)
+          return .cancel
+        } catch {
+          return .allow
+        }
+      }
     }
     return .allow
   }
@@ -333,7 +364,7 @@ extension TKBridgeWebViewController: WKUIDelegate {
 }
 
 extension TKBridgeWebViewController: WKScriptMessageHandler {
-  public func userContentController(_ userContentController: WKUserContentController, 
+  public func userContentController(_ userContentController: WKUserContentController,
                                     didReceive message: WKScriptMessage) {
     let observers = bridgeMessageObservers[message.name]
     observers?.forEach { $0(message.body) }
