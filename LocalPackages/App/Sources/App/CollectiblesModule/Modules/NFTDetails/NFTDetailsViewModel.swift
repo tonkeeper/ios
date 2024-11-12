@@ -62,7 +62,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsStore
   private let walletNftManagementStore: WalletNFTsManagementStore
-  private let scamController: NFTScamController
+  private let nftService: NFTService
 
   init(nft: NFT,
        wallet: Wallet,
@@ -70,14 +70,14 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
        dnsService: DNSService,
        appSetttingsStore: AppSettingsStore,
        walletNftManagementStore: WalletNFTsManagementStore,
-       scamController: NFTScamController) {
+       nftService: NFTService) {
     self.nft = nft
     self.wallet = wallet
     self.configuration = configuration
     self.dnsService = dnsService
     self.appSetttingsStore = appSetttingsStore
     self.walletNftManagementStore = walletNftManagementStore
-    self.scamController = scamController
+    self.nftService = nftService
   }
   
   // MARK: - NFTDetailsModuleOutput
@@ -248,9 +248,13 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     ]
     reportSpamButton.action = { [weak self] in
       Task {
-        await self?.spamNFT()
-        self?.didTapReportSpam?()
-        try await self?.scamController.changeSuspiciousState(isScam: true)
+        guard let self else {
+          return
+        }
+
+        await self.spamNFT()
+        self.didTapReportSpam?()
+        try await self.nftService.changeSuspiciousState(self.nft, isTestnet: self.wallet.isTestnet, isScam: true)
       }
     }
 
@@ -258,8 +262,12 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.Actions.notSpam))
     notSpamButton.action = { [weak self] in
       Task {
-        await self?.approveNFT()
-        try await self?.scamController.changeSuspiciousState(isScam: false)
+        guard let self else {
+          return
+        }
+
+        await self.approveNFT()
+        try await self.nftService.changeSuspiciousState(self.nft, isTestnet: self.wallet.isTestnet, isScam: false)
       }
     }
 

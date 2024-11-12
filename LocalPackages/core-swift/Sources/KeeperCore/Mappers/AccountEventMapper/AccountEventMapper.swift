@@ -4,10 +4,11 @@ import TKLocalize
 import TonSwift
 
 public struct AccountEventMapper {
+
   private let dateFormatter: DateFormatter
   private let amountFormatter: AmountFormatter
   private let amountMapper: AccountEventAmountMapper
-  
+
   init(dateFormatter: DateFormatter,
        amountFormatter: AmountFormatter,
        amountMapper: AccountEventAmountMapper) {
@@ -17,6 +18,7 @@ public struct AccountEventMapper {
   }
   
   public func mapEvent(_ event: AccountEvent,
+                       nftManagmentStore: WalletNFTsManagementStore,
                        eventDate: Date,
                        accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
                        isTestnet: Bool,
@@ -30,6 +32,7 @@ public struct AccountEventMapper {
       )
       return mapAction(
         action,
+        nftManagmentStore: nftManagmentStore,
         accountEvent: event,
         rightTopDescription: rightTopDescription,
         isTestnet: isTestnet,
@@ -48,6 +51,7 @@ public struct AccountEventMapper {
 
 private extension AccountEventMapper {
   func mapAction(_ action: AccountEventAction,
+                 nftManagmentStore: WalletNFTsManagementStore,
                  accountEvent: AccountEvent,
                  rightTopDescription: String?,
                  isTestnet: Bool,
@@ -85,6 +89,7 @@ private extension AccountEventMapper {
                                  status: action.status.rawValue)
     case .auctionBid(let auctionBid):
       return mapAuctionBidAction(auctionBid,
+                                 nftManagmentStore: nftManagmentStore,
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
@@ -92,6 +97,7 @@ private extension AccountEventMapper {
                                  isTestnet: isTestnet)
     case .nftPurchase(let nftPurchase):
       return mapNFTPurchaseAction(nftPurchase,
+                                  nftManagmentStore: nftManagmentStore,
                                   accountEvent: accountEvent,
                                   preview: action.preview,
                                   rightTopDescription: rightTopDescription,
@@ -113,6 +119,7 @@ private extension AccountEventMapper {
                                         isTestnet: isTestnet)
     case .nftItemTransfer(let nftItemTransfer):
       return mapItemTransferAction(nftItemTransfer,
+                                   nftManagmentStore: nftManagmentStore,
                                    accountEvent: accountEvent,
                                    preview: action.preview,
                                    rightTopDescription: rightTopDescription,
@@ -397,6 +404,7 @@ private extension AccountEventMapper {
   }
   
   func mapAuctionBidAction(_ action: AccountEventAction.AuctionBid,
+                           nftManagmentStore: WalletNFTsManagementStore,
                            accountEvent: AccountEvent,
                            preview: AccountEventAction.SimplePreview,
                            rightTopDescription: String?,
@@ -404,10 +412,38 @@ private extension AccountEventMapper {
                            isTestnet: Bool) -> AccountEventModel.Action {
     var nft: AccountEventModel.Action.ActionNFT?
     if let actionNft = action.nft {
+      let nftState: NFTsManagementState.NFTState?
+      if let collection = actionNft.collection {
+        nftState = nftManagmentStore.getState().nftStates[.collection(collection.address)]
+      } else {
+        nftState = nftManagmentStore.getState().nftStates[.singleItem(actionNft.address)]
+      }
+
+      func composeCollectionName() -> String? {
+        if let collection = actionNft.collection {
+          return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.NftDetails.singleNft : collection.name
+        } else {
+          return TKLocales.NftDetails.singleNft
+        }
+      }
+
+      let collectionName: String?
+      let isSuspecious: Bool
+      switch actionNft.trust {
+      case .none, .blacklist, .unknown:
+        let isManuallyApproved = nftState == .approved
+        isSuspecious = nftState != .approved
+        collectionName = isManuallyApproved ? composeCollectionName() : TKLocales.NftDetails.unverifiedNft
+      case .whitelist, .graylist:
+        collectionName = composeCollectionName()
+        isSuspecious = false
+      }
+
       let nftModel = AccountEventModel.Action.ActionNFT(
         nft: actionNft,
+        isSuspecious: isSuspecious,
         name: actionNft.name,
-        collectionName: actionNft.collection?.name ?? .singleNFT,
+        collectionName: collectionName,
         image: actionNft.preview.size500)
       nft = nftModel
     }
@@ -424,16 +460,44 @@ private extension AccountEventMapper {
   }
   
   func mapNFTPurchaseAction(_ action: AccountEventAction.NFTPurchase,
+                            nftManagmentStore: WalletNFTsManagementStore,
                             accountEvent: AccountEvent,
                             preview: AccountEventAction.SimplePreview,
                             rightTopDescription: String?,
                             status: String?,
                             isTestnet: Bool) -> AccountEventModel.Action {
-    
+    let nftState: NFTsManagementState.NFTState?
+    if let collection = action.nft.collection {
+      nftState = nftManagmentStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      nftState = nftManagmentStore.getState().nftStates[.singleItem(action.nft.address)]
+    }
+
+    func composeCollectionName() -> String? {
+      if let collection = action.nft.collection {
+        return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.NftDetails.singleNft : collection.name
+      } else {
+        return TKLocales.NftDetails.singleNft
+      }
+    }
+
+    let collectionName: String?
+    let isSuspecious: Bool
+    switch action.nft.trust {
+    case .none, .blacklist, .unknown:
+      let isManuallyApproved = nftState == .approved
+      isSuspecious = nftState != .approved
+      collectionName = isManuallyApproved ? composeCollectionName() : TKLocales.NftDetails.unverifiedNft
+    case .whitelist, .graylist:
+      collectionName = composeCollectionName()
+      isSuspecious = false
+    }
+
     let nftModel = AccountEventModel.Action.ActionNFT(
       nft: action.nft,
+      isSuspecious: isSuspecious,
       name: action.nft.name,
-      collectionName: action.nft.collection?.name ?? .singleNFT,
+      collectionName: collectionName,
       image: action.nft.preview.size500
     )
     let amount = amountMapper
@@ -508,6 +572,7 @@ private extension AccountEventMapper {
   }
   
   func mapItemTransferAction(_ action: AccountEventAction.NFTItemTransfer,
+                             nftManagmentStore: WalletNFTsManagementStore,
                              accountEvent: AccountEvent,
                              preview: AccountEventAction.SimplePreview,
                              rightTopDescription: String?,
@@ -533,10 +598,38 @@ private extension AccountEventMapper {
     
     var actionNFT: AccountEventModel.Action.ActionNFT?
     if let nft = nftProvider(action.nftAddress) {
+      let nftState: NFTsManagementState.NFTState?
+      if let collection = nft.collection {
+        nftState = nftManagmentStore.getState().nftStates[.collection(collection.address)]
+      } else {
+        nftState = nftManagmentStore.getState().nftStates[.singleItem(nft.address)]
+      }
+
+      func composeCollectionName() -> String? {
+        if let collection = nft.collection {
+          return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.NftDetails.singleNft : collection.name
+        } else {
+          return TKLocales.NftDetails.singleNft
+        }
+      }
+
+      var collectionName: String?
+      let isSuspecious: Bool
+      switch nft.trust {
+      case .none, .blacklist, .unknown:
+        let isManuallyApproved = nftState == .approved
+        isSuspecious = nftState != .approved
+        collectionName = isManuallyApproved ? composeCollectionName() : TKLocales.NftDetails.unverifiedNft
+      case .whitelist, .graylist:
+        collectionName = composeCollectionName()
+        isSuspecious = false
+      }
+
       let nftModel = AccountEventModel.Action.ActionNFT(
         nft: nft,
+        isSuspecious: isSuspecious,
         name: nft.name,
-        collectionName: nft.collection?.name ?? .singleNFT,
+        collectionName: collectionName,
         image: nft.preview.size500)
       actionNFT = nftModel 
     }
@@ -689,8 +782,4 @@ private extension WalletAccount {
     )
     return friendlyAddress.toShort()
   }
-}
-
-private extension String {
-  static let singleNFT = "Single NFT"
 }

@@ -275,7 +275,8 @@ public final class MainAssembly {
           amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
         ),
         amountFormatter: formattersAssembly.amountFormatter,
-        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+        nftManagmentStore: storesAssembly.walletNFTsManagementStore(wallet: wallet)
       )
     )
   }
@@ -292,24 +293,6 @@ public final class MainAssembly {
     DecryptCommentController(
       encryptedCommentService: servicesAssembly.encryptedCommentService(),
       decryptedCommentStore: storesAssembly.decryptedCommentStore
-    )
-  }
-
-  public func NFTScamController(nft: NFT) -> NFTScamController {
-    KeeperCore.NFTScamController(configuration: configurationAssembly.configuration, nft: nft)
-  }
-}
-
-private extension MainAssembly {
-  var accountEventMapper: AccountEventMapper {
-    AccountEventMapper(
-      dateFormatter: formattersAssembly.dateFormatter,
-      amountFormatter: formattersAssembly.amountFormatter,
-      amountMapper: SignedAccountEventAmountMapper(
-        plainAccountEventAmountMapper: PlainAccountEventAmountMapper(
-          amountFormatter: formattersAssembly.amountFormatter
-        )
-      )
     )
   }
 }

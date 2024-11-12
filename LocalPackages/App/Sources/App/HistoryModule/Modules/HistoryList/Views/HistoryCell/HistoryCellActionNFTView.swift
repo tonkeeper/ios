@@ -110,6 +110,7 @@ extension HistoryCellActionView {
       init(imageModel: TKImageView.Model,
            name: String?,
            collectionName: String?,
+           isSuspecious: Bool,
            isVerified: Bool,
            isBlurVisible: Bool,
            action: @escaping () -> Void) {
@@ -120,11 +121,12 @@ extension HistoryCellActionView {
           alignment: .left,
           lineBreakMode: .byTruncatingTail
         )
-        
+
+        let color: UIColor = isSuspecious ? .Accent.orange : .Bubble.foreground.withAlphaComponent(0.64)
         self.collectionName = collectionName?
           .withTextStyle(
             .body2,
-            color: .Bubble.foreground.withAlphaComponent(0.64),
+            color: color,
             alignment: .left,
             lineBreakMode: .byTruncatingTail
           )

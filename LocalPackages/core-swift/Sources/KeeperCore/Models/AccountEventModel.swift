@@ -32,6 +32,7 @@ public struct AccountEventModel {
     
     public struct ActionNFT {
       public let nft: NFT
+      public let isSuspecious: Bool
       public let name: String?
       public let collectionName: String?
       public let image: URL?
