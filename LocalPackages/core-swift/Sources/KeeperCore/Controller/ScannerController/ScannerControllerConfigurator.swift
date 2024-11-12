@@ -1,5 +1,6 @@
 import Foundation
 import URKit
+import TonSwift
 
 public protocol ScannerControllerConfigurator {
   func handleQRCode(_ qrCode: String) throws -> Deeplink
@@ -26,6 +27,12 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
   public init() {}
   
   public func handleQRCode(_ qrCode: String) throws -> Deeplink {
+    do {
+      _ = try Address.parse(qrCode)
+      // QR code is a valid address, so we should resolve it as transfer with recipient
+      let tonTransfer = Deeplink.transfer(.init(recipient: qrCode, amount: nil, comment: nil, jettonAddress: nil, expirationTimestamp: nil))
+      return tonTransfer
+    } catch {}
     return try deeplinkParser.parse(string: qrCode)
   }
   
