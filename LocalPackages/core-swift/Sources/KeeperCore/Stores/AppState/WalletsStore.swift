@@ -65,6 +65,10 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     super.init(state: State.empty)
   }
   
+  public func getWallet(id: String) -> Wallet? {
+    wallets.first(where: { $0.id == id })
+  }
+  
   @discardableResult
   public func addWallets(_ wallets: [Wallet]) async -> State {
     return await withCheckedContinuation { continuation in

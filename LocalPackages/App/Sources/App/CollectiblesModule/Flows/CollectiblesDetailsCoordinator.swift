@@ -76,13 +76,13 @@ private extension CollectiblesDetailsCoordinator {
     }
     
     module.output.didTapBurn = { [weak self] nft in
-      guard let self = self, let burnAddress = try? Address.burnAddress else {
+      guard let self = self, let burnAddress = FriendlyAddress.burnAddress else {
         return
       }
       
       openTransfer(
         nft: nft,
-        recipient: Recipient(recipientAddress: .raw(burnAddress), isMemoRequired: false)
+        recipient: Recipient(recipientAddress: .friendly(burnAddress), isMemoRequired: false)
       )
     }
     
@@ -305,9 +305,10 @@ private extension CollectiblesDetailsCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
   }
 }
 
-private extension Address {
-  static var burnAddress: Address? = try? Address.parse(raw: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
+private extension FriendlyAddress {
+  static var burnAddress: FriendlyAddress? = try? FriendlyAddress(string: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
 }
