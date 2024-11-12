@@ -12,6 +12,7 @@ final class SettingsPurchasesModel {
   struct State {
     let visible: [Item]
     let hidden: [Item]
+    let approved: [Item]
     let spam: [Item]
     let collectionNfts: [NFTCollection: [NFT]]
   }
@@ -91,6 +92,7 @@ final class SettingsPurchasesModel {
       return State(
         visible: [],
         hidden: [],
+        approved: [],
         spam: [],
         collectionNfts: [:]
       )
@@ -109,7 +111,8 @@ final class SettingsPurchasesModel {
     var visible = [Item]()
     var hidden = [Item]()
     var spam = [Item]()
-    
+    var approved = [Item]()
+
     for nft in nfts {
       if let collection = nft.collection {
         if !addedCollections.contains(collection) {
@@ -125,6 +128,8 @@ final class SettingsPurchasesModel {
               hidden.append(.collection(collection: collection))
             case .visible:
               visible.append(.collection(collection: collection))
+            case .approved:
+              approved.append(.collection(collection: collection))
             }
           case .none, .whitelist, .graylist, .unknown:
             switch managementState.nftStates[.collection(collection.address)] {
@@ -134,6 +139,8 @@ final class SettingsPurchasesModel {
               hidden.append(.collection(collection: collection))
             case .visible, .none:
               visible.append(.collection(collection: collection))
+            case .approved:
+              approved.append(.collection(collection: collection))
             }
           }
         }
@@ -156,6 +163,8 @@ final class SettingsPurchasesModel {
             hidden.append(.single(nft: nft))
           case .visible:
             visible.append(.single(nft: nft))
+          case .approved:
+            approved.append(.single(nft: nft))
           }
         case .none, .whitelist, .graylist, .unknown:
           switch managementState.nftStates[.singleItem(nft.address)] {
@@ -165,6 +174,8 @@ final class SettingsPurchasesModel {
             hidden.append(.single(nft: nft))
           case .visible, .none:
             visible.append(.single(nft: nft))
+          case .approved:
+            approved.append(.single(nft: nft))
           }
         }
       }
@@ -173,6 +184,7 @@ final class SettingsPurchasesModel {
     return State(
       visible: visible,
       hidden: hidden,
+      approved: approved,
       spam: spam,
       collectionNfts: collectionNFTs
     )

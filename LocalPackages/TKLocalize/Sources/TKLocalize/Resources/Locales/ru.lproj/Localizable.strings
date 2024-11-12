@@ -48,6 +48,8 @@
 "collectibles.title" = "Коллекции";
 "collectibles.collection_hidden" = "Коллекция скрыта";
 "collectibles.nft_hidden" = "Токен скрыт";
+"collectibles.collection_marked_as_spam" = "Коллекция помечена как спам";
+"collectibles.nft_marked_as_spam" = "NFT помечен как спам";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";

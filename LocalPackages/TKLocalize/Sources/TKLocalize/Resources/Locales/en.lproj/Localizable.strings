@@ -48,6 +48,8 @@
 "collectibles.title" = "Collectibles";
 "collectibles.collection_hidden" = "Collection hidden";
 "collectibles.nft_hidden" = "NFT hidden";
+"collectibles.collection_marked_as_spam" = "Collection marked as Spam";
+"collectibles.nft_marked_as_spam" = "NFT marked as Spam";
 
 "purchases.title" = "Purchases";
 "purchases.empty_placeholder" = "Your collectibles\nwill be shown here";

@@ -57,6 +57,7 @@ public struct RemoteConfiguration: Equatable {
   public let disableBattery: Bool
   public let disableBatterySend: Bool
   public let disableBatteryCryptoRechargeModule: Bool
+  public let scamApiURL: URL?
   public let flags: Flags
   
   enum CodingKeys: String, CodingKey {
@@ -87,6 +88,7 @@ public struct RemoteConfiguration: Equatable {
     case disableBattery = "disable_battery"
     case disableBatterySend = "disable_battery_send"
     case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
+    case scamApiURL = "scam_api_url"
   }
 }
 
@@ -143,6 +145,7 @@ extension RemoteConfiguration {
       disableBattery: false,
       disableBatterySend: false,
       disableBatteryCryptoRechargeModule: true,
+      scamApiURL: nil,
       flags: .default
     )
   }

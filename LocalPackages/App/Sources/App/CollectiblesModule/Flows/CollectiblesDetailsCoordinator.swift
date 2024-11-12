@@ -159,25 +159,41 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      Task {
-        let toastTitle: String
-        if self.nft.collection != nil {
-          toastTitle = TKLocales.Collectibles.collectionHidden
-        } else {
-          toastTitle = TKLocales.Collectibles.nftHidden
-        }
+      let toastTitle: String
+      if self.nft.collection != nil {
+        toastTitle = TKLocales.Collectibles.collectionHidden
+      } else {
+        toastTitle = TKLocales.Collectibles.nftHidden
+      }
 
-        await MainActor.run {
-          self.router.dismiss(animated: true, completion: {
-            let configuration = ToastPresenter.Configuration(title: toastTitle)
-            ToastPresenter.showToast(configuration: configuration)
-          })
-        }
+      DispatchQueue.main.async {
+        let configuration = ToastPresenter.Configuration(title: toastTitle)
+        ToastPresenter.showToast(configuration: configuration)
+        self.didClose?()
       }
     }
 
     module.output.didTapUnverifiedNftDetails = { [weak self] in
       self?.openUnverifiedNftInfoPopup()
+    }
+
+    module.output.didTapReportSpam = { [weak self] in
+      guard let self else {
+        return
+      }
+
+      let toastTitle: String
+      if self.nft.collection != nil {
+        toastTitle = TKLocales.Collectibles.collectionMarkedAsSpam
+      } else {
+        toastTitle = TKLocales.Collectibles.nftMarkedAsSpam
+      }
+
+      DispatchQueue.main.async {
+        let configuration = ToastPresenter.Configuration(title: toastTitle)
+        ToastPresenter.showToast(configuration: configuration)
+        self.didClose?()
+      }
     }
 
     router.push(viewController: module.view)

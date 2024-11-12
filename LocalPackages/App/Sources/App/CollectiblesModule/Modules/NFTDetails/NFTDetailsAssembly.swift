@@ -12,6 +12,7 @@ struct NFTDetailsAssembly {
     let viewModel = NFTDetailsViewModelImplementation(
       nft: nft,
       wallet: wallet,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       dnsService: keeperCoreMainAssembly.servicesAssembly.dnsService(),
       appSetttingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       walletNftManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)

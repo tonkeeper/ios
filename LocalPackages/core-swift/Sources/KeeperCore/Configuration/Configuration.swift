@@ -157,6 +157,10 @@ public final class Configuration {
     isTestnet ? configuration.testnet.disableBatteryCryptoRechargeModule : configuration.mainnet.disableBatteryCryptoRechargeModule
   }
 
+  public var scamApiURL: URL? {
+    configuration.mainnet.scamApiURL
+  }
+
   public func flags(isTestnet: Bool) -> RemoteConfiguration.Flags {
     isTestnet ? configuration.testnet.flags : configuration.mainnet.flags
   }

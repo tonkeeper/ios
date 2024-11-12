@@ -68,21 +68,26 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - Mapper
   
-  private let collectiblesListMapper = CollectiblesListMapper()
-  
+  private lazy var collectiblesListMapper = CollectiblesListMapper(
+    walletNftManagementStore: walletNftManagementStore
+  )
+
   // MARK: - Dependencies
   
   private let wallet: Wallet
   private let walletNFTsManagedStore: WalletNFTsManagedStore
+  private let walletNftManagementStore: WalletNFTsManagementStore
   private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
        walletNFTsManagedStore: WalletNFTsManagedStore,
+       walletNftManagementStore: WalletNFTsManagementStore,
        appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
     self.walletNFTsManagedStore = walletNFTsManagedStore
+    self.walletNftManagementStore = walletNftManagementStore
     self.appSettingsStore = appSettingsStore
   }
 }
@@ -117,12 +122,23 @@ private extension CollectiblesListViewModelImplementation {
   
   func createModels(state: [NFT], isSecureMode: Bool) -> [String: CollectibleCollectionViewCell.Model] {
     return state.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
+      let currentState = currentLocalState(item)
       let model = collectiblesListMapper.map(nft: item, isSecureMode: isSecureMode)
       let identifier = item.address.toString()
       result[identifier] = model
     })
   }
-  
+
+  func currentLocalState(_ item: NFT) -> NFTsManagementState.NFTState? {
+    let state: NFTsManagementState.NFTState?
+    if let collection = item.collection {
+      state = walletNftManagementStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      state = walletNftManagementStore.getState().nftStates[.singleItem(item.address)]
+    }
+    return state
+  }
+
   func filterSpamNFTItems(nfts: [NFT],
                           managementState: NFTsManagementState) -> [NFT] {
     
@@ -139,7 +155,7 @@ private extension CollectiblesListViewModelImplementation {
         case .blacklist:
           return state == .visible
         case .graylist, .none, .unknown, .whitelist:
-          return state != .hidden
+          return state != .hidden && state != .spam
         }
       }
     }
