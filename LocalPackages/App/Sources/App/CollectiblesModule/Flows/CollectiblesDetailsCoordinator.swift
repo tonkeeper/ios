@@ -260,9 +260,9 @@ private extension CollectiblesDetailsCoordinator {
         Task {
           try? await scamNFTController.changeSuspiciousState(isScam: true)
           if let collection = nft.collection {
-            await nftManagmentStore?.approveItem(.collection(collection.address))
+            await nftManagmentStore?.spamItem(.collection(collection.address))
           } else {
-            await nftManagmentStore?.approveItem(.singleItem(nft.address))
+            await nftManagmentStore?.spamItem(.singleItem(nft.address))
           }
 
           let toastTitle: String
