@@ -96,12 +96,23 @@ final class TransferTransaction {
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
     let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
     
+    func isBatteryBalanceEnable(tonProofToken: String) async -> Bool {
+      do {
+        let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
+        let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
+        return compareResult == .orderedDescending
+      } catch {
+        return false
+      }
+    }
+    
     if isRelayerAvailable,
        let tonProofToken,
        let excessAccount = batteryConfig?.excessAccount,
        let excessAddress = try? Address.parse(excessAccount),
        await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
-       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
+       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet),
+       await isBatteryBalanceEnable(tonProofToken: tonProofToken) {
       return try await calculateBatteryFee(
         wallet: wallet,
         transfer: transfer,
