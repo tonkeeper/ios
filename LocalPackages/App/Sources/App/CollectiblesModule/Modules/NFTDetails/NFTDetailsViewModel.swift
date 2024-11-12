@@ -61,8 +61,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let configuration: Configuration
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsStore
-  private unowned let walletNftManagementStore: WalletNFTsManagementStore
-  private unowned let scamController: NFTScamController
+  private let walletNftManagementStore: WalletNFTsManagementStore
+  private let scamController: NFTScamController
 
   init(nft: NFT,
        wallet: Wallet,
@@ -123,7 +123,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         }
 
         DispatchQueue.main.async {
-          self.update()
+          observer.update()
         }
       }
     }
