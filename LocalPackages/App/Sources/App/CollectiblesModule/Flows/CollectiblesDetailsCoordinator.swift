@@ -260,12 +260,6 @@ private extension CollectiblesDetailsCoordinator {
         Task {
           let isTestnet = self?.wallet.isTestnet ?? false
 
-          if let collection = nft.collection {
-            await nftManagmentStore?.spamItem(.collection(collection.address))
-          } else {
-            await nftManagmentStore?.spamItem(.singleItem(nft.address))
-          }
-
           let toastTitle: String
           if nft.collection != nil {
             toastTitle = TKLocales.Collectibles.collectionMarkedAsSpam
@@ -276,9 +270,15 @@ private extension CollectiblesDetailsCoordinator {
           ToastPresenter.showToast(configuration: .loading)
           try? await nftService.changeSuspiciousState(nft, isTestnet: isTestnet, isScam: true)
 
+          if let collection = nft.collection {
+            await nftManagmentStore?.spamItem(.collection(collection.address))
+          } else {
+            await nftManagmentStore?.spamItem(.singleItem(nft.address))
+          }
+
           await MainActor.run {
             ToastPresenter.hideAll()
-            
+
             let configuration = ToastPresenter.Configuration(title: toastTitle)
             ToastPresenter.showToast(configuration: configuration)
             self?.didClose?()
