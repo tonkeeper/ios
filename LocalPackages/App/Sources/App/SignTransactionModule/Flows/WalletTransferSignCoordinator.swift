@@ -102,7 +102,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signedData
@@ -128,7 +129,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signedData
@@ -139,7 +141,7 @@ private extension WalletTransferSignCoordinator {
         }
       }
     case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
-      Task {[weak self] in
+      Task { [weak self] in
         guard let self else { return }
         do {
           let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
@@ -160,7 +162,8 @@ private extension WalletTransferSignCoordinator {
             throw ExtenalSignError.cancelled
           }
           let signedBoc = try TransferSigner.signWalletTransfer(
-            walletTransfer,
+            walletTransfer.signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
             wallet: wallet,
             seqno: transferData.seqno,
             signed: signature
@@ -171,19 +174,33 @@ private extension WalletTransferSignCoordinator {
         }
       }
     case .Ledger(_, _, let ledgerDevice):
-      Task {
+      Task { [weak self] in
+        guard let self else { return }
         do {
-          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
-            let transaction = try Transaction.from(transfer: transfer)
-            guard let data = await handleLedgerSign(
-              transaction: transaction[0],
-              ledgerDevice: ledgerDevice
-            ) else {
-              throw ExtenalSignError.cancelled
-            }
-            return data
-          })
-          self.didSign?(signedBoc)
+          let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+            .createUnsignedWalletTransfer(
+              wallet: wallet
+            )
+          let transactions = try Transaction.from(transfer: walletTransfer)
+          guard !transactions.isEmpty else {
+            throw ExtenalSignError.cancelled
+          }
+          let transaction = transactions[0]
+          guard let signedData = await handleLedgerSign(
+            transaction: transaction,
+            ledgerDevice: ledgerDevice
+          ) else {
+            throw ExtenalSignError.cancelled
+          }
+          let signingMessage = try TonTransport.buildTransfer(transaction: transaction).signingMessage
+          let signedBoc = try TransferSigner.signWalletTransfer(
+            signingMessage,
+            signaturePosition: walletTransfer.signaturePosition,
+            wallet: wallet,
+            seqno: transferData.seqno,
+            signed: signedData
+          ).toBoc().base64EncodedString()
+          didSign?(signedBoc)
         } catch {
           self.didCancel?()
         }
