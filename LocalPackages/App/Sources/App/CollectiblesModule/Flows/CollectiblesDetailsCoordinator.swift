@@ -237,6 +237,16 @@ private extension CollectiblesDetailsCoordinator {
     let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
+
+    let scamNFTController = keeperCoreMainAssembly.NFTScamController(nft: nft)
+    let nftManagmentStore = keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
+    let state: NFTsManagementState.NFTState?
+    if let collection = nft.collection {
+      state = nftManagmentStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      state = nftManagmentStore.getState().nftStates[.singleItem(nft.address)]
+    }
+
     var reportSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     reportSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.reportSpam))
     reportSpamButton.backgroundColors = [
@@ -248,19 +258,35 @@ private extension CollectiblesDetailsCoordinator {
     }
     var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
     notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.notSpam))
-    notSpamButton.action = {
+    notSpamButton.action = { [weak bottomSheetViewController, nft, weak nftManagmentStore, scamNFTController] in
+      Task {
+        try? await scamNFTController.changeSuspiciousState(isScam: false)
+        if let collection = nft.collection {
+          await nftManagmentStore?.approveItem(.collection(collection.address))
+        } else {
+          await nftManagmentStore?.approveItem(.singleItem(nft.address))
+        }
 
+        bottomSheetViewController?.dismiss()
+      }
     }
+
     let content = [
       TKLocales.NftDetails.UnverifiedNft.usedForSpamDescription,
       TKLocales.NftDetails.UnverifiedNft.usedForScamDescription,
       TKLocales.NftDetails.UnverifiedNft.littleInfoDescription
     ]
+
+    var buttons = [reportSpamButton]
+    if state != .approved {
+      buttons.append(notSpamButton)
+    }
+
     let configuration = configurationBuilder.commonConfiguration(
       title: TKLocales.NftDetails.unverifiedNft,
       caption: TKLocales.NftDetails.UnverifiedNft.unverifiedDescription,
       body: [.textWithTabs(content: content)],
-      buttons: [reportSpamButton, notSpamButton]
+      buttons: buttons
     )
 
     viewController.configuration = configuration

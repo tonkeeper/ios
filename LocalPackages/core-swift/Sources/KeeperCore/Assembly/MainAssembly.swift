@@ -249,7 +249,7 @@ public final class MainAssembly {
   public func browserExploreController() -> BrowserExploreController {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
   }
-  
+
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
       walletsStore: storesAssembly.walletsStore,
@@ -293,6 +293,10 @@ public final class MainAssembly {
       encryptedCommentService: servicesAssembly.encryptedCommentService(),
       decryptedCommentStore: storesAssembly.decryptedCommentStore
     )
+  }
+
+  public func NFTScamController(nft: NFT) -> NFTScamController {
+    KeeperCore.NFTScamController(configuration: configurationAssembly.configuration, nft: nft)
   }
 }
 

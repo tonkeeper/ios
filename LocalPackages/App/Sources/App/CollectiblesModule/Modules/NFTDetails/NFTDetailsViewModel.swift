@@ -61,20 +61,23 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private let configuration: Configuration
   private let dnsService: DNSService
   private let appSetttingsStore: AppSettingsStore
-  private let walletNftManagementStore: WalletNFTsManagementStore
+  private unowned let walletNftManagementStore: WalletNFTsManagementStore
+  private unowned let scamController: NFTScamController
 
   init(nft: NFT,
        wallet: Wallet,
        configuration: Configuration,
        dnsService: DNSService,
        appSetttingsStore: AppSettingsStore,
-       walletNftManagementStore: WalletNFTsManagementStore) {
+       walletNftManagementStore: WalletNFTsManagementStore,
+       scamController: NFTScamController) {
     self.nft = nft
     self.wallet = wallet
     self.configuration = configuration
     self.dnsService = dnsService
     self.appSetttingsStore = appSetttingsStore
     self.walletNftManagementStore = walletNftManagementStore
+    self.scamController = scamController
   }
   
   // MARK: - NFTDetailsModuleOutput
@@ -244,7 +247,11 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       .highlighted: .Accent.orange.withAlphaComponent(0.64)
     ]
     reportSpamButton.action = { [weak self] in
-      self?.didTapReportSpam?()
+      Task {
+        await self?.spamNFT()
+        self?.didTapReportSpam?()
+        try await self?.scamController.changeSuspiciousState(isScam: true)
+      }
     }
 
     var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .medium)
@@ -252,7 +259,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     notSpamButton.action = { [weak self] in
       Task {
         await self?.approveNFT()
-        try await self?.changeSuspiciousState(isScam: false)
+        try await self?.scamController.changeSuspiciousState(isScam: false)
       }
     }
 
@@ -648,24 +655,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
   }
 
-  private func changeSuspiciousState(isScam: Bool) async throws {
-    var composedURL = configuration.scamApiURL
-    let rawAddress = nft.address.toRaw()
-    composedURL = composedURL?.appendingPathComponent("v1/report/\(rawAddress)")
-    let encoded = SuspiciousNFT(is_scam: isScam)
-    let encoder = JSONEncoder()
-
-    guard let composedURL, let httpBody = try? encoder.encode(encoded) else {
-      return
-    }
-
-    var request = URLRequest(url: composedURL)
-    request.httpMethod = "POST"
-    request.httpBody = httpBody
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    let _ = try await URLSession.shared.data(for: request)
-  }
-
   private func approveNFT() async {
     if let collection = nft.collection {
       await walletNftManagementStore.approveItem(.collection(collection.address))
@@ -681,10 +670,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       await walletNftManagementStore.spamItem(.singleItem(nft.address))
     }
   }
-}
-
-struct SuspiciousNFT: Codable {
-  let is_scam: Bool
 }
 
 private extension String {

@@ -122,7 +122,6 @@ private extension CollectiblesListViewModelImplementation {
   
   func createModels(state: [NFT], isSecureMode: Bool) -> [String: CollectibleCollectionViewCell.Model] {
     return state.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
-      let currentState = currentLocalState(item)
       let model = collectiblesListMapper.map(nft: item, isSecureMode: isSecureMode)
       let identifier = item.address.toString()
       result[identifier] = model
@@ -137,28 +136,5 @@ private extension CollectiblesListViewModelImplementation {
       state = walletNftManagementStore.getState().nftStates[.singleItem(item.address)]
     }
     return state
-  }
-
-  func filterSpamNFTItems(nfts: [NFT],
-                          managementState: NFTsManagementState) -> [NFT] {
-    
-    func filter(items: [NFT]) -> [NFT] {
-      items.filter {
-        let state: NFTsManagementState.NFTState?
-        if let collection = $0.collection {
-          state = managementState.nftStates[.collection(collection.address)]
-        } else {
-          state = managementState.nftStates[.singleItem($0.address)]
-        }
-        
-        switch $0.trust {
-        case .blacklist:
-          return state == .visible
-        case .graylist, .none, .unknown, .whitelist:
-          return state != .hidden && state != .spam
-        }
-      }
-    }
-    return filter(items: nfts)
   }
 }
