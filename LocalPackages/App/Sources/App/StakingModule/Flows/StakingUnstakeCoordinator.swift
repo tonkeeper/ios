@@ -12,7 +12,7 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
   var didFinish: (() -> Void)?
   var didClose: (() -> Void)?
   
-  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+  private weak var confirmationCoordinator: StakingConfirmationCoordinator?
   
   private let wallet: Wallet
   private let stakingPoolInfo: StackingPoolInfo
@@ -45,6 +45,10 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
     else {
       openStakingWithdrawInput()
     }
+  }
+  
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+    confirmationCoordinator?.handleTonkeeperPublishDeeplink(sign: sign) ?? false
   }
   
   func openStakingWithdrawInput() {
@@ -103,6 +107,8 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
       self?.didClose?()
       self?.removeChild(coordinator)
     }
+    
+    self.confirmationCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start(deeplink: nil)

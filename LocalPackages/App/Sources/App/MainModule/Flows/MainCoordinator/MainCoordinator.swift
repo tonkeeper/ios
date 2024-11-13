@@ -30,6 +30,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
   private weak var batteryRefillCoordinator: BatteryRefillCoordinator?
+  private weak var stakingCoordinator: StakingCoordinator?
+  private weak var stakingStakeCoordinator: StakingStakeCoordinator?
+  private weak var stakingUnstakeCoordinator: StakingUnstakeCoordinator?
+  private weak var stakingConfirmationCoordinator: StakingConfirmationCoordinator?
     
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -429,6 +433,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
       if let batteryRefillCoordinator,
          batteryRefillCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
+        return true
+      }
+      if let stakingCoordinator,
+         stakingCoordinator.handleTonkeeperPublishDeeplink(sign: sign){
+        return true
+      }
+      if let stakingStakeCoordinator,
+         stakingStakeCoordinator.handleTonkeeperPublishDeeplink(sign: sign){
+        return true
+      }
+      if let stakingUnstakeCoordinator,
+         stakingUnstakeCoordinator.handleTonkeeperPublishDeeplink(sign: sign){
+        return true
+      }
+      if let stakingConfirmationCoordinator,
+         stakingConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign){
         return true
       }
       return false
@@ -840,6 +860,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.removeChild(coordinator)
     }
     
+    self.stakingConfirmationCoordinator = coordinator
+    
     addChild(coordinator)
     coordinator.start(deeplink: nil)
     
@@ -890,6 +912,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.removeChild(coordinator)
     }
     
+    self.stakingStakeCoordinator = coordinator
+    
     addChild(coordinator)
     coordinator.start(deeplink: nil)
     
@@ -921,6 +945,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
+    
+    self.stakingUnstakeCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start(deeplink: nil)
@@ -966,6 +992,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.router.dismiss()
       self?.removeChild(coordinator)
     }
+    
+    self.stakingCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start(deeplink: nil)
