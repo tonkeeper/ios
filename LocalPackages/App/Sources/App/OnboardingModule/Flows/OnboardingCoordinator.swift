@@ -85,7 +85,14 @@ private extension OnboardingCoordinator {
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(options: [.importRegular, .signer, .ledger, .importWatchOnly, .importTestnet],
+    let coordinator = module.createAddWalletCoordinator(options: [
+      .importRegular,
+      .signer,
+      .keystone,
+      .ledger,
+      .importWatchOnly,
+      .importTestnet
+    ],
                                                         router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.didFinishOnboarding?()
