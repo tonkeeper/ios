@@ -257,28 +257,6 @@ extension API {
     }
     return nfts
   }
-
-  struct SuspiciousNFT: Codable {
-    let is_scam: Bool
-  }
-
-  func changeSuspiciousState(_ nft: NFT, isScam: Bool) async throws {
-    var composedURL = configuration.scamApiURL
-    let rawAddress = nft.address.toRaw()
-    composedURL = composedURL?.appendingPathComponent("v1/report/\(rawAddress)")
-    let encoded = SuspiciousNFT(is_scam: isScam)
-    let encoder = JSONEncoder()
-
-    guard let composedURL, let httpBody = try? encoder.encode(encoded) else {
-      return
-    }
-
-    var request = URLRequest(url: composedURL)
-    request.httpMethod = "POST"
-    request.httpBody = httpBody
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    let _ = try await urlSession.data(for: request)
-  }
 }
 
 // MARK: - Jettons

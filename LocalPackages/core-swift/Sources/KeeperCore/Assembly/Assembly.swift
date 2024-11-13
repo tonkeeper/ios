@@ -46,11 +46,13 @@ public final class Assembly {
   private lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
   private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
+  private lazy var scamAPIAssembly = ScamAPIAssembly(configurationAssembly: configurationAssembly)
   private lazy var servicesAssembly = ServicesAssembly(
     repositoriesAssembly: repositoriesAssembly, 
     apiAssembly: apiAssembly,
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
     locationAPIAsembly: locationAPIAssembly,
+    scamAPIAssembly: scamAPIAssembly,
     coreAssembly: coreAssembly,
     secureAssembly: secureAssembly,
     batteryAssembly: batteryAssembly

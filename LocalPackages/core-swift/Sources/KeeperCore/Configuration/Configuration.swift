@@ -32,6 +32,11 @@ public final class Configuration {
       await loadConfiguration().mainnet.tonApiV2Key
     }
   }
+  public func scamApiURL(isTestnet: Bool) async -> URL? {
+    isTestnet
+    ? await loadConfiguration().testnet.scamApiURL
+    : await loadConfiguration().mainnet.scamApiURL
+  }
   public var mercuryoSecret: String? {
     get async {
       await loadConfiguration().mainnet.mercuryoSecret
@@ -155,10 +160,6 @@ public final class Configuration {
   
   public func isDisableBatteryCryptoRechargeModule(isTestnet: Bool) -> Bool {
     isTestnet ? configuration.testnet.disableBatteryCryptoRechargeModule : configuration.mainnet.disableBatteryCryptoRechargeModule
-  }
-
-  public var scamApiURL: URL? {
-    configuration.mainnet.scamApiURL
   }
 
   public func flags(isTestnet: Bool) -> RemoteConfiguration.Flags {

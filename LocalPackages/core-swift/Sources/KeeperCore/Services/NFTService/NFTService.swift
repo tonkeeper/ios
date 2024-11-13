@@ -10,10 +10,14 @@ public protocol NFTService {
 
 final class NFTServiceImplementation: NFTService {
   private let apiProvider: APIProvider
+  private let scamAPI: ScamAPI
   private let nftRepository: NFTRepository
   
-  init(apiProvider: APIProvider, nftRepository: NFTRepository) {
+  init(apiProvider: APIProvider,
+       scamAPI: ScamAPI,
+       nftRepository: NFTRepository) {
     self.apiProvider = apiProvider
+    self.scamAPI = scamAPI
     self.nftRepository = nftRepository
   }
   
@@ -45,6 +49,6 @@ final class NFTServiceImplementation: NFTService {
 
   func changeSuspiciousState(_ nft: NFT, isTestnet: Bool, isScam: Bool) async throws {
     guard !isTestnet else { return }
-    try await apiProvider.api(isTestnet).changeSuspiciousState(nft, isScam: isScam)
+    try await scamAPI.changeSuspiciousState(nft, isScam: isScam, isTestnet: isTestnet)
   }
 }
