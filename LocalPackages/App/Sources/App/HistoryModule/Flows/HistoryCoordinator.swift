@@ -93,6 +93,7 @@ private extension HistoryCoordinator {
   }
   
   func openReceive(wallet: Wallet) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     let module = ReceiveModule(
       dependencies: ReceiveModule.Dependencies(
         coreAssembly: coreAssembly,
@@ -109,6 +110,7 @@ private extension HistoryCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     let coordinator = BuyCoordinator(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -126,6 +128,7 @@ private extension HistoryCoordinator {
   
   @MainActor
   func openNFTDetails(wallet: Wallet, address: Address) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     if let nft = try? keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet) {
       openDetails(wallet: wallet, nft: nft)
     } else {
@@ -179,6 +182,7 @@ private extension HistoryCoordinator {
   }
   
   func decryptComment(wallet: Wallet, payload: EncryptedCommentPayload, eventId: String) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     didDecryptComment?(wallet, payload, eventId)
   }
 }

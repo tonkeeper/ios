@@ -159,7 +159,6 @@ public final class TKImageView: UIView, ConfigurableView {
   
   public func prepareForReuse() {
     image = .urlImage(nil)
-    image = nil
   }
 
   private func setup() {
