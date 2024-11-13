@@ -22,7 +22,6 @@ final class SendV3View: UIView {
   
   lazy var recipientTextField: TKTextField = {
     let textInputControl = TKTextInputTextViewControl()
-    textInputControl.keyboardType = .asciiCapable
     return TKTextField(
       textFieldInputView: TKTextFieldInputView(
         textInputControl: textInputControl
