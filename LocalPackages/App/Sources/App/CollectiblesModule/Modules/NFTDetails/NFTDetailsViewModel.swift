@@ -246,11 +246,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       .highlighted: .Accent.orange.withAlphaComponent(0.64)
     ]
     reportSpamButton.action = { [weak self] in
-      Task {
-        guard let self else {
-          return
-        }
+      guard let self else { return }
 
+      Task {
         await self.spamNFT()
         self.didTapReportSpam?()
         try await self.nftService.changeSuspiciousState(self.nft, isTestnet: self.wallet.isTestnet, isScam: true)
@@ -260,11 +258,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .medium)
     notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.Actions.notSpam))
     notSpamButton.action = { [weak self] in
-      Task {
-        guard let self else {
-          return
-        }
+      guard let self else { return }
 
+      Task {
         await self.approveNFT()
         try await self.nftService.changeSuspiciousState(self.nft, isTestnet: self.wallet.isTestnet, isScam: false)
       }
