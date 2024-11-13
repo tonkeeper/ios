@@ -118,6 +118,7 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
       connectionResponseHandler(.response(response))
     } catch {
       connectionResponseHandler(.error(.unknownError))
+      throw error
     }
   }
   
