@@ -17,4 +17,22 @@ public extension String {
       )
     )
   }
+
+  func withTabTextStyle(
+    _ textStyle: TKTextStyle,
+    color: UIColor,
+    alignment: NSTextAlignment = .left,
+    lineBreakMode: NSLineBreakMode = .byTruncatingTail
+  ) -> NSAttributedString {
+    
+    let string = textStyle.uppercased ? uppercased() : self
+    return NSAttributedString(
+      string: string,
+      attributes: textStyle.getTabStyledAttributes(
+        color: color,
+        alignment: alignment,
+        lineBreakMode: lineBreakMode
+      )
+    )
+  }
 }

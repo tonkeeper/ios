@@ -4,10 +4,11 @@ import TKLocalize
 import TonSwift
 
 public struct AccountEventMapper {
+
   private let dateFormatter: DateFormatter
   private let amountFormatter: AmountFormatter
   private let amountMapper: AccountEventAmountMapper
-  
+
   init(dateFormatter: DateFormatter,
        amountFormatter: AmountFormatter,
        amountMapper: AccountEventAmountMapper) {
@@ -17,6 +18,7 @@ public struct AccountEventMapper {
   }
   
   public func mapEvent(_ event: AccountEvent,
+                       nftManagmentStore: WalletNFTsManagementStore,
                        eventDate: Date,
                        accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
                        isTestnet: Bool,
@@ -30,6 +32,7 @@ public struct AccountEventMapper {
       )
       return mapAction(
         action,
+        nftManagmentStore: nftManagmentStore,
         accountEvent: event,
         rightTopDescription: rightTopDescription,
         isTestnet: isTestnet,
@@ -48,6 +51,7 @@ public struct AccountEventMapper {
 
 private extension AccountEventMapper {
   func mapAction(_ action: AccountEventAction,
+                 nftManagmentStore: WalletNFTsManagementStore,
                  accountEvent: AccountEvent,
                  rightTopDescription: String?,
                  isTestnet: Bool,
@@ -85,6 +89,7 @@ private extension AccountEventMapper {
                                  status: action.status.rawValue)
     case .auctionBid(let auctionBid):
       return mapAuctionBidAction(auctionBid,
+                                 nftManagmentStore: nftManagmentStore,
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
@@ -92,6 +97,7 @@ private extension AccountEventMapper {
                                  isTestnet: isTestnet)
     case .nftPurchase(let nftPurchase):
       return mapNFTPurchaseAction(nftPurchase,
+                                  nftManagmentStore: nftManagmentStore,
                                   accountEvent: accountEvent,
                                   preview: action.preview,
                                   rightTopDescription: rightTopDescription,
@@ -113,6 +119,7 @@ private extension AccountEventMapper {
                                         isTestnet: isTestnet)
     case .nftItemTransfer(let nftItemTransfer):
       return mapItemTransferAction(nftItemTransfer,
+                                   nftManagmentStore: nftManagmentStore,
                                    accountEvent: accountEvent,
                                    preview: action.preview,
                                    rightTopDescription: rightTopDescription,
@@ -397,45 +404,51 @@ private extension AccountEventMapper {
   }
   
   func mapAuctionBidAction(_ action: AccountEventAction.AuctionBid,
+                           nftManagmentStore: WalletNFTsManagementStore,
                            accountEvent: AccountEvent,
                            preview: AccountEventAction.SimplePreview,
                            rightTopDescription: String?,
                            status: String?,
                            isTestnet: Bool) -> AccountEventModel.Action {
-    var nft: AccountEventModel.Action.ActionNFT?
-    if let actionNft = action.nft {
-      let nftModel = AccountEventModel.Action.ActionNFT(
-        nft: actionNft,
-        name: actionNft.name,
-        collectionName: actionNft.collection?.name ?? .singleNFT,
-        image: actionNft.preview.size500)
-      nft = nftModel
+    var eventType: AccountEventModel.Action.ActionType = .bid
+    var nftAction: AccountEventModel.Action.ActionNFT?
+    if let nft = action.nft {
+      let nftState = calculateNFTState(nft, nftManagmentStore: nftManagmentStore)
+      nftAction = composeNFTAction(nft, nftState: nftState)
+
+      if nftState == .spam && nft.trust != .whitelist {
+        eventType = .spam
+      }
     }
-    
-    return AccountEventModel.Action(eventType: .bid,
-                                    amount: preview.value,
-                                    subamount: nil,
-                                    leftTopDescription: action.bidder.value(isTestnet: isTestnet),
-                                    leftBottomDescription: nil,
-                                    rightTopDescription: rightTopDescription,
-                                    status: status,
-                                    comment: nil,
-                                    nft: nft)
+
+    return AccountEventModel.Action(
+      eventType: eventType,
+      amount: preview.value,
+      subamount: nil,
+      leftTopDescription: action.bidder.value(isTestnet: isTestnet),
+      leftBottomDescription: nil,
+      rightTopDescription: rightTopDescription,
+      status: status,
+      comment: nil,
+      nft: nftAction
+    )
   }
   
   func mapNFTPurchaseAction(_ action: AccountEventAction.NFTPurchase,
+                            nftManagmentStore: WalletNFTsManagementStore,
                             accountEvent: AccountEvent,
                             preview: AccountEventAction.SimplePreview,
                             rightTopDescription: String?,
                             status: String?,
                             isTestnet: Bool) -> AccountEventModel.Action {
-    
-    let nftModel = AccountEventModel.Action.ActionNFT(
-      nft: action.nft,
-      name: action.nft.name,
-      collectionName: action.nft.collection?.name ?? .singleNFT,
-      image: action.nft.preview.size500
-    )
+    let nftState = calculateNFTState(action.nft, nftManagmentStore: nftManagmentStore)
+    let nftAction = composeNFTAction(action.nft, nftState: nftState)
+
+    var eventType: AccountEventModel.Action.ActionType = .nftPurchase
+    if nftState == .spam && action.nft.trust != .whitelist {
+      eventType = .spam
+    }
+
     let amount = amountMapper
       .mapAmount(
         amount: action.price,
@@ -446,7 +459,7 @@ private extension AccountEventMapper {
       )
     
     return AccountEventModel.Action(
-      eventType: .nftPurchase,
+      eventType: eventType,
       amount: amount,
       subamount: nil,
       leftTopDescription: action.seller.value(isTestnet: isTestnet),
@@ -454,7 +467,7 @@ private extension AccountEventMapper {
       rightTopDescription: rightTopDescription,
       status: status,
       comment: nil,
-      nft: nftModel
+      nft: nftAction
     )
   }
   
@@ -508,6 +521,7 @@ private extension AccountEventMapper {
   }
   
   func mapItemTransferAction(_ action: AccountEventAction.NFTItemTransfer,
+                             nftManagmentStore: WalletNFTsManagementStore,
                              accountEvent: AccountEvent,
                              preview: AccountEventAction.SimplePreview,
                              rightTopDescription: String?,
@@ -515,7 +529,7 @@ private extension AccountEventMapper {
                              isTestnet: Bool,
                              nftProvider: (Address) -> NFT?,
                              decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
-    let eventType: AccountEventModel.Action.ActionType
+    var eventType: AccountEventModel.Action.ActionType
     var leftTopDescription: String?
     if let previewAccount = preview.accounts.first {
       leftTopDescription = previewAccount.address.toFriendly(
@@ -531,14 +545,14 @@ private extension AccountEventMapper {
       eventType = .receieved
     }
     
-    var actionNFT: AccountEventModel.Action.ActionNFT?
+    var nftAction: AccountEventModel.Action.ActionNFT?
     if let nft = nftProvider(action.nftAddress) {
-      let nftModel = AccountEventModel.Action.ActionNFT(
-        nft: nft,
-        name: nft.name,
-        collectionName: nft.collection?.name ?? .singleNFT,
-        image: nft.preview.size500)
-      actionNFT = nftModel 
+      let nftState = calculateNFTState(nft, nftManagmentStore: nftManagmentStore)
+      nftAction = composeNFTAction(nft, nftState: nftState)
+
+      if nftState == .spam && nft.trust != .whitelist {
+        eventType = .spam
+      }
     }
 
     var encryptedComment: AccountEventModel.Action.EncryptedComment?
@@ -563,7 +577,7 @@ private extension AccountEventMapper {
                                     status: status,
                                     comment: action.comment,
                                     encryptedComment: encryptedComment,
-                                    nft: actionNFT)
+                                    nft: nftAction)
   }
   
   func mapJettonSwapAction(_ action: AccountEventAction.JettonSwap,
@@ -677,6 +691,48 @@ private extension AccountEventMapper {
       nft: nil
     )
   }
+
+  private func calculateNFTState(_ nft: NFT, nftManagmentStore: WalletNFTsManagementStore) -> NFTsManagementState.NFTState? {
+    if let collection = nft.collection {
+      return nftManagmentStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      return nftManagmentStore.getState().nftStates[.singleItem(nft.address)]
+    }
+  }
+
+  func composeNFTAction(_ nft: NFT, nftState: NFTsManagementState.NFTState?) -> AccountEventModel.Action.ActionNFT? {
+    func composeCollectionName() -> String? {
+      if let collection = nft.collection {
+        return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.NftDetails.singleNft : collection.name
+      } else {
+        return TKLocales.NftDetails.singleNft
+      }
+    }
+
+    let collectionName: String?
+    let isSuspecious: Bool
+    switch nft.trust {
+    case .none, .blacklist, .unknown:
+      isSuspecious = nftState != .approved
+      collectionName = TKLocales.NftDetails.unverifiedNft
+    case .whitelist, .graylist:
+      collectionName = composeCollectionName()
+      isSuspecious = false
+    }
+
+    let actionNFT: AccountEventModel.Action.ActionNFT?
+    if nft.trust != .whitelist && nftState == .spam {
+      actionNFT = nil
+    } else {
+      actionNFT = AccountEventModel.Action.ActionNFT(
+        nft: nft,
+        isSuspecious: isSuspecious,
+        name: nft.name,
+        collectionName: collectionName,
+        image: nft.preview.size500)
+    }
+    return actionNFT
+  }
 }
 
 private extension WalletAccount {
@@ -689,8 +745,4 @@ private extension WalletAccount {
     )
     return friendlyAddress.toShort()
   }
-}
-
-private extension String {
-  static let singleNFT = "Single NFT"
 }

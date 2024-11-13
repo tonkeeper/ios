@@ -56,6 +56,17 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         observer.paginationLoader.reload()
       }
     }
+
+    nftManagmentStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateState(let wallet):
+        guard wallet == observer.wallet else {
+          return
+        }
+
+        observer.didUpdateNFTsState()
+      }
+    }
     setInitialState()
     paginationLoader.reload()
   }
@@ -115,7 +126,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   private let dateFormatter: DateFormatter
   private let accountEventMapper: AccountEventMapper
   private let historyEventMapper: HistoryEventMapper
-  
+  private let nftManagmentStore: WalletNFTsManagementStore
+
   // MARK: - Init
   
   init(wallet: Wallet,
@@ -127,7 +139,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
        cacheProvider: HistoryListCacheProvider,
        dateFormatter: DateFormatter,
        accountEventMapper: AccountEventMapper,
-       historyEventMapper: HistoryEventMapper) {
+       historyEventMapper: HistoryEventMapper,
+       nftManagmentStore: WalletNFTsManagementStore) {
     self.wallet = wallet
     self.paginationLoader = paginationLoader
     self.appSettingsStore = appSettingsStore
@@ -138,6 +151,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     self.dateFormatter = dateFormatter
     self.accountEventMapper = accountEventMapper
     self.historyEventMapper = historyEventMapper
+    self.nftManagmentStore = nftManagmentStore
   }
 
   private func setInitialState() {
@@ -208,7 +222,19 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     default: break
     }
   }
-  
+
+  private func didUpdateNFTsState() {
+    queue.async { [weak self] in
+      guard let self else { return }
+      let configurations = mapEventsCellConfigurations(events: events)
+      let snapshot = snapshot.reloadAllItemsSnapshot()
+      DispatchQueue.main.async {
+        self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+        self.eventHandler?(.snapshotUpdate(snapshot))
+      }
+    }
+  }
+
   private func didGetDecryptedCommentStoreEvent(_ event: DecryptedCommentStore.Event) {
     switch event {
     case .didDecryptComment(let eventId, let wallet):
@@ -340,6 +366,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     
     let eventModel = accountEventMapper.mapEvent(
       event,
+      nftManagmentStore: nftManagmentStore,
       eventDate: event.date,
       accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
         dateFormatter: dateFormatter

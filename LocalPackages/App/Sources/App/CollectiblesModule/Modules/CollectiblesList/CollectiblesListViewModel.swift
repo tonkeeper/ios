@@ -68,21 +68,26 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - Mapper
   
-  private let collectiblesListMapper = CollectiblesListMapper()
-  
+  private lazy var collectiblesListMapper = CollectiblesListMapper(
+    walletNftManagementStore: walletNftManagementStore
+  )
+
   // MARK: - Dependencies
   
   private let wallet: Wallet
   private let walletNFTsManagedStore: WalletNFTsManagedStore
+  private let walletNftManagementStore: WalletNFTsManagementStore
   private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
        walletNFTsManagedStore: WalletNFTsManagedStore,
+       walletNftManagementStore: WalletNFTsManagementStore,
        appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
     self.walletNFTsManagedStore = walletNFTsManagedStore
+    self.walletNftManagementStore = walletNftManagementStore
     self.appSettingsStore = appSettingsStore
   }
 }
@@ -122,27 +127,14 @@ private extension CollectiblesListViewModelImplementation {
       result[identifier] = model
     })
   }
-  
-  func filterSpamNFTItems(nfts: [NFT],
-                          managementState: NFTsManagementState) -> [NFT] {
-    
-    func filter(items: [NFT]) -> [NFT] {
-      items.filter {
-        let state: NFTsManagementState.NFTState?
-        if let collection = $0.collection {
-          state = managementState.nftStates[.collection(collection.address)]
-        } else {
-          state = managementState.nftStates[.singleItem($0.address)]
-        }
-        
-        switch $0.trust {
-        case .blacklist:
-          return state == .visible
-        case .graylist, .none, .unknown, .whitelist:
-          return state != .hidden
-        }
-      }
+
+  func currentLocalState(_ item: NFT) -> NFTsManagementState.NFTState? {
+    let state: NFTsManagementState.NFTState?
+    if let collection = item.collection {
+      state = walletNftManagementStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      state = walletNftManagementStore.getState().nftStates[.singleItem(item.address)]
     }
-    return filter(items: nfts)
+    return state
   }
 }

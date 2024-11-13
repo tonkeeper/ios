@@ -476,8 +476,12 @@ public enum TKLocales {
   public enum Collectibles {
     /// Collection hidden
     public static let collectionHidden = TKLocales.tr("Localizable", "collectibles.collection_hidden", fallback: "Collection hidden")
+    /// Collection marked as Spam
+    public static let collectionMarkedAsSpam = TKLocales.tr("Localizable", "collectibles.collection_marked_as_spam", fallback: "Collection marked as Spam")
     /// NFT hidden
     public static let nftHidden = TKLocales.tr("Localizable", "collectibles.nft_hidden", fallback: "NFT hidden")
+    /// NFT marked as Spam
+    public static let nftMarkedAsSpam = TKLocales.tr("Localizable", "collectibles.nft_marked_as_spam", fallback: "NFT marked as Spam")
     /// Collectibles
     public static let title = TKLocales.tr("Localizable", "collectibles.title", fallback: "Collectibles")
   }
@@ -859,6 +863,26 @@ public enum TKLocales {
     public static let unverifiedNft = TKLocales.tr("Localizable", "nft_details.unverified_nft", fallback: "Unverified NFT")
     /// View in explorer
     public static let viewInExplorer = TKLocales.tr("Localizable", "nft_details.view_in_explorer", fallback: "View in explorer")
+    public enum Actions {
+      /// Not Spam
+      public static let notSpam = TKLocales.tr("Localizable", "nft_details.actions.not_spam", fallback: "Not Spam")
+      /// Report Spam
+      public static let reportSpam = TKLocales.tr("Localizable", "nft_details.actions.report_spam", fallback: "Report Spam")
+    }
+    public enum UnverifiedNft {
+      /// •	We know little about the author and history of this NFT.
+      public static let littleInfoDescription = TKLocales.tr("Localizable", "nft_details.unverified_nft.little_info_description", fallback: "•\tWe know little about the author and history of this NFT.")
+      /// Not Spam
+      public static let notSpam = TKLocales.tr("Localizable", "nft_details.unverified_nft.not_spam", fallback: "Not Spam")
+      /// Report Spam
+      public static let reportSpam = TKLocales.tr("Localizable", "nft_details.unverified_nft.report_spam", fallback: "Report Spam")
+      /// NFT may not be safe to use for one of the following reasons.
+      public static let unverifiedDescription = TKLocales.tr("Localizable", "nft_details.unverified_nft.unverified_description", fallback: "NFT may not be safe to use for one of the following reasons.")
+      /// •	Used for scam. NFT's name, description or image can lead users into deception.
+      public static let usedForScamDescription = TKLocales.tr("Localizable", "nft_details.unverified_nft.used_for_scam_description", fallback: "•\tUsed for scam. NFT's name, description or image can lead users into deception.")
+      /// •	Used for spam. Employed for sending unwanted and often irrelevant messages at scale.
+      public static let usedForSpamDescription = TKLocales.tr("Localizable", "nft_details.unverified_nft.used_for_spam_description", fallback: "•\tUsed for spam. Employed for sending unwanted and often irrelevant messages at scale.")
+    }
   }
   public enum Onboarding {
     /// Create a new wallet or add an existing one

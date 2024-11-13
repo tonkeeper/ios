@@ -189,6 +189,7 @@ struct HistoryEventMapper {
         imageModel: imageViewModel,
         name: actionNft.name,
         collectionName: actionNft.collectionName,
+        isSuspecious: actionNft.isSuspecious,
         isVerified: actionNft.nft.trust == .whitelist,
         isBlurVisible: isSecureMode,
         action: {

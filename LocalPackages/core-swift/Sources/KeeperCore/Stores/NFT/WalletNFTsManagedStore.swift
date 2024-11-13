@@ -64,7 +64,7 @@ public final class WalletNFTsManagedStore: Store<WalletNFTsManagedStore.Event, W
       case .blacklist:
         return state == .visible
       case .graylist, .none, .unknown, .whitelist:
-        return state != .hidden
+        return state != .hidden && state != .spam
       }
     }
   }

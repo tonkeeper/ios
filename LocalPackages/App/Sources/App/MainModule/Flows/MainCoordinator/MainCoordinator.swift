@@ -1145,10 +1145,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openInsufficientFundsPopup(jettonInfo: JettonInfo, requiredAmount: BigUInt, availableAmount: BigUInt) {
-    let viewController = InsufficientFundsViewController()
+    let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
     
-    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     let configuration = configurationBuilder.insufficientTokenConfiguration(

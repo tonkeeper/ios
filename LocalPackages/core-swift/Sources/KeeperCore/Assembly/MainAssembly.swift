@@ -249,7 +249,7 @@ public final class MainAssembly {
   public func browserExploreController() -> BrowserExploreController {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
   }
-  
+
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
       walletsStore: storesAssembly.walletsStore,
@@ -275,7 +275,8 @@ public final class MainAssembly {
           amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
         ),
         amountFormatter: formattersAssembly.amountFormatter,
-        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+        nftManagmentStore: storesAssembly.walletNFTsManagementStore(wallet: wallet)
       )
     )
   }
@@ -292,20 +293,6 @@ public final class MainAssembly {
     DecryptCommentController(
       encryptedCommentService: servicesAssembly.encryptedCommentService(),
       decryptedCommentStore: storesAssembly.decryptedCommentStore
-    )
-  }
-}
-
-private extension MainAssembly {
-  var accountEventMapper: AccountEventMapper {
-    AccountEventMapper(
-      dateFormatter: formattersAssembly.dateFormatter,
-      amountFormatter: formattersAssembly.amountFormatter,
-      amountMapper: SignedAccountEventAmountMapper(
-        plainAccountEventAmountMapper: PlainAccountEventAmountMapper(
-          amountFormatter: formattersAssembly.amountFormatter
-        )
-      )
     )
   }
 }

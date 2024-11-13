@@ -4,7 +4,7 @@ import TKLocalize
 import KeeperCore
 import BigInt
 
-struct InsufficientFundsViewControllerConfigurationBuilder {
+struct InfoPopupBottomSheetConfigurationBuilder {
   
   private let amountFormatter: AmountFormatter
   
@@ -17,7 +17,7 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
     tokenFractionalDigits: Int,
     required: BigUInt,
     available: BigUInt,
-    okAction: @escaping () -> Void) -> InsufficientFundsViewController.Configuration {
+    okAction: @escaping () -> Void) -> InfoPopupBottomSheetViewController.Configuration {
       let requiredFormattedAmount = amountFormatter.formatAmount(
         required,
         fractionDigits: tokenFractionalDigits,
@@ -42,11 +42,12 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
       okButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.ok))
       okButtonConfiguration.action = okAction
 
-      return InsufficientFundsViewController.Configuration(
+      return InfoPopupBottomSheetViewController.Configuration(
         image: .TKUIKit.Icons.Size84.exclamationmarkCircle,
         imageTintColor: .Icon.secondary,
         title: title,
         caption: caption,
+        bodyContent: nil,
         buttons: [okButtonConfiguration]
       )
     }
@@ -54,14 +55,15 @@ struct InsufficientFundsViewControllerConfigurationBuilder {
   func commonConfiguration(
     title: String,
     caption: String,
+    body: [InfoPopupBottomSheetViewController.Configuration.BodyView]? = nil,
     buttons: [TKButton.Configuration]
-  ) -> InsufficientFundsViewController.Configuration {
-
-    InsufficientFundsViewController.Configuration(
+  ) -> InfoPopupBottomSheetViewController.Configuration {
+    InfoPopupBottomSheetViewController.Configuration(
       image: nil,
       imageTintColor: nil,
       title: title,
       caption: caption,
+      bodyContent: body,
       buttons: buttons
     )
   }

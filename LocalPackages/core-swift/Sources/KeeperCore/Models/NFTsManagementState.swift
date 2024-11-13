@@ -10,6 +10,7 @@ public struct NFTsManagementState: Codable, Equatable {
   public enum NFTState: Codable, Equatable {
     case visible
     case hidden
+    case approved
     case spam
   }
   

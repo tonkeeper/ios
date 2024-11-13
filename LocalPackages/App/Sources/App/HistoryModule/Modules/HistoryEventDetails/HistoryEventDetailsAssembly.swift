@@ -20,6 +20,7 @@ struct HistoryEventDetailsAssembly {
       tonRatesStore: keeperCoreAssembly.storesAssembly.tonRatesStore,
       currencyStore: keeperCoreAssembly.storesAssembly.currencyStore,
       nftService: keeperCoreAssembly.servicesAssembly.nftService(),
+      nftManagmentStore: keeperCoreAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
       isTestnet: isTestnet
     )
     

@@ -9,16 +9,19 @@ struct ConfirmTransactionMapper {
   private let accountEventMapper: AccountEventMapper
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
+  private let nftManagmentStore: WalletNFTsManagementStore
 
   init(nftService: NFTService,
        accountEventMapper: AccountEventMapper,
        amountFormatter: AmountFormatter,
-       decimalAmountFormatter: DecimalAmountFormatter
+       decimalAmountFormatter: DecimalAmountFormatter,
+       nftManagmentStore: WalletNFTsManagementStore
   ) {
     self.nftService = nftService
     self.accountEventMapper = accountEventMapper
     self.amountFormatter = amountFormatter
     self.decimalAmountFormatter = decimalAmountFormatter
+    self.nftManagmentStore = nftManagmentStore
   }
   
   func mapTransactionInfo(
@@ -39,6 +42,7 @@ struct ConfirmTransactionMapper {
     let eventModel = accountEventMapper
       .mapEvent(
         try AccountEvent(accountEvent: info.event),
+        nftManagmentStore: nftManagmentStore,
         eventDate: Date(),
         accountEventRightTopDescriptionProvider: descriptionProvider,
         isTestnet: wallet.isTestnet,

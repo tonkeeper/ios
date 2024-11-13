@@ -218,6 +218,7 @@ extension API {
 // MARK: - NFTs
 
 extension API {
+
   func getAccountNftItems(address: Address,
                           collectionAddress: Address?,
                           limit: Int?,
