@@ -10,11 +10,18 @@ final class NFTDetailsView: UIView {
     stackView.axis = .vertical
     return stackView
   }()
-  let reportSpamButtonsView = NFTDetailsReportSpamButtonsView()
+  let manageNFTContainerView = UIView()
   let informationView = NFTDetailsInformationView()
   let buttonsView = NFTDetailsButtonsView()
   let propertiesView = NFTDetailsPropertiesView()
   let detailsView = NFTDetailsDetailsView()
+  
+  func setManageNFTView(_ view: UIView) {
+    manageNFTContainerView.addSubview(view)
+    view.snp.makeConstraints { make in
+      make.edges.equalTo(manageNFTContainerView)
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -43,7 +50,7 @@ final class NFTDetailsView: UIView {
     
     addSubview(scrollView)
     scrollView.addSubview(contentStackView)
-    contentStackView.addArrangedSubview(reportSpamButtonsView)
+    contentStackView.addArrangedSubview(manageNFTContainerView)
     contentStackView.addArrangedSubview(informationView)
     contentStackView.addArrangedSubview(buttonsView)
     contentStackView.addArrangedSubview(propertiesView)

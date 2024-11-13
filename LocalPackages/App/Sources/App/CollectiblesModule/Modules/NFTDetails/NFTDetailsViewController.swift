@@ -3,9 +3,12 @@ import TKUIKit
 
 final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> {
   private let viewModel: NFTDetailsViewModel
+  private let manageNFTViewController: NFTDetailsManageNFTViewController
   
-  init(viewModel: NFTDetailsViewModel) {
+  init(viewModel: NFTDetailsViewModel,
+       manageNFTViewController: NFTDetailsManageNFTViewController) {
     self.viewModel = viewModel
+    self.manageNFTViewController = manageNFTViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -23,6 +26,10 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
   
   private func setup() {
     setupNavigationBar()
+    
+    addChild(manageNFTViewController)
+    customView.setManageNFTView(manageNFTViewController.view)
+    manageNFTViewController.didMove(toParent: self)
   }
   
   private func setupNavigationBar() {
@@ -38,13 +45,8 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
       self?.customView.titleView.configure(model: model)
     }
 
-    viewModel.didUpdateReportSpamView = { [weak self] model in
-      if let model {
-        self?.customView.reportSpamButtonsView.isHidden = false
-        self?.customView.reportSpamButtonsView.configure(model: model)
-      } else {
-        self?.customView.reportSpamButtonsView.isHidden = true
-      }
+    viewModel.didUpdateManageNFTViewIsHidden = { [weak self] isHidden in
+      self?.customView.manageNFTContainerView.isHidden = isHidden
     }
 
     viewModel.didUpdateInformationView = { [weak self] model in

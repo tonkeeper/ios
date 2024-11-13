@@ -30,8 +30,7 @@ struct CollectiblesListMapper {
     let title: String = isSecureMode ? "* * * *" : nft.name ?? nft.address.toString(bounceable: true)
     
     let subtitle: NSAttributedString?
-    switch nft.trust {
-    case .none, .blacklist, .unknown:
+    if nft.isUnverified {
       let isManuallyApproved = currentLocalState(nft) == .approved
       let color: UIColor = isManuallyApproved ? .Text.secondary : .Accent.orange
       let composedSubtitle: String? = isManuallyApproved ? composeSubtitle() : TKLocales.Purchases.unverified
@@ -41,7 +40,7 @@ struct CollectiblesListMapper {
         alignment: .left,
         lineBreakMode: .byTruncatingTail
       )
-    case .whitelist, .graylist:
+    } else {
       subtitle = composeSubtitle()?.withTextStyle(
         .body3,
         color: .Text.secondary,
@@ -49,7 +48,6 @@ struct CollectiblesListMapper {
         lineBreakMode: .byTruncatingTail
       )
     }
-    
     return CollectibleCollectionViewCell.Model(
       identifier: nft.address.toRaw(),
       imageDownloadTask: ImageDownloadTask(closure: { [weak imageLoader] imageView, size, cornerRadius in
