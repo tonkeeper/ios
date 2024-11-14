@@ -137,38 +137,44 @@ private extension BatteryRefillCoordinator {
       tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration
     )
-    
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
+
+    let confirmController = keeperCoreMainAssembly.confirmTransactionController(
       wallet: wallet,
-      confirmator: BatteryRechargeSignTransactionConfirmationCoordinatorConfirmator(
-        bocBuilder: bocBuilder,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: BatteryRechargeConfirmTransactionControllerBocProvider(
-          bocBuilder: bocBuilder
-        )
-      ),
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+      bocProvider: BatteryRechargeConfirmTransactionControllerBocProvider(
+        bocBuilder: bocBuilder
+      )
     )
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    Task {
+      let confirmModel = try await confirmController.createRequestModel()
+      let coordinator = SignTransactionConfirmationCoordinator(
+        router: WindowRouter(window: window),
+        wallet: wallet,
+        confirmator: BatteryRechargeSignTransactionConfirmationCoordinatorConfirmator(
+          bocBuilder: bocBuilder,
+          sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
+        ),
+        confirmModel: confirmModel,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+
+      coordinator.didCancel = { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      }
+
+      coordinator.didConfirm = { [weak self, weak coordinator] in
+        ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Recharge.Toast.success))
+        self?.removeChild(coordinator)
+        self?.didFinish?()
+      }
+
+      self.signTransactionConfirmationCoordinator = coordinator
+
+      await MainActor.run {
+        addChild(coordinator)
+        coordinator.start()
+      }
     }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Recharge.Toast.success))
-      self?.removeChild(coordinator)
-      self?.didFinish?()
-    }
-    
-    self.signTransactionConfirmationCoordinator = coordinator
-    
-    addChild(coordinator)
-    coordinator.start()
   }
   
   func openTokenPicker(token: Token, completion: @escaping (Token) -> Void) {

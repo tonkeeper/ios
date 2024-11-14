@@ -18,7 +18,7 @@ struct InfoPopupBottomSheetConfigurationBuilder {
     tokenFractionalDigits: Int,
     required: BigUInt,
     available: BigUInt,
-    buttons: [TKButton.Configuration]) -> InsufficientFundsViewController.Configuration {
+    buttons: [TKButton.Configuration]) -> InfoPopupBottomSheetViewController.Configuration {
       let requiredFormattedAmount = amountFormatter.formatAmount(
         required,
         fractionDigits: tokenFractionalDigits,
@@ -48,20 +48,14 @@ struct InfoPopupBottomSheetConfigurationBuilder {
 
       let caption = TKLocales.InsufficientFunds.toBePaidYourBalance(
         requiredFormattedAmount, availableFormattedAmount
-      ).withTextStyle(
-        .body1,
-        color: .Text.secondary,
-        alignment: .center
       )
-//        .withTextStyle(
-//        .body1,
-//        color: .Text.secondary,
-//        alignment: .center
-//      )
 
-      return InsufficientFundsViewController.Configuration(
-        title: attributedTitle,
+      return .init(
+        image: .TKUIKit.Icons.Size84.exclamationmarkCircle,
+        imageTintColor: .Icon.secondary,
+        title: title,
         caption: caption,
+        bodyContent: nil,
         buttons: buttons
       )
     }

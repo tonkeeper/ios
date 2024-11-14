@@ -87,14 +87,11 @@ private extension BrowserCoordinator {
       _ = self?.didHandleDeeplink?(deeplink)
     }
     coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-      Task {
-        guard let wallet = try? await self?.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
-          return
-        }
-
-        await self?.openBuySell(wallet: wallet)
+      guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+        return
       }
+      self?.removeChild(coordinator)
+      self?.openBuySell(wallet: wallet)
     }
 
     addChild(coordinator)

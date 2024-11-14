@@ -266,9 +266,9 @@ public final class MainAssembly {
       nftService: servicesAssembly.nftService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
+      totalBalanceStore: storesAssembly.totalBalanceStore,
       balanceStore: storesAssembly.convertedBalanceStore,
       jettonBalanceResolver: loadersAssembly.jettonBalanceResolver(),
-      totalBalanceStore: storesAssembly.totalBalanceStore,
       confirmTransactionMapper: ConfirmTransactionMapper(
         nftService: servicesAssembly.nftService(),
         accountEventMapper: AccountEventMapper(

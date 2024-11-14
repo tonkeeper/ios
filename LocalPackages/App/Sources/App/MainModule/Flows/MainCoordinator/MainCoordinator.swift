@@ -877,7 +877,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       deeplinkHandler: { url in
         let deeplinkParser = DeeplinkParser()
         let deeplink = try deeplinkParser.parse(string: url)
-        self.handleDeeplink(deeplink: deeplink)
+        let _ = self.handleDeeplink(deeplink: deeplink)
       })
     router.present(viewController)
   }
@@ -1151,7 +1151,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     availableAmount: BigUInt,
     buttons: [TKButton.Configuration]
   ) {
-    let viewController = InsufficientFundsViewController()
     let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
     

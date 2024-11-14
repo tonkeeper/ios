@@ -57,9 +57,7 @@ private extension WebSwapCoordinator {
     )
     
     messageHandler.send = { [weak self] request, completion in
-      Task {
-        try await self?.openSend(signRequest: request, completion: completion)
-      }
+      self?.openSend(signRequest: request, completion: completion)
     }
     
     messageHandler.close = {
@@ -73,7 +71,6 @@ private extension WebSwapCoordinator {
     router.push(viewController: module.view)
   }
 
-  @MainActor
   func openSend(signRequest: SendTransactionSignRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
     guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
@@ -89,36 +86,40 @@ private extension WebSwapCoordinator {
       )
     )
 
-    let confirmModel = try await confirmController.createRequestModel()
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
-      wallet: wallet,
-      confirmator: StonfiSwapSignTransactionConfirmationCoordinatorConfirmator(
-        signRequest: signRequest,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
-        responseHandler: { result in
-          completion(result)
-        }
-      ),
-      confirmModel: confirmModel,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
-    )
+    Task {
+      let confirmModel = try await confirmController.createRequestModel()
+      let coordinator = SignTransactionConfirmationCoordinator(
+        router: WindowRouter(window: window),
+        wallet: wallet,
+        confirmator: StonfiSwapSignTransactionConfirmationCoordinatorConfirmator(
+          signRequest: signRequest,
+          sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+          tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
+          responseHandler: { result in
+            completion(result)
+          }
+        ),
+        confirmModel: confirmModel,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
 
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+      coordinator.didCancel = { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+
+      coordinator.didConfirm = { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+
+      self.signTransactionConfirmationCoordinator = coordinator
+      
+      await MainActor.run {
+        addChild(coordinator)
+        coordinator.start()
+      }
     }
-
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-
-    self.signTransactionConfirmationCoordinator = coordinator
-
-    addChild(coordinator)
-    coordinator.start()
   }
 }

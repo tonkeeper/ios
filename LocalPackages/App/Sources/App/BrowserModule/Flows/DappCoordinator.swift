@@ -72,13 +72,11 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     messageHandler.send = { [weak self] app, request, completion in
-      Task {
-        guard let wallet = try? await self?.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
-          return
-        }
-
-        try await self?.openSend(wallet: wallet, dapp: dapp, appRequest: request, completion: completion)
+      guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+        return
       }
+
+      self?.openSend(wallet: wallet, dapp: dapp, appRequest: request, completion: completion)
     }
 
     module.view.modalPresentationStyle = .fullScreen
@@ -152,65 +150,64 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
   }
 
-  @MainActor
   private func openSend(
     wallet: Wallet,
     dapp: Dapp,
     appRequest: TonConnect.AppRequest,
-    completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void
-  ) async throws {
-    ToastPresenter.showToast(configuration: .loading)
+    completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+      ToastPresenter.showToast(configuration: .loading)
 
-    guard let wallet = try? await self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet(),
-    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-          let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-          let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
+      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+            let connectedApps = try? keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
+            let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
 
-      completion(.error(.unknownApp))
-      return
-    }
-
-    let confirmTransactionController = keeperCoreMainAssembly.confirmTransactionController(
-      wallet: wallet,
-      bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-        signTransactionParams: appRequest.params
-      )
-    )
-
-    let model = try await confirmTransactionController.createRequestModel()
-    if let confirmModel = model.confirmModel {
-      let (token, balance) = confirmModel.token
-      var isConfirmFlowAvailable: Bool
-
-      switch token {
-      case .ton:
-        isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount
-      case .jetton:
-        let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
-        isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
-      }
-
-      guard isConfirmFlowAvailable else {
-        startInsufficientFlow(wallet: wallet, model: confirmModel)
-        completion(.error(.userDeclinedTransaction))
+        completion(.error(.unknownApp))
         return
       }
-    }
 
-    startSignTransactionConfirmationCoordinator(
-      wallet: wallet,
-      dapp: dapp,
-      appRequest: appRequest,
-      confirmModel: model,
-      completion: completion
-    )
+      Task {
+        let confirmTransactionController = keeperCoreMainAssembly.confirmTransactionController(
+          wallet: wallet,
+          bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+            signTransactionParams: appRequest.params
+          )
+        )
+
+        let model = try await confirmTransactionController.createRequestModel()
+        if let confirmModel = model.confirmModel {
+          let (token, balance) = confirmModel.token
+          var isConfirmFlowAvailable: Bool
+
+          switch token {
+          case .ton:
+            isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount
+          case .jetton:
+            let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
+            isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
+          }
+
+          guard isConfirmFlowAvailable else {
+            startInsufficientFlow(wallet: wallet, model: confirmModel)
+            completion(.error(.userDeclinedTransaction))
+            return
+          }
+        }
+
+        startSignTransactionConfirmationCoordinator(
+          wallet: wallet,
+          dapp: dapp,
+          appRequest: appRequest,
+          confirmModel: model,
+          completion: completion
+        )
+      }
   }
 
   @MainActor
   private func startInsufficientFlow(wallet: Wallet, model: ConfirmTransactionController.ConfirmModel) {
-    let viewController = InsufficientFundsViewController()
+    let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
 

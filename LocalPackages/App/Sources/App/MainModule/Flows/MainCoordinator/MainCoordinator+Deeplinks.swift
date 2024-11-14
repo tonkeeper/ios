@@ -87,13 +87,13 @@ extension MainCoordinator {
             )
           )
         }
-      } catch JettonBalanceResolverError.insufficientFunds(let jettonInfo, let balance, _) {
+      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, _) {
         await MainActor.run { [weak self, jettonInfo] in
           self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
 
           let walletsStore = self?.keeperCoreMainAssembly.storesAssembly.walletsStore
-          guard let wallet = try? walletsStore?.getActiveWallet() else {
+          guard let wallet = try? walletsStore?.activeWallet else {
             return
           }
           var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
@@ -104,7 +104,7 @@ extension MainCoordinator {
               self?.openBuy(wallet: wallet)
             }
           }
-
+          
           self?.openInsufficientFundsPopup(
             wallet: wallet,
             jettonInfo: jettonInfo,
