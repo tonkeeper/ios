@@ -308,16 +308,15 @@ private extension CollectiblesDetailsCoordinator {
       TKLocales.NftDetails.UnverifiedNft.usedForScamDescription,
       TKLocales.NftDetails.UnverifiedNft.littleInfoDescription
     ]
-
-    var buttons = [reportSpamButton]
-    if state != .approved {
-      buttons.append(notSpamButton)
+    
+    var buttons = [TKButton.Configuration]()
+    if wallet.isReportSpamAvailable {
+      buttons.append(reportSpamButton)
+      if state != .approved {
+        buttons.append(notSpamButton)
+      }
     }
-
-    if wallet.kind == .watchonly {
-      buttons = []
-    }
-
+    
     let configuration = configurationBuilder.commonConfiguration(
       title: TKLocales.NftDetails.unverifiedNft,
       caption: TKLocales.NftDetails.UnverifiedNft.unverifiedDescription,
