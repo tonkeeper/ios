@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import UIKit
 import TKLocalize
+import TKFeatureFlags
 import TonSwift
 
 protocol WalletBalanceModuleOutput: AnyObject {
@@ -213,7 +214,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
       }
     }
-    configuration.addUpdateObserver(self) { observer in
+
+    TKFeatureFlags.provider.addObserver(self, flags: [.isSwapDisable, .isExchangeMethodsDisable]) { observer, flag in
       observer.syncQueue.async {
         guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else { return }
         let model = observer.createHeaderModel(state: totalBalanceModelState)
@@ -778,7 +780,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
-    let flags = configuration.flags(isTestnet: wallet.isTestnet)
     let sendButton: WalletBalanceHeaderButtonsView.Model.Button = {
       WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.send,
@@ -807,7 +808,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let swapButton: WalletBalanceHeaderButtonsView.Model.Button? = {
-      guard !flags.isSwapDisable else { return nil }
+      guard !TKFeatureFlags.provider.isSwapDisable else { return nil }
       return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
@@ -819,7 +820,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let buyButton: WalletBalanceHeaderButtonsView.Model.Button? = {
-      guard !flags.isExchangeMethodsDisable else { return nil }
+      guard !TKFeatureFlags.provider.isExchangeMethodsDisable else { return nil }
       return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,
         icon: .TKUIKit.Icons.Size28.usd,

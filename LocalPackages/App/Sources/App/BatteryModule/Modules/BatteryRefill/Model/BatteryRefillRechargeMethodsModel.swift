@@ -1,4 +1,5 @@
 import Foundation
+import TKFeatureFlags
 import KeeperCore
 import BigInt
 import TonSwift
@@ -48,16 +49,13 @@ final class BatteryRefillRechargeMethodsModel {
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let configuration: Configuration
   private let batteryService: BatteryService
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       configuration: Configuration,
        batteryService: BatteryService) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configuration = configuration
     self.batteryService = batteryService
   }
   
@@ -80,7 +78,7 @@ final class BatteryRefillRechargeMethodsModel {
   }
   
   private func updateState() {
-    guard !configuration.isDisableBatteryCryptoRechargeModule(isTestnet: wallet.isTestnet) else {
+    guard !TKFeatureFlags.provider.isBatteryCryptoRechargeDisable else {
       state = .idle(items: [])
       return
     }

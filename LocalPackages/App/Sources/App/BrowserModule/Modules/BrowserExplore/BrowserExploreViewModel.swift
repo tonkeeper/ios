@@ -3,6 +3,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKFeatureFlags
 
 protocol BrowserExploreModuleOutput: AnyObject {
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
@@ -45,7 +46,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
         break
       }
     }
-    configuration.addUpdateObserver(self) { observer in
+    TKFeatureFlags.provider.addObserver(self, flags: [.isDappsDisable]) { observer, _ in
       Task {
         await observer.reloadContent()
       }
@@ -101,27 +102,22 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   private let browserExploreController: BrowserExploreController
   private let walletStore: WalletsStore
   private let regionStore: RegionStore
-  private let configuration: Configuration
 
   // MARK: - Init
   
   init(browserExploreController: BrowserExploreController,
        walletStore: WalletsStore,
-       regionStore: RegionStore,
-       configuration: Configuration) {
+       regionStore: RegionStore) {
     self.browserExploreController = browserExploreController
     self.walletStore = walletStore
     self.regionStore = regionStore
-    self.configuration = configuration
   }
 }
 
 private extension BrowserExploreViewModelImplementation {
 
   func reloadContent() async {
-    let isTestnet = (try? walletStore.activeWallet.isTestnet) ?? false
-    let flags = configuration.flags(isTestnet: isTestnet)
-    guard !flags.isDappsDisable else {
+    guard !TKFeatureFlags.provider.isDappsDisable else {
       await setEmptyState()
       return 
     }

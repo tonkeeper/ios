@@ -162,6 +162,7 @@
 		7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartView.swift; sourceTree = "<group>"; };
 		7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidgetView.swift; sourceTree = "<group>"; };
 		7D4C14632AD98E44002B2922 /* diamond.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = diamond.json; sourceTree = "<group>"; };
+		7D6587BF2CE670AA009797E8 /* TKFeatureFlags */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKFeatureFlags; sourceTree = "<group>"; };
 		7D6A3DDC2CB00CB8008314E1 /* TKStories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKStories; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
@@ -444,6 +445,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				7D6587BF2CE670AA009797E8 /* TKFeatureFlags */,
 				7DAF89E22CDAC08600D58260 /* TKKeychain */,
 				7D6A3DDC2CB00CB8008314E1 /* TKStories */,
 				E66F82AA2C2F2BB00009E7C2 /* Ledger */,

@@ -30,7 +30,6 @@ struct BatteryRefillAssembly {
       rechargeMethodsModel: BatteryRefillRechargeMethodsModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
         batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService()
       ),
       headerModel: BatteryRefillHeaderModel(
