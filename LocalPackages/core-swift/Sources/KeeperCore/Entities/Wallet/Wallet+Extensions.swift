@@ -345,5 +345,12 @@ public extension Wallet {
       return false
     }
   }
+  
+  var isReportSpamAvailable: Bool {
+    switch kind {
+    case .watchonly: return false
+    default: return true
+    }
+  }
 }
 

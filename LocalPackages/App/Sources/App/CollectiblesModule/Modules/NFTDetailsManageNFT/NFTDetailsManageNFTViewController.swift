@@ -23,7 +23,7 @@ final class NFTDetailsManageNFTViewController: UIViewController, NFTDetailsManag
   var didMarkAsSpam: (() -> Void)?
   
   func getState() -> NFTDetailsManageNFTState {
-    guard wallet.kind != .watchonly,
+    guard wallet.isReportSpamAvailable,
           nft.isUnverified,
           nftManagementStore.state.nftStates[getNftManagementItem()] != .approved else {
       return .hidden
