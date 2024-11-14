@@ -314,6 +314,10 @@ private extension CollectiblesDetailsCoordinator {
       buttons.append(notSpamButton)
     }
 
+    if wallet.kind == .watchonly {
+      buttons = []
+    }
+
     let configuration = configurationBuilder.commonConfiguration(
       title: TKLocales.NftDetails.unverifiedNft,
       caption: TKLocales.NftDetails.UnverifiedNft.unverifiedDescription,
