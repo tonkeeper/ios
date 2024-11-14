@@ -23,6 +23,17 @@ public final class TKModalCardViewController: UIViewController, TKBottomSheetScr
     return stackView
   }()
   
+  public var successTitle: String = "Done" {
+    didSet {
+      actionBarView.successTitle = successTitle
+    }
+  }
+  public var errorTitle: String = "Error" {
+    didSet {
+      actionBarView.errorTitle = errorTitle
+    }
+  }
+  
   private lazy var headerView = TKModalCardViewController.HeaderView(viewController: self)
   private lazy var contentView = TKModalCardViewController.ContentView(viewController: self)
   private lazy var actionBarView = TKModalCardViewController.ActionBar(viewController: self)

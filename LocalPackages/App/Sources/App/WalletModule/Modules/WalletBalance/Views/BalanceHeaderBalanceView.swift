@@ -25,7 +25,7 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
   }
 
   struct Model {
-    let balanceModel: BalanceHeaderAmountView.Model
+    let balanceConfiguration: BalanceHeaderAmountView.Configuration
     let addressButtonConfiguration: TKButton.Configuration
     let connectionStatusModel: ConnectionStatusView.Model?
     let tags: [TKTagView.Configuration]
@@ -33,7 +33,7 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    balanceView.configure(model: model.balanceModel)
+    balanceView.configuration = model.balanceConfiguration
     addressButton.configuration = model.addressButtonConfiguration
     stateDateLabel.attributedText = model.stateDate?.withTextStyle(.body2, color: .Text.secondary, alignment: .center)
     

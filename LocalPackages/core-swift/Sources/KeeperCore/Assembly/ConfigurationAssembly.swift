@@ -10,19 +10,17 @@ public final class ConfigurationAssembly {
     self.tonkeeperApiAssembly = tonkeeperApiAssembly
     self.coreAssembly = coreAssembly
   }
-//  
-//  private weak var _remoteConfigurationStore: ConfigurationStore?
-//  public var remoteConfigurationStore: ConfigurationStore {
-//    if let remoteConfigurationStore = _remoteConfigurationStore {
-//      return remoteConfigurationStore
-//    } else {
-//      let remoteConfigurationStore = ConfigurationStore(
-//        configurationService: remoteConfigurationService()
-//      )
-//      _remoteConfigurationStore = remoteConfigurationStore
-//      return remoteConfigurationStore
-//    }
-//  }
+
+  private weak var _configuration: Configuration?
+  public var configuration: Configuration {
+    if let configuration = _configuration {
+      return configuration
+    } else {
+      let configuration = Configuration(remoteConfigurationService: remoteConfigurationService())
+      _configuration = configuration
+      return configuration
+    }
+  }
   
   func remoteConfigurationService() -> RemoteConfigurationService {
     RemoteConfigurationServiceImplementation(
@@ -35,30 +33,5 @@ public final class ConfigurationAssembly {
     RemoteConfigurationRepositoryImplementation(
       fileSystemVault: coreAssembly.fileSystemVault()
     )
-  }
-  
-  private weak var _configurationStore: ConfigurationStore?
-  public var configurationStore: ConfigurationStore {
-    if let configurationStore = _configurationStore {
-      return configurationStore
-    } else {
-      let configurationStore = ConfigurationStore(repository: remoteConfigurationRepository())
-      _configurationStore = configurationStore
-      return configurationStore
-    }
-  }
-  
-  private weak var _configurationLoader: ConfigurationLoader?
-  public var configurationLoader: ConfigurationLoader {
-    if let configurationLoader = _configurationLoader {
-      return configurationLoader
-    } else {
-      let configurationLoader = ConfigurationLoader(
-        configurationStore: configurationStore,
-        configurationService: remoteConfigurationService()
-      )
-      _configurationLoader = configurationLoader
-      return configurationLoader
-    }
   }
 }

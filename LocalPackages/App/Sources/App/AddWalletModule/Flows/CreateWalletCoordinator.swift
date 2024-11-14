@@ -28,7 +28,7 @@ public final class CreateWalletCoordinator: RouterCoordinator<ViewControllerRout
   }
 
   public override func start() {
-    let hasMnemonics = walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics()
+    let hasMnemonics = walletsUpdateAssembly.secureAssembly.mnemonicsRepository().hasMnemonics()
     let hasRegularWallet = { [walletsUpdateAssembly] in
       do {
         return try walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository().getKeeperInfo().wallets.contains(where: { $0.kind == .regular })
@@ -77,7 +77,7 @@ private extension CreateWalletCoordinator {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: self.router,
-      mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: walletsUpdateAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()

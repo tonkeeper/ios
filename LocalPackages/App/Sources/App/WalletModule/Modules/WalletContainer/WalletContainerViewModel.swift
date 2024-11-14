@@ -33,7 +33,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
         case .didChangeActiveWallet, 
             .didUpdateWalletMetaData, 
             .didUpdateWalletSetupSettings:
-          self.wallet = try? observer.walletsStore.getActiveWallet()
+          self.wallet = try? observer.walletsStore.activeWallet
         default: break
         }
       }
@@ -65,7 +65,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   }
   
   private func setInitialState() {
-    guard let wallet = try? walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? walletsStore.activeWallet else { return }
     self.wallet = wallet
   }
 }

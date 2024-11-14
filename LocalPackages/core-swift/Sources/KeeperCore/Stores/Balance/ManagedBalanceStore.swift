@@ -6,6 +6,7 @@ public struct ManagedBalance {
   public let tonItems: [ProcessedBalanceTonItem]
   public let pinnedItems: [ProcessedBalanceItem]
   public let unpinnedItems: [ProcessedBalanceItem]
+  public let batteryBalance: BatteryBalance?
   public let currency: Currency
   public let date: Date
   public let isManagable: Bool
@@ -25,11 +26,11 @@ public enum ManagedBalanceState {
   }
 }
 
-public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, ManagedBalanceStore.State> {
+public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, ManagedBalanceStore.State> {
   public typealias State = [Wallet: ManagedBalanceState]
   
   public enum Event {
-    case didUpdateManagedBalance(state: ManagedBalanceState, wallet: Wallet)
+    case didUpdateManagedBalance(wallet: Wallet)
   }
   
   private let balanceStore: ProcessedBalanceStore
@@ -43,17 +44,9 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
     setupObservers()
   }
   
-  public override var initialState: State {
-    let balanceStates = balanceStore.getState()
-    let tokenManagementState = tokenManagementStore.getState()
-    var state = State()
-    for wallet in balanceStates.keys {
-      state[wallet] = calculateState(
-        wallet: wallet,
-        balanceState: balanceStates[wallet] ?? .none,
-        tokenManagementState: tokenManagementState[wallet]
-      )
-    }
+  public override func createInitialState() -> State {
+    let balanceStates = balanceStore.state
+    let state = calculateState(wallets: balanceStates.keys.map { $0 as Wallet })
     return state
   }
   
@@ -67,56 +60,61 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
   }
   
   private func didGetBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateProccessedBalance(_, let wallet):
-        await updateState(wallet: wallet)
-      }
+    switch event {
+    case .didUpdateProccessedBalance(let wallet):
+      updateState(wallets: [wallet])
     }
   }
   
   private func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateStakingPools(_, let wallet):
-        await updateState(wallet: wallet)
-      }
+    switch event {
+    case .didUpdateStakingPools(let wallet):
+      updateState(wallets: [wallet])
     }
   }
   
   private func didGetTokenManagementStoreEvent(_ event: TokenManagementStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateState(let wallet):
-        await updateState(wallet: wallet)
-      }
+    switch event {
+    case .didUpdateState(let wallet):
+      updateState(wallets: [wallet])
     }
   }
   
-  private func updateState(wallet: Wallet) async {
-    var managedBalanceState: ManagedBalanceState?
-    await setState { state in
-      let balanceState = self.balanceStore.getState()[wallet]
-      let tokenManagementState = self.tokenManagementStore.getState()[wallet]
-      
-      var updatedState = state
-      managedBalanceState = self.calculateState(
-        wallet: wallet,
-        balanceState: balanceState ?? .none,
-        tokenManagementState: tokenManagementState
-      )
-      updatedState[wallet] = managedBalanceState
+  private func updateState(wallets: [Wallet]) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
+      let walletsState = calculateState(wallets: wallets)
+      let updatedState = state.merging(walletsState, uniquingKeysWith: { $1 })
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      guard let managedBalanceState else { return }
-      self.sendEvent(.didUpdateManagedBalance(state: managedBalanceState, wallet: wallet))
+    } completion: { [weak self] _ in
+      wallets.forEach { self?.sendEvent(.didUpdateManagedBalance(wallet: $0)) }
     }
+  }
+
+  private func calculateState(wallets: [Wallet]) -> State {
+    guard !wallets.isEmpty else { return [:] }
+    
+    let balanceState = self.balanceStore.state
+    let tokenManagementState = self.tokenManagementStore.state
+
+    var state = State()
+    for wallet in wallets {
+      guard let walletBalanceState = balanceState[wallet] else { continue }
+      let walletState = calculateState(
+        wallet: wallet,
+        balanceState: walletBalanceState,
+        tokenManagementState: tokenManagementState[wallet]
+      )
+      state[wallet] = walletState
+    }
+    
+    return state
   }
   
   private func calculateState(wallet: Wallet,
-                              balanceState: ProcessedBalanceState?,
+                              balanceState: ProcessedBalanceState,
                               tokenManagementState: TokenManagementState?) -> ManagedBalanceState? {
-    guard let balance = balanceState?.balance else { return nil }
+    let balance = balanceState.balance
     
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
     let stateHiddenItems = tokenManagementState?.hiddenState ?? [:]
@@ -133,10 +131,10 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
         if statePinnedItems.contains(balanceItem.identifier) {
           pinnedItems.append(balanceItem)
         } else {
-          let isHidden = {
-            stateHiddenItems[balanceItem.identifier] == true || (stateHiddenItems[balanceItem.identifier] == nil && balanceItem.isZeroBalance)
-          }()
+          let isHidden = stateHiddenItems[balanceItem.identifier] == true
+
           guard !isHidden else { continue }
+
           unpinnedItems.append(balanceItem)
         }
       }
@@ -187,6 +185,7 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
       tonItems: tonItems,
       pinnedItems: sortedPinnedItems,
       unpinnedItems: sortedUnpinnedItems,
+      batteryBalance: balance.batteryBalance,
       currency: balance.currency,
       date: balance.date,
       isManagable: (balance.jettonItems.count + balance.stakingItems.count) > 0
@@ -197,8 +196,6 @@ public final class ManagedBalanceStore: StoreV3<ManagedBalanceStore.Event, Manag
       return .current(managedBalance)
     case .previous:
       return .previous(managedBalance)
-    case .none:
-      return .none
     }
   }
 }

@@ -64,7 +64,7 @@ private extension PasscodeChangeCoordinator {
     passcodeInput.output.validateInput = { [weak self] input in
       guard let self else { return .failed }
       return await Task<PasscodeInputValidationResult, Never> {
-        let isValid = await self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().checkIfPasswordValid(
+        let isValid = await self.keeperCoreAssembly.secureAssembly.mnemonicsRepository().checkIfPasswordValid(
           input
         )
         return isValid ? .success : .failed
@@ -116,11 +116,11 @@ private extension PasscodeChangeCoordinator {
     passcodeInput.output.didFinish = { [weak self] passcode in
       guard let self else { return }
       Task {
-        try await self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().changePassword(
+        try await self.keeperCoreAssembly.secureAssembly.mnemonicsRepository().changePassword(
           oldPassword: oldPasscode,
           newPassword: newPasscode
         )
-        try? self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().deletePassword()
+        try? self.keeperCoreAssembly.secureAssembly.mnemonicsRepository().deletePassword()
         await self.keeperCoreAssembly.storesAssembly.securityStore.setIsBiometryEnable(false)
         await MainActor.run {
           self.didChangePasscode?()

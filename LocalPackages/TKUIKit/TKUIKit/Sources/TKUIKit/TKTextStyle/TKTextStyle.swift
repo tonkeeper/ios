@@ -55,6 +55,32 @@ public struct TKTextStyle: Hashable {
     
     return attributes
   }
+
+  public func getTabStyledAttributes(color: UIColor,
+                                     alignment: NSTextAlignment = .left,
+                                     lineBreakMode: NSLineBreakMode = .byTruncatingTail) -> [NSAttributedString.Key: Any] {
+    let paragraphStyle = NSMutableParagraphStyle()
+    let bulletSize = NSAttributedString(string: "•", attributes: [.font: font]).size()
+    let itemStart = bulletSize.width + 8
+    paragraphStyle.headIndent = itemStart
+    paragraphStyle.tabStops = [NSTextTab(textAlignment: .left, location: itemStart)]
+    paragraphStyle.minimumLineHeight = lineHeight
+    paragraphStyle.maximumLineHeight = lineHeight
+    paragraphStyle.alignment = alignment
+    paragraphStyle.lineBreakMode = lineBreakMode
+
+    var attributes: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: color,
+      .paragraphStyle: paragraphStyle,
+      .baselineOffset: baselineOffset,
+    ]
+    if underline {
+      attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+    }
+
+    return attributes
+  }
 }
 
 public extension TKTextStyle {

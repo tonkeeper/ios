@@ -112,6 +112,41 @@ public extension TonConnect.TonProofItemReplySuccess.Proof {
   }
 }
 
+public extension TonConnect.Signature {
+  func data() -> Data {
+    let string = "ton-proof-item-v2/".data(using: .utf8)!
+    let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
+    
+    let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
+      Data(a)
+    }
+    let addressHash = address.hash
+    let domainLength = withUnsafeBytes(of: UInt32(littleEndian: domain.lengthBytes)) { a in
+      Data(a)
+    }
+    let domainValue = domain.value.data(using: .utf8)!
+    let timestamp = withUnsafeBytes(of: UInt64(littleEndian: timestamp)) { a in
+      Data(a)
+    }
+    let payload = payload.data(using: .utf8)!
+    
+    return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
+  }
+  
+  func signature() throws -> Data {
+    let signatureMessageData = data()
+    let signatureMessage = signatureMessageData.sha256()
+    let prefixData: Data = Data(hex: "ffff")
+    let tonConnectData = "ton-connect".data(using: .utf8) ?? Data()
+    let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
+    let signature = try TweetNacl.NaclSign.signDetached(
+      message: signatureData,
+      secretKey: privateKey.data
+    )
+    return signature
+  }
+}
+
 extension TonConnect.SendTransactionResponse: Encodable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
@@ -123,3 +158,4 @@ extension TonConnect.SendTransactionResponse: Encodable {
     }
   }
 }
+

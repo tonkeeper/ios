@@ -48,7 +48,6 @@ private extension DecimalAmountFormatter {
                                       maximumNotZeroFractionalCount: Int) -> Int {
     let fractionLength = abs(amount.exponent)
     if fractionLength == 0 { return 0 }
-    let integerNumber = NSDecimalNumber(decimal: amount.rounded())
     let fractionalNumber = NSDecimalNumber(decimal: amount.fraction).multiplying(byPowerOf10: Int16(fractionLength))
     return (fractionLength - fractionalNumber.stringValue.count) + min(maximumNotZeroFractionalCount, fractionLength)
   }

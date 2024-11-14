@@ -5,19 +5,23 @@ public final class TKListItemButton: UIControl {
   public struct Configuration {
     public let listItemConfiguration: TKListItemContentView.Configuration
     public let accessory: TKListItemAccessory?
+    public let isEnable: Bool
     public let tapClosure: (() -> Void)?
     
     public init(listItemConfiguration: TKListItemContentView.Configuration,
                 accessory: TKListItemAccessory? = nil,
+                isEnable: Bool,
                 tapClosure: (() -> Void)?) {
       self.listItemConfiguration = listItemConfiguration
       self.accessory = accessory
+      self.isEnable = isEnable
       self.tapClosure = tapClosure
     }
   }
   
   public var configuration = Configuration(
     listItemConfiguration: .default,
+    isEnable: false,
     tapClosure: nil
   ) {
     didSet {
@@ -30,6 +34,12 @@ public final class TKListItemButton: UIControl {
   public override var isHighlighted: Bool {
     didSet {
       hightlightView.isHighlighted = isHighlighted
+    }
+  }
+  
+  public override var isEnabled: Bool {
+    didSet {
+      alpha = isEnabled ? 1 : 0.48
     }
   }
   
@@ -82,7 +92,8 @@ public final class TKListItemButton: UIControl {
   private func didUpdateConfiguration() {
     listItemView.configuration = configuration.listItemConfiguration
     tapClosure = configuration.tapClosure
-    isUserInteractionEnabled = configuration.tapClosure != nil
+    isUserInteractionEnabled = configuration.tapClosure != nil && configuration.isEnable
+    isEnabled = configuration.isEnable
     
     accessoryContainer.subviews.forEach { $0.removeFromSuperview() }
     if let accessoryView = configuration.accessory?.view {

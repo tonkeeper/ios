@@ -71,13 +71,13 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
   // MARK: - Dependencies
   
   private let popularAppsService: PopularAppsService
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let searchEngineService: SearchEngineServiceProtocol
 
   // MARK: - Init
   
   init(popularAppsService: PopularAppsService,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        searchEngineService: SearchEngineServiceProtocol) {
     self.popularAppsService = popularAppsService
     self.appSettingsStore = appSettingsStore
@@ -122,7 +122,7 @@ private extension BrowserSearchViewModelImplementation {
     if !searchSuggestions.isEmpty {
       let headerModel = BrowserSearchListSectionHeaderView.Model(
         titleModel: TKListTitleView.Model(
-          title: appSettingsStore.initialState.searchEngine.searchTitle,
+          title: appSettingsStore.state.searchEngine.searchTitle,
           textStyle: .label1
         )
       )
@@ -213,7 +213,7 @@ private extension BrowserSearchViewModelImplementation {
   func searchSuggestions(input: String) async {
     try? await Task.sleep(nanoseconds: 500_000_000)
     guard !Task.isCancelled else { return }
-    let searchEngine = await appSettingsStore.getState().searchEngine
+    let searchEngine = appSettingsStore.state.searchEngine
     do {
       let suggestions = try await searchEngineService.loadSuggestions(
         searchText: input,

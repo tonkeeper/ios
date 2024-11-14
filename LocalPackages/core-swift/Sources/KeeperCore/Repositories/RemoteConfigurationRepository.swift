@@ -7,23 +7,23 @@ enum RemoteConfigurationRepositoryError: Swift.Error {
 }
 
 protocol RemoteConfigurationRepository {
-  var configuration: RemoteConfiguration { get throws }
-  
-  func saveConfiguration(_ configuration: RemoteConfiguration) throws
+  var configuration: RemoteConfigurations { get throws }
+
+  func saveConfiguration(_ configuration: RemoteConfigurations) throws
 }
 
 struct RemoteConfigurationRepositoryImplementation: RemoteConfigurationRepository {
-  let fileSystemVault: FileSystemVault<RemoteConfiguration, String>
-  
-  init(fileSystemVault: FileSystemVault<RemoteConfiguration, String>) {
+  let fileSystemVault: FileSystemVault<RemoteConfigurations, String>
+
+  init(fileSystemVault: FileSystemVault<RemoteConfigurations, String>) {
     self.fileSystemVault = fileSystemVault
   }
   
-  func saveConfiguration(_ configuration: RemoteConfiguration) throws {
+  func saveConfiguration(_ configuration: RemoteConfigurations) throws {
     try fileSystemVault.saveItem(configuration, key: .fileVaultConfigurationKey)
   }
   
-  var configuration: RemoteConfiguration {
+  var configuration: RemoteConfigurations {
     get throws {
       if let configuration = try? fileSystemVault.loadItem(key: .fileVaultConfigurationKey) {
         return configuration
@@ -36,7 +36,7 @@ struct RemoteConfigurationRepositoryImplementation: RemoteConfigurationRepositor
       
       let decoder = JSONDecoder()
       do {
-        let configuration = try decoder.decode(RemoteConfiguration.self, from: data)
+        let configuration = try decoder.decode(RemoteConfigurations.self, from: data)
         return configuration
       } catch {
         throw RemoteConfigurationRepositoryError.defaultConfigurationCorrupted(error: error)
@@ -46,6 +46,6 @@ struct RemoteConfigurationRepositoryImplementation: RemoteConfigurationRepositor
 }
 
 private extension String {
-  static let fileVaultConfigurationKey = "RemoteConfiguration"
+  static let fileVaultConfigurationKey = "RemoteConfigurations"
   static let defaultConfigurationFileName = "DefaultRemoteConfiguration.json"
 }

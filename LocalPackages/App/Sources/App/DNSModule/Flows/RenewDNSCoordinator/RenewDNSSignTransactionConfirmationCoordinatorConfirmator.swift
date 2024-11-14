@@ -16,7 +16,7 @@ struct RenewDNSSignTransactionConfirmationCoordinatorConfirmator: SignTransactio
     self.sendService = sendService
   }
   
-  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferData) async throws -> String?) async throws {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let amount = OP_AMOUNT.CHANGE_DNS_RECORD
@@ -27,26 +27,27 @@ struct RenewDNSSignTransactionConfirmationCoordinatorConfirmator: SignTransactio
       throw SignTransactionConfirmationCoordinatorConfirmatorError.indexerOffline
     }
     
-    let boc = try await TransferMessageBuilder(
-      transferData: .changeDNSRecord(
-        .renew(
+    let transferData = TransferData(
+      transfer: .changeDNSRecord(
+        TransferData.ChangeDNSRecord.renew(
           TransferData.ChangeDNSRecord.RenewDNS(
-            seqno: seqno,
             nftAddress: nft.address,
-            linkAmount: amount,
-            timeout: timeout
+            linkAmount: amount
           )
         )
-      )
-    ).createBoc { transferMessageBuilder in
-      guard let signedBoc = try await signClosure(transferMessageBuilder) else {
-        throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
-      }
-      return signedBoc
+      ),
+      wallet: wallet,
+      messageType: .ext,
+      seqno: seqno,
+      timeout: timeout
+    )
+        
+    guard let signedBoc = try await signClosure(transferData) else {
+      throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
     }
-
+    
     do {
-      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      try await sendService.sendTransaction(boc: signedBoc, wallet: wallet)
       NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
       throw error

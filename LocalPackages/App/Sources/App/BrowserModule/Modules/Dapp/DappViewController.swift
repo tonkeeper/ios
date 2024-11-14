@@ -2,17 +2,20 @@ import UIKit
 import TKUIKit
 import TKScreenKit
 import SnapKit
-  import TKCore
+import TKCore
+import KeeperCore
 
 final class DappViewController: UIViewController {
   private let viewModel: DappViewModel
   private let analyticsProvider: AnalyticsProvider
   
   private var bridgeWebViewController: TKBridgeWebViewController?
+  private let deeplinkHandler: (_ deeplink: Deeplink) -> Void
 
-  init(viewModel: DappViewModel, analyticsProvider: AnalyticsProvider) {
+  init(viewModel: DappViewModel, analyticsProvider: AnalyticsProvider, deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void) {
     self.viewModel = viewModel
     self.analyticsProvider = analyticsProvider
+    self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -44,8 +47,12 @@ private extension DappViewController {
         initialURL: url,
         initialTitle: title,
         jsInjection: self.viewModel.jsInjection,
-        configuration: .default
-      )
+        configuration: .default,
+        deeplinkHandler: { url in
+          let deeplinkParser = DeeplinkParser()
+          let deeplink = try deeplinkParser.parse(string: url)
+          self.deeplinkHandler(deeplink)
+        })
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
         self?.viewModel.didLoadInitialRequest()
       }

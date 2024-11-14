@@ -1,10 +1,10 @@
 import Foundation
 
-public final class StakingPoolsStore: StoreV3<StakingPoolsStore.Event, StakingPoolsStore.State> {
+public final class StakingPoolsStore: Store<StakingPoolsStore.Event, StakingPoolsStore.State> {
   public typealias State = [Wallet: [StackingPoolInfo]]
   
   public enum Event {
-    case didUpdateStakingPools(stakingPools: [StackingPoolInfo], wallet: Wallet)
+    case didUpdateStakingPools(wallet: Wallet)
   }
   
   private let walletsStore: WalletsStore
@@ -17,7 +17,7 @@ public final class StakingPoolsStore: StoreV3<StakingPoolsStore.Event, StakingPo
     super.init(state: [:])
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     let wallets = walletsStore.wallets
     var state = State()
     wallets.forEach { wallet in
@@ -27,14 +27,26 @@ public final class StakingPoolsStore: StoreV3<StakingPoolsStore.Event, StakingPo
     return state
   }
   
-  public func setStackingPools(_ pools: [StackingPoolInfo], wallet: Wallet) async {
-    await setState { [repository] state in
+  public func setStackingPools(_ pools: [StackingPoolInfo],
+                               wallet: Wallet) async {
+    return await withCheckedContinuation { continuation in
+      setStackingPools(pools, wallet: wallet) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func setStackingPools(_ pools: [StackingPoolInfo],
+                               wallet: Wallet,
+                               completion: @escaping () -> Void) {
+    updateState { [repository] state in
       var updatedState = state
       updatedState[wallet] = pools
       try? repository.setStakingPoolsInfo(pools, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      self.sendEvent(.didUpdateStakingPools(stakingPools: pools, wallet: wallet))
+    } completion: { [weak self] _ in
+      self?.sendEvent(.didUpdateStakingPools(wallet: wallet))
+      completion()
     }
   }
 }

@@ -4,6 +4,16 @@ import TonSwift
 import BigInt
 import CryptoKit
 
+public struct LedgerTransfer {
+  public let signingMessage: Builder
+  public let package: Data
+  
+  public init(signingMessage: Builder, package: Data) {
+    self.signingMessage = signingMessage
+    self.package = package
+  }
+}
+
 public class TonTransport {
   private let transport: BleTransportProtocol
   private let lockQueue = DispatchQueue(label: "TonTransportQueue")
@@ -124,16 +134,11 @@ public class TonTransport {
     return LedgerAccount(publicKey: publicKey, revision: .v4R2, path: path)
   }
   
-  public func signTransaction(path: AccountPath, transaction: Transaction) async throws -> Cell {
-    let account = try await getAccount(path: path)
-    let publicKey = account.publicKey
-    
-    let timeout = transaction.timeout ?? UInt64(Date().timeIntervalSince1970) + 60
-    
+  public static func buildTransfer(transaction: Transaction) throws -> LedgerTransfer {
     var pkg = [UInt8]()
     pkg += putUint8(0)
     pkg += putUint32(transaction.seqno)
-    pkg += putUint32(timeout)
+    pkg += putUint32(transaction.timeout)
     pkg += try putVarUInt(transaction.coins.rawValue)
     pkg += putAddress(transaction.destination)
     pkg += putUint8(transaction.bounceable ? 1 : 0)
@@ -241,6 +246,221 @@ public class TonTransport {
       payload = try builder.endCell()
       hints += putUint16(bytes.count) + bytes
       
+      // Jetton Burn
+    case .jettonBurn(let burnPayload):
+      hints = putUint8(1) + putUint32(0x03)
+      let builder = try Builder().store(uint: 0x595f07bc, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = burnPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += try putVarUInt(burnPayload.coins.rawValue) + putAddress(burnPayload.responseDestination)
+      try burnPayload.coins.storeTo(builder: builder)
+      try burnPayload.responseDestination.storeTo(builder: builder)
+      
+      if let customPayload = burnPayload.customPayload {
+        switch customPayload {
+        case .cellPayload(let cell):
+          bytes += putUint8(1) + putCellRef(cell)
+          try builder.storeMaybe(ref: cell)
+        case .byteArrayPayload(let customPayloadBytes):
+          bytes += putUint8(2) + putUint8(UInt8(customPayloadBytes.count)) + customPayloadBytes
+          try builder.storeMaybe(ref: try Builder().store(data: customPayloadBytes).endCell())
+        }
+      } else {
+        bytes += putUint8(0)
+        try builder.store(bit: false)
+      }
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Add Whitelist
+    case .addWhitelist(let whitelistPayload):
+      hints = putUint8(1) + putUint32(0x04)
+      let builder = try Builder().store(uint: 0x7258a69b, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = whitelistPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += putAddress(whitelistPayload.address)
+      try whitelistPayload.address.storeTo(builder: builder)
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+    case .changeDNSRecord(let dnsPayload):
+      hints = putUint8(1) + putUint32(0x09)
+      let builder = try Builder().store(uint: 0x4eb1f0f9, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = dnsPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      switch dnsPayload.record {
+      case .wallet(let walletRecord):
+        try builder.store(data: "wallet".data(using: .utf8)!.sha256())
+        if let wallet = walletRecord {
+          bytes += putUint8(1) + putUint8(0) + putAddress(wallet.address)
+          try wallet.address.storeTo(builder: builder)
+          
+          if let capabilities = wallet.capabilities {
+            bytes += putUint8(1)
+            try builder.store(bit: capabilities.isWallet)
+            if capabilities.isWallet {
+              try builder.store(uint: 0x2177, bits: 16)
+            }
+          } else {
+            bytes += putUint8(0)
+          }
+        } else {
+          bytes += putUint8(0) + putUint8(0)
+        }
+      case .unknown(let key, let value):
+          if key.count != 32 {
+            throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "DNS record key length must be 32 bytes long"])
+          }
+          try builder.store(data: key)
+          bytes += putUint8(value != nil ? 1 : 0) + putUint8(1)
+          if let recordValue = value {
+              bytes += putCellRef(recordValue)
+              try builder.storeMaybe(ref: recordValue)
+          }
+      }
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Single Nominator Change Validator
+    case .singleNominatorChangeValidator(let nominatorPayload):
+      hints = putUint8(1) + putUint32(0x06)
+      let builder = try Builder().store(uint: 0x1001, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = nominatorPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += putAddress(nominatorPayload.address)
+      try nominatorPayload.address.storeTo(builder: builder)
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Single Nominator Withdraw
+    case .singleNominatorWithdraw(let withdrawPayload):
+      hints = putUint8(1) + putUint32(0x05)
+      let builder = try Builder().store(uint: 0x1000, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = withdrawPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += try putVarUInt(withdrawPayload.coins.rawValue)
+      try withdrawPayload.coins.storeTo(builder: builder)
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Token Bridge Pay Swap
+    case .tokenBridgePaySwap(let swapPayload):
+      hints = putUint8(1) + putUint32(0x0A)
+      let builder = try Builder().store(uint: 0x8, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = swapPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      if swapPayload.swapId.count != 32 {
+        throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Swap ID must be 32 bytes long"])
+      }
+      bytes += swapPayload.swapId
+      try builder.store(data: swapPayload.swapId)
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Tonstakers Deposit
+    case .tonstakersDeposit(let depositPayload):
+      hints = putUint8(1) + putUint32(0x07)
+      let builder = try Builder().store(uint: 0x47d54391, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = depositPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      if let appId = depositPayload.appId {
+        bytes += putUint8(1) + (try putUint64(appId))
+        try builder.store(uint: appId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+      }
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+      // Vote for Proposal
+    case .voteForProposal(let votePayload):
+      hints = putUint8(1) + putUint32(0x08)
+      let builder = try Builder().store(uint: 0x69fb306c, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = votePayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += putAddress(votePayload.votingAddress) + (try putUint48(votePayload.expirationDate)) + putUint8(votePayload.vote ? 1 : 0) + putUint8(votePayload.needConfirmation ? 1 : 0)
+      try votePayload.votingAddress.storeTo(builder: builder)
+      try builder.store(uint: votePayload.expirationDate, bits: 48)
+      try builder.store(bit: votePayload.vote)
+      try builder.store(bit: votePayload.needConfirmation)
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
+      
+    case .unsafe(let unsafePayload):
+      payload = unsafePayload
+      
     case .none: break
     }
     
@@ -249,13 +469,6 @@ public class TonTransport {
     } else {
       pkg += putUint8(0) + putUint8(0)
     }
-    
-    _ = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x03, data: path.data)
-    let pkgChunks = chunks(buf: Data(pkg), n: 255)
-    for chunk in pkgChunks.dropLast() {
-      _ = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x02, data: Data(chunk))
-    }
-    let res = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x00, data: Data(pkgChunks.last!))
     
     let orderBuilder = try Builder()
       .store(bit: false)
@@ -286,18 +499,57 @@ public class TonTransport {
     
     let transfer = try Builder()
       .store(uint: 698983191, bits: 32)
-      .store(uint: timeout, bits: 32)
+      .store(uint: transaction.timeout, bits: 32)
       .store(uint: transaction.seqno, bits: 32)
       .store(uint: 0, bits: 8)
       .store(uint: transaction.sendMode.rawValue, bits: 8)
       .store(ref: orderBuilder.endCell())
-      .endCell()
+    
+    return LedgerTransfer(signingMessage: transfer, package: Data(pkg))
+  }
+  
+  public func signAddressProof(path: AccountPath, domain: String, timestamp: UInt64, payload: String) async throws -> Data {
+    let publicKey = try await getAccount(path: path).publicKey
+    
+    let domainData = domain.data(using: .utf8)!
+    let timestampData = Data(try TonTransport.putUint64(BigUInt(timestamp)))
+    let payloadData = payload.data(using: .utf8)!
+    
+    let pkg: Data = path.data + Data(TonTransport.putUint8(UInt8(domainData.count))) + domainData + timestampData + payloadData
+    
+    let res = try await doRequest(ins: TonTransport.INS_PROOF, p1: 0x01, p2: 0x00, data: pkg)
+    let signature = res.subdata(in: 1..<65)
+    let hash = res.subdata(in: (2 + 64)..<(2 + 64 + 32))
+    
+    let isValidSignature = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey.data).isValidSignature(signature, for: hash)
+    
+    if !isValidSignature {
+      throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Received signature is invalid"])
+    }
+    
+    return signature
+  }
+  
+  public func signTransaction(path: AccountPath, transaction: Transaction) async throws -> Data {
+    let account = try await getAccount(path: path)
+    let publicKey = account.publicKey
+    
+    let transfer: LedgerTransfer = try TonTransport.buildTransfer(transaction: transaction)
+    
+    let signingMessage = try transfer.signingMessage.endCell()
+    
+    _ = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x03, data: path.data)
+    let pkgChunks = chunks(buf: transfer.package, n: 255)
+    for chunk in pkgChunks.dropLast() {
+      _ = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x02, data: Data(chunk))
+    }
+    let res = try await doRequest(ins: TonTransport.INS_SIGN_TX, p1: 0x00, p2: 0x00, data: Data(pkgChunks.last!))
     
     let signature = res.subdata(in: 1..<65)
     let hash = res.subdata(in: 66..<98)
     
-    if !hash.elementsEqual(transfer.hash()) {
-      throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Hash mismatch. Expected: \(transfer.hash().hexString()), got: \(hash.hexString())"])
+    if !hash.elementsEqual(signingMessage.hash()) {
+      throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Hash mismatch. Expected: \(signingMessage.hash().hexString()), got: \(hash.hexString())"])
     }
     
     let isValidSignature = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey.data).isValidSignature(signature, for: hash)
@@ -306,44 +558,45 @@ public class TonTransport {
       throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Received signature is invalid"])
     }
     
-    return try Builder()
-      .store(data: signature)
-      .store(slice: transfer.beginParse())
-      .endCell()
+    return signature
   }
 }
 
 private extension TonTransport {
-  func putUint32(_ value: UInt64) -> [UInt8] {
+  static func putUint32(_ value: UInt64) -> [UInt8] {
     let byteArray = withUnsafeBytes(of: value.bigEndian, Array.init)
     return Array(byteArray.suffix(4))
   }
   
-  func putUint16(_ value: Int) -> [UInt8] {
+  static func putUint16(_ value: Int) -> [UInt8] {
     let byteArray = withUnsafeBytes(of: UInt16(value).bigEndian, Array.init)
     return Array(byteArray.suffix(2))
   }
   
-  func putUint64(_ value: BigUInt) throws -> [UInt8] {
+  static func putUint48(_ value: BigUInt) throws -> [UInt8] {
+    return try Builder().store(biguint: value, bits: 48).endCell().bits.bitsToPaddedBuffer().toByteArray()
+  }
+  
+  static func putUint64(_ value: BigUInt) throws -> [UInt8] {
     return try Builder().store(biguint: value, bits: 64).endCell().bits.bitsToPaddedBuffer().toByteArray()
   }
   
-  func putVarUInt(_ value: BigUInt) throws -> [UInt8] {
+  static func putVarUInt(_ value: BigUInt) throws -> [UInt8] {
     let sizeBytes = value == 0 ? 0 : Int(ceil(Double(value.bitWidth) / 8.0))
     let cell = try Builder().store(uint: sizeBytes, bits: 8).store(uint: value, bits: sizeBytes * 8).endCell()
     return try cell.beginParse().loadBits(8 + sizeBytes * 8).bitsToPaddedBuffer().toByteArray()
   }
   
-  func putUint8(_ value: UInt8) -> [UInt8] {
+  static func putUint8(_ value: UInt8) -> [UInt8] {
     return [value]
   }
   
-  func putAddress(_ address: Address) -> [UInt8] {
+  static func putAddress(_ address: Address) -> [UInt8] {
     let workchainIdByte = address.workchain == -1 ? UInt8(0xff) : UInt8(address.workchain)
     return putUint8(workchainIdByte) + address.hash.toByteArray()
   }
   
-  func putCellRef(_ ref: Cell) -> [UInt8] {
+  static func putCellRef(_ ref: Cell) -> [UInt8] {
     return putUint16(Int(ref.depth())) + ref.hash()
   }
 }

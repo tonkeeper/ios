@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class NFTStore: StoreV3<NFTStore.Event, NFTStore.State> {
+public final class NFTStore: Store<NFTStore.Event, NFTStore.State> {
   public typealias State = Void
   public enum Event {
     case didUpdateNFT(nft: NFT)
@@ -14,16 +14,24 @@ public final class NFTStore: StoreV3<NFTStore.Event, NFTStore.State> {
     super.init(state: Void())
   }
   
-  public override var initialState: State {
+  public override func createInitialState() -> State {
     Void()
   }
   
   public func setNFT(_ nft: NFT) async {
-    await setState { [repository] _ in
+    await withCheckedContinuation { continuation in
+      setNFT(nft) {
+        continuation.resume()
+      }
+    }
+  }
+  
+  public func setNFT(_ nft: NFT, completion: (() -> Void)?) {
+    updateState { [repository] _  in
       try? repository.saveNFT(nft, key: nft.address.toRaw())
       return StateUpdate(newState: Void())
-    } notify: { _ in
-      self.sendEvent(.didUpdateNFT(nft: nft))
+    } completion: { [weak self] _ in
+      self?.sendEvent(.didUpdateNFT(nft: nft))
     }
   }
 }

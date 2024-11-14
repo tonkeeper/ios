@@ -3,9 +3,11 @@ import AVFoundation
 import KeeperCore
 import TKCore
 import UIKit
+import URKit
 
 protocol ScannerViewModuleOutput: AnyObject {
   var didScanDeeplink: ((Deeplink) -> Void)? { get set }
+  var didScanUR: ((UR) throws -> Void)? { get set }
 }
 
 protocol ScannerViewModel: AnyObject {
@@ -49,6 +51,7 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   // MARK: - ScannerViewModuleOutput
   
   var didScanDeeplink: ((Deeplink) -> Void)?
+  var didScanUR: ((UR) throws -> Void)?
   
   // MARK: - ScannerViewModel
   
@@ -233,12 +236,24 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
           let stringValue = metadataObject.stringValue
     else { return }
     do {
-      let deeplink = try scannerController.handleScannedQRCode(stringValue)
-      self.captureSession.stopRunning()
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      DispatchQueue.main.async {
-        self.didScanDeeplink?(deeplink)
+      if (self.didScanDeeplink != nil) {
+        let deeplink = try scannerController.handleScannedQRCode(stringValue)
+        self.captureSession.stopRunning()
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        DispatchQueue.main.async {
+          self.didScanDeeplink?(deeplink)
+        }
+      } else if (self.didScanUR != nil) {
+        let ur = try scannerController.handleScannedQRCodeUR(stringValue)
+        self.captureSession.stopRunning()
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        DispatchQueue.main.async {
+          do {
+            try self.didScanUR?(ur)
+          } catch {}
+        }
       }
+      return
     } catch {
       return
     }

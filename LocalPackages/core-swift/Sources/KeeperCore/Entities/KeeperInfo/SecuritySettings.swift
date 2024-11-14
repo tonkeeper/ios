@@ -4,6 +4,11 @@ import Foundation
 public struct SecuritySettings: Equatable {
   public let isBiometryEnabled: Bool
   public let isLockScreen: Bool
+  
+  public init(isBiometryEnabled: Bool, isLockScreen: Bool) {
+    self.isBiometryEnabled = isBiometryEnabled
+    self.isLockScreen = isLockScreen
+  }
 }
 
 extension SecuritySettings: Codable {

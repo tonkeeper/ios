@@ -45,6 +45,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-globe-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var fireBadge: UIImage {
+          .imageWithName("Icons/16/ic-fire-badge-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var ellipses: UIImage {
           .imageWithName("Icons/16/ic-ellipsis-16")
           .withRenderingMode(.alwaysTemplate)
@@ -140,10 +144,22 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-link-small-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var flash: UIImage {
+          .imageWithName("Icons/16/ic-flash-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var battery: UIImage {
+          .imageWithName("Icons/16/ic-battery-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
           .imageWithName("Icons/28/ic-qr-viewfinder-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var battery: UIImage {
+          .imageWithName("Icons/28/ic-battery-28")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var linkOutline: UIImage {
@@ -294,6 +310,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-signer-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var keystone: UIImage {
+          .imageWithName("Icons/28/ic-keystone-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var eyeClosedOutline: UIImage {
           .imageWithName("Icons/28/ic-eye-closed-outline-28")
           .withRenderingMode(.alwaysTemplate)
@@ -369,6 +389,9 @@ public extension UIImage {
         
         public static var tonWhalesLogo: UIImage {
           .imageWithName("Icons/44/ic-tonwhales-44")
+        }
+        public static var tonkeeperLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonkeeper-44")
         }
       }
       public enum Size56 {
@@ -481,6 +504,12 @@ public extension UIImage {
       public enum Size128 {
         public static var lock: UIImage {
           .imageWithName("Icons/128/ic-lock-128")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
+      public enum Vector {
+        public static var flash: UIImage {
+          .imageWithName("Icons/Vector/ic-flash-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }

@@ -31,7 +31,8 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
+        
         let token: Token
         if let jettonAddress {
           let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
@@ -127,14 +128,14 @@ extension MainCoordinator {
   func openBuyDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openBuy(wallet: wallet)
   }
   
   func openStakingDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openStake(wallet: wallet)
   }
   
@@ -150,7 +151,7 @@ extension MainCoordinator {
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
         let stakingPools = try await stakingService.loadStakingPools(wallet: wallet)
         await stakingStore.setStackingPools(stakingPools, wallet: wallet)
         guard let stakingPool = stakingPools.first(where: { $0.address == poolAddress }) else {
@@ -238,16 +239,16 @@ extension MainCoordinator {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     
-    let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
+    let buySellService = keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
+    let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
     
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
-        let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret
-        let currency = await currencyStore.getState()
+        let wallet = try walletsStore.activeWallet
+        let mercuryoSecret = await configuration.mercuryoSecret
+        let currency = currencyStore.getState()
         
         let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
         guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
@@ -286,7 +287,7 @@ extension MainCoordinator {
   func openSwapDeeplink(fromToken: String?, toToken: String?) {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
     openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
   
@@ -302,7 +303,7 @@ extension MainCoordinator {
   
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try await walletsStore.getActiveWallet()
+        let wallet = try walletsStore.activeWallet
         let event = try await service.loadEvent(wallet: wallet, eventId: eventId)
         guard let action = event.actions.first else {
           await MainActor.run {
@@ -335,5 +336,27 @@ extension MainCoordinator {
     }
     
     self.deeplinkHandleTask = deeplinkHandleTask
+  }
+  
+  func handleBatteryDeeplink(_ payload: Deeplink.Battery) {
+    let service = keeperCoreMainAssembly.batteryAssembly.batteryService()
+    let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
+    let walletStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    
+    guard let wallet = try? walletStore.activeWallet else { return }
+    
+    if let promocode = payload.promocode {
+      Task {
+        await promocodeStore.setResolveState(.resolving(promocode: promocode))
+        do {
+          try await service.verifyPromocode(wallet: wallet, promocode: promocode)
+          await promocodeStore.setResolveState(.success(promocode: promocode))
+        } catch {
+          await promocodeStore.setResolveState(.failed(promocode: promocode))
+        }
+      }
+    }
+    
+    self.openBattery(wallet: wallet)
   }
 }

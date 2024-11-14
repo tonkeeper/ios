@@ -4,11 +4,13 @@ import TKUIKit
 import TKCore
 import TKLocalize
 import KeeperCore
+import CoreComponents
 import TKLocalize
 import TKStories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -36,9 +38,9 @@ private extension SettingsCoordinator {
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
       anaylticsProvider: coreAssembly.analyticsProvider
     )
@@ -93,6 +95,10 @@ private extension SettingsCoordinator {
       self?.addV4Wallet(wallet: wallet)
     }
     
+    configurator.didTapBattery = { [weak self] wallet in
+      self?.didTapBattery?(wallet)
+    }
+    
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
@@ -102,6 +108,10 @@ private extension SettingsCoordinator {
     }
     
     let module = SettingsListAssembly.module(configurator: configurator)
+    
+    module.output.didOpenDevMenu = { [weak self] in
+      self?.openDevMenu()
+    }
     
     module.viewController.setupBackButton()
     
@@ -221,7 +231,7 @@ private extension SettingsCoordinator {
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
-      await walletsStore.setWallet(
+      await walletsStore.updateWalletMetaData(
         wallet,
         metaData: WalletMetaData(customizeWalletModel: model)
       )
@@ -267,7 +277,7 @@ private extension SettingsCoordinator {
   func openSecurity() {
     let configuration = SettingsListSecurityConfigurator(
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       biometryProvider: BiometryProvider()
     )
     
@@ -435,8 +445,56 @@ private extension SettingsCoordinator {
     return await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: router,
-      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
+  }
+  
+  func openDevMenu() {
+    let configuration = SettingsListDevMenuConfigurator(
+      uniqueIdProvider: coreAssembly.uniqueIdProvider
+    )
+    let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
+    let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()
+    configuration.didSelectRNWalletsSeedPhrases = {
+      Task { @MainActor [weak self] in
+        guard let self,
+        let passcode = await self.getPasscode() else { return }
+        
+        let rnWalletsStore: RNWalletsStore? = try? await rnAsyncStorage.getValue(key: "walletsStore")
+        let rnWallets = rnWalletsStore?.wallets ?? []
+        let rnWalletsItems = rnWallets.map { SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
+          name: $0.name, identifier: $0.identifier
+        )}
+        let wallets = (try? keeperInfoRepository.getKeeperInfo().wallets) ?? []
+        let walletsItems = wallets.map {
+          SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
+            name: $0.metaData.label, identifier: $0.id
+          )
+        }
+        
+        let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
+        guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
+          return
+        }
+        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: Array(Set(rnWalletsItems + walletsItems)))
+      }
+    }
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
+  }
+  
+  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem]) {
+    let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
+      mnemonics: mnemonics,
+      wallets: wallets
+    )
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
   }
 }

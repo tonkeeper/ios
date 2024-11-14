@@ -12,6 +12,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -25,6 +26,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -39,6 +41,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -55,7 +58,8 @@ extension KeeperInfo {
       setupSettings: wallet.setupSettings,
       notificationSettings: wallet.notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }
@@ -69,7 +73,8 @@ extension KeeperInfo {
       setupSettings: setupSettings,
       notificationSettings: wallet.notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }
@@ -83,7 +88,23 @@ extension KeeperInfo {
       setupSettings: wallet.setupSettings,
       notificationSettings: notificationSettings,
       backupSettings: wallet.backupSettings,
-      addressBook: wallet.addressBook
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings
+    )
+    return (updateWallet(updatedWallet), updatedWallet)
+  }
+  
+  func updateWallet(_ wallet: Wallet,
+                    batterySettings: BatterySettings) -> (keeperInfo: KeeperInfo, wallet: Wallet) {
+    let updatedWallet = Wallet(
+      id: wallet.id,
+      identity: wallet.identity,
+      metaData: wallet.metaData,
+      setupSettings: wallet.setupSettings,
+      notificationSettings: wallet.notificationSettings,
+      backupSettings: wallet.backupSettings,
+      addressBook: wallet.addressBook,
+      batterySettings: batterySettings
     )
     return (updateWallet(updatedWallet), updatedWallet)
   }
@@ -120,6 +141,22 @@ extension KeeperInfo {
     return updateWallets(updatedWallets)
   }
   
+  func updateWalletBackupDate(_ wallet: Wallet, backupDate: Date?) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: backupDate,
+      isSetupFinished: wallet.setupSettings.isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
+  func updateWalletIsSetupFinished(_ wallet: Wallet, isSetupFinished: Bool) -> KeeperInfo {
+    let setupSettings = WalletSetupSettings(
+      backupDate: wallet.setupSettings.backupDate,
+      isSetupFinished: isSetupFinished
+    )
+    return updateWallet(wallet, setupSettings: setupSettings).keeperInfo
+  }
+  
   // MARK: - Currency
   
   func updateCurrency(_ currency: Currency) -> KeeperInfo {
@@ -130,6 +167,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
       country: self.country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -143,6 +181,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
       country: region,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -160,6 +199,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: appSettings,
       country: self.country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -198,6 +238,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -216,6 +257,7 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -266,6 +308,7 @@ extension KeeperInfo {
       securitySettings: securitySettings,
       appSettings: self.appSettings,
       country: country,
+      batterySettings: self.batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -279,6 +322,21 @@ extension KeeperInfo {
       securitySettings: self.securitySettings,
       appSettings: appSettings,
       country: country,
+      batterySettings: self.batterySettings,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+  
+  public func updateBatterySettings(_ batterySettings: BatterySettings) -> KeeperInfo {
+    KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: self.currency,
+      securitySettings: self.securitySettings,
+      appSettings: self.appSettings,
+      country: self.country,
+      batterySettings: batterySettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )

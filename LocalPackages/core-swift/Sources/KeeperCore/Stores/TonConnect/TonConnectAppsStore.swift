@@ -117,6 +117,10 @@ public final class TonConnectAppsStore {
     try tonConnectService.getConnectedApps(forWallet: wallet)
   }
   
+  public func deleteConnectedApp(wallet: Wallet, app: TonConnectApp) {
+    try? tonConnectService.disconnectApp(app, wallet: wallet)
+  }
+  
   public func getLastEventId() -> String? {
     try? tonConnectService.getLastEventId()
   }

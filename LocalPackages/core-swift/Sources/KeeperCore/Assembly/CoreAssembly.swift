@@ -1,40 +1,36 @@
 import Foundation
 import CoreComponents
+import TKKeychain
 
 public struct CoreAssembly {
   let cacheURL: URL
   let sharedCacheURL: URL
   let appInfoProvider: AppInfoProvider
+  let seedProvider: () -> String
   
   init(cacheURL: URL, 
        sharedCacheURL: URL,
-       appInfoProvider: AppInfoProvider) {
+       appInfoProvider: AppInfoProvider,
+       seedProvider: @escaping () -> String) {
     self.cacheURL = cacheURL
     self.sharedCacheURL = sharedCacheURL
     self.appInfoProvider = appInfoProvider
+    self.seedProvider = seedProvider
   }
   
-  func mnemonicVault() -> MnemonicVault {
-    MnemonicVault(keychainVault: keychainVault, accessGroup: nil)
-  }
-  
-  func mnemonicsV3Vault(seedProvider: @escaping () -> String) -> MnemonicsV3Vault {
-    MnemonicsV3Vault(
-      keychainVault: keychainVault,
-      seedProvider: seedProvider
-    )
-  }
-  
-  func mnemonicsV4Vault() -> MnemonicsV4Vault {
-    MnemonicsV4Vault(
+  public func rnMnemonicsVault() -> RNMnemonicsVault {
+    RNMnemonicsVault(
       keychainVault: keychainVault
     )
   }
   
-  func passcodeVault() -> PasscodeVault {
-    PasscodeVault(keychainVault: keychainVault)
+  public func mnemonicsVault() -> MnemonicsVault {
+    MnemonicsVault(
+      keychainVault: keychainVault,
+      seedProvider: seedProvider
+    )
   }
-  
+
   func tonConnectAppsVault() -> TonConnectAppsVault {
     TonConnectAppsVault(keychainVault: keychainVault)
   }
@@ -51,8 +47,8 @@ public struct CoreAssembly {
     return FileSystemVault(fileManager: fileManager, directory: sharedCacheURL)
   }
   
-  public var keychainVault: KeychainVault {
-    KeychainVaultImplementation(keychain: keychain)
+  public var keychainVault: TKKeychainVault {
+    TKKeychainVaultImplementation(keychain: TKKeychainImplementation())
   }
   
   func settingsVault() -> SettingsVault<SettingsKey> {
@@ -63,10 +59,6 @@ public struct CoreAssembly {
 private extension CoreAssembly {
   var fileManager: FileManager {
     .default
-  }
-  
-  var keychain: Keychain {
-    KeychainImplementation()
   }
   
   var userDefaults: UserDefaults {

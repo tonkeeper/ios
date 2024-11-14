@@ -21,7 +21,8 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
-        appInfoProvider: coreAssembly.appInfoProvider
+        appInfoProvider: coreAssembly.appInfoProvider,
+        seedProvider: { "" }
       )
     )
     

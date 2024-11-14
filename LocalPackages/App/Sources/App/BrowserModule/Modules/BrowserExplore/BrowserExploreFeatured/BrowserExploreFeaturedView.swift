@@ -32,10 +32,19 @@ final class BrowserExploreFeaturedView: UIView {
       collectionView.alpha = 0
       collectionView.reloadData()
       collectionView.layoutIfNeeded()
+
+      slideshowTask?.cancel()
+      slideshowTask = nil
       guard !dataSource.isEmpty else { return }
+
       DispatchQueue.main.async {
         let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
-        self.collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0), at: .centeredHorizontally, animated: false)
+        self.safeCollectionViewScroll(
+          at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
+          at: .centeredHorizontally,
+          animated: false
+        )
+
         UIView.animate(withDuration: 0.2) {
           self.collectionView.alpha = 1.0
         }
@@ -127,38 +136,46 @@ final class BrowserExploreFeaturedView: UIView {
 }
 
 private extension BrowserExploreFeaturedView {
-  private func indexOfMostVisibleCell() -> Int {
-    let itemWidth = calculateItemSize(width: collectionView.bounds.width)
-    let proportionalOffset = collectionView.contentOffset.x / itemWidth
-    let index = Int(round(proportionalOffset))
-    let numberOfItems = collectionView.numberOfItems(inSection: 0)
-    let safeIndex = max(0, min(numberOfItems, index))
-    return safeIndex
+
+  func indexOfMostVisibleCell(offset: Int = 0) -> Int {
+      let itemWidth = calculateItemSize(width: collectionView.bounds.width)
+      let proportionalOffset = collectionView.contentOffset.x / itemWidth
+      let index = Int(round(proportionalOffset)) + offset
+      let numberOfItems = collectionView.numberOfItems(inSection: 0)
+      let safeIndex = max(0, min(numberOfItems - 1, index))
+      return safeIndex
   }
-  
+
   var indexOfLeftSignificantCell: Int { Int.numberOfAdditionalItems/2 * self.dapps.count }
   var indexOfRightSignificantCell: Int { indexOfLeftSignificantCell + self.dapps.count - 1 }
   
   func startSlideShowTask() {
     slideshowTask?.cancel()
-    slideshowTask = Task {
+    slideshowTask = Task { @MainActor in
       try? await Task.sleep(nanoseconds: 4_000_000_000)
       guard !Task.isCancelled else { return }
-      await MainActor.run {
-        resetCarouselIfNeeded()
-        self.collectionView.isScrollEnabled = false
-        UIView.animate(withDuration: 0.5) {
-          self.collectionView.scrollToItem(
-            at: IndexPath(item: self.indexOfMostVisibleCell() + 1, section: 0),
-            at: .centeredHorizontally,
-            animated: true
-          )
-        } completion: { _ in
-          self.collectionView.isScrollEnabled = true
-          self.startSlideShowTask()
-        }
+      resetCarouselIfNeeded()
+      self.collectionView.isScrollEnabled = false
+      UIView.animate(withDuration: 0.5) {
+        self.safeCollectionViewScroll(
+          at: IndexPath(item: self.indexOfMostVisibleCell(offset: 1), section: 0),
+          at: .centeredHorizontally,
+          animated: true
+        )
+      } completion: { _ in
+        self.collectionView.isScrollEnabled = true
+        self.startSlideShowTask()
       }
     }
+  }
+
+  func safeCollectionViewScroll(at indexPath: IndexPath,
+                                at scrollPosition: UICollectionView.ScrollPosition,
+                                animated: Bool) {
+    guard collectionView.numberOfSections > indexPath.section,
+    collectionView.numberOfItems(inSection: indexPath.section) > indexPath.item else { return }
+  
+    collectionView.scrollToItem(at: indexPath, at: scrollPosition, animated: animated)
   }
 }
 
@@ -216,7 +233,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
       
     } else {
       let indexPath = IndexPath(row: indexOfMostVisibleCell, section: 0)
-      collectionView.scrollToItem(at: indexPath, at: .centeredHorizontally, animated: true)
+      safeCollectionViewScroll(at: indexPath, at: .centeredHorizontally, animated: true)
     }
   }
   
@@ -231,13 +248,19 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     let indexOfRightSignificantCell = indexOfLeftSignificantCell + self.dapps.count - 1
     
     if indexOfMostVisibleCell == indexOfLeftSignificantCell - 1 {
-      collectionView.scrollToItem(at: IndexPath(item: indexOfRightSignificantCell, section: 0),
-                                  at: .centeredHorizontally, animated: false)
+      safeCollectionViewScroll(
+        at: IndexPath(item: indexOfRightSignificantCell, section: 0),
+        at: .centeredHorizontally,
+        animated: false
+      )
     }
     
     if indexOfMostVisibleCell == indexOfRightSignificantCell + 1 {
-      collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
-                                       at: .centeredHorizontally, animated: false)
+      safeCollectionViewScroll(
+        at: IndexPath(item: indexOfLeftSignificantCell, section: 0),
+        at: .centeredHorizontally,
+        animated: false
+      )
     }
   }
   

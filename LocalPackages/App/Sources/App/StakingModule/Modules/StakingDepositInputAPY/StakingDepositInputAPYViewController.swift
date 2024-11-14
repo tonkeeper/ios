@@ -3,25 +3,43 @@ import TKUIKit
 import KeeperCore
 import BigInt
 
-final class StakingDepositInputAPYViewController: UIViewController, StakingInputDetailsModuleInput {
-    
-  private var selectedStackingPoolInfo: StackingPoolInfo?
+protocol StakingDepositInputAPYModuleInput: AnyObject {
+  func setInputAmount(_ amount: BigUInt)
+}
+
+final class StakingDepositInputAPYViewController: UIViewController, StakingDepositInputAPYModuleInput {
+  
+  func setInputAmount(_ amount: BigUInt) {
+    self.inputAmount = amount
+  }
   private var balanceItem: BalanceStakingItemModel?
   
   private let stackView = UIStackView()
   private let headerView = TKListTitleView()
   private let listView = StakingDetailsListView()
   
+  private var inputAmount: BigUInt = 0 {
+    didSet {
+      reconfigure()
+    }
+  }
+  
   private let wallet: Wallet
+  private let stakingPool: StackingPoolInfo
+  private let stakingPoolsStore: StakingPoolsStore
   private let balanceStore: ConvertedBalanceStore
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   
   init(wallet: Wallet,
+       stakingPool: StackingPoolInfo,
+       stakingPoolsStore: StakingPoolsStore,
        balanceStore: ConvertedBalanceStore,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter) {
     self.wallet = wallet
+    self.stakingPool = stakingPool
+    self.stakingPoolsStore = stakingPoolsStore
     self.balanceStore = balanceStore
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
@@ -48,12 +66,22 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
     headerView.snp.makeConstraints { make in
       make.height.equalTo(48)
     }
+    
+    reconfigure()
   }
   
-  func configureWith(stackingPoolInfo: StackingPoolInfo,
-                     tonAmount: BigUInt,
-                     isMostProfitable: Bool) {
-    self.selectedStackingPoolInfo = stackingPoolInfo
+  func reconfigure() {
+    func calculateAPY(amount: BigUInt, apy: Decimal) -> (BigUInt, Int) {
+      let apyFractionLength = max(Int16(-apy.exponent), 0)
+      let apyPlain = NSDecimalNumber(decimal: apy)
+        .multiplying(byPowerOf10: apyFractionLength)
+      let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
+      
+      let fractionLength = Int(apyFractionLength) + TonInfo.fractionDigits
+      let result = amount / 100 * apyBigInt
+      return (result, fractionLength)
+    }
+    
     guard let balance = balanceStore.getState()[wallet]?.balance else {
       return
     }
@@ -62,7 +90,7 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
       return
     }
     
-    let afterStakeAPY = calculateAPY(amount: tonAmount + BigUInt(UInt64(balanceItem.info.amount)), apy: stackingPoolInfo.apy)
+    let afterStakeAPY = calculateAPY(amount: inputAmount + BigUInt(UInt64(balanceItem.info.amount)), apy: stakingPool.apy)
     let afterStakeAPYFormatted = amountFormatter.formatAmount(
       afterStakeAPY.0,
       fractionDigits: afterStakeAPY.1,
@@ -70,7 +98,7 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
       symbol: TonInfo.symbol
     )
 
-    let currentAPY = calculateAPY(amount: BigUInt(UInt64(balanceItem.info.amount)), apy: stackingPoolInfo.apy)
+    let currentAPY = calculateAPY(amount: BigUInt(UInt64(balanceItem.info.amount)), apy: stakingPool.apy)
     let currentAPYFormatted = amountFormatter.formatAmount(
       currentAPY.0,
       fractionDigits: currentAPY.1,
@@ -103,29 +131,15 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
       ]
     )
     
-    DispatchQueue.main.async {
-      self.headerView.configure(model: TKListTitleView.Model(title: "Your APY", textStyle: .label1))
-      self.listView.configure(model: listModel)
-    }
-    
-    func calculateAPY(amount: BigUInt, apy: Decimal) -> (BigUInt, Int) {
-      let apyFractionLength = max(Int16(-apy.exponent), 0)
-      let apyPlain = NSDecimalNumber(decimal: apy)
-        .multiplying(byPowerOf10: apyFractionLength)
-      let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
-      
-      let fractionLength = Int(apyFractionLength) + TonInfo.fractionDigits
-      let result = amount / 100 * apyBigInt
-      return (result, fractionLength)
-    }
+    self.headerView.configure(model: TKListTitleView.Model(title: "Your APY", textStyle: .label1))
+    self.listView.configure(model: listModel)
   }
 }
 
 private extension StakingDepositInputAPYViewController {
   func createBalanceItem(balance: ConvertedBalance) -> BalanceStakingItemModel? {
-    guard let stakingPoolInfo = selectedStackingPoolInfo else { return nil }
     if let stakingPoolJetton = balance.jettonsBalance
-      .first(where: { $0.jettonBalance.item.jettonInfo.address == stakingPoolInfo.liquidJettonMaster }) {
+      .first(where: { $0.jettonBalance.item.jettonInfo.address == stakingPool.liquidJettonMaster }) {
       var amount: Int64 = 0
       if let tonRate = stakingPoolJetton.jettonBalance.rates[.TON] {
         let converted = RateConverter().convertToDecimal(
@@ -139,7 +153,7 @@ private extension StakingDepositInputAPYViewController {
       }
       
       let info = AccountStackingInfo(
-        pool: stakingPoolInfo.address,
+        pool: stakingPool.address,
         amount: amount,
         pendingDeposit: 0,
         pendingWithdraw: 0,
@@ -149,7 +163,7 @@ private extension StakingDepositInputAPYViewController {
       let stakingItem = BalanceStakingItemModel(
         id: info.pool.toRaw(),
         info: info,
-        poolInfo: stakingPoolInfo,
+        poolInfo: stakingPool,
         currency: balance.currency,
         converted: stakingPoolJetton.converted,
         price: stakingPoolJetton.price
@@ -158,11 +172,11 @@ private extension StakingDepositInputAPYViewController {
       return stakingItem
     }
     
-    if let stakingItem = balance.stackingBalance.first(where: { $0.stackingInfo.pool == stakingPoolInfo.address }) {
+    if let stakingItem = balance.stackingBalance.first(where: { $0.stackingInfo.pool == stakingPool.address }) {
       let balanceItem = BalanceStakingItemModel(
         id: stakingItem.stackingInfo.pool.toRaw(),
         info: stakingItem.stackingInfo,
-        poolInfo: stakingPoolInfo,
+        poolInfo: stakingPool,
         currency: balance.currency,
         converted: stakingItem.amountConverted,
         price: stakingItem.price

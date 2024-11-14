@@ -68,16 +68,16 @@ private extension CustomizeWalletViewController {
       customView?.badgeView.icon = icon
     }
     
-//    viewModel.didSelectEmoji = { [weak customView] emoji in
-//      customView?.badgeView.emoji = emoji.emoji
-//    }
-    
     viewModel.didSelectColor = { [weak customView] color in
       customView?.badgeView.color = color
     }
     
     viewModel.didUpdateContinueButtonIsEnabled = { [weak customView] isEnabled in
       customView?.continueButton.isEnabled = isEnabled
+    }
+    
+    viewModel.didUpdateContinueButtonIsLoadig = { [weak customView] isLoading in
+      customView?.continueButton.configuration.showsLoader = isLoading
     }
   }
   

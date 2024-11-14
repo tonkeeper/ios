@@ -53,6 +53,7 @@
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
+		<string>tg</string>
 		<string>tonsign</string>
 		<string>ledgerlive</string>
 	</array>

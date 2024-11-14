@@ -16,6 +16,15 @@ public struct NFT: Codable, Equatable {
   public let isHidden: Bool
   public let trust: Trust
   
+  public var isUnverified: Bool {
+    switch trust {
+    case .whitelist, .graylist:
+      return false
+    case .blacklist, .none, .unknown:
+      return true
+    }
+  }
+  
   public var notNilName: String {
     if let name, !name.isEmpty {
       return name

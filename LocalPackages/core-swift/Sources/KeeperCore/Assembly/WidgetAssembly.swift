@@ -8,7 +8,6 @@ public final class WidgetAssembly {
   private let formattersAssembly: FormattersAssembly
   private let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
-  private let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
 
@@ -19,7 +18,6 @@ public final class WidgetAssembly {
        formattersAssembly: FormattersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
-       passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
@@ -29,7 +27,6 @@ public final class WidgetAssembly {
     self.formattersAssembly = formattersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
-    self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
   }

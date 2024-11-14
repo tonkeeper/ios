@@ -155,6 +155,7 @@ private extension TKButton {
     case .none:
       self.buttonContentView.title = nil
     }
+    self.buttonContentView.titleLabel.numberOfLines = configuration.textNumberOfLines
     self.buttonContentView.icon = configuration.content.icon
   }
 }

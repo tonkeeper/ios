@@ -2,6 +2,8 @@ import UIKit
 import TKUIKit
 
 final class StakingPoolDetailsView: TKView {
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let scrollView = TKUIScrollView()
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
@@ -33,11 +35,14 @@ final class StakingPoolDetailsView: TKView {
     super.setup()
     backgroundColor = .Background.page
     
+    navigationBar.centerView = titleView
+    
     descriptionLabel.numberOfLines = 0
     descriptionLabelContainer.setViews([descriptionLabel])
     descriptionLabelContainer.padding = UIEdgeInsets(top: 12, left: 1, bottom: 16, right: 1)
     
     addSubview(scrollView)
+    addSubview(navigationBar)
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(listView)
     contentStackView.addArrangedSubview(descriptionLabelContainer)
@@ -64,6 +69,10 @@ final class StakingPoolDetailsView: TKView {
       make.top.equalTo(self.scrollView)
       make.left.right.bottom.equalTo(self.scrollView).priority(.high)
       make.width.equalTo(scrollView)
+    }
+    
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
     }
   }
 }

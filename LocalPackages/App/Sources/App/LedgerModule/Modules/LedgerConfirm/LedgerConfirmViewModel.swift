@@ -11,7 +11,7 @@ enum LedgerConfirmError: Error {
 
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
-  var didSign: ((String) -> Void)? { get set }
+  var didSign: ((Data) -> Void)? { get set }
   var didError: ((_ error: LedgerConfirmError) -> Void)? { get set }
 }
 
@@ -40,7 +40,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   // MARK: - LedgerConnectModuleOutput
   
   var didCancel: (() -> Void)?
-  var didSign: ((String) -> Void)?
+  var didSign: ((Data) -> Void)?
   var didError: ((_ error: LedgerConfirmError) -> Void)?
   
   // MARK: - LedgerConnectViewModel
@@ -53,7 +53,6 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   private var pollTonAppTask: Task<Void, Swift.Error>? = nil
   private var disconnectTask: Task<Void, Never>? = nil
   
-  private var transport: BleTransportProtocol = BleTransport.shared
   private var isClosed: Bool = false
   
   func viewDidLoad() {
@@ -69,7 +68,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     pollTonAppTask?.cancel()
     disconnectTask?.cancel()
     
-    transport.disconnect(completion: nil)
+    bleTransport.disconnect(completion: nil)
   }
   
   // MARK: - State
@@ -82,22 +81,27 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
-  private let transferMessageBuilder: TransferMessageBuilder
-  private let ledgerDevice: Wallet.LedgerDevice
+  private let transaction: Transaction
   private let wallet: Wallet
+  private let ledgerDevice: Wallet.LedgerDevice
+  private let bleTransport: BleTransportProtocol
   
   // MARK: - Init
   
-  init(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
-    self.transferMessageBuilder = transferMessageBuilder
+  init(transaction: Transaction,
+       wallet: Wallet,
+       ledgerDevice: Wallet.LedgerDevice,
+       bleTransport: BleTransportProtocol) {
+    self.transaction = transaction
     self.wallet = wallet
     self.ledgerDevice = ledgerDevice
+    self.bleTransport = bleTransport
   }
 }
 
 private extension LedgerConfirmViewModelImplementation {
   func listenBluetoothState() {
-    transport.bluetoothStateCallback { state in
+    bleTransport.bluetoothStateCallback { state in
       switch state {
       case .poweredOn:
         self.connect()
@@ -119,8 +123,9 @@ private extension LedgerConfirmViewModelImplementation {
       let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
       
       print("Connecting to \(peripheral.name)...")
-      transport.disconnect() { _ in
-        self.transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
+      bleTransport.disconnect() { [weak self] _ in
+        guard let self else { return }
+        self.bleTransport.connect(toPeripheralID: peripheral, disconnectedCallback: {
           print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
           if self.isClosed { return }
           
@@ -153,19 +158,22 @@ private extension LedgerConfirmViewModelImplementation {
   }
   
   func checkVersion(version: String) -> Result<Void, LedgerConfirmError> {
-    switch transferMessageBuilder.transferData {
-    case .nft(_), .changeDNSRecord(_):
+    if (transaction.payload == nil) {
+      return .success(())
+    }
+    switch transaction.payload {
+    case .jettonTransfer(_):
+      return .success(())
+    default:
       guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
         return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
       }
-      return .success(())
-    default:
       return .success(())
     }
   }
   
   func waitForAppOpen() {
-    let tonTransport = TonTransport(transport: transport)
+    let tonTransport = TonTransport(transport: bleTransport)
     
     @Sendable func startPollTask() {
       let task = Task {
@@ -202,16 +210,11 @@ private extension LedgerConfirmViewModelImplementation {
     
     Task {
       do {
-        let transactionBuilder = LedgerTransactionBuilder(wallet: self.wallet,
-                                                          transferMessageBuilder: self.transferMessageBuilder,
-                                                          tonTransport: tonTransport,
-                                                          accountPath: accountPath)
-        
-        let boc = try await transactionBuilder.signTransaction()
+        let signature = try await tonTransport.signTransaction(path: accountPath, transaction: transaction)
         
         await MainActor.run {
           self.setConfirmed()
-          self.didSign?(boc)
+          self.didSign?(signature)
         }
       } catch {
         await MainActor.run {

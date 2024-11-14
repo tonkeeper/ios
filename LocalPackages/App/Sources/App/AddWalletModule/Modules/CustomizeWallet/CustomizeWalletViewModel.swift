@@ -20,6 +20,7 @@ protocol CustomizeWalletViewModel: AnyObject {
   var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)? { get set }
   var didSelectColor: ((UIColor) -> Void)? { get set }
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)? { get set }
+  var didUpdateContinueButtonIsLoadig: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func setWalletName(_ name: String)
@@ -39,6 +40,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)?
   var didSelectColor: ((UIColor) -> Void)?
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)?
+  var didUpdateContinueButtonIsLoadig: ((Bool) -> Void)?
   
   func viewDidLoad() {
     didUpdateModel?(createModel(items: []))
@@ -115,7 +117,11 @@ private extension CustomizeWalletViewModelImplementation {
         size: .large
       )
       continueButtonConfiguration?.content.title = .plainString(title)
-      continueButtonConfiguration?.action = action
+      continueButtonConfiguration?.action = { [weak self] in
+        self?.didUpdateContinueButtonIsEnabled?(false)
+        self?.didUpdateContinueButtonIsLoadig?(true)
+        action()
+      }
     }
   
     return CustomizeWalletView.Model(

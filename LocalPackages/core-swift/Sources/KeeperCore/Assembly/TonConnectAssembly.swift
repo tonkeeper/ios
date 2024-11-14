@@ -8,19 +8,22 @@ public final class TonConnectAssembly {
   let apiAssembly: APIAssembly
   let coreAssembly: CoreAssembly
   let formattersAssembly: FormattersAssembly
+  let secureAssembly: SecureAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        apiAssembly: APIAssembly,
        coreAssembly: CoreAssembly,
-       formattersAssembly: FormattersAssembly) {
+       formattersAssembly: FormattersAssembly,
+       secureAssembly: SecureAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.apiAssembly = apiAssembly
     self.coreAssembly = coreAssembly
     self.formattersAssembly = formattersAssembly
+    self.secureAssembly = secureAssembly
   }
   
   public func tonConnectConfirmTransactionControllerBocProvider(signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmTransactionControllerBocProvider {
@@ -38,7 +41,7 @@ public final class TonConnectAssembly {
     TonConnectServiceImplementation(
       urlSession: .shared,
       apiClient: apiAssembly.tonConnectAPIClient(),
-      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
+      mnemonicsRepository: secureAssembly.mnemonicsRepository(),
       tonConnectAppsVault: coreAssembly.tonConnectAppsVault(),
       tonConnectAppsVaultLegacy: coreAssembly.tonConnectAppsVaultLegacy(),
       tonConnectRepository: tonConnectRepository(),

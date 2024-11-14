@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class SendConfirmationViewController: GenericViewViewController<SendConfirmationView> {
   private let viewModel: SendConfirmationViewModel
@@ -42,6 +43,9 @@ private extension SendConfirmationViewController {
     addChild(modalCardViewController)
     customView.embedContent(modalCardViewController.view)
     modalCardViewController.didMove(toParent: self)
+    
+    modalCardViewController.successTitle = TKLocales.Result.success
+    modalCardViewController.errorTitle = TKLocales.Result.failure
   }
   
   func setupBindings() {

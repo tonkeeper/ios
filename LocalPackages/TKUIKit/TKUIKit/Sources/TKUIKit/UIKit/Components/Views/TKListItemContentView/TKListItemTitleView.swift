@@ -2,8 +2,8 @@ import UIKit
 
 public final class TKListItemTitleView: UIView {
   
-  public struct Configuration {
-    public struct Icon {
+  public struct Configuration: Hashable {
+    public struct Icon: Hashable {
       public var image: UIImage
       public var tintColor: UIColor?
       
@@ -14,7 +14,7 @@ public final class TKListItemTitleView: UIView {
       }
     }
     
-    public struct Title {
+    public struct Title: Hashable {
       public let text: NSAttributedString?
       public let numberOfLines: Int
       

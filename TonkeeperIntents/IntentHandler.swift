@@ -19,7 +19,8 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
-        appInfoProvider: coreAssembly.appInfoProvider
+        appInfoProvider: coreAssembly.appInfoProvider,
+        seedProvider: { "" }
       )
     )
     

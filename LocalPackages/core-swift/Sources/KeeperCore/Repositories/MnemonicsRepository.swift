@@ -23,7 +23,7 @@ public protocol MnemonicsRepository {
   func importMnemonics(_ mnemonics: Mnemonics, password: String) async throws
 }
 
-extension MnemonicsV3Vault: MnemonicsRepository {
+extension RNMnemonicsVault: MnemonicsRepository {
   public func getMnemonic(wallet: Wallet, password: String) async throws -> CoreComponents.Mnemonic {
     try await getMnemonic(identifier: wallet.id, password: password)
   }
@@ -51,7 +51,7 @@ extension MnemonicsV3Vault: MnemonicsRepository {
   }
 }
 
-extension MnemonicsV4Vault: MnemonicsRepository {
+extension MnemonicsVault: MnemonicsRepository {
   public func getMnemonic(wallet: Wallet, password: String) async throws -> CoreComponents.Mnemonic {
     try await getMnemonic(identifier: wallet.id, password: password)
   }

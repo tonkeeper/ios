@@ -10,7 +10,7 @@ struct HistoryAssembly {
   -> MVVMModule<HistoryViewController, HistoryModuleOutput, HistoryModuleInput> {
     let viewModel = HistoryV2ViewModelImplementation(
       wallet: wallet,
-      backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore
+      backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate
     )
     let viewController = HistoryViewController(
       viewModel: viewModel,

@@ -2,14 +2,29 @@ import TKUIKit
 import UIKit
 import SnapKit
 
-final class BalanceHeaderAmountView: UIControl, ConfigurableView {
+final class BalanceHeaderAmountView: UIControl {
+  
+  struct Configuration {
+    enum Backup {
+      case none
+      case backup(color: UIColor, closure: () -> Void)
+    }
+    let balanceButtonModel: BalanceHeaderAmountButton.Model
+    let batteryButtonConfiguration: BalanceHeaderBatteryButton.Configuration?
+    let backup: Backup
+  }
+  
+  var configuration: Configuration? {
+    didSet {
+      didUpdateConfiguration()
+    }
+  }
   
   private let balanceButton = BalanceHeaderAmountButton()
+  private let batteryButton = BalanceHeaderBatteryButton()
   private let backupButton = TKButton()
-  
-  private var balanceButtonRightConstrant: Constraint?
-  private var balanceButtonRightBackupConstrant: Constraint?
-  
+  private let stackView = UIStackView()
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -19,35 +34,51 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  struct Model {
-    enum Backup {
-      case none
-      case backup(color: UIColor, closure: () -> Void)
+  private func setup() {
+    setupBackupButton()
+    
+    stackView.alignment = .center
+    
+    addSubview(stackView)
+    stackView.addArrangedSubview(balanceButton)
+    stackView.addArrangedSubview(backupButton)
+    stackView.addArrangedSubview(batteryButton)
+    
+    stackView.snp.makeConstraints { make in
+      make.centerX.equalTo(self)
+      make.centerY.equalTo(self)
     }
-    let balanceButtonModel: BalanceHeaderAmountButton.Model
-    let backup: Backup
   }
   
-  func configure(model: Model) {
-    balanceButton.configure(model: model.balanceButtonModel)
-    switch model.backup {
+  private func didUpdateConfiguration() {
+    guard let configuration = configuration else {
+      return
+    }
+    balanceButton.configure(model: configuration.balanceButtonModel)
+    
+    switch configuration.backup {
     case .none:
       backupButton.isHidden = true
       backupButton.configuration.action = nil
-      balanceButtonRightBackupConstrant?.deactivate()
-      balanceButtonRightConstrant?.activate()
     case .backup(let color, let closure):
       backupButton.isHidden = false
       backupButton.configuration.action = closure
       backupButton.configuration.iconTintColor = color
       backupButton.configuration.backgroundColors = [.normal: color.withAlphaComponent(0.48),
                                                      .highlighted: color.withAlphaComponent(0.48)]
-      balanceButtonRightConstrant?.deactivate()
-      balanceButtonRightBackupConstrant?.activate()
     }
+    
+    if let batteryButtonConfiguration = configuration.batteryButtonConfiguration {
+      batteryButton.isHidden = false
+      batteryButton.configuration = batteryButtonConfiguration
+    } else {
+      batteryButton.isHidden = true
+    }
+    
+    stackView.setCustomSpacing(backupButton.isHidden ? 8 : 0, after: balanceButton)
   }
   
-  private func setup() {
+  private func setupBackupButton() {
     backupButton.configuration.content = TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size12.informationCircle)
     backupButton.configuration.backgroundColors = [.normal: .Accent.orange.withAlphaComponent(0.48),
                                                    .highlighted: .Accent.orange.withAlphaComponent(0.48)]
@@ -58,25 +89,5 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
     backupButton.configuration.contentAlpha = [.highlighted: 0.48]
     
     backupButton.isHidden = true
-    
-    backupButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-    
-    addSubview(balanceButton)
-    addSubview(backupButton)
-    
-    balanceButton.snp.makeConstraints { make in
-      make.centerX.equalTo(self).priority(.high)
-      make.centerY.equalTo(self)
-      make.left.greaterThanOrEqualTo(self)
-      balanceButtonRightConstrant = make.right.equalTo(self).constraint
-      balanceButtonRightBackupConstrant = make.right.equalTo(backupButton.snp.left).constraint
-    }
-    
-    balanceButtonRightBackupConstrant?.deactivate()
-    
-    backupButton.snp.makeConstraints { make in
-      make.centerY.equalTo(balanceButton)
-      make.right.lessThanOrEqualTo(self)
-    }
   }
 }

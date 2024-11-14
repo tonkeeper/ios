@@ -72,23 +72,23 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   private let toToken: String?
 
   private let wallet: Wallet
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let messageHandler: StonfiSwapMessageHandler
   
   init(wallet: Wallet,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        messageHandler: StonfiSwapMessageHandler,
        fromToken: String? = nil,
        toToken: String? = nil) {
     self.wallet = wallet
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.messageHandler = messageHandler
     self.fromToken = fromToken
     self.toToken = toToken
   }
   
   private func buildURL() async -> URL? {
-    guard let stonfiUrl = await configurationStore.getConfiguration().stonfiUrl else {
+    guard let stonfiUrl = configuration.stonfiUrl else {
       return nil
     }
     

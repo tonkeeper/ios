@@ -102,18 +102,21 @@ public struct AccountEventAction: Codable {
     public let amount: Int64
     public let staker: WalletAccount
     public let pool: WalletAccount
+    public let implementation: StakingPoolImplementation
   }
   
   public struct WithdrawStake: Codable {
     public let amount: Int64
     public let staker: WalletAccount
     public let pool: WalletAccount
+    public let implementation: StakingPoolImplementation
   }
   
   public struct WithdrawStakeRequest: Codable {
     public let amount: Int64?
     public let staker: WalletAccount
     public let pool: WalletAccount
+    public let implementation: StakingPoolImplementation
   }
   
   public struct RecoverStake: Codable {

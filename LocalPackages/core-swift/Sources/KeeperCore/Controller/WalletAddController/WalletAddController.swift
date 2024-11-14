@@ -6,11 +6,14 @@ import TonTransport
 public final class WalletAddController {
 
   private let walletsStore: WalletsStore
+  private let tonProofTokenService: TonProofTokenService
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
+       tonProofTokenService: TonProofTokenService,
        mnemonicsRepositoty: MnemonicsRepository) {
     self.walletsStore = walletsStore
+    self.tonProofTokenService = tonProofTokenService
     self.mnemonicsRepository = mnemonicsRepositoty
   }
   
@@ -27,9 +30,16 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: walletIdentity,
       metaData: metaData,
-      setupSettings: WalletSetupSettings()
+      setupSettings: WalletSetupSettings(),
+      batterySettings: BatterySettings()
     )
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: [WalletPrivateKeyPair(
+        wallet: wallet,
+        privateKey: keyPair.privateKey
+      )]
+    )
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
     await walletsStore.addWallets([wallet])
   }
@@ -39,6 +49,9 @@ public final class WalletAddController {
   }
   public func addWalletRevision(wallet: Wallet, revision: WalletContractVersion,  passcode: String) async throws {
     let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
+    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+      mnemonicArray: mnemonic.mnemonicWords
+    )
     
     let newWalletKind: WalletKind
     switch wallet.identity.kind {
@@ -61,9 +74,16 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: newWalletIdentity,
       metaData: wallet.metaData,
-      setupSettings: wallet.setupSettings
+      setupSettings: wallet.setupSettings,
+      batterySettings: BatterySettings()
     )
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: [WalletPrivateKeyPair(
+        wallet: wallet,
+        privateKey: keyPair.privateKey
+      )]
+    )
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
     await walletsStore.addWallets([wallet])
   }
@@ -99,9 +119,18 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: walletIdentity,
         metaData: revisionMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     
+    await tonProofTokenService.loadTokensFor(
+      pairs: wallets.map {
+        WalletPrivateKeyPair(
+          wallet: $0,
+          privateKey: keyPair.privateKey
+        )
+      }
+    )
     try await mnemonicsRepository.saveMnemonic(
       mnemonic,
       wallets: wallets,
@@ -116,9 +145,42 @@ public final class WalletAddController {
       id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
-      setupSettings: WalletSetupSettings()
+      setupSettings: WalletSetupSettings(),
+      batterySettings: BatterySettings()
     )
     await walletsStore.addWallets([wallet])
+  }
+  
+  public func importKeystoneWallet(
+    publicKey: TonSwift.PublicKey,
+    revisions: [WalletContractVersion],
+    xfp: String?,
+    path: String?,
+    metaData: WalletMetaData
+  ) async throws {
+    let addPostfix = revisions.count > 1
+    
+    let wallets = revisions.map { revision in
+      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
+      let revisionMetaData = WalletMetaData(
+        label: label,
+        tintColor: metaData.tintColor,
+        icon: metaData.icon
+      )
+      
+      let identity = WalletIdentity(
+        network: .mainnet,
+        kind: .Keystone(publicKey, xfp, path, revision)
+      )
+      
+      return Wallet(
+        id: UUID().uuidString,
+        identity: identity,
+        metaData: revisionMetaData,
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
+    }
+    await walletsStore.addWallets(wallets)
   }
   
   public func importSignerWallet(publicKey: TonSwift.PublicKey,
@@ -153,7 +215,8 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: identity,
         metaData: revisionMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     await walletsStore.addWallets(wallets)
   }
@@ -183,7 +246,8 @@ public final class WalletAddController {
         id: UUID().uuidString,
         identity: identity,
         metaData: accountMetaData,
-        setupSettings: WalletSetupSettings(backupDate: Date()))
+        setupSettings: WalletSetupSettings(backupDate: Date()),
+        batterySettings: BatterySettings())
     }
     await walletsStore.addWallets(wallets)
   }

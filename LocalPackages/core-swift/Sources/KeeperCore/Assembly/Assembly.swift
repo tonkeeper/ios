@@ -5,31 +5,57 @@ public final class Assembly {
     public let cacheURL: URL
     public let sharedCacheURL: URL
     public let appInfoProvider: AppInfoProvider
+    public let seedProvider: () -> String
     
     public init(cacheURL: URL,
                 sharedCacheURL: URL,
-                appInfoProvider: AppInfoProvider) {
+                appInfoProvider: AppInfoProvider,
+                seedProvider: @escaping () -> String) {
       self.cacheURL = cacheURL
       self.sharedCacheURL = sharedCacheURL
       self.appInfoProvider = appInfoProvider
+      self.seedProvider = seedProvider
     }
   }
   
   private let coreAssembly: CoreAssembly
-  public lazy var repositoriesAssembly = RepositoriesAssembly(coreAssembly: coreAssembly)
+  public lazy var repositoriesAssembly = RepositoriesAssembly(
+    coreAssembly: coreAssembly
+  )
+  public lazy var secureAssembly = SecureAssembly(
+    coreAssembly: coreAssembly
+  )
   private lazy var configurationAssembly = ConfigurationAssembly(
     tonkeeperApiAssembly: tonkeeperApiAssembly,
+    coreAssembly: coreAssembly
+  )
+  private lazy var buySellAssembly = BuySellAssembly(
+    tonkeeperApiAssembly: tonkeeperApiAssembly,
+    coreAssembly: coreAssembly
+  )
+  private lazy var knownAccountsAssembly = KnownAccountsAssembly(
+    tonkeeperApiAssembly: tonkeeperApiAssembly,
+    coreAssembly: coreAssembly
+  )
+  
+  private lazy var backgroundUpdateAssembly = BackgroundUpdateAssembly(
+    apiAssembly: apiAssembly,
+    storesAssembly: storesAssembly,
     coreAssembly: coreAssembly
   )
   private lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
   private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
+  private lazy var scamAPIAssembly = ScamAPIAssembly(configurationAssembly: configurationAssembly)
   private lazy var servicesAssembly = ServicesAssembly(
     repositoriesAssembly: repositoriesAssembly, 
     apiAssembly: apiAssembly,
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
     locationAPIAsembly: locationAPIAssembly,
-    coreAssembly: coreAssembly
+    scamAPIAssembly: scamAPIAssembly,
+    coreAssembly: coreAssembly,
+    secureAssembly: secureAssembly,
+    batteryAssembly: batteryAssembly
   )
   private lazy var storesAssembly = StoresAssembly(
     apiAssembly: apiAssembly,
@@ -40,7 +66,8 @@ public final class Assembly {
     servicesAssembly: servicesAssembly,
     storesAssembly: storesAssembly,
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
-    apiAssembly: apiAssembly
+    apiAssembly: apiAssembly,
+    knownAccountsAssembly: knownAccountsAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
   private lazy var mappersAssembly = MappersAssembly(formattersAssembly: formattersAssembly)
@@ -50,14 +77,14 @@ public final class Assembly {
       servicesAssembly: servicesAssembly,
       repositoriesAssembly: repositoriesAssembly,
       formattersAssembly: formattersAssembly,
-      rnAssembly: rnAssembly
+      secureAssembly: secureAssembly
     )
   }
-  private lazy var passcodeAssembly = PasscodeAssembly(
-    repositoriesAssembly: repositoriesAssembly,
-    storesAssembly: storesAssembly
+  private lazy var rnAssembly = RNAssembly()
+  private lazy var batteryAssembly = BatteryAssembly(
+    batteryAPIAssembly: BatteryAPIAssembly(configurationAssembly: configurationAssembly),
+    coreAssembly: coreAssembly
   )
-  private lazy var rnAssembly = RNAssembly(coreAssembly: coreAssembly)
   
   private let dependencies: Dependencies
   
@@ -66,7 +93,8 @@ public final class Assembly {
     self.coreAssembly = CoreAssembly(
       cacheURL: dependencies.cacheURL,
       sharedCacheURL: dependencies.sharedCacheURL,
-      appInfoProvider: dependencies.appInfoProvider
+      appInfoProvider: dependencies.appInfoProvider,
+      seedProvider: dependencies.seedProvider
     )
   }
 }
@@ -83,10 +111,14 @@ public extension Assembly {
       mappersAssembly: mappersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
-      passcodeAssembly: passcodeAssembly,
+      buySellAssembly: buySellAssembly,
+      batteryAssembly: batteryAssembly,
+      knownAccountsAssembly: knownAccountsAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
-      rnAssembly: rnAssembly
+      backgroundUpdateAssembly: backgroundUpdateAssembly,
+      rnAssembly: rnAssembly,
+      secureAssembly: secureAssembly
     )
   }
   
@@ -99,7 +131,6 @@ public extension Assembly {
       formattersAssembly: formattersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
-      passcodeAssembly: passcodeAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly
     )

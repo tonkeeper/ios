@@ -5,10 +5,12 @@ import KeeperCore
 struct ManageTokensAssembly {
   private init() {}
   static func module(model: ManageTokensModel,
-                     mapper: ManageTokensListMapper) -> MVVMModule<ManageTokensViewController, ManageTokensModuleOutput, Void> {
+                     mapper: ManageTokensListMapper,
+                     updateQueue: DispatchQueue) -> MVVMModule<ManageTokensViewController, ManageTokensModuleOutput, Void> {
     let viewModel = ManageTokensViewModelImplementation(
       model: model,
-      mapper: mapper
+      mapper: mapper,
+      updateQueue: updateQueue
     )
     
     let viewController = ManageTokensViewController(viewModel: viewModel)

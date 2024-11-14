@@ -12,7 +12,7 @@ let package = Package(
         .library(name: "TonTransport", targets: ["TonTransport"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/LedgerHQ/hw-transport-ios-ble.git", from: "1.0.0"),
+        .package(url: "https://github.com/tonkeeper/hw-transport-ios-ble", from: "2.0.0"),
         .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.6"),
         .package(path: "../TKCryptoSwift"),
     ],

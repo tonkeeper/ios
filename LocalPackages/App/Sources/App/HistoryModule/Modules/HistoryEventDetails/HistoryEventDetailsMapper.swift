@@ -72,6 +72,7 @@ final class HistoryEventDetailsMapper {
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
+  private let nftManagmentStore: WalletNFTsManagementStore
   private let isTestnet: Bool
   
   private let rateConverter = RateConverter()
@@ -86,11 +87,13 @@ final class HistoryEventDetailsMapper {
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        nftService: NFTService,
+       nftManagmentStore: WalletNFTsManagementStore,
        isTestnet: Bool) {
     self.amountMapper = amountMapper
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.nftService = nftService
+    self.nftManagmentStore = nftManagmentStore
     self.isTestnet = isTestnet
   }
   
@@ -464,7 +467,7 @@ final class HistoryEventDetailsMapper {
     }
     
     let nft = try? nftService.getNFT(address: nftTransfer.nftAddress, isTestnet: isTestnet)
-    guard nft != nil, nft?.trust != .blacklist else {
+    guard let nft, nft.trust != .blacklist else {
       return Model(
         title: "NFT",
         date: dateFormatted,
@@ -473,9 +476,11 @@ final class HistoryEventDetailsMapper {
         listItems: [.fee(value: fee, converted: feeConverted)]
       )
     }
-    
+
+    let nftState = calculateNFTState(nft, nftManagmentStore: nftManagmentStore)
+    let isScam = activityEvent.isScam || nftState == .spam
     listItems.append(.fee(value: fee, converted: feeConverted))
-    if let comment = nftTransfer.comment, !comment.isEmpty, !activityEvent.isScam {
+    if let comment = nftTransfer.comment, !comment.isEmpty, !isScam {
       listItems.append(.comment(comment))
     }
     if let encryptedComment = nftTransfer.encryptedComment, let sender = nftTransfer.sender {
@@ -490,11 +495,13 @@ final class HistoryEventDetailsMapper {
     }
     
     var headerImage: Model.HeaderImage?
-    if let nftImageUrl = nft?.imageURL {
+    if let nftImageUrl = nft.imageURL {
       headerImage = .nft(nftImageUrl)
     }
     let nftModel = Model.NFT(
-      name: nft?.name, collectionName: nft?.collection?.name, isVerified: nft?.trust == .whitelist
+      name: nft.name,
+      collectionName: nft.collection?.name,
+      isVerified: nft.trust == .whitelist
     )
     
     return Model(
@@ -503,7 +510,7 @@ final class HistoryEventDetailsMapper {
       date: dateFormatted,
       nftModel: nftModel,
       status: status.rawValue,
-      isScam: activityEvent.isScam,
+      isScam: isScam,
       listItems: listItems
     )
   }
@@ -545,7 +552,8 @@ final class HistoryEventDetailsMapper {
       currency: .TON)
     
     let fiatPrice = convertTonToFiatString(amount: action.price)
-    
+    let nftState = calculateNFTState(action.nft, nftManagmentStore: nftManagmentStore)
+    let isScam = activityEvent.isScam || nftState == .spam
     return Model(
       headerImage: headerImage,
       title: title,
@@ -553,11 +561,19 @@ final class HistoryEventDetailsMapper {
       fiatPrice: fiatPrice,
       nftModel: nftModel,
       status: status.rawValue,
-      isScam: activityEvent.isScam,
+      isScam: isScam,
       listItems: listItems
     )
   }
-  
+
+  private func calculateNFTState(_ nft: NFT, nftManagmentStore: WalletNFTsManagementStore) -> NFTsManagementState.NFTState? {
+    if let collection = nft.collection {
+      return nftManagmentStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      return nftManagmentStore.getState().nftStates[.singleItem(nft.address)]
+    }
+  }
+
   func mapDomainRenew(activityEvent: AccountEvent,
                       action: AccountEventAction.DomainRenew,
                       date: String,

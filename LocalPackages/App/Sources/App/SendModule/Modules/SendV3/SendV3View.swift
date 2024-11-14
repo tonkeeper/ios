@@ -3,6 +3,8 @@ import TKUIKit
 import SnapKit
 
 final class SendV3View: UIView {
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let scrollView = TKUIScrollView()
   let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -20,7 +22,6 @@ final class SendV3View: UIView {
   
   lazy var recipientTextField: TKTextField = {
     let textInputControl = TKTextInputTextViewControl()
-    textInputControl.keyboardType = .asciiCapable
     return TKTextField(
       textFieldInputView: TKTextFieldInputView(
         textInputControl: textInputControl
@@ -53,14 +54,17 @@ final class SendV3View: UIView {
   }
   
   private func setup() {
-    
     recipientTextField.rightItems = [
       TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
       TKTextField.RightItem(view: recipientScanButton, mode: .empty)
     ]
     commentInputView.commentTextField.rightItems = [TKTextField.RightItem(view: commentPasteButton, mode: .empty)]
     
+    navigationBar.centerView = titleView
+
+    
     addSubview(scrollView)
+    addSubview(navigationBar)
     scrollView.addSubview(stackView)
     
     stackView.addArrangedSubview(recipientTextField)
@@ -77,6 +81,10 @@ final class SendV3View: UIView {
       make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
       make.width.equalTo(scrollView)
+    }
+    
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
     }
   }
 }

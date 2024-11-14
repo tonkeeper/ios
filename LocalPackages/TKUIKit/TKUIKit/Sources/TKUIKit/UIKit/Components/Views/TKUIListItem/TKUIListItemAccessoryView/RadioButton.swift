@@ -5,25 +5,34 @@ public enum TKRadioButtonState {
   case deselected
 }
 
-final class RadioButton: UIControl {
+public final class RadioButton: UIControl {
   private let outerLayer = CAShapeLayer()
   private let innerLayer = CAShapeLayer()
   
-  var didToggle: ((_ isSelected: Bool) -> Void)?
+  public var didToggle: ((_ isSelected: Bool) -> Void)?
   
-  var tintColors: [TKRadioButtonState: UIColor] = [:] {
+  public var tintColors: [TKRadioButtonState: UIColor] = [:] {
     didSet {
       updateAppearance()
     }
   }
   
-  var size: CGFloat = .zero {
+  public var padding: UIEdgeInsets = .zero {
     didSet {
-      updateAppearance()
+      invalidateIntrinsicContentSize()
+      setNeedsLayout()
     }
   }
   
-  override var isSelected: Bool {
+  public var size: CGFloat = .zero {
+    didSet {
+      updateAppearance()
+      invalidateIntrinsicContentSize()
+      setNeedsLayout()
+    }
+  }
+  
+  public override var isSelected: Bool {
     didSet {
       guard isSelected != oldValue else { return }
       updateAppearance()
@@ -31,7 +40,14 @@ final class RadioButton: UIControl {
     }
   }
   
-  override init(frame: CGRect) {
+  public override var isEnabled: Bool {
+    didSet {
+      guard isSelected != oldValue else { return }
+      alpha = isEnabled ? 1 : 0.48
+    }
+  }
+  
+  public override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
   }
@@ -46,7 +62,12 @@ final class RadioButton: UIControl {
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
-    .init(width: self.size, height: self.size)
+    .init(width: self.size + padding.left + padding.right,
+          height: self.size + padding.top + padding.bottom)
+  }
+  
+  public override var intrinsicContentSize: CGSize {
+    CGSize(width: self.size, height: self.size)
   }
 }
 
@@ -65,8 +86,8 @@ private extension RadioButton {
     
     let outerPath = UIBezierPath(
       ovalIn: CGRect(
-        x: (bounds.width - diameter) / 2,
-        y: (bounds.height - diameter) / 2,
+        x: (bounds.width - diameter - padding.right + padding.left) / 2,
+        y: (bounds.height - diameter - padding.bottom + padding.top) / 2,
         width: diameter,
         height: diameter
       )
@@ -74,8 +95,8 @@ private extension RadioButton {
     
     let innerPath = UIBezierPath(
       ovalIn: CGRect(
-        x: (size - innerDiameter) / 2,
-        y: (size - innerDiameter) / 2,
+        x: (bounds.width - innerDiameter - padding.right + padding.left) / 2,
+        y: (bounds.height - innerDiameter - padding.bottom + padding.top) / 2,
         width: innerDiameter,
         height: innerDiameter
       )

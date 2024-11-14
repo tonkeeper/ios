@@ -3,6 +3,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
+@MainActor
 public struct OnboardingModule {
   private let dependencies: Dependencies
   public init(dependencies: Dependencies) {

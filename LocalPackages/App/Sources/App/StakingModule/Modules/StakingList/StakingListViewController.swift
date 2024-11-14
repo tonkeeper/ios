@@ -24,13 +24,52 @@ final class StakingListViewController: GenericViewViewController<StakingListView
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.navigationBar.layoutIfNeeded()
+    customView.collectionView.contentInset.top = customView.navigationBar.bounds.height
+    customView.collectionView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
+  }
 }
 
 private extension StakingListViewController {
   func setup() {
-    navigationItem.title = viewModel.title
+    setupNavigationBar()
+    
+    customView.titleView.configure(
+      model: TKUINavigationBarTitleView.Model(
+        title: viewModel.title.withTextStyle(
+          .h3,
+          color: .Text.primary,
+          alignment: .center,
+          lineBreakMode: .byTruncatingTail
+        )
+      )
+    )
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
+  }
+  
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    if navigationController.viewControllers.count > 1 {
+      customView.navigationBar.leftViews = [
+        TKUINavigationBar.createBackButton {
+          navigationController.popViewController(animated: true)
+        }
+      ]
+    }
+    
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createCloseButton { [weak self] in
+        self?.viewModel.didTapCloseButton()
+      }
+    ]
   }
   
   func setupBindings() {

@@ -18,6 +18,17 @@ public struct Recipient: Equatable {
       }
     }
     
+    public var addressString: String {
+      switch self {
+      case .friendly(let friendlyAddress):
+        return friendlyAddress.toString()
+      case .raw(let address):
+        return address.toRaw()
+      case .domain(let domain):
+        return domain.friendlyAddress.toString()
+      }
+    }
+    
     public var shortAddressString: String {
       switch self {
       case .friendly(let friendlyAddress):
@@ -52,4 +63,9 @@ public struct Recipient: Equatable {
   
   public let recipientAddress: RecipientAddress
   public let isMemoRequired: Bool
+  
+  public init(recipientAddress: RecipientAddress, isMemoRequired: Bool) {
+    self.recipientAddress = recipientAddress
+    self.isMemoRequired = isMemoRequired
+  }
 }

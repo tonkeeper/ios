@@ -93,6 +93,9 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
             using: appInformationCellRegistration,
             for: indexPath,
             item: item)
+          cell.handleDiamondAction = { [weak self] in
+            self?.viewModel.openDevMenu()
+          }
           return cell
         case let item as SettingsButtonListItem:
           let cell = collectionView.dequeueConfiguredReusableCell(

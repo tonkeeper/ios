@@ -34,20 +34,27 @@ open class TKPlainButton: UIControl, ConfigurableView {
       }
     }
     public let title: NSAttributedString?
+    public let numberOfLines: Int
     public let icon: Icon?
+    public let isEnable: Bool
     public let action: (() -> Void)?
     
     public init(title: NSAttributedString?,
-                icon: Icon?,
+                numberOfLines: Int = 1,
+                icon: Icon? = nil,
+                isEnable: Bool = true,
                 action: (() -> Void)?) {
       self.title = title
+      self.numberOfLines = numberOfLines
       self.icon = icon
+      self.isEnable = isEnable
       self.action = action
     }
   }
   
   public func configure(model: Model) {
     label.attributedText = model.title
+    label.numberOfLines = model.numberOfLines
     if let icon = model.icon {
       iconImageView.image = icon.image
       iconImageView.tintColor = icon.tintColor

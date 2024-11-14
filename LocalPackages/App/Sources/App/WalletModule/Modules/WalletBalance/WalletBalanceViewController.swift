@@ -117,10 +117,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     let listButtonFooterRegistration = TKListCollectionViewButtonFooterViewRegistration.registration()
     let listButtonHeaderRegistration = TKListCollectionViewButtonHeaderViewRegistration.registration()
     dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
-      guard let snapshot = self?.dataSource.snapshot() else { return nil }
-      let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
-      switch elementKind {
-      case String.balanceHeaderElementKind:
+      if elementKind == String.balanceHeaderElementKind {
         let view = collectionView.dequeueReusableSupplementaryView(
           ofKind: elementKind,
           withReuseIdentifier: TKReusableContainerView.reuseIdentifier,
@@ -128,7 +125,12 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         ) as? TKReusableContainerView
         view?.setContentView(self?.customView.headerView)
         return view
+      }
+      
+      switch elementKind {
       case TKListCollectionViewButtonFooterView.elementKind:
+        guard let snapshot = self?.dataSource.snapshot() else { return nil }
+        let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
         switch snapshotSection {
         case .balance(let balanceSection):
           guard let configuration = balanceSection.footerConfiguration else { return nil}
@@ -141,6 +143,8 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         default: return nil
         }
       case TKListCollectionViewButtonHeaderView.elementKind:
+        guard let snapshot = self?.dataSource.snapshot() else { return nil }
+        let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
         switch snapshotSection {
         case .setup(let setupSection):
           let view = collectionView.dequeueConfiguredReusableSupplementary(
@@ -151,8 +155,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
           return view
         default: return nil
         }
-      default:
-        return nil
+      default: return nil
       }
     }
     

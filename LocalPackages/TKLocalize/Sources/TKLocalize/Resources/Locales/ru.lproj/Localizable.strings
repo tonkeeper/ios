@@ -14,8 +14,12 @@
 "actions.hide_collection" = "Скрыть коллекцию";
 "actions.hide_and_report_spam" = "Скрыть и пожаловаться";
 "actions.view_on_tonviewier" = "Открыть в Tonviewer";
+"actions.burn_nft" = "Сжечь NFT";
 
 "state.failed" = "Неуспешно";
+
+"result.success" = "Готово";
+"result.failure" = "Ошибка";
 
 "toast.copied" = "Скопировано";
 "toast.loading" = "Загрузка";
@@ -44,6 +48,8 @@
 "collectibles.title" = "Коллекции";
 "collectibles.collection_hidden" = "Коллекция скрыта";
 "collectibles.nft_hidden" = "Токен скрыт";
+"collectibles.collection_marked_as_spam" = "Коллекция помечена как спам";
+"collectibles.nft_marked_as_spam" = "NFT помечен как спам";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
@@ -60,6 +66,11 @@
 "browser.tab.explore" = "Витрина";
 "browser.tab.connected" = "Подключенные";
 "browser.list.all" = "Все";
+
+"browser.connected_apps.empty_title" = "Ваши приложения будут здесь";
+"browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Tonkeeper.";
+"browser.connected_apps.disconnect.title" = "Отключить";
+"browser.connected_apps.disconnect.button" = "Отключить";
 
 "browser.search_field.placeholder" = "Поиск";
 "browser.search.title" = "Браузер";
@@ -223,6 +234,11 @@
 "confirm_send.recipient.address" = "Адрес получателя";
 "confirm_send.confirm_button" = "Подтвердить и отправить";
 "confirm_send.confirm" = "Подтвердить";
+"confirm_send.risk.total" = "Всего: %@";
+"confirm_send.risk.total_nft" = "Всего: %@ + %ld NFT";
+"confirm_send.risk.caption_without_nft" = "Общая стоимость токенов, которые будут отправлены с вашего кошелька. Возвраты не учитываются в общей стоимости.";
+"confirm_send.risk.nft_caption" = "Общая стоимость токенов, за исключением стоимости NFT, которые будут отправлены с вашего кошелька. Возвраты не учитываются в общей стоимости.";
+"confirm_send.risk.action_button_title = Понятно";
 
 "customize_wallet.title" = "Кастомизируйте свой кошелёк";
 "customize_wallet.description" = "Имя и иконка кошелька хранятся локально на вашем устройстве.";
@@ -307,6 +323,7 @@
 "balance_list.staking_item.comment.staked" = "%@ TON будет зачислено";
 "balance_list.staking_item.comment.unstaked" = "%@ TON будет выведено";
 "balance_list.staking_item.comment.time_estimate" = "через %@";
+"balance_list.staking_item.comment.after_end_of_cycle" = "после окончания цикла";
 
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
@@ -330,6 +347,7 @@
 "action_types.future.send" = "Отправить";
 "action_types.future.receive" = "Получить";
 "action_types.sent" = "Отправлено";
+"action_types.burned" = "Сожжено";
 "action_types.received" = "Получено";
 "action_types.stake" = "Депозит";
 "action_types.unstake" = "Вывод";
@@ -404,9 +422,17 @@
 "nft_details.renew_until" = "Продлить до %@";
 "nft_details.expires_in_days" = "Истекает через %@ дней";
 "nft_details.unverified_nft" = "Непроверенный NFT";
+"nft_details.unverified_nft.unverified_description" = "NFT может быть небезопасным по\U00A0одной\U00A0из\U00A0следующих причин.";
+"nft_details.unverified_nft.used_for_spam_description" = "•\tИспользуется для\U00A0спама. Применяется для\U00A0отправки нерелевантных сообщений в\U00A0больших масштабах.";
+"nft_details.unverified_nft.used_for_scam_description" = "•\tИспользуется в\U00A0мошенничестве. Название NFT, информация или\U00A0изображение может вводить пользователей в\U00A0заблуждение.";
+"nft_details.unverified_nft.little_info_description" = "•\tМы пока мало знаем об\U00A0авторе и\U00A0истории этого NFT.";
+"nft_details.unverified_nft.report_spam" = "Пожаловаться на спам";
+"nft_details.unverified_nft.not_spam" = "Это не спам";
 "nft_details.about_collection" = "Подробнее о коллекции";
 "nft_details.domain_on_sale_description" = "Домен сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
 "nft_details.nft_on_sale_description" = "NFT сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
+"nft_details.actions.report_spam" = "Пожаловаться";
+"nft_details.actions.not_spam" = "Это не спам";
 
 "buy_list_popup.do_not_show_again" = "Не показывать снова";
 "buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper.";
@@ -427,6 +453,14 @@
 "signer_sign.step_three_description" = "Отсканируйте QR-код подписанной транзакции Signer";
 "signer_sign.transaction" = "Транзакция";
 
+"keystone_sign.step_one" = "Шаг 1";
+"keystone_sign.step_one_description" = "Отсканируйте QR-код с помощью Keystone";
+"keystone_sign.step_two" = "Шаг 2";
+"keystone_sign.step_two_description" = "Подтвердите транзакцию в Keystone";
+"keystone_sign.step_three" = "Шаг 3";
+"keystone_sign.step_three_description" = "Отсканируйте QR-код подписанной транзакции Keystone";
+"keystone_sign.transaction" = "Транзакция";
+
 "apy" = "APY";
 "max_apy" = "MAX APY";
 
@@ -442,14 +476,6 @@
 "staking_balance_details.tap_to_collect" = "Нажмите, чтобы вывести";
 "staking_balance_details.stake" = "Внести";
 "staking_balance_details.unstake" = "Вывести";
-
-"staking_confirmation_mapper.wallet" = "Кошелёк";
-"staking_confirmation_mapper.recipient" = "Получатель";
-"staking_confirmation_mapper.amount" = "Сумма";
-"staking_confirmation_mapper.apy" = "APY";
-"staking_confirmation_mapper.fee" = "Комиссия";
-"staking_confirmation_mapper.stake" = "Депозит";
-"staking_confirmation_mapper.confirm_action" = "Подтвердить действие";
 
 "staking.title" = "Стейкинг";
 
@@ -475,12 +501,16 @@
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Минимальный депозит";
 "staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+"staking_pool_details.choose" = "Выбрать";
 
 "ton_connect_mapper.connect_to" = "Войти в ";
 "ton_connect_mapper.requesting_capture" = "%@ запрашивает доступ к адресу вашего кошелька%@";
+"ton_connect_mapper.allow_notifications" = "Включить уведомления";
+"ton_connect.sure_check_service_address_connect_without_checking" = "Обязательно проверьте адрес сервиса перед подключением · Подключиться без дополнительной проверки в браузере";
 
 "ton_connect.connect_wallet" = "Подключить кошелёк";
 "ton_connect.allow_notifications" = "Разрешить уведомления";
+"ton_connect.open_browser_and_connect" = "Открыть браузер и подключиться";
 "ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
 
 "wallet_balance_list.join_channel" = "Присоединяйтесь к каналу Tonkeeper";
@@ -512,3 +542,60 @@
 "insufficientFunds.recharge_wallet" = "Пополнить кошелёк";
 "insufficientFunds.insufficient_balance" = "Недостаточный баланс";
 "insufficientFunds.buy_token_title" = "Купить %@";
+
+"transaction_confirmation.confirm_action" = "Подтвердить действие";
+"transaction_confirmation.wallet" = "Кошелёк";
+"transaction_confirmation.recipient" = "Получатель";
+"transaction_confirmation.fee" = "Комиссия";
+"transaction_confirmation.amount" = "Сумма";
+"transaction_confirmation.unstake_amount" = "Сумма вывода";
+"transaction_confirmation.unstake" = "Вывод";
+"transaction_confirmation.deposit" = "Депозит";
+"transaction_confirmation.comment" = "Комментарий";
+"transaction_confirmation.apy" = "APY";
+"transaction_confirmation.battery" = "Будет оплачена батарейкой";
+"transaction_confirmation.buttons.confirm_and_send" = "Подтвердить и отправить";
+"transaction_confirmation.buttons.confirm_and_stake" = "Подтвердить и внести";
+"transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
+"transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";
+
+"battery.refill.title" = "Батарейка Tonkeeper";
+"battery.refill.empty_caption" = "Обменивайте через Tonkeeper, отправляйте токены.";
+"battery.refill.supported_transactions" = "Поддерживаемые транзакции";
+"battery.refill.settings.title" = "Настройки батарейки";
+"battery.refill.settings.caption" = "Будут оплачены: ";
+"battery.refill.settings.caption.items.swaps" = "обмен через Tonkeeper";
+"battery.refill.settings.caption.items.token_transfers" = "отправка токенов";
+"battery.refill.settings.caption.items.NFT_transfers" = "отправка NFT";
+"battery.refill.iap.items.large" = "Большой";
+"battery.refill.iap.items.medium" = "Средний";
+"battery.refill.iap.items.small" = "Малый";
+"battery.refill.crypto.recharge" = "Зарядить за";
+"battery.refill.gift.title" = "Батарейка в подарок";
+"battery.refill.gift.caption" = "Поделись с друзьями";
+"battery.refill.charges_history.title" = "История зарядов";
+"battery.refill.charges_history.caption" = "Пополнение и возврат";
+"battery.refill.footer.description" = "Один заряд покрывает среднюю комиссию за транзакцию. Некоторые транзакции могут стоить дороже.";
+"battery.refill.footer.restore_purchase" = "Восстановить покупки";
+"battery.refill.charges.zero" = "зарядов";
+"battery.refill.charges.one" = "заряд";
+"battery.refill.charges.few" = "заряда";
+"battery.refill.charges.many" = "зарядов";
+"battery.refill.charges.other" = "зарядов";
+"battery.refill.promocode" = "Промокод";
+"battery.refill.toast.recharged" = "Батарейка заряжена";
+
+"battery.settings.title" = "Настройки батарейки";
+"battery.settings.caption" = "Выбранные транзакции будут оплачены батарейкой Tonkeeper.";
+"battery.settings.items.swaps.title" = "Обмен через Tonkeeper";
+"battery.settings.items.swaps.caption" = "за обмен";
+"battery.settings.items.token.title" = "Отправка токенов";
+"battery.settings.items.token.caption" = "за отправку";
+"battery.settings.items.nft.title" = "Отправка NFT";
+"battery.settings.items.nft.caption" = "за отправку";
+
+"battery.recharge.title" = "Зарядка";
+"battery.recharge.gift_title" = "Подарок";
+"battery.recharge.сustom_input.title" = "Другое количество";
+"battery.recharge.сustom_input.caption" = "Ввести вручную";
+"battery.recharge.toast.success" = "Батарейка зарядится за пару минут";

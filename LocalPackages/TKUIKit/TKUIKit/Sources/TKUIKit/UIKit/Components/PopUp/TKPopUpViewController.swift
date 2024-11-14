@@ -10,6 +10,8 @@ public extension TKPopUp {
     
     public let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
+    private let bottomStackViewContainer = UIView()
+    private let bottomStackView = UIStackView()
     
     public var didUpdateHeight: (() -> Void)?
     
@@ -39,12 +41,28 @@ public extension TKPopUp {
       didUpdateConfiguration()
     }
     
+    public override func viewDidLayoutSubviews() {
+      super.viewDidLayoutSubviews()
+      
+      bottomStackViewContainer.setNeedsLayout()
+      bottomStackViewContainer.layoutIfNeeded()
+      
+      scrollView.contentInset.bottom = bottomStackViewContainer.frame.height
+    }
+    
     private func didUpdateConfiguration() {
       contentStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
       for item in configuration.items {
         let view = item.getView()
         contentStackView.addArrangedSubview(view)
         contentStackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
+      }
+      
+      bottomStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      for item in configuration.bottomItems {
+        let view = item.getView()
+        bottomStackView.addArrangedSubview(view)
+        bottomStackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
       }
     }
     
@@ -53,14 +71,25 @@ public extension TKPopUp {
       
       contentStackView.axis = .vertical
       
+      bottomStackView.axis = .vertical
+      
       view.addSubview(scrollView)
+      view.addSubview(bottomStackViewContainer)
       scrollView.addSubview(contentStackView)
+      bottomStackViewContainer.addSubview(bottomStackView)
       
       scrollView.snp.makeConstraints { make in
         make.edges.equalTo(self.view)
       }
       contentStackView.snp.makeConstraints { make in
         make.edges.width.equalTo(scrollView)
+      }
+      bottomStackViewContainer.snp.makeConstraints { make in
+        make.left.bottom.right.equalTo(self.view)
+      }
+      bottomStackView.snp.makeConstraints { make in
+        make.top.left.right.equalTo(bottomStackViewContainer)
+        make.bottom.equalTo(bottomStackViewContainer.safeAreaLayoutGuide)
       }
     }
   }

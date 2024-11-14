@@ -38,9 +38,9 @@ final class ManageTokensViewModelImplementation: ManageTokensViewModel, ManageTo
     let itemCellConfigurations: [ManageTokensListItem: TKListItemCell.Configuration]
   }
   
-  //  // MARK: - ManageTokensModuleOutput
+  // MARK: - ManageTokensModuleOutput
   
-  //  // MARK: - ManageTokensViewModel
+  // MARK: - ManageTokensViewModel
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateSnapshot: ((ManageTokensViewController.Snapshot, Bool) -> Void)?
@@ -52,15 +52,12 @@ final class ManageTokensViewModelImplementation: ManageTokensViewModel, ManageTo
     
     model.didUpdateState = { [weak self] state in
       guard let self else { return }
-      Task {
-        await self.actor.addTask(block:{
-          guard !self.isDragging else { return }
-          let listModel = self.handleState(state: state)
-          await MainActor.run {
-            self.listModel = listModel
-            self.didUpdateSnapshot?(listModel.snapshot, false)
-          }
-        })
+      updateQueue.async {
+        let listModel = self.handleState(state: state)
+        DispatchQueue.main.async {
+          self.listModel = listModel
+          self.didUpdateSnapshot?(listModel.snapshot, false)
+        }
       }
     }
     
@@ -75,19 +72,11 @@ final class ManageTokensViewModelImplementation: ManageTokensViewModel, ManageTo
   }
   
   func didStartDragging() {
-    Task {
-      await actor.addTask {
-        self.isDragging = true
-      }
-    }
+    self.isDragging = true
   }
   
   func didStopDragging() {
-    Task {
-      await actor.addTask {
-        self.isDragging = false
-      }
-    }
+    self.isDragging = false
   }
   
   func movePinnedItem(from: Int, to: Int) {
@@ -99,32 +88,22 @@ final class ManageTokensViewModelImplementation: ManageTokensViewModel, ManageTo
   private var listModel = ListModel(snapshot: ManageTokensViewController.Snapshot(),
                                     itemCellConfigurations: [:])
   
-  private let actor = SerialActor<Void>()
-  private var isDragging = false {
-    didSet {
-      guard !isDragging else { return }
-      Task {
-        let state = await model.getState()
-        let listModel = self.handleState(state: state)
-        await MainActor.run {
-          self.listModel = listModel
-          self.didUpdateSnapshot?(listModel.snapshot, false)
-        }
-      }
-    }
-  }
+  private var isDragging = false
   
   // MARK: - Dependencies
   
   private let model: ManageTokensModel
   private let mapper: ManageTokensListMapper
+  private let updateQueue: DispatchQueue
   
   // MARK: - Init
   
   init(model: ManageTokensModel,
-       mapper: ManageTokensListMapper) {
+       mapper: ManageTokensListMapper,
+       updateQueue: DispatchQueue) {
     self.model = model
     self.mapper = mapper
+    self.updateQueue = updateQueue
   }
 }
 

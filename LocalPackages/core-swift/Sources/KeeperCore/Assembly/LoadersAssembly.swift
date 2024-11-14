@@ -7,15 +7,18 @@ public final class LoadersAssembly {
   private let storesAssembly: StoresAssembly
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let apiAssembly: APIAssembly
+  private let knownAccountsAssembly: KnownAccountsAssembly
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
-       apiAssembly: APIAssembly) {
+       apiAssembly: APIAssembly,
+       knownAccountsAssembly: KnownAccountsAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.apiAssembly = apiAssembly
+    self.knownAccountsAssembly = knownAccountsAssembly
   }
   
   var chartLoader: ChartV2Loader {
@@ -32,20 +35,6 @@ public final class LoadersAssembly {
       notificationsStore: storesAssembly.internalNotificationsStore
     )
     _internalNotificationsLoader = loader
-    return loader
-  }
-  
-  private weak var _fiatMethodsLoader: FiatMethodsLoader?
-  func fiatMethodsLoader() -> FiatMethodsLoader {
-    if let _fiatMethodsLoader {
-      return _fiatMethodsLoader
-    }
-    let loader = FiatMethodsLoader(
-      fiatMethodsStore: storesAssembly.fiatMethodsStore,
-      buySellMethodsService: servicesAssembly.buySellMethodsService(),
-      locationService: servicesAssembly.locationService()
-    )
-    _fiatMethodsLoader = loader
     return loader
   }
   
@@ -85,47 +74,47 @@ public final class LoadersAssembly {
       nftService: servicesAssembly.nftService()
     )
   }
-  
-  private weak var _walletStateLoader: WalletStateLoader?
-  public var walletStateLoader: WalletStateLoader {
-    if let _walletStateLoader {
-      return _walletStateLoader
+
+  private weak var _balanceLoader: BalanceLoader?
+  public var balanceLoader: BalanceLoader {
+    if let _balanceLoader {
+      return _balanceLoader
     }
-    let loader = WalletStateLoader(
-      balanceStore: storesAssembly.balanceStore,
+    let loader = BalanceLoader(
+      walletStore: storesAssembly.walletsStore,
       currencyStore: storesAssembly.currencyStore,
-      walletsStore: storesAssembly.walletsStore,
-      walletNFTSStore: storesAssembly.walletNFTsStore,
       ratesStore: storesAssembly.tonRatesStore,
-      stakingPoolsStore: storesAssembly.stackingPoolsStore,
-      balanceService: servicesAssembly.balanceService(),
-      stackingService: servicesAssembly.stackingService(),
-      accountNFTService: servicesAssembly.accountNftService(),
       ratesService: servicesAssembly.ratesService(),
-      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater
+      walletStateLoaderProvider: { self.walletBalanceLoaders(wallet: $0) }
     )
-    _walletStateLoader = loader
+    _balanceLoader = loader
     return loader
   }
   
-  // TODO: Rename and move to provider assembly
-  
-  private weak var _knownAccountsStore: KnownAccountsStore?
-  var knownAccountsStore: KnownAccountsStore {
-    if let knownAccountsStore = _knownAccountsStore {
-      return knownAccountsStore
-    } else {
-      let knownAccountsStore = KnownAccountsStore(
-        knownAccountsService: servicesAssembly.knownAccountsService()
-      )
-      _knownAccountsStore = knownAccountsStore
-      return knownAccountsStore
+  private var _walletBalanceLoaders = [Wallet: Weak<WalletBalanceLoader>]()
+  public func walletBalanceLoaders(wallet: Wallet) -> WalletBalanceLoader {
+    if let weakWrapper = _walletBalanceLoaders[wallet],
+       let store = weakWrapper.value {
+      return store
     }
+    let store = WalletBalanceLoader(
+      wallet: wallet,
+      balanceStore: storesAssembly.balanceStore,
+      stakingPoolsStore: storesAssembly.stackingPoolsStore,
+      walletNFTSStore: storesAssembly.walletNFTsStore,
+      ratesStore: storesAssembly.tonRatesStore,
+      balanceService: servicesAssembly.balanceService(),
+      stackingService: servicesAssembly.stackingService(),
+      accountNFTService: servicesAssembly.accountNftService(),
+      ratesService: servicesAssembly.ratesService()
+    )
+    _walletBalanceLoaders[wallet] = Weak(value: store)
+    return store
   }
   
   public func recipientResolver() -> RecipientResolver {
     RecipientResolverImplementation(
-      knownAccountsStore: knownAccountsStore,
+      knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider,
       dnsService: servicesAssembly.dnsService()
     )
   }

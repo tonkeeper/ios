@@ -23,6 +23,8 @@ public struct Wallet: Codable, Hashable {
   /// List of remembered favorite addresses
   let addressBook: [AddressBookEntry]
   
+  public let batterySettings: BatterySettings
+  
   /// Store your app-specific configuration here. Such as theme settings and other preferences.
   /// TODO: make this codeable so it can be backed up and sycned.
   //    let userInfo: [String:AnyObject]
@@ -39,7 +41,8 @@ public struct Wallet: Codable, Hashable {
        setupSettings: WalletSetupSettings,
        notificationSettings: NotificationSettings = NotificationSettings(isOn: false, dapps: [:]),
        backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
-       addressBook: [AddressBookEntry] = []) {
+       addressBook: [AddressBookEntry] = [],
+       batterySettings: BatterySettings) {
     self.id = id
     self.identity = identity
     self.metaData = metaData
@@ -47,6 +50,7 @@ public struct Wallet: Codable, Hashable {
     self.notificationSettings = notificationSettings
     self.backupSettings = backupSettings
     self.addressBook = addressBook
+    self.batterySettings = batterySettings
   }
   
   public static func == (lhs: Wallet, rhs: Wallet) -> Bool {
@@ -59,5 +63,17 @@ public struct Wallet: Codable, Hashable {
   
   public func hash(into hasher: inout Hasher) {
     hasher.combine(id)
+  }
+  
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.id = try container.decode(String.self, forKey: .id)
+    self.identity = try container.decode(WalletIdentity.self, forKey: .identity)
+    self.metaData = try container.decode(WalletMetaData.self, forKey: .metaData)
+    self.setupSettings = try container.decode(WalletSetupSettings.self, forKey: .setupSettings)
+    self.notificationSettings = try container.decode(NotificationSettings.self, forKey: .notificationSettings)
+    self.backupSettings = try container.decode(WalletBackupSettings.self, forKey: .backupSettings)
+    self.addressBook = try container.decode([AddressBookEntry].self, forKey: .addressBook)
+    self.batterySettings = try container.decodeIfPresent(BatterySettings.self, forKey: .batterySettings) ?? BatterySettings()
   }
 }

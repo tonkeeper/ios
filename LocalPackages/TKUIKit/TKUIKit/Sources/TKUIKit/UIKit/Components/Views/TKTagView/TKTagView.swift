@@ -1,7 +1,7 @@
 import UIKit
 
 public final class TKTagView: UIView {
-  public struct Configuration {
+  public struct Configuration: Hashable {
     public var text: NSAttributedString
     public var textPadding: UIEdgeInsets
     public var backgroundColor: UIColor

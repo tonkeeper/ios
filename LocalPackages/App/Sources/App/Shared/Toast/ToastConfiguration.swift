@@ -2,6 +2,15 @@ import TKUIKit
 import TKLocalize
 
 public extension ToastPresenter.Configuration {
+  
+  static func defaultConfiguration(text: String) -> ToastPresenter.Configuration {
+    ToastPresenter.Configuration(
+      title: text,
+      backgroundColor: .Background.contentTint,
+      foregroundColor: .Text.primary,
+      dismissRule: .default
+    )
+  }
 
   static var copied: ToastPresenter.Configuration {
     .init(

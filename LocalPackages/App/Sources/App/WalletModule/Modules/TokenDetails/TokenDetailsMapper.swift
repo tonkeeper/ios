@@ -15,21 +15,28 @@ struct TokenDetailsMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapTonBalance(tonBalance: ConvertedTonBalance, currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
-    let bigUIntAmount = BigUInt(tonBalance.tonBalance.amount)
-    let amount = amountFormatter.formatAmount(
+  func mapTonBalance(tonBalance: ConvertedTonBalance?, currency: Currency?) -> (tokenAmount: String, convertedAmount: String?) {
+    guard let amount = tonBalance?.tonBalance.amount else {
+      return ("0", nil)
+    }
+    let bigUIntAmount = BigUInt(amount)
+
+    let formattedAmount = amountFormatter.formatAmount(
       bigUIntAmount,
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       symbol: TonInfo.symbol
     )
-    let converted = decimalAmountFormatter.format(
-      amount: tonBalance.converted,
-      maximumFractionDigits: 2,
-      currency: currency
-    )
+    var converted: String?
+    if let currency, let convertedAmount = tonBalance?.converted {
+      converted = decimalAmountFormatter.format(
+        amount: convertedAmount,
+        maximumFractionDigits: 2,
+        currency: currency
+      )
+    }
     
-    return (amount, converted)
+    return (formattedAmount, converted)
   }
   
   func mapJettonBalance(jettonBalance: ConvertedJettonBalance, currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
@@ -76,8 +83,11 @@ struct TokenDetailsMapper {
     return (amount, convertedAmount)
   }
   
-  func mapJettonBalance(jettonBalance: JettonBalance,
-                        currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
+  func mapJettonBalance(jettonBalance: JettonBalance?,
+                        currency: Currency?) -> (tokenAmount: String, convertedAmount: String?) {
+    guard let jettonBalance else {
+      return ("0", nil)
+    }
     let amount = amountFormatter.formatAmount(
       jettonBalance.quantity,
       fractionDigits: jettonBalance.item.jettonInfo.fractionDigits,
@@ -86,7 +96,7 @@ struct TokenDetailsMapper {
     )
     
     var convertedAmount: String?
-    if let rate = jettonBalance.rates[currency] {
+    if let currency, let rate = jettonBalance.rates[currency] {
       let converted = rateConverter.convert(
         amount: jettonBalance.quantity,
         amountFractionLength: jettonBalance.item.jettonInfo.fractionDigits,

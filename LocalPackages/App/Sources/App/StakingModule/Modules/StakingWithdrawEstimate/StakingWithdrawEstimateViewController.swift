@@ -3,7 +3,7 @@ import TKUIKit
 import KeeperCore
 import BigInt
 
-final class StakingWithdrawEstimateViewController: UIViewController, StakingInputDetailsModuleInput {
+final class StakingWithdrawEstimateViewController: UIViewController {
 
   private let dateComponentsFormatter: DateComponentsFormatter = {
     let formatter = DateComponentsFormatter()

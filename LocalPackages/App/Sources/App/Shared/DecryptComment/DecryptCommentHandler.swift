@@ -20,7 +20,7 @@ final class DecryptCommentHandler {
         guard let passcode = await PasscodeInputCoordinator.getPasscode(
           parentCoordinator: parentCoordinator,
           parentRouter: parentRouter,
-          mnemonicsRepository: keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+          mnemonicsRepository: keeperCoreAssembly.secureAssembly.mnemonicsRepository(),
           securityStore: keeperCoreAssembly.storesAssembly.securityStore
         ) else { return }
         

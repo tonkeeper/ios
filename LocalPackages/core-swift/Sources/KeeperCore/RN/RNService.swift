@@ -23,12 +23,9 @@ public protocol RNService {
 
 final class RNServiceImplementation: RNService {
   private let asyncStorage: RNAsyncStorage
-  private let keychainVault: KeychainVault
   
-  init(asyncStorage: RNAsyncStorage,
-       keychainVault: KeychainVault) {
+  init(asyncStorage: RNAsyncStorage) {
     self.asyncStorage = asyncStorage
-    self.keychainVault = keychainVault
   }
   
   func needToMigrate() async -> Bool {

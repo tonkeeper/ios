@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class LinkDNSViewController: BasicViewController, TKBottomSheetScrollContentViewController {
   private let viewModel: LinkDNSViewModel
@@ -55,6 +56,9 @@ private extension LinkDNSViewController {
       modalCardViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
       modalCardViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor)
     ])
+    
+    modalCardViewController.successTitle = TKLocales.Result.success
+    modalCardViewController.errorTitle = TKLocales.Result.failure
   }
   
   func setupBindings() {

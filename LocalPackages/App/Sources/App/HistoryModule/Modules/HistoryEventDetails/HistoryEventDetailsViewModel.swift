@@ -253,7 +253,7 @@ private extension HistoryEventDetailsViewModelImplementation {
         action: .copy(copyValue: copyValue)
       )
     case .recipientAddress(let value, let copyValue):
-      item = HistoryEventDetailsListAddressItem(
+      item = TKListContainerFullValueItemItem(
         title: TKLocales.EventDetails.recipientAddress,
         value: value,
         copyValue: copyValue
@@ -269,7 +269,7 @@ private extension HistoryEventDetailsViewModelImplementation {
         action: .copy(copyValue: copyValue)
       )
     case .senderAddress(let value, let copyValue):
-      item = HistoryEventDetailsListAddressItem(
+      item = TKListContainerFullValueItemItem(
         title: TKLocales.EventDetails.senderAddress,
         value: value,
         copyValue: copyValue

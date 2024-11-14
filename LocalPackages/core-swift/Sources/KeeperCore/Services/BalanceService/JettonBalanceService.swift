@@ -21,7 +21,7 @@ final class JettonBalanceServiceImplementation: JettonBalanceService {
       address: wallet.address,
       currencies: currencies
     )
-    let filtered = tokensBalance.filter { $0.item.jettonInfo.verification != .blacklist }
+    let filtered = tokensBalance.filter { $0.item.jettonInfo.verification != .blacklist && !$0.quantity.isZero }
     return filtered
   }
 }

@@ -17,7 +17,7 @@ public struct BigIntAmountFormatter {
       let nonSignificantLength = fractionDigits - significantLength
       let significantPart = initialString.prefix(maximumFractionDigits).filter { $0 != "0" }
       let string = String(repeating: "0", count: nonSignificantLength) + significantPart
-      return "0" + (.fractionalSeparator ?? ".") + string
+      return "0" + (.fractionalSeparator) + string
     } else {
       let fractional = String(initialString.suffix(fractionDigits))
       let fractionalLength = min(fractionDigits, maximumFractionDigits)
@@ -27,7 +27,7 @@ public struct BigIntAmountFormatter {
       let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: .groupSeparator)
       var result = separatedInteger
       if fractionalResult.count > 0 {
-        result += (.fractionalSeparator ?? ".") + fractionalResult
+        result += (.fractionalSeparator) + fractionalResult
       }
       return result
     }
@@ -35,8 +35,7 @@ public struct BigIntAmountFormatter {
   
   public func bigInt(string: String, targetFractionalDigits: Int) throws -> (amount: BigInt, fractionalDigits: Int) {
     guard !string.isEmpty else { throw Error.invalidInput(string) }
-    let fractionalSeparator: String = .fractionalSeparator ?? ""
-    let components = string.components(separatedBy: fractionalSeparator)
+    let components = string.components(separatedBy: String.fractionalSeparator)
     guard components.count < 3 else { throw Error.invalidInput(string) }
     
     var fractionalDigits = 0
@@ -69,8 +68,10 @@ private extension Int {
 }
 
 private extension String {
-  static let groupSeparator = " "
-  static var fractionalSeparator: String? {
-    Locale.current.decimalSeparator
+  static var groupSeparator: String {
+    Locale.current.groupingSeparator ?? ""
+  }
+  static var fractionalSeparator: String {
+    Locale.current.decimalSeparator ?? ""
   }
 }

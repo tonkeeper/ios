@@ -44,7 +44,6 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   private var disconnectTask: Task<Void, Never>? = nil
   private var accountsTask: Task<Void, Never>? = nil
   
-  private var transport: BleTransportProtocol = BleTransport.shared
   private var tonTransport: TonTransport? = nil
   private var connectedDeviceId: String? = nil
   private var connectedDeviceProductName: String? = nil
@@ -64,8 +63,8 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     disconnectTask?.cancel()
     accountsTask?.cancel()
     
-    transport.stopScanning()
-    transport.disconnect(completion: nil)
+    bleTransport.stopScanning()
+    bleTransport.disconnect(completion: nil)
   }
   
   // MARK: - State
@@ -84,17 +83,20 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   // MARK: - Dependencies
   
   private let urlOpener: URLOpener
+  private let bleTransport: BleTransportProtocol
   
   // MARK: - Init
   
-  init(urlOpener: URLOpener) {
+  init(urlOpener: URLOpener,
+       bleTransport: BleTransportProtocol) {
     self.urlOpener = urlOpener
+    self.bleTransport = bleTransport
   }
 }
 
 private extension LedgerConnectViewModelImplementation {
   func listenBluetoothState() {
-    transport.bluetoothStateCallback { state in
+    bleTransport.bluetoothStateCallback { state in
       switch state {
       case .poweredOn:
         self.startScan()
@@ -108,11 +110,12 @@ private extension LedgerConnectViewModelImplementation {
     }
   }
   
-  func connect(peripheralInfo: PeripheralInfoTuple) {
+  func connect(peripheralInfo: PeripheralInfo) {
     print("Connecting to \(peripheralInfo.peripheral.name)...")
     
-    transport.disconnect() { _ in
-      self.transport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
+    bleTransport.disconnect() { [weak self] _ in
+      guard let self else { return }
+      self.bleTransport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
         print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
         if self.isClosed { return }
         
@@ -131,7 +134,7 @@ private extension LedgerConnectViewModelImplementation {
         }
       }, success: { result in
         print("Connected to \(result.name), udid: \(result.uuid)")
-        self.transport.stopScanning()
+        self.bleTransport.stopScanning()
         self.disconnectTask?.cancel()
         self.setConnected(peripheralInfo: peripheralInfo)
         self.waitForAppOpen()
@@ -145,11 +148,11 @@ private extension LedgerConnectViewModelImplementation {
   
   func startScan() {
     print("Start scanning bluetooth devices")
-    transport.stopScanning()
+    bleTransport.stopScanning()
     
     var connecting = false
     
-    transport.scan(duration: 5.0) { discoveries in
+    bleTransport.scan(duration: 25.0) { discoveries in
       guard let firstDiscovery = discoveries.first else { return }
       if !connecting {
         connecting = true
@@ -157,12 +160,12 @@ private extension LedgerConnectViewModelImplementation {
       }
     } stopped: { error in
       if let error = error {
-        if error == .scanningTimedOut {
-          print("Bluetooth scan timed out.")
+        switch error {
+        case .scanningTimedOut:
           if !connecting {
             self.startScan()
           }
-        } else {
+        default:
           print("Bluetooth scan error: \(error.localizedDescription)")
         }
       }
@@ -170,7 +173,7 @@ private extension LedgerConnectViewModelImplementation {
   }
   
   func waitForAppOpen() {
-    let tonTransport = TonTransport(transport: transport)
+    let tonTransport = TonTransport(transport: bleTransport)
     
     @Sendable func startPollTask() {
       let task = Task {
@@ -235,8 +238,8 @@ private extension LedgerConnectViewModelImplementation {
     self.state = .idle
   }
   
-  func setConnected(peripheralInfo: PeripheralInfoTuple) {
-    let deviceModel = Devices.fromServiceUuid(serviceUuid: peripheralInfo.serviceUUID)
+  func setConnected(peripheralInfo: PeripheralInfo) {
+    let deviceModel = LedgerDevice.getDeviceWith(serviceUUID: peripheralInfo.serviceUUID)
     self.connectedDeviceProductName = deviceModel.productName
     self.connectedDeviceId = peripheralInfo.peripheral.uuid.uuidString
     self.state = .bluetoothConnected

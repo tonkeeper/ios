@@ -1,14 +1,9 @@
 import UIKit
 
-public protocol TKListItemBadgeViewCustomView {
-  func getView() -> UIView
-}
-
 public final class TKListItemBadgeView: UIView {
-  
-  public enum Configuration {
+    
+  public enum Configuration: Hashable {
     case imageView(TKImageView.Model)
-    case customView(TKListItemBadgeViewCustomView)
     
     public static var `default`: Configuration {
       Configuration.imageView(TKImageView.Model(image: nil))
@@ -71,13 +66,6 @@ public final class TKListItemBadgeView: UIView {
       iconView.configure(model: configuration)
       customViewContainer.isHidden = true
       customView?.removeFromSuperview()
-    case .customView(let configuration):
-      customViewContainer.isHidden = false
-      let customView = configuration.getView()
-      customViewContainer.addSubview(customView)
-      self.customView = customView
-      iconView.isHidden = true
-      iconView.configure(model: TKImageView.Model(image: nil))
     }
   }
 }

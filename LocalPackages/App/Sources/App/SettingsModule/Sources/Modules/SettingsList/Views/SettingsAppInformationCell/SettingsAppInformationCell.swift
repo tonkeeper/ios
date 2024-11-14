@@ -4,10 +4,14 @@ import Lottie
 
 final class SettingsAppInformationCell: UICollectionViewCell {
   
+  var handleDiamondAction: (() -> Void)?
+  
   private let appNameLabel = UILabel()
   private let versionLabel = UILabel()
   private let diamondView = LottieAnimationView(name: "diamond.json", bundle: .module)
   private let stackView = UIStackView()
+  
+  private var diamondTapCount = 0
   
   struct Configuration: Hashable {
     let appName: String
@@ -88,5 +92,12 @@ private extension SettingsAppInformationCell {
   @objc
   func didTapDiamond() {
     diamondView.play()
+    diamondTapCount += 1
+    if diamondTapCount >= 5 {
+      handleDiamondAction?()
+    }
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      self.diamondTapCount = 0
+    }
   }
 }

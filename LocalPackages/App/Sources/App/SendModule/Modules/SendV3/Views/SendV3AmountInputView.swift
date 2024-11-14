@@ -22,7 +22,7 @@ final class SendV3AmountInputView: UIView {
   }()
   
   let balanceView = SendV3AmountBalanceView()
-  let tokenView = SendV3AmountInputTokenView()
+  let tokenView = TokenPickerButton()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -34,6 +34,9 @@ final class SendV3AmountInputView: UIView {
   }
 
   private func setup() {
+    tokenView.contentPadding = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 12)
+    tokenView.padding = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 12)
+    
     amountTextField.rightItems = [TKTextField.RightItem(view: tokenView, mode: .always)]
     
     addSubview(amountTextField)
@@ -52,8 +55,8 @@ final class SendV3AmountInputView: UIView {
       self?.didUpdateText?(text)
     }
     
-    tokenView.addAction(UIAction(handler: { [weak self] _ in
+    tokenView.didTap = { [weak self] in
       self?.didTapTokenPicker?()
-    }), for: .touchUpInside)
+    }
   }
 }

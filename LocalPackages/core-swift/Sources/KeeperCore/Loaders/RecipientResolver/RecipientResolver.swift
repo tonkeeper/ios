@@ -11,12 +11,12 @@ public struct RecipientResolverImplementation: RecipientResolver {
     case failedResolve(string: String)
   }
   
-  private let knownAccountsStore: KnownAccountsStore
+  private let knownAccountsProvider: KnownAccountsProvider
   private let dnsService: DNSService
   
-  init(knownAccountsStore: KnownAccountsStore, 
+  init(knownAccountsProvider: KnownAccountsProvider,
        dnsService: DNSService) {
-    self.knownAccountsStore = knownAccountsStore
+    self.knownAccountsProvider = knownAccountsProvider
     self.dnsService = dnsService
   }
   
@@ -44,12 +44,7 @@ public struct RecipientResolverImplementation: RecipientResolver {
   }
   
   private func isMemoRequired(for address: Address) async -> Bool {
-    let knownAccounts: [KnownAccount]
-    do {
-      knownAccounts = try await knownAccountsStore.getKnownAccounts()
-    } catch {
-      knownAccounts = []
-    }
+    let knownAccounts = await knownAccountsProvider.getKnownAccounts()
     
     if let knownAccount = knownAccounts.first(where: { $0.address == address }) {
       return knownAccount.requireMemo

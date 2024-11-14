@@ -13,7 +13,7 @@ struct StonfiSwapAssembly {
 
     let viewModel = StonfiSwapViewModelImplementation(
       wallet: wallet,
-      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore,
+      configuration: keeperCoreAssembly.configurationAssembly.configuration,
       messageHandler: messageHandler,
       fromToken: fromToken,
       toToken: toToken

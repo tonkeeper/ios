@@ -76,6 +76,7 @@ private extension CollectiblesCoordinator {
   }
 
   func openNFTDetails(wallet: Wallet, nft: NFT) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
@@ -113,6 +114,7 @@ private extension CollectiblesCoordinator {
   }
 
   func openPurchases(wallet: Wallet) {
+    guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     let module = SettingsPurchasesAssembly.module(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly

@@ -24,4 +24,13 @@ public enum Token: Equatable, Hashable {
       return jettonItem.jettonInfo.symbol ?? ""
     }
   }
+  
+  public var identifier: String {
+    switch self {
+    case .ton:
+      return TonInfo.symbol
+    case .jetton(let jettonItem):
+      return jettonItem.jettonInfo.address.toRaw()
+    }
+  }
 }

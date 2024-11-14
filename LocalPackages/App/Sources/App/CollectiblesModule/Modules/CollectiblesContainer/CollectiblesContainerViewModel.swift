@@ -30,7 +30,7 @@ final class CollectiblesContainerViewModelImplementation: CollectiblesContainerV
       }
     }
     
-    guard let wallet = try? walletsStore.getActiveWallet() else { return }
+    guard let wallet = try? walletsStore.activeWallet else { return }
     didChangeWallet?(wallet)
   }
   

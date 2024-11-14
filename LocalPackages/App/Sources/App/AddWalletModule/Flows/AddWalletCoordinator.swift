@@ -17,6 +17,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
   private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
   private let pairLedgerCoordinatorProvider: (ViewControllerRouter) -> PairLedgerCoordinator
+  private let pairKeystoneCoordinatorProvider: (NavigationControllerRouter) -> PairKeystoneCoordinator
   
   init(router: ViewControllerRouter,
        options: [AddWalletOption],
@@ -25,7 +26,8 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
        importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator,
        importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
        pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator,
-       pairLedgerCoordinatorProvider: @escaping (ViewControllerRouter) -> PairLedgerCoordinator) {
+       pairLedgerCoordinatorProvider: @escaping (ViewControllerRouter) -> PairLedgerCoordinator,
+       pairKeystoneCoordinatorProvider:  @escaping (NavigationControllerRouter) -> PairKeystoneCoordinator) {
     self.walletAddController = walletAddController
     self.options = options
     self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
@@ -33,6 +35,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
     self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
     self.pairSignerCoordinatorProvider = pairSignerCoordinatorProvider
     self.pairLedgerCoordinatorProvider = pairLedgerCoordinatorProvider
+    self.pairKeystoneCoordinatorProvider = pairKeystoneCoordinatorProvider
     super.init(router: router)
   }
   
@@ -87,6 +90,8 @@ private extension AddWalletCoordinator {
       openAddWallet(isTestnet: true)
     case .signer:
       openPairSigner()
+    case .keystone:
+      openPairKeystone()
     case .ledger:
       openPairLedger()
     }
@@ -170,6 +175,38 @@ private extension AddWalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
+  }
+  
+  func openPairKeystone() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let coordinator = pairKeystoneCoordinatorProvider(
+      router
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+      self?.router.dismiss(animated: true, completion: {
+        self?.didCancel?()
+      })
+    }
+    
+    coordinator.didPaired = {[weak self, weak coordinator] in
+      router.dismiss(animated: true) {
+        self?.didAddWallets?()
+      }
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
     
     self.router.present(navigationController, onDismiss: { [weak self] in
       self?.didCancel?()

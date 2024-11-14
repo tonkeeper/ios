@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import BigInt
 
+@MainActor
 struct SendModule {
   private let dependencies: Dependencies
   public init(dependencies: Dependencies) {

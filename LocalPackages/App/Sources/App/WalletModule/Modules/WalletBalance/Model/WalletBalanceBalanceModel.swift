@@ -31,12 +31,12 @@ final class WalletBalanceBalanceModel {
   private let walletsStore: WalletsStore
   private let balanceStore: ManagedBalanceStore
   private let stackingPoolsStore: StakingPoolsStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   
   init(walletsStore: WalletsStore,
        balanceStore: ManagedBalanceStore,
        stackingPoolsStore: StakingPoolsStore,
-       appSettingsStore: AppSettingsV3Store) {
+       appSettingsStore: AppSettingsStore) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.stackingPoolsStore = stackingPoolsStore
@@ -60,7 +60,7 @@ final class WalletBalanceBalanceModel {
   }
   
   func getItems() throws -> BalanceListItems {
-    let activeWallet = try walletsStore.getActiveWallet()
+    let activeWallet = try walletsStore.activeWallet
     let isSecureMode = appSettingsStore.getState().isSecureMode
     let balanceState = balanceStore.getState()[activeWallet]
     let stakingPools = stackingPoolsStore.getState()[activeWallet]
@@ -73,10 +73,10 @@ final class WalletBalanceBalanceModel {
   }
   
   func getItems() async throws -> BalanceListItems {
-    let activeWallet = try await walletsStore.getActiveWallet()
-    let isSecureMode = await appSettingsStore.getState().isSecureMode
-    let balanceState = await balanceStore.getState()[activeWallet]
-    let stakingPools = await stackingPoolsStore.getState()[activeWallet]
+    let activeWallet = try walletsStore.activeWallet
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    let balanceState = balanceStore.getState()[activeWallet]
+    let stakingPools = stackingPoolsStore.getState()[activeWallet]
     return createItems(
       wallet: activeWallet,
       balanceState: balanceState,
@@ -90,6 +90,8 @@ final class WalletBalanceBalanceModel {
       switch event {
       case .didChangeActiveWallet:
         await self.actor.addTask(block: { await self.updateItems() })
+      case .didUpdateWalletMetaData:
+        await self.actor.addTask(block: { await self.updateItems() })
       default: break
       }
     }
@@ -98,8 +100,8 @@ final class WalletBalanceBalanceModel {
   private func didGetBalanceStoreEvent(_ event: ManagedBalanceStore.Event) {
     Task {
       switch event {
-      case .didUpdateManagedBalance(_, let wallet):
-        switch await walletsStore.getState() {
+      case .didUpdateManagedBalance(let wallet):
+        switch walletsStore.getState() {
         case .empty: break
         case .wallets(let state):
           guard state.activeWalelt == wallet else { return }
@@ -112,8 +114,8 @@ final class WalletBalanceBalanceModel {
   private func didGetStackingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
     Task {
       switch event {
-      case .didUpdateStakingPools(_, let wallet):
-        switch await walletsStore.getState() {
+      case .didUpdateStakingPools(let wallet):
+        switch walletsStore.getState() {
         case .empty: break
         case .wallets(let state):
           guard state.activeWalelt == wallet else { return }
@@ -123,20 +125,20 @@ final class WalletBalanceBalanceModel {
     }
   }
   
-  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsStore.Event) {
     Task {
       await self.actor.addTask(block: { await self.updateItems() })
     }
   }
   
   private func updateItems() async {
-    let walletsStoreState = await walletsStore.getState()
+    let walletsStoreState = walletsStore.state
     switch walletsStoreState {
     case .empty: break
     case .wallets(let walletsState):
-      let isSecureMode = await appSettingsStore.getState().isSecureMode
-      let balanceState = await balanceStore.getState()[walletsState.activeWalelt]
-      let stakingPools = await stackingPoolsStore.getState()[walletsState.activeWalelt]
+      let isSecureMode = appSettingsStore.state.isSecureMode
+      let balanceState = balanceStore.state[walletsState.activeWalelt]
+      let stakingPools = stackingPoolsStore.state[walletsState.activeWalelt]
       let items = createItems(
         wallet: walletsState.activeWalelt,
         balanceState: balanceState,

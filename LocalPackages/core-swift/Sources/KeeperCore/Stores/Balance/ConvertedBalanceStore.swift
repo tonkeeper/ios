@@ -2,10 +2,10 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, ConvertedBalanceStore.State> {
+public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, ConvertedBalanceStore.State> {
   public typealias State = [Wallet: ConvertedBalanceState]
   public enum Event {
-    case didUpdateConvertedBalance(state: ConvertedBalanceState, wallet: Wallet)
+    case didUpdateConvertedBalance(wallet: Wallet)
   }
   
   private let walletsStore: WalletsStore
@@ -22,73 +22,53 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     super.init(state: [:])
-    balanceStore.addObserver(self) { observer, event in
-      observer.didGetBalanceStoreEvent(event)
-    }
-    tonRatesStore.addObserver(self) { observer, event in
-      observer.didGetTonRatesStoreEvent(event)
-    }
+    setupObservations()
   }
   
-  public override var initialState: State {
-    let wallets = walletsStore.wallets
-    let balanceStates = balanceStore.getState()
-    let tonRates = tonRatesStore.getState()
-    let currency = currencyStore.getState()
+  public override func createInitialState() -> State {
+    calculateState(wallets: walletsStore.wallets)
+  }
+  
+  private func calculateState(wallets: [Wallet]) -> State {
+    guard !wallets.isEmpty else { return [:] }
+    let balanceStates = balanceStore.state
+    let tonRates = tonRatesStore.state
+    let currency = currencyStore.state
+    
+    let rates = tonRates.first(where: { $0.currency == currency })
     
     var state = State()
     for wallet in wallets {
       guard let walletBalanceState = balanceStates[wallet] else { continue }
       state[wallet] = recalculateBalance(
         balanceState: walletBalanceState,
-        tonRate: tonRates.first(where: { $0.currency == currency }),
+        tonRate: rates,
         currency: currency
       )
     }
     return state
   }
   
-  private func didGetBalanceStoreEvent(_ event: BalanceStore.Event) {
-    Task {
+  private func setupObservations() {
+    balanceStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateBalanceState(let wallet, _):
-        await updateState(wallet: wallet)
+      case .didUpdateBalanceState(let wallet):
+        observer.updateState(wallets: [wallet])
       }
+    }
+    tonRatesStore.addObserver(self) { observer, event in
+      observer.updateState(wallets: observer.walletsStore.wallets)
     }
   }
   
-  private func didGetTonRatesStoreEvent(_ event: TonRatesStore.Event) {
-    Task {
-      switch event {
-      case .didUpdateTonRates:
-        let wallets = walletsStore.wallets
-        for wallet in wallets {
-          await updateState(wallet: wallet)
-        }
-      }
-    }
-  }
-  
-  private func updateState(wallet: Wallet) async {
-    var convertedBalanceState: ConvertedBalanceState?
-    await setState { state in
-      guard let balanceState = self.balanceStore.getState()[wallet] else {
-        return nil
-      }
-      let tonRates = self.tonRatesStore.getState()
-      let currency = self.currencyStore.getState()
-      
-      convertedBalanceState = self.recalculateBalance(
-        balanceState: balanceState,
-        tonRate: tonRates.first(where: { $0.currency == currency }),
-        currency: currency
-      )
-      var updatedState = state
-      updatedState[wallet] = convertedBalanceState
+  private func updateState(wallets: [Wallet]) {
+    updateState { [weak self] state in
+      guard let self else { return nil }
+      let walletsState = self.calculateState(wallets: wallets)
+      let updatedState = state.merging(walletsState, uniquingKeysWith: { $1 })
       return StateUpdate(newState: updatedState)
-    } notify: { _ in
-      guard let convertedBalanceState else { return }
-      self.sendEvent(.didUpdateConvertedBalance(state: convertedBalanceState, wallet: wallet))
+    } completion: { [weak self] _ in
+      wallets.forEach { self?.sendEvent(.didUpdateConvertedBalance(wallet: $0)) }
     }
   }
   

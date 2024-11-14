@@ -3,7 +3,9 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-public protocol SettingsListModuleOutput: AnyObject {}
+public protocol SettingsListModuleOutput: AnyObject {
+  var didOpenDevMenu: (() -> Void)? { get set }
+}
 
 protocol SettingsListViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
@@ -11,6 +13,7 @@ protocol SettingsListViewModel: AnyObject {
   var selectedItems: Set<SettingsListItem> { get }
 
   func viewDidLoad()
+  func openDevMenu()
 }
 
 struct SettingsListState {
@@ -31,6 +34,8 @@ extension SettingsListConfigurator {
 final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
   
   // MARK: - SettingsListModuleOutput
+  
+  var didOpenDevMenu: (() -> Void)?
   
   // MARK: - SettingsListViewModel
   
@@ -53,6 +58,9 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     update(with: state, animated: false)
   }
 
+  func openDevMenu() {
+    didOpenDevMenu?()
+  }
   
   private let configurator: SettingsListConfigurator
   

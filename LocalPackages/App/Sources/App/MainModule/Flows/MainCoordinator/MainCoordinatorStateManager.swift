@@ -41,7 +41,7 @@ final class MainCoordinatorStateManager {
   }
   
   func getState() throws -> State {
-    let wallet = try walletsStore.getActiveWallet()
+    let wallet = try walletsStore.activeWallet
     
     let nfts = walletNFTsManagedStore?.getState() ?? []
     let state = createState(activeWallet: wallet, nfts: nfts)
@@ -69,7 +69,7 @@ final class MainCoordinatorStateManager {
   }
   
   private func updateWalletNFTsManagedStore() {
-    if let wallet = try? walletsStore.getActiveWallet() {
+    if let wallet = try? walletsStore.activeWallet {
       self.walletNFTsManagedStore = walletNFTsManagedStoreProvider(wallet)
       self.walletNFTsManagedStore?.addObserver(self, closure: { observer, event in
         DispatchQueue.main.async {

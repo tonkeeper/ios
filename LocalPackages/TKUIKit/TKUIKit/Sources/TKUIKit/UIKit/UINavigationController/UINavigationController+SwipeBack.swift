@@ -27,7 +27,7 @@ extension UINavigationController: UIGestureRecognizerDelegate {
   public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
     let isSystemSwipeToBackEnabled = interactivePopGestureRecognizer?.isEnabled == true
     let isThereStackedViewControllers = viewControllers.count > 1
-    if let panGestureRecognizer = gestureRecognizer as? UIPanGestureRecognizer {
+    if let _ = gestureRecognizer as? UIPanGestureRecognizer {
       return isSystemSwipeToBackEnabled && isThereStackedViewControllers
     }
     return false

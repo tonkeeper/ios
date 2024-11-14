@@ -23,6 +23,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapNotifications: ((Wallet) -> Void)?
   var didTapW5Wallet: ((Wallet) -> Void)?
   var didTapV4Wallet: ((Wallet) -> Void)?
+  var didTapBattery: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -40,10 +41,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private var wallet: Wallet
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let appSettingsStore: AppSettingsV3Store
+  private let appSettingsStore: AppSettingsStore
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
-  private let configurationStore: ConfigurationStore
+  private let configuration: Configuration
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -52,10 +53,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   init(wallet: Wallet,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
-       appSettingsStore: AppSettingsV3Store,
+       appSettingsStore: AppSettingsStore,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
-       configurationStore: ConfigurationStore,
+       configuration: Configuration,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -64,7 +65,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.appSettingsStore = appSettingsStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
-    self.configurationStore = configurationStore
+    self.configuration = configuration
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -122,7 +123,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     var sections = [SettingsListSection]()
     
     sections.append(createWalletEditSection())
-    if let walletSettingsSection = createWalletSettingsSection() {
+    if let walletSettingsSection = createWalletSettingsSection(configuration: configuration) {
       sections.append(walletSettingsSection)
     }
     if let appSettingsSection = createAppSettingsSection() {
@@ -148,7 +149,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func createWalletSettingsSection() -> SettingsListSection? {
+  private func createWalletSettingsSection(configuration: Configuration) -> SettingsListSection? {
     var items = [AnyHashable]()
     if let backupItem = createBackupItem() {
       items.append(backupItem)
@@ -160,6 +161,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
     if let v4Item = createV4Item() {
       items.append(v4Item)
+    }
+    if let batteryItem = createBatteryItem(isBeta: configuration.isBatteryBeta(isTestnet: wallet.isTestnet)) {
+      items.append(batteryItem)
     }
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
@@ -401,7 +405,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.search)
         )))
 
-    let searchEngine = appSettingsStore.initialState.searchEngine
+    let searchEngine = appSettingsStore.state.searchEngine
     return SettingsListItem(
       id: .searchItemIdentifier,
       cellConfiguration: cellConfiguration,
@@ -420,7 +424,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                           value: nil,
                           description: nil,
                           icon: nil) {
-            Task { await self.appSettingsStore.updateSearchEngine(item) }
+            self.appSettingsStore.setSearchEngine(item)
           }
         }
 
@@ -483,11 +487,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.question, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .faqUrl else {
             return
           }
@@ -510,11 +513,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Accent.blue)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .directSupportUrl else {
             return
           }
@@ -537,11 +539,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .tonkeeperNewsUrl else {
             return
           }
@@ -564,11 +565,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.messageBubble, tintColor: .Icon.secondary)),
       onSelection: {
-        [weak self, configurationStore] _ in
+        [weak self, configuration] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = await configurationStore
-            .getConfiguration()
+          guard let contactUsURL = configuration
             .supportLink else {
             return
           }
@@ -776,6 +776,32 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func createBatteryItem(isBeta: Bool) -> SettingsListItem? {
+    guard wallet.kind == .regular else { return nil}
+    var tags = [TKTagView.Configuration]()
+    if isBeta {
+      tags.append(TKTagView.Configuration.tag(text: "BETA"))
+    }
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Battery",
+            tags: tags
+          )
+        )))
+    return SettingsListItem(
+      id: .batteryIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.battery, tintColor: .Accent.blue)),
+      onSelection: {
+        [weak self] _ in
+        guard let self else { return }
+        self.didTapBattery?(wallet)
+      }
+    )
+  }
 }
 
 private extension String {
@@ -796,4 +822,5 @@ private extension String {
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
   static let notificationsIdentifier = "Notifications item"
+  static let batteryIdentifier = "Battery item"
 }

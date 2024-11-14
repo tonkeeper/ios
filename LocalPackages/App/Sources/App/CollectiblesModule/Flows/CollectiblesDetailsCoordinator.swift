@@ -22,12 +22,13 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+
   public init(router: NavigationControllerRouter,
               nft: NFT,
               wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
-              keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+              keeperCoreMainAssembly: KeeperCore.MainAssembly
+  ) {
     self.nft = nft
     self.wallet = wallet
     self.coreAssembly = coreAssembly
@@ -74,6 +75,17 @@ private extension CollectiblesDetailsCoordinator {
       self?.openTransfer(nft: nft)
     }
     
+    module.output.didTapBurn = { [weak self] nft in
+      guard let self = self, let burnAddress = FriendlyAddress.burnAddress else {
+        return
+      }
+      
+      openTransfer(
+        nft: nft,
+        recipient: Recipient(recipientAddress: .friendly(burnAddress), isMemoRequired: false)
+      )
+    }
+    
     module.output.didTapLinkDomain = { [weak self] wallet, nft in
       self?.openLinkDomain(wallet: wallet, nft: nft)
     }
@@ -94,7 +106,7 @@ private extension CollectiblesDetailsCoordinator {
       PasscodeInputCoordinator.present(
         parentCoordinator: self,
         parentRouter: self.router,
-        mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+        mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         onCancel: { },
         onInput: { passcode in
@@ -112,7 +124,7 @@ private extension CollectiblesDetailsCoordinator {
             let proofProvider = TonConnectNFTProofProvider(
               wallet: self.wallet,
               nft: self.nft,
-              mnemonicRepository: self.keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
+              mnemonicRepository: self.keeperCoreMainAssembly.secureAssembly.mnemonicsRepository()
             )
             guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
               await MainActor.run {
@@ -135,8 +147,7 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
-      let linkBuilder = TonviewerLinkBuilder(configurationStore: configurationStore)
+      let linkBuilder = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
       guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
@@ -148,29 +159,49 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      Task {
-        let toastTitle: String
-        if self.nft.collection != nil {
-          toastTitle = TKLocales.Collectibles.collectionHidden
-        } else {
-          toastTitle = TKLocales.Collectibles.nftHidden
-        }
+      let toastTitle: String
+      if self.nft.collection != nil {
+        toastTitle = TKLocales.Collectibles.collectionHidden
+      } else {
+        toastTitle = TKLocales.Collectibles.nftHidden
+      }
 
-        await MainActor.run {
-          self.router.dismiss(animated: true, completion: {
-            let configuration = ToastPresenter.Configuration(title: toastTitle)
-            ToastPresenter.showToast(configuration: configuration)
-          })
-        }
+      DispatchQueue.main.async {
+        let configuration = ToastPresenter.Configuration(title: toastTitle)
+        ToastPresenter.showToast(configuration: configuration)
+        self.didClose?()
+      }
+    }
+
+    module.output.didTapUnverifiedNftDetails = { [weak self] in
+      self?.openUnverifiedNftInfoPopup()
+    }
+
+    module.output.didTapReportSpam = { [weak self] in
+      guard let self else {
+        return
+      }
+
+      let toastTitle: String
+      if self.nft.collection != nil {
+        toastTitle = TKLocales.Collectibles.collectionMarkedAsSpam
+      } else {
+        toastTitle = TKLocales.Collectibles.nftMarkedAsSpam
+      }
+
+      DispatchQueue.main.async {
+        let configuration = ToastPresenter.Configuration(title: toastTitle)
+        ToastPresenter.showToast(configuration: configuration)
+        self.didClose?()
       }
     }
 
     router.push(viewController: module.view)
   }
 
-  func openTransfer(nft: NFT) {
+  func openTransfer(nft: NFT, recipient: Optional<Recipient> = nil) {
     let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let sendTokenCoordinator = SendModule(
       dependencies: SendModule.Dependencies(
@@ -180,7 +211,8 @@ private extension CollectiblesDetailsCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .nft(nft)
+      sendItem: .nft(nft),
+      recipient: recipient
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
@@ -198,7 +230,102 @@ private extension CollectiblesDetailsCoordinator {
     
     self.router.rootViewController.present(navigationController, animated: true)
   }
-  
+
+  func openUnverifiedNftInfoPopup() {
+    let viewController = InfoPopupBottomSheetViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+
+    let nftService = keeperCoreMainAssembly.servicesAssembly.nftService()
+    let nftManagmentStore = keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
+    let state: NFTsManagementState.NFTState?
+    if let collection = nft.collection {
+      state = nftManagmentStore.getState().nftStates[.collection(collection.address)]
+    } else {
+      state = nftManagmentStore.getState().nftStates[.singleItem(nft.address)]
+    }
+
+    var reportSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    reportSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.reportSpam))
+    reportSpamButton.backgroundColors = [
+      .normal: .Accent.orange,
+      .highlighted: .Accent.orange.withAlphaComponent(0.64)
+    ]
+    reportSpamButton.action = {
+      [weak bottomSheetViewController, nft, weak nftManagmentStore, nftService, weak self] in
+
+      bottomSheetViewController?.dismiss() {
+        Task {
+          let isTestnet = self?.wallet.isTestnet ?? false
+
+          let toastTitle: String
+          if nft.collection != nil {
+            toastTitle = TKLocales.Collectibles.collectionMarkedAsSpam
+          } else {
+            toastTitle = TKLocales.Collectibles.nftMarkedAsSpam
+          }
+
+          ToastPresenter.showToast(configuration: .loading)
+          try? await nftService.changeSuspiciousState(nft, isTestnet: isTestnet, isScam: true)
+
+          if let collection = nft.collection {
+            await nftManagmentStore?.spamItem(.collection(collection.address))
+          } else {
+            await nftManagmentStore?.spamItem(.singleItem(nft.address))
+          }
+
+          await MainActor.run {
+            ToastPresenter.hideAll()
+
+            let configuration = ToastPresenter.Configuration(title: toastTitle)
+            ToastPresenter.showToast(configuration: configuration)
+            self?.didClose?()
+          }
+        }
+      }
+    }
+
+    var notSpamButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    notSpamButton.content = .init(title: .plainString(TKLocales.NftDetails.UnverifiedNft.notSpam))
+    notSpamButton.action = { [weak bottomSheetViewController, nft, weak nftManagmentStore, nftService, weak self] in
+      Task {
+        bottomSheetViewController?.dismiss()
+
+        let isTestnet = self?.wallet.isTestnet ?? false
+        try? await nftService.changeSuspiciousState(nft, isTestnet: isTestnet, isScam: false)
+        if let collection = nft.collection {
+          await nftManagmentStore?.approveItem(.collection(collection.address))
+        } else {
+          await nftManagmentStore?.approveItem(.singleItem(nft.address))
+        }
+      }
+    }
+
+    let content = [
+      TKLocales.NftDetails.UnverifiedNft.usedForSpamDescription,
+      TKLocales.NftDetails.UnverifiedNft.usedForScamDescription,
+      TKLocales.NftDetails.UnverifiedNft.littleInfoDescription
+    ]
+
+    var buttons = [reportSpamButton]
+    if state != .approved {
+      buttons.append(notSpamButton)
+    }
+
+    let configuration = configurationBuilder.commonConfiguration(
+      title: TKLocales.NftDetails.unverifiedNft,
+      caption: TKLocales.NftDetails.UnverifiedNft.unverifiedDescription,
+      body: [.textWithTabs(content: content)],
+      buttons: buttons
+    )
+
+    viewController.configuration = configuration
+    let presented = router.rootViewController.presentedViewController ?? router.rootViewController
+    bottomSheetViewController.present(fromViewController: presented)
+  }
+
   func openLinkDomain(wallet: Wallet, nft: NFT) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
@@ -293,5 +420,10 @@ private extension CollectiblesDetailsCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
   }
+}
+
+private extension FriendlyAddress {
+  static var burnAddress: FriendlyAddress? = try? FriendlyAddress(string: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
 }

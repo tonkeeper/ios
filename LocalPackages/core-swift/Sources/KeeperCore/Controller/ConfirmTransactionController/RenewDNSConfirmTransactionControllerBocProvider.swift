@@ -4,14 +4,11 @@ import TonSwift
 public final class RenewDNSConfirmTransactionControllerBocProvider: ConfirmTransactionControllerBocProvider {
   private let nft: NFT
   private let sendService: SendService
-  private let signClosure: (WalletTransfer) async throws -> Data
   
   public init(nft: NFT,
-              sendService: SendService,
-              signClosure: @escaping (WalletTransfer) async throws -> Data) {
+              sendService: SendService) {
     self.nft = nft
     self.sendService = sendService
-    self.signClosure = signClosure
   }
   
   public func createBoc(wallet: Wallet, seqno: UInt64, timeout: UInt64) async throws -> String {
@@ -19,13 +16,32 @@ public final class RenewDNSConfirmTransactionControllerBocProvider: ConfirmTrans
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let amount = OP_AMOUNT.CHANGE_DNS_RECORD
     
-    return try await ChangeDNSRecordMessageBuilder.renewDNSMessage(
+    let transferData = TransferData(
+      transfer: .changeDNSRecord(
+        .renew(
+          TransferData.ChangeDNSRecord.RenewDNS(
+            nftAddress: nft.address,
+            linkAmount: amount
+          )
+        )
+      ),
       wallet: wallet,
+      messageType: .ext,
       seqno: seqno,
-      nftAddress: nft.address,
-      linkAmount: amount,
-      timeout: timeout,
-      signClosure: signClosure
+      timeout: timeout
     )
+    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+      .createUnsignedWalletTransfer(
+        wallet: wallet
+      )
+    
+    let signed = try TransferSigner.signWalletTransfer(
+      walletTransfer,
+      wallet: wallet,
+      seqno: transferData.seqno,
+      signer: WalletTransferEmptyKeySigner()
+    ).toBoc().hexString()
+    
+    return signed
   }
 }

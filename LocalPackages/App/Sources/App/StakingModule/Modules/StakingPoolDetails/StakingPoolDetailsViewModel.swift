@@ -9,6 +9,7 @@ protocol StakingPoolDetailsModuleOutput: AnyObject {
   var didSelectPool: ((StackingPoolInfo) -> Void)? { get set }
   var didOpenURL: ((URL) -> Void)? { get set }
   var didOpenURLInApp: ((URL, String?) -> Void)? { get set }
+  var didClose: (() -> Void)? { get set }
 }
 
 protocol StakingPoolDetailsModuleInput: AnyObject {
@@ -24,6 +25,7 @@ protocol StakingPoolDetailsViewModel: AnyObject {
   
   func viewDidLoad()
   func didTapChooseButton()
+  func didTapCloseButton()
 }
 
 final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewModel, StakingPoolDetailsModuleOutput {
@@ -45,6 +47,7 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
   var didSelectPool: ((StackingPoolInfo) -> Void)?
   var didOpenURLInApp: ((URL, String?) -> Void)?
   var didOpenURL: ((URL) -> Void)?
+  var didClose: (() -> Void)?
   
   // MARK: - StakingViewModel
   
@@ -53,7 +56,7 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
   }
   
   var buttonTitle: String {
-    "Choose"
+    TKLocales.StakingPoolDetails.choose
   }
   
   var listViewModel: StakingDetailsListView.Model {
@@ -76,16 +79,15 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
     )
   }
   
-  func viewDidLoad() {
-    
+  func viewDidLoad() {}
+  
+  func didTapCloseButton() {
+    didClose?()
   }
   
   func didTapChooseButton() {
     didSelectPool?(pool.pool)
   }
-}
-
-private extension StakingPoolDetailsViewModelImplementation {
 }
 
 private extension String {

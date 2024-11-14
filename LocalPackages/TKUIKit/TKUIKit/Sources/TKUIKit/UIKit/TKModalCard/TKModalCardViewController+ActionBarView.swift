@@ -2,6 +2,18 @@ import UIKit
 
 extension TKModalCardViewController {
   final class ActionBar: UIView, ConfigurableView {
+    
+    var successTitle: String = "Done" {
+      didSet {
+        resultView.successTitle = successTitle
+      }
+    }
+    var errorTitle: String = "Error" {
+      didSet {
+        resultView.errorTitle = errorTitle
+      }
+    }
+    
     private weak var viewController: UIViewController?
     private let contentStackView: UIStackView = {
       let stackView = UIStackView()

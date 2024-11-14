@@ -35,6 +35,7 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController?.setNavigationBarHidden(true, animated: true)
+    viewModel.viewWillAppear()
   }
   
   func scrollToTop() {

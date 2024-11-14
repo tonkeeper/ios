@@ -1,34 +1,37 @@
 import Foundation
 import CoreComponents
+import TKKeychain
 import TonSwift
 
 struct TonConnectAppsVault: KeyValueVault {
   typealias StoreValue = TonConnectApps
   typealias StoreKey = Wallet
   
-  private let keychainVault: KeychainVault
+  private let keychainVault: TKKeychainVault
   
-  public init(keychainVault: KeychainVault) {
+  public init(keychainVault: TKKeychainVault) {
     self.keychainVault = keychainVault
   }
   
   func saveValue(_ value: TonConnectApps, for key: StoreKey) throws {
-    try keychainVault.saveValue(value, to: query(key: key))
+    try keychainVault.set(value, query: query(key: key))
   }
   
   func deleteValue(for key: StoreKey) throws {
-    try keychainVault.deleteItem(query(key: key))
+    try keychainVault.delete(query(key: key))
   }
   
   func loadValue(key: StoreKey) throws -> TonConnectApps {
-    try keychainVault.readValue(query(key: key))
+    try keychainVault.get(query: query(key: key))
   }
   
-  private func query(key: StoreKey) -> KeychainQueryable {
-    KeychainGenericPasswordItem(service: .key,
-                                account: key.id,
-                                accessGroup: nil,
-                                accessible: .whenUnlockedThisDeviceOnly)
+  private func query(key: StoreKey) -> TKKeychainQuery {
+    TKKeychainQuery(
+      item: .genericPassword(service: .key, account: key.id),
+      accessGroup: nil,
+      biometry: .none,
+      accessible: .whenUnlockedThisDeviceOnly
+    )
   }
 }
 
@@ -38,29 +41,32 @@ struct TonConnectAppsVaultLegacy: KeyValueVault {
   typealias StoreValue = TonConnectApps
   typealias StoreKey = String
   
-  private let keychainVault: KeychainVault
+  private let keychainVault: TKKeychainVault
   
-  public init(keychainVault: KeychainVault) {
+  public init(keychainVault: TKKeychainVault) {
     self.keychainVault = keychainVault
   }
   
   func saveValue(_ value: TonConnectApps, for key: StoreKey) throws {
-    try keychainVault.saveValue(value, to: query(key: key))
+    try keychainVault.set(value, query: query(key: key))
   }
   
   func deleteValue(for key: StoreKey) throws {
-    try keychainVault.deleteItem(query(key: key))
+    try keychainVault.delete(query(key: key))
   }
   
   func loadValue(key: StoreKey) throws -> TonConnectApps {
-    try keychainVault.readValue(query(key: key))
+    try keychainVault.get(query: query(key: key))
   }
   
-  private func query(key: StoreKey) -> KeychainQueryable {
-    KeychainGenericPasswordItem(service: .key,
-                                account: key,
-                                accessGroup: nil,
-                                accessible: .whenUnlockedThisDeviceOnly)
+  private func query(key: StoreKey) -> TKKeychainQuery {
+    return TKKeychainQuery(
+      item: .genericPassword(service: .key,
+                             account: key),
+      accessGroup: nil,
+      biometry: .none,
+      accessible: .whenUnlockedThisDeviceOnly
+    )
   }
 }
 

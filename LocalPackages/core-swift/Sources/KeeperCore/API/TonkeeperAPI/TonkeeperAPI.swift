@@ -8,7 +8,7 @@ protocol TonkeeperAPI {
   func loadConfiguration(lang: String,
                          build: String,
                          chainName: String,
-                         platform: String) async throws -> RemoteConfiguration
+                         platform: String) async throws -> RemoteConfigurations
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
@@ -29,8 +29,8 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
   func loadConfiguration(lang: String,
                          build: String,
                          chainName: String,
-                         platform: String) async throws -> RemoteConfiguration {
-    let url = host.appendingPathComponent("/keys")
+                         platform: String) async throws -> RemoteConfigurations {
+    let url = host.appendingPathComponent("/keys/all")
     guard var components = URLComponents(
       url: url,
       resolvingAgainstBaseURL: false
@@ -44,7 +44,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ]
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
-    let entity = try JSONDecoder().decode(RemoteConfiguration.self, from: data)
+    let entity = try JSONDecoder().decode(RemoteConfigurations.self, from: data)
     return entity
   }
   
