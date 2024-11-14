@@ -3,6 +3,10 @@ import TKUIKit
 import SnapKit
 import WebKit
 
+public protocol TKBridgeWebViewControllerUserAgentProvider {
+  func getUserAgent() -> String
+}
+
 open class TKBridgeWebViewController: UIViewController {
   
   public struct Configuration {
@@ -98,6 +102,7 @@ open class TKBridgeWebViewController: UIViewController {
   private let initialTitle: String?
   private let jsInjection: String
   private let configuration: Configuration
+  private let userAgentProvider: TKBridgeWebViewControllerUserAgentProvider?
   private let deeplinkHandler: ((_ deeplink: String) throws -> Void)?
   
   // MARK: - Init
@@ -106,12 +111,14 @@ open class TKBridgeWebViewController: UIViewController {
               initialTitle: String?,
               jsInjection: String?,
               configuration: Configuration,
+              userAgentProvider: TKBridgeWebViewControllerUserAgentProvider?,
               deeplinkHandler: ((_ deeplink: String) throws -> Void)? = nil) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
     self.url = initialURL
     self.configuration = configuration
     self.jsInjection = jsInjection ?? ""
+    self.userAgentProvider = userAgentProvider
     self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle
@@ -125,24 +132,7 @@ open class TKBridgeWebViewController: UIViewController {
   
   open override func viewDidLoad() {
     super.viewDidLoad()
-    
-    webViewObserver = webView.observe(\.url, options: .new) { [weak self] webView, change in
-        guard let newURL = change.newValue as? URL else { return }
 
-        if var urlComponents = URLComponents(url: newURL, resolvingAgainstBaseURL: false) {
-            var queryItems = urlComponents.queryItems ?? []
-            if !queryItems.contains(where: { $0.name == "utm_source" }) {
-                queryItems.append(URLQueryItem(name: "utm_source", value: "tonkeeper"))
-                urlComponents.queryItems = queryItems
-
-                if let updatedURL = urlComponents.url {
-                    self?.webView.load(URLRequest(url: updatedURL))
-                }
-            }
-        }
-    }
-
-    
     navigationBar.centerView = titleView
     
     view.backgroundColor = .Background.page
@@ -154,6 +144,7 @@ open class TKBridgeWebViewController: UIViewController {
     webView.scrollView.layer.masksToBounds = false
     webView.layer.masksToBounds = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
+    webView.customUserAgent = userAgentProvider?.getUserAgent()
 #if DEBUG
     if #available(iOS 16.4, *) {
       webView.isInspectable = true
@@ -178,7 +169,7 @@ open class TKBridgeWebViewController: UIViewController {
       self?.backButton.isHidden = !canGoBack
     }
     
-    let urlRequest = URLRequest(url: url)
+    let urlRequest = URLRequest(url: updateURLWithTonkeeperUTM(url: url))
     webView.load(urlRequest)
   }
   
@@ -278,6 +269,16 @@ open class TKBridgeWebViewController: UIViewController {
       activityViewController,
       animated: true
     )
+  }
+  
+  private func updateURLWithTonkeeperUTM(url: URL) -> URL {
+    guard var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url }
+    var queryItems = urlComponents.queryItems ?? []
+    guard !queryItems.contains(where: { $0.name != "utm_source" }) else { return url }
+    queryItems.append(URLQueryItem(name: "utm_source", value: "tonkeeper"))
+    urlComponents.queryItems = queryItems
+    guard let updatedURL = urlComponents.url else { return url }
+    return updatedURL
   }
   
   private func didUpdateUrl() {

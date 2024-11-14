@@ -48,6 +48,7 @@ private extension DappViewController {
         initialTitle: title,
         jsInjection: self.viewModel.jsInjection,
         configuration: .default,
+        userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
         deeplinkHandler: { url in
           let deeplinkParser = DeeplinkParser()
           let deeplink = try deeplinkParser.parse(string: url)

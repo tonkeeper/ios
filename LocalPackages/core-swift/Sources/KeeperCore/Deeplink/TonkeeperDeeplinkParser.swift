@@ -122,13 +122,14 @@ public struct TonkeeperDeeplinkParser {
     guard let versionParameter = components?.queryItems?.first(where: { $0.name == "v" })?.value,
           let version = TonConnectParameters.Version(rawValue: versionParameter),
           let clientId = components?.queryItems?.first(where: { $0.name == "id" })?.value,
-          let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value,
           let requestPayloadValue = components?.queryItems?.first(where: { $0.name == "r" })?.value,
           let requestPayloadData = requestPayloadValue.data(using: .utf8),
           let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
     else {
       throw DeeplinkParserError.invalidParameters
     }
+    
+    let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value
       
     return TonConnectParameters(
       version: version,

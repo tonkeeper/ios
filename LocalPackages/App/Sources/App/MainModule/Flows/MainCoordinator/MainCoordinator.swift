@@ -874,6 +874,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       initialTitle: nil,
       jsInjection: nil,
       configuration: .default,
+      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
       deeplinkHandler: { url in
         let deeplinkParser = DeeplinkParser()
         let deeplink = try deeplinkParser.parse(string: url)
