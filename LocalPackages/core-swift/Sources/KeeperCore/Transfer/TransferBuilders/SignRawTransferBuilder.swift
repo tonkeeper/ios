@@ -30,7 +30,7 @@ public struct SignRawTransferBuilder {
                                           messageType: MessageType) throws -> WalletTransfer {
     let messages = try payloads.map { payload in
       var stateInit: StateInit?
-      if let stateInitString = payload.stateInit {
+      if let stateInitString = payload.stateInit, !stateInitString.isEmpty {
         stateInit = try StateInit.loadFrom(
           slice: try Cell
             .fromBase64(src: stateInitString)
