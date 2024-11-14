@@ -151,7 +151,8 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       initialURL: url,
       initialTitle: nil,
       jsInjection: nil,
-      configuration: .default)
+      configuration: .default,
+      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider())
     router.present(viewController)
   }
   
