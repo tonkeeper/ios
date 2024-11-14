@@ -40,12 +40,6 @@ struct InfoPopupBottomSheetConfigurationBuilder {
         title = TKLocales.InsufficientFunds.title
       }
 
-      let attributedTitle = title.withTextStyle(
-        .h2,
-        color: .Text.primary,
-        alignment: .center
-      )
-
       let caption = TKLocales.InsufficientFunds.toBePaidYourBalance(
         requiredFormattedAmount, availableFormattedAmount
       )

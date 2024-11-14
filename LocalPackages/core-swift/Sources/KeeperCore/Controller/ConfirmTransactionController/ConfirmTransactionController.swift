@@ -113,7 +113,7 @@ private extension ConfirmTransactionController {
     let fee = Int64(abs(event.fee))
     let tonRisk = transactionInfo.risk.ton
 
-    guard let balance = await balanceStore.getState()[wallet]?.balance else {
+    guard let balance = balanceStore.getState()[wallet]?.balance else {
       return nil
     }
     let tonBalance = UInt64(balance.tonBalance.tonBalance.amount)

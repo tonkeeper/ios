@@ -1145,7 +1145,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openInsufficientFundsPopup(
-    wallet: Wallet?,
+    wallet: Wallet,
     jettonInfo: JettonInfo,
     requiredAmount: BigUInt,
     availableAmount: BigUInt,
@@ -1161,7 +1161,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let tokenSymbol = jettonInfo.symbol ?? jettonInfo.name
 
     let configuration = configurationBuilder.insufficientTokenConfiguration(
-      walletLabel: wallet?.metaData.label,
+      walletLabel: wallet.metaData.label,
       tokenSymbol: tokenSymbol,
       tokenFractionalDigits: jettonInfo.fractionDigits,
       required: requiredAmount,
@@ -1247,7 +1247,6 @@ private extension MainCoordinator {
     }
   }
 
-  @MainActor
   func openTonConnectModule(_ request: TonConnect.AppRequest,
                             wallet: Wallet,
                             app: TonConnectApp) async throws {
@@ -1271,8 +1270,10 @@ private extension MainCoordinator {
       self?.removeChild(coordinator)
     }
 
-    addChild(coordinator)
-    coordinator.start()
+    await MainActor.run {
+      addChild(coordinator)
+      coordinator.start()
+    }
   }
 }
 

@@ -157,10 +157,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
       ToastPresenter.showToast(configuration: .loading)
 
-      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-            let connectedApps = try? keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-            let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
-
+      guard let connectedApps = try? keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
+            let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host })
+      else {
         completion(.error(.unknownApp))
         return
       }
