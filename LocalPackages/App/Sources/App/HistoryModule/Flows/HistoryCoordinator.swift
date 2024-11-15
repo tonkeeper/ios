@@ -117,7 +117,11 @@ private extension HistoryCoordinator {
       coreAssembly: coreAssembly,
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
-    
+
+    coordinator.didClose = { [weak coordinator, weak self] in
+      self?.removeChild(coordinator)
+    }
+
     addChild(coordinator)
     coordinator.start()
   }

@@ -86,12 +86,22 @@ private extension BrowserCoordinator {
     coordinator.didHandleDeeplink = { [weak self] deeplink in
       _ = self?.didHandleDeeplink?(deeplink)
     }
-    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] in
-      guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
-        return
-      }
+    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet in
       self?.removeChild(coordinator)
       self?.openBuySell(wallet: wallet)
+    }
+    coordinator.didRequestOpenDefi = { [weak self, weak coordinator] wallet in
+      guard let self else { return }
+
+      self.removeChild(coordinator)
+      let browserController = self.keeperCoreMainAssembly.browserExploreController()
+      let lang = Locale.current.languageCode ?? "en"
+      if let cachedCategories = try? browserController.getCachedPopularApps(lang: lang),
+         let defiCategory = cachedCategories.categories.first(with: "defi", at: \.id) {
+        self.openCategory(defiCategory)
+      } else {
+        self.openBuySell(wallet: wallet)
+      }
     }
 
     addChild(coordinator)
@@ -135,16 +145,32 @@ private extension BrowserCoordinator {
 
   @MainActor
   func openBuySell(wallet: Wallet) {
-      let coordinator = BuyCoordinator(
-        wallet: wallet,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly,
-        router: ViewControllerRouter(rootViewController: router.rootViewController)
-      )
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: ViewControllerRouter(rootViewController: router.rootViewController)
+    )
 
-      router.dismiss(animated: true) { [weak self] in
-        self?.addChild(coordinator)
-        coordinator.start()
-      }
+    coordinator.didOpenItem = { [weak self] url, fromViewController in
+      self?.openBuySellItemURL(url, fromViewController: fromViewController)
     }
+
+    coordinator.didClose = { [weak coordinator, weak self] in
+      self?.removeChild(coordinator)
+    }
+
+    router.dismiss(animated: true) { [weak self] in
+      self?.addChild(coordinator)
+      coordinator.start()
+    }
+  }
+
+  func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
+    let webViewController = TKWebViewController(url: url)
+    let navigationController = UINavigationController(rootViewController: webViewController)
+    navigationController.modalPresentationStyle = .fullScreen
+    navigationController.configureTransparentAppearance()
+    fromViewController.present(navigationController, animated: true)
+  }
 }

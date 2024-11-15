@@ -6,6 +6,7 @@ import TKScreenKit
 import TKUIKit
 import BigInt
 import TKLocalize
+import TonSwift
 
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
@@ -16,7 +17,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
-  public var didRequestOpenBuySell: (() -> Void)?
+  public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
+  public var didRequestOpenDefi: ((_ wallet: Wallet) -> Void)?
 
   public init(
     router: ViewControllerRouter,
@@ -37,10 +39,14 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
   private func openDappModule(_ dapp: Dapp) {
     let messageHandler = DefaultDappMessageHandler()
-    let module = DappAssembly.module(dapp: dapp, analyticsProvider: coreAssembly.analyticsProvider, deeplinkHandler: { deeplink in
-      self.didHandleDeeplink?(deeplink)
-    }, messageHandler: messageHandler)
-    
+    let module = DappAssembly.module(
+      dapp: dapp,
+      analyticsProvider: coreAssembly.analyticsProvider,
+      deeplinkHandler: { deeplink in
+        self.didHandleDeeplink?(deeplink)
+      },
+      messageHandler: messageHandler)
+
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else {
         completion(.error(.unknownError))
@@ -175,18 +181,30 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         let model = try await confirmTransactionController.createRequestModel()
         if let confirmModel = model.confirmModel {
           let (token, balance) = confirmModel.token
-          var isConfirmFlowAvailable: Bool
 
+          let trustCoins: [Address] = [
+            JettonMasterAddress.tonUSDT,
+            JettonMasterAddress.NOT,
+            JettonMasterAddress.HMSTR
+          ]
+
+          let isConfirmFlowAvailable: Bool
+          let isInAppPurchase: Bool
           switch token {
           case .ton:
             isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount
-          case .jetton:
+            isInAppPurchase = true
+          case .jetton(let item):
             let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
             isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
+            isInAppPurchase = trustCoins.contains(where: { $0.toRaw() == item.jettonInfo.address.toRaw() })
           }
 
           guard isConfirmFlowAvailable else {
-            startInsufficientFlow(wallet: wallet, model: confirmModel)
+            startInsufficientFlow(
+              wallet: wallet,
+              model: confirmModel,
+              isInAppPurchaseFlowAvailable: isInAppPurchase)
             completion(.error(.userDeclinedTransaction))
             return
           }
@@ -203,7 +221,11 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   @MainActor
-  private func startInsufficientFlow(wallet: Wallet, model: ConfirmTransactionController.ConfirmModel) {
+  private func startInsufficientFlow(
+    wallet: Wallet,
+    model: ConfirmTransactionController.ConfirmModel,
+    isInAppPurchaseFlowAvailable: Bool
+  ) {
     let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
     let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
@@ -216,7 +238,13 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     )
     buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss() {
-        self?.router.dismiss(animated: true) { self?.didRequestOpenBuySell?() }
+        self?.router.dismiss(animated: true) {
+          if isInAppPurchaseFlowAvailable {
+            self?.didRequestOpenBuySell?(wallet)
+          } else {
+            self?.didRequestOpenDefi?(wallet)
+          }
+        }
       }
     }
     let configuration = configurationBuilder.insufficientTokenConfiguration(

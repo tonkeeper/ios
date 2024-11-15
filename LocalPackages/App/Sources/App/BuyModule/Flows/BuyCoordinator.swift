@@ -8,7 +8,8 @@ import KeeperCore
 public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   var didOpenItem: ((URL, _ fromViewController: UIViewController) -> Void)?
-  
+  var didClose: (() -> Void)?
+
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -58,7 +59,11 @@ private extension BuyCoordinator {
         }
       )
     }
-    
+
+    bottomSheetViewController.didClose = { [weak self] _ in
+      self?.didClose?()
+    }
+
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   

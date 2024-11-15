@@ -1014,10 +1014,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
     
-    coordinator.didOpenItem = { url, fromViewController in
-      self.openBuySellItemURL(url, fromViewController: fromViewController)
+    coordinator.didOpenItem = { [weak self] url, fromViewController in
+      self?.openBuySellItemURL(url, fromViewController: fromViewController)
     }
-    
+
+    coordinator.didClose = { [weak coordinator, weak self] in
+      self?.removeChild(coordinator)
+    }
+
     self.router.dismiss(animated: true) { [weak self] in
       self?.addChild(coordinator)
       coordinator.start()

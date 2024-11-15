@@ -142,16 +142,18 @@ private extension ConfirmTransactionController {
         requiredAmount = Int64(purchase.price)
         availableBalance = BigUInt(tonBalance)
       case .jettonSwap(let jettonSwap):
-        if let address = jettonSwap.jettonInfoIn?.address, let jettonBalance = try? await self.jettonBalanceResolver.resolveJetton(
-          jettonAddress: address,
-          wallet: self.wallet
-        ) {
+        if let address = jettonSwap.jettonInfoIn?.address,
+           let jettonBalance = try? await self.jettonBalanceResolver.resolveJetton(
+            jettonAddress: address,
+            wallet: self.wallet) {
+
           requiredAmount = Int64(jettonSwap.amountIn)
           token = .jetton(jettonBalance.item)
           availableBalance = jettonBalance.quantity
         } else if let tonIn = jettonSwap.tonIn {
           requiredAmount = Int64(fee) + tonIn
           availableBalance = BigUInt(tonBalance)
+          token = .ton
         } else {
           requiredAmount = Int64(fee) + tonRisk
           availableBalance = BigUInt(tonBalance)
