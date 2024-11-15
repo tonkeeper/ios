@@ -4,7 +4,7 @@ import SnapKit
 
 final class BalanceHeaderBalanceView: UIView, ConfigurableView {
   
-  private let balanceView = BalanceHeaderAmountView()
+  private let amountView = BalanceHeaderBalanceAmountView()
   private let statusView = BalanceHeaderBalanceStatusView()
   private let stackView = UIStackView()
 
@@ -18,12 +18,12 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
   }
 
   struct Model {
-    let balanceConfiguration: BalanceHeaderAmountView.Configuration
+    let amountViewConfiguration: BalanceHeaderBalanceAmountView.Configuration
     let statusViewConfiguration: BalanceHeaderBalanceStatusView.Configuration
   }
   
   func configure(model: Model) {
-    balanceView.configuration = model.balanceConfiguration
+    amountView.configuration = model.amountViewConfiguration
     statusView.configuration = model.statusViewConfiguration
   }
 }
@@ -31,7 +31,7 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
 private extension BalanceHeaderBalanceView {
   func setup() {
     stackView.axis = .vertical
-    stackView.addArrangedSubview(balanceView)
+    stackView.addArrangedSubview(amountView)
     stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(4)))
     stackView.addArrangedSubview(statusView)
     stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(8)))
@@ -41,18 +41,10 @@ private extension BalanceHeaderBalanceView {
   }
   
   func setupConstraints() {
-    balanceView.snp.makeConstraints { make in
-      make.height.equalTo(CGFloat.balanceLabelHeight)
-    }
-    
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self).inset(UIEdgeInsets.stackViewPadding)
     }
   }
-}
-
-private extension CGFloat {
-  static let balanceLabelHeight: CGFloat = 56
 }
 
 private extension UIEdgeInsets {

@@ -49,7 +49,7 @@ public final class AppSettingsStore: Store<AppSettingsStore.Event, AppSettingsSt
     }
   }
   
-  public func toggleIsSecureMode(completion: @escaping (State) -> Void) {
+  public func toggleIsSecureMode(completion: ((State) -> Void)? = nil) {
     keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo = keeperInfo else { return nil }
       let updateKeeperInfo = keeperInfo.updateIsSecureMode(!keeperInfo.appSettings.isSecureMode)
@@ -61,7 +61,7 @@ public final class AppSettingsStore: Store<AppSettingsStore.Event, AppSettingsSt
         return StateUpdate(newState: state)
       } completion: { [weak self] state in
         self?.sendEvent(.didUpdateIsSecureMode(isSecureMode: state.isSecureMode))
-        completion(state)
+        completion?(state)
       }
     }
   }

@@ -1,6 +1,6 @@
 import UIKit
 
-final class BalanceHeaderBatteryButton: UIControl {
+final class BalanceHeaderBalanceBatteryButton: UIControl {
   
   struct Configuration {
     let batteryConfiguration: BatteryView.State
@@ -35,7 +35,7 @@ final class BalanceHeaderBatteryButton: UIControl {
     addSubview(batteryView)
     
     batteryView.snp.makeConstraints { make in
-      make.edges.equalTo(self).inset(UIEdgeInsets(top: 10, left: 0, bottom: 12, right: 24))
+      make.edges.equalTo(self).inset(UIEdgeInsets(top: 10, left: 0, bottom: 12, right: 8))
     }
     
     addAction(UIAction(handler: { [weak self] _ in

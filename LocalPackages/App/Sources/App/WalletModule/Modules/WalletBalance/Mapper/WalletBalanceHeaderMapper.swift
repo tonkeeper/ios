@@ -24,7 +24,7 @@ struct WalletBalanceHeaderMapper {
   func mapTotalBalance(totalBalance: TotalBalance?) -> String {
     if let totalBalance = totalBalance {
       return decimalAmountFormatter.format(amount: totalBalance.amount,
-                                           maximumFractionDigits: 2,
+                                           maximumFractionDigits: totalBalance.amount > 1000 ? 0 : 2,
                                            currency: totalBalance.currency)
     } else {
       return "-"

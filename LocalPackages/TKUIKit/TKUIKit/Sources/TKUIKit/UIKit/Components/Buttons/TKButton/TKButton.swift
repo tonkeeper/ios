@@ -71,8 +71,8 @@ open class TKButton: UIControl {
     let contentViewHeight = min(contentViewSizeThatFits.height, availableHeight)
     
     let contentViewFrame = CGRect(
-      x: bounds.width/2 - contentViewWidth/2,
-      y: bounds.height/2 - contentViewHeight/2,
+      x: padding.left,
+      y: padding.top,
       width: contentViewWidth,
       height: contentViewHeight
     )
