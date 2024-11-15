@@ -104,7 +104,6 @@ private extension BatteryRefillViewController {
   
   func createDataSource() -> BatteryRefill.DataSource {
     let listCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
-    let headerCellRegistration = BatteryRefillHeaderCellRegistration.registration(collectionView: customView.collectionView)
     let footerCellRegistration = BatteryRefillFooterCellRegistration.registration(collectionView: customView.collectionView)
     
     let dataSource = BatteryRefill.DataSource(

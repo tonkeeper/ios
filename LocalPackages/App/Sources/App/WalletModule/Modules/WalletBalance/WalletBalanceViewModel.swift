@@ -35,9 +35,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
 protocol WalletBalanceModuleInput: AnyObject {}
 
 protocol WalletBalanceViewModel: AnyObject {
-  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
+  var didUpdateSnapshot: ((_ snapshot: WalletBalance.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
   
-  var didUpdateItems: (([WalletBalanceListItem: WalletBalanceListCell.Configuration]) -> Void)? { get set }
+  var didUpdateItems: (([WalletBalance.ListItem: WalletBalanceListCell.Configuration]) -> Void)? { get set }
   
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)? { get set }
@@ -49,7 +49,7 @@ protocol WalletBalanceViewModel: AnyObject {
 }
 
 struct WalletBalanceListModel {
-  let snapshot: WalletBalanceViewController.Snapshot
+  let snapshot: WalletBalance.Snapshot
   let listItemsConfigurations: [String: WalletBalanceListCell.Configuration]
   let notificationItemsConfigurations: [String: NotificationBannerCell.Configuration]
 }
@@ -58,8 +58,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   // MARK: - WalletBalanceModuleOutput
   
-  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)?
-  var didUpdateItems: (([WalletBalanceListItem : WalletBalanceListCell.Configuration]) -> Void)?
+  var didUpdateSnapshot: ((_ snapshot: WalletBalance.Snapshot, _ isAnimated: Bool) -> Void)?
+  var didUpdateItems: (([WalletBalance.ListItem : WalletBalanceListCell.Configuration]) -> Void)?
     
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
@@ -132,7 +132,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let syncQueue = DispatchQueue(label: "SyncQueue")
   
   @MainActor
-  private var listModel = WalletBalanceListModel(snapshot: WalletBalanceViewController.Snapshot(),
+  private var listModel = WalletBalanceListModel(snapshot: WalletBalance.Snapshot(),
                                                  listItemsConfigurations: [:],
                                                  notificationItemsConfigurations: [:])
   private var balanceListItems: WalletBalanceBalanceModel.BalanceListItems?
@@ -267,7 +267,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private func createWalletBalanceListModel(balanceListItems: WalletBalanceBalanceModel.BalanceListItems?,
                                             setupState: WalletBalanceSetupModel.State?,
                                             notifications: [NotificationModel]) -> WalletBalanceListModel {
-    var snapshot = WalletBalanceViewController.Snapshot()
+    var snapshot = WalletBalance.Snapshot()
     var listItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
     var notificationItemsConfigurations = [String : NotificationBannerCell.Configuration]()
     
@@ -275,21 +275,24 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       let (section, cellConfigurations) = createNotificationsSection(notifications: notifications)
       notificationItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.notifications(section)])
-      snapshot.appendItems(section.items, toSection: .notifications(section))
+      snapshot.appendItems(section.items.map { .notificationItem($0) }, toSection: .notifications(section))
     }
+    
+    snapshot.appendSections([.balanceHeader])
+    snapshot.appendItems([.balanceHeader], toSection: .balanceHeader)
     
     if let setupState {
       let (section, cellConfigurations) = createSetupSection(setupState: setupState)
       listItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.setup(section)])
-      snapshot.appendItems(section.items, toSection: .setup(section))
+      snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .setup(section))
     }
     
     if let balanceListItems {
       let (section, cellConfigurations) = createBalanceSection(balanceListItems: balanceListItems)
       listItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.balance(section)])
-      snapshot.appendItems(section.items, toSection: .balance(section))
+      snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .balance(section))
     }
     
     if #available(iOS 15.0, *) {
@@ -307,9 +310,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   private func createBalanceSection(
     balanceListItems: WalletBalanceBalanceModel.BalanceListItems
-  ) -> (section: WalletBalanceListSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
+  ) -> (section: WalletBalance.BalanceItemsSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
     var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
-    var sectionItems = [WalletBalanceListItem]()
+    var sectionItems = [WalletBalance.ListItem]()
     balanceListItems.items.forEach { balanceListItem in
       switch balanceListItem.balanceItem {
       case .ton(let item):
@@ -318,7 +321,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           isSecure: balanceListItems.isSecure,
           isPinned: balanceListItem.isPinned
         )
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectTon?(balanceListItems.wallet)
           }
@@ -329,7 +332,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           item,
           isSecure: balanceListItems.isSecure,
           isPinned: balanceListItem.isPinned)
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectJetton?(balanceListItems.wallet, item.jetton, !item.price.isZero)
           }
@@ -346,7 +349,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
                   let poolInfo = item.poolInfo else { return }
             self.didSelectCollectStakingItem?(balanceListItems.wallet, poolInfo, item.info)
           })
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             guard let self,
                   let poolInfo = item.poolInfo else { return }
@@ -368,7 +371,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
     }
     
-    let section = WalletBalanceListSection(
+    let section = WalletBalance.BalanceItemsSection(
       items: sectionItems,
       footerConfiguration: footerConfiguration
     )
@@ -377,9 +380,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   private func createSetupSection(
     setupState: WalletBalanceSetupModel.State
-  ) -> (section: WalletBalanceSetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
+  ) -> (section: WalletBalance.SetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
     var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
-    var sectionItems = [WalletBalanceListItem]()
+    var sectionItems = [WalletBalance.ListItem]()
     
     setupState.items.forEach { item in
       switch item {
@@ -392,7 +395,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
         
         let configuration = self.listMapper.createNotificationsConfiguration()
-        let notificationsItem = WalletBalanceListItem(
+        let notificationsItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .switch(
             TKListItemSwitchAccessoryView.Configuration(
@@ -420,7 +423,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         })
 
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
-        let telegramChannelItem = WalletBalanceListItem(
+        let telegramChannelItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .button(buttonConfiguration),
           onSelection: nil
@@ -429,7 +432,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         sectionItems.append(telegramChannelItem)
       case .backup:
         let backupConfiguration = self.listMapper.createBackupConfiguration()
-        let backupItem = WalletBalanceListItem(
+        let backupItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .chevron,
           onSelection: { [weak self] in
@@ -463,7 +466,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
         
         let biometryConfiguration = self.listMapper.createBiometryConfiguration()
-        let biometryItem = WalletBalanceListItem(
+        let biometryItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .switch(
             TKListItemSwitchAccessoryView.Configuration(
@@ -495,7 +498,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       buttonConfiguration: headerButtonConfiguration
     )
     
-    let section = WalletBalanceSetupSection(
+    let section = WalletBalance.SetupSection(
       items: sectionItems,
       headerConfiguration: headerConfiguration
     )
@@ -503,9 +506,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   private func createNotificationsSection(notifications: [NotificationModel])
-  -> (section: WalletBalanceNotificationSection, cellConfigurations: [String: NotificationBannerCell.Configuration]) {
+  -> (section: WalletBalance.NotificationSection, cellConfigurations: [String: NotificationBannerCell.Configuration]) {
     var cellConfigurations = [String: NotificationBannerCell.Configuration]()
-    var items = [WalletBalanceNotificationItem]()
+    var items = [WalletBalance.NotificationItem]()
     notifications.forEach { notification in
       let actionButton: NotificationBannerView.Model.ActionButton? = {
         guard let action = notification.action else {
@@ -545,7 +548,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           )
         )
       )
-      let item = WalletBalanceNotificationItem(
+      let item = WalletBalance.NotificationItem(
         id: notification.id,
         cellConfiguration: cellConfiguration
       )
@@ -554,7 +557,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       items.append(item)
     }
     
-    let section = WalletBalanceNotificationSection(
+    let section = WalletBalance.NotificationSection(
       items: items
     )
     
@@ -588,7 +591,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     let listModel = await self.listModel
     let isSecure = self.appSettingsStore.state.isSecureMode
     var listItemsConfigurations = listModel.listItemsConfigurations
-    var items = [WalletBalanceListItem: WalletBalanceListCell.Configuration]()
+    var items = [WalletBalance.ListItem: WalletBalanceListCell.Configuration]()
     
     for item in stakingItems {
       guard case let .staking(stakingItem) = item.balanceItem else { continue }
@@ -604,7 +607,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
       listItemsConfigurations[stakingItem.id] = cellConfiguration
       
-      let item = WalletBalanceListItem(
+      let item = WalletBalance.ListItem(
         identifier: stakingItem.id) { [weak self] in
           guard let self,
                 let poolInfo = stakingItem.poolInfo else { return }
