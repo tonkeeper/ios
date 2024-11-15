@@ -5,8 +5,9 @@ import TKCoordinator
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
   var didScroll: ((CGFloat) -> Void)?
   
-  private var balanceItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
-  
+  private let refreshControl = UIRefreshControl()
+  private var isRefreshing = false
+    
   private let viewModel: WalletBalanceViewModel
 
   init(viewModel: WalletBalanceViewModel) {
@@ -30,7 +31,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     scrollToTop(animated: true)
   }
   
-  func setup() {
+  private func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.showsVerticalScrollIndicator = false
@@ -38,19 +39,20 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
       TKContainerCollectionViewCell.self,
       forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
     )
+    
+    customView.collectionView.refreshControl = refreshControl
+    refreshControl.addAction(UIAction(handler: { [weak self] _ in
+      self?.isRefreshing = true
+    }), for: .valueChanged)
   }
   
-  func setupBindings() {
+  private func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
       guard let self else { return }
       if isAnimated {
         dataSource.apply(snapshot, animatingDifferences: true)
       } else {
-        if #available(iOS 15.0, *) {
-          dataSource.applySnapshotUsingReloadData(snapshot, completion: nil)
-        } else {
-          dataSource.apply(snapshot, animatingDifferences: false)
-        }
+        dataSource.apply(snapshot, animatingDifferences: false)
       }
     }
     
@@ -73,6 +75,11 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     viewModel.didCopy = { configuration in
       ToastPresenter.showToast(configuration: configuration)
     }
+  }
+  
+  @objc
+  func refreshControlAction() {
+    
   }
   
   private lazy var dataSource: WalletBalance.DataSource = {
@@ -267,6 +274,14 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
   
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
     didScroll?(scrollView.contentOffset.y + scrollView.adjustedContentInset.top)
+  }
+  
+  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    if isRefreshing {
+      viewModel.didTriggerRefresh()
+      isRefreshing = false
+      refreshControl.endRefreshing()
+    }
   }
 }
 

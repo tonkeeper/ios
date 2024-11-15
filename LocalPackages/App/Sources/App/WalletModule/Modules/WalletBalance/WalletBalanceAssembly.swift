@@ -57,7 +57,8 @@ struct WalletBalanceAssembly {
         dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
       ),
       urlOpener: coreAssembly.urlOpener(),
-      appSettings: coreAssembly.appSettings
+      appSettings: coreAssembly.appSettings,
+      balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader
     )
     let viewController = WalletBalanceViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)
