@@ -635,22 +635,22 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
       }
     }()
-    
-    let addressButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
-      textStyle: .body2,
-      textColor: .Text.secondary,
-      contentAlpha: [.normal: 1, .highlighted: 0.48],
-      action: { [weak self] in
-        guard let self else { return }
-        self.didTapCopy(address: state.address.toString(),
-                         toastConfiguration: state.wallet.copyToastConfiguration())
-        self.appSettings.addressCopyCount += 1
-        if self.appSettings.addressCopyCount <= 3 {
-          didUpdateTotalBalanceState(state)
-        }
-      }
-    )
+//    
+//    let addressButtonConfiguration = TKButton.Configuration(
+//      content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
+//      textStyle: .body2,
+//      textColor: .Text.secondary,
+//      contentAlpha: [.normal: 1, .highlighted: 0.48],
+//      action: { [weak self] in
+//        guard let self else { return }
+//        self.didTapCopy(address: state.address.toString(),
+//                         toastConfiguration: state.wallet.copyToastConfiguration())
+//        self.appSettings.addressCopyCount += 1
+//        if self.appSettings.addressCopyCount <= 3 {
+//          didUpdateTotalBalanceState(state)
+//        }
+//      }
+//    )
     
     let balanceColor: UIColor
     let backup: BalanceHeaderAmountView.Configuration.Backup
@@ -694,26 +694,63 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       backup: backup
     )
     
-    let stateDate: String? = {
-      guard let totalBalanceState = state.totalBalanceState else { return nil }
-      switch totalBalanceState {
-      case .current, .none:
-        return nil
-      case .previous(let totalBalance):
-        return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
+//    let stateDate: String? = {
+//      guard let totalBalanceState = state.totalBalanceState else { return nil }
+//      switch totalBalanceState {
+//      case .current, .none:
+//        return nil
+//      case .previous(let totalBalance):
+//        return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
+//      }
+//    }()
+    
+    let statusViewConfiguration: BalanceHeaderBalanceStatusView.Configuration = {
+      let action = {  [weak self] in
+        guard let self else { return }
+        self.didTapCopy(address: state.address.toString(),
+                        toastConfiguration: state.wallet.copyToastConfiguration())
+        self.appSettings.addressCopyCount += 1
+        if self.appSettings.addressCopyCount <= 3 {
+          didUpdateTotalBalanceState(state)
+        }
+      }
+      
+      if let connectionStatusModel = self.createConnectionStatusModel(
+        backgroundUpdateState: state.backgroundUpdateConnectionState, 
+        isLoading: state.isLoadingBalance
+      ) {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .connection(connectionStatusModel), 
+          action: action
+        )
+      } else if let totalBalanceState = state.totalBalanceState, case let .previous(totalBalance) = totalBalanceState {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .updated(TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))),
+          action: action
+        )
+      } else {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .address(addressButtonText, tags: state.wallet.balanceTagConfigurations()),
+          action: action
+        )
       }
     }()
     
     let headerModel = BalanceHeaderBalanceView.Model(
       balanceConfiguration: balanceConfiguration,
-      addressButtonConfiguration: addressButtonConfiguration,
-      connectionStatusModel: self.createConnectionStatusModel(
-        backgroundUpdateState: state.backgroundUpdateConnectionState,
-        isLoading: state.isLoadingBalance
-      ),
-      tags: state.wallet.balanceTagConfigurations(),
-      stateDate: stateDate
+      statusViewConfiguration: statusViewConfiguration
     )
+    
+//    let headerModel = BalanceHeaderBalanceView.Model(
+//      balanceConfiguration: balanceConfiguration,
+//      addressButtonConfiguration: addressButtonConfiguration,
+//      connectionStatusModel: self.createConnectionStatusModel(
+//        backgroundUpdateState: state.backgroundUpdateConnectionState,
+//        isLoading: state.isLoadingBalance
+//      ),
+//      tags: state.wallet.balanceTagConfigurations(),
+//      stateDate: stateDate
+//    )
     
     let model = BalanceHeaderView.Model(
       balanceModel: headerModel,
@@ -748,10 +785,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> ConnectionStatusView.Model? {
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> BalanceHeaderBalanceConnectionStatusView.Model? {
     switch (backgroundUpdateState, isLoading) {
     case (.connecting, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
@@ -759,19 +796,19 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     case (.connected, false):
       return nil
     case (.connected, true):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
     case (.disconnected, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
     case (.noConnection, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.noInternet,
         titleColor: .Accent.orange,
         isLoading: false

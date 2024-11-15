@@ -247,7 +247,7 @@
 
 "connection_status.updating" = "Обновление";
 "connection_status.no_internet" = "Нет сети";
-"connection_status.updated_at" = "Обновлено %@";
+"connection_status.updated_at" = "Обновлён %@";
 
 "token.unverified" = "Непроверенный токен";
 

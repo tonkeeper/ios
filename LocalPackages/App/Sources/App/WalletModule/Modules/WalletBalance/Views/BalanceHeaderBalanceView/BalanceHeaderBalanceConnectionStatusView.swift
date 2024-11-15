@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class ConnectionStatusView: UIView, ConfigurableView {
+final class BalanceHeaderBalanceConnectionStatusView: UIView, ConfigurableView {
   
   private let titleLabel = UILabel()
   private let loaderView = TKLoaderView(size: .xSmall, style: .secondary)
@@ -51,7 +51,7 @@ final class ConnectionStatusView: UIView, ConfigurableView {
   }
 }
 
-private extension ConnectionStatusView {
+private extension BalanceHeaderBalanceConnectionStatusView {
   func setup() {
     addSubview(containerView)
     containerView.addSubview(stackView)

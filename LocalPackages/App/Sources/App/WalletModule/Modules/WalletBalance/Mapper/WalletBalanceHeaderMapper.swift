@@ -17,7 +17,7 @@ struct WalletBalanceHeaderMapper {
   }
   
   func makeUpdatedDate(_ date: Date) -> String {
-    dateFormatter.dateFormat = "MMM d, HH:mm"
+    dateFormatter.dateFormat = "d MMM HH:mm"
     return dateFormatter.string(from: date)
   }
   
