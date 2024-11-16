@@ -77,7 +77,7 @@ public struct API {
       if let errorResponse = error as? ErrorResponse {
         switch errorResponse {
         case .error(let statusCode, _, _, _):
-          if statusCode == 429 || count <= 3 {
+          if statusCode == 429 {
             try await Task.sleep(nanoseconds: delay * UInt64(count))
             try Task.checkCancellation()
             return try await performRequest(request: request, count: count + 1, delay: delay)
