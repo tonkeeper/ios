@@ -46,7 +46,6 @@ protocol WalletBalanceViewModel: AnyObject {
   func viewDidLoad()
   func getListItemCellConfiguration(identifier: String) -> WalletBalanceListCell.Configuration?
   func getNotificationItemCellConfiguration(identifier: String) -> NotificationBannerCell.Configuration?
-  func didTriggerRefresh()
 }
 
 struct WalletBalanceListModel {
@@ -127,22 +126,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   func getNotificationItemCellConfiguration(identifier: String) -> NotificationBannerCell.Configuration? {
     listModel.notificationItemsConfigurations[identifier]
   }
-  
-  func didTriggerRefresh() {
-    if let lastRefreshTriggerDate {
-      guard abs(lastRefreshTriggerDate.timeIntervalSince(Date())) > 10 else { return }
-      self.lastRefreshTriggerDate = Date()
-      balanceLoader.loadActiveWalletBalance()
-    } else {
-      lastRefreshTriggerDate = Date()
-      balanceLoader.loadActiveWalletBalance()
-    }
-  }
 
   // MARK: - State
   
   private let syncQueue = DispatchQueue(label: "SyncQueue")
-  private var lastRefreshTriggerDate: Date?
   
   @MainActor
   private var listModel = WalletBalanceListModel(snapshot: WalletBalance.Snapshot(),
@@ -168,7 +155,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let headerMapper: WalletBalanceHeaderMapper
   private let urlOpener: URLOpener
   private let appSettings: AppSettings
-  private let balanceLoader: BalanceLoader
   
   init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
@@ -180,8 +166,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
        urlOpener: URLOpener,
-       appSettings: AppSettings,
-       balanceLoader: BalanceLoader) {
+       appSettings: AppSettings) {
     self.balanceListModel = balanceListModel
     self.setupModel = setupModel
     self.totalBalanceModel = totalBalanceModel
@@ -193,7 +178,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     self.headerMapper = headerMapper
     self.urlOpener = urlOpener
     self.appSettings = appSettings
-    self.balanceLoader = balanceLoader
   }
   
   private func setupObservations() {
