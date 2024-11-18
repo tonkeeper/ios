@@ -28,7 +28,12 @@ extension MainCoordinator {
     }
 
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    
+    let trustCoins: [Address] = [
+      JettonMasterAddress.tonUSDT,
+      JettonMasterAddress.NOT,
+      JettonMasterAddress.HMSTR
+    ]
+
     let deeplinkHandleTask = Task {
       do {
         let wallet = try walletsStore.activeWallet
@@ -39,20 +44,28 @@ extension MainCoordinator {
           if let amount, jettonBalance.quantity < amount {
             await MainActor.run {
               ToastPresenter.hideAll()
-
+              let isInAppPurchase = trustCoins.contains(jettonAddress)
               var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-              let tokenTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonBalance.item.jettonInfo.symbol ?? jettonBalance.item.jettonInfo.name)
-              buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(tokenTitle))
+              buyButtonConfiguration.content = TKButton.Configuration.Content(
+                title: .plainString(TKLocales.InsufficientFunds.rechargeWallet)
+              )
               buyButtonConfiguration.action = { [weak self] in
                 self?.router.dismiss(animated: true) {
-                  self?.openBuy(wallet: wallet)
+                  if isInAppPurchase {
+                    self?.openBuy(wallet: wallet)
+                  } else {
+                    self?.router.select(index: 2)
+                    self?.browserCoordinator?.router.popToRoot()
+                    self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
+                  }
                 }
               }
               self.openInsufficientFundsPopup(
                 wallet: wallet,
                 jettonInfo: jettonBalance.item.jettonInfo,
                 requiredAmount: amount,
-                availableAmount: jettonBalance.quantity, buttons: [buyButtonConfiguration]
+                availableAmount: jettonBalance.quantity,
+                buttons: [buyButtonConfiguration]
               )
             }
             return
@@ -87,24 +100,27 @@ extension MainCoordinator {
             )
           )
         }
-      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, _) {
+      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, wallet) {
         await MainActor.run { [weak self, jettonInfo] in
           self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
 
-          let walletsStore = self?.keeperCoreMainAssembly.storesAssembly.walletsStore
-          guard let wallet = try? walletsStore?.activeWallet else {
-            return
-          }
+          let isInAppPurchase = trustCoins.contains(jettonInfo.address)
           var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
           let tokenTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonInfo.symbol ?? jettonInfo.name)
           buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(tokenTitle))
           buyButtonConfiguration.action = { [weak self] in
             self?.router.dismiss(animated: true) {
-              self?.openBuy(wallet: wallet)
+              if isInAppPurchase {
+                self?.openBuy(wallet: wallet)
+              } else {
+                self?.router.select(index: 2)
+                self?.browserCoordinator?.router.popToRoot()
+                self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
+              }
             }
           }
-          
+
           self?.openInsufficientFundsPopup(
             wallet: wallet,
             jettonInfo: jettonInfo,

@@ -197,7 +197,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
           case .jetton(let item):
             let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
             isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
-            isInAppPurchase = trustCoins.contains(where: { $0.toRaw() == item.jettonInfo.address.toRaw() })
+            isInAppPurchase = trustCoins.contains(item.jettonInfo.address)
           }
 
           guard isConfirmFlowAvailable else {
@@ -233,8 +233,15 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     )
 
     var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    let buttonTitle: String
+    switch model.token.token {
+    case .ton:
+      buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(model.token.token.symbol)
+    case .jetton:
+      buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
+    }
     buyButtonConfiguration.content = TKButton.Configuration.Content(
-      title: .plainString(TKLocales.InsufficientFunds.buyTokenTitle(model.token.token.symbol))
+      title: .plainString(buttonTitle)
     )
     buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss() {

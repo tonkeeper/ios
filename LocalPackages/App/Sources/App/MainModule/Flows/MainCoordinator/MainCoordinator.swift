@@ -23,7 +23,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private var walletCoordinator: WalletCoordinator?
   private var historyCoordinator: HistoryCoordinator?
-  private var browserCoordinator: BrowserCoordinator?
+  var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
   private weak var addWalletCoordinator: AddWalletCoordinator?

@@ -88,20 +88,13 @@ private extension BrowserCoordinator {
     }
     coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet in
       self?.removeChild(coordinator)
-      self?.openBuySell(wallet: wallet)
+      self?.openBuySell(wallet: wallet, isInAppPurchase: true)
     }
     coordinator.didRequestOpenDefi = { [weak self, weak coordinator] wallet in
       guard let self else { return }
 
       self.removeChild(coordinator)
-      let browserController = self.keeperCoreMainAssembly.browserExploreController()
-      let lang = Locale.current.languageCode ?? "en"
-      if let cachedCategories = try? browserController.getCachedPopularApps(lang: lang),
-         let defiCategory = cachedCategories.categories.first(with: "defi", at: \.id) {
-        self.openCategory(defiCategory)
-      } else {
-        self.openBuySell(wallet: wallet)
-      }
+      self.openBuySell(wallet: wallet, isInAppPurchase: false)
     }
 
     addChild(coordinator)
@@ -142,9 +135,22 @@ private extension BrowserCoordinator {
 
     fromViewController.present(navigationController, animated: true)
   }
+}
+
+public extension BrowserCoordinator {
 
   @MainActor
-  func openBuySell(wallet: Wallet) {
+  func openBuySell(wallet: Wallet, isInAppPurchase: Bool) {
+    let browserController = keeperCoreMainAssembly.browserExploreController()
+    let lang = Locale.current.languageCode ?? "en"
+    if !isInAppPurchase,
+       let cachedCategories = try? browserController.getCachedPopularApps(lang: lang),
+       let defiCategory = cachedCategories.categories.first(with: "defi", at: \.id) {
+
+      self.openCategory(defiCategory)
+      return
+    }
+
     let coordinator = BuyCoordinator(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -166,7 +172,7 @@ private extension BrowserCoordinator {
     }
   }
 
-  func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
+  private func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
     let webViewController = TKWebViewController(url: url)
     let navigationController = UINavigationController(rootViewController: webViewController)
     navigationController.modalPresentationStyle = .fullScreen
