@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import TKScreenKit
 import TKUIKit
+import FirebasePerformance
 
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
@@ -86,6 +87,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     Task {
+      let trace = Performance.startTrace(name: "perform_connect")
       do {
         let manifest = try await keeperCoreMainAssembly.tonConnectAssembly.tonConnectService().loadManifest(
           url: payload.manifestUrl
@@ -95,6 +97,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
           clientId: UUID().uuidString,
           requestPayload: payload
         )
+        trace?.setValue(manifest.url.absoluteString, forAttribute: "manifest")
         await MainActor.run {
           ToastPresenter.hideToast()
           handleLoadedManifest(
@@ -104,12 +107,15 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             completion: completion
           )
         }
+        trace?.setValue("success", forAttribute: "result")
       } catch {
         await MainActor.run {
           ToastPresenter.hideToast()
           completion(.error(.appManifestNotFound))
         }
+        trace?.setValue("fail", forAttribute: "result")
       }
+      trace?.stop()
     }
 
     func handleLoadedManifest(parameters: TonConnectParameters,
