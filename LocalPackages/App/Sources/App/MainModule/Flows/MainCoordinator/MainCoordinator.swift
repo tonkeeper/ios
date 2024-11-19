@@ -538,7 +538,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       
       coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
         guard let navigationController else { return }
-        self?.router.present(navigationController)
+        if self?.router.rootViewController.presentedViewController != nil {
+          self?.router.dismiss(animated: true, completion: {
+            self?.router.present(navigationController)
+          })
+        } else {
+          self?.router.present(navigationController)
+        }
       }
       
       coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
