@@ -75,46 +75,68 @@ private extension WebSwapCoordinator {
   
   func openSend(signRequest: SendTransactionSignRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
-      return
-    }
-
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
-      wallet: wallet,
-      confirmator: StonfiSwapSignTransactionConfirmationCoordinatorConfirmator(
-        signRequest: signRequest,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
-        responseHandler: { result in
-          completion(result)
-        }
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: signRequest.params
-        )
-      ),
+    guard let window = router.rootViewController.view.window else { return }
+    SignRawConfirmationCoordinator.show(
+      coordinator: self,
+      window: window,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
-    )
+      coreAssembly: coreAssembly)
     
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
+//    let a = self.router as ContainerViewControllerRouter<UINavigationController>
     
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    self.signTransactionConfirmationCoordinator = coordinator
-    
-    addChild(coordinator)
-    coordinator.start()
+//    self as RootCoordinator<ContainerViewControllerRouter<UINavigationController>>
+//    SignRawConfirmationCoordinator.startFrom(
+//      coordinator: self,
+//      keeperCoreMainAssembly: keeperCoreMainAssembly,
+//      coreAssembly: coreAssembly
+//    )
+//    guard let coordinator = SignRawConfirmationCoordinator.coordinator(
+//      keeperCoreMainAssembly: keeperCoreMainAssembly,
+//      coreAssembly: coreAssembly
+//    ) else { return }
+//    
+//    addChild(coordinator)
+//    coordinator.start()
+//    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+//      return
+//    }
+//
+//    guard let windowScene = UIApplication.keyWindowScene else { return }
+//    let window = TKWindow(windowScene: windowScene)
+//    let coordinator = SignTransactionConfirmationCoordinator(
+//      router: WindowRouter(window: window),
+//      wallet: wallet,
+//      confirmator: StonfiSwapSignTransactionConfirmationCoordinatorConfirmator(
+//        signRequest: signRequest,
+//        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+//        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
+//        responseHandler: { result in
+//          completion(result)
+//        }
+//      ),
+//      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
+//        wallet: wallet,
+//        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+//          signTransactionParams: signRequest.params
+//        )
+//      ),
+//      keeperCoreMainAssembly: keeperCoreMainAssembly,
+//      coreAssembly: coreAssembly
+//    )
+//    
+//    coordinator.didCancel = { [weak self, weak coordinator] in
+//      guard let coordinator else { return }
+//      self?.removeChild(coordinator)
+//    }
+//    
+//    coordinator.didConfirm = { [weak self, weak coordinator] in
+//      guard let coordinator else { return }
+//      self?.removeChild(coordinator)
+//    }
+//    
+//    self.signTransactionConfirmationCoordinator = coordinator
+//    
+//    addChild(coordinator)
+//    coordinator.start()
   }
 }
