@@ -2,9 +2,21 @@ import Foundation
 import TonSwift
 import BigInt
 
-enum DeeplinkParserError: Swift.Error {
+enum DeeplinkParserError: Swift.Error, LocalizedError {
   case unsupportedDeeplink(string: String?)
   case invalidParameters
+  case unknownQueryItem(name: String)
+  
+  var errorDescription: String? {
+    switch self {
+    case .unsupportedDeeplink:
+      "Unsupported deeplink"
+    case .invalidParameters:
+      "Invalid parameters"
+    case .unknownQueryItem(let name):
+      "Unknown parameter \(name)"
+    }
+  }
 }
 
 public struct DeeplinkParser {

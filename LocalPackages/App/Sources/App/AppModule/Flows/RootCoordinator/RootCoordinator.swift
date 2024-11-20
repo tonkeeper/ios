@@ -85,6 +85,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         return false
       }
     } catch {
+      ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
       return false
     }
   }

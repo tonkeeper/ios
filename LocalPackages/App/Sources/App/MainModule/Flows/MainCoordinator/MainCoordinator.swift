@@ -138,6 +138,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let deeplink = try mainController.parseDeeplink(deeplink: string)
         return handleTonkeeperDeeplink(deeplink)
       } catch {
+        ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
         return false
       }
     default:
@@ -338,6 +339,36 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
+  func openSignRaw(wallet: Wallet, recipient: Recipient, amount: BigUInt, payload: String?, stateInit: String?) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+    
+    let navigationController = TKNavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
+        
+    let bocBuilder = TransactionConfirmationDeeplinkBocBuilder(wallet: wallet, payload: .init(amount: amount, recipient: recipient, payload: payload, stateInit: stateInit), sendService: keeperCoreMainAssembly.servicesAssembly.sendService(), configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
+    
+    let coordinator = SignTransactionConfirmationCoordinator(
+      router: WindowRouter(window: window),
+      wallet: wallet,
+      confirmator: TransactionConfirmationDeeplinkConfirmationCoordinatorConfirmator(
+        bocBuilder: bocBuilder,
+        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
+      ),
+      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
+        wallet: wallet,
+        bocProvider: TransactionConfirmationDeeplinkControllerBocProvider(
+          bocBuilder: bocBuilder
+        )
+      ),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
   func openSwap(wallet: Wallet, token: Token) {
     let fromToken: String?
     let toToken: String?
@@ -393,14 +424,23 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
     case let .transfer(data):
-      openSendDeeplink(
-        recipient: data.recipient,
-        amount: data.amount,
-        comment: data.comment,
-        jettonAddress: data.jettonAddress,
-        expirationTimestamp: data.expirationTimestamp
-      )
-      return true
+      switch data {
+      case .sendTransfer(let sendTransferData):
+        openSendDeeplink(
+          recipient: sendTransferData.recipient,
+          amount: sendTransferData.amount,
+          comment: sendTransferData.comment,
+          jettonAddress: sendTransferData.jettonAddress,
+          expirationTimestamp: sendTransferData.expirationTimestamp
+        )
+        return true
+      case .signRawTransfer(let signRawTransferData):
+        openSignRawSendDeeplink(recipient: signRawTransferData.recipient,
+                                amount: signRawTransferData.amount, bin: signRawTransferData.bin, stateInit: signRawTransferData.stateInit,
+                                expirationTimestamp: signRawTransferData.expirationTimestamp
+        )
+        return true
+      }
     case .buyTon:
       openBuyDeeplink()
       return true

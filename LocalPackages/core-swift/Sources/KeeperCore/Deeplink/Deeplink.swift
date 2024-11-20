@@ -3,13 +3,25 @@ import TonSwift
 import BigInt
 
 public enum Deeplink: Equatable {
-
   public struct TransferData: Equatable {
     public let recipient: String
     public let amount: BigUInt?
     public let comment: String?
     public let jettonAddress: Address?
     public let expirationTimestamp: Int64?
+  }
+  
+  public struct RawTransferData: Equatable {
+    public let recipient: String
+    public let amount: BigUInt?
+    public let bin: String?
+    public let stateInit: String?
+    public let expirationTimestamp: Int64?
+  }
+  
+  public enum Transfer: Equatable {
+    case sendTransfer(TransferData)
+    case signRawTransfer(RawTransferData)
   }
   
   public struct SwapData: Equatable {
@@ -21,7 +33,7 @@ public enum Deeplink: Equatable {
     public let promocode: String?
   }
   
-  case transfer(TransferData)
+  case transfer(Transfer)
   case buyTon
   case staking
   case pool(Address)
