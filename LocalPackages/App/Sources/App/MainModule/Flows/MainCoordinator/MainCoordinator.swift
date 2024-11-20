@@ -138,6 +138,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let deeplink = try mainController.parseDeeplink(deeplink: string)
         return handleTonkeeperDeeplink(deeplink)
       } catch {
+        ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
         return false
       }
     default:
