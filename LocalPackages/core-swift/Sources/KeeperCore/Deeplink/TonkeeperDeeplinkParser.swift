@@ -96,8 +96,11 @@ public struct TonkeeperDeeplinkParser {
       }
       return Int64(exp)
     }()
-    
+        
     if (bin != nil || stateInit != nil) {
+      if (comment != nil) {
+        throw DeeplinkParserError.invalidParameters
+      }
       return .signRawTransfer(.init(recipient: recipient, amount: amount, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
     }
     
