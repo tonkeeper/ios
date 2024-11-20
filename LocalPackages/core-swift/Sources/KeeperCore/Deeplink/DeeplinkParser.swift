@@ -5,6 +5,7 @@ import BigInt
 enum DeeplinkParserError: Swift.Error {
   case unsupportedDeeplink(string: String?)
   case invalidParameters
+  case unknownQueryItem(name: String)
 }
 
 public struct DeeplinkParser {

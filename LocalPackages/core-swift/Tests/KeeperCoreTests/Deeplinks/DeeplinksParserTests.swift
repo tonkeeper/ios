@@ -13,10 +13,13 @@ final class DeeplinksParserTests: XCTestCase {
     
     let string = "tonkeeper://transfer/\(address)?text=\(text)&amount=\(amount)"
     let transferData = Deeplink.TransferData(
-      recipient: try! Address.parse(address),
+      recipient: address,
       amount: BigUInt(amount),
+      bin: nil,
+      stateInit: nil,
       comment: text,
-      jettonAddress: nil
+      jettonAddress: nil,
+      expirationTimestamp: nil
     )
     let result = Deeplink.transfer(transferData)
     
@@ -32,10 +35,13 @@ final class DeeplinksParserTests: XCTestCase {
     
     let string = "ton://transfer/\(address)?text=\(text)&amount=\(amount)"
     let transferData = Deeplink.TransferData(
-      recipient: try! Address.parse(address),
+      recipient: address,
       amount: BigUInt(amount),
+      bin: nil,
+      stateInit: nil,
       comment: text,
-      jettonAddress: nil
+      jettonAddress: nil,
+      expirationTimestamp: nil
     )
     let result = Deeplink.transfer(transferData)
     
@@ -51,10 +57,13 @@ final class DeeplinksParserTests: XCTestCase {
     
     let string = "https://app.tonkeeper.com/transfer/\(address)?text=\(text)&amount=\(amount)"
     let transferData = Deeplink.TransferData(
-      recipient: try! Address.parse(address),
+      recipient: address,
       amount: BigUInt(amount),
+      bin: nil,
+      stateInit: nil,
       comment: text,
-      jettonAddress: nil
+      jettonAddress: nil,
+      expirationTimestamp: nil
     )
     let result = Deeplink.transfer(transferData)
     

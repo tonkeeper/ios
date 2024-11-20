@@ -84,9 +84,13 @@ private extension SendTokenCoordinator {
       self?.openScan(completion: { deeplink in
         switch deeplink {
         case .transfer(let data):
-          module.input.setRecipient(string: data.recipient)
-          module.input.setAmount(amount: data.amount)
-          module.input.setComment(comment: data.comment)
+          switch data {
+            case .sendTransfer(let sendTransferData):
+              module.input.setRecipient(string: sendTransferData.recipient)
+              module.input.setAmount(amount: sendTransferData.amount)
+              module.input.setComment(comment: sendTransferData.comment)
+            default: break
+          }
           default: break
         }
       })

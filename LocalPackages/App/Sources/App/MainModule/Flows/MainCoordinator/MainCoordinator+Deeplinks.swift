@@ -98,6 +98,54 @@ extension MainCoordinator {
     self.deeplinkHandleTask = deeplinkHandleTask
   }
   
+  func openSignRawSendDeeplink(recipient: String,
+                        amount: BigUInt?,
+                        bin: String?,
+                        stateInit: String?,
+                               expirationTimestamp: Int64?) {
+    deeplinkHandleTask?.cancel()
+    
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+    
+    if let expirationTimestamp {
+      let expirationDate = Date(timeIntervalSince1970: TimeInterval(expirationTimestamp))
+      guard Date() <= expirationDate else {
+        let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.linkExpired)
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(configuration: configuration)
+        return
+      }
+    }
+    
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    
+    let deeplinkHandleTask = Task {
+      do {
+        let wallet = try walletsStore.activeWallet
+        
+        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
+        
+        guard let amount = amount else { return }
+
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          self.openSignRaw(wallet: wallet, recipient: recipient, amount: amount, payload: bin, stateInit: stateInit)
+        }
+      } catch {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(configuration: .failed)
+        }
+      }
+    }
+    
+    self.deeplinkHandleTask = deeplinkHandleTask
+  }
+  
   func openBuyDeeplink() {
     deeplinkHandleTask?.cancel()
     deeplinkHandleTask = nil
