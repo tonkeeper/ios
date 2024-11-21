@@ -150,6 +150,7 @@ extension API {
       return AccountsAPI.getAccountEventsWithRequestBuilder(
         accountId: address.toRaw(),
         limit: limit,
+        subjectOnly: true,
         beforeLt: beforeLt,
         startDate: nil,
         endDate: nil
