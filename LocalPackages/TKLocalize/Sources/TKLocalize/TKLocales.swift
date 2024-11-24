@@ -569,6 +569,8 @@ public enum TKLocales {
       public static let uah = TKLocales.tr("Localizable", "currency.items.uah", fallback: "Ukrainian hryvnian")
       /// United States Dollar
       public static let usd = TKLocales.tr("Localizable", "currency.items.usd", fallback: "United States Dollar")
+      /// Uzbekistani sum
+      public static let uzs = TKLocales.tr("Localizable", "currency.items.uzs", fallback: "Uzbekistani sum")
     }
   }
   public enum CustomizeWallet {
@@ -1006,6 +1008,8 @@ public enum TKLocales {
     public enum Items {
       /// Backup
       public static let backup = TKLocales.tr("Localizable", "settings.items.backup", fallback: "Backup")
+      /// Battery
+      public static let battery = TKLocales.tr("Localizable", "settings.items.battery", fallback: "Battery")
       /// Contact us
       public static let contactUs = TKLocales.tr("Localizable", "settings.items.contact_us", fallback: "Contact us")
       /// Currency

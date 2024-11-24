@@ -16,6 +16,7 @@ public enum Currency: String, Codable, CaseIterable {
   case KRW = "KRW"
   case IDR = "IDR"
   case INR = "INR"
+  case UZS = "UZS"
   
   public init?(code: String) {
     self.init(rawValue: code)
@@ -41,6 +42,7 @@ public enum Currency: String, Codable, CaseIterable {
     case .KZT: return "₸"
     case .RUB: return "₽"
     case .UAH: return "₴"
+    case .UZS: return "sum"
     }
   }
   
@@ -60,6 +62,7 @@ public enum Currency: String, Codable, CaseIterable {
     case .KZT: return TKLocales.Currency.Items.kzt
     case .RUB: return TKLocales.Currency.Items.rub
     case .UAH: return TKLocales.Currency.Items.uah
+    case .UZS: return TKLocales.Currency.Items.uzs
     }
   }
   

@@ -113,6 +113,7 @@
 "settings.items.notifications" = "Notifications";
 "settings.items.wallet_w5" = "Wallet W5";
 "settings.items.wallet_v4R2" = "Wallet v4R2";
+"settings.items.battery" = "Battery";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -170,6 +171,7 @@
 "currency.items.krw" = "South Korean Won";
 "currency.items.idr" = "Indonesian Rupiah";
 "currency.items.inr" = "Indian Rupee";
+"currency.items.uzs" = "Uzbekistani sum";
 
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";

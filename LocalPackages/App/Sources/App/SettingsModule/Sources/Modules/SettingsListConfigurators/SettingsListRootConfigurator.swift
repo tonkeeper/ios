@@ -787,7 +787,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: "Battery",
+            title: TKLocales.Settings.Items.battery,
             tags: tags
           )
         )))

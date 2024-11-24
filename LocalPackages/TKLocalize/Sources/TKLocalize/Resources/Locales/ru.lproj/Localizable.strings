@@ -111,6 +111,7 @@
 "settings.items.notifications" = "Уведомления";
 "settings.items.wallet_w5" = "Кошелёк W5";
 "settings.items.wallet_v4R2" = "Кошелёк v4R2";
+"settings.items.battery" = "Батарейка";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -168,6 +169,7 @@
 "currency.items.krw" = "Южнокорейская вона";
 "currency.items.idr" = "Индонезийская рупия";
 "currency.items.inr" = "Индийская рупия";
+"currency.items.uzs" = "Узбекский сум";
 
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";
