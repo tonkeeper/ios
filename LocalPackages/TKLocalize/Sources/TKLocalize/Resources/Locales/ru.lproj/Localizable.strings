@@ -170,6 +170,16 @@
 "currency.items.idr" = "Индонезийская рупия";
 "currency.items.inr" = "Индийская рупия";
 "currency.items.uzs" = "Узбекский сум";
+"currency.items.byn" = "Белорусский рубль";
+"currency.items.brl" = "Бразильский реал";
+"currency.items.try" = "Турецкая лира";
+"currency.items.ngn" = "Нигерийская найра";
+"currency.items.thb" = "Тайский бат";
+"currency.items.bdt" = "Бангладешская така";
+"currency.items.cad" = "Канадский доллар";
+"currency.items.ils" = "Израильский шекель";
+"currency.items.gel" = "Грузинский лари";
+"currency.items.vhd" = "Вьетнамский донг";
 
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";

@@ -172,6 +172,16 @@
 "currency.items.idr" = "Indonesian Rupiah";
 "currency.items.inr" = "Indian Rupee";
 "currency.items.uzs" = "Uzbekistani sum";
+"currency.items.byn" = "Belarusian ruble";
+"currency.items.brl" = "Brazilian Real";
+"currency.items.try" = "Turkish Lira";
+"currency.items.ngn" = "Nigerian Naira";
+"currency.items.thb" = "Thai baht";
+"currency.items.bdt" = "Bangladeshi taka";
+"currency.items.cad" = "Canadian Dollar";
+"currency.items.ils" = "Israeli Sheqel";
+"currency.items.gel" = "Georgian lari";
+"currency.items.vhd" = "Vietnamese dong";
 
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";

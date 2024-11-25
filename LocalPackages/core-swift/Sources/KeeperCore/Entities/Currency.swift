@@ -17,6 +17,16 @@ public enum Currency: String, Codable, CaseIterable {
   case IDR = "IDR"
   case INR = "INR"
   case UZS = "UZS"
+  case BYN = "BYN"
+  case BRL = "BRL"
+  case TRY = "TRY"
+  case NGN = "NGN"
+  case THB = "THB"
+  case BDT = "BDT"
+  case CAD = "CAD"
+  case ILS = "ILS"
+  case GEL = "GEL"
+  case VND = "VND"
   
   public init?(code: String) {
     self.init(rawValue: code)
@@ -43,6 +53,16 @@ public enum Currency: String, Codable, CaseIterable {
     case .RUB: return "₽"
     case .UAH: return "₴"
     case .UZS: return "sum"
+    case .BYN: return "Br"
+    case .BRL: return "R$"
+    case .TRY: return "₺"
+    case .NGN: return "₦"
+    case .THB: return "฿"
+    case .BDT: return "৳"
+    case .CAD: return "C$"
+    case .ILS: return "₪"
+    case .GEL: return "₾"
+    case .VND: return "đ"
     }
   }
   
@@ -63,12 +83,22 @@ public enum Currency: String, Codable, CaseIterable {
     case .RUB: return TKLocales.Currency.Items.rub
     case .UAH: return TKLocales.Currency.Items.uah
     case .UZS: return TKLocales.Currency.Items.uzs
+    case .BYN: return TKLocales.Currency.Items.byn
+    case .BRL: return TKLocales.Currency.Items.brl
+    case .TRY: return TKLocales.Currency.Items.try
+    case .NGN: return TKLocales.Currency.Items.ngn
+    case .THB: return TKLocales.Currency.Items.thb
+    case .BDT: return TKLocales.Currency.Items.bdt
+    case .CAD: return TKLocales.Currency.Items.cad
+    case .ILS: return TKLocales.Currency.Items.ils
+    case .GEL: return TKLocales.Currency.Items.gel
+    case .VND: return TKLocales.Currency.Items.vhd
     }
   }
   
   public var symbolOnLeft: Bool {
     switch self {
-    case .EUR, .USD, .GBP: return true
+    case .EUR, .USD, .GBP, .BDT, .CAD, .ILS: return true
     default: return false
     }
   }

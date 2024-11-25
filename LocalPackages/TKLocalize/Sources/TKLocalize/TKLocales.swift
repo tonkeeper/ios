@@ -545,6 +545,14 @@ public enum TKLocales {
     public enum Items {
       /// United Arab Emirates Dirham
       public static let aed = TKLocales.tr("Localizable", "currency.items.aed", fallback: "United Arab Emirates Dirham")
+      /// Bangladeshi taka
+      public static let bdt = TKLocales.tr("Localizable", "currency.items.bdt", fallback: "Bangladeshi taka")
+      /// Brazilian Real
+      public static let brl = TKLocales.tr("Localizable", "currency.items.brl", fallback: "Brazilian Real")
+      /// Belarusian ruble
+      public static let byn = TKLocales.tr("Localizable", "currency.items.byn", fallback: "Belarusian ruble")
+      /// Canadian Dollar
+      public static let cad = TKLocales.tr("Localizable", "currency.items.cad", fallback: "Canadian Dollar")
       /// Swiss Franc
       public static let chf = TKLocales.tr("Localizable", "currency.items.chf", fallback: "Swiss Franc")
       /// China Yuan
@@ -553,8 +561,12 @@ public enum TKLocales {
       public static let eur = TKLocales.tr("Localizable", "currency.items.eur", fallback: "Euro")
       /// Great Britain Pound
       public static let gbp = TKLocales.tr("Localizable", "currency.items.gbp", fallback: "Great Britain Pound")
+      /// Georgian lari
+      public static let gel = TKLocales.tr("Localizable", "currency.items.gel", fallback: "Georgian lari")
       /// Indonesian Rupiah
       public static let idr = TKLocales.tr("Localizable", "currency.items.idr", fallback: "Indonesian Rupiah")
+      /// Israeli Sheqel
+      public static let ils = TKLocales.tr("Localizable", "currency.items.ils", fallback: "Israeli Sheqel")
       /// Indian Rupee
       public static let inr = TKLocales.tr("Localizable", "currency.items.inr", fallback: "Indian Rupee")
       /// Japanese Yen
@@ -563,14 +575,22 @@ public enum TKLocales {
       public static let krw = TKLocales.tr("Localizable", "currency.items.krw", fallback: "South Korean Won")
       /// Kazakhstani Tenge
       public static let kzt = TKLocales.tr("Localizable", "currency.items.kzt", fallback: "Kazakhstani Tenge")
+      /// Nigerian Naira
+      public static let ngn = TKLocales.tr("Localizable", "currency.items.ngn", fallback: "Nigerian Naira")
       /// Russian Ruble
       public static let rub = TKLocales.tr("Localizable", "currency.items.rub", fallback: "Russian Ruble")
+      /// Thai baht
+      public static let thb = TKLocales.tr("Localizable", "currency.items.thb", fallback: "Thai baht")
+      /// Turkish Lira
+      public static let `try` = TKLocales.tr("Localizable", "currency.items.try", fallback: "Turkish Lira")
       /// Ukrainian hryvnian
       public static let uah = TKLocales.tr("Localizable", "currency.items.uah", fallback: "Ukrainian hryvnian")
       /// United States Dollar
       public static let usd = TKLocales.tr("Localizable", "currency.items.usd", fallback: "United States Dollar")
       /// Uzbekistani sum
       public static let uzs = TKLocales.tr("Localizable", "currency.items.uzs", fallback: "Uzbekistani sum")
+      /// Vietnamese dong
+      public static let vhd = TKLocales.tr("Localizable", "currency.items.vhd", fallback: "Vietnamese dong")
     }
   }
   public enum CustomizeWallet {
