@@ -7,6 +7,7 @@ import KeeperCore
 import TKCore
 import TonSwift
 import BigInt
+import TKStories
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   

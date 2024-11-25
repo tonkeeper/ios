@@ -32,6 +32,12 @@ public final class Configuration {
       await loadConfiguration().mainnet.tonApiV2Key
     }
   }
+  public var stories: [String] {
+    get async {
+      // stories may be nullable on testnet, but in mainnet should be always presented
+      await loadConfiguration().mainnet.stories!
+    }
+  }
   public func scamApiURL(isTestnet: Bool) async -> URL? {
     isTestnet
     ? await loadConfiguration().testnet.scamApiURL

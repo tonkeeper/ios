@@ -86,6 +86,8 @@ public final class Assembly {
     coreAssembly: coreAssembly
   )
   
+  private lazy var storiesAssembly = StoriesAssembly(tonkeeperApiAssembly: tonkeeperApiAssembly, configurationAssembly: configurationAssembly, coreAssembly: coreAssembly)
+  
   private let dependencies: Dependencies
   
   public init(dependencies: Dependencies) {
@@ -118,7 +120,8 @@ public extension Assembly {
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
       rnAssembly: rnAssembly,
-      secureAssembly: secureAssembly
+      secureAssembly: secureAssembly,
+      storiesAssembly: storiesAssembly
     )
   }
   

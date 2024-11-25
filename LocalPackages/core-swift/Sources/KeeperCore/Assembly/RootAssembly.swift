@@ -18,6 +18,7 @@ public final class RootAssembly {
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly
+  public let storiesAssembly: StoriesAssembly
 
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -35,7 +36,8 @@ public final class RootAssembly {
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        rnAssembly: RNAssembly,
-       secureAssembly: SecureAssembly) {
+       secureAssembly: SecureAssembly,
+       storiesAssembly: StoriesAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
@@ -53,6 +55,7 @@ public final class RootAssembly {
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
     self.secureAssembly = secureAssembly
+    self.storiesAssembly = storiesAssembly
   }
   
   private var _rootController: RootController?
@@ -66,7 +69,8 @@ public final class RootAssembly {
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: secureAssembly.mnemonicsRepository(),
         buySellProvider: buySellAssembly.buySellProvider,
-        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
+        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider,
+        storyProvider: storiesAssembly.storyProvider
       )
       self._rootController = rootController
       return rootController

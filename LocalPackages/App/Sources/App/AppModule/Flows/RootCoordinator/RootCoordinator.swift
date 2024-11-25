@@ -1,4 +1,5 @@
 import UIKit
+import TKStories
 import TKUIKit
 import TKCoordinator
 import TKCore
@@ -46,7 +47,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     stateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
-    
+        
     let state = stateManager.state
     switch state {
     case .onboarding:
@@ -67,7 +68,13 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         if didNeedToMigrate {
           self?.openMain(deeplink: deeplink)
         } else {
-          self?.handlePasscodeFlowIfNeeded { self?.openMain(deeplink: deeplink) }
+          self?.handlePasscodeFlowIfNeeded {
+            self?.openMain(deeplink: deeplink)
+            self?.rootController.loadStoryToShow()
+            self?.rootController.didLoadStoryToShow = { [weak self] story in
+              self?.openStory(story: story)
+            }
+          }
         }
       }
     }
@@ -216,6 +223,57 @@ private extension RootCoordinator {
     showViewController(coordinator.router.rootViewController, animated: true)
   }
   
+  func openStory(story: Story) {
+      do {
+          let storiesViewController = TKStories.storiesViewController(
+              models: try story.pages.compactMap { page -> StoriesPageModel? in
+                  guard let url = URL(string: page.image) else {
+                      throw OpenStoryError.invalidImageUrl
+                  }
+                  
+                  let data: Data
+                  do {
+                      data = try Data(contentsOf: url)
+                  } catch {
+                      throw OpenStoryError.invalidImageUrl
+                  }
+                  
+                  guard let backgroundImage = UIImage(data: data) else {
+                      throw OpenStoryError.invalidImageUrl
+                  }
+                  
+                let button: StoriesPageModel.Button? = {
+                    if let button = page.button {
+                        return StoriesPageModel.Button(title: button.title, action: {
+                            switch button.type {
+                            case .deeplink:
+                              self.router.dismiss(animated: true, completion: {
+                                _ = self.handleDeeplink(deeplink: button.payload)
+                              })
+                            case .link:
+                              self.router.dismiss(animated: true, completion: {
+                                if let url = URL(string: button.payload) {
+                                  UIApplication.shared.open(url)
+                                }
+                              })
+                            }
+                        })
+                    }
+                    return nil
+                }()
+                  
+                  return StoriesPageModel(title: page.title,
+                                          description: page.description,
+                                          button: button,
+                                          backgroundImage: backgroundImage)
+              }
+          )
+          router.present(storiesViewController)
+      } catch {
+          print("Failed to open story: \(error)")
+      }
+  }
+  
   func openMain(deeplink: CoordinatorDeeplink?) {
     let module = MainModule(
       dependencies: MainModule.Dependencies(
@@ -360,3 +418,7 @@ private extension RootCoordinator {
 
 extension KeeperCore.Deeplink: TKCoordinator.CoordinatorDeeplink {}
 extension String: TKCoordinator.CoordinatorDeeplink {}
+
+enum OpenStoryError: Error {
+    case invalidImageUrl
+}
