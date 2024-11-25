@@ -51,7 +51,7 @@ public final class StoriesPresenter {
                               backgroundImage: .urlImage(page.image))
     }
     
-    let storiesViewController = TKStories.Stories.storiesViewController(models: models)
+    let storiesViewController = TKStoriesFactory.storiesViewController(models: models)
     self.storiesViewController = storiesViewController
     
     storiesViewController.storiesPresentationController?.didDismiss = { [weak self] in

@@ -21,7 +21,7 @@ public struct Assembly {
     StoriesPresenter(storiesService: storiesService())
   }
   
-  private func storiesService() -> StoriesService {
+  public func storiesService() -> StoriesService {
     StoriesServiceImplementation(
       api: keeperCoreAssembly.tonkeeperAPIAssembly.api,
       shownStoriesRepository: ShownStoriesRepositoryImplementation(

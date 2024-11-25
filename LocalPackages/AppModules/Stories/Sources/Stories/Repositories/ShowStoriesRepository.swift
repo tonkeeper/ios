@@ -4,6 +4,7 @@ import CoreComponents
 protocol ShownStoriesRepository {
   func saveShownStories(_ storyIds: [String]) throws
   func getShownStories() throws -> [String]
+  func reset() throws
 }
 
 final class ShownStoriesRepositoryImplementation: ShownStoriesRepository {
@@ -25,6 +26,10 @@ final class ShownStoriesRepositoryImplementation: ShownStoriesRepository {
     } catch {
       return []
     }
+  }
+  
+  func reset() throws {
+    try fileSystemVault.saveItem([], key: .key)
   }
 }
 

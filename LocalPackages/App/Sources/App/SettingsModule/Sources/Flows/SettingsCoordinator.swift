@@ -7,6 +7,7 @@ import KeeperCore
 import CoreComponents
 import TKLocalize
 import TKStories
+import Stories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -174,7 +175,7 @@ private extension SettingsCoordinator {
   }
   
   func openW5Story(wallet: Wallet) {
-    let storiesViewController = TKStories.Stories.storiesViewController(
+    let storiesViewController = TKStoriesFactory.storiesViewController(
       models: [
         StoriesPageModel(
           title: TKLocales.W5Stories.Gasless.title,
@@ -451,8 +452,11 @@ private extension SettingsCoordinator {
   }
   
   func openDevMenu() {
+    let storiesAssembly = Stories.Assembly(keeperCoreAssembly: keeperCoreMainAssembly)
+    
     let configuration = SettingsListDevMenuConfigurator(
-      uniqueIdProvider: coreAssembly.uniqueIdProvider
+      uniqueIdProvider: coreAssembly.uniqueIdProvider,
+      storiesService: storiesAssembly.storiesService()
     )
     let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
     let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()

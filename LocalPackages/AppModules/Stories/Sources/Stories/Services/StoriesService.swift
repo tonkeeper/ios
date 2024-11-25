@@ -5,6 +5,7 @@ public protocol StoriesService {
   func loadStory(storyID: String) async throws -> Story
   func isNeedToShow(storyID: String) -> Bool
   func markStoryShown(storyID: String)
+  func resetShownStories()
 }
 
 final class StoriesServiceImplementation: StoriesService {
@@ -33,5 +34,9 @@ final class StoriesServiceImplementation: StoriesService {
   
   func markStoryShown(storyID: String) {
     try? shownStoriesRepository.saveShownStories([storyID])
+  }
+  
+  func resetShownStories() {
+    try? shownStoriesRepository.reset()
   }
 }

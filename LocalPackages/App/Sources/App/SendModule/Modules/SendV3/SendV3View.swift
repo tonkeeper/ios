@@ -61,6 +61,7 @@ final class SendV3View: UIView {
     commentInputView.commentTextField.rightItems = [TKTextField.RightItem(view: commentPasteButton, mode: .empty)]
     
     navigationBar.centerView = titleView
+    navigationBar.scrollView = scrollView
 
     
     addSubview(scrollView)
