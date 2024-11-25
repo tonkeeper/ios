@@ -279,7 +279,7 @@ private extension BrowserExploreViewModelImplementation {
               tintColor: .clear,
               backgroundColor: .clear,
               size: CGSize(width: 44, height: 44),
-              cornerRadius: 16
+              cornerRadius: 12
             )
           ),
           alignment: .center
