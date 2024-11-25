@@ -287,11 +287,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         )
       )
     )
-    
+
     return SettingsListItem(
       id: .backupItemIdentifier,
       cellConfiguration: cellConfiguration,
-      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.lock, tintColor: .Accent.blue)),
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
       onSelection: { [weak self] _ in
         self?.didTapBackup?()
       }
@@ -390,7 +390,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     return SettingsListItem(
       id: .securityItemIdentifier,
       cellConfiguration: cellConfiguration,
-      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.lock, tintColor: .Accent.blue)),
       onSelection: {
         [weak self] _ in
         self?.didTapSecuritySettings?()
