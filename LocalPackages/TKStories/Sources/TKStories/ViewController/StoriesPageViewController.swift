@@ -4,7 +4,7 @@ import TKUIKit
 final class StoriesPageViewController: UIViewController {
   
   private let stackView = UIStackView()
-  private let backgroundImageView = UIImageView()
+  private let backgroundImageView = TKImageView()
   private let titleLabel = UILabel()
   private let descriptionLabel = UILabel()
   private let button = TKButton()
@@ -28,7 +28,15 @@ final class StoriesPageViewController: UIViewController {
   }
   
   private func setupContent() {
-    backgroundImageView.image = model.backgroundImage
+    backgroundImageView.configure(
+      model: TKImageView.Model(
+        image: model.backgroundImage,
+        tintColor: .clear,
+        size: .none,
+        corners: .none,
+        padding: .zero
+      )
+    )
     titleLabel.attributedText = model.title.withTextStyle(.h1, color: .Constant.white)
     descriptionLabel.attributedText = model.description.withTextStyle(.body1, color: .Constant.white)
     if let button = model.button {
@@ -41,6 +49,8 @@ final class StoriesPageViewController: UIViewController {
   }
   
   private func setup() {
+    view.backgroundColor = .black
+    
     button.configuration = .actionButtonConfiguration(category: .overlay, size: .medium)
     titleLabel.numberOfLines = 0
     descriptionLabel.numberOfLines = 0

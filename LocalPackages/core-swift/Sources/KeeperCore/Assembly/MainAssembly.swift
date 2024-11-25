@@ -102,12 +102,6 @@ public final class MainAssembly {
     )
   }
   
-  public func storiesController(pages: [StoriesController.StoryPage]) -> StoriesController {
-    StoriesController(
-      pages: pages
-    )
-  }
-  
   public func sendV3Controller(wallet: Wallet) -> SendV3Controller {
     SendV3Controller(
       wallet: wallet,

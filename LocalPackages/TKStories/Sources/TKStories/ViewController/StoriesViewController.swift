@@ -3,6 +3,10 @@ import TKUIKit
 
 public final class StoriesViewController: UIViewController {
   
+  public var storiesPresentationController: StoriesPresentationController? {
+    presentationController as? StoriesPresentationController
+  }
+  
   private let bar = ProgressBarView()
   private let closeButton: TKButton = {
     var configuration = TKButton.Configuration.headerAccentButtonConfiguration()
@@ -111,7 +115,7 @@ public final class StoriesViewController: UIViewController {
       self?.dismiss(animated: true)
     }
     
-    view.backgroundColor = .red
+    view.backgroundColor = .Background.page
     view.addSubview(pageContainerView)
     view.addSubview(bar)
     view.addSubview(closeButton)

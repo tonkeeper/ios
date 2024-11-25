@@ -174,17 +174,17 @@ private extension SettingsCoordinator {
   }
   
   func openW5Story(wallet: Wallet) {
-    let storiesViewController = TKStories.storiesViewController(
+    let storiesViewController = TKStories.Stories.storiesViewController(
       models: [
         StoriesPageModel(
           title: TKLocales.W5Stories.Gasless.title,
           description: TKLocales.W5Stories.Gasless.subtitle,
-          backgroundImage: .TKUIKit.Images.storyGasless
+          backgroundImage: .image(.TKUIKit.Images.storyGasless)
         ),
         StoriesPageModel(
           title: TKLocales.W5Stories.Messages.title,
           description: TKLocales.W5Stories.Messages.subtitle,
-          backgroundImage: .TKUIKit.Images.storyMessages
+          backgroundImage: .image(.TKUIKit.Images.storyMessages)
         ),
         StoriesPageModel(
           title: TKLocales.W5Stories.Phrase.title,
@@ -197,7 +197,7 @@ private extension SettingsCoordinator {
               })
             }
           ),
-          backgroundImage: .TKUIKit.Images.storyPhrase
+          backgroundImage: .image(.TKUIKit.Images.storyPhrase)
         )
       ]
     )

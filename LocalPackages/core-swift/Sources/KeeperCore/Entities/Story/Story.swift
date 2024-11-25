@@ -3,20 +3,9 @@ import Foundation
 public struct Story: Decodable, Equatable {
   public struct Page: Decodable, Equatable {
     public struct Button: Decodable, Equatable {
-      public enum ButtonType: String {
+      public enum ButtonType: String, Decodable {
         case deeplink
         case link
-        
-        public init?(rawValue: String) {
-          switch rawValue.lowercased() {
-          case "deeplink":
-            self = .deeplink
-          case "link":
-            self = .link
-          default:
-            return nil
-          }
-        }
       }
       
       public let title: String
@@ -46,7 +35,7 @@ public struct Story: Decodable, Equatable {
     
     public let title: String
     public let description: String
-    public let image: String
+    public let image: URL?
     public let button: Button?
   }
   

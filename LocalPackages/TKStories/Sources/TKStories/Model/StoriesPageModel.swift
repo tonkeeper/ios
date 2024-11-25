@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 
 public struct StoriesPageModel {
   public struct Button {
@@ -15,12 +16,12 @@ public struct StoriesPageModel {
   public let title: String
   public let description: String
   public let button: Button?
-  public let backgroundImage: UIImage
+  public let backgroundImage: TKImage
   
   public init(title: String,
               description: String,
               button: Button? = nil,
-              backgroundImage: UIImage) {
+              backgroundImage: TKImage) {
     self.title = title
     self.description = description
     self.button = button
