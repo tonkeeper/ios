@@ -85,8 +85,8 @@ private extension BrowserExploreViewController {
     customView.collectionView.delegate = self
     customView.collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "ContainerCell")
     
-    featuredView.didSelectApp = { [weak self] index in
-      self?.viewModel.selectFeaturedApp(index: index)
+    featuredView.didSelectApp = { [weak self] dapp in
+      self?.viewModel.selectFeaturedApp(dapp: dapp)
     }
   }
   

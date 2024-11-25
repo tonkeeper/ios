@@ -17,7 +17,7 @@ protocol BrowserExploreViewModel: AnyObject {
   
   func viewDidLoad()
   func didSelectCategoryAll(index: Int)
-  func selectFeaturedApp(index: Int)
+  func selectFeaturedApp(dapp: Dapp)
 }
 
 final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, BrowserExploreModuleOutput {
@@ -81,15 +81,11 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
     didSelectCategory?(categories[categoryIndex])
   }
   
-  func selectFeaturedApp(index: Int) {
-    guard let app = featuredCategory?.apps[safe: index] else {
-      return
-    }
-    
-    didSelectDapp?(app)
+  func selectFeaturedApp(dapp: Dapp) {
+    didSelectDapp?(dapp)
     analyticsProvider.logEvent(eventKey: .browserClick,
-                               args: ["name": app.name,
-                                      "url": app.url.absoluteString,
+                               args: ["name": dapp.name,
+                                      "url": dapp.url.absoluteString,
                                       "source": "featured"])
   }
   

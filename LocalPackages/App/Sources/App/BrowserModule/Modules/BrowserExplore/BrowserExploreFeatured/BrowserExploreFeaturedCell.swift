@@ -37,6 +37,7 @@ final class BrowserExploreFeaturedCell: UICollectionViewCell, ReusableView, Conf
   struct Model {
     let posterImageTask: ImageDownloadTask
     let listModel: TKUIListItemView.Configuration
+    let tapClosure: (() -> Void)?
   }
   
   func configure(model: Model) {
