@@ -45,6 +45,7 @@ public enum Deeplink: Equatable {
   case tonconnect(TonConnectParameters)
   case dapp(URL)
   case battery(Battery)
+  case browser
 }
 
 public enum ExternalSignDeeplink: Equatable {

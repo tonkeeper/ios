@@ -518,6 +518,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleTonConnectDeeplink(parameters)
     case .dapp(let dappURL):
       return handleDappDeeplink(url: dappURL)
+    case .browser:
+      openBrowserTabExplore()
+      return true
     case .battery(let battery):
       handleBatteryDeeplink(battery)
       return true
@@ -1267,6 +1270,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
+  }
+  
+  private func openBrowserTabExplore() {
+    guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
+    guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
+    router.rootViewController.navigationController?.popToRootViewController(animated: true)
+    router.rootViewController.selectedIndex = index
+    router.dismiss(animated: true)
+    browserCoordinator?.openExplore()
   }
   
   private func decryptComment(wallet: Wallet,

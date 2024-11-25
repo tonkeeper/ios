@@ -10,6 +10,8 @@ import TKLocalize
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
+  
+  private var browserInput: BrowserModuleInput?
 
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -26,6 +28,10 @@ public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRou
   
   public override func start() {
     openBrowser()
+  }
+  
+  func openExplore() {
+    browserInput?.openExplore()
   }
 }
 
@@ -55,6 +61,9 @@ private extension BrowserCoordinator {
         module.input.updateSelectedCountry(resultSelectedCountry)
       }
     }
+    
+    browserInput = module.input
+    
     router.push(viewController: module.view, animated: false)
   }
   

@@ -93,10 +93,12 @@ private extension BrowserViewController {
     }
     
     viewModel.didSelectExplore = { [weak self] in
+      self?.customView.headerView.segmentedControlView.selectExploreButton()
       self?.showExplore()
     }
     
     viewModel.didSelectConnected = { [weak self] in
+      self?.customView.headerView.segmentedControlView.selectConnectedButton()
       self?.showConnected()
     }
 

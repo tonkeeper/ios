@@ -35,6 +35,8 @@ public struct TonkeeperDeeplinkParser {
       return .dapp(try parseDapp(url: url))
     case "battery":
       return .battery(parseBattery(url: url))
+    case "browser":
+      return .browser
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }

@@ -6,6 +6,7 @@ import TKLocalize
 
 protocol BrowserModuleInput: AnyObject {
   func updateSelectedCountry(_ selectedCountry: SelectedCountry)
+  func openExplore()
 }
 
 protocol BrowserModuleOutput: AnyObject {
@@ -165,5 +166,9 @@ extension BrowserViewModelImplementation: BrowserModuleInput {
         updateCountryPickerButton()
       }
     }
+  }
+  
+  func openExplore() {
+    didSelectExplore?()
   }
 }
