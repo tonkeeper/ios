@@ -54,9 +54,7 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     updateCountryPickerButton()
   }
   
-  func viewWillAppear() {
-    analyticsProvider.logEvent(eventKey: .openBrowser)
-  }
+  func viewWillAppear() {}
 
   func didTapSearchBar() {
     didTapSearch?()

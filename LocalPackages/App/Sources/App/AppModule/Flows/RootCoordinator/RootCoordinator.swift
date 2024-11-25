@@ -83,7 +83,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       if let onboardingCoordinator {
         return onboardingCoordinator.handleDeeplink(deeplink: coreDeeplink)
       } else if let mainCoordinator {
-        return mainCoordinator.handleDeeplink(deeplink: coreDeeplink)
+        return mainCoordinator.handleDeeplink(deeplink: coreDeeplink, fromStories: false)
       } else {
         return false
       }

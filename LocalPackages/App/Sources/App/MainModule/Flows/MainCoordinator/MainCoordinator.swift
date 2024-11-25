@@ -113,6 +113,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           }
         }
     }
+    
+    router.didSelectItem = { [weak self] index in
+      guard let self else { return }
+      let viewControllers = self.router.rootViewController.viewControllers ?? []
+      guard viewControllers.count > index else { return }
+      let viewController = viewControllers[index]
+      if viewController === browserCoordinator?.router.rootViewController {
+        coreAssembly.analyticsProvider.logEvent(
+          eventKey: .openBrowser
+        )
+      }
+    }
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
@@ -127,21 +139,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     mainController.start()
     DispatchQueue.main.async {
-      _ = self.handleDeeplink(deeplink: deeplink)
+      _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
     }
     
     setupStoriesController()
     mainCoordinatorStoriesController?.start()
   }
   
-  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+  func handleDeeplink(deeplink: CoordinatorDeeplink?, fromStories: Bool) -> Bool {
     switch deeplink {
     case let tonkeeperDeeplink as KeeperCore.Deeplink:
-      return handleTonkeeperDeeplink(tonkeeperDeeplink)
+      return handleTonkeeperDeeplink(tonkeeperDeeplink, fromStories: fromStories)
     case let string as String:
       do {
         let deeplink = try mainController.parseDeeplink(deeplink: string)
-        return handleTonkeeperDeeplink(deeplink)
+        return handleTonkeeperDeeplink(deeplink, fromStories: fromStories)
       } catch {
         ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
         return false
@@ -162,7 +174,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     mainCoordinatorStoriesController?.fromViewControllerProvider = { [weak self] in self?.router.rootViewController }
     mainCoordinatorStoriesController?.deeplinkAction = { [weak self] in
-      _ = self?.handleDeeplink(deeplink: $0)
+      _ = self?.handleDeeplink(deeplink: $0, fromStories: true)
     }
     mainCoordinatorStoriesController?.urlAction = { [weak self] in
       self?.openURL($0, title: nil)
@@ -246,7 +258,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
@@ -254,7 +266,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self.openDapp(title: title, url: url)
     }
     collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
 
     self.walletCoordinator = walletCoordinator
@@ -315,7 +327,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        _ = self?.handleTonkeeperDeeplink(deeplink)
+        _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
       })
     }
     
@@ -444,7 +456,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
 
-  func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
+  func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink, fromStories: Bool) -> Bool {
     switch deeplink {
     case let .transfer(data):
       switch data {
@@ -523,6 +535,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleDappDeeplink(url: dappURL)
     case .browser:
       openBrowserTabExplore()
+      coreAssembly.analyticsProvider.logEvent(
+        eventKey: .openBrowser,
+        args: ["from": fromStories ? "story" : "deep-link"]
+      )
       return true
     case .battery(let battery):
       handleBatteryDeeplink(battery)
@@ -950,7 +966,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       deeplinkHandler: { url in
         let deeplinkParser = DeeplinkParser()
         let deeplink = try deeplinkParser.parse(string: url)
-        self.handleDeeplink(deeplink: deeplink)
+        _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
       })
     router.present(viewController)
   }
@@ -1260,7 +1276,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
 
     coordinator.didHandleDeeplink = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
   
     addChild(coordinator)

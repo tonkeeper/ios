@@ -85,7 +85,12 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
     guard let app = featuredCategory?.apps[safe: index] else {
       return
     }
+    
     didSelectDapp?(app)
+    analyticsProvider.logEvent(eventKey: .browserClick,
+                               args: ["name": app.name,
+                                      "url": app.url.absoluteString,
+                                      "source": "featured"])
   }
   
   // MARK: - State
@@ -102,15 +107,18 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   private let browserExploreController: BrowserExploreController
   private let walletStore: WalletsStore
   private let regionStore: RegionStore
+  private let analyticsProvider: AnalyticsProvider
 
   // MARK: - Init
   
   init(browserExploreController: BrowserExploreController,
        walletStore: WalletsStore,
-       regionStore: RegionStore) {
+       regionStore: RegionStore,
+       analyticsProvider: AnalyticsProvider) {
     self.browserExploreController = browserExploreController
     self.walletStore = walletStore
     self.regionStore = regionStore
+    self.analyticsProvider = analyticsProvider
   }
 }
 
@@ -299,6 +307,10 @@ private extension BrowserExploreViewModelImplementation {
       ),
       selectionClosure: { [weak self] in
         self?.didSelectDapp?(dapp)
+        self?.analyticsProvider.logEvent(eventKey: .browserClick,
+                                         args: ["name": dapp.name,
+                                                "url": dapp.url.absoluteString,
+                                                "source": "recommendation"])
       }
     )
   }

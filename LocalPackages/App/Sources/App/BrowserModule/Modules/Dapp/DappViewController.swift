@@ -7,14 +7,12 @@ import KeeperCore
 
 final class DappViewController: UIViewController {
   private let viewModel: DappViewModel
-  private let analyticsProvider: AnalyticsProvider
   
   private var bridgeWebViewController: TKBridgeWebViewController?
   private let deeplinkHandler: (_ deeplink: Deeplink) -> Void
 
-  init(viewModel: DappViewModel, analyticsProvider: AnalyticsProvider, deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void) {
+  init(viewModel: DappViewModel, deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void) {
     self.viewModel = viewModel
-    self.analyticsProvider = analyticsProvider
     self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
   }
@@ -40,8 +38,6 @@ private extension DappViewController {
   func setupBinding() {
     viewModel.didOpenApp = { [weak self] url, title in
       guard let self, let url else { return }
-      
-      self.analyticsProvider.logEvent(eventKey: .clickDapp, args: ["name": title ?? "", "url": url.absoluteString])
       
       let bridgeWebViewController = TKBridgeWebViewController(
         initialURL: url,
