@@ -19,7 +19,7 @@ public class AptabaseService: AnalyticsService {
   
   public init() {}
   
-  public func logEvent(eventKey: EventKeys, args: [String : String]) {
+  public func logEvent(eventKey: EventKey, args: [String : Any]) {
     Aptabase.shared.trackEvent(eventKey.rawValue, with: args)
   }
 }

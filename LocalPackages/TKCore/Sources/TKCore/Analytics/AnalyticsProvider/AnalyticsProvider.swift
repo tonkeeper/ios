@@ -1,7 +1,7 @@
 import Foundation
 import Aptabase
 
-public enum EventKeys: String {
+public enum EventKey: String {
   case clickDapp = "click_dapp"
   case launchApp = "launch_app"
   case importWallet = "import_wallet"
@@ -10,14 +10,21 @@ public enum EventKeys: String {
   case deleteWallet = "delete_wallet"
   case resetWallet = "reset_wallet"
   case openBrowser = "browser_open"
+  
+  case storyOpen = "story_open"
+  case storyPageView = "story_page_view"
+  case storyClick = "story_click"
+  
+  public var parameters: [String : Any] { [:] }
+  public var key: String { rawValue }
 }
 
 public protocol AnalyticsService {
-  func logEvent(eventKey: EventKeys, args: [String: String])
+  func logEvent(eventKey: EventKey, args: [String: Any])
 }
 
 public extension AnalyticsService {
-  func logEvent(eventKey: EventKeys) {
+  func logEvent(eventKey: EventKey) {
     self.logEvent(eventKey: eventKey, args: [:])
   }
 }
@@ -32,7 +39,7 @@ public struct AnalyticsProvider {
     self.uniqueIdProvider = uniqueIdProvider
   }
   
-  public func logEvent(eventKey: EventKeys, args: [String: String] = [:]) {
+  public func logEvent(eventKey: EventKey, args: [String: Any] = [:]) {
     var args = args
     args["firebase_user_id"] = uniqueIdProvider.uniqueDeviceId.uuidString
     for service in services {

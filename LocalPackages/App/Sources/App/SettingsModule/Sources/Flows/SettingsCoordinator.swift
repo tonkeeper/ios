@@ -452,7 +452,10 @@ private extension SettingsCoordinator {
   }
   
   func openDevMenu() {
-    let storiesAssembly = Stories.Assembly(keeperCoreAssembly: keeperCoreMainAssembly)
+    let storiesAssembly = Stories.Assembly(
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
     
     let configuration = SettingsListDevMenuConfigurator(
       uniqueIdProvider: coreAssembly.uniqueIdProvider,

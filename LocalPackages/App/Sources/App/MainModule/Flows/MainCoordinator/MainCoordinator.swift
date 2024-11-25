@@ -152,7 +152,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   private func setupStoriesController() {
-    let storiesAssembly = Stories.Assembly(keeperCoreAssembly: keeperCoreMainAssembly)
+    let storiesAssembly = Stories.Assembly(
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
     mainCoordinatorStoriesController = MainCoordinatorStoriesController(
       storiesPresenter: storiesAssembly.storiesPresenter(),
       storiesController: storiesAssembly.storiesController()

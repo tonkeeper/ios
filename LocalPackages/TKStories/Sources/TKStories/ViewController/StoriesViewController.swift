@@ -3,6 +3,9 @@ import TKUIKit
 
 public final class StoriesViewController: UIViewController {
   
+  public var didOpen: (() -> Void)?
+  public var didOpenPage: ((_ pageNumber: Int) -> Void)?
+  
   public var storiesPresentationController: StoriesPresentationController? {
     presentationController as? StoriesPresentationController
   }
@@ -32,6 +35,7 @@ public final class StoriesViewController: UIViewController {
       openActivePage()
       startTimer()
       updateActivePageBar()
+      didOpenPage?(activePage)
     }
   }
   private var _activePage = 0
@@ -40,6 +44,8 @@ public final class StoriesViewController: UIViewController {
   
   private lazy var longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
   private let trasitionManager = StoriesModalTransitionManager()
+  
+  private var isFirstAppear = true
   
   private let models: [StoriesPageModel]
   private let pageDuration: TimeInterval
@@ -85,6 +91,10 @@ public final class StoriesViewController: UIViewController {
       didStart = true
       updateActivePageBar()
       startTimer()
+    }
+    if isFirstAppear {
+      didOpen?()
+      isFirstAppear = false
     }
   }
   

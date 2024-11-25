@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKStories
+import TKCore
 import KeeperCore
 
 @MainActor
@@ -10,9 +11,12 @@ public final class StoriesPresenter {
   private var storiesViewController: TKStories.StoriesViewController?
   
   private let storiesService: StoriesService
+  private let analyticsProvider: AnalyticsProvider
   
-  init(storiesService: StoriesService) {
+  init(storiesService: StoriesService,
+       analyticsProvider: AnalyticsProvider) {
     self.storiesService = storiesService
+    self.analyticsProvider = analyticsProvider
   }
 
   @MainActor
@@ -29,7 +33,7 @@ public final class StoriesPresenter {
       if let pageButton = page.button {
         button = StoriesPageModel.Button(
           title: pageButton.title,
-          action: {
+          action: { [weak self] in
             switch pageButton.type {
             case .deeplink:
               self?.storiesViewController?.dismiss(animated: true, completion: {
@@ -41,6 +45,11 @@ public final class StoriesPresenter {
                 urlAction(url)
               })
             }
+            self?.analyticsProvider.logEvent(
+              eventKey: .storyClick,
+              args: ["story_id": story.id,
+                     "button": pageButton.title]
+            )
           }
         )
       }
@@ -52,6 +61,14 @@ public final class StoriesPresenter {
     }
     
     let storiesViewController = TKStoriesFactory.storiesViewController(models: models)
+    storiesViewController.didOpen = { [analyticsProvider] in
+      analyticsProvider.logEvent(eventKey: .storyOpen, args: ["story_id": story.id])
+      analyticsProvider.logEvent(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": 1])
+    }
+    storiesViewController.didOpenPage = { [analyticsProvider] pageNumber in
+      analyticsProvider.logEvent(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": pageNumber + 1])
+    }
+    
     self.storiesViewController = storiesViewController
     
     storiesViewController.storiesPresentationController?.didDismiss = { [weak self] in
