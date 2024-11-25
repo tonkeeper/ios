@@ -20,7 +20,8 @@ let package = Package(
     .package(path: "../TKLocalize"),
     .package(path: "../TKScreenKit"),
     .package(path: "../TKStories"),
-    .package(path: "../TKFeatureFlags")
+    .package(path: "../TKFeatureFlags"),
+    .package(path: "../AppModules/Stories"),
   ],
   targets: [
     .target(
@@ -35,7 +36,8 @@ let package = Package(
         .product(name: "WalletCore", package: "core-swift"),
         .product(name: "TKLocalize", package: "TKLocalize"),
         .product(name: "TKStories", package: "TKStories"),
-        .product(name: "TKFeatureFlags", package: "TKFeatureFlags")
+        .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
+        .product(name: "Stories", package: "Stories")
       ],
       resources: [.process("Resources")]
     )

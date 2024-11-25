@@ -71,8 +71,4 @@ public struct RepositoriesAssembly {
   func tonProofTokenRepository() -> TonProofTokenRepository {
     TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
   }
-  
-  func shownStoriesRepository() -> ShownStoriesRepository {
-    ShownStoriesRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
-  }
 }

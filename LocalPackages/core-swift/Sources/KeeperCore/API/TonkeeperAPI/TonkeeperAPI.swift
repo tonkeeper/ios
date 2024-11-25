@@ -4,7 +4,7 @@ enum TonkeeperAPIError: Swift.Error {
   case incorrectUrl
 }
 
-protocol TonkeeperAPI {
+public protocol TonkeeperAPI {
   func loadConfiguration(lang: String,
                          build: String,
                          chainName: String,

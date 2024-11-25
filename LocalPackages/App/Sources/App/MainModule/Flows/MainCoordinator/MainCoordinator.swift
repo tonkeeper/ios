@@ -7,7 +7,7 @@ import KeeperCore
 import TKCore
 import TonSwift
 import BigInt
-import TKStories
+import Stories
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
@@ -16,6 +16,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
+  private var mainCoordinatorStoriesController: MainCoordinatorStoriesController?
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -128,6 +129,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     DispatchQueue.main.async {
       _ = self.handleDeeplink(deeplink: deeplink)
     }
+    
+    setupStoriesController()
+    mainCoordinatorStoriesController?.start()
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -144,6 +148,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
     default:
       return false
+    }
+  }
+  
+  private func setupStoriesController() {
+    let storiesAssembly = Stories.Assembly(keeperCoreAssembly: keeperCoreMainAssembly)
+    mainCoordinatorStoriesController = MainCoordinatorStoriesController(
+      storiesPresenter: storiesAssembly.storiesPresenter(),
+      storiesController: storiesAssembly.storiesController()
+    )
+    mainCoordinatorStoriesController?.fromViewControllerProvider = { [weak self] in self?.router.rootViewController }
+    mainCoordinatorStoriesController?.deeplinkAction = { [weak self] in
+      _ = self?.handleDeeplink(deeplink: $0)
+    }
+    mainCoordinatorStoriesController?.urlAction = { [weak self] in
+      self?.openURL($0, title: nil)
     }
   }
   

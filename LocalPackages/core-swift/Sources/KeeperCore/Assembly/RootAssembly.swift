@@ -13,12 +13,12 @@ public final class RootAssembly {
   private let buySellAssembly: BuySellAssembly
   private let batteryAssembly: BatteryAssembly
   private let knownAccountsAssembly: KnownAccountsAssembly
+  private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly
-  public let storiesAssembly: StoriesAssembly
 
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -32,12 +32,12 @@ public final class RootAssembly {
        buySellAssembly: BuySellAssembly,
        batteryAssembly: BatteryAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        rnAssembly: RNAssembly,
-       secureAssembly: SecureAssembly,
-       storiesAssembly: StoriesAssembly) {
+       secureAssembly: SecureAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
@@ -50,12 +50,12 @@ public final class RootAssembly {
     self.buySellAssembly = buySellAssembly
     self.batteryAssembly = batteryAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
+    self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.rnAssembly = rnAssembly
     self.secureAssembly = secureAssembly
-    self.storiesAssembly = storiesAssembly
   }
   
   private var _rootController: RootController?
@@ -69,8 +69,7 @@ public final class RootAssembly {
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: secureAssembly.mnemonicsRepository(),
         buySellProvider: buySellAssembly.buySellProvider,
-        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider,
-        storyProvider: storiesAssembly.storyProvider
+        knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
       )
       self._rootController = rootController
       return rootController
@@ -109,6 +108,7 @@ public final class RootAssembly {
       batteryAssembly: batteryAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
+      tonkeeperAPIAssembly: tonkeeperAPIAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
       secureAssembly: secureAssembly,

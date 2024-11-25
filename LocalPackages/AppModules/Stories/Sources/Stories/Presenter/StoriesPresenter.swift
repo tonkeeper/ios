@@ -1,18 +1,25 @@
 import UIKit
 import TKUIKit
-import TKScreenKit
 import TKStories
 import KeeperCore
 
-final class StoriesPresenter {
-
+@MainActor
+public final class StoriesPresenter {
+  
   private var window: UIWindow?
   private var storiesViewController: TKStories.StoriesViewController?
   
-  func presentStory(story: Story,
-                    fromViewController: UIViewController,
-                    deeplinkAction: @escaping (String) -> Void,
-                    urlAction: @escaping (URL) -> Void) {
+  private let storiesService: StoriesService
+  
+  init(storiesService: StoriesService) {
+    self.storiesService = storiesService
+  }
+
+  @MainActor
+  public func presentStory(story: Story,
+                           fromViewController: UIViewController,
+                           deeplinkAction: @escaping (String) -> Void,
+                           urlAction: @escaping (URL) -> Void) {
     guard let windowScene = fromViewController.view.window?.windowScene ?? UIApplication.keyWindowScene else { return }
     let window = createWindow(windowScene: windowScene)
     self.window = window
@@ -50,9 +57,15 @@ final class StoriesPresenter {
     storiesViewController.storiesPresentationController?.didDismiss = { [weak self] in
       self?.window = nil
     }
-   
+    
     window.makeKeyAndVisible()
-    window.rootViewController?.present(storiesViewController, animated: true)
+    window.rootViewController?.present(
+      storiesViewController,
+      animated: true,
+      completion: { [weak self] in
+        self?.storiesService.markStoryShown(storyID: story.id)
+      }
+    )
   }
   
   private func createWindow(windowScene: UIWindowScene) -> UIWindow {

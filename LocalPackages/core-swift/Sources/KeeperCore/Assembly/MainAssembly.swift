@@ -20,6 +20,7 @@ public final class MainAssembly {
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
+  public let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly
   
@@ -37,6 +38,7 @@ public final class MainAssembly {
        batteryAssembly: BatteryAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        secureAssembly: SecureAssembly,
@@ -55,6 +57,7 @@ public final class MainAssembly {
     self.batteryAssembly = batteryAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
+    self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.secureAssembly = secureAssembly

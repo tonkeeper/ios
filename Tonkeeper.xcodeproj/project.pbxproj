@@ -164,6 +164,7 @@
 		7D4C14632AD98E44002B2922 /* diamond.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = diamond.json; sourceTree = "<group>"; };
 		7D6587BF2CE670AA009797E8 /* TKFeatureFlags */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKFeatureFlags; sourceTree = "<group>"; };
 		7D6A3DDC2CB00CB8008314E1 /* TKStories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKStories; sourceTree = "<group>"; };
+		7D6C62D02CF4BF6D00A40892 /* Stories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Stories; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetEntry.swift; sourceTree = "<group>"; };
@@ -342,6 +343,14 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		7D6C62CF2CF4BE9600A40892 /* AppModules */ = {
+			isa = PBXGroup;
+			children = (
+				7D6C62D02CF4BF6D00A40892 /* Stories */,
+			);
+			path = AppModules;
+			sourceTree = "<group>";
+		};
 		7D7CF6BF2AC7040900EB0BFF /* Configurations */ = {
 			isa = PBXGroup;
 			children = (
@@ -445,6 +454,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				7D6C62CF2CF4BE9600A40892 /* AppModules */,
 				7D6587BF2CE670AA009797E8 /* TKFeatureFlags */,
 				7DAF89E22CDAC08600D58260 /* TKKeychain */,
 				7D6A3DDC2CB00CB8008314E1 /* TKStories */,

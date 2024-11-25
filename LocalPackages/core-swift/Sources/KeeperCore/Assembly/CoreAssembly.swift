@@ -39,7 +39,7 @@ public struct CoreAssembly {
     TonConnectAppsVaultLegacy(keychainVault: keychainVault)
   }
 
-  func fileSystemVault<T, K>() -> FileSystemVault<T, K> {
+  public func fileSystemVault<T, K>() -> FileSystemVault<T, K> {
     return FileSystemVault(fileManager: fileManager, directory: cacheURL)
   }
   

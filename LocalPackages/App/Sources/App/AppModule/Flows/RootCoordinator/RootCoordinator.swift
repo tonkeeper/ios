@@ -15,8 +15,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   private weak var onboardingCoordinator: OnboardingCoordinator?
   private weak var mainCoordinator: MainCoordinator?
   
-  private let storiesPresenter = StoriesPresenter()
-  
   private var activeViewController: UIViewController?
   
   private let dependencies: Dependencies
@@ -72,10 +70,6 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         } else {
           self?.handlePasscodeFlowIfNeeded {
             self?.openMain(deeplink: deeplink)
-            self?.rootController.loadStoryToShow()
-            self?.rootController.didLoadStoryToShow = { [weak self] story in
-              self?.openStory(story: story)
-            }
           }
         }
       }
@@ -223,17 +217,6 @@ private extension RootCoordinator {
     coordinator.start(deeplink: deeplink)
     
     showViewController(coordinator.router.rootViewController, animated: true)
-  }
-  
-  func openStory(story: Story) {
-    storiesPresenter.presentStory(story: story, 
-                                  fromViewController: router.rootViewController,
-    deeplinkAction: { [weak self] payload in
-      _ = self?.handleDeeplink(deeplink: payload)
-    },
-    urlAction: { [weak self] url in
-      self?.dependencies.coreAssembly.urlOpener().open(url: url)
-    })
   }
   
   func openMain(deeplink: CoordinatorDeeplink?) {
