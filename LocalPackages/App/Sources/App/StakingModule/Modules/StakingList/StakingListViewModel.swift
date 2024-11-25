@@ -7,6 +7,7 @@ import TKLocalize
 protocol StakingListModuleOutput: AnyObject {
   var didSelectPool: ((StakingListPool) -> Void)? { get set }
   var didSelectGroup: ((StakingListGroup) -> Void)? { get set }
+  var didChoosePool: ((StakingListPool) -> Void)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -52,6 +53,7 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
   
   var didSelectPool: ((StakingListPool) -> Void)?
   var didSelectGroup: ((StakingListGroup) -> Void)?
+  var didChoosePool: ((StakingListPool) -> Void)?
   var didClose: (() -> Void)?
   
   // MARK: - StakingListViewModel
@@ -71,7 +73,7 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
     didClose?()
   }
 
-  private let model: StakingListModel
+  private var model: StakingListModel
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -121,8 +123,8 @@ private extension StakingListViewModelImplementation {
     )
     let minimumDescription = TKLocales.StakingList.minimumDepositDescription(minimumFormatted)
 
-    let description = "\(minimumDescription)\n\(percentDescription)"
-    
+    let description = "\(minimumDescription). \(percentDescription)"
+
     let title = pool.pool.name.withTextStyle(
       .label1,
       color: .Text.primary,
@@ -170,8 +172,11 @@ private extension StakingListViewModelImplementation {
         TKUIListItemRadioButtonAccessoryView.Configuration(
           isSelected: pool.pool.address == model.selectedPool?.address,
           size: 24,
-          handler: { _ in
-            
+          handler: { [weak self] _ in
+            guard self?.model.selectedPool?.address != pool.pool.address else {
+              return
+            }
+            self?.didChoosePool?(pool)
           }
         )
       )

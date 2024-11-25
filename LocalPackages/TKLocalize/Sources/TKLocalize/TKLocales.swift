@@ -1247,6 +1247,18 @@ public enum TKLocales {
     /// Other
     public static let other = TKLocales.tr("Localizable", "staking_deposit_pool_picker.other", fallback: "Other")
   }
+  public enum StakingInput {
+    /// Available: %@
+    public static func availableBalance(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "staking_input.available_balance", String(describing: p1), fallback: "Available: %@")
+    }
+    /// Insufficient balance
+    public static let insufficientBalance = TKLocales.tr("Localizable", "staking_input.insufficient_balance", fallback: "Insufficient balance")
+    /// Minimum %@
+    public static func minimumBalance(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "staking_input.minimum_balance", String(describing: p1), fallback: "Minimum %@")
+    }
+  }
   public enum StakingList {
     /// APY
     public static let apy = TKLocales.tr("Localizable", "staking_list.apy", fallback: "APY")
@@ -1254,9 +1266,9 @@ public enum TKLocales {
     public static let maxApy = TKLocales.tr("Localizable", "staking_list.max_apy", fallback: "MAX APY")
     /// Minimal Deposit
     public static let minimalDeposit = TKLocales.tr("Localizable", "staking_list.minimal_deposit", fallback: "Minimal Deposit")
-    /// Minimum deposit %@
+    /// Min. deposit %@
     public static func minimumDepositDescription(_ p1: Any) -> String {
-      return TKLocales.tr("Localizable", "staking_list.minimum_deposit_description", String(describing: p1), fallback: "Minimum deposit %@")
+      return TKLocales.tr("Localizable", "staking_list.minimum_deposit_description", String(describing: p1), fallback: "Min. deposit %@")
     }
   }
   public enum StakingPoolDetails {

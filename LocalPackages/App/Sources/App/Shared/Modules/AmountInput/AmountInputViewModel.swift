@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import BigInt
+import TKLocalize
 
 enum AmountInputSymbol {
   case icon(UIImage)
@@ -315,7 +316,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
       )
     }
   }
-  
+
   private func updateBalanceView() {
     let balance: String
     let color: UIColor
@@ -325,10 +326,10 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         fractionDigits: sourceUnit.fractionalDigits,
         maximumFractionDigits: sourceUnit.fractionalDigits,
         symbol: sourceUnit.symbol)
-      balance = "Available: \(formattedBalance)"
+      balance = TKLocales.StakingInput.availableBalance(formattedBalance)
       color = .Text.secondary
     } else if sourceAmount > sourceBalance {
-      balance = "Insufficient balance"
+      balance = TKLocales.StakingInput.insufficientBalance
       color = .Accent.red
     } else if let minimumSourceAmount, sourceAmount < minimumSourceAmount {
       let formattedMinimum = amountFormatter.formatAmount(
@@ -336,7 +337,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         fractionDigits: sourceUnit.fractionalDigits,
         maximumFractionDigits: sourceUnit.fractionalDigits,
         symbol: sourceUnit.symbol)
-      balance = "Minimum \(formattedMinimum)"
+      balance = TKLocales.StakingInput.minimumBalance(formattedMinimum)
       color = .Accent.red
     } else {
       let formattedBalance = amountFormatter.formatAmount(
@@ -344,7 +345,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         fractionDigits: sourceUnit.fractionalDigits,
         maximumFractionDigits: sourceUnit.fractionalDigits,
         symbol: sourceUnit.symbol)
-      balance = "Available: \(formattedBalance)"
+      balance = TKLocales.StakingInput.availableBalance(formattedBalance)
       color = .Text.secondary
     }
 

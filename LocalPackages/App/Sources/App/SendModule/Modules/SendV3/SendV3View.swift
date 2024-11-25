@@ -78,7 +78,7 @@ final class SendV3View: UIView {
     }
     
     stackView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
+      make.top.equalTo(scrollView)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
       make.width.equalTo(scrollView)
     }

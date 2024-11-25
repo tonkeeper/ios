@@ -110,7 +110,11 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
         poolSelectionClosure(selectedPool)
       })
     }
-    
+
+    module.output.didChoosePool = { pool in
+      poolSelectionClosure(pool.pool)
+    }
+
     module.output.didClose = { [weak self] in
       self?.didFinish?()
     }
