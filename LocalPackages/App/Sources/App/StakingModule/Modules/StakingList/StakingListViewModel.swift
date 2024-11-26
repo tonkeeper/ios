@@ -73,7 +73,7 @@ final class StakingListViewModelImplementation: StakingListViewModel, StakingLis
     didClose?()
   }
 
-  private var model: StakingListModel
+  private let model: StakingListModel
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
