@@ -17,7 +17,7 @@ final class ShownStoriesRepositoryImplementation: ShownStoriesRepository {
   func saveShownStories(_ storyIds: [String]) throws {
     let shownStories = Set((try? getShownStories()) ?? [])
     let updatedShownStories = shownStories.union(storyIds)
-//    try fileSystemVault.saveItem(updatedShownStories, key: .key)
+    try fileSystemVault.saveItem(updatedShownStories, key: .key)
   }
 
   func getShownStories() throws -> [String] {
