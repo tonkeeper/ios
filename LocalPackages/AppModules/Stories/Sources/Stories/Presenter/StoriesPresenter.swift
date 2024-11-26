@@ -28,7 +28,7 @@ public final class StoriesPresenter {
     let window = createWindow(windowScene: windowScene)
     self.window = window
     
-    let models: [StoriesPageModel] = story.pages.map { [weak self] page in
+    let models: [StoriesPageModel] = story.pages.enumerated().map { [weak self] index, page in
       var button: StoriesPageModel.Button?
       if let pageButton = page.button {
         button = StoriesPageModel.Button(
@@ -48,7 +48,10 @@ public final class StoriesPresenter {
             self?.analyticsProvider.logEvent(
               eventKey: .storyClick,
               args: ["story_id": story.id,
-                     "button": pageButton.title]
+                     "page_number": index + 1,
+                     "button_type": pageButton.type.rawValue,
+                     "button_payload": pageButton.payload,
+                     "button_title": pageButton.title]
             )
           }
         )

@@ -2,7 +2,7 @@ import Foundation
 import Aptabase
 
 public enum EventKey: String {
-  case browserClick = "browser_click"
+  case clickDapp = "click_dapp"
   case launchApp = "launch_app"
   case importWallet = "import_wallet"
   case importWatchOnly = "import_watch_only"
