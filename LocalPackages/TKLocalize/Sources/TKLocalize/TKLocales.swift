@@ -399,6 +399,14 @@ public enum TKLocales {
       public static let title = TKLocales.tr("Localizable", "bluetooth.powered_off_alert.title", fallback: "Bluetooth is off")
     }
   }
+  public enum BridgeWeb {
+    /// Copy link
+    public static let copyLink = TKLocales.tr("Localizable", "bridge_web.copy_link", fallback: "Copy link")
+    /// Refresh
+    public static let refresh = TKLocales.tr("Localizable", "bridge_web.refresh", fallback: "Refresh")
+    /// Share
+    public static let share = TKLocales.tr("Localizable", "bridge_web.share", fallback: "Share")
+  }
   public enum Browser {
     public enum ConnectedApps {
       /// Explore apps and services in Tonkeeper browser.
@@ -538,6 +546,16 @@ public enum TKLocales {
     }
     /// Updating
     public static let updating = TKLocales.tr("Localizable", "connection_status.updating", fallback: "Updating")
+  }
+  public enum CountryPicker {
+    /// All Regions
+    public static let allRegions = TKLocales.tr("Localizable", "country_picker.all_regions", fallback: "All Regions")
+    /// Auto
+    public static let auto = TKLocales.tr("Localizable", "country_picker.auto", fallback: "Auto")
+    /// Search
+    public static let search = TKLocales.tr("Localizable", "country_picker.search", fallback: "Search")
+    /// Choose your country
+    public static let title = TKLocales.tr("Localizable", "country_picker.title", fallback: "Choose your country")
   }
   public enum Currency {
     /// Primary currency
@@ -1338,6 +1356,8 @@ public enum TKLocales {
   public enum Token {
     /// Unverified token
     public static let unverified = TKLocales.tr("Localizable", "token.unverified", fallback: "Unverified token")
+    /// View details
+    public static let viewDetails = TKLocales.tr("Localizable", "token.view_details", fallback: "View details")
   }
   public enum TonConnect {
     /// Connect wallet

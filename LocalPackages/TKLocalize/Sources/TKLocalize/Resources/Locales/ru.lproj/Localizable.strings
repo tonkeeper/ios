@@ -45,6 +45,11 @@
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
 
+"country_picker.title" = "Выберите вашу страну";
+"country_picker.search" = "Поиск";
+"country_picker.auto" = "Автоматически";
+"country_picker.all_regions" = "Все регионы";
+
 "collectibles.title" = "Коллекции";
 "collectibles.collection_hidden" = "Коллекция скрыта";
 "collectibles.nft_hidden" = "Токен скрыт";
@@ -62,6 +67,10 @@
 "history.placeholder.subtitle" = "Совершите первую транзакцию!";
 "history.placeholder.buttons.receive" = "Получить";
 "history.placeholder.buttons.buy" = "Купить Toncoin";
+
+"bridge_web.refresh" = "Обновить";
+"bridge_web.share" = "Поделиться";
+"bridge_web.copy_link" = "Скопировать ссылку";
 
 "browser.tab.explore" = "Витрина";
 "browser.tab.connected" = "Подключенные";
@@ -262,6 +271,7 @@
 "connection_status.updated_at" = "Обновлён %@";
 
 "token.unverified" = "Непроверенный токен";
+"token.view_details" = "Подробнее";
 
 "onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
 "onboarding.buttons.create_new" = "Создать новый кошелёк";
@@ -308,6 +318,9 @@
 "add_wallet.items.testnet.title" = "Аккаунт в Testnet";
 "add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов в Testnet";
 
+"add_wallet.items.pair_keystone.title" = "Подключить Keystone";
+"add_wallet.items.pair_keystone.subtitle" = "Аппаратный модуль использующий AIR-GAP";
+
 "add_wallet.items.pair_ledger.title" = "Подключить Ledger";
 "add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
 
@@ -315,6 +328,9 @@
 
 "signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";
 "signer.scan.open_signer_button" = "Открыть Signer на этом устройстве";
+
+"keystone.scan.subtitle" = "Откройте Keystone » Программные кошельки » Tonkeeper";
+"keystone.scan.about_keystone_button" = "О Keystone";
 
 "chart.price" = "Цена";
 

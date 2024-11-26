@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 import WebKit
+import TKLocalize
 
 public protocol TKBridgeWebViewControllerUserAgentProvider {
   func getUserAgent() -> String
@@ -227,14 +228,14 @@ open class TKBridgeWebViewController: UIViewController {
   private func menuButtonAction() {
     let items = [
       TKPopupMenuItem(
-        title: "Refresh",
+        title: TKLocales.BridgeWeb.refresh,
         icon: .TKUIKit.Icons.Size16.refresh,
         selectionHandler: { [weak self] in
           self?.webView.reload()
         }
       ),
       TKPopupMenuItem(
-        title: "Share",
+        title: TKLocales.BridgeWeb.share,
         icon: .TKUIKit.Icons.Size16.share,
         selectionHandler: { [weak self] in
           guard let url = self?.webView.url else { return }
@@ -242,7 +243,7 @@ open class TKBridgeWebViewController: UIViewController {
         }
       ),
       TKPopupMenuItem(
-        title: "Copy link",
+        title: TKLocales.BridgeWeb.copyLink,
         icon: .TKUIKit.Icons.Size16.copy,
         selectionHandler: { [weak self, configuration] in
           guard let url = self?.webView.url else { return }
