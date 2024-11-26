@@ -21,16 +21,13 @@ public final class TKListContainerView: UIView {
   public struct Configuration {
 
     public let items: [TKListContainerItem]
-    public let isSeparatorVisible: Bool
     public let copyToastConfiguration: ToastPresenter.Configuration
 
     public init(
       items: [TKListContainerItem],
-      isSeparatorVisible: Bool,
       copyToastConfiguration: ToastPresenter.Configuration
     ) {
       self.items = items
-      self.isSeparatorVisible = isSeparatorVisible
       self.copyToastConfiguration = copyToastConfiguration
     }
   }
@@ -92,7 +89,7 @@ public final class TKListContainerView: UIView {
         contentView.isUserInteractionEnabled = false
         let itemView = TKListContainerItemViewContainer()
         itemView.setContentView(contentView)
-        let isSeparatorVisible = configuration.isSeparatorVisible && configuration.items.count - 1 != item.offset
+        let isSeparatorVisible = (configuration.items.count - 1) != item.offset
         itemView.isSeparatorVisible = isSeparatorVisible
 
         if let action = item.element.action {

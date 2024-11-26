@@ -249,7 +249,6 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     let configuration = TKListContainerView.Configuration(
       items: items,
-      isSeparatorVisible: true,
       copyToastConfiguration: .copied
     )
     return TKPopUp.Component.List(

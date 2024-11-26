@@ -12,7 +12,7 @@ public final class TKListContainerItemViewContainer: UIControl {
 
   private let highlightView = TKHighlightView()
 
-  var isSeparatorVisible: Bool = false {
+  var isSeparatorVisible: Bool = true {
     didSet {
       separatorView.isHidden = !isSeparatorVisible
     }

@@ -235,7 +235,6 @@ private extension HistoryEventDetailsViewModelImplementation {
     return TKPopUp.Component.List(
       configuration: TKListContainerView.Configuration(
         items: items,
-        isSeparatorVisible: true,
         copyToastConfiguration: .copied
       )
     )

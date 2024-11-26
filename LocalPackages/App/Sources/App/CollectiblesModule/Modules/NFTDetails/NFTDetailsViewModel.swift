@@ -357,7 +357,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     
     let listViewConfiguration = TKListContainerView.Configuration(
       items: items,
-      isSeparatorVisible: true,
       copyToastConfiguration: .copied
     )
     
