@@ -5,6 +5,7 @@ public enum FeatureFlag: String, CaseIterable {
   case isSwapDisable
   case isExchangeMethodsDisable
   case isDappsDisable
+  case isStoriesDisable
   case disableBatteryCryptoRechargeModule
   
   var key: String {
@@ -16,6 +17,7 @@ public protocol TKFeatureFlagsProvider {
   var isSwapDisable: Bool { get }
   var isExchangeMethodsDisable: Bool { get }
   var isDappsDisable: Bool { get }
+  var isStoriesDisable: Bool { get }
   var isBatteryCryptoRechargeDisable: Bool { get }
   
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<FeatureFlag>, closure: @escaping (T, FeatureFlag) -> Void)
@@ -34,6 +36,9 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
   var isBatteryCryptoRechargeDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.disableBatteryCryptoRechargeModule.key).boolValue
   }
+  var isStoriesDisable: Bool {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isStoriesDisable.key).boolValue
+  }
   
   private var observers = [FeatureFlag: [UUID: (FeatureFlag) -> Void]]()
   
@@ -46,6 +51,7 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
     remoteConfig.setDefaults([FeatureFlag.isSwapDisable.key: "true" as NSString,
                               FeatureFlag.isExchangeMethodsDisable.key: "true" as NSString,
                               FeatureFlag.isDappsDisable.key: "true" as NSString,
+                              FeatureFlag.isStoriesDisable.key: "true" as NSString,
                               FeatureFlag.disableBatteryCryptoRechargeModule.key: "true" as NSString])
     
     remoteConfig.fetch { [weak self] status, error in

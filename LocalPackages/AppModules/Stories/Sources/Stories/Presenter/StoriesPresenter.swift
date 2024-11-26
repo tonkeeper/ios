@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKStories
 import TKCore
+import TKFeatureFlags
 import KeeperCore
 
 @MainActor
@@ -25,6 +26,7 @@ public final class StoriesPresenter {
                            fromAnalyticsProperty: String,
                            deeplinkAction: @escaping (String) -> Void,
                            urlAction: @escaping (URL) -> Void) {
+    guard !TKFeatureFlags.provider.isStoriesDisable else { return }
     guard let windowScene = fromViewController.view.window?.windowScene ?? UIApplication.keyWindowScene else { return }
     let window = createWindow(windowScene: windowScene)
     self.window = window

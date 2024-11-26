@@ -14,6 +14,7 @@ let package = Package(
     .package(path: "../../core-swift"),
     .package(path: "../../TKUIKit"),
     .package(path: "../../TKStories"),
+    .package(path: "../../TKFeatureFlags"),
     .package(path: "../../TKCore")
   ],
   targets: [
@@ -23,6 +24,7 @@ let package = Package(
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "TKStories", package: "TKStories"),
         .product(name: "TKCore", package: "TKCore"),
+        .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
         .product(name: "WalletCore", package: "core-swift")
       ])
   ]
