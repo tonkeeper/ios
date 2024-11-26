@@ -36,6 +36,7 @@ open class TKBridgeWebViewController: UIViewController {
     )
     userContentController.addUserScript(script)
     configuration.userContentController = userContentController
+    configuration.allowsInlineMediaPlayback = true
     let webView = WKWebView(frame: .zero, configuration: configuration)
     return webView
   }()
