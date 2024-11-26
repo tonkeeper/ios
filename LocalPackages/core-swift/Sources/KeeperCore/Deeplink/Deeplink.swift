@@ -46,6 +46,7 @@ public enum Deeplink: Equatable {
   case dapp(URL)
   case battery(Battery)
   case browser
+  case story(storyId: String)
 }
 
 public enum ExternalSignDeeplink: Equatable {

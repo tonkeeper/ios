@@ -25,6 +25,7 @@ final class MainCoordinatorStoriesController {
         storiesPresenter.presentStory(
           story: story,
           fromViewController: fromViewController,
+          fromAnalyticsProperty: "wallet",
           deeplinkAction: { [weak self] in
             self?.deeplinkAction?($0)
           }, urlAction: { [weak self] in
@@ -33,6 +34,26 @@ final class MainCoordinatorStoriesController {
       case .failure:
         break
       }
+    }
+  }
+  
+  @MainActor
+  func handleDeeplinkStory(storyId: String) async throws {
+    guard let fromViewController = fromViewControllerProvider?() else { return }
+    let result = await storiesController.loadStory(storyId: storyId, ignoreShowed: true)
+    switch result {
+    case .success(let story):
+      storiesPresenter.presentStory(
+        story: story,
+        fromViewController: fromViewController,
+        fromAnalyticsProperty: "deep-link",
+        deeplinkAction: { [weak self] in
+          self?.deeplinkAction?($0)
+        }, urlAction: { [weak self] in
+          self?.urlAction?($0)
+        })
+    case .failure(let error):
+      throw error
     }
   }
 }

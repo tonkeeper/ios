@@ -37,6 +37,8 @@ public struct TonkeeperDeeplinkParser {
       return .battery(parseBattery(url: url))
     case "browser":
       return .browser
+    case "story":
+      return .story(storyId: try parseStory(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
@@ -222,5 +224,22 @@ public struct TonkeeperDeeplinkParser {
     
     let promocode = components?.queryItems?.first(where: { $0.name == "promocode" })?.value
     return Deeplink.Battery(promocode: promocode)
+  }
+  
+  private func parseStory(url: URL) throws -> String {
+    let components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: true
+    )
+    
+    let storyId: String = try {
+      guard url.pathComponents.count > 1 else {
+        throw DeeplinkParserError.invalidParameters
+      }
+      let storyId = url.pathComponents[1]
+      return storyId
+    }()
+    
+    return storyId
   }
 }

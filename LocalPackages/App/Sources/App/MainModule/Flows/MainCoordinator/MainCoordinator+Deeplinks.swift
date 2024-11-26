@@ -380,4 +380,24 @@ extension MainCoordinator {
     
     self.openBattery(wallet: wallet)
   }
+  
+  func handleStoryDeeplink(storyId: String) {
+    deeplinkHandleTask?.cancel()
+    deeplinkHandleTask = nil
+    
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+    
+    deeplinkHandleTask = Task { @MainActor in
+      do {
+        try await mainCoordinatorStoriesController?.handleDeeplinkStory(storyId: storyId)
+        self.deeplinkHandleTask = nil
+        ToastPresenter.hideAll()
+      } catch {
+        self.deeplinkHandleTask = nil
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(configuration: .failed)
+      }
+    }
+  }
 }

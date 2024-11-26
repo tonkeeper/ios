@@ -21,9 +21,13 @@ public actor StoriesController {
   public func loadStories() async -> Result<Story, Error> {
     let stories = await configuration.stories
     guard let storyId = stories.first else { return .failure(.noStories) }
+    return await loadStory(storyId: storyId, ignoreShowed: false)
+  }
+  
+  public func loadStory(storyId: String, ignoreShowed: Bool) async -> Result<Story, Error> {
     do {
       let story = try await storiesService.loadStory(storyID: storyId)
-      guard storiesService.isNeedToShow(storyID: storyId) else {
+      guard ignoreShowed || storiesService.isNeedToShow(storyID: storyId) else {
         return .failure(.allStoriesShown)
       }
       return .success(story)

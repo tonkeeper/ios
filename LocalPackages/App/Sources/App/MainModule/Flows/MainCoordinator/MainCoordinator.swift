@@ -16,7 +16,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
-  private var mainCoordinatorStoriesController: MainCoordinatorStoriesController?
+  var mainCoordinatorStoriesController: MainCoordinatorStoriesController?
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -140,10 +140,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     mainController.start()
     DispatchQueue.main.async {
       _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+      self.setupStoriesController()
+      self.mainCoordinatorStoriesController?.start()
     }
-    
-    setupStoriesController()
-    mainCoordinatorStoriesController?.start()
   }
   
   func handleDeeplink(deeplink: CoordinatorDeeplink?, fromStories: Bool) -> Bool {
@@ -542,6 +541,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return true
     case .battery(let battery):
       handleBatteryDeeplink(battery)
+      return true
+    case .story(let storyId):
+      handleStoryDeeplink(storyId: storyId)
       return true
     }
   }

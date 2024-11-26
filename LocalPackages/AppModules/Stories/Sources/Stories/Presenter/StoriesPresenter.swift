@@ -6,7 +6,7 @@ import KeeperCore
 
 @MainActor
 public final class StoriesPresenter {
-  
+
   private var window: UIWindow?
   private var storiesViewController: TKStories.StoriesViewController?
   
@@ -22,6 +22,7 @@ public final class StoriesPresenter {
   @MainActor
   public func presentStory(story: Story,
                            fromViewController: UIViewController,
+                           fromAnalyticsProperty: String,
                            deeplinkAction: @escaping (String) -> Void,
                            urlAction: @escaping (URL) -> Void) {
     guard let windowScene = fromViewController.view.window?.windowScene ?? UIApplication.keyWindowScene else { return }
@@ -65,7 +66,7 @@ public final class StoriesPresenter {
     
     let storiesViewController = TKStoriesFactory.storiesViewController(models: models)
     storiesViewController.didOpen = { [analyticsProvider] in
-      analyticsProvider.logEvent(eventKey: .storyOpen, args: ["story_id": story.id])
+      analyticsProvider.logEvent(eventKey: .storyOpen, args: ["story_id": story.id, "from": fromAnalyticsProperty])
       analyticsProvider.logEvent(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": 1])
     }
     storiesViewController.didOpenPage = { [analyticsProvider] pageNumber in
