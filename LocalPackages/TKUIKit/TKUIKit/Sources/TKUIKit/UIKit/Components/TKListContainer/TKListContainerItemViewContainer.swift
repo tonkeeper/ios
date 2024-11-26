@@ -1,6 +1,7 @@
 import UIKit
 
 public final class TKListContainerItemViewContainer: UIControl {
+
   var isHighlightable: Bool = true
   public override var isHighlighted: Bool {
     didSet {
@@ -8,9 +9,16 @@ public final class TKListContainerItemViewContainer: UIControl {
       highlightView.isHighlighted = isHighlighted
     }
   }
-  
+
   private let highlightView = TKHighlightView()
-  
+
+  var isSeparatorVisible: Bool = false {
+    didSet {
+      separatorView.isHidden = !isSeparatorVisible
+    }
+  }
+  private let separatorView = TKSeparatorView()
+
   public override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -19,19 +27,25 @@ public final class TKListContainerItemViewContainer: UIControl {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
+
   func setContentView(_ view: UIView) {
     addSubview(view)
     view.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
   }
-  
+
   private func setup() {
     backgroundColor = .Background.content
-    addSubview(highlightView)
+
+    addSubviews(highlightView, separatorView)
+
     highlightView.snp.makeConstraints { make in
       make.edges.equalTo(self)
+    }
+    separatorView.snp.makeConstraints { make in
+      make.left.equalToSuperview().inset(16)
+      make.bottom.right.equalToSuperview()
     }
   }
 }

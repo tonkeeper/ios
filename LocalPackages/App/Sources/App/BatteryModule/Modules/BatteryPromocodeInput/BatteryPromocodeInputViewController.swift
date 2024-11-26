@@ -157,7 +157,13 @@ final class BatteryPromocodeInputViewController: UIViewController, BatteryPromoc
   
   private func updateTextFieldRightItems() {
     var rightItems = [TKTextField.RightItem]()
-    rightItems.append(TKTextField.RightItem(view: promocodePasteButton, mode: .empty))
+    rightItems.append(
+      TKTextField.RightItem(
+        view: promocodePasteButton,
+        mode: .empty,
+        padding: UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 8)
+      )
+    )
     switch resolvingState {
     case .success:
       let tickView = UIImageView()

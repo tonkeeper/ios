@@ -349,10 +349,10 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
   
   private func createRechargeMethodCellConfiguration(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> TKListItemCell.Configuration {
     let title: String
-    let caption: String
+    let caption: String?
     let iconViewConfiguration: TKListItemIconView.Configuration
     switch item {
-    case .token(let token, let amount):
+    case .token(let token, _):
       title = "\(TKLocales.Battery.Refill.Crypto.recharge) \(token.symbol)"
       
       switch token {
@@ -361,13 +361,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       case .jetton(let jettonItem):
         iconViewConfiguration = .configuration(jettonInfo: jettonItem.jettonInfo)
       }
-      
-      caption = amountFormatter.formatAmount(
-        amount,
-        fractionDigits: token.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: token.symbol
-      )
+      caption = nil
     case .gift:
       title = TKLocales.Battery.Refill.Gift.title
       caption = TKLocales.Battery.Refill.Gift.caption
@@ -379,15 +373,21 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         size: CGSize(width: 44, height: 44)
       )
     }
-    
+
+    let captionViewsConfigurations: [TKListItemTextView.Configuration] = {
+      if let caption {
+        [TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2)]
+      } else {
+        []
+      }
+    }()
+
     return TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: iconViewConfiguration,
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
-          captionViewsConfigurations: [
-            TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2)
-          ]
+          captionViewsConfigurations: captionViewsConfigurations
         )
       )
     )
