@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class CountryPickerViewController: GenericViewViewController<CountryPickerView>, KeyboardObserving {
   typealias Item = TKUIListItemCell.Configuration
@@ -59,7 +60,7 @@ final class CountryPickerViewController: GenericViewViewController<CountryPicker
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    customView.topBar.title = "Choose your country"
+    customView.topBar.title = TKLocales.CountryPicker.title
     customView.topBar.button.configuration.action = { [weak self] in
       self?.dismiss(animated: true)
     }
@@ -71,7 +72,7 @@ final class CountryPickerViewController: GenericViewViewController<CountryPicker
     
     self.countries = countriesProvider.countries
     
-    customView.searchBar.placeholder = "Search"
+    customView.searchBar.placeholder = TKLocales.CountryPicker.search
     customView.searchBar.textField.addTarget(self, action: #selector(didBeginSearch), for: .editingDidBegin)
     customView.searchBar.textField.addTarget(self, action: #selector(didEndSearch), for: .editingDidEnd)
     customView.searchBar.textField.addTarget(self, action: #selector(didEdit), for: .editingChanged)
@@ -172,12 +173,17 @@ private extension CountryPickerViewController {
     var recentSectionItems = [TKUIListItemCell.Configuration]()
     var selectedItems = [TKUIListItemCell.Configuration]()
     if !isSearching {
-      let auto = countries.first(where: { $0.alpha2 == locale.regionCode })
-      if let auto {
+      if let regionCode = locale.regionCode,
+         let auto = countries.first(with: regionCode, at: \.alpha2) {
+
+        let title: String = {
+          Locale.current.localizedString(forRegionCode: auto.alpha2) ?? auto.en
+        }()
+
         let item = mapCountry(
           id: "auto",
-          itemTitle: "Auto",
-          itemSubtitle: auto.en,
+          itemTitle: TKLocales.CountryPicker.auto,
+          itemSubtitle: title,
           icon: auto.flag) { [weak self] in
             self?.didSelectCountry?(.auto)
           }
@@ -188,7 +194,7 @@ private extension CountryPickerViewController {
       }
       let all = mapCountry(
         id: "all",
-        itemTitle: "All Regions",
+        itemTitle: TKLocales.CountryPicker.allRegions,
         itemSubtitle: nil,
         icon: "🌍") { [weak self] in
           self?.didSelectCountry?(.all)
@@ -198,10 +204,16 @@ private extension CountryPickerViewController {
         selectedItems.append(all)
       }
       
-      if case .country(let countryCode) = selectedCountry, let country = countries.first(where: { $0.alpha2 == countryCode }) {
+      if case .country(let countryCode) = selectedCountry,
+         let country = countries.first(with: countryCode, at: \.alpha2) {
+
+        let title: String = {
+          Locale.current.localizedString(forRegionCode: country.alpha2) ?? country.en
+        }()
+
         let countryRecent = mapCountry(
           id: "countryRecent",
-          itemTitle: country.en,
+          itemTitle: title,
           itemSubtitle: nil,
           icon: country.flag) { [weak self] in
             self?.didSelectCountry?(.country(countryCode: country.alpha2))
@@ -229,9 +241,12 @@ private extension CountryPickerViewController {
     }()
     
     filteredCountries.forEach { country in
+      let title: String = {
+        Locale.current.localizedString(forRegionCode: country.alpha2) ?? country.en
+      }()
       let item = mapCountry(
         id: country.alpha2,
-        itemTitle: country.en,
+        itemTitle: title,
         itemSubtitle: nil,
         icon: country.flag) { [weak self] in
           self?.didSelectCountry?(.country(countryCode: country.alpha2))

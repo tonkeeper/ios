@@ -45,6 +45,11 @@
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
 "camera_permission.button" = "Open Settings";
 
+"country_picker.title" = "Choose your country";
+"country_picker.search" = "Search";
+"country_picker.auto" = "Auto";
+"country_picker.all_regions" = "All Regions";
+
 "collectibles.title" = "Collectibles";
 "collectibles.collection_hidden" = "Collection hidden";
 "collectibles.nft_hidden" = "NFT hidden";
@@ -61,6 +66,10 @@
 "history.placeholder.subtitle" = "Make your first transaction!";
 "history.placeholder.buttons.receive" = "Receive";
 "history.placeholder.buttons.buy" = "Buy Toncoin";
+
+"bridge_web.refresh" = "Refresh";
+"bridge_web.share" = "Share";
+"bridge_web.copy_link" = "Copy link";
 
 "browser.tab.explore" = "Explore";
 "browser.tab.connected" = "Connected";
@@ -264,6 +273,7 @@
 "connection_status.updated_at" = "Updated %@";
 
 "token.unverified" = "Unverified token";
+"token.view_details" = "View details";
 
 "onboarding.caption" = "Create a new wallet or add an existing one";
 "onboarding.buttons.create_new" = "Create New Wallet";
@@ -323,7 +333,6 @@
 
 "keystone.scan.subtitle" = "Open Keystone » Connect Software Wallet » Tonkeeper";
 "keystone.scan.about_keystone_button" = "About Keystone";
-
 
 "chart.price" = "Price";
 
