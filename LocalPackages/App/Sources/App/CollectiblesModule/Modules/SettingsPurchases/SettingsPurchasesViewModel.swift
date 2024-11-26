@@ -340,7 +340,7 @@ private extension SettingsPurchasesViewModelImplementation {
       title: title,
       listConfiguration: TKListContainerView.Configuration(
         items: listItems,
-        isSeparationVisible: true,
+        isSeparatorVisible: true,
         copyToastConfiguration: .copied
       ),
       buttonConfiguration: buttonConfiguration

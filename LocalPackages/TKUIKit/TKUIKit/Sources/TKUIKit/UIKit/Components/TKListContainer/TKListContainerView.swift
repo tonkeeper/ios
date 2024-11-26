@@ -26,11 +26,11 @@ public final class TKListContainerView: UIView {
 
     public init(
       items: [TKListContainerItem],
-      isSeparationVisible: Bool,
+      isSeparatorVisible: Bool,
       copyToastConfiguration: ToastPresenter.Configuration
     ) {
       self.items = items
-      self.isSeparatorVisible = true
+      self.isSeparatorVisible = isSeparatorVisible
       self.copyToastConfiguration = copyToastConfiguration
     }
   }
