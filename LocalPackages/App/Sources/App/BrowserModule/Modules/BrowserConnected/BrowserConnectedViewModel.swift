@@ -31,12 +31,15 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
-    browserConnectedController.didUpdateApps = { [weak self] in
-      DispatchQueue.main.async {
-        self?.reloadContent()
+    connectedAppsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateApps:
+        DispatchQueue.main.async {
+          observer.reloadContent()
+        }
       }
     }
-    browserConnectedController.start()
+
     reloadContent()
   }
   
@@ -72,19 +75,19 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - Dependencies
   
-  private let browserConnectedController: BrowserConnectedController
-  
+  private let connectedAppsStore: ConnectedAppsStore
+
   // MARK: - Init
   
-  init(browserConnectedController: BrowserConnectedController) {
-    self.browserConnectedController = browserConnectedController
+  init(connectedAppsStore: ConnectedAppsStore) {
+    self.connectedAppsStore = connectedAppsStore
   }
 }
 
 private extension BrowserConnectedViewModelImplementation {
 
   func reloadContent() {
-    connectedApps = browserConnectedController.getConnectedApps()
+    connectedApps = connectedAppsStore.getState()
   }
   
   func updateSnapshot(sections: [BrowserConnected.Section]) {
@@ -113,7 +116,7 @@ private extension BrowserConnectedViewModelImplementation {
             title: app.manifest.name,
             configuration: configuration,
             deleteHandler: { [weak self] in
-              self?.browserConnectedController.deleteApp(app)
+              self?.connectedAppsStore.deleteApp(app)
             }
           )
         }
@@ -142,9 +145,7 @@ private extension BrowserConnectedViewModelImplementation {
       state = .empty(
         TKEmptyStateView.Model(
           title: TKLocales.Browser.ConnectedApps.emptyTitle,
-          caption: TKLocales.Browser.ConnectedApps.emptyDescription,
-          leftButton: nil,
-          rightButton: nil
+          caption: TKLocales.Browser.ConnectedApps.emptyDescription
         )
       )
 

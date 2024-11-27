@@ -45,32 +45,34 @@ public final class TKEmptyStateView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   public struct Model {
+
     let title: NSAttributedString
     let caption: NSAttributedString?
-    let leftButton: TKButton.Configuration?
-    let rightButton: TKButton.Configuration?
-    
-    public init(title: String,
-                caption: String?,
-                leftButton: TKButton.Configuration?,
-                rightButton: TKButton.Configuration?) {
-      self.title = title.withTextStyle(
-        .h2,
-        color: .Text.primary,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      )
-      self.caption = caption?.withTextStyle(
-        .body1,
-        color: .Text.secondary,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      )
-      self.leftButton = leftButton
-      self.rightButton = rightButton
+
+    public init(title: String, caption: String?) {
+        self.title = title.withTextStyle(
+          .h2,
+          color: .Text.primary,
+          alignment: .center,
+          lineBreakMode: .byWordWrapping
+        )
+        self.caption = caption?.withTextStyle(
+          .body1,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byWordWrapping
+        )
+      }
+
+    public init(
+      title: NSAttributedString,
+      caption: NSAttributedString?
+    ) {
+      self.title = title
+      self.caption = caption
     }
   }
-  
+
   public func configure(model: Model) {
     titleLabel.attributedText = model.title
     captionLabel.attributedText = model.caption

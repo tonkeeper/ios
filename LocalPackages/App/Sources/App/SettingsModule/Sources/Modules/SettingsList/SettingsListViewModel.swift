@@ -9,6 +9,7 @@ public protocol SettingsListModuleOutput: AnyObject {
 
 protocol SettingsListViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
+  var didUpdateState: ((SettingsListView.State) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot, _ animated: Bool) -> Void)? { get set }
   var selectedItems: Set<SettingsListItem> { get }
 
@@ -17,7 +18,13 @@ protocol SettingsListViewModel: AnyObject {
 }
 
 struct SettingsListState {
+  let state: SettingsListView.State
   let sections: [SettingsListSection]
+
+  init(state: SettingsListView.State = .content, sections: [SettingsListSection]) {
+    self.state = state
+    self.sections = sections
+  }
 }
 
 protocol SettingsListConfigurator: AnyObject {
@@ -40,6 +47,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   // MARK: - SettingsListViewModel
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
+  var didUpdateState: ((SettingsListView.State) -> Void)?
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot, Bool) -> Void)?
   var selectedItems: Set<SettingsListItem> {
     configurator.selectedItems
@@ -96,6 +104,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
         }
       }
     }
+    didUpdateState?(state.state)
     didUpdateSnapshot?(snapshot, animated)
   }
 }

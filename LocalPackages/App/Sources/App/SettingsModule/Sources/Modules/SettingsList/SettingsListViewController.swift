@@ -6,8 +6,14 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
   typealias Item = AnyHashable
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
-  
+
   private let viewModel: SettingsListViewModel
+
+  var state: SettingsListView.State = .content {
+    didSet {
+      updateState()
+    }
+  }
 
   init(viewModel: SettingsListViewModel) {
     self.viewModel = viewModel
@@ -23,6 +29,7 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
     
     setup()
     setupBindings()
+    updateState()
     viewModel.viewDidLoad()
   }
   
@@ -31,12 +38,26 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
     customView.collectionView.collectionViewLayout = layout
     customView.collectionView.delegate = self
   }
-  
+
+  private func updateState() {
+    switch state {
+    case .content:
+      customView.collectionView.isHidden = false
+      customView.emptyView.isHidden = true
+    case .empty(let model):
+      customView.collectionView.isHidden = true
+      customView.emptyView.isHidden = false
+      customView.emptyView.configure(model: model)
+    }
+  }
+
   private func setupBindings() {
     viewModel.didUpdateTitleView = { [weak self] model in
       self?.customView.titleView.configure(model: model)
     }
-    
+    viewModel.didUpdateState = { [weak self] state in
+      self?.state = state
+    }
     viewModel.didUpdateSnapshot = { [weak self] snapshot, animated in
       self?.dataSource.apply(snapshot, animatingDifferences: animated, completion: {
         let selectedItems = self?.viewModel.selectedItems
@@ -248,6 +269,7 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
 }
 
 extension SettingsListViewController: UICollectionViewDelegate {
+
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]

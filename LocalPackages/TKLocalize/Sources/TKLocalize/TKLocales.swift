@@ -1064,6 +1064,10 @@ public enum TKLocales {
         /// Disconnect
         public static let disconnect = TKLocales.tr("Localizable", "settings.connected_apps.actions.disconnect", fallback: "Disconnect")
       }
+      public enum Empty {
+        /// No connected apps
+        public static let title = TKLocales.tr("Localizable", "settings.connected_apps.empty.title", fallback: "No connected apps")
+      }
     }
     public enum Items {
       /// Backup

@@ -2,8 +2,15 @@ import UIKit
 import TKUIKit
 
 public final class SettingsListView: UIView {
+
+  enum State {
+    case content
+    case empty(TKEmptyStateView.Model)
+  }
+
   let navigationBar = TKUINavigationBar()
   let titleView = TKUINavigationBarTitleView()
+  let emptyView = TKEmptyStateView()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override init(frame: CGRect) {
@@ -34,8 +41,11 @@ private extension SettingsListView {
     navigationBar.scrollView = collectionView
     navigationBar.centerView = titleView
     
-    addSubview(collectionView)
-    addSubview(navigationBar)
+    addSubviews(
+      collectionView,
+      emptyView,
+      navigationBar
+    )
 
     setupConstraints()
   }
@@ -45,6 +55,9 @@ private extension SettingsListView {
       make.top.left.right.equalTo(self)
     }
     collectionView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+    emptyView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
   }

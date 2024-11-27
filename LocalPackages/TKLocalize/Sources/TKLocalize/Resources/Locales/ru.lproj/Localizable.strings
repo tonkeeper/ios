@@ -173,6 +173,8 @@
 "settings.connected_apps.actions.disconnect" = "Отключить";
 "settings.connected_apps.actions.cancel" = "Отмена";
 
+"settings.connected_apps.empty.title" = "Нет подключённых приложений";
+
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
 "theme.options.dark" = "Тёмная";

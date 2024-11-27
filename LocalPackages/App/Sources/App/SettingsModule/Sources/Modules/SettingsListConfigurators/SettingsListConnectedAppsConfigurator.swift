@@ -14,31 +14,41 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
 
   var didRequestShowAlert: ((_ title: String, _ actions: [UIAlertAction]) -> Void)?
 
-  private let connectedAppsController: BrowserConnectedController
+  private let connectedAppsStore: ConnectedAppsStore
 
-  private var connectedApps: [TonConnectApp] {
-    connectedAppsController.getConnectedApps()
-  }
-
-  init(connectedController: BrowserConnectedController) {
-    self.connectedAppsController = connectedController
+  init(connectedAppsStore: ConnectedAppsStore) {
+    self.connectedAppsStore = connectedAppsStore
 
     setupBindings()
   }
 
   private func setupBindings() {
-    connectedAppsController.didUpdateApps = { [weak self] in
-      guard let self else {
-        return
+    connectedAppsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateApps:
+        let apps = observer.connectedAppsStore.getState()
+        observer.didUpdateState?(observer.composeState(apps: apps))
       }
-
-      self.didUpdateState?(composeState(apps: self.connectedApps))
     }
   }
 
-  func getInitialState() -> SettingsListState { composeState(apps: connectedApps) }
+  func getInitialState() -> SettingsListState {
+    composeState(apps: connectedAppsStore.getState())
+  }
 
   private func composeState(apps: [TonConnectApp]) -> SettingsListState {
+    guard !apps.isEmpty else {
+      let title = TKLocales.Settings.ConnectedApps.Empty.title
+        .withTextStyle(
+          .body1,
+          color: .Text.tertiary,
+          alignment: .center
+        )
+
+      let emptyModel = TKEmptyStateView.Model(title: title, caption: nil)
+      return SettingsListState(state: .empty(emptyModel), sections: [])
+    }
+
     var sections = [SettingsListSection]()
     if let buttonSection = createDisconnectAllAppsButton(apps: apps) {
       sections.append(buttonSection)
@@ -52,7 +62,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
 
     var buttonConfiguration: TKButton.Configuration = .actionButtonConfiguration(category: .secondary, size: .large)
     buttonConfiguration.content = .init(title: .plainString(TKLocales.Settings.ConnectedApps.disconnectAllApps))
-    buttonConfiguration.action = { [weak self, apps, connectedAppsController] in
+    buttonConfiguration.action = { [weak self, apps, connectedAppsStore] in
       let title = TKLocales.Settings.ConnectedApps.disconnectAllTitle
       let cancelAction = UIAlertAction(
         title: TKLocales.Settings.ConnectedApps.Actions.cancel,
@@ -63,7 +73,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
         title: TKLocales.Settings.ConnectedApps.Actions.disconnect,
         style: .destructive
       ) { _ in
-        apps.forEach { connectedAppsController.deleteApp($0) }
+        apps.forEach { connectedAppsStore.deleteApp($0) }
       }
 
       self?.didRequestShowAlert?(title, [cancelAction, disconnectAction])
@@ -73,7 +83,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
     )
     return .button(
       SettingsButtonListItem(
-        id: "disconnectAllAppsButton",
+        id: UUID().uuidString,
         cellConfiguration: cellConfiguration
       )
     )
@@ -107,7 +117,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
       let buttonConfiguration = TKListItemButtonAccessoryView.Configuration(
         title: TKLocales.Settings.ConnectedApps.disconnect,
         category: .tertiary
-      ) { [weak self, app, connectedAppsController] in
+      ) { [weak self, app, connectedAppsStore] in
         let title = TKLocales.Settings.ConnectedApps.disconnectItemTitle(app.manifest.name)
         let cancelAction = UIAlertAction(
           title: TKLocales.Settings.ConnectedApps.Actions.cancel,
@@ -118,7 +128,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
           title: TKLocales.Settings.ConnectedApps.Actions.disconnect,
           style: .destructive
         ) { _ in
-          connectedAppsController.deleteApp(app)
+          connectedAppsStore.deleteApp(app)
         }
 
         self?.didRequestShowAlert?(title, [cancelAction, disconnectAction])
