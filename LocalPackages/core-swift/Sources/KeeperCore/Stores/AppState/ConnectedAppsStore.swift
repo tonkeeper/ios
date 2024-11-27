@@ -26,7 +26,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
   private func bindDependencies() {
     tonConnectAppsStore.addObserver(self)
     walletsStore.addObserver(self) { observer, event in
-      observer.update()
+      switch event {
+      case .didChangeActiveWallet:
+        observer.update()
+      default:
+        break
+      }
     }
   }
 
