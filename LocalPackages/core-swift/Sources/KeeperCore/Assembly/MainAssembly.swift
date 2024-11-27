@@ -247,13 +247,6 @@ public final class MainAssembly {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
   }
 
-  public func browserConnectedController() -> BrowserConnectedController {
-    BrowserConnectedController(
-      walletsStore: storesAssembly.walletsStore,
-      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
-    )
-  }
-  
   public func confirmTransactionController(wallet: Wallet,
                                            bocProvider: ConfirmTransactionControllerBocProvider) -> ConfirmTransactionController {
     ConfirmTransactionController(

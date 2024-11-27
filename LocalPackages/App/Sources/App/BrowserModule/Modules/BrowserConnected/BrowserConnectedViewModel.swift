@@ -10,7 +10,7 @@ protocol BrowserConnectedModuleOutput: AnyObject {
 
 protocol BrowserConnectedViewModel: AnyObject {
 
-  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)? { get set }
+  var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)? { get set }
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)? { get set }
   var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
   
@@ -26,17 +26,20 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - BrowserConnectedViewModel
   
-  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)?
+  var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)?
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)?
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
-    browserConnectedController.didUpdateApps = { [weak self] in
-      DispatchQueue.main.async {
-        self?.reloadContent()
+    connectedAppsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateApps:
+        DispatchQueue.main.async {
+          observer.reloadContent()
+        }
       }
     }
-    browserConnectedController.start()
+
     reloadContent()
   }
   
@@ -72,19 +75,19 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - Dependencies
   
-  private let browserConnectedController: BrowserConnectedController
-  
+  private let connectedAppsStore: ConnectedAppsStore
+
   // MARK: - Init
   
-  init(browserConnectedController: BrowserConnectedController) {
-    self.browserConnectedController = browserConnectedController
+  init(connectedAppsStore: ConnectedAppsStore) {
+    self.connectedAppsStore = connectedAppsStore
   }
 }
 
 private extension BrowserConnectedViewModelImplementation {
 
   func reloadContent() {
-    connectedApps = browserConnectedController.getConnectedApps()
+    connectedApps = connectedAppsStore.getState()
   }
   
   func updateSnapshot(sections: [BrowserConnected.Section]) {
@@ -113,7 +116,7 @@ private extension BrowserConnectedViewModelImplementation {
             title: app.manifest.name,
             configuration: configuration,
             deleteHandler: { [weak self] in
-              self?.browserConnectedController.deleteApp(app)
+              self?.connectedAppsStore.deleteApp(app)
             }
           )
         }
@@ -127,7 +130,7 @@ private extension BrowserConnectedViewModelImplementation {
   }
   
   func didUpdateConnectedApps() {
-    let state: BrowserConnectedView.State
+    let state: BrowserConnectedViewController.State
     let sections: [BrowserConnected.Section]
 
     defer {
@@ -140,11 +143,10 @@ private extension BrowserConnectedViewModelImplementation {
     guard !connectedApps.isEmpty else {
       sections = []
       state = .empty(
-        TKEmptyStateView.Model(
+        TKEmptyViewController.Model(
           title: TKLocales.Browser.ConnectedApps.emptyTitle,
           caption: TKLocales.Browser.ConnectedApps.emptyDescription,
-          leftButton: nil,
-          rightButton: nil
+          buttons: []
         )
       )
 

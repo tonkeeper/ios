@@ -3,19 +3,8 @@ import TKUIKit
 
 final class BrowserConnectedView: UIView {
   
-  enum State {
-    case data
-    case empty(TKEmptyStateView.Model)
-  }
-  
-  var state: State = .data {
-    didSet {
-      setupState()
-    }
-  }
-  
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
-  let emptyView = TKEmptyStateView()
+  let emptyViewContainer = UIView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -24,6 +13,13 @@ final class BrowserConnectedView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  func embedEmptyView(_ emptyView: UIView) {
+    emptyViewContainer.addSubview(emptyView)
+    emptyView.snp.makeConstraints { make in
+      make.edges.equalTo(emptyViewContainer)
+    }
   }
 }
 
@@ -34,9 +30,7 @@ private extension BrowserConnectedView {
     collectionView.contentInsetAdjustmentBehavior = .never
     
     addSubview(collectionView)
-    addSubview(emptyView)
-    
-    setupState()
+    addSubview(emptyViewContainer)
     
     setupConstraints()
   }
@@ -46,20 +40,8 @@ private extension BrowserConnectedView {
       make.edges.equalTo(self)
     }
     
-    emptyView.snp.makeConstraints { make in
+    emptyViewContainer.snp.makeConstraints { make in
       make.edges.equalTo(self)
-    }
-  }
-  
-  func setupState() {
-    switch state {
-    case .data:
-      emptyView.isHidden = true
-      collectionView.isHidden = false
-    case .empty(let model):
-      emptyView.configure(model: model)
-      emptyView.isHidden = false
-      collectionView.isHidden = true
     }
   }
 }

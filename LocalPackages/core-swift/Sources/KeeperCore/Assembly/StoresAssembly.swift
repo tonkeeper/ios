@@ -2,6 +2,7 @@ import Foundation
 import TonSwift
 
 public final class StoresAssembly {
+
   private let apiAssembly: APIAssembly
   private let coreAssembly: CoreAssembly
   private let repositoriesAssembly: RepositoriesAssembly
@@ -269,6 +270,20 @@ public final class StoresAssembly {
       let decryptedCommentStore = DecryptedCommentStore()
       _decryptedCommentStore = decryptedCommentStore
       return decryptedCommentStore
+    }
+  }
+
+  private weak var _connectedAppsStore: ConnectedAppsStore?
+  public func connectedAppsStore(tonConnectAppsStore: TonConnectAppsStore) -> ConnectedAppsStore {
+    if let _connectedAppsStore {
+      return _connectedAppsStore
+    } else {
+      let store = ConnectedAppsStore(
+        walletsStore: walletsStore,
+        tonConnectAppsStore: tonConnectAppsStore
+      )
+      _connectedAppsStore = store
+      return store
     }
   }
 }

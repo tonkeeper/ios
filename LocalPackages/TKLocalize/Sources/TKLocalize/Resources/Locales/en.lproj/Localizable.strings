@@ -123,6 +123,7 @@
 "settings.items.wallet_w5" = "Wallet W5";
 "settings.items.wallet_v4R2" = "Wallet v4R2";
 "settings.items.battery" = "Battery";
+"settings.items.connected_apps" = "Connected Apps";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -159,6 +160,21 @@
 "settings.notifications.title" = "Notifications";
 "settings.notifications.notifications_item.title" = "Push notifications";
 "settings.notifications.notifications_item.caption" = "Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.";
+"settings.notifications.notifications_disabled.title" = "Notifications are disabled";
+"settings.notifications.notifications_disabled.caption" = "You turned off notifications in\U00A0your phone’s settings. To\U00A0activate notifications, go to\U00A0Settings on\U00A0this device.";
+"settings.notifications.notifications_disabled.action_title" = "Settings";
+
+"settings.connected_apps.title" = "Connected Apps";
+"settings.connected_apps.disconnect" = "Disconnect";
+"settings.connected_apps.disconnect_all_apps" = "Disconnect All Apps";
+"settings.connected_apps.apps" = "Apps";
+
+"settings.connected_apps.disconnect_all_title" = "Disconnect All Apps?";
+"settings.connected_apps.disconnect_item_title" = "Disconnect %@?";
+"settings.connected_apps.actions.disconnect" = "Disconnect";
+"settings.connected_apps.actions.cancel" = "Cancel";
+
+"settings.connected_apps.empty.title" = "No connected apps";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";

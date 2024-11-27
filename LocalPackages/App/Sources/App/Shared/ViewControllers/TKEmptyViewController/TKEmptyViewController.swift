@@ -7,7 +7,7 @@ final class TKEmptyViewController: UIViewController {
       let title: String
       let action: () -> Void
     }
-    let title: String
+    let title: String?
     let caption: String?
     let buttons: [Button]
   }
@@ -25,7 +25,7 @@ final class TKEmptyViewController: UIViewController {
   }
   
   func configure(model: Model) {
-    titleLabel.attributedText = model.title.withTextStyle(
+    titleLabel.attributedText = model.title?.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,

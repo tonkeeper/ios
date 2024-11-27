@@ -121,6 +121,7 @@
 "settings.items.wallet_w5" = "Кошелёк W5";
 "settings.items.wallet_v4R2" = "Кошелёк v4R2";
 "settings.items.battery" = "Батарейка";
+"settings.items.connected_apps" = "Подключённые приложения";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -157,6 +158,22 @@
 "settings.notifications.title" = "Уведомления";
 "settings.notifications.notifications_item.title" = "Push уведомления";
 "settings.notifications.notifications_item.caption" = "Получайте уведомления при получении TON, токенов, NFT и уведомления от подключенных приложений.";
+
+"settings.notifications.notifications_disabled.title" = "Уведомления отключены";
+"settings.notifications.notifications_disabled.caption" = "Вы отключили уведомления в\U00A0настройках устройства. Чтобы ничего не\U00A0пропустить разрешите уведомления.";
+"settings.notifications.notifications_disabled.action_title" = "Открыть настройки";
+
+"settings.connected_apps.title" = "Подключённые приложения";
+"settings.connected_apps.disconnect" = "Отключить";
+"settings.connected_apps.disconnect_all_apps" = "Отключить все приложения";
+"settings.connected_apps.apps" = "Приложения";
+
+"settings.connected_apps.disconnect_all_title" = "Отключить все приложения?";
+"settings.connected_apps.disconnect_item_title" = "Отключить %@?";
+"settings.connected_apps.actions.disconnect" = "Отключить";
+"settings.connected_apps.actions.cancel" = "Отмена";
+
+"settings.connected_apps.empty.title" = "Нет подключённых приложений";
 
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
