@@ -2,12 +2,6 @@ import UIKit
 import TKUIKit
 
 public final class SettingsListView: UIView {
-
-  enum State {
-    case content
-    case empty(TKEmptyViewController.Model)
-  }
-
   let navigationBar = TKUINavigationBar()
   let titleView = TKUINavigationBarTitleView()
   let emptyViewContainer = UIView()

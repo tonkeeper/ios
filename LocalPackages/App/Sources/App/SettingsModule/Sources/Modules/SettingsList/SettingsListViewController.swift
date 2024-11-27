@@ -6,12 +6,17 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
   typealias Item = AnyHashable
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
+  
+  enum State {
+    case content
+    case empty(TKEmptyViewController.Model)
+  }
 
   private let emptyViewController = TKEmptyViewController()
   
   private let viewModel: SettingsListViewModel
 
-  var state: SettingsListView.State = .content {
+  var state: State = .content {
     didSet {
       updateState()
     }
