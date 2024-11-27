@@ -7,6 +7,8 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
 
+  private let emptyViewController = TKEmptyViewController()
+  
   private let viewModel: SettingsListViewModel
 
   var state: SettingsListView.State = .content {
@@ -37,17 +39,21 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
     setupNavigationBar()
     customView.collectionView.collectionViewLayout = layout
     customView.collectionView.delegate = self
+    
+    addChild(emptyViewController)
+    customView.embedEmptyView(emptyViewController.view)
+    emptyViewController.didMove(toParent: self)
   }
 
   private func updateState() {
     switch state {
     case .content:
       customView.collectionView.isHidden = false
-      customView.emptyView.isHidden = true
+      customView.emptyViewContainer.isHidden = true
     case .empty(let model):
       customView.collectionView.isHidden = true
-      customView.emptyView.isHidden = false
-      customView.emptyView.configure(model: model)
+      customView.emptyViewContainer.isHidden = false
+      emptyViewController.configure(model: model)
     }
   }
 

@@ -38,14 +38,8 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
 
   private func composeState(apps: [TonConnectApp]) -> SettingsListState {
     guard !apps.isEmpty else {
-      let title = TKLocales.Settings.ConnectedApps.Empty.title
-        .withTextStyle(
-          .body1,
-          color: .Text.tertiary,
-          alignment: .center
-        )
-
-      let emptyModel = TKEmptyStateView.Model(title: title, caption: nil)
+      let caption = TKLocales.Settings.ConnectedApps.Empty.title
+      let emptyModel = TKEmptyViewController.Model(title: nil, caption: caption, buttons: [])
       return SettingsListState(state: .empty(emptyModel), sections: [])
     }
 

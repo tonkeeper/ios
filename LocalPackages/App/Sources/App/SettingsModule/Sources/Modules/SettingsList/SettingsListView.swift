@@ -5,12 +5,12 @@ public final class SettingsListView: UIView {
 
   enum State {
     case content
-    case empty(TKEmptyStateView.Model)
+    case empty(TKEmptyViewController.Model)
   }
 
   let navigationBar = TKUINavigationBar()
   let titleView = TKUINavigationBarTitleView()
-  let emptyView = TKEmptyStateView()
+  let emptyViewContainer = UIView()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override init(frame: CGRect) {
@@ -29,6 +29,13 @@ public final class SettingsListView: UIView {
     collectionView.contentInset.top = navigationBar.bounds.height
     collectionView.contentInset.bottom = safeAreaInsets.bottom + 16
   }
+  
+  func embedEmptyView(_ emptyView: UIView) {
+    emptyViewContainer.addSubview(emptyView)
+    emptyView.snp.makeConstraints { make in
+      make.edges.equalTo(emptyViewContainer)
+    }
+  }
 }
 
 private extension SettingsListView {
@@ -43,7 +50,7 @@ private extension SettingsListView {
     
     addSubviews(
       collectionView,
-      emptyView,
+      emptyViewContainer,
       navigationBar
     )
 
@@ -57,7 +64,7 @@ private extension SettingsListView {
     collectionView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
-    emptyView.snp.makeConstraints { make in
+    emptyViewContainer.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
   }

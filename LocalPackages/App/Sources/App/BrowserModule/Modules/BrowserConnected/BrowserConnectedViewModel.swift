@@ -10,7 +10,7 @@ protocol BrowserConnectedModuleOutput: AnyObject {
 
 protocol BrowserConnectedViewModel: AnyObject {
 
-  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)? { get set }
+  var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)? { get set }
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)? { get set }
   var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
   
@@ -26,7 +26,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - BrowserConnectedViewModel
   
-  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)?
+  var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)?
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)?
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
@@ -130,7 +130,7 @@ private extension BrowserConnectedViewModelImplementation {
   }
   
   func didUpdateConnectedApps() {
-    let state: BrowserConnectedView.State
+    let state: BrowserConnectedViewController.State
     let sections: [BrowserConnected.Section]
 
     defer {
@@ -143,9 +143,10 @@ private extension BrowserConnectedViewModelImplementation {
     guard !connectedApps.isEmpty else {
       sections = []
       state = .empty(
-        TKEmptyStateView.Model(
+        TKEmptyViewController.Model(
           title: TKLocales.Browser.ConnectedApps.emptyTitle,
-          caption: TKLocales.Browser.ConnectedApps.emptyDescription
+          caption: TKLocales.Browser.ConnectedApps.emptyDescription,
+          buttons: []
         )
       )
 
