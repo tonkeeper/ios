@@ -554,7 +554,7 @@
 
 "staking_list.max_apy" = "MAX APY";
 "staking_list.apy" = "APY";
-"staking_list.minimum_deposit_description" = "Minimum deposit %@";
+"staking_list.minimum_deposit_description" = "Min. deposit %@";
 
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
@@ -648,3 +648,7 @@
 "battery.recharge.сustom_input.title" = "Other";
 "battery.recharge.сustom_input.caption" = "Enter amount manually";
 "battery.recharge.toast.success" = "Battery will charge in a few minutes";
+
+"staking_input.available_balance" = "Available: %@";
+"staking_input.insufficient_balance" = "Insufficient balance";
+"staking_input.minimum_balance" = "Minimum %@";

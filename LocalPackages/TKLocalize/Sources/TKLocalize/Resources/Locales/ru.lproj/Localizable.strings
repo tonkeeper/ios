@@ -540,7 +540,7 @@
 
 "staking_list.max_apy" = "MAX APY";
 "staking_list.apy" = "APY";
-"staking_list.minimum_deposit_description" = "Минимальный депозит %@";
+"staking_list.minimum_deposit_description" = "Мин. депозит %@";
 
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
@@ -634,3 +634,7 @@
 "battery.recharge.сustom_input.title" = "Другое количество";
 "battery.recharge.сustom_input.caption" = "Ввести вручную";
 "battery.recharge.toast.success" = "Батарейка зарядится за пару минут";
+
+"staking_input.available_balance" = "Доступно: %@";
+"staking_input.insufficient_balance" = "Недостаточно средств";
+"staking_input.minimum_balance" = "Минимально %@";

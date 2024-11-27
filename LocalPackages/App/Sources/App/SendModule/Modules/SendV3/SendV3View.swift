@@ -58,8 +58,14 @@ final class SendV3View: UIView {
       TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
       TKTextField.RightItem(view: recipientScanButton, mode: .empty)
     ]
-    commentInputView.commentTextField.rightItems = [TKTextField.RightItem(view: commentPasteButton, mode: .empty)]
-    
+    commentInputView.commentTextField.rightItems = [
+      TKTextField.RightItem(
+        view: commentPasteButton,
+        mode: .empty,
+        padding: .init(top: 0, left: 0, bottom: 0, right: 8)
+      )
+    ]
+
     navigationBar.centerView = titleView
     navigationBar.scrollView = scrollView
 
@@ -79,7 +85,7 @@ final class SendV3View: UIView {
     }
     
     stackView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
+      make.top.equalTo(scrollView)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
       make.width.equalTo(scrollView)
     }

@@ -7,12 +7,12 @@ import TonSwift
 final class BatteryRefillRechargeMethodsModel {
   
   enum RechargeMethodItem {
-    case token(token: Token, amount: BigUInt)
+    case token(token: Token)
     case gift(token: Token)
     
     var identifier: String {
       switch self {
-      case .token(let token, _):
+      case .token(let token):
         return token.identifier
       case .gift:
         return "gift_identifier"
@@ -21,7 +21,7 @@ final class BatteryRefillRechargeMethodsModel {
     
     var token: Token {
       switch self {
-      case .token(let token, _):
+      case .token(let token):
         return token
       case .gift(let token):
         return token
@@ -114,14 +114,13 @@ final class BatteryRefillRechargeMethodsModel {
         return nil
       }
       return RechargeMethodItem.token(
-        token: .jetton(jettonBalance.jettonBalance.item),
-        amount: jettonBalance.jettonBalance.quantity
+        token: .jetton(jettonBalance.jettonBalance.item)
       )
     }
     
     var result = items
     if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount)))
+      result.append(.token(token: .ton))
     }
     if !result.isEmpty {
       let giftItem = result[0]

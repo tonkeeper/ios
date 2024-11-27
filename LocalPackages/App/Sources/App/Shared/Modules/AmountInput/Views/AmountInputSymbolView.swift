@@ -85,6 +85,7 @@ final class AmountInputSymbolView: UIView {
       label.attributedText = nil
       imageView.image = icon
       imageView.tintColor = tintColor
+      imageView.contentMode = .scaleAspectFit
     case nil:
       break
     }
