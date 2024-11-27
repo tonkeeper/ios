@@ -33,6 +33,13 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 }
 
 private extension SettingsCoordinator {
+
+  func presentAlertController(title: String, message: String?, actions: [UIAlertAction]) {
+    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    actions.forEach { action in alertController.addAction(action) }
+    router.rootViewController.present(alertController, animated: true)
+  }
+
   func openSettingsRoot() {
     let configurator = SettingsListRootConfigurator(
       wallet: wallet,
@@ -51,9 +58,7 @@ private extension SettingsCoordinator {
     }
     
     configurator.didShowAlert = { [weak self] title, description, actions in
-      let alertController = UIAlertController(title: title, message: description, preferredStyle: .alert)
-      actions.forEach { action in alertController.addAction(action) }
-      self?.router.rootViewController.present(alertController, animated: true)
+      self?.presentAlertController(title: title, message: description, actions: actions)
     }
     
     configurator.didTapEditWallet = { [weak self] wallet in
@@ -99,7 +104,11 @@ private extension SettingsCoordinator {
     configurator.didTapBattery = { [weak self] wallet in
       self?.didTapBattery?(wallet)
     }
-    
+
+    configurator.didTapConnectedApps = { [weak self] wallet in
+      self?.openConnectedApps(wallet: wallet)
+    }
+
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
@@ -450,7 +459,19 @@ private extension SettingsCoordinator {
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
-  
+
+  func openConnectedApps(wallet: Wallet) {
+    let configurator = SettingsListConnectedAppsConfigurator(
+      connectedController: keeperCoreMainAssembly.browserConnectedController()
+    )
+    configurator.didRequestShowAlert = { [weak self] title, actions in
+      self?.presentAlertController(title: title, message: nil, actions: actions)
+    }
+    
+    let module = SettingsListAssembly.module(configurator: configurator)
+    router.push(viewController: module.viewController)
+  }
+
   func openDevMenu() {
     let storiesAssembly = Stories.Assembly(
       keeperCoreAssembly: keeperCoreMainAssembly,

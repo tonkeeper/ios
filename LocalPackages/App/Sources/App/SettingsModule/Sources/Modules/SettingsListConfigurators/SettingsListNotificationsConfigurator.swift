@@ -146,11 +146,11 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
       id: .notificationsNotAvailableBannerIdentifier,
       cellConfiguration: NotificationBannerCell.Configuration(
         bannerViewConfiguration: NotificationBannerView.Model(
-          title: "Notifications are disabled",
-          caption: "You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.",
+          title: TKLocales.Settings.Notifications.NotificationsDisabled.title,
+          caption: TKLocales.Settings.Notifications.NotificationsDisabled.caption,
           appearance: .accentYellow,
           actionButton: NotificationBannerView.Model.ActionButton(
-            title: "Settings",
+            title: TKLocales.Settings.Notifications.NotificationsDisabled.actionTitle,
             action: { [urlOpener] in
               guard let url = URL(string: UIApplication.openSettingsURLString),
                     urlOpener.canOpen(url: url) else {

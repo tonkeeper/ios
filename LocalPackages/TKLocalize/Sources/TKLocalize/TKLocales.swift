@@ -1043,11 +1043,35 @@ public enum TKLocales {
   public enum Settings {
     /// Settings
     public static let title = TKLocales.tr("Localizable", "settings.title", fallback: "Settings")
+    public enum ConnectedApps {
+      /// Apps
+      public static let apps = TKLocales.tr("Localizable", "settings.connected_apps.apps", fallback: "Apps")
+      /// Disconnect
+      public static let disconnect = TKLocales.tr("Localizable", "settings.connected_apps.disconnect", fallback: "Disconnect")
+      /// Disconnect All Apps
+      public static let disconnectAllApps = TKLocales.tr("Localizable", "settings.connected_apps.disconnect_all_apps", fallback: "Disconnect All Apps")
+      /// Disconnect All Apps?
+      public static let disconnectAllTitle = TKLocales.tr("Localizable", "settings.connected_apps.disconnect_all_title", fallback: "Disconnect All Apps?")
+      /// Disconnect %@?
+      public static func disconnectItemTitle(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "settings.connected_apps.disconnect_item_title", String(describing: p1), fallback: "Disconnect %@?")
+      }
+      /// Connected Apps
+      public static let title = TKLocales.tr("Localizable", "settings.connected_apps.title", fallback: "Connected Apps")
+      public enum Actions {
+        /// Cancel
+        public static let cancel = TKLocales.tr("Localizable", "settings.connected_apps.actions.cancel", fallback: "Cancel")
+        /// Disconnect
+        public static let disconnect = TKLocales.tr("Localizable", "settings.connected_apps.actions.disconnect", fallback: "Disconnect")
+      }
+    }
     public enum Items {
       /// Backup
       public static let backup = TKLocales.tr("Localizable", "settings.items.backup", fallback: "Backup")
       /// Battery
       public static let battery = TKLocales.tr("Localizable", "settings.items.battery", fallback: "Battery")
+      /// Connected Apps
+      public static let connectedApps = TKLocales.tr("Localizable", "settings.items.connected_apps", fallback: "Connected Apps")
       /// Contact us
       public static let contactUs = TKLocales.tr("Localizable", "settings.items.contact_us", fallback: "Contact us")
       /// Currency
@@ -1118,6 +1142,14 @@ public enum TKLocales {
     public enum Notifications {
       /// Notifications
       public static let title = TKLocales.tr("Localizable", "settings.notifications.title", fallback: "Notifications")
+      public enum NotificationsDisabled {
+        /// Settings
+        public static let actionTitle = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.action_title", fallback: "Settings")
+        /// You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.
+        public static let caption = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.caption", fallback: "You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.")
+        /// Notifications are disabled
+        public static let title = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.title", fallback: "Notifications are disabled")
+      }
       public enum NotificationsItem {
         /// Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.
         public static let caption = TKLocales.tr("Localizable", "settings.notifications.notifications_item.caption", fallback: "Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.")

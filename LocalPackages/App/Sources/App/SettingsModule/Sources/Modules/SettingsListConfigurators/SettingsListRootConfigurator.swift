@@ -24,7 +24,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapW5Wallet: ((Wallet) -> Void)?
   var didTapV4Wallet: ((Wallet) -> Void)?
   var didTapBattery: ((Wallet) -> Void)?
-  
+  var didTapConnectedApps: ((Wallet) -> Void)?
+
   // MARK: - SettingsListV2Configurator
   
   var didUpdateState: ((SettingsListState) -> Void)?
@@ -165,7 +166,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     if let batteryItem = createBatteryItem(isBeta: configuration.isBatteryBeta(isTestnet: wallet.isTestnet)) {
       items.append(batteryItem)
     }
+    items.append(createConnectedAppsItem())
+
     guard !items.isEmpty else { return nil }
+
     return SettingsListSection.listItems(
       SettingsListItemsSection(
         items: items,
@@ -435,6 +439,27 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           width: 0,
           items: items,
           selectedIndex: selectedIndex)
+      }
+    )
+  }
+
+  private func createConnectedAppsItem() -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.connectedApps)
+        )))
+    let iconConfiguration = TKListItemIconAccessoryView.Configuration(
+      icon: .TKUIKit.Icons.Size28.connectedApps,
+      tintColor: .Accent.blue
+    )
+    
+    return SettingsListItem(
+      id: .connectedAppsIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(iconConfiguration),
+      onSelection: { [weak self, wallet] _ in
+        self?.didTapConnectedApps?(wallet)
       }
     )
   }
@@ -823,4 +848,5 @@ private extension String {
   static let logoutIdentifier = "LogoutItem"
   static let notificationsIdentifier = "Notifications item"
   static let batteryIdentifier = "Battery item"
+  static let connectedAppsIdentifier = "ConnectedAppsItem"
 }
