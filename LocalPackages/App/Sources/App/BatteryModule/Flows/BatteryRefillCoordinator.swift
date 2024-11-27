@@ -62,7 +62,7 @@ private extension BatteryRefillCoordinator {
     
     module.output.didTapRecharge = { [weak self] rechargeMethod in
       switch rechargeMethod {
-      case let .token(token, _):
+      case let .token(token):
         self?.openRecharge(token: token,
                            isGift: false,
                            promocodeStore: promocodeStore)
