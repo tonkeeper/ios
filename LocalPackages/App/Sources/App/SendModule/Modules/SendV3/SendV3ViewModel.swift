@@ -317,7 +317,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
     let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSeparator = " "
+    numberFormatter.groupingSeparator = Locale.current.groupingSeparator ?? " "
     numberFormatter.groupingSize = 3
     numberFormatter.usesGroupingSeparator = true
     numberFormatter.decimalSeparator = Locale.current.decimalSeparator
