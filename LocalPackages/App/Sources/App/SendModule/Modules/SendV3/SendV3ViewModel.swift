@@ -139,6 +139,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     case .nft:
       break
     }
+    isCommentRequired = recipient?.isMemoRequired ?? false
     updateRemaining()
     update()
   }
