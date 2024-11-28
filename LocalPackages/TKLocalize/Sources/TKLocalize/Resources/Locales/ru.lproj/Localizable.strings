@@ -163,7 +163,7 @@
 "settings.notifications.notifications_disabled.caption" = "Вы отключили уведомления в\U00A0настройках устройства. Чтобы ничего не\U00A0пропустить разрешите уведомления.";
 "settings.notifications.notifications_disabled.action_title" = "Открыть настройки";
 
-"settings.connected_apps.title" = "Подключённые приложения";
+"settings.connected_apps.title" = "Приложения";
 "settings.connected_apps.disconnect" = "Отключить";
 "settings.connected_apps.disconnect_all_apps" = "Отключить все приложения";
 "settings.connected_apps.apps" = "Приложения";
