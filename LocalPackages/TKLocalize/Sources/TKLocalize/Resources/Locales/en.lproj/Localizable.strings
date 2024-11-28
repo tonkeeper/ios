@@ -164,7 +164,7 @@
 "settings.notifications.notifications_disabled.caption" = "You turned off notifications in\U00A0your phone’s settings. To\U00A0activate notifications, go to\U00A0Settings on\U00A0this device.";
 "settings.notifications.notifications_disabled.action_title" = "Settings";
 
-"settings.connected_apps.title" = "Connected Apps";
+"settings.connected_apps.title" = "Apps";
 "settings.connected_apps.disconnect" = "Disconnect";
 "settings.connected_apps.disconnect_all_apps" = "Disconnect All Apps";
 "settings.connected_apps.apps" = "Apps";

@@ -1056,8 +1056,8 @@ public enum TKLocales {
       public static func disconnectItemTitle(_ p1: Any) -> String {
         return TKLocales.tr("Localizable", "settings.connected_apps.disconnect_item_title", String(describing: p1), fallback: "Disconnect %@?")
       }
-      /// Connected Apps
-      public static let title = TKLocales.tr("Localizable", "settings.connected_apps.title", fallback: "Connected Apps")
+      /// Apps
+      public static let title = TKLocales.tr("Localizable", "settings.connected_apps.title", fallback: "Apps")
       public enum Actions {
         /// Cancel
         public static let cancel = TKLocales.tr("Localizable", "settings.connected_apps.actions.cancel", fallback: "Cancel")
