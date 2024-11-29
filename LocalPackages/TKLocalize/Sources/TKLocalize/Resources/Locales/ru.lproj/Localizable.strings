@@ -206,6 +206,15 @@
 "currency.items.ils" = "Израильский шекель";
 "currency.items.gel" = "Грузинский лари";
 "currency.items.vhd" = "Вьетнамский донг";
+"currency.items.ZAR" = "Южноафриканский рэнд";
+"currency.items.ARS" = "Аргентинское песо";
+"currency.items.COP" = "Колумбийское песо";
+"currency.items.ETB" = "Эфиопский быр";
+"currency.items.KES" = "Кенийский шиллинг";
+"currency.items.UGX" = "Угандийский шиллинг";
+"currency.items.VES" = "Венесуэльский боливар";
+"currency.items.BTC" = "Bitcoin";
+"currency.items.TON" = "Toncoin";
 
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";

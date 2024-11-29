@@ -207,6 +207,15 @@
 "currency.items.ils" = "Israeli Sheqel";
 "currency.items.gel" = "Georgian lari";
 "currency.items.vhd" = "Vietnamese dong";
+"currency.items.ZAR" = "South African rand";
+"currency.items.ARS" = "Argentine peso";
+"currency.items.COP" = "Colombian peso";
+"currency.items.ETB" = "Ethiopian birr";
+"currency.items.KES" = "Kenyan shilling";
+"currency.items.UGX" = "Ugandan shilling";
+"currency.items.VES" = "Venezuelan bolívar";
+"currency.items.BTC" = "Bitcoin";
+"currency.items.TON" = "Toncoin";
 
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";

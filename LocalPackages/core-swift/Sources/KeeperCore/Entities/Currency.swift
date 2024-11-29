@@ -2,7 +2,6 @@ import Foundation
 import TKLocalize
 
 public enum Currency: String, Codable, CaseIterable {
-  case TON = "TON"
   case JPY = "JPY"
   case USD = "USD"
   case EUR = "EUR"
@@ -27,6 +26,15 @@ public enum Currency: String, Codable, CaseIterable {
   case ILS = "ILS"
   case GEL = "GEL"
   case VND = "VND"
+  case ZAR
+  case ARS
+  case COP
+  case ETB
+  case KES
+  case UGX
+  case VES
+  case TON
+  case BTC
   
   public init?(code: String) {
     self.init(rawValue: code)
@@ -38,7 +46,6 @@ public enum Currency: String, Codable, CaseIterable {
   
   public var symbol: String {
     switch self {
-    case .TON: return "TON"
     case .USD: return "$"
     case .JPY: return "¥"
     case .AED: return rawValue
@@ -63,12 +70,21 @@ public enum Currency: String, Codable, CaseIterable {
     case .ILS: return "₪"
     case .GEL: return "₾"
     case .VND: return "đ"
+    case .ZAR: return "R‎"
+    case .ARS: return "$"
+    case .COP: return "$"
+    case .ETB: return "ብር"
+    case .KES: return "KSh"
+    case .UGX: return "USh"
+    case .VES: return "Bs"
+    case .TON: return "TON"
+    case .BTC: return "₿"
     }
   }
   
   public var title: String {
     switch self {
-    case .TON: return "Toncoin"
+    case .TON: return TKLocales.Currency.Items.ton
     case .USD: return TKLocales.Currency.Items.usd
     case .JPY: return TKLocales.Currency.Items.jpy
     case .AED: return TKLocales.Currency.Items.aed
@@ -88,11 +104,19 @@ public enum Currency: String, Codable, CaseIterable {
     case .TRY: return TKLocales.Currency.Items.try
     case .NGN: return TKLocales.Currency.Items.ngn
     case .THB: return TKLocales.Currency.Items.thb
-    case .BDT: return TKLocales.Currency.Items.bdt
+    case .BDT: return TKLocales.Currency.Items.bdt	
     case .CAD: return TKLocales.Currency.Items.cad
     case .ILS: return TKLocales.Currency.Items.ils
     case .GEL: return TKLocales.Currency.Items.gel
     case .VND: return TKLocales.Currency.Items.vhd
+    case .ZAR: return TKLocales.Currency.Items.zar
+    case .ARS: return TKLocales.Currency.Items.ars
+    case .COP: return TKLocales.Currency.Items.cop
+    case .ETB: return TKLocales.Currency.Items.etb
+    case .KES: return TKLocales.Currency.Items.kes
+    case .UGX: return TKLocales.Currency.Items.ugx
+    case .VES: return TKLocales.Currency.Items.ves
+    case .BTC: return TKLocales.Currency.Items.btc
     }
   }
   
