@@ -18,7 +18,6 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   private let contentContainerView = UIView()
   let walletButton = WalletContainerWalletButton()
   private let settingsButton = TKIndicatorButton(frame: .zero)
-  private let blurView = TKBlurView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -47,7 +46,8 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
 
 private extension WalletContainerTopBarView {
   func setup() {
-    addSubview(blurView)
+    backgroundColor = .Background.page
+    
     addSubview(contentContainerView)
     addSubview(separatorView)
     contentContainerView.addSubview(settingsButton)
@@ -58,10 +58,6 @@ private extension WalletContainerTopBarView {
   func setupConstraints() {
     settingsButton.setContentHuggingPriority(.required, for: .horizontal)
     settingsButton.setContentCompressionResistancePriority(.required, for: .horizontal)
-    
-    blurView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-    }
     
     walletButton.snp.makeConstraints { make in
       make.centerX.equalTo(contentContainerView)
