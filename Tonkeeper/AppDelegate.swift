@@ -19,6 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     UNUserNotificationCenter.current().delegate = self
     
+    clearBadgeCount()
+
     return true
   }
   
@@ -30,11 +32,23 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     return UISceneConfiguration(name: "Default Configuration",
                                 sessionRole: connectingSceneSession.role)
   }
+  
+  func applicationDidBecomeActive(_ application: UIApplication) {
+    clearBadgeCount()
+  }
 }
 
 extension AppDelegate: UNUserNotificationCenterDelegate {
   func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
     return [.banner]
+  }
+  
+  func clearBadgeCount() {
+    if #available(iOS 16.0, *) {
+      UNUserNotificationCenter.current().setBadgeCount(0)
+    } else {
+      UIApplication.shared.applicationIconBadgeNumber = 0
+    }
   }
 }
 
