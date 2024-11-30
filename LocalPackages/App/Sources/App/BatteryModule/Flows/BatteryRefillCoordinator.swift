@@ -8,7 +8,6 @@ import KeeperCore
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
-  var didFinish: (() -> Void)?
   
   private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
   
@@ -57,7 +56,7 @@ private extension BatteryRefillCoordinator {
     }
     
     module.output.didFinish = { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     module.output.didTapRecharge = { [weak self] rechargeMethod in
@@ -162,7 +161,7 @@ private extension BatteryRefillCoordinator {
     coordinator.didConfirm = { [weak self, weak coordinator] in
       ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Recharge.Toast.success))
       self?.removeChild(coordinator)
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     self.signTransactionConfirmationCoordinator = coordinator

@@ -185,6 +185,7 @@
 		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7DA6C14E2CFA2D1900E6B688 /* SignRaw */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = SignRaw; sourceTree = "<group>"; };
 		7DAF89E22CDAC08600D58260 /* TKKeychain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKKeychain; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
@@ -346,6 +347,7 @@
 		7D6C62CF2CF4BE9600A40892 /* AppModules */ = {
 			isa = PBXGroup;
 			children = (
+				7DA6C14E2CFA2D1900E6B688 /* SignRaw */,
 				7D6C62D02CF4BF6D00A40892 /* Stories */,
 			);
 			path = AppModules;

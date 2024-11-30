@@ -5,9 +5,7 @@ import TKScreenKit
 import TKCore
 import KeeperCore
 
-final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
-  
+final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {  
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -38,13 +36,13 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
     viewController.didTapCancel = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss(completion: {
-        self?.didFinish?()
+        self?.didFinish?(self)
       })
     }
     
     bottomSheetViewController.didClose = { [weak self] isInteractivly in
       guard !isInteractivly else {
-        self?.didFinish?()
+        self?.didFinish?(self)
         return
       }
       self?.openPasscodeInput()
@@ -60,7 +58,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
-        self?.didFinish?()
+        self?.didFinish?(self)
       },
       onInput: { [weak self, wallet, keeperCoreMainAssembly] passcode in
         guard let self else { return }
@@ -95,10 +93,9 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    checkCoordinator.didFinish = { [weak self, weak checkCoordinator] in
-      checkCoordinator?.router.rootViewController.dismiss(animated: true, completion: {
-        self?.didFinish?()
-        guard let checkCoordinator else { return }
+    checkCoordinator.didFinish = { [weak self] in
+      $0?.router.rootViewController.dismiss(animated: true, completion: {
+        self?.didFinish?(self)
         self?.removeChild(checkCoordinator)
       })
     }
@@ -109,7 +106,7 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
     router.present(checkCoordinator.router.rootViewController,
                    onDismiss: { [weak self, weak checkCoordinator] in
       checkCoordinator?.router.rootViewController.dismiss(animated: true, completion: {
-        self?.didFinish?()
+        self?.didFinish?(self)
         guard let checkCoordinator else { return }
         self?.removeChild(checkCoordinator)
       })

@@ -6,6 +6,7 @@ import TKCore
 import KeeperCore
 import TonSwift
 import TKLocalize
+import SignRaw
 
 public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -75,12 +76,23 @@ private extension WebSwapCoordinator {
   
   func openSend(signRequest: SendTransactionSignRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
-    guard let window = router.rootViewController.view.window else { return }
-    SignRawConfirmationCoordinator.show(
-      coordinator: self,
-      window: window,
+    guard let windowScene = router.rootViewController.view.window?.windowScene else { return }
+    SignRawConfirmationCoordinator.startCoordinator(
+      windowScene: windowScene,
+      parentCoordinator: self,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly)
+      coreAssembly: coreAssembly
+    )
+//    SignRawConfirmationCoordinator(
+//      router: <#T##WindowRouter#>,
+//      keeperCoreMainAssembly: <#T##MainAssembly#>,
+//      coreAssembly: <#T##CoreAssembly#>
+//    )
+//    SignRawConfirmationCoordinator.show(
+//      coordinator: self,
+//      window: window,
+//      keeperCoreMainAssembly: keeperCoreMainAssembly,
+//      coreAssembly: coreAssembly)
     
 //    let a = self.router as ContainerViewControllerRouter<UINavigationController>
     

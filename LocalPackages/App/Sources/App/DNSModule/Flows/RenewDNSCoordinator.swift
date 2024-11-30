@@ -8,7 +8,6 @@ import TonSwift
 final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   
   var didCancel: (() -> Void)?
-  var didFinish: (() -> Void)?
   
   private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
     
@@ -61,7 +60,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
     
     coordinator.didConfirm = { [weak self, weak coordinator] in
       self?.removeChild(coordinator)
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     self.signTransactionConfirmationCoordinator = coordinator

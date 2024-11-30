@@ -350,11 +350,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       comment: comment
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+    sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
       self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+      self?.removeChild($0)
     }
     
     self.sendTokenCoordinator = sendTokenCoordinator
@@ -765,9 +764,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBattery(wallet: wallet)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -941,8 +939,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
@@ -997,9 +995,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -1031,9 +1029,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -1078,9 +1076,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -1183,9 +1181,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openDapp(title: title, url: url)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     self.batteryRefillCoordinator = coordinator
@@ -1209,9 +1207,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -1230,9 +1227,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       wallet: wallet
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)

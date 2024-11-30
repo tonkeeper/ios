@@ -5,22 +5,22 @@ import TKCoordinator
 import KeeperCore
 
 @MainActor
-final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
-  
-  private var didFinish: ((SignRawConfirmationCoordinator) -> Void)?
-  
+public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
+//  
+//  private var didFinish: ((SignRawConfirmationCoordinator) -> Void)?
+//  
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
-  init(router: WindowRouter,
-       keeperCoreMainAssembly: KeeperCore.MainAssembly,
-       coreAssembly: TKCore.CoreAssembly) {
+  public init(router: WindowRouter,
+              keeperCoreMainAssembly: KeeperCore.MainAssembly,
+              coreAssembly: TKCore.CoreAssembly) {
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
   }
   
-  override func start() {
+  public override func start() {
     openConfirmation()
   }
   
@@ -45,13 +45,11 @@ final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
   }
 }
 
-extension SignRawConfirmationCoordinator {
-  static func show(coordinator: Coordinator, 
-                   window: UIWindow,
-                   keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                   coreAssembly: TKCore.CoreAssembly) {
-    guard let windowScene = window.windowScene else { return }
-    
+public extension SignRawConfirmationCoordinator {
+  static func startCoordinator(windowScene: UIWindowScene,
+                               parentCoordinator: Coordinator,
+                               keeperCoreMainAssembly: KeeperCore.MainAssembly,
+                               coreAssembly: TKCore.CoreAssembly) {
     let signRawWindow = TKWindow(windowScene: windowScene)
     let signRawCoordinator = SignRawConfirmationCoordinator(
       router: WindowRouter(window: signRawWindow),
@@ -59,11 +57,12 @@ extension SignRawConfirmationCoordinator {
       coreAssembly: coreAssembly
     )
     
-    signRawCoordinator.didFinish = { signRawCoordinator in
-      coordinator.removeChild(signRawCoordinator)
+    signRawCoordinator.didFinish = { [weak parentCoordinator] signRawCoordinator in
+      print("🤡signRawCoordinator did finish")
+      parentCoordinator?.removeChild(signRawCoordinator)
     }
     
-    coordinator.addChild(signRawCoordinator)
+    parentCoordinator.addChild(signRawCoordinator)
     signRawCoordinator.start()
   }
 }

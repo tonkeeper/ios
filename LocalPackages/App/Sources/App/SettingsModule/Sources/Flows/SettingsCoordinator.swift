@@ -10,7 +10,6 @@ import TKStories
 import Stories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
   var didTapBattery: ((Wallet) -> Void)?
   
   private let wallet: Wallet
@@ -127,7 +126,7 @@ private extension SettingsCoordinator {
     
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     })
   }
   
@@ -313,9 +312,8 @@ private extension SettingsCoordinator {
       router: router
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -333,9 +331,8 @@ private extension SettingsCoordinator {
       wallet: wallet
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)

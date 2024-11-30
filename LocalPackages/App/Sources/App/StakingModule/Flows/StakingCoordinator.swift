@@ -8,7 +8,6 @@ import TonSwift
 
 final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  var didFinish: (() -> Void)?
   var didClose: (() -> Void)?
   
   private weak var confirmationCoordinator: StakingConfirmationCoordinator?
@@ -116,7 +115,7 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     }
 
     module.output.didClose = { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     router.push(viewController: module.view)
@@ -126,7 +125,7 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     let module = StakingPoolDetailsAssembly.module(pool: pool, keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     module.view.setupBackButton()
@@ -169,8 +168,8 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       router: router
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
