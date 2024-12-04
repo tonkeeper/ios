@@ -1,0 +1,102 @@
+import UIKit
+import TKUIKit
+import UIComponents
+import Mapping
+import KeeperCore
+import BigInt
+import TKLocalize
+
+struct SignRawConfirmationMapper {
+  private let nftService: NFTService
+  private let tonRatesStore: TonRatesStore
+  private let currencyStore: CurrencyStore
+  private let totalBalanceStore: TotalBalanceStore
+  private let nftManagmentStore: WalletNFTsManagementStore
+  private let accountEventMapper: Mapping.AccountEventMapper
+  private let accountEventModelMapper: Mapping.AccountEventModelMapper
+  private let decimalAmountFormatter: DecimalAmountFormatter
+  private let amountFormatter: AmountFormatter
+  
+  public init(nftService: NFTService,
+              tonRatesStore: TonRatesStore,
+              currencyStore: CurrencyStore,
+              totalBalanceStore: TotalBalanceStore,
+              nftManagmentStore: WalletNFTsManagementStore,
+              accountEventMapper: Mapping.AccountEventMapper,
+              accountEventModelMapper: Mapping.AccountEventModelMapper,
+              decimalAmountFormatter: DecimalAmountFormatter,
+              amountFormatter: AmountFormatter) {
+    self.nftService = nftService
+    self.tonRatesStore = tonRatesStore
+    self.currencyStore = currencyStore
+    self.totalBalanceStore = totalBalanceStore
+    self.nftManagmentStore = nftManagmentStore
+    self.accountEventMapper = accountEventMapper
+    self.accountEventModelMapper = accountEventModelMapper
+    self.decimalAmountFormatter = decimalAmountFormatter
+    self.amountFormatter = amountFormatter
+  }
+  
+  func mapEmulationResult(emulationResult: SignRawEmulationResult, wallet: Wallet) -> AccountEventCellContentView.Model {
+    switch emulationResult {
+    case .success(let signRawEmulation):
+      return mapSuccessEmulationResult(signRawEmulation: signRawEmulation, wallet: wallet)
+    case .failed:
+      fatalError()
+    }
+  }
+  
+  func mapSuccessEmulationResult(signRawEmulation: SignRawEmulation, wallet: Wallet) -> AccountEventCellContentView.Model {
+    let currency = currencyStore.getState()
+    let tonRate = tonRatesStore.getState().first(where: { $0.currency == currency })
+    
+    let descriptionProvider = SignRawConfirmationAccountEventRightTopDescriptionProvider(
+      rates: tonRate,
+      currency: currency,
+      formatter: amountFormatter
+    )
+    
+    let eventModel = accountEventMapper.mapEvent(
+      signRawEmulation.event,
+      nftManagmentStore: nftManagmentStore,
+      eventDate: Date(),
+      accountEventRightTopDescriptionProvider: descriptionProvider,
+      isTestnet: wallet.isTestnet,
+      nftProvider: { address in
+        try? self.nftService.getNFT(address: address, isTestnet: wallet.isTestnet)
+      },
+      decryptedCommentProvider: { _ in return nil }
+    )
+    
+    let feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
+    + amountFormatter.formatAmount(
+      BigUInt(signRawEmulation.fee),
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: 2,
+      currency: .TON)
+    var feeConverted: String?
+    if let tonRate {
+      let converted = RateConverter().convertToDecimal(
+        amount: BigUInt(signRawEmulation.fee),
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: tonRate
+      )
+      feeConverted = decimalAmountFormatter.format(
+        amount: converted,
+        maximumFractionDigits: 2,
+        significantFractionDigits: 2,
+        currency: currency
+      )
+    }
+    
+    let model = accountEventModelMapper.mapSignRawEventContentConfiguration(
+      eventModel,
+      fee: feeFormatted,
+      feeConverted: feeConverted,
+      feeDescription: signRawEmulation.transferType.isBattery ? TKLocales.TransactionConfirmation.battery : nil
+    )
+    return model
+  }
+}
+
+

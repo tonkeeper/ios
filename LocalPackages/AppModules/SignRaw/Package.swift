@@ -13,8 +13,10 @@ let package = Package(
   dependencies: [
     .package(path: "../../TKUIKit"),
     .package(path: "../../TKCore"),
-    .package(path: "../TKCoordinator"),
-    .package(path: "../../core-swift")
+    .package(path: "../../TKCoordinator"),
+    .package(path: "../../core-swift"),
+    .package(path: "../WalletExtensions"),
+    .package(path: "../Mapping")
   ],
   targets: [
     .target(
@@ -23,7 +25,9 @@ let package = Package(
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "TKCore", package: "TKCore"),
         .product(name: "TKCoordinator", package: "TKCoordinator"),
-        .product(name: "WalletCore", package: "core-swift")
+        .product(name: "WalletCore", package: "core-swift"),
+        .product(name: "WalletExtensions", package: "WalletExtensions"),
+        .product(name: "Mapping", package: "Mapping")
       ])
   ]
 )

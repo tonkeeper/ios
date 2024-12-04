@@ -350,9 +350,12 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-bell-28")
           .withRenderingMode(.alwaysTemplate)
         }
-        
         public static var connectedApps: UIImage {
           .imageWithName("Icons/28/ic-apps-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var ton: UIImage {
+          .imageWithName("Icons/28/ic-ton-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

@@ -10,30 +10,26 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   func emulate() async -> Result<Void, TransactionConfirmationError> {
     do {
-      let payload = try await transferTransaction.calculateFee(
+      let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount),
-        recipient: recipient,
-        comment: comment
+        transfer: .jetton(jettonItem, amount: amount, recipient: recipient, comment: comment)
       )
-      self.transferPayload = payload
-      updateFee(payload: transferPayload)
+      self.emulationResult = result
+      updateFee(emulationResult: emulationResult)
       return .success(())
     } catch {
-      self.transferPayload = nil
-      updateFee(payload: nil)
+      self.emulationResult = nil
+      updateFee(emulationResult: nil)
       return .failure(.failedToCalculateFee)
     }
   }
   
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
     do {
-      try await transferTransaction.sendTransaction(
+      try await transferService.sendTransaction(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount),
-        recipient: recipient,
-        comment: comment,
-        transferType: transferPayload?.type ?? .default,
+        transfer: .jetton(jettonItem, amount: amount, recipient: recipient, comment: comment),
+        transferType: emulationResult?.transferType ?? .default,
         signClosure: { [weak self, wallet] transferData in
           guard let signed = try? await self?.signHandler?(transferData, wallet) else {
             throw TransactionConfirmationError.failedToSign
@@ -49,7 +45,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   public var signHandler: ((TransferData, Wallet) async throws -> String?)?
   
-  @Atomic private var transferPayload: TransferTransaction.TransferPayload?
+  @Atomic private var emulationResult: TransferEmulationResult?
   @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
   
   private let wallet: Wallet
@@ -62,7 +58,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let transferTransaction: TransferTransaction
+  private let transferService: TransferService
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -74,7 +70,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
        balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       transferTransaction: TransferTransaction) {
+       transferService: TransferService) {
     self.wallet = wallet
     self.recipient = recipient
     self.jettonItem = jettonItem
@@ -85,7 +81,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.transferTransaction = transferTransaction
+    self.transferService = transferService
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -100,12 +96,12 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     )
   }
   
-  private func updateFee(payload: TransferTransaction.TransferPayload?) {
-    guard let payload else {
+  private func updateFee(emulationResult: TransferEmulationResult?) {
+    guard let emulationResult else {
       fee = .value(nil, converted: nil, isBattery: false)
       return
     }
-    let fee = BigUInt(payload.fee)
+    let fee = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
     
     var convertedFee: TransactionConfirmationModel.Amount?
     let currency = currencyStore.getState()
@@ -130,7 +126,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         item: .currency(.TON)
       ),
       converted: convertedFee,
-      isBattery: payload.isBattery
+      isBattery: emulationResult.transferType.isBattery
     )
   }
   

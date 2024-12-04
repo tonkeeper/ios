@@ -6,15 +6,21 @@ import KeeperCore
 
 @MainActor
 public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
-//  
-//  private var didFinish: ((SignRawConfirmationCoordinator) -> Void)?
-//  
+  
+  var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> String?)?
+
+  private let wallet: Wallet
+  private let signRawRequest: SignRawRequest
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   public init(router: WindowRouter,
+              wallet: Wallet,
+              signRawRequest: SignRawRequest,
               keeperCoreMainAssembly: KeeperCore.MainAssembly,
               coreAssembly: TKCore.CoreAssembly) {
+    self.wallet = wallet
+    self.signRawRequest = signRawRequest
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -30,39 +36,29 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     router.window.makeKeyAndVisible()
     
     let module = SignRawConfirmationAssembly.module(
+      wallet: wallet,
+      signRawRequest: signRawRequest,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
+    weak var moduleInput = module.input
     let containerViewController = TKBottomSheetViewController(contentViewController: module.view)
     containerViewController.didClose = { [weak self] isInteractivly in
       guard let self else { return }
       guard isInteractivly else { return }
+      moduleInput?.cancel()
       self.didFinish?(self)
-      // TODO: Module call cancel
+    }
+    
+    module.output.didRequireSign = { [weak self] transferData, wallet in
+      guard let self else { return nil }
+      return try await didRequireSign?(transferData, wallet, containerViewController)
+    }
+    module.output.didConfirm = { [weak self] in
+      guard let self else { return }
+      self.didFinish?(self)
     }
     
     containerViewController.present(fromViewController: rootViewController)
-  }
-}
-
-public extension SignRawConfirmationCoordinator {
-  static func startCoordinator(windowScene: UIWindowScene,
-                               parentCoordinator: Coordinator,
-                               keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                               coreAssembly: TKCore.CoreAssembly) {
-    let signRawWindow = TKWindow(windowScene: windowScene)
-    let signRawCoordinator = SignRawConfirmationCoordinator(
-      router: WindowRouter(window: signRawWindow),
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
-    )
-    
-    signRawCoordinator.didFinish = { [weak parentCoordinator] signRawCoordinator in
-      print("🤡signRawCoordinator did finish")
-      parentCoordinator?.removeChild(signRawCoordinator)
-    }
-    
-    parentCoordinator.addChild(signRawCoordinator)
-    signRawCoordinator.start()
   }
 }

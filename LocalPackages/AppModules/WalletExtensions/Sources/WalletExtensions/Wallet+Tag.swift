@@ -3,7 +3,7 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 
-extension WalletContractVersion {
+public extension WalletContractVersion {
   var tag: String? {
     switch self {
     case .v5Beta:
@@ -15,7 +15,7 @@ extension WalletContractVersion {
   }
 }
 
-extension Wallet {
+public extension Wallet {
   var kindTag: String? {
     switch kind {
     case .regular:
@@ -38,7 +38,7 @@ extension Wallet {
   }
 }
 
-extension Wallet {
+public extension Wallet {
   func copyToastConfiguration() -> ToastPresenter.Configuration {
     let backgroundColor: UIColor
     let foregroundColor: UIColor

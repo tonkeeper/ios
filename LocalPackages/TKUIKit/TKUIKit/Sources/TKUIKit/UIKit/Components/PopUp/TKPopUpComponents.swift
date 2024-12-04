@@ -310,3 +310,57 @@ public extension TKPopUp.Component {
     }
   }
 }
+
+public extension TKPopUp.Component {
+  struct Loader: TKPopUp.Item {
+    
+    
+    public func getView() -> UIView {
+      let loaderView = TKLoaderView(
+        size: size,
+        style: style
+      )
+      return loaderView
+    }
+    
+    private let size: TKLoaderView.Size
+    private let style: TKLoaderView.Style
+    public var bottomSpace: CGFloat
+    
+    public init(size: TKLoaderView.Size,
+                style: TKLoaderView.Style,
+                bottomSpace: CGFloat = 0) {
+      self.size = size
+      self.style = style
+      self.bottomSpace = bottomSpace
+    }
+  }
+}
+
+public extension TKPopUp.Component {
+  struct Slider: TKPopUp.Item {
+    
+    public func getView() -> UIView {
+      let slider = TKSlider()
+      slider.title = title
+      slider.isEnable = isEnable
+      slider.didConfirm = didConfirm
+      return slider
+    }
+    
+    private let title: String?
+    private let isEnable: Bool
+    private let didConfirm: () -> Void
+    public var bottomSpace: CGFloat
+    
+    public init(title: String?,
+                isEnable: Bool,
+                didConfirm: @escaping () -> Void,
+                bottomSpace: CGFloat = 0) {
+      self.title = title
+      self.isEnable = isEnable
+      self.didConfirm = didConfirm
+      self.bottomSpace = bottomSpace
+    }
+  }
+}

@@ -40,11 +40,17 @@ final class SignRawConfirmationViewController: GenericViewViewController<SignRaw
   }
   
   private func setup() {
-    
+    setupContent()
   }
   
   private func setupBindings() {
-    
+    viewModel.didUpdateHeader = { [weak self] in
+      self?.didUpdatePullCardHeaderItem?($0)
+    }
+    viewModel.didUpdateConfiguration = { [weak self] in
+      self?.popUpViewController.configuration = $0
+      self?.didUpdateHeight?()
+    }
   }
   
   func setupContent() {

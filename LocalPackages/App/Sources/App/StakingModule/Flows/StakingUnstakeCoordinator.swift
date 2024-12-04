@@ -98,8 +98,8 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
       router: router
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in

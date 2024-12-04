@@ -10,6 +10,7 @@ import KeeperCore
 import UIKit
 import TKCore
 import TKUIKit
+import WalletExtensions
 
 
 class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentHandling {

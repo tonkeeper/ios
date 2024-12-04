@@ -82,6 +82,22 @@ public struct UnsignedTransferBuilder {
         timeout: transferData.timeout,
         messageType: transferData.messageType
       )
+    case .stonfiSwap(let signRaw):
+      return try SignRawTransferBuilder.createWalletTransfer(
+        wallet: wallet,
+        seqno: transferData.seqno,
+        payloads: signRaw.payloads.map {
+          SignRawTransferBuilder.Payload(
+            value: $0.value,
+            recipientAddress: $0.recipientAddress,
+            stateInit: $0.stateInit,
+            payload: $0.payload
+          )
+        },
+        sender: signRaw.sender,
+        timeout: transferData.timeout,
+        messageType: transferData.messageType
+      )
     case .changeDNSRecord(let changeDNSRecord):
       switch changeDNSRecord {
       case .link(let linkDNS):

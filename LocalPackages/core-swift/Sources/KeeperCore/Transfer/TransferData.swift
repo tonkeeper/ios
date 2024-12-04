@@ -183,6 +183,7 @@ public struct TransferData {
     case nft(NFT)
     case swap(Swap)
     case tonConnect(TonConnect)
+    case stonfiSwap(TonConnect)
     case changeDNSRecord(ChangeDNSRecord)
     case stake(Stake)
   }

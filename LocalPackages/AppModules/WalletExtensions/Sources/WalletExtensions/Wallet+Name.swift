@@ -2,8 +2,8 @@ import UIKit
 import TKUIKit
 import KeeperCore
 
-extension Wallet {
-  func iconWithName(attributes: [NSAttributedString.Key: Any], 
+public extension Wallet {
+  func iconWithName(attributes: [NSAttributedString.Key: Any],
                     iconColor: UIColor, 
                     iconSide: CGFloat) -> NSAttributedString {
     switch self.icon {
