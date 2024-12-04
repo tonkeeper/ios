@@ -6,6 +6,18 @@ import KeeperCore
 import BigInt
 import TKLocalize
 
+struct SignRawConfirmationModel {
+  struct Risk {
+    let total: String
+    let title: String
+    let caption: String
+    let isRisk: Bool
+  }
+  
+  let contentModel: AccountEventCellContentView.Model
+  let risk: Risk?
+}
+
 struct SignRawConfirmationMapper {
   private let nftService: NFTService
   private let tonRatesStore: TonRatesStore
@@ -37,10 +49,13 @@ struct SignRawConfirmationMapper {
     self.amountFormatter = amountFormatter
   }
   
-  func mapEmulationResult(emulationResult: SignRawEmulationResult, wallet: Wallet) -> AccountEventCellContentView.Model {
+  func mapEmulationResult(emulationResult: SignRawEmulationResult, wallet: Wallet) -> SignRawConfirmationModel {
     switch emulationResult {
     case .success(let signRawEmulation):
-      return mapSuccessEmulationResult(signRawEmulation: signRawEmulation, wallet: wallet)
+      return SignRawConfirmationModel(
+        contentModel: mapSuccessEmulationResult(signRawEmulation: signRawEmulation, wallet: wallet),
+        risk: mapRisk(emulation: signRawEmulation, wallet: wallet)
+      )
     case .failed:
       fatalError()
     }
@@ -96,6 +111,49 @@ struct SignRawConfirmationMapper {
       feeDescription: signRawEmulation.transferType.isBattery ? TKLocales.TransactionConfirmation.battery : nil
     )
     return model
+  }
+  
+  func mapRisk(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel.Risk? {
+    let currency = currencyStore.getState()
+    guard let totalBalanceState = totalBalanceStore.state[wallet],
+          let totalBalance = totalBalanceState.totalBalance,
+          let tonRate = tonRatesStore.getState().first(where: { $0.currency == currency })
+    else {
+      return nil
+    }
+    
+    let tonRisk = emulation.risk.ton
+    let totalRisk = tonRisk + emulation.fee
+    
+    let convertedTonRisk = RateConverter().convertToDecimal(
+      amount: BigUInt(totalRisk),
+      amountFractionLength: TonInfo.fractionDigits,
+      rate: tonRate
+    )
+    let riskLowMark = totalBalance.amount * emulation.risk.totalAmountTreshold
+    let isRisk = convertedTonRisk >= riskLowMark
+    let total = decimalAmountFormatter.format(
+      amount: convertedTonRisk,
+      maximumFractionDigits: 2,
+      currency: currency
+    )
+    
+    let title: String
+    let caption: String
+    if emulation.risk.nftsCount == 0 {
+      title = TKLocales.ConfirmSend.Risk.total(total)
+      caption = TKLocales.ConfirmSend.Risk.captionWithoutNft
+    } else {
+      title = TKLocales.ConfirmSend.Risk.totalNft(total, emulation.risk.nftsCount)
+      caption = TKLocales.ConfirmSend.Risk.nftCaption
+    }
+    
+    return SignRawConfirmationModel.Risk(
+      total: total,
+      title: title,
+      caption: caption,
+      isRisk: isRisk
+    )
   }
 }
 

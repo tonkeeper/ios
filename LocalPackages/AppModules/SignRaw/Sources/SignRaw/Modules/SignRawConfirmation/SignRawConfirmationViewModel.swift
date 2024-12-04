@@ -57,8 +57,8 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   
   private enum State {
     case emulating
-    case idle(emulationResult: SignRawEmulationResult)
-    case confirmation(emulationResult: SignRawEmulationResult, confirmationState: ConfirmationState)
+    case idle
+    case confirmation(confirmationState: ConfirmationState)
   }
   
   private enum ConfirmationState {
@@ -68,6 +68,21 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   }
   
   private var state: State = .emulating {
+    didSet {
+      didUpdateConfiguration?(createConfiguration())
+    }
+  }
+  
+  private var emulationResult: SignRawEmulationResult? {
+    didSet {
+      guard let emulationResult else {
+        model = nil
+        return
+      }
+      model = signRawConfirmationMapper.mapEmulationResult(emulationResult: emulationResult, wallet: wallet)
+    }
+  }
+  private var model: SignRawConfirmationModel? {
     didSet {
       didUpdateConfiguration?(createConfiguration())
     }
@@ -87,8 +102,8 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   
   private func emulate() {
     Task {
-      let result = try await signRawController.emulate()
-      self.state = .idle(emulationResult: result)
+      emulationResult = try await signRawController.emulate()
+      self.state = .idle
     }
   }
   
@@ -96,13 +111,10 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     switch state {
     case .emulating:
       createEmulatingConfiguration()
-    case .idle(let emulationResult):
-      createIdleConfiguration(
-        emulationResult: emulationResult
-      )
-    case .confirmation(let emulationResult, let confirmationState):
+    case .idle:
+      createIdleConfiguration()
+    case .confirmation(let confirmationState):
       createConfirmationConfiguration(
-        emulationResult: emulationResult,
         confirmationState: confirmationState
       )
     }
@@ -120,11 +132,12 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     return configuration
   }
   
-  private func createIdleConfiguration(emulationResult: SignRawEmulationResult) -> TKPopUp.Configuration {
-    let items: [TKPopUp.Item] = [
-      createContentItem(emulationResult: emulationResult),
-      createProcessItem()
-    ]
+  private func createIdleConfiguration() -> TKPopUp.Configuration {
+    var items = [TKPopUp.Item]()
+    if let contentItem = createContentItem() {
+      items.append(contentItem)
+    }
+    items.append(createProcessItem())
     let configuration = TKPopUp.Configuration(
       items: items
     )
@@ -132,12 +145,12 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     return configuration
   }
   
-  private func createConfirmationConfiguration(emulationResult: SignRawEmulationResult,
-                                               confirmationState: ConfirmationState) -> TKPopUp.Configuration {
-    let items: [TKPopUp.Item] = [
-      createContentItem(emulationResult: emulationResult),
-      createProcessItem()
-    ]
+  private func createConfirmationConfiguration(confirmationState: ConfirmationState) -> TKPopUp.Configuration {
+    var items = [TKPopUp.Item]()
+    if let contentItem = createContentItem() {
+      items.append(contentItem)
+    }
+    items.append(createProcessItem())
     let configuration = TKPopUp.Configuration(
       items: items
     )
@@ -185,46 +198,36 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   }
   
   private func createProcessItem() -> TKPopUp.Item {
-    let processItem: TKPopUp.Item = {
-      TKPopUp.Component.Process(
-        items: [
-          createSliderItem(),
-          createRiskItem()
-        ],
-        state: {
-          switch state {
-          case .emulating:
-              return .idle
-          case .idle(_):
-              return .idle
-          case .confirmation(_, let confirmationState):
-            switch confirmationState {
-            case .process:
-              return .process
-            case .success:
-              return .success
-            case .failed:
-              return .failed
-            }
+    var items = [TKPopUp.Item]()
+    items.append(createSliderItem())
+    if let riskItem = createRiskItem() {
+      items.append(riskItem)
+    }
+    
+    let processItem = TKPopUp.Component.Process(
+      items: items,
+      state: {
+        switch state {
+        case .emulating:
+            return .idle
+        case .idle:
+            return .idle
+        case .confirmation(let confirmationState):
+          switch confirmationState {
+          case .process:
+            return .process
+          case .success:
+            return .success
+          case .failed:
+            return .failed
           }
-        }(),
-        successTitle: TKLocales.Result.success,
-        errorTitle: TKLocales.Result.failure
-      )
-    }()
+        }
+      }(),
+      successTitle: TKLocales.Result.success,
+      errorTitle: TKLocales.Result.failure
+    )
     
     return processItem
-  }
-  
-  private func createRiskItem() -> TKPopUp.Item {
-    TKPopUp.Component.LabelComponent(
-      text: "dsds".withTextStyle(
-        .body2,
-        color: .gray,
-        alignment: .center,
-        lineBreakMode: .byWordWrapping
-      )
-    )
   }
   
   private func createSliderItem() -> TKPopUp.Item {
@@ -234,10 +237,10 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     case .emulating:
       isEnable = false
       action = {}
-    case .idle(let emulationResult):
+    case .idle:
       isEnable = true
       action = { [weak self] in
-        self?.confirmTransaction(emulationResult: emulationResult)
+        self?.confirmTransaction()
       }
     case .confirmation:
       isEnable = true
@@ -258,33 +261,55 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     )
   }
   
-  private func createContentItem(emulationResult: SignRawEmulationResult) -> TKPopUp.Item {
-    let model = signRawConfirmationMapper.mapEmulationResult(
-      emulationResult: emulationResult,
-      wallet: wallet
-    )
-    
+  private func createRiskItem() -> TKPopUp.Item? {
+    switch state {
+    case .emulating:
+      return TKPopUp.Component.LabelComponent(
+        text: "Loading".withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byTruncatingTail
+        ),
+        numberOfLines: 1
+      )
+    default:
+      guard let risk = model?.risk else { return nil }
+      let signRawRiskItem = SignRawRiskView.Model(
+        bottomSpace: 0,
+        title: risk.title,
+        isRisk: risk.isRisk,
+        action: {
+          
+        }
+      )
+      return signRawRiskItem
+    }
+  }
+  
+  private func createContentItem() -> TKPopUp.Item? {
+    guard let model else { return nil }
     return TKPopUp.Component.GroupComponent(
       padding: UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16),
       items: [SignRawContentView.Configuration(
-        actionsConfiguration: model
+        actionsConfiguration: model.contentModel
       )]
     )
   }
   
-  private func confirmTransaction(emulationResult: SignRawEmulationResult) {
+  private func confirmTransaction() {
     Task {
-      state = .confirmation(emulationResult: emulationResult, confirmationState: .process)
+      state = .confirmation(confirmationState: .process)
       do {
-        try await signRawController.sendTransaction(emulationResult: emulationResult)
-        state = .confirmation(emulationResult: emulationResult, confirmationState: .success)
+        try await signRawController.sendTransaction(transactionType: emulationResult?.transactionType ?? .default)
+        state = .confirmation(confirmationState: .success)
         try? await Task.sleep(nanoseconds: 1_000_000_000)
         NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
         didConfirm?()
       } catch {
-        state = .confirmation(emulationResult: emulationResult, confirmationState: .failed)
+        state = .confirmation(confirmationState: .failed)
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        state = .idle(emulationResult: emulationResult)
+        state = .idle
       }
     }
   }

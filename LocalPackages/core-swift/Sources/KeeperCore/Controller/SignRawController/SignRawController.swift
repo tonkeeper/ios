@@ -6,6 +6,15 @@ import TonAPI
 public enum SignRawEmulationResult {
   case success(SignRawEmulation)
   case failed
+  
+  public var transactionType: TransferType {
+    switch self {
+    case .success(let signRawEmulation):
+      return signRawEmulation.transferType
+    case .failed:
+      return .default
+    }
+  }
 }
 
 public struct SignRawEmulation {
@@ -17,7 +26,7 @@ public struct SignRawEmulation {
     
     public let ton: UInt64
     public let jettons: [Jetton]
-    public let hasNfts: Bool
+    public let nftsCount: Int
     public let totalAmountTreshold: Decimal = 0.2
   }
   
@@ -59,18 +68,11 @@ public final class SignRawController {
     self.currencyStore = currencyStore
   }
   
-  public func sendTransaction(emulationResult: SignRawEmulationResult) async throws {
+  public func sendTransaction(transactionType: TransferType) async throws {
     try await transferService.sendTransaction(
       wallet: wallet,
       transfer: .stonfiSwap(signRawRequest),
-      transferType: {
-        switch emulationResult {
-        case .success(let emulation):
-          return emulation.transferType
-        case .failed:
-          return .default
-        }
-      }(),
+      transferType: transactionType,
       signClosure: { [weak self, wallet] transferData in
         guard let signed = try? await self?.signHandler?(transferData, wallet) else {
           throw TransactionConfirmationError.failedToSign
@@ -120,7 +122,7 @@ public final class SignRawController {
     SignRawEmulation.Risk(
       ton: UInt64(risk.ton),
       jettons: risk.jettons.compactMap { try? SignRawEmulation.Risk.Jetton(walletAddress: Address.parse($0.walletAddress.address), quantity: BigUInt(stringLiteral: $0.quantity)) },
-      hasNfts: !risk.nfts.isEmpty
+      nftsCount: risk.nfts.count
     )
   }
   
