@@ -42,7 +42,7 @@ public enum Deeplink: Equatable {
   case action(eventId: String)
   case publish(sign: Data)
   case externalSign(ExternalSignDeeplink)
-  case tonconnect(TonConnectParameters)
+  case tonconnect(TonConnectPayload)
   case dapp(URL)
   case battery(Battery)
   case browser
