@@ -8,7 +8,7 @@ public extension TonConnect {
     }
     
     public let method: Method
-    public let params: [SendTransactionParam]
+    public let params: [SignRawRequest]
     public let id: String
     
     enum CodingKeys: String, CodingKey {
@@ -25,7 +25,7 @@ public extension TonConnect {
       let jsonDecoder = JSONDecoder()
       params = paramsArray.compactMap {
         guard let data = $0.data(using: .utf8) else { return nil }
-        return try? jsonDecoder.decode(SendTransactionParam.self, from: data)
+        return try? jsonDecoder.decode(SignRawRequest.self, from: data)
       }
     }
   }

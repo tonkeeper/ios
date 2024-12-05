@@ -356,21 +356,18 @@ public struct TransferService {
     }
 
     let payloads: [TransferData.TonConnect.Payload] = try rebuildedMessages.map {
-      var payloadCell: Cell
-      if let base64Payload = $0.payload {
-        payloadCell = try Cell.fromBase64(src: base64Payload)
-      } else {
-        payloadCell = Cell.empty
-      }
-      if let excessesAddress {
+      var resultPayload: String?
+      if let payload = $0.payload, let excessesAddress {
+        var payloadCell = try Cell.fromBase64(src: payload)
         payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)
+        resultPayload = try payloadCell.toBoc().base64EncodedString()
       }
       
       return TransferData.TonConnect.Payload(
         value: BigInt(integerLiteral: Int64($0.amount)),
         recipientAddress: $0.address,
         stateInit: $0.stateInit,
-        payload: try payloadCell.toBoc().base64EncodedString()
+        payload: resultPayload
       )
     }
     
