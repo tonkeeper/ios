@@ -10,8 +10,6 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
   private let tonConnectAppsStore: TonConnectAppsStore
   private let cookiesService: CookiesServiceProtocol
 
-  private let cookieQueue = DispatchQueue(label: #function)
-
   public init(
     walletsStore: WalletsStore,
     tonConnectAppsStore: TonConnectAppsStore,
