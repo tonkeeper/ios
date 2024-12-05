@@ -356,16 +356,21 @@ public struct TransferService {
     }
 
     let payloads: [TransferData.TonConnect.Payload] = try rebuildedMessages.map {
-      var resultPayload = $0.payload
-      if let excessesAddress, let payload = resultPayload, !payload.isEmpty {
-        resultPayload = try rebuildPayloadWithExcessesAddress(payload: payload, excessesAddress)
+      var payloadCell: Cell
+      if let base64Payload = $0.payload {
+        payloadCell = try Cell.fromBase64(src: base64Payload)
+      } else {
+        payloadCell = Cell.empty
+      }
+      if let excessesAddress {
+        payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)
       }
       
       return TransferData.TonConnect.Payload(
         value: BigInt(integerLiteral: Int64($0.amount)),
         recipientAddress: $0.address,
         stateInit: $0.stateInit,
-        payload: resultPayload
+        payload: try payloadCell.toBoc().base64EncodedString()
       )
     }
     
@@ -378,9 +383,8 @@ public struct TransferService {
     return transfer
   }
   
-  private func rebuildPayloadWithExcessesAddress(payload: String, _ excessesAddress: Address) throws -> String {
-    let payloadCell = try Cell.fromBase64(src: payload)
-    let payloadSlice = try payloadCell.toSlice()
+  private func rebuildPayloadWithExcessesAddress(payload: Cell, _ excessesAddress: Address) throws -> Cell {
+    let payloadSlice = try payload.toSlice()
     let opcode = Int32(try payloadSlice.loadUint(bits: 32))
     let builder = Builder()
   
@@ -392,11 +396,33 @@ public struct TransferService {
       try builder.store(payloadSlice.loadType() as Address)
       try builder.store(bit: true)
       try builder.store(excessesAddress)
-      let cell = try builder.endCell()
-      return try cell.toString()
+    case OpCodes.STONFI_SWAP_V2:
+      try builder.store(uint: OpCodes.STONFI_SWAP_V2, bits: 32)
+      try builder.store(payloadSlice.loadType() as Address)
+      try builder.store(payloadSlice.loadType() as Address)
+      let _ : TonSwift.AnyAddress = try payloadSlice.loadType()
+      try builder.store(excessesAddress)
+      try builder.store(uint: payloadSlice.loadUint(bits: 64), bits: 64)
+      try builder.store(ref: payloadSlice.loadRef())
+    case OpCodes.JETTON_TRANSFER:
+      try builder.store(uint: OpCodes.JETTON_TRANSFER, bits: 32)
+      try builder.store(uint: payloadSlice.loadUint(bits: 64), bits: 64)
+      try builder.store(payloadSlice.loadCoins())
+      try builder.store(payloadSlice.loadType() as Address)
+      let _ : TonSwift.AnyAddress = try payloadSlice.loadType()
+      while payloadSlice.remainingRefs > 0 {
+        let forwardCell = try payloadSlice.loadRef()
+        let rebuildedRef = try rebuildPayloadWithExcessesAddress(payload: forwardCell, excessesAddress)
+        try builder.store(ref: rebuildedRef)
+      }
+      try builder.store(excessesAddress)
+      try builder.store(bits: payloadSlice.loadBits(payloadSlice.remainingBits))
     default:
       return payload
     }
+    
+    let cell = try builder.endCell()
+    return cell
   }
   
   private func isRelayerAvailable(wallet: Wallet,
