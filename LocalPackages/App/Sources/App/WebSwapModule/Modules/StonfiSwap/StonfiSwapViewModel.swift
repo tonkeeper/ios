@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKCore
 
 protocol StonfiSwapViewModel: AnyObject {
   var didOpen: ((URL?, String?) -> Void)? { get set }
@@ -101,6 +102,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
       if let toToken {
         items.append(URLQueryItem(name: "tt", value: toToken))
       }
+      items.append(URLQueryItem(name: "clientVersion", value: InfoProvider.appVersion()))
       return items
     }()
     
