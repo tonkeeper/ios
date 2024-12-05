@@ -4,6 +4,11 @@ import SnapKit
 import WebKit
 import TKLocalize
 
+public protocol TKWebDataStoreProvider {
+  func dataStore() -> WKWebsiteDataStore
+  func removeData(host: String)
+}
+
 public protocol TKBridgeWebViewControllerUserAgentProvider {
   func getUserAgent() -> String
 }
@@ -35,6 +40,7 @@ open class TKBridgeWebViewController: UIViewController {
       forMainFrameOnly: true
     )
     userContentController.addUserScript(script)
+    configuration.websiteDataStore = webDataStoreProvider?.dataStore() ?? .default()
     configuration.userContentController = userContentController
     configuration.allowsInlineMediaPlayback = true
     let webView = WKWebView(frame: .zero, configuration: configuration)
@@ -105,6 +111,7 @@ open class TKBridgeWebViewController: UIViewController {
   private let jsInjection: String
   private let configuration: Configuration
   private let userAgentProvider: TKBridgeWebViewControllerUserAgentProvider?
+  private let webDataStoreProvider: TKWebDataStoreProvider?
   private let deeplinkHandler: ((_ deeplink: String) throws -> Void)?
   
   // MARK: - Init
@@ -114,6 +121,7 @@ open class TKBridgeWebViewController: UIViewController {
               jsInjection: String?,
               configuration: Configuration,
               userAgentProvider: TKBridgeWebViewControllerUserAgentProvider?,
+              webDataStoreProvider: TKWebDataStoreProvider?,
               deeplinkHandler: ((_ deeplink: String) throws -> Void)? = nil) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
@@ -121,6 +129,7 @@ open class TKBridgeWebViewController: UIViewController {
     self.configuration = configuration
     self.jsInjection = jsInjection ?? ""
     self.userAgentProvider = userAgentProvider
+    self.webDataStoreProvider = webDataStoreProvider
     self.deeplinkHandler = deeplinkHandler
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle

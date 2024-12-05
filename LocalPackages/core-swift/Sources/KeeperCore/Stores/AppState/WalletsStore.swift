@@ -7,6 +7,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   
   public enum Event {
     case didAddWallets(wallets: [Wallet])
+    case willChangeActiveWallet(wallet: Wallet)
     case didChangeActiveWallet(wallet: Wallet)
     case didMoveWallet(fromIndex: Int, toIndex: Int)
     case didUpdateWalletMetaData(wallet: Wallet)
@@ -188,6 +189,10 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   
   public func makeWalletActive(_ wallet: Wallet,
                                completion: @escaping (State) -> Void) {
+    if let activeWallet = try? activeWallet {
+      sendEvent(.willChangeActiveWallet(wallet: activeWallet))
+    }
+
     keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
       let updateKeeperInfo = keeperInfo.updateActiveWallet(wallet)

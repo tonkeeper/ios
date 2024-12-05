@@ -40,7 +40,8 @@ private extension StonfiSwapViewController {
         initialTitle: title,
         jsInjection: self.viewModel.jsInjection,
         configuration: .default,
-        userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider()
+        userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
+        webDataStoreProvider: nil
       )
       bridgeWebViewController.isHeaderHidden = true
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in

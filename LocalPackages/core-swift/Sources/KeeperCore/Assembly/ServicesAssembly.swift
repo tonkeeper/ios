@@ -156,4 +156,8 @@ public final class ServicesAssembly {
       api: apiAssembly.api
     )
   }
+
+  public func cookiesService() -> CookiesServiceProtocol {
+    CookiesService(cookiesRepository: repositoriesAssembly.cookiesRepository())
+  }
 }
