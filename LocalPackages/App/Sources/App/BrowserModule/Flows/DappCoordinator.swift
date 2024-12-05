@@ -33,14 +33,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   private func openDappModule(_ dapp: Dapp) {
-    var webDataStore: TKWebDataStoreProvider?
-    if let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet {
-      webDataStore = TKWebDataStore(wallet: wallet)
-    }
     let messageHandler = DefaultDappMessageHandler()
     let module = DappAssembly.module(
       dapp: dapp,
-      webDataStoreProvider: webDataStore,
       analyticsProvider: coreAssembly.analyticsProvider,
       deeplinkHandler: { deeplink in
         self.didHandleDeeplink?(deeplink)

@@ -15,18 +15,15 @@ final class CookiesService: CookiesServiceProtocol {
 
   private let cookiesRepository: CookiesRepositoryProtocol
 
-  private var cookiesStorage: HTTPCookieStorage { .shared }
+  private var webDataStore: WKWebsiteDataStore { .default() }
 
   init(cookiesRepository: CookiesRepositoryProtocol) {
     self.cookiesRepository = cookiesRepository
   }
 
   func saveCookiesState(hosts: [String], wallet: Wallet) {
-    guard #unavailable(iOS 17) else {
-      return
-    }
     Task {
-      let cookies = await WKWebsiteDataStore.default().httpCookieStore.allCookies()
+      let cookies = await webDataStore.httpCookieStore.allCookies()
       let filteredCookies: [CookieBridgeModel] = cookies.compactMap {
         guard hosts.contains($0.domain) else {
           return nil
@@ -46,17 +43,12 @@ final class CookiesService: CookiesServiceProtocol {
       guard let cookie = $0.asHttpCookie else {
         return
       }
-      WKWebsiteDataStore.default().httpCookieStore.setCookie(cookie)
+      webDataStore.httpCookieStore.setCookie(cookie)
     }
   }
 
   func removeCookies(for host: String, wallet: Wallet) {
-    guard #unavailable(iOS 17) else {
-      webDataStore(wallet: wallet).removeData(host: host)
-      return
-    }
-
-    WKWebsiteDataStore.default().httpCookieStore.getAllCookies { [weak self] cookies in
+    webDataStore.httpCookieStore.getAllCookies { [weak self] cookies in
       guard let self else {
         return
       }
@@ -74,34 +66,20 @@ final class CookiesService: CookiesServiceProtocol {
   }
 
   func removeAllSessionCookies(_ completion: @escaping (() -> Void)) {
-    guard #unavailable(iOS 17) else {
-      return
-    }
-
-    let dataStore = WKWebsiteDataStore.default()
     DispatchQueue.main.async {
-      dataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-        dataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records) {
-          completion()
-        }
+      self.webDataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+        self.webDataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records, completionHandler: completion)
       }
     }
   }
 
   func removeStorageCookie(_ cookie: HTTPCookie) {
     Task {
-      await WKWebsiteDataStore.default().httpCookieStore.deleteCookie(cookie)
+      await webDataStore.httpCookieStore.deleteCookie(cookie)
     }
   }
 
   func removeAllStorageCookies(for wallet: Wallet) {
     cookiesRepository.removeCookies(for: wallet)
-  }
-}
-
-extension CookiesService {
-
-  func webDataStore(wallet: Wallet) -> TKWebDataStore {
-    TKWebDataStore(wallet: wallet)
   }
 }

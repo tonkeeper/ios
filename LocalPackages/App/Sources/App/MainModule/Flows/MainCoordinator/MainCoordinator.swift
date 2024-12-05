@@ -959,23 +959,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openURL(_ url: URL, title: String?) {
-    var webDataStore: TKWebDataStoreProvider?
-    if let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet {
-      webDataStore = TKWebDataStore(wallet: wallet)
-    }
-//    let viewController = TKBridgeWebViewController(
-//      initialURL: url,
-//      initialTitle: nil,
-//      jsInjection: nil,
-//      configuration: .default,
-//      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
-//      webDataStoreProvider: webDataStore,
-//      deeplinkHandler: { url in
-//        let deeplinkParser = DeeplinkParser()
-//        let deeplink = try deeplinkParser.parse(string: url)
-//        _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
-//      })
-//    router.present(viewController)
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default,
+      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
+      deeplinkHandler: { url in
+        let deeplinkParser = DeeplinkParser()
+        let deeplink = try deeplinkParser.parse(string: url)
+        _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+      })
+    router.present(viewController)
   }
   
   func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {

@@ -5,7 +5,6 @@ import TKScreenKit
 protocol DappViewModel: AnyObject {
   var didOpenApp: ((URL?, String?) -> Void)? { get set }
   var injectHandler: ((String) -> Void)? { get set }
-  var webDataStore: TKWebDataStoreProvider? { get }
   var jsInjection: String? { get }
   
   func viewDidLoad()
@@ -18,7 +17,6 @@ final class DappViewModelImplementation: DappViewModel {
 
   var didOpenApp: ((URL?, String?) -> Void)?
   var injectHandler: ((String) -> Void)?
-  var webDataStore: TKWebDataStoreProvider? { webDataStoreProvider }
 
   func viewDidLoad() {
     didOpenApp?(dapp.url, dapp.name)
@@ -92,14 +90,11 @@ final class DappViewModelImplementation: DappViewModel {
   }
   
   private let dapp: Dapp
-  private let webDataStoreProvider: TKWebDataStoreProvider?
   private let messageHandler: DappMessageHandler
   
   init(dapp: Dapp,
-       webDataStoreProvider: TKWebDataStoreProvider?,
        messageHandler: DappMessageHandler) {
     self.dapp = dapp
-    self.webDataStoreProvider = webDataStoreProvider
     self.messageHandler = messageHandler
   }
   
