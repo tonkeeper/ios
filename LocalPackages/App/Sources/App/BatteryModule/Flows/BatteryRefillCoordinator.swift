@@ -4,12 +4,13 @@ import TKUIKit
 import TKCore
 import TKLocalize
 import KeeperCore
+import SignRaw
 
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
   
-  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
@@ -30,8 +31,10 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
   }
   
   public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
-    guard let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator else { return false }
-    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
   }
 }
 
@@ -125,10 +128,10 @@ private extension BatteryRefillCoordinator {
   }
   
   func openConfirmation(payload: BatteryRechargePayload) {
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
+    guard let windowScene = router.rootViewController.view.window?.windowScene else { return }
     
-    let bocBuilder = BatteryRechargeBocBuilder(
+    
+    let batteryRechargeSignRawBuilder = BatteryRechargeSignRawBuilder(
       wallet: wallet,
       payload: payload,
       batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
@@ -137,37 +140,20 @@ private extension BatteryRefillCoordinator {
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration
     )
     
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
+    SignRawPresenter.presentSignRaw(
+      windowScene: windowScene,
+      windowLevel: .signRaw,
       wallet: wallet,
-      confirmator: BatteryRechargeSignTransactionConfirmationCoordinatorConfirmator(
-        bocBuilder: bocBuilder,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: BatteryRechargeConfirmTransactionControllerBocProvider(
-          bocBuilder: bocBuilder
-        )
-      ),
+      transferProvider: { try await batteryRechargeSignRawBuilder.getSignRawRequest() },
+      coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+      didRequireSign: { [weak self] transferData, wallet, coordinator, router in
+        try await self?.didRequireSign(transferData: transferData,
+                                       wallet: wallet,
+                                       coordinator: coordinator,
+                                       router: router)
+      }
     )
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-    }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Recharge.Toast.success))
-      self?.removeChild(coordinator)
-      self?.didFinish?(self)
-    }
-    
-    self.signTransactionConfirmationCoordinator = coordinator
-    
-    addChild(coordinator)
-    coordinator.start()
   }
   
   func openTokenPicker(token: Token, completion: @escaping (Token) -> Void) {
@@ -196,5 +182,31 @@ private extension BatteryRefillCoordinator {
     }
     
     bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
+  }
+  
+  @MainActor
+  func didRequireSign(transferData: TransferData,
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    let coordinator = WalletTransferSignCoordinator(
+      router: router,
+      wallet: wallet,
+      transferData: transferData,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
+    
+    self.walletTransferSignCoordinator = coordinator
+    
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+  
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
+    }
   }
 }

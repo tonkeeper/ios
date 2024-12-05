@@ -84,27 +84,16 @@ public struct TransferService {
   
   public func emulate(wallet: Wallet,
                       transfer: Transfer) async throws -> TransferEmulationResult {
-    let relayerAvailable = isRelayerAvailable(wallet: wallet, transfer: transfer)
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
     let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
     
-    func isBatteryBalanceEnable(tonProofToken: String) async -> Bool {
-      do {
-        let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
-        let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
-        return compareResult == .orderedDescending
-      } catch {
-        return false
-      }
-    }
     
-    if relayerAvailable,
-       let tonProofToken,
+    if let tonProofToken,
+       await isRelayerAvailable(wallet: wallet, tonProofToken: tonProofToken, transfer: transfer),
        let excessAccount = batteryConfig?.excessAccount,
        let excessAddress = try? Address.parse(excessAccount),
        await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
-       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet),
-       await isBatteryBalanceEnable(tonProofToken: tonProofToken) {
+       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
       return try await emulateWithBattery(
         wallet: wallet,
         transfer: transfer,
@@ -300,6 +289,20 @@ public struct TransferService {
         seqno: seqno,
         timeout: timeout
       )
+    case .signRaw(let signRawRequest, let forceRelayer):
+      return TransferData(
+        transfer: try await createTransferDataTransfer(
+          wallet: wallet,
+          signRawRequest: signRawRequest,
+          seqno: seqno,
+          timout: timeout,
+          excessesAddress: transferType.excessAddress
+        ),
+        wallet: wallet,
+        messageType: messageType,
+        seqno: seqno,
+        timeout: timeout
+      )
     }
   }
   
@@ -397,16 +400,36 @@ public struct TransferService {
   }
   
   private func isRelayerAvailable(wallet: Wallet,
-                                  transfer: Transfer) -> Bool {
+                                  tonProofToken: String,
+                                  transfer: Transfer) async -> Bool {
+    
+    let isBalanceAvailable: () async -> Bool = {
+      return await isBatteryBalanceEnable(wallet: wallet, tonProofToken: tonProofToken)
+    }
     switch transfer {
     case .ton:
       return false
     case .jetton:
-      return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable && isBalanceAvailable
     case .nft:
-      return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable && isBalanceAvailable
     case .stonfiSwap:
-      return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable && isBalanceAvailable
+    case .signRaw(_, let isForceRelayer):
+      return isForceRelayer
+    }
+  }
+  
+  func isBatteryBalanceEnable(wallet: Wallet, tonProofToken: String) async -> Bool {
+    do {
+      let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
+      let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
+      return compareResult == .orderedDescending
+    } catch {
+      return false
     }
   }
 }

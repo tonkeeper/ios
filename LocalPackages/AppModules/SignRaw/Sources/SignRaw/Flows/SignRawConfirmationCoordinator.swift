@@ -10,17 +10,17 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
   var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> String?)?
 
   private let wallet: Wallet
-  private let signRawRequest: SignRawRequest
+  private let transferProvider: () async throws -> Transfer
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   public init(router: WindowRouter,
               wallet: Wallet,
-              signRawRequest: SignRawRequest,
+              transferProvider: @escaping () async throws -> Transfer,
               keeperCoreMainAssembly: KeeperCore.MainAssembly,
               coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
-    self.signRawRequest = signRawRequest
+    self.transferProvider = transferProvider
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -37,7 +37,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     
     let module = SignRawConfirmationAssembly.module(
       wallet: wallet,
-      signRawRequest: signRawRequest,
+      transferProvider: transferProvider,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     

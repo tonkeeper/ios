@@ -7,14 +7,14 @@ import Mapping
 struct SignRawConfirmationAssembly {
   private init() {}
   static func module(wallet: Wallet,
-                     signRawRequest: SignRawRequest,
+                     transferProvider: @escaping () async throws -> Transfer,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<SignRawConfirmationViewController, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput> {
     let viewModel = SignRawConfirmationViewModelImplementation(
       wallet: wallet,
       signRawController: SignRawController(
         wallet: wallet,
-        signRawRequest: signRawRequest, 
+        transferProvider: transferProvider,
         transferService: keeperCoreMainAssembly.transferAssembly.transferService(),
         nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,

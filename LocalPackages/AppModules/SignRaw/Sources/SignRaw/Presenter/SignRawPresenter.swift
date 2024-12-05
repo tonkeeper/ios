@@ -10,7 +10,7 @@ public final class SignRawPresenter {
   public static func presentSignRaw(windowScene: UIWindowScene,
                                     windowLevel: UIWindow.Level,
                                     wallet: Wallet,
-                                    signRawRequest: SignRawRequest,
+                                    transferProvider: @escaping () async throws -> Transfer,
                                     coreAssembly: TKCore.CoreAssembly,
                                     keeperCoreMainAssembly: KeeperCore.MainAssembly,
                                     didRequireSign: ((TransferData, Wallet, Coordinator, ViewControllerRouter) async throws -> String?)?) {
@@ -21,7 +21,7 @@ public final class SignRawPresenter {
     let coordinator = SignRawConfirmationCoordinator(
       router: router,
       wallet: wallet,
-      signRawRequest: signRawRequest,
+      transferProvider: transferProvider,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )

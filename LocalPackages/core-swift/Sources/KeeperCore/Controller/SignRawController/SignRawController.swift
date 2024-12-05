@@ -48,20 +48,20 @@ public final class SignRawController {
   public var signHandler: ((TransferData, Wallet) async throws -> String?)?
   
   private let wallet: Wallet
-  private let signRawRequest: SignRawRequest
+  private let transferProvider: () async throws -> Transfer
   private let transferService: TransferService
   private let nftService: NFTService
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
   public init(wallet: Wallet,
-              signRawRequest: SignRawRequest,
+              transferProvider: @escaping () async throws -> Transfer,
               transferService: TransferService,
               nftService: NFTService,
               tonRatesStore: TonRatesStore,
               currencyStore: CurrencyStore) {
     self.wallet = wallet
-    self.signRawRequest = signRawRequest
+    self.transferProvider = transferProvider
     self.transferService = transferService
     self.nftService = nftService
     self.tonRatesStore = tonRatesStore
@@ -71,7 +71,7 @@ public final class SignRawController {
   public func sendTransaction(transactionType: TransferType) async throws {
     try await transferService.sendTransaction(
       wallet: wallet,
-      transfer: .stonfiSwap(signRawRequest),
+      transfer: try await transferProvider(),
       transferType: transactionType,
       signClosure: { [weak self, wallet] transferData in
         guard let signed = try? await self?.signHandler?(transferData, wallet) else {
@@ -82,40 +82,36 @@ public final class SignRawController {
     )
   }
   
-  public func emulate() async throws -> SignRawEmulationResult {
-    do {
-      let result = try await transferService.emulate(
-        wallet: wallet,
-        transfer: .stonfiSwap(signRawRequest)
+  public func emulate() async throws -> SignRawEmulation {
+    let result = try await transferService.emulate(
+      wallet: wallet,
+      transfer: try await transferProvider()
+    )
+    let event = try AccountEvent(accountEvent: result.transactionInfo.event)
+    let fee = UInt64(abs(result.transactionInfo.event.extra))
+    let nfts = try await loadEventNFTs(event: event)
+    let risk = handleRisk(risk: result.transactionInfo.risk)
+    let currency = currencyStore.state
+    var feeConverted: SignRawEmulation.FeeConverted?
+    if let rates = tonRatesStore.state.first(where: { $0.currency == currency }) {
+      feeConverted = SignRawEmulation.FeeConverted(
+        converted: RateConverter().convertToDecimal(
+          amount: BigUInt(fee),
+          amountFractionLength: TonInfo.fractionDigits,
+          rate: rates
+        ),
+        currency: currency
       )
-      let event = try AccountEvent(accountEvent: result.transactionInfo.event)
-      let fee = UInt64(abs(result.transactionInfo.event.extra))
-      let nfts = try await loadEventNFTs(event: event)
-      let risk = handleRisk(risk: result.transactionInfo.risk)
-      let currency = currencyStore.state
-      var feeConverted: SignRawEmulation.FeeConverted?
-      if let rates = tonRatesStore.state.first(where: { $0.currency == currency }) {
-        feeConverted = SignRawEmulation.FeeConverted(
-          converted: RateConverter().convertToDecimal(
-            amount: BigUInt(fee),
-            amountFractionLength: TonInfo.fractionDigits,
-            rate: rates
-          ),
-          currency: currency
-        )
-      }
-      
-      return .success(SignRawEmulation(
-        event: event,
-        fee: fee,
-        feeConverted: feeConverted,
-        risk: risk,
-        nfts: nfts,
-        transferType: result.transferType
-      ))
-    } catch {
-      return .failed
     }
+    
+    return SignRawEmulation(
+      event: event,
+      fee: fee,
+      feeConverted: feeConverted,
+      risk: risk,
+      nfts: nfts,
+      transferType: result.transferType
+    )
   }
   
   private func handleRisk(risk: TonAPI.Risk) -> SignRawEmulation.Risk {

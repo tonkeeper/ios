@@ -49,16 +49,11 @@ struct SignRawConfirmationMapper {
     self.amountFormatter = amountFormatter
   }
   
-  func mapEmulationResult(emulationResult: SignRawEmulationResult, wallet: Wallet) -> SignRawConfirmationModel {
-    switch emulationResult {
-    case .success(let signRawEmulation):
-      return SignRawConfirmationModel(
-        contentModel: mapSuccessEmulationResult(signRawEmulation: signRawEmulation, wallet: wallet),
-        risk: mapRisk(emulation: signRawEmulation, wallet: wallet)
-      )
-    case .failed:
-      fatalError()
-    }
+  func mapEmulationResult(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel {
+    return SignRawConfirmationModel(
+      contentModel: mapSuccessEmulationResult(signRawEmulation: emulation, wallet: wallet),
+      risk: mapRisk(emulation: emulation, wallet: wallet)
+    )
   }
   
   func mapSuccessEmulationResult(signRawEmulation: SignRawEmulation, wallet: Wallet) -> AccountEventCellContentView.Model {

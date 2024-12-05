@@ -81,7 +81,7 @@ private extension WebSwapCoordinator {
       windowScene: windowScene,
       windowLevel: .signRaw,
       wallet: wallet,
-      signRawRequest: signRequest,
+      transferProvider: { .stonfiSwap(signRequest) },
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in
