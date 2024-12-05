@@ -1,6 +1,5 @@
 import Foundation
 import KeeperCore
-import TKScreenKit
 
 protocol DappViewModel: AnyObject {
   var didOpenApp: ((URL?, String?) -> Void)? { get set }

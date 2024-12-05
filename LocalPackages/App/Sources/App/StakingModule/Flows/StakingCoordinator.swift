@@ -151,15 +151,14 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   func openURL(_ url: URL, title: String?) {
-//    let viewController = TKBridgeWebViewController(
-//      initialURL: url,
-//      initialTitle: nil,
-//      jsInjection: nil,
-//      configuration: .default,
-//      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider(),
-//      webDataStoreProvider: TKBridgeWebDataStore(wallet: wallet)
-//    )
-//    router.present(viewController)
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default,
+      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider()
+    )
+    router.present(viewController)
   }
   
   @MainActor func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {

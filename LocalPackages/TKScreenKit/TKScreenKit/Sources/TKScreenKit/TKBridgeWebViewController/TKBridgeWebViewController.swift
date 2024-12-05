@@ -4,11 +4,6 @@ import SnapKit
 import WebKit
 import TKLocalize
 
-public protocol TKWebDataStoreProvider {
-  func dataStore() -> WKWebsiteDataStore
-  func removeData(host: String)
-}
-
 public protocol TKBridgeWebViewControllerUserAgentProvider {
   func getUserAgent() -> String
 }

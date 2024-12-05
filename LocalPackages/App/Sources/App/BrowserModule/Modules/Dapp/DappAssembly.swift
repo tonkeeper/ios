@@ -1,7 +1,6 @@
 import Foundation
 import TKCore
 import KeeperCore
-import TKScreenKit
 
 struct DappAssembly {
   private init() {}
