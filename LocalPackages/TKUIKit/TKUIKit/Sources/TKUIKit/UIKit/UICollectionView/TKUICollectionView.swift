@@ -16,4 +16,9 @@ public final class TKUICollectionView: UICollectionView {
     guard !(view is UIControl) else { return true }
     return super.touchesShouldCancel(in: view)
   }
+  
+  public override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    super.touchesEnded(touches, with: event)
+    self.endEditing(true)
+  }
 }
