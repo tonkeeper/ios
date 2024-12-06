@@ -293,8 +293,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "915094091eb0d9d6fe0ac64655df5c19f14a53a1",
-        "version" : "1.0.24"
+        "revision" : "cf9e99e0dbdf46e983f502113ef30247bd27f7e2",
+        "version" : "1.0.25"
       }
     },
     {
