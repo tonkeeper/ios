@@ -145,6 +145,7 @@ private extension BatteryRefillCoordinator {
       windowLevel: .signRaw,
       wallet: wallet,
       transferProvider: { try await batteryRechargeSignRawBuilder.getSignRawRequest() },
+      resultHandler: nil,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in

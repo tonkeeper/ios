@@ -46,6 +46,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
       transferProvider: { [nft] in
         .renewDNS(nft: nft)
       },
+      resultHandler: nil,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in

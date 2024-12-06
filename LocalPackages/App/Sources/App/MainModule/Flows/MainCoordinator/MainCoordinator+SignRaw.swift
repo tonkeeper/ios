@@ -5,7 +5,9 @@ import BigInt
 import SignRaw
 
 extension MainCoordinator {
-  func openSignRaw(wallet: Wallet, transferProvider: @escaping () async throws -> Transfer) {
+  func openSignRaw(wallet: Wallet,
+                   transferProvider: @escaping () async throws -> Transfer,
+                   resultHandler: SignRawControllerResultHandler?) {
     guard let windowScene = router.rootViewController.view.window?.windowScene else { return }
   
     SignRawPresenter.presentSignRaw(
@@ -13,6 +15,7 @@ extension MainCoordinator {
       windowLevel: .signRaw,
       wallet: wallet,
       transferProvider:transferProvider,
+      resultHandler: resultHandler,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in
@@ -39,11 +42,11 @@ extension MainCoordinator {
       )
     }
     
-    openSignRaw(wallet: wallet) {
+    openSignRaw(wallet: wallet, transferProvider: {
       .signRaw(
         try await signRaw(), forceRelayer: true
       )
-    }
+    }, resultHandler: nil)
   }
   
   private func createTransferSignRaw(wallet: Wallet,
@@ -97,3 +100,32 @@ extension MainCoordinator {
     }
   }
 }
+
+struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
+  private let app: TonConnectApp
+  private let appRequest: TonConnect.AppRequest
+  private let tonConnectService: TonConnectService
+  
+  init(app: TonConnectApp,
+       appRequest: TonConnect.AppRequest,
+       tonConnectService: TonConnectService) {
+    self.app = app
+    self.appRequest = appRequest
+    self.tonConnectService = tonConnectService
+  }
+  
+  func didConfirm(boc: String) {
+    Task {
+      try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
+    }
+  }
+  
+  func didFail(error: any Error) {}
+  
+  func didCancel() {
+    Task {
+      try await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
+    }
+  }
+}
+

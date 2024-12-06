@@ -8,6 +8,7 @@ struct SignRawConfirmationAssembly {
   private init() {}
   static func module(wallet: Wallet,
                      transferProvider: @escaping () async throws -> Transfer,
+                     resultHandler: SignRawControllerResultHandler?,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<SignRawConfirmationViewController, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput> {
     let viewModel = SignRawConfirmationViewModelImplementation(
@@ -18,7 +19,8 @@ struct SignRawConfirmationAssembly {
         transferService: keeperCoreMainAssembly.transferAssembly.transferService(),
         nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+        resultHandler: resultHandler
       ),
       signRawConfirmationMapper: SignRawConfirmationMapper(
         nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),

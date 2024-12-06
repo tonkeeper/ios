@@ -171,7 +171,13 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       windowScene: windowScene,
       windowLevel: .signRaw,
       wallet: wallet,
-      transferProvider: { .signRaw(request, forceRelayer: false) },
+      transferProvider: {
+        .signRaw(request, forceRelayer: false)
+      },
+      resultHandler: DappSignRawResultHandler(
+        appRequest: appRequest,
+        connectionResponseHandler: completion
+      ),
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in
@@ -205,5 +211,33 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     case .failed(let error):
       throw error
     }
+  }
+}
+
+private struct DappSignRawResultHandler: SignRawControllerResultHandler {
+  private let appRequest: TonConnect.AppRequest
+  private let connectionResponseHandler: (TonConnectAppsStore.SendTransactionResult) -> Void
+  
+  init(appRequest: TonConnect.AppRequest, 
+       connectionResponseHandler: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    self.appRequest = appRequest
+    self.connectionResponseHandler = connectionResponseHandler
+  }
+  
+  func didConfirm(boc: String) {
+    let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
+      .init(result: boc,
+            id: appRequest.id)
+    )
+    guard let response = try? JSONEncoder().encode(sendTransactionResponse) else { return }
+    connectionResponseHandler(.response(response))
+  }
+  
+  func didFail(error: any Error) {
+    connectionResponseHandler(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    connectionResponseHandler(.error(.userDeclinedTransaction))
   }
 }

@@ -43,6 +43,12 @@ public struct SignRawEmulation {
   public let transferType: TransferType
 }
 
+public protocol SignRawControllerResultHandler {
+  func didConfirm(boc: String)
+  func didFail(error: Swift.Error)
+  func didCancel()
+}
+
 public final class SignRawController {
   
   public var signHandler: ((TransferData, Wallet) async throws -> String?)?
@@ -53,23 +59,26 @@ public final class SignRawController {
   private let nftService: NFTService
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
+  private let resultHandler: SignRawControllerResultHandler?
   
   public init(wallet: Wallet,
               transferProvider: @escaping () async throws -> Transfer,
               transferService: TransferService,
               nftService: NFTService,
               tonRatesStore: TonRatesStore,
-              currencyStore: CurrencyStore) {
+              currencyStore: CurrencyStore,
+              resultHandler: SignRawControllerResultHandler?) {
     self.wallet = wallet
     self.transferProvider = transferProvider
     self.transferService = transferService
     self.nftService = nftService
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
+    self.resultHandler = resultHandler
   }
   
   public func sendTransaction(transactionType: TransferType) async throws {
-    try await transferService.sendTransaction(
+    let boc = try await transferService.sendTransaction(
       wallet: wallet,
       transfer: try await transferProvider(),
       transferType: transactionType,
@@ -80,6 +89,11 @@ public final class SignRawController {
         return signed
       }
     )
+    resultHandler?.didConfirm(boc: boc)
+  }
+  
+  public func cancel() {
+    resultHandler?.didCancel()
   }
   
   public func emulate() async throws -> SignRawEmulation {

@@ -54,10 +54,11 @@ public struct TransferService {
     self.configuration = configuration
   }
   
+  @discardableResult
   public func sendTransaction(wallet: Wallet,
                               transfer: Transfer,
                               transferType: TransferType,
-                              signClosure: (TransferData) async throws -> String) async throws {
+                              signClosure: (TransferData) async throws -> String) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -80,6 +81,7 @@ public struct TransferService {
         tonProofToken: tonProofToken
       )
     }
+    return boc
   }
   
   public func emulate(wallet: Wallet,
@@ -375,7 +377,7 @@ public struct TransferService {
     }
 
     let payloads: [TransferData.TonConnect.Payload] = try rebuildedMessages.map {
-      var resultPayload: String?
+      var resultPayload: String? = $0.payload
       if let payload = $0.payload, let excessesAddress {
         var payloadCell = try Cell.fromBase64(src: payload.fixBase64())
         payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)

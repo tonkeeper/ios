@@ -1315,9 +1315,9 @@ private extension MainCoordinator {
                                wallet: Wallet,
                                app: TonConnectApp) {
     guard let signRawRequest = request.params.first else { return }
-    openSignRaw(wallet: wallet) {
+    openSignRaw(wallet: wallet, transferProvider: {
       .signRaw(signRawRequest, forceRelayer: false)
-    }
+    }, resultHandler: BridgeSignRawResultHandler(app: app, appRequest: request, tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()))
   }
 }
 

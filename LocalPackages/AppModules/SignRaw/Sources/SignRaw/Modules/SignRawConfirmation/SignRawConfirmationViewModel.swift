@@ -34,7 +34,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   // MARK: - SignRawConfirmationModuleInput
   
   func cancel() {
-    
+    signRawController.cancel()
   }
   
   // MARK: - SignRawConfirmationViewModel
@@ -298,7 +298,6 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         try await signRawController.sendTransaction(transactionType: state.emulationState.transferType)
         state.confirmationState = .success
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
         didConfirm?()
       } catch {
         state.confirmationState = .failed

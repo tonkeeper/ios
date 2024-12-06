@@ -11,6 +11,7 @@ public final class SignRawPresenter {
                                     windowLevel: UIWindow.Level,
                                     wallet: Wallet,
                                     transferProvider: @escaping () async throws -> Transfer,
+                                    resultHandler: SignRawControllerResultHandler?,
                                     coreAssembly: TKCore.CoreAssembly,
                                     keeperCoreMainAssembly: KeeperCore.MainAssembly,
                                     didRequireSign: ((TransferData, Wallet, Coordinator, ViewControllerRouter) async throws -> String?)?) {
@@ -22,6 +23,7 @@ public final class SignRawPresenter {
       router: router,
       wallet: wallet,
       transferProvider: transferProvider,
+      resultHandler: resultHandler,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
