@@ -549,54 +549,59 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
 
   // MARK: -  TODO: complete on next iteration: flow: .deeplink
-  func handleTonConnectDeeplink(_ parameters: TonConnectParameters) -> Bool {
-    ToastPresenter.hideAll()
-    ToastPresenter.showToast(configuration: .loading)
-    Task {
-      do {
-        let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
-        await MainActor.run {
-          ToastPresenter.hideToast()
-          let coordinator = TonConnectModule(
-            dependencies: TonConnectModule.Dependencies(
-              coreAssembly: coreAssembly,
-              keeperCoreMainAssembly: keeperCoreMainAssembly
+  func handleTonConnectDeeplink(_ payload: TonConnectPayload) -> Bool {
+    switch (payload) {
+    case .empty:
+      return false
+    case .withParameters(let parameters):
+      ToastPresenter.hideAll()
+      ToastPresenter.showToast(configuration: .loading)
+      Task {
+        do {
+          let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
+          await MainActor.run {
+            ToastPresenter.hideToast()
+            let coordinator = TonConnectModule(
+              dependencies: TonConnectModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+              )
+            ).createConnectCoordinator(
+              router: ViewControllerRouter(rootViewController: router.rootViewController),
+              flow: .common,
+              connector: DefaultTonConnectConnectCoordinatorConnector(
+                tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+              ),
+              parameters: parameters,
+              manifest: manifest,
+              showWalletPicker: true
             )
-          ).createConnectCoordinator(
-            router: ViewControllerRouter(rootViewController: router.rootViewController),
-            flow: .common,
-            connector: DefaultTonConnectConnectCoordinatorConnector(
-              tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
-            ),
-            parameters: parameters,
-            manifest: manifest,
-            showWalletPicker: true
-          )
-          
-          coordinator.didCancel = { [weak self, weak coordinator] in
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
+            
+            coordinator.didCancel = { [weak self, weak coordinator] in
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            }
+            
+            coordinator.didConnect = { [weak self, weak coordinator] in
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            }
+            
+            coordinator.didRequestOpeningBrowser = { [weak self] manifest in
+              self?.openDapp(title: manifest.name, url: manifest.url)
+            }
+            
+            addChild(coordinator)
+            coordinator.start()
           }
-          
-          coordinator.didConnect = { [weak self, weak coordinator] in
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
+        } catch {
+          await MainActor.run {
+            ToastPresenter.hideAll()
           }
-
-          coordinator.didRequestOpeningBrowser = { [weak self] manifest in
-            self?.openDapp(title: manifest.name, url: manifest.url)
-          }
-
-          addChild(coordinator)
-          coordinator.start()
-        }
-      } catch {
-        await MainActor.run {
-          ToastPresenter.hideAll()
         }
       }
+      return true
     }
-    return true
   }
 
   func handleSignerDeeplink(_ deeplink: ExternalSignDeeplink) -> Bool {
