@@ -136,12 +136,14 @@ public struct TonkeeperDeeplinkParser {
     url.lastPathComponent
   }
   
-  func parseTonconnect(url: URL) throws -> TonConnectParameters {
+  func parseTonconnect(url: URL) throws -> TonConnectPayload {
     let components = URLComponents(
       url: url,
       resolvingAgainstBaseURL: true
     )
     
+    let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value
+
     guard let versionParameter = components?.queryItems?.first(where: { $0.name == "v" })?.value,
           let version = TonConnectParameters.Version(rawValue: versionParameter),
           let clientId = components?.queryItems?.first(where: { $0.name == "id" })?.value,
@@ -149,16 +151,14 @@ public struct TonkeeperDeeplinkParser {
           let requestPayloadData = requestPayloadValue.data(using: .utf8),
           let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
     else {
-      throw DeeplinkParserError.invalidParameters
+      return .empty
     }
     
-    let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value
-      
-    return TonConnectParameters(
+    return .withParameters(TonConnectParameters(
       version: version,
       clientId: clientId,
       requestPayload: requestPayload,
-      returnStrategy: returnStrategy)
+      returnStrategy: returnStrategy))
   }
   
   func parsePublish(url: URL) throws -> Data {

@@ -17,3 +17,8 @@ public struct TonConnectParameters: Equatable {
     self.returnStrategy = returnStrategy
   }
 }
+
+public enum TonConnectPayload: Equatable {
+  case withParameters(TonConnectParameters)
+  case empty
+}
