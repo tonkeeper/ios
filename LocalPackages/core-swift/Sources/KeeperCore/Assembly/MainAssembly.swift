@@ -241,30 +241,6 @@ public final class MainAssembly {
   public func browserExploreController() -> BrowserExploreController {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
   }
-
-  public func confirmTransactionController(wallet: Wallet,
-                                           bocProvider: ConfirmTransactionControllerBocProvider) -> ConfirmTransactionController {
-    ConfirmTransactionController(
-      wallet: wallet,
-      bocProvider: bocProvider,
-      sendService: servicesAssembly.sendService(),
-      nftService: servicesAssembly.nftService(),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      totalBalanceStore: storesAssembly.totalBalanceStore,
-      confirmTransactionMapper: ConfirmTransactionMapper(
-        nftService: servicesAssembly.nftService(),
-        accountEventMapper: AccountEventMapper(
-          dateFormatter: formattersAssembly.dateFormatter,
-          amountFormatter: formattersAssembly.amountFormatter,
-          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
-        ),
-        amountFormatter: formattersAssembly.amountFormatter,
-        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-        nftManagmentStore: storesAssembly.walletNFTsManagementStore(wallet: wallet)
-      )
-    )
-  }
   
   public func linkDNSController(wallet: Wallet, nft: NFT) -> LinkDNSController {
     LinkDNSController(

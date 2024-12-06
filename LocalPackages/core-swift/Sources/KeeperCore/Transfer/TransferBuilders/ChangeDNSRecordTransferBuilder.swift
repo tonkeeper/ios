@@ -53,3 +53,27 @@ public struct ChangeDNSRecordTransferBuilder {
     )
   }
 }
+
+//let renewData = DNSRenewData(queryId: UInt64(Date().timeIntervalSince1970))
+//let builder = Builder()
+//try renewData.storeTo(builder: builder)
+//let body = try builder.endCell()
+//let messages = [
+//  MessageRelaxed.internal(
+//    to: nftAddress,
+//    value: linkAmount,
+//    bounce: true,
+//    body: body
+//  )
+//]
+//
+//return try WalletTransferBuilder.buildWalletTransfer(
+//  wallet: wallet,
+//  sender: try wallet.address,
+//  seqno: seqno,
+//  internalMessages: { sender in
+//    messages
+//  },
+//  timeout: timeout,
+//  messageType: messageType
+//)

@@ -115,42 +115,46 @@ public struct TransferService {
                                   tonProofToken: String,
                                   transferType: TransferType) async throws -> TransferEmulationResult {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let transferData = try await createTransferData(
-      wallet: wallet,
-      transfer: transfer,
-      seqno: seqno,
-      transferType: transferType
-    )
-    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
-      .createUnsignedWalletTransfer(wallet: wallet)
-    let signed = try TransferSigner.signWalletTransfer(
-      walletTransfer,
-      wallet: wallet,
-      seqno: transferData.seqno,
-      signer: WalletTransferEmptyKeySigner()
-    )
     do {
-      let transactionInfo = try await batteryService.loadTransactionInfo(
+      let transferData = try await createTransferData(
         wallet: wallet,
-        boc: signed.toBoc().base64EncodedString(),
-        tonProofToken: tonProofToken
+        transfer: transfer,
+        seqno: seqno,
+        transferType: transferType
       )
-      if transactionInfo.isBatteryAvailable {
-        return TransferEmulationResult(
-          transactionInfo: transactionInfo.info,
-          transferType: .battery(excessAddress: excessAddress)
+      let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+        .createUnsignedWalletTransfer(wallet: wallet)
+      let signed = try TransferSigner.signWalletTransfer(
+        walletTransfer,
+        wallet: wallet,
+        seqno: transferData.seqno,
+        signer: WalletTransferEmptyKeySigner()
+      )
+      do {
+        let transactionInfo = try await batteryService.loadTransactionInfo(
+          wallet: wallet,
+          boc: signed.toBoc().base64EncodedString(),
+          tonProofToken: tonProofToken
         )
-      } else {
+        if transactionInfo.isBatteryAvailable {
+          return TransferEmulationResult(
+            transactionInfo: transactionInfo.info,
+            transferType: .battery(excessAddress: excessAddress)
+          )
+        } else {
+          return try await defaultEmulate(
+            wallet: wallet,
+            transfer: transfer
+          )
+        }
+      } catch {
         return try await defaultEmulate(
           wallet: wallet,
           transfer: transfer
         )
       }
     } catch {
-      return try await defaultEmulate(
-        wallet: wallet,
-        transfer: transfer
-      )
+      throw error
     }
   }
   
@@ -289,7 +293,7 @@ public struct TransferService {
         seqno: seqno,
         timeout: timeout
       )
-    case .signRaw(let signRawRequest, let forceRelayer):
+    case .signRaw(let signRawRequest, _):
       return TransferData(
         transfer: try await createTransferDataTransfer(
           wallet: wallet,
@@ -297,6 +301,21 @@ public struct TransferService {
           seqno: seqno,
           timout: timeout,
           excessesAddress: transferType.excessAddress
+        ),
+        wallet: wallet,
+        messageType: messageType,
+        seqno: seqno,
+        timeout: timeout
+      )
+    case .renewDNS(let nft):
+      return TransferData(
+        transfer: TransferData.Transfer.changeDNSRecord(
+          .renew(
+            TransferData.ChangeDNSRecord.RenewDNS(
+              nftAddress: nft.address,
+              linkAmount: OP_AMOUNT.CHANGE_DNS_RECORD
+            )
+          )
         ),
         wallet: wallet,
         messageType: messageType,
@@ -358,7 +377,7 @@ public struct TransferService {
     let payloads: [TransferData.TonConnect.Payload] = try rebuildedMessages.map {
       var resultPayload: String?
       if let payload = $0.payload, let excessesAddress {
-        var payloadCell = try Cell.fromBase64(src: payload)
+        var payloadCell = try Cell.fromBase64(src: payload.fixBase64())
         payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)
         resultPayload = try payloadCell.toBoc().base64EncodedString()
       }
@@ -443,6 +462,8 @@ public struct TransferService {
       return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable && isBalanceAvailable
     case .signRaw(_, let isForceRelayer):
       return isForceRelayer
+    case .renewDNS:
+      return false
     }
   }
   

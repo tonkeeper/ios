@@ -132,7 +132,13 @@ extension MainCoordinator {
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
-          self.openSignRaw(wallet: wallet, recipient: recipient, amount: amount, payload: bin, stateInit: stateInit)
+          self.openTransferSignRaw(
+            wallet: wallet,
+            recipient: recipient,
+            amount: amount,
+            payload: bin,
+            stateInit: stateInit
+          )
         }
       } catch {
         await MainActor.run {

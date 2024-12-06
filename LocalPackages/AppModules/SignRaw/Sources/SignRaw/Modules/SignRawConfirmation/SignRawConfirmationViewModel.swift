@@ -64,7 +64,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         switch self {
         case .emulating:
           return .default
-        case .success(let model, let transferType):
+        case .success(_, let transferType):
           return transferType
         case .fail:
           return .default

@@ -28,6 +28,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
+  weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
@@ -372,36 +373,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
-  func openSignRaw(wallet: Wallet, recipient: Recipient, amount: BigUInt, payload: String?, stateInit: String?) {
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-    
-    let navigationController = TKNavigationController()
-    navigationController.setNavigationBarHidden(true, animated: false)
-        
-    let bocBuilder = TransactionConfirmationDeeplinkBocBuilder(wallet: wallet, payload: .init(amount: amount, recipient: recipient, payload: payload, stateInit: stateInit), sendService: keeperCoreMainAssembly.servicesAssembly.sendService(), configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
-    
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
-      wallet: wallet,
-      confirmator: TransactionConfirmationDeeplinkConfirmationCoordinatorConfirmator(
-        bocBuilder: bocBuilder,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: TransactionConfirmationDeeplinkControllerBocProvider(
-          bocBuilder: bocBuilder
-        )
-      ),
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
-    )
-    
-    addChild(coordinator)
-    coordinator.start()
-  }
-  
   func openSwap(wallet: Wallet, token: Token) {
     let fromToken: String?
     let toToken: String?
@@ -493,6 +464,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       openActionDeeplink(eventId: eventId)
       return true
     case .publish(let sign):
+      if let walletTransferSignCoordinator {
+        walletTransferSignCoordinator.externalSignHandler?(sign)
+        walletTransferSignCoordinator.externalSignHandler = nil
+        return true
+      }
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
       }
@@ -1333,27 +1309,10 @@ private extension MainCoordinator {
   func handleTonConnectRequest(_ request: TonConnect.AppRequest,
                                wallet: Wallet,
                                app: TonConnectApp) {
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-    let coordinator = TonConnectModule(
-      dependencies: TonConnectModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).createConfirmationCoordinator(window: window, wallet: wallet, appRequest: request, app: app)
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    guard let signRawRequest = request.params.first else { return }
+    openSignRaw(wallet: wallet) {
+      .signRaw(signRawRequest, forceRelayer: false)
     }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
   }
 }
 

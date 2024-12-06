@@ -8,4 +8,5 @@ public enum Transfer {
   case nft(NFT, transferAmount: BigUInt, recipient: Recipient, comment: String?)
   case stonfiSwap(SignRawRequest)
   case signRaw(SignRawRequest, forceRelayer: Bool)
+  case renewDNS(nft: NFT)
 }

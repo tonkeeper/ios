@@ -30,32 +30,6 @@ struct TonConnectModule {
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
     )
   }
-  
-  func createConfirmationCoordinator(
-    window: UIWindow,
-    wallet: Wallet,
-    appRequest: TonConnect.AppRequest,
-    app: TonConnectApp
-  ) -> SignTransactionConfirmationCoordinator {
-    SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
-      wallet: wallet,
-      confirmator: DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator(
-        app: app,
-        appRequest: appRequest,
-        sendService: dependencies.keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
-      ),
-      confirmTransactionController: dependencies.keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: appRequest.params
-        )
-      ),
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-      coreAssembly: dependencies.coreAssembly
-    )
-  }
 }
 
 extension TonConnectModule {
