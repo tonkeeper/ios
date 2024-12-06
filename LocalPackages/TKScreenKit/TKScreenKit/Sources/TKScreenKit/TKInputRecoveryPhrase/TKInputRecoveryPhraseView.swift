@@ -48,9 +48,9 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   var keyboardHeight: CGFloat = 0 {
     didSet {
       if keyboardHeight.isZero {
-        scrollView.contentInset.bottom = safeAreaInsets.bottom
+        scrollView.contentInset.bottom = safeAreaInsets.bottom + suggestsView.bounds.height
       } else {
-        scrollView.contentInset.bottom = keyboardHeight - safeAreaInsets.bottom
+        scrollView.contentInset.bottom = keyboardHeight - safeAreaInsets.bottom + suggestsView.bounds.height
       }
       pasteButton.snp.remakeConstraints { make in
         make.centerX.equalTo(self)

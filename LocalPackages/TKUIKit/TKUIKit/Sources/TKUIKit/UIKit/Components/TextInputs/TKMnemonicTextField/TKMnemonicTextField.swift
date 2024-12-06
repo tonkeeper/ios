@@ -50,6 +50,8 @@ public final class TKMnemonicTextField: UIControl {
   private lazy var textFieldInputView: TKTextFieldInputView = {
     let textInputControl = TKTextInputTextFieldControl()
     textInputControl.delegate = self
+    textInputControl.autocorrectionType = .no
+    textInputControl.keyboardType = .asciiCapable
     let textFieldInputView = TKTextFieldInputView(textInputControl: textInputControl)
     return textFieldInputView
   }()
