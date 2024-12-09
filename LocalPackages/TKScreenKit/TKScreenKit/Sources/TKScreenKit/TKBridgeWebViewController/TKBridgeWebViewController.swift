@@ -339,8 +339,9 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
   }
   
   public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+    let externalOpenHosts = ["t.me"]
     if let url = navigationAction.request.url {
-      if let host = url.host,host.contains("t.me") {
+      if let host = url.host, externalOpenHosts.contains(host) {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
         return .cancel
       }

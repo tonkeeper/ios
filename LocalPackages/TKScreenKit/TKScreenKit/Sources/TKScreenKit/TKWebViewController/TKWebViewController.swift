@@ -12,7 +12,12 @@ public protocol TKWebViewControllerNavigationHandler {
 }
 
 public final class TKWebViewController: UIViewController {
-  private let webView = WKWebView()
+  private lazy var webView: WKWebView = {
+    let configuration = WKWebViewConfiguration()
+    configuration.allowsInlineMediaPlayback = true
+    let webView = WKWebView(frame: .zero, configuration: configuration)
+    return webView
+  }()
   
   private let url: URL
   private let handler: TKWebViewControllerNavigationHandler
