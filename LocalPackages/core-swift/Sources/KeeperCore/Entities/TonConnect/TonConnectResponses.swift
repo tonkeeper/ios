@@ -225,6 +225,22 @@ public extension TonConnect {
       self.id = id
     }
   }
+  
+  struct FetchEventError: Encodable {
+    public let code: ErrorCode
+    public let message: String
+    
+    public init(code: ErrorCode, message: String) {
+      self.code = code
+      self.message = message
+    }
+    
+    public enum ErrorCode: Int, Encodable {
+      case unknownError = 0
+    }
+    
+  }
+
   struct SendTransactionResponseError: Encodable {
     public struct Error: Encodable {
       public let code: ErrorCode

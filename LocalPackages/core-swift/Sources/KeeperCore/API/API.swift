@@ -4,6 +4,11 @@ import TonSwift
 import BigInt
 import OpenAPIRuntime
 
+public enum FetchError: Error {
+  case wrongHost
+  case unsupportedScheme
+}
+
 protocol APIHostProvider {
   var basePath: String { get async }
 }
@@ -88,6 +93,52 @@ public struct API {
         throw error
       }
     }
+  }
+}
+
+// MARK: - For Dapp bridge
+
+extension API {
+  func tonapiFetch(url: String, options: [String: Any]?) async throws -> (Data, URLResponse) {
+    let uri = URL(string: url)
+    if uri?.scheme != "https" {
+      throw FetchError.unsupportedScheme
+    }
+    let host = uri?.host
+    if host != "tonapi.io" && host?.hasSuffix(".tonapi.io") == false {
+      throw FetchError.wrongHost
+    }
+    
+    var builder = URLRequest(url: uri!)
+  
+    let methodOptions = options?["method"] as? String ?? "GET"
+    let headersOptions = options?["headers"] as? [String: String] ?? [:]
+    let bodyOptions = options?["body"] as? String ?? ""
+    var contentTypeOptions = "application/json"
+    
+    for (key, value) in headersOptions {
+      if key == "Authorization" {
+        builder.setValue(value, forHTTPHeaderField: "X-Authorization")
+      } else if key == "Content-Type" {
+        contentTypeOptions = value
+      } else {
+        builder.setValue(value, forHTTPHeaderField: key)
+      }
+    }
+    
+    let apiKey = await configuration.tonApiV2Key
+    builder.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+    
+    if methodOptions == "POST" {
+      builder.httpBody = bodyOptions.data(using: .utf8)
+      builder.setValue(contentTypeOptions, forHTTPHeaderField: "Content-Type")
+      builder.httpMethod = "POST"
+    }
+    
+    let data = try await urlSession.data(for: builder)
+    
+    return data
   }
 }
 
