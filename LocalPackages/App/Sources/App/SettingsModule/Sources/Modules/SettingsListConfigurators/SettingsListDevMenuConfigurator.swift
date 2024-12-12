@@ -1,4 +1,5 @@
 import UIKit
+import WebKit
 import TKUIKit
 import Stories
 import KeeperCore
@@ -67,7 +68,8 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
   
   private func createSwapSection() -> SettingsListSection {
     let items = [
-      createSwapURLItem()
+      createSwapURLItem(),
+      clearCookiesItem()
     ]
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
@@ -150,10 +152,40 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func clearCookiesItem() -> SettingsListItem {
+
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Clear cookies"
+          )
+        )
+      )
+    )
+    return SettingsListItem(
+      id: .clearCookiesItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .none,
+      onSelection: { _ in
+        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
+        print("[WebCacheCleaner] All cookies deleted")
+        
+        WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+          records.forEach { record in
+            WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
+            print("[WebCacheCleaner] Record \(record) deleted")
+          }
+        }
+      }
+    )
+  }
 }
 
 private extension String {
   static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
   static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
   static let swapURLItemIdentifier = "swapURLItemIdentifier"
+  static let clearCookiesItemIdentifier = "swapURLItemIdentifier"
 }
