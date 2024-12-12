@@ -402,11 +402,15 @@ public struct TransferService {
   }
   
   private func rebuildPayloadWithExcessesAddress(payload: Cell, _ excessesAddress: Address) throws -> Cell {
+    
     let payloadSlice = try payload.toSlice()
-    let opcode = Int32(try payloadSlice.loadUint(bits: 32))
+    guard let opcode = try? payloadSlice.loadUint(bits: 32),
+          opcode <= Int32.max else {
+      return payload
+    }
     let builder = Builder()
   
-    switch opcode {
+    switch Int32(opcode) {
     case OpCodes.STONFI_SWAP:
       try builder.store(uint: OpCodes.STONFI_SWAP, bits: 32)
       try builder.store(payloadSlice.loadType() as Address)
