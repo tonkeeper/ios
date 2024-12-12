@@ -29,3 +29,5 @@ APTABASE_ENDPOINT = https:/$()/anonymous-analytics.tonkeeper.com
 
 TERMS_OF_SERVICE_URL = https:/$()/tonkeeper.com/terms
 PRIVACY_POLICY_URL = https:/$()/tonkeeper.com/privacy
+
+TONKEEPER_SWAP_URL = https:/$()/swap-widget.tonkeeper.com

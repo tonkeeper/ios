@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKFeatureFlags
 
 protocol StonfiSwapViewModel: AnyObject {
   var didOpen: ((URL?, String?) -> Void)? { get set }
@@ -17,12 +18,8 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   var injectHandler: ((String) -> Void)?
   
   func viewDidLoad() {
-    Task {
-      guard let url = await buildURL() else { return }
-      await MainActor.run {
-        didOpen?(url, nil)
-      }
-    }
+    guard let url = buildURL() else { return }
+    didOpen?(url, nil)
   }
   
   func didLoadInitialRequest() {
@@ -88,12 +85,12 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
     self.toToken = toToken
   }
   
-  private func buildURL() async -> URL? {
-    guard let stonfiUrl = configuration.stonfiUrl else {
+  private func buildURL() -> URL? {
+    guard let swapUrl = getSwapURL() else {
       return nil
     }
     
-    var urlComponents = URLComponents(url: stonfiUrl, resolvingAgainstBaseURL: false)
+    var urlComponents = URLComponents(url: swapUrl, resolvingAgainstBaseURL: false)
     urlComponents?.queryItems = {
       var items = [URLQueryItem]()
       if let fromToken {
@@ -107,6 +104,14 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
     }()
     
     return urlComponents?.url
+  }
+  
+  private func getSwapURL() -> URL? {
+    if TKFeatureFlags.localProvider.isTonkeeperSwapOn {
+      return InfoProvider.tonkeeperSwapURL()
+    } else {
+      return configuration.stonfiUrl
+    }
   }
   
   private func sendResponse(_ response: StonfiSwapBridgeResponse) {

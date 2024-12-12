@@ -20,6 +20,7 @@ public struct InfoProvider {
     case platform = "PLATFORM"
     case termsOfServiceURL = "TermsOfServiceURL"
     case privacyPolicyURL = "PrivacyPolicyURL"
+    case tonkeeperSwapURL = "TonkeeperSwapURL"
   }
   
   static func value<T>(key: Keys) -> T? {
@@ -69,6 +70,11 @@ public struct InfoProvider {
   
   public static func privacyPolicyURL() -> URL? {
     guard let value: String = self.value(key: .privacyPolicyURL) else { return nil }
+    return URL(string: value)
+  }
+  
+  public static func tonkeeperSwapURL() -> URL? {
+    guard let value: String = self.value(key: .tonkeeperSwapURL) else { return nil }
     return URL(string: value)
   }
 }
