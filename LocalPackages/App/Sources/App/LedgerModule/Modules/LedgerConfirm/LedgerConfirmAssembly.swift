@@ -10,7 +10,21 @@ struct LedgerConfirmAssembly {
                      ledgerDevice: Wallet.LedgerDevice,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerConfirmViewController, LedgerConfirmModuleOutput, Void> {
     let viewModel = LedgerConfirmViewModelImplementation(
-      transaction: transaction,
+      confirmItem: .transaction(transaction),
+      wallet: wallet,
+      ledgerDevice: ledgerDevice,
+      bleTransport: coreAssembly.ledgerAssembly.bleTransport
+    )
+    let viewController = LedgerConfirmViewController(viewModel: viewModel)
+    return .init(view: viewController, output: viewModel, input: Void())
+  }
+  
+  static func module(signatureData: TonConnect.SignatureData,
+                     wallet: Wallet,
+                     ledgerDevice: Wallet.LedgerDevice,
+                     coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerConfirmViewController, LedgerConfirmModuleOutput, Void> {
+    let viewModel = LedgerConfirmViewModelImplementation(
+      confirmItem: .signatureData(signatureData),
       wallet: wallet,
       ledgerDevice: ledgerDevice,
       bleTransport: coreAssembly.ledgerAssembly.bleTransport

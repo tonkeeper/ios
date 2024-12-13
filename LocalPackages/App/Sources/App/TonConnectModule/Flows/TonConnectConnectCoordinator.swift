@@ -4,25 +4,32 @@ import TKCoordinator
 import TKUIKit
 import TKScreenKit
 import TKCore
+import TonSwift
+import URKit
+
+enum ConnectError: Error {
+  case unknown
+  case noPasscode
+}
 
 @MainActor
 public protocol TonConnectConnectCoordinatorConnector {
   func connect(wallet: Wallet,
-               passcode: String,
                parameters: TonConnectParameters,
-               manifest: TonConnectManifest) async throws
+               manifest: TonConnectManifest,
+               signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws
 }
 
 @MainActor
 public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   
-  public func connect(wallet: Wallet, passcode: String, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
+  public func connect(wallet: Wallet, parameters: TonConnectParameters, manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws {
     try await tonConnectAppsStore.connect(
       wallet: wallet,
-      passcode: passcode,
       parameters: parameters,
-      manifest: manifest
+      manifest: manifest,
+      signTonProofHandler: signTonProofHandler
     )
   }
   
@@ -41,12 +48,12 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  public func connect(wallet: Wallet, passcode: String, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
+  public func connect(wallet: Wallet, parameters: TonConnectParameters, manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws {
     let response = await tonConnectAppsStore.connectBridgeDapp(
       wallet: wallet,
-      passcode: passcode,
       parameters: parameters,
-      manifest: manifest
+      manifest: manifest,
+      signTonProofHandler: signTonProofHandler
     )
     connectionResponseHandler(response)
   }
@@ -164,22 +171,144 @@ private extension TonConnectConnectCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func connect(
-    parameters: TonConnectConnectParameters,
-    fromViewController: UIViewController
-  ) async -> Bool {
+  func handleKeystoneSign(fromViewController: UIViewController,
+                          signatureData: TonConnect.SignatureData,
+                          wallet: Wallet,
+                          publicKey: TonSwift.PublicKey,
+                          path: String?,
+                          xfp: String?,
+                          revision: WalletContractVersion,
+                          network: Network) async throws -> Data {
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        
+        do {
+          var cryptoKeypath: CryptoKeyPath? = nil
+          if let xfp = xfp {
+            if let path = path {
+              cryptoKeypath = CryptoKeyPath(components: try CryptoPath.init(string: path), sourceFingerprint: UInt64(xfp), depth: nil)
+            }
+          }
+          
+          let tonSignRequest = try TonSignRequest(requestId: nil, signData: signatureData.data(), dataType: 2, cryptoKeypath: cryptoKeypath, address: wallet.address.toFriendly(bounceable: false).toString(), origin: "Tonkeeper")
+          
+          let ur = try UR.init(type: "ton-sign-request", cbor: try tonSignRequest.toCBOR())
+          
+          let module = KeystoneSignAssembly.module(
+            transaction: ur,
+            wallet: wallet,
+            assembly: self.keeperCoreMainAssembly,
+            coreAssembly: self.coreAssembly
+          )
+          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+          
+          bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+            guard isInteractivly else { return }
+            bottomSheetViewController?.dismiss(completion: {
+              continuation.resume(throwing: ConnectError.unknown)
+            })
+          }
+          
+          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] ur in
+            bottomSheetViewController?.dismiss {
+              guard let signature = try? TonSignature(cbor: ur.cbor).signature else { return }
+              continuation.resume(returning: signature)
+            }
+          }
+          
+          bottomSheetViewController.present(fromViewController: fromViewController)
+        } catch {
+          continuation.resume(throwing: ConnectError.unknown)
+        }
+      }
+    }
+  }
+  
+  func handleLedgerProof(fromViewController: UIViewController, signatureData: TonConnect.SignatureData, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) async throws -> Data {
+    try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        let module = LedgerConfirmAssembly.module(signatureData: signatureData,
+                                                  wallet: wallet,
+                                                  ledgerDevice: ledgerDevice,
+                                                  coreAssembly: self.coreAssembly)
+        
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+        
+        bottomSheetViewController.didClose = { isInteractivly in
+          guard !isInteractivly else {
+            continuation.resume(throwing: ConnectError.unknown)
+            return
+          }
+        }
+        
+        module.output.didCancel = { [weak bottomSheetViewController] in
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(throwing: ConnectError.unknown)
+          })
+        }
+        
+        module.output.didSign = { [weak bottomSheetViewController] signature in
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(returning: signature)
+          })
+        }
+        
+        module.output.didError = { [weak bottomSheetViewController] error in
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(throwing: ConnectError.unknown)
+          })
+        }
+        
+        bottomSheetViewController.present(fromViewController: fromViewController)
+      }
+    }
+  }
+  
+  func handleCommonProof(signatureData: TonConnect.SignatureData, fromViewController: UIViewController, wallet: Wallet) async throws -> Data {
     guard let passcode = await PasscodeInputCoordinator.getPasscode(
       parentCoordinator: self,
       parentRouter: ViewControllerRouter(rootViewController: fromViewController),
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
-    ) else { return false }
+    ) else { throw ConnectError.noPasscode }
+    
+    let mnemonic = try await keeperCoreMainAssembly.secureAssembly.mnemonicsRepository().getMnemonic(wallet: wallet, password: passcode)
+    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    let privateKey = keyPair.privateKey
+    
+    let signature: TonConnect.Signature = .init(signatureData: signatureData, privateKey: privateKey)
+    return try signature.signature()
+  }
+  
+  func connect(
+    parameters: TonConnectConnectParameters,
+    fromViewController: UIViewController
+  ) async -> Bool {
+    let signTonProofHandler: (String) async throws -> TonConnect.ConnectItemReply = { [weak self, unowned fromViewController] payload in
+      guard let self = self else { throw ConnectError.unknown }
+      
+      let wallet = parameters.wallet
+      let address = try wallet.address
+      let timestamp = UInt64(Date().timeIntervalSince1970)
+      
+      let signatureData: TonConnect.SignatureData = .init(address: address, domain: .init(domain: parameters.manifest.host), timestamp: timestamp, payload: payload)
+      
+      switch (wallet.identity.kind) {
+      case .Ledger(_, _, let ledgerDevice):
+        return await .tonProofSigned(.success(.init(data: signatureData, signature: try self.handleLedgerProof(fromViewController: fromViewController, signatureData: signatureData, wallet: wallet, ledgerDevice: ledgerDevice))))
+      case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
+        return await .tonProofSigned(.success(.init(data: signatureData, signature: try self.handleKeystoneSign(fromViewController: fromViewController, signatureData: signatureData, wallet: wallet, publicKey: publicKey, path: path, xfp: xfp, revision: walletContractVersion, network: wallet.identity.network))))
+      default:
+        return await .tonProofSigned(.success(.init(data: signatureData, signature: try self.handleCommonProof(signatureData: signatureData, fromViewController: fromViewController, wallet: wallet))))
+      }
+    }
+    
     do {
       try await connector.connect(
         wallet: parameters.wallet,
-        passcode: passcode,
         parameters: parameters.parameters,
-        manifest: parameters.manifest
+        manifest: parameters.manifest,
+        signTonProofHandler: signTonProofHandler
       )
       return true
     } catch {

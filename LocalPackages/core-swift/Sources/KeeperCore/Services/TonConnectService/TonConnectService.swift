@@ -14,9 +14,8 @@ public protocol TonConnectService {
   func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest)
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
-    passcode: String,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest) async throws -> TonConnect.ConnectEventSuccess
+    manifest: TonConnectManifest, signTonProofHandler:  @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws -> TonConnect.ConnectEventSuccess
   func encryptSuccessResponse(
     _ successResponse: TonConnect.ConnectEventSuccess,
     parameters: TonConnectParameters,
@@ -110,24 +109,20 @@ final class TonConnectServiceImplementation: TonConnectService {
   
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
-    passcode: String,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest) async throws -> TonConnect.ConnectEventSuccess {
+    manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws -> TonConnect.ConnectEventSuccess {
       guard wallet.isTonconnectAvailable else {
         throw
           TonConnectServiceError.unsupportedWalletKind(
             walletKind: wallet.identity.kind
           )
       }
-      let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-      let successResponse = try TonConnectResponseBuilder
+      let successResponse = try await TonConnectResponseBuilder
           .buildConnectEventSuccesResponse(
               requestPayloadItems: parameters.requestPayload.items,
               wallet: wallet,
-              walletPrivateKey: privateKey,
-              manifest: manifest
+              manifest: manifest,
+              signTonProof: signTonProofHandler
           )
       return successResponse
   }
