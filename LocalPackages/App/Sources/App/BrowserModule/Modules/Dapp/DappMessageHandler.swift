@@ -14,6 +14,15 @@ enum DappMessageHandlerResult {
     }
   }
   
+  init(_ result: TonConnectAppsStore.FetchResult) {
+    switch result {
+    case .response(let data):
+      self = .success(data)
+    case .error(let error):
+      self = .failed(error.rawValue)
+    }
+  }
+  
   init(_ result: TonConnectAppsStore.SendTransactionResult) {
     switch result {
     case .response(let data):
@@ -34,6 +43,7 @@ final class DefaultDappMessageHandler: DappMessageHandler {
   var reconnect: ((Dapp, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
   var disconnect: ((Dapp) -> Void)?
   var send: ((Dapp, TonConnect.AppRequest, @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) -> Void)?
+  var fetch: ((String, [String: Any]?, @escaping (TonConnectAppsStore.FetchResult) -> Void) -> Void)?
   
   func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
     switch message.type {
@@ -57,6 +67,18 @@ final class DefaultDappMessageHandler: DappMessageHandler {
         completion(DappMessageHandlerResult(result))
       }
       reconnect?(dapp, reconnectCompletion)
+    case .tonapiFetch:
+      guard message.args.count >= 1,
+            let url = message.args[0] as? String,
+            let params = message.args[1] as? [String: Any]?
+      else {
+        completion(.failed(TonConnect.FetchEventError.ErrorCode.unknownError.rawValue))
+        return
+      }
+      let fetchCompletion: ((TonConnectAppsStore.FetchResult) -> Void) = { result in
+        completion(DappMessageHandlerResult(result))
+      }
+      fetch?(url, params, fetchCompletion)
     case .send:
       guard !message.args.isEmpty,
             let data = try? JSONSerialization.data(withJSONObject: message.args[0]),

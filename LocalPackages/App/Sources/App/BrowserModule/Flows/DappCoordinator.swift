@@ -50,6 +50,23 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         fromViewController: moduleView,
         completion: completion)
     }
+    
+    messageHandler.fetch = { [weak self] url, params, completion in
+      guard let self else {
+        completion(.error(.unknownError))
+        return
+      }
+      Task {
+        do {
+          let data = try await self.keeperCoreMainAssembly.servicesAssembly.dappFetchService().fetch(url, params: params)
+          completion(.response(data))
+          
+        } catch {
+          completion(.error(.unknownError))
+          print(error)
+        }
+      }
+    }
 
     messageHandler.reconnect = {
       [weak self] dapp,

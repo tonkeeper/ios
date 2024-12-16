@@ -120,6 +120,27 @@ final class DappViewModelImplementation: DappViewModel {
     infoString = String(describing: infoString).replacingOccurrences(of: "\\", with: "")
     return """
             (() => {
+                            if (!window.tonapi) {
+                              window.tonapi = {
+                                fetch: async (url, options) => {
+                                  return new Promise((resolve, reject) => {
+                                    window.invokeRnFunc('tonapi.fetch', [url, options], (result) => {
+                                      try {
+                                        const headers = new Headers(result.headers);
+                                        const response = new Response(result.body, {
+                                          status: result.status,
+                                          statusText: result.statusText,
+                                          headers: headers
+                                        });
+                                        resolve(response);
+                                      } catch (e) {
+                                        reject(e);
+                                      }
+                                    }, reject)
+                                  });
+                                }
+                              };
+                            }
                             if (!window.\(String.windowKey)) {
                                 window.rnPromises = {};
                                 window.rnEventListeners = [];
@@ -239,6 +260,7 @@ enum DappBridgeFunctionType: String, Codable {
   case connect
   case restoreConnection
   case disconnect
+  case tonapiFetch = "tonapi.fetch"
 }
 
 private extension String {

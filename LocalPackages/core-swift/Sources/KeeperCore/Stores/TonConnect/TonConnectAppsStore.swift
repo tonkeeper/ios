@@ -11,6 +11,11 @@ public protocol TonConnectAppsStoreObserver: AnyObject {
 
 public final class TonConnectAppsStore {
   
+  public enum FetchResult {
+    case response(Data)
+    case error(TonConnect.FetchEventError.ErrorCode)
+  }
+  
   public enum ConnectResult {
     case response(Data)
     case error(TonConnect.ConnectEventError.Error)
