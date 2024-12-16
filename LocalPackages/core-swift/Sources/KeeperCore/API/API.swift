@@ -366,7 +366,7 @@ extension API {
       name: response.metadata.name,
       symbol: response.metadata.symbol,
       verification: verification,
-      imageURL: URL(string: response.metadata.image ?? "")
+      imageURL: URL(string: response.preview)
     )
   }
 }
@@ -635,7 +635,7 @@ extension API {
 extension API {
   func getStatus() async throws -> Int {
     let request = try await createRequest {
-      return BlockchainAPI.statusWithRequestBuilder()
+      return UtilitiesAPI.statusWithRequestBuilder()
     }
     let response = try await performRequest(request: request).body
     return response.indexingLatency
