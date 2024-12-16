@@ -81,19 +81,14 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
-  enum ConfirmItem {
-    case transaction(Transaction)
-    case signatureData(TonConnect.SignatureData)
-  }
-  
-  private let confirmItem: ConfirmItem
+  private let confirmItem: LedgedConfirmConfirmItem
   private let wallet: Wallet
   private let ledgerDevice: Wallet.LedgerDevice
   private let bleTransport: BleTransportProtocol
   
   // MARK: - Init
   
-  init(confirmItem: ConfirmItem,
+  init(confirmItem: LedgedConfirmConfirmItem,
        wallet: Wallet,
        ledgerDevice: Wallet.LedgerDevice,
        bleTransport: BleTransportProtocol) {
@@ -220,32 +215,32 @@ private extension LedgerConfirmViewModelImplementation {
   
   func sign(tonTransport: TonTransport) {
     let accountPath = AccountPath(index: ledgerDevice.accountIndex)
-    Task {
+    Task { @MainActor in
       do {
         switch confirmItem {
         case .transaction(let transaction):
-          let signature = try await tonTransport.signTransaction(path: accountPath, transaction: transaction)
-          await MainActor.run {
-            self.setConfirmed()
-            self.didSign?(signature)
-          }
+          let signature = try await tonTransport.signTransaction(
+            path: accountPath,
+            transaction: transaction)
+          self.setConfirmed()
+          self.didSign?(signature)
         case .signatureData(let signatureData):
-          let signed = try await tonTransport.signAddressProof(path: accountPath, domain: signatureData.domain.value, timestamp: signatureData.timestamp, payload: signatureData.payload)
-          await MainActor.run {
-            self.setConfirmed()
-            self.didSign?(signed)
-          }
+          let signed = try await tonTransport.signAddressProof(
+            path: accountPath,
+            domain: signatureData.domain.value,
+            timestamp: signatureData.timestamp,
+            payload: signatureData.payload)
+          self.setConfirmed()
+          self.didSign?(signed)
         }
-        
       } catch {
-        await MainActor.run {
-          if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
-            // nothing
-          } else {
-            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
-          }
-          
+        defer {
           self.didCancel?()
+        }
+        if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
+          return
+        } else {
+          self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
         }
       }
     }
@@ -365,7 +360,8 @@ private extension LedgerConfirmViewModelImplementation {
       switch self.confirmItem {
       case .transaction(_):
         return TKLocales.LedgerConfirm.Steps.Confirm.description
-      case .signatureData(_): return TKLocales.LedgerConfirm.Steps.ConfirmProof.description
+      case .signatureData(_): 
+        return TKLocales.LedgerConfirm.Steps.ConfirmProof.description
       }
     }()
     

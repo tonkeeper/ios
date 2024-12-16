@@ -5,26 +5,12 @@ import TonTransport
 
 struct LedgerConfirmAssembly {
   private init() {}
-  static func module(transaction: Transaction, 
+  static func module(confirmItem: LedgedConfirmConfirmItem,
                      wallet: Wallet,
                      ledgerDevice: Wallet.LedgerDevice,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerConfirmViewController, LedgerConfirmModuleOutput, Void> {
     let viewModel = LedgerConfirmViewModelImplementation(
-      confirmItem: .transaction(transaction),
-      wallet: wallet,
-      ledgerDevice: ledgerDevice,
-      bleTransport: coreAssembly.ledgerAssembly.bleTransport
-    )
-    let viewController = LedgerConfirmViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: Void())
-  }
-  
-  static func module(signatureData: TonConnect.SignatureData,
-                     wallet: Wallet,
-                     ledgerDevice: Wallet.LedgerDevice,
-                     coreAssembly: TKCore.CoreAssembly) -> MVVMModule<LedgerConfirmViewController, LedgerConfirmModuleOutput, Void> {
-    let viewModel = LedgerConfirmViewModelImplementation(
-      confirmItem: .signatureData(signatureData),
+      confirmItem: confirmItem,
       wallet: wallet,
       ledgerDevice: ledgerDevice,
       bleTransport: coreAssembly.ledgerAssembly.bleTransport
