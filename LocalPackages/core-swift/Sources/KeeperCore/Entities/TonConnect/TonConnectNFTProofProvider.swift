@@ -38,7 +38,7 @@ public struct TonConnectNFTProofProvider {
 
     let proof = item.proof
     let signature = proof.signature
-    let timestamp = signature.timestamp
+    let timestamp = signature.signatureData.timestamp
 
     let builder = Builder()
     try wallet.stateInit.storeTo(builder: builder)
@@ -53,7 +53,7 @@ public struct TonConnectNFTProofProvider {
     queryItems.append(URLQueryItem(name: "timestamp", value: "\(timestamp)"))
     queryItems.append(URLQueryItem(name: "domain", value: "\(item.proof.domain.value)"))
     queryItems.append(URLQueryItem(name: "stateInit", value: stateInit))
-    queryItems.append(URLQueryItem(name: "signature", value: "\(signature.data().hexString())"))
+    queryItems.append(URLQueryItem(name: "signature", value: "\(signature.signatureData.data().hexString())"))
     urlComponents?.queryItems = queryItems
     return urlComponents?.url
   }

@@ -71,10 +71,12 @@ final class TonProofTokenServiceImplementation: TonProofTokenService {
       timestamp: timestamp,
       domain: domain,
       signature: TonConnect.Signature(
-        address: try wallet.address,
-        domain: domain,
-        timestamp: timestamp,
-        payload: payload,
+        signatureData: .init(
+          address: try wallet.address,
+          domain: domain,
+          timestamp: timestamp,
+          payload: payload
+        ),
         privateKey: privateKey
       ),
       payload: payload
