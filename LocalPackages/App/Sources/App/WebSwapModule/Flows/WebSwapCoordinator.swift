@@ -82,7 +82,7 @@ private extension WebSwapCoordinator {
       windowLevel: .signRaw,
       wallet: wallet,
       transferProvider: { .stonfiSwap(signRequest) },
-      resultHandler: nil,
+      resultHandler: ResultHandler(completion: completion),
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       didRequireSign: { [weak self] transferData, wallet, coordinator, router in
@@ -118,5 +118,26 @@ private extension WebSwapCoordinator {
     case .failed(let error):
       throw error
     }
+  }
+}
+
+private struct ResultHandler: SignRawControllerResultHandler {
+  
+  private let completion: (SendTransactionSignResult) -> Void
+  
+  init(completion: @escaping (SendTransactionSignResult) -> Void) {
+    self.completion = completion
+  }
+  
+  func didConfirm(boc: String) {
+    completion(.response(boc))
+  }
+  
+  func didFail(error: any Error) {
+    completion(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    completion(.error(.userDeclinedTransaction))
   }
 }
