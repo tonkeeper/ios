@@ -12,7 +12,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     do {
       let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount, recipient: recipient, comment: comment)
+        transfer: .jetton(jettonItem, transferAmount: BigUInt(1000000000), amount: amount, recipient: recipient, comment: comment),
+        params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))]
       )
       self.emulationResult = result
       updateFee(emulationResult: emulationResult)
@@ -26,9 +27,21 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
     do {
+      let transferAmount: BigUInt = {
+        guard let emulationResult else {
+          return BigUInt(100000000)
+        }
+        let emulationExtra = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
+        let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
+        var transferAmount = emulationExtra + minimumTransferAmount
+        transferAmount = transferAmount < minimumTransferAmount
+        ? minimumTransferAmount
+        : transferAmount
+        return transferAmount
+      }()
       try await transferService.sendTransaction(
         wallet: wallet,
-        transfer: .jetton(jettonItem, amount: amount, recipient: recipient, comment: comment),
+        transfer: .jetton(jettonItem, transferAmount: transferAmount, amount: amount, recipient: recipient, comment: comment),
         transferType: emulationResult?.transferType ?? .default,
         signClosure: { [weak self, wallet] transferData in
           guard let signed = try? await self?.signHandler?(transferData, wallet) else {

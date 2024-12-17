@@ -13,7 +13,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       
       let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .nft(nft, transferAmount: BigUInt(1000000000), recipient: recipient, comment: comment)
+        transfer: .nft(nft, transferAmount: BigUInt(1000000000), recipient: recipient, comment: comment),
+        params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))]
       )
       self.emulationResult = result
       updateFee(emulationResult: emulationResult)
@@ -29,10 +30,10 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     do {
       let transferAmount: BigUInt = {
         guard let emulationResult else {
-          return BigUInt(1000000000)
+          return BigUInt(100000000)
         }
         let emulationExtra = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
-        let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
+        let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
         var transferAmount = emulationExtra + minimumTransferAmount
         transferAmount = transferAmount < minimumTransferAmount
         ? minimumTransferAmount

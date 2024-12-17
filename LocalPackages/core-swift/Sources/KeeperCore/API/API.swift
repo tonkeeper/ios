@@ -270,10 +270,10 @@ extension API {
     return response.seqno
   }
   
-  func emulateMessageWallet(boc: String) async throws -> MessageConsequences {
+  func emulateMessageWallet(boc: String, params: [EmulateMessageToWalletRequestParamsInner]?) async throws -> MessageConsequences {
     let request = try await createRequest {
       return EmulationAPI.emulateMessageToWalletWithRequestBuilder(
-        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc)
+        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc, params: params)
       )
     }
     

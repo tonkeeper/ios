@@ -38,6 +38,7 @@ public struct UnsignedTransferBuilder {
       )
     case .jetton(let jetton):
       return try JettonTransferBuilder.createWalletTransfer(
+        transferAmount: jetton.transferAmount,
         wallet: wallet,
         seqno: transferData.seqno,
         tokenAddress: jetton.jettonAddress,
