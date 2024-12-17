@@ -312,6 +312,8 @@
 
 "import_wallet.title" = "Введите секретный ключ";
 "import_wallet.description" = "Чтобы восстановить доступ, введите 12 или 24 секретных слова, которые вы получили при создании кошелька.";
+"import_wallet.set_12_words" = "12 слов";
+"import_wallet.set_24_words" = "24 слова";
 
 "choose_wallets.title" = "Выберите кошельки";
 "choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";

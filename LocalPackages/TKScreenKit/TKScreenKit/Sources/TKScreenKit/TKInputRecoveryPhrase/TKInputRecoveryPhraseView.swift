@@ -55,16 +55,7 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   
   let continueButton = TKButton()
   
-  private let set24WordsButton: TKButton = {
-    var configuration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .small)
-    let button = TKButton(configuration: configuration)
-    return button
-  }()
-  private let set12WordsButton: TKButton = {
-    var configuration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .small)
-    let button = TKButton(configuration: configuration)
-    return button
-  }()
+  private let wordsNumSegmentedControl = TKInputRecoveryPhraseWordsNumSegmentedControl()
   
   let suggestsView = TKInputRecoveryPhraseSuggestsView()
   let pasteButton = TKButton()
@@ -140,20 +131,11 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   public func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
     
-    set12WordsButton.configuration = .actionButtonConfiguration(category: model.switchWordsCountButtonsModel.selected == 12 ? .secondary : .tertiary, size: .small)
-
-    set24WordsButton.configuration = .actionButtonConfiguration(category: model.switchWordsCountButtonsModel.selected == 24 ? .secondary : .tertiary, size: .small)
-
+    wordsNumSegmentedControl.configure(model: .init(tabs: [model.switchWordsCountButtonsModel.set24WordsButtonTitle, model.switchWordsCountButtonsModel.set12WordsButtonTitle]))
     
-    set12WordsButton.configuration.content = .init(title: .plainString(model.switchWordsCountButtonsModel.set12WordsButtonTitle))
-    set24WordsButton.configuration.content = .init(title: .plainString(model.switchWordsCountButtonsModel.set24WordsButtonTitle))
-    
-    set12WordsButton.configuration.action = {
-      model.switchWordsCountButtonsModel.didUpdateWordsCount(12)
-    }
-    
-    set24WordsButton.configuration.action = {
-      model.switchWordsCountButtonsModel.didUpdateWordsCount(24)
+    wordsNumSegmentedControl.selectedIndex = model.switchWordsCountButtonsModel.selected == 24 ? 0 : 1
+    wordsNumSegmentedControl.didSelectTab = { tab in
+      model.switchWordsCountButtonsModel.didUpdateWordsCount(tab == 0 ? 24 : 12)
     }
     
     inputTextFields.forEach { $0.removeFromSuperview() }
@@ -243,9 +225,7 @@ private extension TKInputRecoveryPhraseView {
     
     contentStackView.addArrangedSubview(titleDescriptionView)
     
-    contentStackView.addArrangedSubview(switchWordsCountButtonsStackView)
-    switchWordsCountButtonsStackView.addArrangedSubview(set24WordsButton)
-    switchWordsCountButtonsStackView.addArrangedSubview(set12WordsButton)
+    contentStackView.addArrangedSubview(wordsNumSegmentedControl)
 
     contentStackView.addArrangedSubview(continueButton)
     
