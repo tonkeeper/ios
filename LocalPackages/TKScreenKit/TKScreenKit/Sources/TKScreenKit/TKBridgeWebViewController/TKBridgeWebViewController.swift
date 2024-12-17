@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 import WebKit
+import TKLocalize
 
 public protocol TKBridgeWebViewControllerUserAgentProvider {
   func getUserAgent() -> String
@@ -35,6 +36,7 @@ open class TKBridgeWebViewController: UIViewController {
     )
     userContentController.addUserScript(script)
     configuration.userContentController = userContentController
+    configuration.allowsInlineMediaPlayback = true
     let webView = WKWebView(frame: .zero, configuration: configuration)
     return webView
   }()
@@ -227,14 +229,14 @@ open class TKBridgeWebViewController: UIViewController {
   private func menuButtonAction() {
     let items = [
       TKPopupMenuItem(
-        title: "Refresh",
+        title: TKLocales.BridgeWeb.refresh,
         icon: .TKUIKit.Icons.Size16.refresh,
         selectionHandler: { [weak self] in
           self?.webView.reload()
         }
       ),
       TKPopupMenuItem(
-        title: "Share",
+        title: TKLocales.BridgeWeb.share,
         icon: .TKUIKit.Icons.Size16.share,
         selectionHandler: { [weak self] in
           guard let url = self?.webView.url else { return }
@@ -242,7 +244,7 @@ open class TKBridgeWebViewController: UIViewController {
         }
       ),
       TKPopupMenuItem(
-        title: "Copy link",
+        title: TKLocales.BridgeWeb.copyLink,
         icon: .TKUIKit.Icons.Size16.copy,
         selectionHandler: { [weak self, configuration] in
           guard let url = self?.webView.url else { return }
@@ -337,8 +339,9 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
   }
   
   public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+    let externalOpenHosts = ["t.me"]
     if let url = navigationAction.request.url {
-      if let host = url.host,host.contains("t.me") {
+      if let host = url.host, externalOpenHosts.contains(host) {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
         return .cancel
       }

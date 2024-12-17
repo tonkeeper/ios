@@ -38,6 +38,7 @@ public struct UnsignedTransferBuilder {
       )
     case .jetton(let jetton):
       return try JettonTransferBuilder.createWalletTransfer(
+        transferAmount: jetton.transferAmount,
         wallet: wallet,
         seqno: transferData.seqno,
         tokenAddress: jetton.jettonAddress,
@@ -79,6 +80,22 @@ public struct UnsignedTransferBuilder {
           )
         },
         sender: tonConnect.sender,
+        timeout: transferData.timeout,
+        messageType: transferData.messageType
+      )
+    case .stonfiSwap(let signRaw):
+      return try SignRawTransferBuilder.createWalletTransfer(
+        wallet: wallet,
+        seqno: transferData.seqno,
+        payloads: signRaw.payloads.map {
+          SignRawTransferBuilder.Payload(
+            value: $0.value,
+            recipientAddress: $0.recipientAddress,
+            stateInit: $0.stateInit,
+            payload: $0.payload
+          )
+        },
+        sender: signRaw.sender,
         timeout: transferData.timeout,
         messageType: transferData.messageType
       )

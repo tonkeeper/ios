@@ -3,6 +3,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKFeatureFlags
 
 protocol BrowserExploreModuleOutput: AnyObject {
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
@@ -16,7 +17,7 @@ protocol BrowserExploreViewModel: AnyObject {
   
   func viewDidLoad()
   func didSelectCategoryAll(index: Int)
-  func selectFeaturedApp(index: Int)
+  func selectFeaturedApp(dapp: Dapp)
 }
 
 final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, BrowserExploreModuleOutput {
@@ -45,7 +46,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
         break
       }
     }
-    configuration.addUpdateObserver(self) { observer in
+    TKFeatureFlags.provider.addObserver(self, flags: [.isDappsDisable]) { observer, _ in
       Task {
         await observer.reloadContent()
       }
@@ -80,11 +81,12 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
     didSelectCategory?(categories[categoryIndex])
   }
   
-  func selectFeaturedApp(index: Int) {
-    guard let app = featuredCategory?.apps[safe: index] else {
-      return
-    }
-    didSelectDapp?(app)
+  func selectFeaturedApp(dapp: Dapp) {
+    didSelectDapp?(dapp)
+    analyticsProvider.logEvent(eventKey: .clickDapp,
+                               args: ["name": dapp.name,
+                                      "url": dapp.url.absoluteString,
+                                      "from": "banner"])
   }
   
   // MARK: - State
@@ -101,27 +103,25 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   private let browserExploreController: BrowserExploreController
   private let walletStore: WalletsStore
   private let regionStore: RegionStore
-  private let configuration: Configuration
+  private let analyticsProvider: AnalyticsProvider
 
   // MARK: - Init
   
   init(browserExploreController: BrowserExploreController,
        walletStore: WalletsStore,
        regionStore: RegionStore,
-       configuration: Configuration) {
+       analyticsProvider: AnalyticsProvider) {
     self.browserExploreController = browserExploreController
     self.walletStore = walletStore
     self.regionStore = regionStore
-    self.configuration = configuration
+    self.analyticsProvider = analyticsProvider
   }
 }
 
 private extension BrowserExploreViewModelImplementation {
 
   func reloadContent() async {
-    let isTestnet = (try? walletStore.activeWallet.isTestnet) ?? false
-    let flags = configuration.flags(isTestnet: isTestnet)
-    guard !flags.isDappsDisable else {
+    guard !TKFeatureFlags.provider.isDappsDisable else {
       await setEmptyState()
       return 
     }
@@ -283,7 +283,7 @@ private extension BrowserExploreViewModelImplementation {
               tintColor: .clear,
               backgroundColor: .clear,
               size: CGSize(width: 44, height: 44),
-              cornerRadius: 16
+              cornerRadius: 12
             )
           ),
           alignment: .center
@@ -303,6 +303,10 @@ private extension BrowserExploreViewModelImplementation {
       ),
       selectionClosure: { [weak self] in
         self?.didSelectDapp?(dapp)
+        self?.analyticsProvider.logEvent(eventKey: .clickDapp,
+                                         args: ["name": dapp.name,
+                                                "url": dapp.url.absoluteString,
+                                                "from": "browser"])
       }
     )
   }

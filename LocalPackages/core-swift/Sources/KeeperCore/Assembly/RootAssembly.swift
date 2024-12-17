@@ -13,6 +13,7 @@ public final class RootAssembly {
   private let buySellAssembly: BuySellAssembly
   private let batteryAssembly: BatteryAssembly
   private let knownAccountsAssembly: KnownAccountsAssembly
+  private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
@@ -31,6 +32,7 @@ public final class RootAssembly {
        buySellAssembly: BuySellAssembly,
        batteryAssembly: BatteryAssembly,
        knownAccountsAssembly: KnownAccountsAssembly,
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
@@ -48,6 +50,7 @@ public final class RootAssembly {
     self.buySellAssembly = buySellAssembly
     self.batteryAssembly = batteryAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
+    self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
@@ -105,6 +108,7 @@ public final class RootAssembly {
       batteryAssembly: batteryAssembly,
       tonConnectAssembly: tonConnectAssembly,
       apiAssembly: apiAssembly,
+      tonkeeperAPIAssembly: tonkeeperAPIAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
       secureAssembly: secureAssembly,

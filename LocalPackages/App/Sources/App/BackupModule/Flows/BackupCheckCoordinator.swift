@@ -5,9 +5,7 @@ import TKScreenKit
 import TKCore
 import KeeperCore
 
-final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
-  
+final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter> {  
   private let wallet: Wallet
   private let phrase: [String]
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -40,14 +38,14 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
     
     if router.rootViewController.viewControllers.isEmpty {
       module.viewController.setupLeftCloseButton { [weak self] in
-        self?.didFinish?()
+        self?.didFinish?(self)
       }
     } else {
       module.viewController.setupBackButton()
     }
     
     router.push(viewController: module.viewController, onPopClosures: { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     })
   }
   
@@ -62,7 +60,7 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
       Task {
         await self.setDidBackup()
         await MainActor.run(body: {
-          self.didFinish?()
+          self.didFinish?(self)
         })
       }
     }

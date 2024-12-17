@@ -7,6 +7,8 @@ import TKUIKit
 import BigInt
 import TKLocalize
 import TonSwift
+import SignRaw
+import FirebasePerformance
 
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
@@ -58,6 +60,23 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         fromViewController: moduleView,
         completion: completion)
     }
+    
+    messageHandler.fetch = { [weak self] url, params, completion in
+      guard let self else {
+        completion(.error(.unknownError))
+        return
+      }
+      Task {
+        do {
+          let data = try await self.keeperCoreMainAssembly.servicesAssembly.dappFetchService().fetch(url, params: params)
+          completion(.response(data))
+          
+        } catch {
+          completion(.error(.unknownError))
+          print(error)
+        }
+      }
+    }
 
     messageHandler.reconnect = { [weak self] dapp, completion in
       guard let self,
@@ -77,12 +96,17 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
     }
 
-    messageHandler.send = { [weak self] app, request, completion in
-      guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
-        return
-      }
-
-      self?.openSend(wallet: wallet, dapp: dapp, appRequest: request, completion: completion)
+    weak var moduleView = module.view
+    messageHandler.send = {
+      [weak self] app, request, completion in
+      guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
+      self.openSend(
+        wallet: wallet,
+        dapp: dapp,
+        appRequest: request,
+        fromViewController: moduleView,
+        completion: completion
+      )
     }
 
     module.view.modalPresentationStyle = .fullScreen
@@ -96,6 +120,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     Task {
+      let trace = Performance.startTrace(name: "perform_connect")
       do {
         let manifest = try await keeperCoreMainAssembly.tonConnectAssembly.tonConnectService().loadManifest(
           url: payload.manifestUrl
@@ -105,6 +130,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
           clientId: UUID().uuidString,
           requestPayload: payload
         )
+        trace?.setValue(manifest.url.absoluteString, forAttribute: "manifest")
         await MainActor.run {
           ToastPresenter.hideToast()
           handleLoadedManifest(
@@ -114,12 +140,15 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             completion: completion
           )
         }
+        trace?.setValue("success", forAttribute: "result")
       } catch {
         await MainActor.run {
           ToastPresenter.hideToast()
           completion(.error(.appManifestNotFound))
         }
+        trace?.setValue("fail", forAttribute: "result")
       }
+      trace?.stop()
     }
 
     func handleLoadedManifest(parameters: TonConnectParameters,
@@ -156,152 +185,84 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
   }
 
-  private func openSend(
-    wallet: Wallet,
-    dapp: Dapp,
-    appRequest: TonConnect.AppRequest,
-    completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
-      ToastPresenter.showToast(configuration: .loading)
-
-      guard let connectedApps = try? keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-            let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host })
-      else {
-        completion(.error(.unknownApp))
-        return
-      }
-
-      Task {
-        let confirmTransactionController = keeperCoreMainAssembly.confirmTransactionController(
-          wallet: wallet,
-          bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-            signTransactionParams: appRequest.params
-          )
-        )
-
-        let model = try await confirmTransactionController.createRequestModel()
-        if let confirmModel = model.confirmModel {
-          let (token, balance) = confirmModel.token
-
-          let trustCoins: [Address] = [
-            JettonMasterAddress.tonUSDT,
-            JettonMasterAddress.NOT,
-            JettonMasterAddress.HMSTR
-          ]
-
-          let isConfirmFlowAvailable: Bool
-          let isInAppPurchase: Bool
-          switch token {
-          case .ton:
-            isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount
-            isInAppPurchase = true
-          case .jetton(let item):
-            let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
-            isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
-            isInAppPurchase = trustCoins.contains(item.jettonInfo.address)
-          }
-
-          guard isConfirmFlowAvailable else {
-            startInsufficientFlow(
-              wallet: wallet,
-              model: confirmModel,
-              isInAppPurchaseFlowAvailable: isInAppPurchase)
-            completion(.error(.userDeclinedTransaction))
-            return
-          }
-        }
-
-        startSignTransactionConfirmationCoordinator(
-          wallet: wallet,
-          dapp: dapp,
-          appRequest: appRequest,
-          confirmModel: model,
-          completion: completion
-        )
-      }
-  }
-
-  @MainActor
-  private func startInsufficientFlow(
-    wallet: Wallet,
-    model: ConfirmTransactionController.ConfirmModel,
-    isInAppPurchaseFlowAvailable: Bool
-  ) {
-    let viewController = InfoPopupBottomSheetViewController()
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
-    )
-
-    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    let buttonTitle: String
-    switch model.token.token {
-    case .ton:
-      buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(model.token.token.symbol)
-    case .jetton:
-      buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
-    }
-    buyButtonConfiguration.content = TKButton.Configuration.Content(
-      title: .plainString(buttonTitle)
-    )
-    buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
-      bottomSheetViewController?.dismiss() {
-        self?.router.dismiss(animated: true) {
-          if isInAppPurchaseFlowAvailable {
-            self?.didRequestOpenBuySell?(wallet)
-          } else {
-            self?.didRequestOpenDefi?(wallet)
-          }
-        }
-      }
-    }
-    let configuration = configurationBuilder.insufficientTokenConfiguration(
-      walletLabel: wallet.metaData.label,
-      tokenSymbol: model.token.token.symbol,
-      tokenFractionalDigits: model.token.token.fractionDigits,
-      required: BigUInt(integerLiteral: UInt64(model.requiredAmount)),
-      available: BigUInt(integerLiteral: UInt64(model.token.availableBalance)),
-      buttons: [buyButtonConfiguration]
-    )
-    viewController.configuration = configuration
-    ToastPresenter.hideAll()
-    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-  }
-
-  @MainActor
-  private func startSignTransactionConfirmationCoordinator(
-    wallet: Wallet,
-    dapp: Dapp,
-    appRequest: TonConnect.AppRequest,
-    confirmModel: ConfirmTransactionModel,
-    completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void
-  ) {
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
+  private func openSend(wallet: Wallet,
+                        dapp: Dapp,
+                        appRequest: TonConnect.AppRequest,
+                        fromViewController: UIViewController,
+                        completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    guard let windowScene = fromViewController.view.window?.windowScene,
+          let request = appRequest.params.first else { return }
+    SignRawPresenter.presentSignRaw(
+      windowScene: windowScene,
+      windowLevel: .signRaw,
       wallet: wallet,
-      confirmator: BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator(
+      transferProvider: {
+        .signRaw(request, forceRelayer: false)
+      },
+      resultHandler: DappSignRawResultHandler(
         appRequest: appRequest,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
-        connectionResponseHandler: completion),
-      confirmModel: confirmModel,
+        connectionResponseHandler: completion
+      ),
+      coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+      didRequireSign: { [weak self] transferData, wallet, coordinator, router in
+        try await self?.didRequireSign(transferData: transferData,
+                                       wallet: wallet,
+                                       coordinator: coordinator,
+                                       router: router)
+      }
     )
+  }
+  
+  @MainActor
+  func didRequireSign(transferData: TransferData,
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    let coordinator = WalletTransferSignCoordinator(
+      router: router,
+      wallet: wallet,
+      transferData: transferData,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
 
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+  
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
     }
+  }
+}
 
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-
-    addChild(coordinator)
-    coordinator.start()
+private struct DappSignRawResultHandler: SignRawControllerResultHandler {
+  private let appRequest: TonConnect.AppRequest
+  private let connectionResponseHandler: (TonConnectAppsStore.SendTransactionResult) -> Void
+  
+  init(appRequest: TonConnect.AppRequest, 
+       connectionResponseHandler: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    self.appRequest = appRequest
+    self.connectionResponseHandler = connectionResponseHandler
+  }
+  
+  func didConfirm(boc: String) {
+    let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
+      .init(result: boc,
+            id: appRequest.id)
+    )
+    guard let response = try? JSONEncoder().encode(sendTransactionResponse) else { return }
+    connectionResponseHandler(.response(response))
+  }
+  
+  func didFail(error: any Error) {
+    connectionResponseHandler(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    connectionResponseHandler(.error(.userDeclinedTransaction))
   }
 }

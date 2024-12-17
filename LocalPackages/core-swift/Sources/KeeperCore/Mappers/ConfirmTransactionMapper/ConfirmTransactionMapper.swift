@@ -48,7 +48,8 @@ struct ConfirmTransactionMapper {
         isTestnet: wallet.isTestnet,
         nftProvider: { address in
           try? self.nftService.getNFT(address: address, isTestnet: wallet.isTestnet)
-        }, decryptedCommentProvider: { _ in return nil }
+        }, 
+        decryptedCommentProvider: { _ in return nil }
       )
 
     let fee = Int64(abs(info.event.extra))

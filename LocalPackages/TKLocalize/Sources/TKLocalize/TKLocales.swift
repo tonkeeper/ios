@@ -399,6 +399,14 @@ public enum TKLocales {
       public static let title = TKLocales.tr("Localizable", "bluetooth.powered_off_alert.title", fallback: "Bluetooth is off")
     }
   }
+  public enum BridgeWeb {
+    /// Copy link
+    public static let copyLink = TKLocales.tr("Localizable", "bridge_web.copy_link", fallback: "Copy link")
+    /// Refresh
+    public static let refresh = TKLocales.tr("Localizable", "bridge_web.refresh", fallback: "Refresh")
+    /// Share
+    public static let share = TKLocales.tr("Localizable", "bridge_web.share", fallback: "Share")
+  }
   public enum Browser {
     public enum ConnectedApps {
       /// Explore apps and services in Tonkeeper browser.
@@ -539,36 +547,86 @@ public enum TKLocales {
     /// Updating
     public static let updating = TKLocales.tr("Localizable", "connection_status.updating", fallback: "Updating")
   }
+  public enum CountryPicker {
+    /// All Regions
+    public static let allRegions = TKLocales.tr("Localizable", "country_picker.all_regions", fallback: "All Regions")
+    /// Auto
+    public static let auto = TKLocales.tr("Localizable", "country_picker.auto", fallback: "Auto")
+    /// Search
+    public static let search = TKLocales.tr("Localizable", "country_picker.search", fallback: "Search")
+    /// Choose your country
+    public static let title = TKLocales.tr("Localizable", "country_picker.title", fallback: "Choose your country")
+  }
   public enum Currency {
     /// Primary currency
     public static let title = TKLocales.tr("Localizable", "currency.title", fallback: "Primary currency")
     public enum Items {
       /// United Arab Emirates Dirham
       public static let aed = TKLocales.tr("Localizable", "currency.items.aed", fallback: "United Arab Emirates Dirham")
+      /// Argentine peso
+      public static let ars = TKLocales.tr("Localizable", "currency.items.ARS", fallback: "Argentine peso")
+      /// Bangladeshi taka
+      public static let bdt = TKLocales.tr("Localizable", "currency.items.bdt", fallback: "Bangladeshi taka")
+      /// Brazilian Real
+      public static let brl = TKLocales.tr("Localizable", "currency.items.brl", fallback: "Brazilian Real")
+      /// Bitcoin
+      public static let btc = TKLocales.tr("Localizable", "currency.items.BTC", fallback: "Bitcoin")
+      /// Belarusian ruble
+      public static let byn = TKLocales.tr("Localizable", "currency.items.byn", fallback: "Belarusian ruble")
+      /// Canadian Dollar
+      public static let cad = TKLocales.tr("Localizable", "currency.items.cad", fallback: "Canadian Dollar")
       /// Swiss Franc
       public static let chf = TKLocales.tr("Localizable", "currency.items.chf", fallback: "Swiss Franc")
       /// China Yuan
       public static let cny = TKLocales.tr("Localizable", "currency.items.cny", fallback: "China Yuan")
+      /// Colombian peso
+      public static let cop = TKLocales.tr("Localizable", "currency.items.COP", fallback: "Colombian peso")
+      /// Ethiopian birr
+      public static let etb = TKLocales.tr("Localizable", "currency.items.ETB", fallback: "Ethiopian birr")
       /// Euro
       public static let eur = TKLocales.tr("Localizable", "currency.items.eur", fallback: "Euro")
       /// Great Britain Pound
       public static let gbp = TKLocales.tr("Localizable", "currency.items.gbp", fallback: "Great Britain Pound")
+      /// Georgian lari
+      public static let gel = TKLocales.tr("Localizable", "currency.items.gel", fallback: "Georgian lari")
       /// Indonesian Rupiah
       public static let idr = TKLocales.tr("Localizable", "currency.items.idr", fallback: "Indonesian Rupiah")
+      /// Israeli Sheqel
+      public static let ils = TKLocales.tr("Localizable", "currency.items.ils", fallback: "Israeli Sheqel")
       /// Indian Rupee
       public static let inr = TKLocales.tr("Localizable", "currency.items.inr", fallback: "Indian Rupee")
       /// Japanese Yen
       public static let jpy = TKLocales.tr("Localizable", "currency.items.jpy", fallback: "Japanese Yen")
+      /// Kenyan shilling
+      public static let kes = TKLocales.tr("Localizable", "currency.items.KES", fallback: "Kenyan shilling")
       /// South Korean Won
       public static let krw = TKLocales.tr("Localizable", "currency.items.krw", fallback: "South Korean Won")
       /// Kazakhstani Tenge
       public static let kzt = TKLocales.tr("Localizable", "currency.items.kzt", fallback: "Kazakhstani Tenge")
+      /// Nigerian Naira
+      public static let ngn = TKLocales.tr("Localizable", "currency.items.ngn", fallback: "Nigerian Naira")
       /// Russian Ruble
       public static let rub = TKLocales.tr("Localizable", "currency.items.rub", fallback: "Russian Ruble")
+      /// Thai baht
+      public static let thb = TKLocales.tr("Localizable", "currency.items.thb", fallback: "Thai baht")
+      /// Toncoin
+      public static let ton = TKLocales.tr("Localizable", "currency.items.TON", fallback: "Toncoin")
+      /// Turkish Lira
+      public static let `try` = TKLocales.tr("Localizable", "currency.items.try", fallback: "Turkish Lira")
       /// Ukrainian hryvnian
       public static let uah = TKLocales.tr("Localizable", "currency.items.uah", fallback: "Ukrainian hryvnian")
+      /// Ugandan shilling
+      public static let ugx = TKLocales.tr("Localizable", "currency.items.UGX", fallback: "Ugandan shilling")
       /// United States Dollar
       public static let usd = TKLocales.tr("Localizable", "currency.items.usd", fallback: "United States Dollar")
+      /// Uzbekistani sum
+      public static let uzs = TKLocales.tr("Localizable", "currency.items.uzs", fallback: "Uzbekistani sum")
+      /// Venezuelan bolívar
+      public static let ves = TKLocales.tr("Localizable", "currency.items.VES", fallback: "Venezuelan bolívar")
+      /// Vietnamese dong
+      public static let vhd = TKLocales.tr("Localizable", "currency.items.vhd", fallback: "Vietnamese dong")
+      /// South African rand
+      public static let zar = TKLocales.tr("Localizable", "currency.items.ZAR", fallback: "South African rand")
     }
   }
   public enum CustomizeWallet {
@@ -1026,9 +1084,39 @@ public enum TKLocales {
   public enum Settings {
     /// Settings
     public static let title = TKLocales.tr("Localizable", "settings.title", fallback: "Settings")
+    public enum ConnectedApps {
+      /// Apps
+      public static let apps = TKLocales.tr("Localizable", "settings.connected_apps.apps", fallback: "Apps")
+      /// Disconnect
+      public static let disconnect = TKLocales.tr("Localizable", "settings.connected_apps.disconnect", fallback: "Disconnect")
+      /// Disconnect All Apps
+      public static let disconnectAllApps = TKLocales.tr("Localizable", "settings.connected_apps.disconnect_all_apps", fallback: "Disconnect All Apps")
+      /// Disconnect All Apps?
+      public static let disconnectAllTitle = TKLocales.tr("Localizable", "settings.connected_apps.disconnect_all_title", fallback: "Disconnect All Apps?")
+      /// Disconnect %@?
+      public static func disconnectItemTitle(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "settings.connected_apps.disconnect_item_title", String(describing: p1), fallback: "Disconnect %@?")
+      }
+      /// Apps
+      public static let title = TKLocales.tr("Localizable", "settings.connected_apps.title", fallback: "Apps")
+      public enum Actions {
+        /// Cancel
+        public static let cancel = TKLocales.tr("Localizable", "settings.connected_apps.actions.cancel", fallback: "Cancel")
+        /// Disconnect
+        public static let disconnect = TKLocales.tr("Localizable", "settings.connected_apps.actions.disconnect", fallback: "Disconnect")
+      }
+      public enum Empty {
+        /// No connected apps
+        public static let title = TKLocales.tr("Localizable", "settings.connected_apps.empty.title", fallback: "No connected apps")
+      }
+    }
     public enum Items {
       /// Backup
       public static let backup = TKLocales.tr("Localizable", "settings.items.backup", fallback: "Backup")
+      /// Battery
+      public static let battery = TKLocales.tr("Localizable", "settings.items.battery", fallback: "Battery")
+      /// Connected Apps
+      public static let connectedApps = TKLocales.tr("Localizable", "settings.items.connected_apps", fallback: "Connected Apps")
       /// Contact us
       public static let contactUs = TKLocales.tr("Localizable", "settings.items.contact_us", fallback: "Contact us")
       /// Currency
@@ -1099,6 +1187,14 @@ public enum TKLocales {
     public enum Notifications {
       /// Notifications
       public static let title = TKLocales.tr("Localizable", "settings.notifications.title", fallback: "Notifications")
+      public enum NotificationsDisabled {
+        /// Settings
+        public static let actionTitle = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.action_title", fallback: "Settings")
+        /// You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.
+        public static let caption = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.caption", fallback: "You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.")
+        /// Notifications are disabled
+        public static let title = TKLocales.tr("Localizable", "settings.notifications.notifications_disabled.title", fallback: "Notifications are disabled")
+      }
       public enum NotificationsItem {
         /// Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.
         public static let caption = TKLocales.tr("Localizable", "settings.notifications.notifications_item.caption", fallback: "Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.")
@@ -1266,6 +1362,18 @@ public enum TKLocales {
     /// Other
     public static let other = TKLocales.tr("Localizable", "staking_deposit_pool_picker.other", fallback: "Other")
   }
+  public enum StakingInput {
+    /// Available: %@
+    public static func availableBalance(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "staking_input.available_balance", String(describing: p1), fallback: "Available: %@")
+    }
+    /// Insufficient balance
+    public static let insufficientBalance = TKLocales.tr("Localizable", "staking_input.insufficient_balance", fallback: "Insufficient balance")
+    /// Minimum %@
+    public static func minimumBalance(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "staking_input.minimum_balance", String(describing: p1), fallback: "Minimum %@")
+    }
+  }
   public enum StakingList {
     /// APY
     public static let apy = TKLocales.tr("Localizable", "staking_list.apy", fallback: "APY")
@@ -1273,9 +1381,9 @@ public enum TKLocales {
     public static let maxApy = TKLocales.tr("Localizable", "staking_list.max_apy", fallback: "MAX APY")
     /// Minimal Deposit
     public static let minimalDeposit = TKLocales.tr("Localizable", "staking_list.minimal_deposit", fallback: "Minimal Deposit")
-    /// Minimum deposit %@
+    /// Min. deposit %@
     public static func minimumDepositDescription(_ p1: Any) -> String {
-      return TKLocales.tr("Localizable", "staking_list.minimum_deposit_description", String(describing: p1), fallback: "Minimum deposit %@")
+      return TKLocales.tr("Localizable", "staking_list.minimum_deposit_description", String(describing: p1), fallback: "Min. deposit %@")
     }
   }
   public enum StakingPoolDetails {
@@ -1337,6 +1445,8 @@ public enum TKLocales {
   public enum Token {
     /// Unverified token
     public static let unverified = TKLocales.tr("Localizable", "token.unverified", fallback: "Unverified token")
+    /// View details
+    public static let viewDetails = TKLocales.tr("Localizable", "token.view_details", fallback: "View details")
   }
   public enum TonConnect {
     /// Allow notifications

@@ -92,7 +92,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     let caption: String = {
       switch model.transaction {
-      case .staking(let staking):
+      case .staking:
         return TKLocales.TransactionConfirmation.confirmAction
       case .transfer(let transfer):
         switch transfer {

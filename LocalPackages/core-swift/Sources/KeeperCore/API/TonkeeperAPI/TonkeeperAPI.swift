@@ -4,7 +4,7 @@ enum TonkeeperAPIError: Swift.Error {
   case incorrectUrl
 }
 
-protocol TonkeeperAPI {
+public protocol TonkeeperAPI {
   func loadConfiguration(lang: String,
                          build: String,
                          chainName: String,
@@ -13,6 +13,7 @@ protocol TonkeeperAPI {
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
   func loadNotifications() async throws -> [InternalNotification]
+  func loadStory(storyId: String) async throws -> Story
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
@@ -125,5 +126,28 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
       throw error
     }
     
+  }
+  
+  func loadStory(storyId: String) async throws -> Story {
+    let url = host.appendingPathComponent("/stories").appendingPathComponent("/" + storyId)
+
+    guard var components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: false
+    ) else { throw TonkeeperAPIError.incorrectUrl }
+    
+    components.queryItems = [
+      .init(name: "lang", value: appInfoProvider.language),
+      .init(name: "version", value: appInfoProvider.version),
+      .init(name: "platform", value: appInfoProvider.platform)
+    ]
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    do {
+      let response = try JSONDecoder().decode(Story.self, from: data)
+      return response
+    } catch {
+      throw error
+    }
   }
 }

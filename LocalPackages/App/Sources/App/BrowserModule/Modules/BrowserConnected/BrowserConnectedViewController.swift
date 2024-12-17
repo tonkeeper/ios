@@ -5,7 +5,17 @@ import TKLocalize
 
 final class BrowserConnectedViewController: GenericViewViewController<BrowserConnectedView>, ScrollViewController {
   
-  typealias DataSource = BrowserConnected.DataSource
+  enum State {
+    case data
+    case empty(TKEmptyViewController.Model)
+  }
+  
+  var state: State = .data {
+    didSet {
+      setupState()
+    }
+  }
+  
   private let viewModel: BrowserConnectedViewModel
     
   private lazy var dataSource = createDataSource()
@@ -17,6 +27,8 @@ final class BrowserConnectedViewController: GenericViewViewController<BrowserCon
     cell, indexPath, itemIdentifier in
     cell.configure(configuration: itemIdentifier)
   }
+  
+  private let emptyViewController = TKEmptyViewController()
   
   private lazy var layout = createLayout()
 
@@ -58,6 +70,10 @@ private extension BrowserConnectedViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
+    
+    addChild(emptyViewController)
+    customView.embedEmptyView(emptyViewController.view)
+    emptyViewController.didMove(toParent: self)
   }
   
   func setupBindings() {
@@ -66,7 +82,7 @@ private extension BrowserConnectedViewController {
     }
     
     viewModel.didUpdateViewState = { [weak self] state in
-      self?.customView.state = state
+      self?.state = state
     }
   }
   
@@ -130,8 +146,8 @@ private extension BrowserConnectedViewController {
     return section
   }
   
-  func createDataSource() -> DataSource {
-    let dataSource = DataSource(collectionView: customView.collectionView) { [appCellConfiguration] collectionView, indexPath, itemIdentifier in
+  func createDataSource() -> BrowserConnected.DataSource {
+    let dataSource = BrowserConnected.DataSource(collectionView: customView.collectionView) { [appCellConfiguration] collectionView, indexPath, itemIdentifier in
       let cell = collectionView.dequeueConfiguredReusableCell(
         using: appCellConfiguration,
         for: indexPath,
@@ -167,5 +183,17 @@ private extension BrowserConnectedViewController {
     )
     
     present(alertController, animated: true)
+  }
+  
+  private func setupState() {
+    switch state {
+    case .data:
+      customView.emptyViewContainer.isHidden = true
+      customView.collectionView.isHidden = false
+    case .empty(let model):
+      emptyViewController.configure(model: model)
+      customView.emptyViewContainer.isHidden = false
+      customView.collectionView.isHidden = true
+    }
   }
 }

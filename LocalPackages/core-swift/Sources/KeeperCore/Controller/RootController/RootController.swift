@@ -5,7 +5,7 @@ public final class RootController {
     case onboarding
     case main(wallets: [Wallet], activeWallet: Wallet)
   }
-
+  
   private let configuration: Configuration
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
@@ -34,7 +34,6 @@ public final class RootController {
       await configuration.loadConfiguration()
     }
   }
-  
   public func parseDeeplink(string: String?) throws -> Deeplink {
     try deeplinkParser.parse(string: string)
   }

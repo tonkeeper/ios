@@ -20,6 +20,7 @@ public struct TonConnectResponseBuilder {
     return successEvent
   }
   
+  // Build connect response with private key provided
   static func buildConnectEventSuccesResponse(requestPayloadItems: [TonConnectRequestPayload.Item],
                                               wallet: Wallet,
                                               walletPrivateKey: TonSwift.PrivateKey,
@@ -49,6 +50,41 @@ public struct TonConnectResponseBuilder {
     let successEvent = TonConnect.ConnectEventSuccess(
       payload: .init(items: replyItems,
                      device: .init())
+    )
+    return successEvent
+  }
+  
+  static func buildConnectEventSuccesResponse(
+    requestPayloadItems: [TonConnectRequestPayload.Item],
+    wallet: Wallet,
+    manifest: TonConnectManifest,
+    signTonProof: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply
+  ) async throws -> TonConnect.ConnectEventSuccess {
+    
+    let address = try wallet.address
+    var replyItems = [TonConnect.ConnectItemReply]()
+    
+    for item in requestPayloadItems {
+      switch item {
+      case .tonAddress:
+        let reply = TonConnect.ConnectItemReply.tonAddress(.init(
+          address: address,
+          network: wallet.identity.network,
+          publicKey: try wallet.publicKey,
+          walletStateInit: try wallet.stateInit)
+        )
+        replyItems.append(reply)
+        
+      case .tonProof(let payload):
+        let reply = try await signTonProof(payload)
+        replyItems.append(reply)
+      case .unknown:
+        continue
+      }
+    }
+    
+    let successEvent = TonConnect.ConnectEventSuccess(
+      payload: .init(items: replyItems, device: .init())
     )
     return successEvent
   }

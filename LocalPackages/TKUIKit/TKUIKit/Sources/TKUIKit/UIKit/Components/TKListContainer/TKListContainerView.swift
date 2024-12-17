@@ -19,10 +19,14 @@ public protocol TKListContainerReconfigurableItem: TKListContainerItem {
 public final class TKListContainerView: UIView {
   
   public struct Configuration {
+
     public let items: [TKListContainerItem]
     public let copyToastConfiguration: ToastPresenter.Configuration
-    public init(items: [TKListContainerItem],
-                copyToastConfiguration: ToastPresenter.Configuration) {
+
+    public init(
+      items: [TKListContainerItem],
+      copyToastConfiguration: ToastPresenter.Configuration
+    ) {
       self.items = items
       self.copyToastConfiguration = copyToastConfiguration
     }
@@ -75,15 +79,20 @@ public final class TKListContainerView: UIView {
   
   private func setup(with configuration: Configuration?) {
     stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+
     guard let configuration else { return }
-    configuration.items.forEach { item in
-      
+
+    configuration.items.enumerated().forEach { item in
+
       let createView = { (id: String?) in
-        let contentView = item.getView()
+        let contentView = item.element.getView()
         contentView.isUserInteractionEnabled = false
         let itemView = TKListContainerItemViewContainer()
         itemView.setContentView(contentView)
-        if let action = item.action {
+        let isSeparatorVisible = (configuration.items.count - 1) != item.offset
+        itemView.isSeparatorVisible = isSeparatorVisible
+
+        if let action = item.element.action {
           itemView.isHighlightable = true
           itemView.addAction(UIAction(handler: { _ in
             switch action {

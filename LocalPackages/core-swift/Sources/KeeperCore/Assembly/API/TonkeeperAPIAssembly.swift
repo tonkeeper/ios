@@ -1,6 +1,6 @@
 import Foundation
 
-final class TonkeeperAPIAssembly {
+public final class TonkeeperAPIAssembly {
   
   private let appInfoProvider: AppInfoProvider
   
@@ -8,7 +8,7 @@ final class TonkeeperAPIAssembly {
     self.appInfoProvider = appInfoProvider
   }
   
-  var api: TonkeeperAPI {
+  public var api: TonkeeperAPI {
     TonkeeperAPIImplementation(
       urlSession: .shared,
       host: apiV1URL,

@@ -70,6 +70,7 @@ public extension TonConnect {
   enum ConnectItemReply: Encodable {
     case tonAddress(TonAddressItemReply)
     case tonProof(TonProofItemReply)
+    case tonProofSigned(TonProofItemReplySigned)
   }
   struct TonAddressItemReply: Encodable {
     public let name = "ton_addr"
@@ -78,6 +79,37 @@ public extension TonConnect {
     public let publicKey: TonSwift.PublicKey
     public let walletStateInit: TonSwift.StateInit
   }
+  enum TonProofItemReplySigned: Encodable {
+    case success(TonProofItemReplySignedSuccess)
+    case error(TonProofItemReplySignedError)
+  }
+  
+  struct TonProofItemReplySignedSuccess: Encodable {
+    public struct Proof: Encodable {
+      public let timestamp: UInt64
+      public let domain: Domain
+      public let signature: Data
+      public let payload: String
+    }
+    
+    public let name = "ton_proof"
+    public let proof: Proof
+  }
+  
+  struct TonProofItemReplySignedError: Encodable {
+    public struct Error: Encodable {
+      let message: String?
+      let code: ErrorCode
+    }
+    public enum ErrorCode: Int, Encodable {
+      case unknownError = 0
+      case methodNotSupported = 400
+    }
+    
+    public let name = "ton_proof"
+    public let error: Error
+  }
+  
   enum TonProofItemReply: Encodable {
     case success(TonProofItemReplySuccess)
     case error(TonProofItemReplyError)
@@ -89,18 +121,6 @@ public extension TonConnect {
       public let signature: Signature
       public let payload: String
       public let privateKey: PrivateKey
-    }
-    
-    public struct Signature: Encodable {
-      public let address: TonSwift.Address
-      public let domain: Domain
-      public let timestamp: UInt64
-      public let payload: String
-    }
-    
-    public struct Domain: Encodable {
-      public let lengthBytes: UInt32
-      public let value: String
     }
     
     public let name = "ton_proof"
@@ -138,31 +158,40 @@ public extension TonConnect {
     }
   }
   
-  struct Signature: Encodable {
+  struct SignatureData: Encodable {
     public let address: TonSwift.Address
     public let domain: Domain
     public let timestamp: UInt64
     public let payload: String
-    public let privateKey: PrivateKey
     
-    public init(address: TonSwift.Address, 
+    public init(address: TonSwift.Address,
                 domain: Domain,
                 timestamp: UInt64,
-                payload: String,
-                privateKey: PrivateKey) {
+                payload: String
+    ) {
       self.address = address
       self.domain = domain
       self.timestamp = timestamp
       self.payload = payload
+    }
+  }
+  
+  struct Signature: Encodable {
+    public let signatureData: SignatureData
+    public let privateKey: PrivateKey
+    
+    public init(signatureData: SignatureData,
+                privateKey: PrivateKey) {
+      self.signatureData = signatureData
       self.privateKey = privateKey
     }
   }
   
   struct Domain: Encodable {
-    public let lengthBytes: UInt32
     public let value: String
+    public let lengthBytes: UInt32
     
-    public init(lengthBytes: UInt32, 
+    public init(lengthBytes: UInt32,
                 value: String) {
       self.lengthBytes = lengthBytes
       self.value = value
@@ -185,12 +214,15 @@ public extension TonConnect.TonProofItemReplySuccess {
        payload: String,
        privateKey: PrivateKey) {
     let timestamp = UInt64(Date().timeIntervalSince1970)
-    let domain = Domain(domain: domain)
-    let signature = Signature(
-      address: address,
-      domain: domain,
-      timestamp: timestamp,
-      payload: payload)
+    let domain = TonConnect.Domain(domain: domain)
+    let signature = TonConnect.Signature(
+      signatureData: .init(
+        address: address,
+        domain: domain,
+        timestamp: timestamp,
+        payload: payload
+      ),
+      privateKey: privateKey)
     let proof = Proof(
       timestamp: timestamp,
       domain: domain,
@@ -202,12 +234,16 @@ public extension TonConnect.TonProofItemReplySuccess {
   }
 }
 
-
-public extension TonConnect.TonProofItemReplySuccess.Domain {
-  init(domain: String) {
-    let domainLength = UInt32(domain.utf8.count)
-    self.value = domain
-    self.lengthBytes = domainLength
+public extension TonConnect.TonProofItemReplySignedSuccess {
+  init(data: TonConnect.SignatureData,
+       signature: Data) {
+    let proof = Proof(
+      timestamp: data.timestamp,
+      domain: data.domain,
+      signature: signature,
+      payload: data.payload
+    )
+    self.init(proof: proof)
   }
 }
 
@@ -225,6 +261,22 @@ public extension TonConnect {
       self.id = id
     }
   }
+  
+  struct FetchEventError: Encodable {
+    public let code: ErrorCode
+    public let message: String
+    
+    public init(code: ErrorCode, message: String) {
+      self.code = code
+      self.message = message
+    }
+    
+    public enum ErrorCode: Int, Encodable {
+      case unknownError = 0
+    }
+    
+  }
+
   struct SendTransactionResponseError: Encodable {
     public struct Error: Encodable {
       public let code: ErrorCode

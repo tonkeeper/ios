@@ -9,7 +9,9 @@ struct BrowserAssembly {
     coreAssembly: TKCore.CoreAssembly
   ) -> MVVMModule<BrowserViewController, BrowserModuleOutput, BrowserModuleInput> {
 
-    let exploreModule = BrowserExploreAssembly.module(keeperCoreAssembly: keeperCoreAssembly)
+    let exploreModule = BrowserExploreAssembly.module(
+      keeperCoreAssembly: keeperCoreAssembly,
+      coreAssembly: coreAssembly)
     let connectedModule = BrowserConnectedAssembly.module(keeperCoreAssembly: keeperCoreAssembly)
 
     let viewModel = BrowserViewModelImplementation(

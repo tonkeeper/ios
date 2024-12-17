@@ -38,7 +38,7 @@ public struct SignRawTransferBuilder {
         )
       }
       var body: Cell = .empty
-      if let messagePayload = payload.payload {
+      if let messagePayload = payload.payload, !messagePayload.isEmpty {
         body = try Cell.fromBase64(src: messagePayload.fixBase64())
       }
       return MessageRelaxed.internal(

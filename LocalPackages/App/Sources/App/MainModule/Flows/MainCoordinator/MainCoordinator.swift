@@ -7,6 +7,7 @@ import KeeperCore
 import TKCore
 import TonSwift
 import BigInt
+import Stories
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
@@ -15,6 +16,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
+  var mainCoordinatorStoriesController: MainCoordinatorStoriesController?
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -26,6 +28,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
+  weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
@@ -111,6 +114,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           }
         }
     }
+    
+    router.didSelectItem = { [weak self] index in
+      guard let self else { return }
+      let viewControllers = self.router.rootViewController.viewControllers ?? []
+      guard viewControllers.count > index else { return }
+      let viewController = viewControllers[index]
+      if viewController === browserCoordinator?.router.rootViewController {
+        coreAssembly.analyticsProvider.logEvent(
+          eventKey: .openBrowser
+        )
+      }
+    }
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
@@ -125,23 +140,44 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     mainController.start()
     DispatchQueue.main.async {
-      _ = self.handleDeeplink(deeplink: deeplink)
+      _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+      self.setupStoriesController()
+      self.mainCoordinatorStoriesController?.start()
     }
   }
   
-  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+  func handleDeeplink(deeplink: CoordinatorDeeplink?, fromStories: Bool) -> Bool {
     switch deeplink {
     case let tonkeeperDeeplink as KeeperCore.Deeplink:
-      return handleTonkeeperDeeplink(tonkeeperDeeplink)
+      return handleTonkeeperDeeplink(tonkeeperDeeplink, fromStories: fromStories)
     case let string as String:
       do {
         let deeplink = try mainController.parseDeeplink(deeplink: string)
-        return handleTonkeeperDeeplink(deeplink)
+        return handleTonkeeperDeeplink(deeplink, fromStories: fromStories)
       } catch {
+        ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
         return false
       }
     default:
       return false
+    }
+  }
+  
+  private func setupStoriesController() {
+    let storiesAssembly = Stories.Assembly(
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    mainCoordinatorStoriesController = MainCoordinatorStoriesController(
+      storiesPresenter: storiesAssembly.storiesPresenter(),
+      storiesController: storiesAssembly.storiesController()
+    )
+    mainCoordinatorStoriesController?.fromViewControllerProvider = { [weak self] in self?.router.rootViewController }
+    mainCoordinatorStoriesController?.deeplinkAction = { [weak self] in
+      _ = self?.handleDeeplink(deeplink: $0, fromStories: true)
+    }
+    mainCoordinatorStoriesController?.urlAction = { [weak self] in
+      self?.openURL($0, title: nil)
     }
   }
   
@@ -222,7 +258,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
@@ -230,7 +266,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self.openDapp(title: title, url: url)
     }
     collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
 
     self.walletCoordinator = walletCoordinator
@@ -291,7 +327,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        _ = self?.handleTonkeeperDeeplink(deeplink)
+        _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
       })
     }
     
@@ -315,11 +351,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       comment: comment
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+    sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
       self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+      self?.removeChild($0)
     }
     
     self.sendTokenCoordinator = sendTokenCoordinator
@@ -390,17 +425,26 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
 
-  func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
+  func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink, fromStories: Bool) -> Bool {
     switch deeplink {
     case let .transfer(data):
-      openSendDeeplink(
-        recipient: data.recipient,
-        amount: data.amount,
-        comment: data.comment,
-        jettonAddress: data.jettonAddress,
-        expirationTimestamp: data.expirationTimestamp
-      )
-      return true
+      switch data {
+      case .sendTransfer(let sendTransferData):
+        openSendDeeplink(
+          recipient: sendTransferData.recipient,
+          amount: sendTransferData.amount,
+          comment: sendTransferData.comment,
+          jettonAddress: sendTransferData.jettonAddress,
+          expirationTimestamp: sendTransferData.expirationTimestamp
+        )
+        return true
+      case .signRawTransfer(let signRawTransferData):
+        openSignRawSendDeeplink(recipient: signRawTransferData.recipient,
+                                amount: signRawTransferData.amount, bin: signRawTransferData.bin, stateInit: signRawTransferData.stateInit,
+                                expirationTimestamp: signRawTransferData.expirationTimestamp
+        )
+        return true
+      }
     case .buyTon:
       openBuyDeeplink()
       return true
@@ -420,6 +464,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       openActionDeeplink(eventId: eventId)
       return true
     case .publish(let sign):
+      if let walletTransferSignCoordinator {
+        walletTransferSignCoordinator.externalSignHandler?(sign)
+        walletTransferSignCoordinator.externalSignHandler = nil
+        return true
+      }
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
       }
@@ -458,61 +507,76 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return handleTonConnectDeeplink(parameters)
     case .dapp(let dappURL):
       return handleDappDeeplink(url: dappURL)
+    case .browser:
+      openBrowserTabExplore()
+      coreAssembly.analyticsProvider.logEvent(
+        eventKey: .openBrowser,
+        args: ["from": fromStories ? "story" : "deep-link"]
+      )
+      return true
     case .battery(let battery):
       handleBatteryDeeplink(battery)
+      return true
+    case .story(let storyId):
+      handleStoryDeeplink(storyId: storyId)
       return true
     }
   }
 
   // MARK: -  TODO: complete on next iteration: flow: .deeplink
-  func handleTonConnectDeeplink(_ parameters: TonConnectParameters) -> Bool {
-    ToastPresenter.hideAll()
-    ToastPresenter.showToast(configuration: .loading)
-    Task {
-      do {
-        let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
-        await MainActor.run {
-          ToastPresenter.hideToast()
-          let coordinator = TonConnectModule(
-            dependencies: TonConnectModule.Dependencies(
-              coreAssembly: coreAssembly,
-              keeperCoreMainAssembly: keeperCoreMainAssembly
+  func handleTonConnectDeeplink(_ payload: TonConnectPayload) -> Bool {
+    switch (payload) {
+    case .empty:
+      return false
+    case .withParameters(let parameters):
+      ToastPresenter.hideAll()
+      ToastPresenter.showToast(configuration: .loading)
+      Task {
+        do {
+          let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
+          await MainActor.run {
+            ToastPresenter.hideToast()
+            let coordinator = TonConnectModule(
+              dependencies: TonConnectModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+              )
+            ).createConnectCoordinator(
+              router: ViewControllerRouter(rootViewController: router.rootViewController),
+              flow: .common,
+              connector: DefaultTonConnectConnectCoordinatorConnector(
+                tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+              ),
+              parameters: parameters,
+              manifest: manifest,
+              showWalletPicker: true
             )
-          ).createConnectCoordinator(
-            router: ViewControllerRouter(rootViewController: router.rootViewController),
-            flow: .common,
-            connector: DefaultTonConnectConnectCoordinatorConnector(
-              tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
-            ),
-            parameters: parameters,
-            manifest: manifest,
-            showWalletPicker: true
-          )
-          
-          coordinator.didCancel = { [weak self, weak coordinator] in
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
+            
+            coordinator.didCancel = { [weak self, weak coordinator] in
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            }
+            
+            coordinator.didConnect = { [weak self, weak coordinator] in
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            }
+            
+            coordinator.didRequestOpeningBrowser = { [weak self] manifest in
+              self?.openDapp(title: manifest.name, url: manifest.url)
+            }
+            
+            addChild(coordinator)
+            coordinator.start()
           }
-          
-          coordinator.didConnect = { [weak self, weak coordinator] in
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
+        } catch {
+          await MainActor.run {
+            ToastPresenter.hideAll()
           }
-
-          coordinator.didRequestOpeningBrowser = { [weak self] manifest in
-            self?.openDapp(title: manifest.name, url: manifest.url)
-          }
-
-          addChild(coordinator)
-          coordinator.start()
-        }
-      } catch {
-        await MainActor.run {
-          ToastPresenter.hideAll()
         }
       }
+      return true
     }
-    return true
   }
 
   func handleSignerDeeplink(_ deeplink: ExternalSignDeeplink) -> Bool {
@@ -538,7 +602,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       
       coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
         guard let navigationController else { return }
-        self?.router.present(navigationController)
+        if self?.router.rootViewController.presentedViewController != nil {
+          self?.router.dismiss(animated: true, completion: {
+            self?.router.present(navigationController)
+          })
+        } else {
+          self?.router.present(navigationController)
+        }
       }
       
       coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
@@ -675,9 +745,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBattery(wallet: wallet)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -851,8 +920,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
@@ -878,13 +947,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       deeplinkHandler: { url in
         let deeplinkParser = DeeplinkParser()
         let deeplink = try deeplinkParser.parse(string: url)
-        let _ = self.handleDeeplink(deeplink: deeplink)
+        _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
       })
     router.present(viewController)
   }
   
   func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
-    let webViewController = TKWebViewController(url: url)
+    let deeplinkHandler = TKWebViewControllerNavigationHandler { [weak self] deeplink in
+      _ = self?.handleDeeplink(deeplink: deeplink, fromStories: false)
+    }
+    
+    let webViewController = TKWebViewController(url: url, handler: deeplinkHandler)
     let navigationController = UINavigationController(rootViewController: webViewController)
     navigationController.modalPresentationStyle = .fullScreen
     navigationController.configureTransparentAppearance()
@@ -903,9 +976,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -937,9 +1010,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -984,9 +1057,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in
@@ -1093,9 +1166,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openDapp(title: title, url: url)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.router.dismiss()
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     self.batteryRefillCoordinator = coordinator
@@ -1119,9 +1192,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -1140,9 +1212,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       wallet: wallet
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -1200,7 +1271,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
 
     coordinator.didHandleDeeplink = { [weak self] deeplink in
-      _ = self?.handleTonkeeperDeeplink(deeplink)
+      _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
   
     addChild(coordinator)
@@ -1213,6 +1284,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
+  }
+  
+  private func openBrowserTabExplore() {
+    guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
+    guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
+    router.rootViewController.navigationController?.popToRootViewController(animated: true)
+    router.rootViewController.selectedIndex = index
+    router.dismiss(animated: true)
+    browserCoordinator?.openExplore()
   }
   
   private func decryptComment(wallet: Wallet,
@@ -1247,38 +1327,10 @@ private extension MainCoordinator {
   func handleTonConnectRequest(_ request: TonConnect.AppRequest,
                                wallet: Wallet,
                                app: TonConnectApp) {
-    Task {
-      try await openTonConnectModule(request, wallet: wallet, app: app)
-    }
-  }
-
-  func openTonConnectModule(_ request: TonConnect.AppRequest,
-                            wallet: Wallet,
-                            app: TonConnectApp) async throws {
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-
-    let coordinator = try await TonConnectModule(
-      dependencies: TonConnectModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).createConfirmationCoordinator(window: window, wallet: wallet, appRequest: request, app: app)
-
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-
-    await MainActor.run {
-      addChild(coordinator)
-      coordinator.start()
-    }
+    guard let signRawRequest = request.params.first else { return }
+    openSignRaw(wallet: wallet, transferProvider: {
+      .signRaw(signRawRequest, forceRelayer: false)
+    }, resultHandler: BridgeSignRawResultHandler(app: app, appRequest: request, tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()))
   }
 }
 

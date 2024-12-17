@@ -177,27 +177,14 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return false
+      return true
     case .keystone:
-      return false
+      return true
     }
   }
   
   var isBrowserAvailable: Bool {
-    switch kind {
-    case .regular:
-      return true
-    case .lockup:
-      return false
-    case .watchonly:
-      return false
-    case .signer:
-      return false
-    case .ledger:
-      return false
-    case .keystone:
-      return false
-    }
+    true
   }
   
   var isGaslessAvailable: Bool {

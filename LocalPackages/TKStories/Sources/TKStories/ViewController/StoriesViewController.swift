@@ -3,6 +3,13 @@ import TKUIKit
 
 public final class StoriesViewController: UIViewController {
   
+  public var didOpen: (() -> Void)?
+  public var didOpenPage: ((_ pageNumber: Int) -> Void)?
+  
+  public var storiesPresentationController: StoriesPresentationController? {
+    presentationController as? StoriesPresentationController
+  }
+  
   private let bar = ProgressBarView()
   private let closeButton: TKButton = {
     var configuration = TKButton.Configuration.headerAccentButtonConfiguration()
@@ -28,6 +35,7 @@ public final class StoriesViewController: UIViewController {
       openActivePage()
       startTimer()
       updateActivePageBar()
+      didOpenPage?(activePage)
     }
   }
   private var _activePage = 0
@@ -36,6 +44,8 @@ public final class StoriesViewController: UIViewController {
   
   private lazy var longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
   private let trasitionManager = StoriesModalTransitionManager()
+  
+  private var isFirstAppear = true
   
   private let models: [StoriesPageModel]
   private let pageDuration: TimeInterval
@@ -82,6 +92,10 @@ public final class StoriesViewController: UIViewController {
       updateActivePageBar()
       startTimer()
     }
+    if isFirstAppear {
+      didOpen?()
+      isFirstAppear = false
+    }
   }
   
   public override func viewWillDisappear(_ animated: Bool) {
@@ -111,7 +125,7 @@ public final class StoriesViewController: UIViewController {
       self?.dismiss(animated: true)
     }
     
-    view.backgroundColor = .red
+    view.backgroundColor = .Background.page
     view.addSubview(pageContainerView)
     view.addSubview(bar)
     view.addSubview(closeButton)

@@ -129,6 +129,10 @@ private extension BatteryRechargeViewController {
         self?.dismiss(animated: true)
       }
     ]
+    
+    customView.navigationBar.didTapNavigationBar = { [weak self] in
+      self?.view.endEditing(true)
+    }
   }
   
   func createDataSource() -> BatteryRecharge.DataSource {

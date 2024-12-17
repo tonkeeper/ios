@@ -20,8 +20,10 @@ public final class MainAssembly {
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
   let apiAssembly: APIAssembly
+  public let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly
+  public let transferAssembly: TransferAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -37,6 +39,7 @@ public final class MainAssembly {
        batteryAssembly: BatteryAssembly,
        tonConnectAssembly: TonConnectAssembly,
        apiAssembly: APIAssembly,
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        secureAssembly: SecureAssembly,
@@ -55,10 +58,16 @@ public final class MainAssembly {
     self.batteryAssembly = batteryAssembly
     self.tonConnectAssembly = tonConnectAssembly
     self.apiAssembly = apiAssembly
+    self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.loadersAssembly = loadersAssembly
     self.backgroundUpdateAssembly = backgroundUpdateAssembly
     self.secureAssembly = secureAssembly
     self.rnAssembly = rnAssembly
+    self.transferAssembly = TransferAssembly(
+      servicesAssembly: servicesAssembly,
+      batteryAssembly: batteryAssembly,
+      configurationAssembly: configurationAssembly
+    )
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -99,12 +108,6 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
-    )
-  }
-  
-  public func storiesController(pages: [StoriesController.StoryPage]) -> StoriesController {
-    StoriesController(
-      pages: pages
     )
   }
   
@@ -155,7 +158,7 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferTransaction: transferTransaction()
+      transferService: transferAssembly.transferService()
     )
   }
   
@@ -172,7 +175,7 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferTransaction: transferTransaction()
+      transferService: transferAssembly.transferService()
     )
   }
   
@@ -189,18 +192,7 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferTransaction: transferTransaction()
-    )
-  }
-  
-  func transferTransaction() -> TransferTransaction {
-    TransferTransaction(
-      tonProofTokenService: servicesAssembly.tonProofTokenService(),
-      sendService: servicesAssembly.sendService(),
-      batteryService: batteryAssembly.batteryService(),
-      balanceStore: storesAssembly.balanceStore,
-      accountService: servicesAssembly.accountService(),
-      configuration: configurationAssembly.configuration
+      transferService: transferAssembly.transferService()
     )
   }
   
@@ -248,39 +240,6 @@ public final class MainAssembly {
   
   public func browserExploreController() -> BrowserExploreController {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
-  }
-
-  public func browserConnectedController() -> BrowserConnectedController {
-    BrowserConnectedController(
-      walletsStore: storesAssembly.walletsStore,
-      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
-    )
-  }
-  
-  public func confirmTransactionController(wallet: Wallet,
-                                           bocProvider: ConfirmTransactionControllerBocProvider) -> ConfirmTransactionController {
-    ConfirmTransactionController(
-      wallet: wallet,
-      bocProvider: bocProvider,
-      sendService: servicesAssembly.sendService(),
-      nftService: servicesAssembly.nftService(),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      totalBalanceStore: storesAssembly.totalBalanceStore,
-      balanceStore: storesAssembly.convertedBalanceStore,
-      jettonBalanceResolver: loadersAssembly.jettonBalanceResolver(),
-      confirmTransactionMapper: ConfirmTransactionMapper(
-        nftService: servicesAssembly.nftService(),
-        accountEventMapper: AccountEventMapper(
-          dateFormatter: formattersAssembly.dateFormatter,
-          amountFormatter: formattersAssembly.amountFormatter,
-          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
-        ),
-        amountFormatter: formattersAssembly.amountFormatter,
-        decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-        nftManagmentStore: storesAssembly.walletNFTsManagementStore(wallet: wallet)
-      )
-    )
   }
   
   public func linkDNSController(wallet: Wallet, nft: NFT) -> LinkDNSController {

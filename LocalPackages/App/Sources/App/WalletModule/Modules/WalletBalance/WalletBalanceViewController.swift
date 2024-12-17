@@ -3,11 +3,6 @@ import TKUIKit
 import TKCoordinator
 
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
-  typealias Section = WalletBalanceSection
-  typealias Item = AnyHashable
-  typealias DataSource = UICollectionViewDiffableDataSource<WalletBalanceSection, Item>
-  typealias Snapshot = NSDiffableDataSourceSnapshot<WalletBalanceSection, Item>
-  
   var didScroll: ((CGFloat) -> Void)?
   
   private var balanceItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
@@ -40,9 +35,8 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     customView.collectionView.delegate = self
     customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.register(
-      TKReusableContainerView.self,
-      forSupplementaryViewOfKind: .balanceHeaderElementKind,
-      withReuseIdentifier: TKReusableContainerView.reuseIdentifier
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
     )
   }
   
@@ -69,7 +63,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     viewModel.didUpdateItems = { [weak self] items in
       guard let self else { return }
       for item in items {
-        guard let indexPath = self.dataSource.indexPath(for: item.key),
+        guard let indexPath = self.dataSource.indexPath(for: .listItem(item.key)),
               let cell = self.customView.collectionView.cellForItem(at: indexPath) as? WalletBalanceListCell else {
           return
         }
@@ -81,16 +75,23 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     }
   }
   
-  private lazy var dataSource: DataSource = {
+  private lazy var dataSource: WalletBalance.DataSource = {
     let balanceListCellRegistration = WalletBalanceListCellRegistration.registration(collectionView: customView.collectionView)
     let notifiationCellRegistration = NotificationBannerCellRegistration.registration
     
-    let dataSource = DataSource(
+    let dataSource = WalletBalance.DataSource(
       collectionView: customView.collectionView) {
         [weak self] collectionView, indexPath, itemIdentifier in
         guard let self else { return nil }
         switch itemIdentifier {
-        case let listItem as WalletBalanceListItem:
+        case .balanceHeader:
+          let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+            for: indexPath
+          )
+          (cell as? TKContainerCollectionViewCell)?.setContentView(customView.headerView)
+          return cell
+        case .listItem(let listItem):
           let configuration = self.viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
           let cell = collectionView.dequeueConfiguredReusableCell(
             using: balanceListCellRegistration,
@@ -102,15 +103,13 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
             cell.defaultAccessoryViews = []
           }
           return cell
-        case let notificationItem as WalletBalanceNotificationItem:
+        case .notificationItem(let notificationItem):
           let configuration = self.viewModel.getNotificationItemCellConfiguration(identifier: notificationItem.id) ?? .default
           let cell = collectionView.dequeueConfiguredReusableCell(
             using: notifiationCellRegistration,
             for: indexPath,
             item: configuration)
           return cell
-        default:
-          return nil
         }
       }
     
@@ -175,19 +174,8 @@ private extension WalletBalanceViewController {
   }
   
   private var layout: UICollectionViewCompositionalLayout {
-    let size = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
-    )
-    let header = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: size,
-      elementKind: .balanceHeaderElementKind,
-      alignment: .top
-    )
-    
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
-    configuration.boundarySupplementaryItems = [header]
     
     let layout = UICollectionViewCompositionalLayout(
       sectionProvider: { [weak dataSource] sectionIndex, _ in
@@ -195,6 +183,30 @@ private extension WalletBalanceViewController {
         let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
         
         switch snapshotSection {
+        case .balanceHeader:
+          let itemLayoutSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(249)
+          )
+          let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
+          
+          let groupLayoutSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(249)
+          )
+          let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: groupLayoutSize,
+            subitems: [item]
+          )
+          
+          let layoutSection = NSCollectionLayoutSection(group: group)
+          layoutSection.contentInsets = NSDirectionalEdgeInsets(
+            top: 0,
+            leading: 16,
+            bottom: 16,
+            trailing: 16
+          )
+          return layoutSection
         case .balance(let section):
           let sectionLayout: NSCollectionLayoutSection = .listItemsSection
           sectionLayout.contentInsets.bottom = 16
@@ -246,7 +258,7 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case let listItem as WalletBalanceListItem:
+    case .listItem(let listItem):
       listItem.onSelection?()
     default:
       return

@@ -1,6 +1,8 @@
 import UIKit
 
-public final class TKUINavigationBar: UIView {
+public final class TKUINavigationBar: UIView, UIGestureRecognizerDelegate {
+  
+  public var didTapNavigationBar: (() -> Void)?
   
   public enum Appearance {
     case `default`
@@ -118,8 +120,14 @@ public final class TKUINavigationBar: UIView {
     barContentContainer.addSubview(rightStackView)
     
     setupConstraints()
-    
+    setupGestures()
     setupAppearance()
+  }
+  
+  private func setupGestures() {
+    let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(tapGestureHandler))
+    tapGestureRecognizer.delegate = self
+    addGestureRecognizer(tapGestureRecognizer)
   }
   
   private func setupConstraints() {
@@ -190,6 +198,16 @@ public final class TKUINavigationBar: UIView {
       gradientView.isHidden = false
       separatorView.isHidden = true
     }
+  }
+  
+  @objc
+  func tapGestureHandler() {
+    didTapNavigationBar?()
+  }
+  
+  public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is UIControl) else { return false }
+    return true
   }
 }
 

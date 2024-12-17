@@ -43,8 +43,8 @@ public final class Assembly {
     storesAssembly: storesAssembly,
     coreAssembly: coreAssembly
   )
-  private lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
-  private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
+  lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
+  lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
   private lazy var scamAPIAssembly = ScamAPIAssembly(configurationAssembly: configurationAssembly)
   private lazy var servicesAssembly = ServicesAssembly(
@@ -114,6 +114,7 @@ public extension Assembly {
       buySellAssembly: buySellAssembly,
       batteryAssembly: batteryAssembly,
       knownAccountsAssembly: knownAccountsAssembly,
+      tonkeeperAPIAssembly: tonkeeperApiAssembly,
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,

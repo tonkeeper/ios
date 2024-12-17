@@ -46,7 +46,7 @@ public struct RecipientResolverImplementation: RecipientResolver {
   private func isMemoRequired(for address: Address) async -> Bool {
     let knownAccounts = await knownAccountsProvider.getKnownAccounts()
     
-    if let knownAccount = knownAccounts.first(where: { $0.address == address }) {
+    if let knownAccount = knownAccounts.first(where: { $0.address.toRaw() == address.toRaw() }) {
       return knownAccount.requireMemo
     } else {
       return false

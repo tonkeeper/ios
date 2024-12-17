@@ -4,13 +4,13 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import TonSwift
+import SignRaw
 
 final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   
   var didCancel: (() -> Void)?
-  var didFinish: (() -> Void)?
   
-  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
     
   private let nft: NFT
   private let wallet: Wallet
@@ -30,49 +30,57 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
-    guard let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator else { return false }
-    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
   }
   
   override func start() {
-    Task {
-      guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
-      let confirmController = keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: RenewDNSConfirmTransactionControllerBocProvider(
-          nft: nft,
-          sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-        )
-      )
-      let confirmModel = try await confirmController.createRequestModel()
-      let coordinator = SignTransactionConfirmationCoordinator(
-        router: router,
-        wallet: wallet,
-        confirmator: RenewDNSSignTransactionConfirmationCoordinatorConfirmator(
-          nft: nft,
-          sendService: keeperCoreMainAssembly.servicesAssembly.sendService()
-        ),
-        confirmModel: confirmModel,
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly
-      )
-
-      coordinator.didCancel = { [weak self, weak coordinator] in
-        self?.removeChild(coordinator)
-        self?.didCancel?()
+    guard let windowScene = router.window.windowScene else { return }
+    
+    SignRawPresenter.presentSignRaw(
+      windowScene: windowScene,
+      windowLevel: .signRaw,
+      wallet: wallet,
+      transferProvider: { [nft] in
+        .renewDNS(nft: nft)
+      },
+      resultHandler: nil,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      didRequireSign: { [weak self] transferData, wallet, coordinator, router in
+        try await self?.didRequireSign(transferData: transferData,
+                                       wallet: wallet,
+                                       coordinator: coordinator,
+                                       router: router)
       }
-
-      coordinator.didConfirm = { [weak self, weak coordinator] in
-        self?.removeChild(coordinator)
-        self?.didFinish?()
-      }
-
-      self.signTransactionConfirmationCoordinator = coordinator
-
-      await MainActor.run {
-        addChild(coordinator)
-        coordinator.start()
-      }
+    )
+  }
+  
+  @MainActor
+  func didRequireSign(transferData: TransferData,
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    let coordinator = WalletTransferSignCoordinator(
+      router: router,
+      wallet: wallet,
+      transferData: transferData,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
+    
+    self.walletTransferSignCoordinator = coordinator
+    
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+  
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
     }
   }
 }

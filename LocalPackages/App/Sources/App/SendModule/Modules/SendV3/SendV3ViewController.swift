@@ -5,6 +5,8 @@ import TKLocalize
 final class SendV3ViewController: GenericViewViewController<SendV3View>, KeyboardObserving {
   private let viewModel: SendV3ViewModel
   
+  private var isFirstAppear = true
+
   init(viewModel: SendV3ViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
@@ -26,7 +28,10 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     registerForKeyboardEvents()
-    customView.recipientTextField.becomeFirstResponder()
+    if isFirstAppear {
+      customView.recipientTextField.becomeFirstResponder()
+      isFirstAppear = false
+    }
   }
 
   public override func viewWillDisappear(_ animated: Bool) {
@@ -45,7 +50,7 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
   public func keyboardWillHide(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.scrollView.contentInset.bottom = 0
+      self.customView.scrollView.contentInset.bottom = self.customView.safeAreaInsets.bottom + 16
     }
   }
   
@@ -54,7 +59,6 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
     
     customView.navigationBar.layoutIfNeeded()
     customView.scrollView.contentInset.top = customView.navigationBar.bounds.height
-    customView.scrollView.contentInset.bottom = customView.safeAreaInsets.bottom + 16
   }
 }
 
@@ -92,6 +96,10 @@ private extension SendV3ViewController {
       viewModel?.didTapRecipientScanButton()
     }
     customView.recipientScanButton.configuration = scanConfiguration
+    
+    let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(viewTapGestureHandler))
+    tapGestureRecognizer.delegate = self
+    customView.addGestureRecognizer(tapGestureRecognizer)
   }
   
   func setupBindings() {
@@ -176,5 +184,18 @@ private extension SendV3ViewController {
     customView.commentInputView.commentTextField.didUpdateText = { [weak viewModel] in
       viewModel?.didInputComment($0)
     }
+  }
+  
+  @objc
+  func viewTapGestureHandler() {
+    customView.endEditing(true)
+  }
+  
+  // MARK: - UIGestureRecognizerDelegate
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard touch.view?.isKind(of: UIControl.self) == false else {
+      return false
+    }
+    return true
   }
 }

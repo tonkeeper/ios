@@ -7,9 +7,9 @@ import KeeperCore
 import CoreComponents
 import TKLocalize
 import TKStories
+import Stories
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
   var didTapBattery: ((Wallet) -> Void)?
   
   private let wallet: Wallet
@@ -32,6 +32,13 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 }
 
 private extension SettingsCoordinator {
+
+  func presentAlertController(title: String, message: String?, actions: [UIAlertAction]) {
+    let alertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+    actions.forEach { action in alertController.addAction(action) }
+    router.rootViewController.present(alertController, animated: true)
+  }
+
   func openSettingsRoot() {
     let configurator = SettingsListRootConfigurator(
       wallet: wallet,
@@ -50,9 +57,7 @@ private extension SettingsCoordinator {
     }
     
     configurator.didShowAlert = { [weak self] title, description, actions in
-      let alertController = UIAlertController(title: title, message: description, preferredStyle: .alert)
-      actions.forEach { action in alertController.addAction(action) }
-      self?.router.rootViewController.present(alertController, animated: true)
+      self?.presentAlertController(title: title, message: description, actions: actions)
     }
     
     configurator.didTapEditWallet = { [weak self] wallet in
@@ -98,7 +103,11 @@ private extension SettingsCoordinator {
     configurator.didTapBattery = { [weak self] wallet in
       self?.didTapBattery?(wallet)
     }
-    
+
+    configurator.didTapConnectedApps = { [weak self] wallet in
+      self?.openConnectedApps(wallet: wallet)
+    }
+
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
@@ -117,7 +126,7 @@ private extension SettingsCoordinator {
     
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     })
   }
   
@@ -174,17 +183,17 @@ private extension SettingsCoordinator {
   }
   
   func openW5Story(wallet: Wallet) {
-    let storiesViewController = TKStories.storiesViewController(
+    let storiesViewController = TKStoriesFactory.storiesViewController(
       models: [
         StoriesPageModel(
           title: TKLocales.W5Stories.Gasless.title,
           description: TKLocales.W5Stories.Gasless.subtitle,
-          backgroundImage: .TKUIKit.Images.storyGasless
+          backgroundImage: .image(.TKUIKit.Images.storyGasless)
         ),
         StoriesPageModel(
           title: TKLocales.W5Stories.Messages.title,
           description: TKLocales.W5Stories.Messages.subtitle,
-          backgroundImage: .TKUIKit.Images.storyMessages
+          backgroundImage: .image(.TKUIKit.Images.storyMessages)
         ),
         StoriesPageModel(
           title: TKLocales.W5Stories.Phrase.title,
@@ -197,7 +206,7 @@ private extension SettingsCoordinator {
               })
             }
           ),
-          backgroundImage: .TKUIKit.Images.storyPhrase
+          backgroundImage: .image(.TKUIKit.Images.storyPhrase)
         )
       ]
     )
@@ -303,9 +312,8 @@ private extension SettingsCoordinator {
       router: router
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -323,9 +331,8 @@ private extension SettingsCoordinator {
       wallet: wallet
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     addChild(coordinator)
@@ -449,10 +456,28 @@ private extension SettingsCoordinator {
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
-  
+
+  func openConnectedApps(wallet: Wallet) {
+    let tonConnectAppsStore = keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+    let connectedAppsStore = keeperCoreMainAssembly.storesAssembly.connectedAppsStore(tonConnectAppsStore: tonConnectAppsStore)
+    let configurator = SettingsListConnectedAppsConfigurator(connectedAppsStore: connectedAppsStore)
+    configurator.didRequestShowAlert = { [weak self] title, actions in
+      self?.presentAlertController(title: title, message: nil, actions: actions)
+    }
+    
+    let module = SettingsListAssembly.module(configurator: configurator)
+    router.push(viewController: module.viewController)
+  }
+
   func openDevMenu() {
+    let storiesAssembly = Stories.Assembly(
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
     let configuration = SettingsListDevMenuConfigurator(
-      uniqueIdProvider: coreAssembly.uniqueIdProvider
+      uniqueIdProvider: coreAssembly.uniqueIdProvider,
+      storiesService: storiesAssembly.storiesService()
     )
     let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
     let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()

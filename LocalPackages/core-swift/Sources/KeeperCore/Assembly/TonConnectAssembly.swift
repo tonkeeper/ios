@@ -26,13 +26,6 @@ public final class TonConnectAssembly {
     self.secureAssembly = secureAssembly
   }
   
-  public func tonConnectConfirmTransactionControllerBocProvider(signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmTransactionControllerBocProvider {
-    TonConnectConfirmTransactionControllerBocProvider(
-      signTransactionParams: signTransactionParams,
-      tonConnectService: tonConnectService()
-    )
-  }
-  
   func tonConnectRepository() -> TonConnectRepository {
     TonConnectRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }

@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class TokenDetailsViewController: GenericViewViewController<TokenDetailsView> {
   private let viewModel: TokenDetailsViewModel
@@ -76,7 +77,7 @@ private extension TokenDetailsViewController {
     customView.navigationBar.rightViews = [
       TKUINavigationBar.createMoreButton { view in
         let item = TKPopupMenuItem(
-          title: "View details",
+          title: TKLocales.Token.viewDetails,
           icon: .TKUIKit.Icons.Size16.globe,
           selectionHandler: { [weak self] in
             self?.viewModel.didTapOpenDetails()

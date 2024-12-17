@@ -45,6 +45,11 @@
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
 
+"country_picker.title" = "Выберите вашу страну";
+"country_picker.search" = "Поиск";
+"country_picker.auto" = "Автоматически";
+"country_picker.all_regions" = "Все регионы";
+
 "collectibles.title" = "Коллекции";
 "collectibles.collection_hidden" = "Коллекция скрыта";
 "collectibles.nft_hidden" = "Токен скрыт";
@@ -62,6 +67,10 @@
 "history.placeholder.subtitle" = "Совершите первую транзакцию!";
 "history.placeholder.buttons.receive" = "Получить";
 "history.placeholder.buttons.buy" = "Купить Toncoin";
+
+"bridge_web.refresh" = "Обновить";
+"bridge_web.share" = "Поделиться";
+"bridge_web.copy_link" = "Скопировать ссылку";
 
 "browser.tab.explore" = "Витрина";
 "browser.tab.connected" = "Подключенные";
@@ -111,6 +120,8 @@
 "settings.items.notifications" = "Уведомления";
 "settings.items.wallet_w5" = "Кошелёк W5";
 "settings.items.wallet_v4R2" = "Кошелёк v4R2";
+"settings.items.battery" = "Батарейка";
+"settings.items.connected_apps" = "Подключённые приложения";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -148,6 +159,22 @@
 "settings.notifications.notifications_item.title" = "Push уведомления";
 "settings.notifications.notifications_item.caption" = "Получайте уведомления при получении TON, токенов, NFT и уведомления от подключенных приложений.";
 
+"settings.notifications.notifications_disabled.title" = "Уведомления отключены";
+"settings.notifications.notifications_disabled.caption" = "Вы отключили уведомления в\U00A0настройках устройства. Чтобы ничего не\U00A0пропустить разрешите уведомления.";
+"settings.notifications.notifications_disabled.action_title" = "Открыть настройки";
+
+"settings.connected_apps.title" = "Приложения";
+"settings.connected_apps.disconnect" = "Отключить";
+"settings.connected_apps.disconnect_all_apps" = "Отключить все приложения";
+"settings.connected_apps.apps" = "Приложения";
+
+"settings.connected_apps.disconnect_all_title" = "Отключить все приложения?";
+"settings.connected_apps.disconnect_item_title" = "Отключить %@?";
+"settings.connected_apps.actions.disconnect" = "Отключить";
+"settings.connected_apps.actions.cancel" = "Отмена";
+
+"settings.connected_apps.empty.title" = "Нет подключённых приложений";
+
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
 "theme.options.dark" = "Тёмная";
@@ -168,6 +195,26 @@
 "currency.items.krw" = "Южнокорейская вона";
 "currency.items.idr" = "Индонезийская рупия";
 "currency.items.inr" = "Индийская рупия";
+"currency.items.uzs" = "Узбекский сум";
+"currency.items.byn" = "Белорусский рубль";
+"currency.items.brl" = "Бразильский реал";
+"currency.items.try" = "Турецкая лира";
+"currency.items.ngn" = "Нигерийская найра";
+"currency.items.thb" = "Тайский бат";
+"currency.items.bdt" = "Бангладешская така";
+"currency.items.cad" = "Канадский доллар";
+"currency.items.ils" = "Израильский шекель";
+"currency.items.gel" = "Грузинский лари";
+"currency.items.vhd" = "Вьетнамский донг";
+"currency.items.ZAR" = "Южноафриканский рэнд";
+"currency.items.ARS" = "Аргентинское песо";
+"currency.items.COP" = "Колумбийское песо";
+"currency.items.ETB" = "Эфиопский быр";
+"currency.items.KES" = "Кенийский шиллинг";
+"currency.items.UGX" = "Угандийский шиллинг";
+"currency.items.VES" = "Венесуэльский боливар";
+"currency.items.BTC" = "Bitcoin";
+"currency.items.TON" = "Toncoin";
 
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";
@@ -247,9 +294,10 @@
 
 "connection_status.updating" = "Обновление";
 "connection_status.no_internet" = "Нет сети";
-"connection_status.updated_at" = "Обновлено %@";
+"connection_status.updated_at" = "Обновлён %@";
 
 "token.unverified" = "Непроверенный токен";
+"token.view_details" = "Подробнее";
 
 "onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
 "onboarding.buttons.create_new" = "Создать новый кошелёк";
@@ -296,6 +344,9 @@
 "add_wallet.items.testnet.title" = "Аккаунт в Testnet";
 "add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов в Testnet";
 
+"add_wallet.items.pair_keystone.title" = "Подключить Keystone";
+"add_wallet.items.pair_keystone.subtitle" = "Аппаратный модуль использующий AIR-GAP";
+
 "add_wallet.items.pair_ledger.title" = "Подключить Ledger";
 "add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
 
@@ -303,6 +354,9 @@
 
 "signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";
 "signer.scan.open_signer_button" = "Открыть Signer на этом устройстве";
+
+"keystone.scan.subtitle" = "Откройте Keystone » Программные кошельки » Tonkeeper";
+"keystone.scan.about_keystone_button" = "О Keystone";
 
 "chart.price" = "Цена";
 
@@ -378,6 +432,7 @@
 "ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
 "ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
 "ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";
+"ledger_confirm.steps.confirm_proof.description" = "Подпишите домен в Ledger";
 
 "ledger_version_update.title" = "Обновите TON приложение в Ledger до версии %@";
 "ledger_version_update.caption" = "Этот тип транзакции не поддерживается в вашей текущей версии приложения.";
@@ -495,7 +550,7 @@
 
 "staking_list.max_apy" = "MAX APY";
 "staking_list.apy" = "APY";
-"staking_list.minimum_deposit_description" = "Минимальный депозит %@";
+"staking_list.minimum_deposit_description" = "Мин. депозит %@";
 
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
@@ -599,3 +654,7 @@
 "battery.recharge.сustom_input.title" = "Другое количество";
 "battery.recharge.сustom_input.caption" = "Ввести вручную";
 "battery.recharge.toast.success" = "Батарейка зарядится за пару минут";
+
+"staking_input.available_balance" = "Доступно: %@";
+"staking_input.insufficient_balance" = "Недостаточно средств";
+"staking_input.minimum_balance" = "Минимально %@";

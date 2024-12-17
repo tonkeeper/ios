@@ -4,6 +4,11 @@ import TonSwift
 import BigInt
 import OpenAPIRuntime
 
+public enum FetchError: Error {
+  case wrongHost
+  case unsupportedScheme
+}
+
 protocol APIHostProvider {
   var basePath: String { get async }
 }
@@ -63,6 +68,78 @@ public struct API {
       return request
     }
   }
+  
+  enum Error: Swift.Error {
+    case failed
+  }
+  
+  @discardableResult
+  private func performRequest<T>(request: RequestBuilder<T>, count: Int = 0, delay: UInt64 = 500_000_000) async throws -> Response<T> {
+    do {
+      let response = try await request.execute()
+      return response
+    } catch {
+      if let errorResponse = error as? ErrorResponse {
+        switch errorResponse {
+        case .error(let statusCode, _, _, _):
+          if statusCode == 429 {
+            try await Task.sleep(nanoseconds: delay * UInt64(count))
+            try Task.checkCancellation()
+            return try await performRequest(request: request, count: count + 1, delay: delay)
+          }
+          throw errorResponse
+        }
+      } else {
+        throw error
+      }
+    }
+  }
+}
+
+// MARK: - For Dapp bridge
+
+extension API {
+  func tonapiFetch(url: String, options: [String: Any]?) async throws -> (Data, URLResponse) {
+    let uri = URL(string: url)
+    if uri?.scheme != "https" {
+      throw FetchError.unsupportedScheme
+    }
+    let host = uri?.host
+    if host != "tonapi.io" && host?.hasSuffix(".tonapi.io") == false {
+      throw FetchError.wrongHost
+    }
+    
+    var builder = URLRequest(url: uri!)
+  
+    let methodOptions = options?["method"] as? String ?? "GET"
+    let headersOptions = options?["headers"] as? [String: String] ?? [:]
+    let bodyOptions = options?["body"] as? String ?? ""
+    var contentTypeOptions = "application/json"
+    
+    for (key, value) in headersOptions {
+      if key == "Authorization" {
+        builder.setValue(value, forHTTPHeaderField: "X-Authorization")
+      } else if key == "Content-Type" {
+        contentTypeOptions = value
+      } else {
+        builder.setValue(value, forHTTPHeaderField: key)
+      }
+    }
+    
+    let apiKey = await configuration.tonApiV2Key
+    builder.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+    
+    if methodOptions == "POST" {
+      builder.httpBody = bodyOptions.data(using: .utf8)
+      builder.setValue(contentTypeOptions, forHTTPHeaderField: "Content-Type")
+      builder.httpMethod = "POST"
+    }
+    
+    let data = try await urlSession.data(for: builder)
+    
+    return data
+  }
 }
 
 // MARK: - Account
@@ -72,7 +149,7 @@ extension API {
     let request = try await createRequest {
       return AccountsAPI.getAccountWithRequestBuilder(accountId: address)
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return try Account(account: response)
   }
   
@@ -84,7 +161,7 @@ extension API {
         supportedExtensions: ["custom_payload"]
       )
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let balances = response.balances
       .compactMap { jetton in
         do {
@@ -124,12 +201,13 @@ extension API {
       return AccountsAPI.getAccountEventsWithRequestBuilder(
         accountId: address.toRaw(),
         limit: limit,
+        subjectOnly: true,
         beforeLt: beforeLt,
         startDate: nil,
         endDate: nil
       )
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let events: [AccountEvent] = response.events.compactMap {
       guard let activityEvent = try? AccountEvent(accountEvent: $0) else { return nil }
       return activityEvent
@@ -155,7 +233,7 @@ extension API {
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let events: [AccountEvent] = response.events.compactMap {
 
       guard let activityEvent = try? AccountEvent(accountEvent: $0) else { return nil }
@@ -175,7 +253,7 @@ extension API {
         eventId: eventId
       )
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return try AccountEvent(accountEvent: response)
   }
 }
@@ -188,18 +266,18 @@ extension API {
       return WalletAPI.getAccountSeqnoWithRequestBuilder(accountId: address.toRaw())
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return response.seqno
   }
   
-  func emulateMessageWallet(boc: String) async throws -> MessageConsequences {
+  func emulateMessageWallet(boc: String, params: [EmulateMessageToWalletRequestParamsInner]?) async throws -> MessageConsequences {
     let request = try await createRequest {
       return EmulationAPI.emulateMessageToWalletWithRequestBuilder(
-        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc)
+        emulateMessageToWalletRequest: EmulateMessageToWalletRequest(boc: boc, params: params)
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return response
   }
   
@@ -211,7 +289,7 @@ extension API {
         )
       )
     }
-    try await request.execute()
+    try await performRequest(request: request)
   }
 }
 
@@ -234,7 +312,7 @@ extension API {
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let collectibles = response.nftItems.compactMap {
       try? NFT(nftItem: $0)
     }
@@ -251,7 +329,7 @@ extension API {
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let nfts = response.nftItems.compactMap {
       try? NFT(nftItem: $0)
     }
@@ -266,7 +344,7 @@ extension API {
     let request = try await createRequest {
       return JettonsAPI.getJettonInfoWithRequestBuilder(accountId: address.toRaw())
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     
     let verification: JettonInfo.Verification
     switch response.verification {
@@ -288,7 +366,7 @@ extension API {
       name: response.metadata.name,
       symbol: response.metadata.symbol,
       verification: verification,
-      imageURL: URL(string: response.metadata.image ?? "")
+      imageURL: URL(string: response.preview)
     )
   }
 }
@@ -306,7 +384,7 @@ extension API {
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     
     return parseResponse(rates: response.rates, jettons: jettons)
   }
@@ -354,7 +432,7 @@ extension API {
       return DNSAPI.dnsResolveWithRequestBuilder(domainName: domainName)
     }
 
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     guard let wallet = response.wallet else {
       throw DNSError.noWalletData
     }
@@ -368,7 +446,7 @@ extension API {
       return DNSAPI.getDnsInfoWithRequestBuilder(domainName: domainName)
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     guard let expiringAt = response.expiringAt else { return nil }
     return Date(timeIntervalSince1970: TimeInterval(integerLiteral: Int64(expiringAt)))
   }
@@ -435,7 +513,7 @@ extension API {
         jettonId: jettonAddress.toRaw()
       )
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return try JettonTransferPayload(customPayload: response.customPayload, stateInit: response.stateInit)
   }
 }
@@ -451,7 +529,7 @@ extension API {
       )
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let result = response.pools.compactMap {
       try? StackingPoolInfo(accountStakingInfo: $0, implementations: response.implementations)
     }
@@ -463,7 +541,7 @@ extension API {
       return StakingAPI.getAccountNominatorsPoolsWithRequestBuilder(accountId: address.toRaw())
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let result = response.pools.compactMap { try? AccountStackingInfo(accountStakingInfo: $0) }
     return result
   }
@@ -472,7 +550,7 @@ extension API {
     let request = try await createRequest {
       return StakingAPI.getStakingPoolInfoWithRequestBuilder(accountId: poolAddress.toRaw())
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     let result = try StackingPoolInfo(accountStakingInfo: response.pool, implementations: [response.pool.implementation.rawValue: response.implementation])
     return result
   }
@@ -490,7 +568,7 @@ extension API {
       )
     }
 
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     
     guard let decoded = response.decoded?.value as? [String: Any],
           let jettonWalletAddress = decoded["jetton_wallet_address"] as? String else {
@@ -528,7 +606,7 @@ extension API {
       )
     }
 
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return response.token
   }
   
@@ -536,7 +614,7 @@ extension API {
     let request = try await createRequest {
       return ConnectAPI.getTonConnectPayloadWithRequestBuilder()
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return response.payload
   }
 }
@@ -548,7 +626,7 @@ extension API {
       return LiteServerAPI.getRawTimeWithRequestBuilder()
     }
     
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return TimeInterval(response.time)
   }
 }
@@ -557,9 +635,9 @@ extension API {
 extension API {
   func getStatus() async throws -> Int {
     let request = try await createRequest {
-      return BlockchainAPI.statusWithRequestBuilder()
+      return UtilitiesAPI.statusWithRequestBuilder()
     }
-    let response = try await request.execute().body
+    let response = try await performRequest(request: request).body
     return response.indexingLatency
   }
 }

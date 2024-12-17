@@ -20,6 +20,7 @@ open class TKWindow: UIWindow {
   
   deinit {
     token = nil
+    print("TKWindow with window level \(self.windowLevel.rawValue) deinit")
   }
 }
 

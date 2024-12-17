@@ -1,4 +1,5 @@
 import Foundation
+import TKFeatureFlags
 import KeeperCore
 import BigInt
 import TonSwift
@@ -6,12 +7,12 @@ import TonSwift
 final class BatteryRefillRechargeMethodsModel {
   
   enum RechargeMethodItem {
-    case token(token: Token, amount: BigUInt)
+    case token(token: Token)
     case gift(token: Token)
     
     var identifier: String {
       switch self {
-      case .token(let token, _):
+      case .token(let token):
         return token.identifier
       case .gift:
         return "gift_identifier"
@@ -20,7 +21,7 @@ final class BatteryRefillRechargeMethodsModel {
     
     var token: Token {
       switch self {
-      case .token(let token, _):
+      case .token(let token):
         return token
       case .gift(let token):
         return token
@@ -48,16 +49,13 @@ final class BatteryRefillRechargeMethodsModel {
   
   private let wallet: Wallet
   private let balanceStore: ConvertedBalanceStore
-  private let configuration: Configuration
   private let batteryService: BatteryService
   
   init(wallet: Wallet,
        balanceStore: ConvertedBalanceStore,
-       configuration: Configuration,
        batteryService: BatteryService) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configuration = configuration
     self.batteryService = batteryService
   }
   
@@ -80,7 +78,7 @@ final class BatteryRefillRechargeMethodsModel {
   }
   
   private func updateState() {
-    guard !configuration.isDisableBatteryCryptoRechargeModule(isTestnet: wallet.isTestnet) else {
+    guard !TKFeatureFlags.provider.isBatteryCryptoRechargeDisable else {
       state = .idle(items: [])
       return
     }
@@ -116,14 +114,13 @@ final class BatteryRefillRechargeMethodsModel {
         return nil
       }
       return RechargeMethodItem.token(
-        token: .jetton(jettonBalance.jettonBalance.item),
-        amount: jettonBalance.jettonBalance.quantity
+        token: .jetton(jettonBalance.jettonBalance.item)
       )
     }
     
     var result = items
     if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton, amount: BigUInt(balance.tonBalance.tonBalance.amount)))
+      result.append(.token(token: .ton))
     }
     if !result.isEmpty {
       let giftItem = result[0]

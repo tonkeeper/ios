@@ -35,16 +35,30 @@ public struct TonkeeperDeeplinkParser {
       return .dapp(try parseDapp(url: url))
     case "battery":
       return .battery(parseBattery(url: url))
+    case "browser":
+      return .browser
+    case "story":
+      return .story(storyId: try parseStory(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
   }
   
-  func parseTransfer(url: URL) throws -> Deeplink.TransferData {
+  func parseTransfer(url: URL) throws -> Deeplink.Transfer {
     let components = URLComponents(
       url: url,
       resolvingAgainstBaseURL: true
     )
+    
+    let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "exp"]
+    
+    if let queryItems = components?.queryItems {
+      for item in queryItems {
+        if !validQueryItems.contains(item.name) {
+          throw DeeplinkParserError.unknownQueryItem(name: item.name)
+        }
+      }
+    }
     
     let recipient: String = try {
       guard url.pathComponents.count > 1 else {
@@ -53,7 +67,7 @@ public struct TonkeeperDeeplinkParser {
       let recipientParameter = url.pathComponents[1]
       return recipientParameter
     }()
-    
+        
     let amount: BigUInt? = {
       guard let amountParameter = components?.queryItems?.first(where: { $0.name == "amount" })?.value else {
         return nil
@@ -63,6 +77,14 @@ public struct TonkeeperDeeplinkParser {
     
     let comment: String? = {
       components?.queryItems?.first(where: { $0.name == "text" })?.value
+    }()
+    
+    let bin: String? = {
+      components?.queryItems?.first(where: { $0.name == "bin" })?.value
+    }()
+    
+    let stateInit: String? = {
+      components?.queryItems?.first(where: { $0.name == "init" })?.value
     }()
     
     let jettonAddress: Address? = {
@@ -78,14 +100,15 @@ public struct TonkeeperDeeplinkParser {
       }
       return Int64(exp)
     }()
-
-    return Deeplink.TransferData(
-      recipient: recipient,
-      amount: amount,
-      comment: comment,
-      jettonAddress: jettonAddress,
-      expirationTimestamp: expirationTimestamp
-    )
+        
+    if (bin != nil || stateInit != nil) {
+      if (comment != nil) {
+        throw DeeplinkParserError.invalidParameters
+      }
+      return .signRawTransfer(.init(recipient: recipient, amount: amount, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
+    }
+    
+    return .sendTransfer(.init(recipient: recipient, amount: amount, comment: comment, jettonAddress: jettonAddress, expirationTimestamp: expirationTimestamp))
   }
   
   func parsePool(url: URL) throws -> Address {
@@ -113,12 +136,14 @@ public struct TonkeeperDeeplinkParser {
     url.lastPathComponent
   }
   
-  func parseTonconnect(url: URL) throws -> TonConnectParameters {
+  func parseTonconnect(url: URL) throws -> TonConnectPayload {
     let components = URLComponents(
       url: url,
       resolvingAgainstBaseURL: true
     )
     
+    let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value
+
     guard let versionParameter = components?.queryItems?.first(where: { $0.name == "v" })?.value,
           let version = TonConnectParameters.Version(rawValue: versionParameter),
           let clientId = components?.queryItems?.first(where: { $0.name == "id" })?.value,
@@ -126,16 +151,14 @@ public struct TonkeeperDeeplinkParser {
           let requestPayloadData = requestPayloadValue.data(using: .utf8),
           let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
     else {
-      throw DeeplinkParserError.invalidParameters
+      return .empty
     }
     
-    let returnStrategy = components?.queryItems?.first(where: { $0.name == "ret" })?.value
-      
-    return TonConnectParameters(
+    return .withParameters(TonConnectParameters(
       version: version,
       clientId: clientId,
       requestPayload: requestPayload,
-      returnStrategy: returnStrategy)
+      returnStrategy: returnStrategy))
   }
   
   func parsePublish(url: URL) throws -> Data {
@@ -201,5 +224,22 @@ public struct TonkeeperDeeplinkParser {
     
     let promocode = components?.queryItems?.first(where: { $0.name == "promocode" })?.value
     return Deeplink.Battery(promocode: promocode)
+  }
+  
+  private func parseStory(url: URL) throws -> String {
+    let components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: true
+    )
+    
+    let storyId: String = try {
+      guard url.pathComponents.count > 1 else {
+        throw DeeplinkParserError.invalidParameters
+      }
+      let storyId = url.pathComponents[1]
+      return storyId
+    }()
+    
+    return storyId
   }
 }

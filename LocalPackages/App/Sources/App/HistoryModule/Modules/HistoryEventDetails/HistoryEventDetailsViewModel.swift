@@ -227,13 +227,14 @@ private extension HistoryEventDetailsViewModelImplementation {
   }
   
   private func configureListItems(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Component.List? {
-    guard !model.listItems.isEmpty else { return nil }
+    guard !model.listItems.isEmpty else {
+      return nil
+    }
+
+    let items = model.listItems.map { configureListItem($0)}
     return TKPopUp.Component.List(
       configuration: TKListContainerView.Configuration(
-        items: model.listItems.map {
-          listItem in
-          configureListItem(listItem)
-        },
+        items: items,
         copyToastConfiguration: .copied
       )
     )

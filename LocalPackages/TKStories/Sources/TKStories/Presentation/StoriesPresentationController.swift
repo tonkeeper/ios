@@ -1,7 +1,9 @@
 import UIKit
 import TKUIKit
 
-final class StoriesPresentationController: UIPresentationController {
+public final class StoriesPresentationController: UIPresentationController {
+  
+  public var didDismiss: (() -> Void)?
  
   let dimmingView: TKPassthroughView = {
     let view = TKPassthroughView()
@@ -18,7 +20,7 @@ final class StoriesPresentationController: UIPresentationController {
     super.init(presentedViewController: presentedViewController, presenting: presentingViewController)
   }
   
-  override func presentationTransitionWillBegin() {
+  public override func presentationTransitionWillBegin() {
     guard let containerView else { return }
     containerView.insertSubview(dimmingView, at: 0)
     
@@ -40,7 +42,7 @@ final class StoriesPresentationController: UIPresentationController {
     }
   }
   
-  override func dismissalTransitionWillBegin() {
+  public override func dismissalTransitionWillBegin() {
     guard let coordinator = presentedViewController.transitionCoordinator else {
       dimmingView.alpha = 0.0
       return
@@ -50,11 +52,15 @@ final class StoriesPresentationController: UIPresentationController {
     }
   }
   
-  override func containerViewWillLayoutSubviews() {
+  public override func dismissalTransitionDidEnd(_ completed: Bool) {
+    didDismiss?()
+  }
+  
+  public override func containerViewWillLayoutSubviews() {
     presentedView?.frame = frameOfPresentedViewInContainerView
   }
 
-  override var frameOfPresentedViewInContainerView: CGRect {
+  public override var frameOfPresentedViewInContainerView: CGRect {
     guard let containerView else { return .zero }
     let frame = CGRect(
       origin: CGPoint(x: 0, y: containerView.safeAreaInsets.top),
@@ -128,11 +134,12 @@ final class StoriesPresentationController: UIPresentationController {
 }
 
 extension StoriesPresentationController: UIGestureRecognizerDelegate {
-  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+  public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
     return true
   }
   
-  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+  public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                                shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
     guard gestureRecognizer == gesture else { return true }
     return false
   }

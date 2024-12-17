@@ -1,4 +1,5 @@
 import UIKit
+import TKStories
 import TKUIKit
 import TKCoordinator
 import TKCore
@@ -46,7 +47,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     stateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
-    
+        
     let state = stateManager.state
     switch state {
     case .onboarding:
@@ -67,10 +68,13 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         if didNeedToMigrate {
           self?.openMain(deeplink: deeplink)
         } else {
-          self?.handlePasscodeFlowIfNeeded { self?.openMain(deeplink: deeplink) }
+          self?.handlePasscodeFlowIfNeeded {
+            self?.openMain(deeplink: deeplink)
+          }
         }
       }
     }
+    sendFirstLaunchAnalyticsEvent()
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -80,11 +84,12 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       if let onboardingCoordinator {
         return onboardingCoordinator.handleDeeplink(deeplink: coreDeeplink)
       } else if let mainCoordinator {
-        return mainCoordinator.handleDeeplink(deeplink: coreDeeplink)
+        return mainCoordinator.handleDeeplink(deeplink: coreDeeplink, fromStories: false)
       } else {
         return false
       }
     } catch {
+      ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
       return false
     }
   }
@@ -354,6 +359,16 @@ private extension RootCoordinator {
     if animated {
       UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
     }
+  }
+  
+  func sendFirstLaunchAnalyticsEvent() {
+    let analyticsProvider = dependencies.coreAssembly.analyticsProvider
+    let appSettings = dependencies.coreAssembly.appSettings
+    
+    let firstLaunchTimestamp = appSettings.firstLaunchDate
+    guard firstLaunchTimestamp == nil else { return }
+    appSettings.firstLaunchDate = Date()
+    analyticsProvider.logEvent(eventKey: .firstLaunch)
   }
 }
 

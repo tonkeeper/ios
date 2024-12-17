@@ -59,6 +59,8 @@ public struct RemoteConfiguration: Equatable {
   public let disableBatteryCryptoRechargeModule: Bool
   public let scamApiURL: URL?
   public let flags: Flags
+  public let stories: [String]?
+  
   
   enum CodingKeys: String, CodingKey {
     case tonapiV2Endpoint
@@ -89,6 +91,7 @@ public struct RemoteConfiguration: Equatable {
     case disableBatterySend = "disable_battery_send"
     case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
     case scamApiURL = "scam_api_url"
+    case stories
   }
 }
 
@@ -146,7 +149,8 @@ extension RemoteConfiguration {
       disableBatterySend: false,
       disableBatteryCryptoRechargeModule: true,
       scamApiURL: nil,
-      flags: .default
+      flags: .default,
+      stories: []
     )
   }
 }

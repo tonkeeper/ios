@@ -22,11 +22,25 @@ public extension TonConnect.ConnectItemReply {
       try container.encode(address)
     case .tonProof(let proof):
       try container.encode(proof)
+    case .tonProofSigned(let proofSigned):
+      try container.encode(proofSigned)
     }
   }
 }
 
 public extension TonConnect.TonProofItemReply {
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    case .success(let success):
+      try container.encode(success)
+    case .error(let error):
+      try container.encode(error)
+    }
+  }
+}
+
+public extension TonConnect.TonProofItemReplySigned {
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
@@ -61,25 +75,21 @@ public extension TonConnect.TonAddressItemReply {
   }
 }
 
-public extension TonConnect.TonProofItemReplySuccess.Signature {
-  func data() -> Data {
-    let string = "ton-proof-item-v2/".data(using: .utf8)!
-    let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
-    
-    let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
-      Data(a)
-    }
-    let addressHash = address.hash
-    let domainLength = withUnsafeBytes(of: UInt32(littleEndian: domain.lengthBytes)) { a in
-      Data(a)
-    }
-    let domainValue = domain.value.data(using: .utf8)!
-    let timestamp = withUnsafeBytes(of: UInt64(littleEndian: timestamp)) { a in
-      Data(a)
-    }
-    let payload = payload.data(using: .utf8)!
-    
-    return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
+public extension TonConnect.TonProofItemReplySignedSuccess.Proof {
+  enum CodingKeys: String, CodingKey {
+    case timestamp
+    case domain
+    case signature
+    case payload
+  }
+  
+  func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(timestamp, forKey: .timestamp)
+    try container.encode(domain, forKey: .domain)
+  
+    try container.encode(signature, forKey: .signature)
+    try container.encode(payload, forKey: .payload)
   }
 }
 
@@ -96,7 +106,7 @@ public extension TonConnect.TonProofItemReplySuccess.Proof {
     try container.encode(timestamp, forKey: .timestamp)
     try container.encode(domain, forKey: .domain)
     
-    let signatureMessageData = signature.data()
+    let signatureMessageData = signature.signatureData.data()
     let signatureMessage = signatureMessageData.sha256()
     guard let prefixData = Data(hex: "ffff"),
           let tonConnectData = "ton-connect".data(using: .utf8) else {
@@ -112,11 +122,10 @@ public extension TonConnect.TonProofItemReplySuccess.Proof {
   }
 }
 
-public extension TonConnect.Signature {
+public extension TonConnect.SignatureData {
   func data() -> Data {
     let string = "ton-proof-item-v2/".data(using: .utf8)!
     let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
-    
     let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
       Data(a)
     }
@@ -129,18 +138,19 @@ public extension TonConnect.Signature {
       Data(a)
     }
     let payload = payload.data(using: .utf8)!
-    
     return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
   }
-  
+}
+
+public extension TonConnect.Signature {
   func signature() throws -> Data {
-    let signatureMessageData = data()
+    let signatureMessageData = signatureData.data()
     let signatureMessage = signatureMessageData.sha256()
     let prefixData: Data = Data(hex: "ffff")
     let tonConnectData = "ton-connect".data(using: .utf8) ?? Data()
-    let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
+    let signatureDataHash = (prefixData + tonConnectData + signatureMessage).sha256()
     let signature = try TweetNacl.NaclSign.signDetached(
-      message: signatureData,
+      message: signatureDataHash,
       secretKey: privateKey.data
     )
     return signature

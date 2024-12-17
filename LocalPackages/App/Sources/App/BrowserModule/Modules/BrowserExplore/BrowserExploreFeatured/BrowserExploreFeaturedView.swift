@@ -6,7 +6,7 @@ import TKCore
 
 final class BrowserExploreFeaturedView: UIView {
   
-  var didSelectApp: ((Int) -> Void)?
+  var didSelectApp: ((Dapp) -> Void)?
 
   // MARK: - Image Loader
   
@@ -198,7 +198,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDataSource {
 
 extension BrowserExploreFeaturedView: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    didSelectApp?(indexPath.item - ((indexPath.item / dapps.count) * dapps.count))
+    dataSource[indexPath.item].tapClosure?()
   }
   
   func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -327,7 +327,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     
     return BrowserExploreFeaturedCell.Model(
       posterImageTask: posterImageTask,
-      listModel: listModel
+      listModel: listModel,
+      tapClosure: { [weak self] in
+        self?.didSelectApp?(dapp)
+      }
     )
   }
 }

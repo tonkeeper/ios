@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import UIKit
 import TKLocalize
+import TKFeatureFlags
 import TonSwift
 
 protocol WalletBalanceModuleOutput: AnyObject {
@@ -34,9 +35,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
 protocol WalletBalanceModuleInput: AnyObject {}
 
 protocol WalletBalanceViewModel: AnyObject {
-  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
+  var didUpdateSnapshot: ((_ snapshot: WalletBalance.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
   
-  var didUpdateItems: (([WalletBalanceListItem: WalletBalanceListCell.Configuration]) -> Void)? { get set }
+  var didUpdateItems: (([WalletBalance.ListItem: WalletBalanceListCell.Configuration]) -> Void)? { get set }
   
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)? { get set }
@@ -48,7 +49,7 @@ protocol WalletBalanceViewModel: AnyObject {
 }
 
 struct WalletBalanceListModel {
-  let snapshot: WalletBalanceViewController.Snapshot
+  let snapshot: WalletBalance.Snapshot
   let listItemsConfigurations: [String: WalletBalanceListCell.Configuration]
   let notificationItemsConfigurations: [String: NotificationBannerCell.Configuration]
 }
@@ -57,8 +58,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   // MARK: - WalletBalanceModuleOutput
   
-  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)?
-  var didUpdateItems: (([WalletBalanceListItem : WalletBalanceListCell.Configuration]) -> Void)?
+  var didUpdateSnapshot: ((_ snapshot: WalletBalance.Snapshot, _ isAnimated: Bool) -> Void)?
+  var didUpdateItems: (([WalletBalance.ListItem : WalletBalanceListCell.Configuration]) -> Void)?
     
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
@@ -131,7 +132,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let syncQueue = DispatchQueue(label: "SyncQueue")
   
   @MainActor
-  private var listModel = WalletBalanceListModel(snapshot: WalletBalanceViewController.Snapshot(),
+  private var listModel = WalletBalanceListModel(snapshot: WalletBalance.Snapshot(),
                                                  listItemsConfigurations: [:],
                                                  notificationItemsConfigurations: [:])
   private var balanceListItems: WalletBalanceBalanceModel.BalanceListItems?
@@ -213,7 +214,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
       }
     }
-    configuration.addUpdateObserver(self) { observer in
+
+    TKFeatureFlags.provider.addObserver(self, flags: [.isSwapDisable, .isExchangeMethodsDisable]) { observer, flag in
       observer.syncQueue.async {
         guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else { return }
         let model = observer.createHeaderModel(state: totalBalanceModelState)
@@ -265,7 +267,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private func createWalletBalanceListModel(balanceListItems: WalletBalanceBalanceModel.BalanceListItems?,
                                             setupState: WalletBalanceSetupModel.State?,
                                             notifications: [NotificationModel]) -> WalletBalanceListModel {
-    var snapshot = WalletBalanceViewController.Snapshot()
+    var snapshot = WalletBalance.Snapshot()
     var listItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
     var notificationItemsConfigurations = [String : NotificationBannerCell.Configuration]()
     
@@ -273,21 +275,24 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       let (section, cellConfigurations) = createNotificationsSection(notifications: notifications)
       notificationItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.notifications(section)])
-      snapshot.appendItems(section.items, toSection: .notifications(section))
+      snapshot.appendItems(section.items.map { .notificationItem($0) }, toSection: .notifications(section))
     }
+    
+    snapshot.appendSections([.balanceHeader])
+    snapshot.appendItems([.balanceHeader], toSection: .balanceHeader)
     
     if let setupState {
       let (section, cellConfigurations) = createSetupSection(setupState: setupState)
       listItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.setup(section)])
-      snapshot.appendItems(section.items, toSection: .setup(section))
+      snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .setup(section))
     }
     
     if let balanceListItems {
       let (section, cellConfigurations) = createBalanceSection(balanceListItems: balanceListItems)
       listItemsConfigurations.merge(cellConfigurations) { $1 }
       snapshot.appendSections([.balance(section)])
-      snapshot.appendItems(section.items, toSection: .balance(section))
+      snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .balance(section))
     }
     
     if #available(iOS 15.0, *) {
@@ -305,9 +310,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   private func createBalanceSection(
     balanceListItems: WalletBalanceBalanceModel.BalanceListItems
-  ) -> (section: WalletBalanceListSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
+  ) -> (section: WalletBalance.BalanceItemsSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
     var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
-    var sectionItems = [WalletBalanceListItem]()
+    var sectionItems = [WalletBalance.ListItem]()
     balanceListItems.items.forEach { balanceListItem in
       switch balanceListItem.balanceItem {
       case .ton(let item):
@@ -316,7 +321,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           isSecure: balanceListItems.isSecure,
           isPinned: balanceListItem.isPinned
         )
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectTon?(balanceListItems.wallet)
           }
@@ -327,7 +332,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           item,
           isSecure: balanceListItems.isSecure,
           isPinned: balanceListItem.isPinned)
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectJetton?(balanceListItems.wallet, item.jetton, !item.price.isZero)
           }
@@ -344,7 +349,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
                   let poolInfo = item.poolInfo else { return }
             self.didSelectCollectStakingItem?(balanceListItems.wallet, poolInfo, item.info)
           })
-        let sectionItem = WalletBalanceListItem(
+        let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             guard let self,
                   let poolInfo = item.poolInfo else { return }
@@ -366,7 +371,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
     }
     
-    let section = WalletBalanceListSection(
+    let section = WalletBalance.BalanceItemsSection(
       items: sectionItems,
       footerConfiguration: footerConfiguration
     )
@@ -375,9 +380,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   private func createSetupSection(
     setupState: WalletBalanceSetupModel.State
-  ) -> (section: WalletBalanceSetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
+  ) -> (section: WalletBalance.SetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
     var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
-    var sectionItems = [WalletBalanceListItem]()
+    var sectionItems = [WalletBalance.ListItem]()
     
     setupState.items.forEach { item in
       switch item {
@@ -390,7 +395,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
         
         let configuration = self.listMapper.createNotificationsConfiguration()
-        let notificationsItem = WalletBalanceListItem(
+        let notificationsItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .switch(
             TKListItemSwitchAccessoryView.Configuration(
@@ -418,7 +423,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         })
 
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
-        let telegramChannelItem = WalletBalanceListItem(
+        let telegramChannelItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .button(buttonConfiguration),
           onSelection: nil
@@ -427,7 +432,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         sectionItems.append(telegramChannelItem)
       case .backup:
         let backupConfiguration = self.listMapper.createBackupConfiguration()
-        let backupItem = WalletBalanceListItem(
+        let backupItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .chevron,
           onSelection: { [weak self] in
@@ -461,7 +466,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
         
         let biometryConfiguration = self.listMapper.createBiometryConfiguration()
-        let biometryItem = WalletBalanceListItem(
+        let biometryItem = WalletBalance.ListItem(
           identifier: item.rawValue,
           accessory: .switch(
             TKListItemSwitchAccessoryView.Configuration(
@@ -493,7 +498,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       buttonConfiguration: headerButtonConfiguration
     )
     
-    let section = WalletBalanceSetupSection(
+    let section = WalletBalance.SetupSection(
       items: sectionItems,
       headerConfiguration: headerConfiguration
     )
@@ -501,9 +506,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   private func createNotificationsSection(notifications: [NotificationModel])
-  -> (section: WalletBalanceNotificationSection, cellConfigurations: [String: NotificationBannerCell.Configuration]) {
+  -> (section: WalletBalance.NotificationSection, cellConfigurations: [String: NotificationBannerCell.Configuration]) {
     var cellConfigurations = [String: NotificationBannerCell.Configuration]()
-    var items = [WalletBalanceNotificationItem]()
+    var items = [WalletBalance.NotificationItem]()
     notifications.forEach { notification in
       let actionButton: NotificationBannerView.Model.ActionButton? = {
         guard let action = notification.action else {
@@ -543,7 +548,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           )
         )
       )
-      let item = WalletBalanceNotificationItem(
+      let item = WalletBalance.NotificationItem(
         id: notification.id,
         cellConfiguration: cellConfiguration
       )
@@ -552,7 +557,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       items.append(item)
     }
     
-    let section = WalletBalanceNotificationSection(
+    let section = WalletBalance.NotificationSection(
       items: items
     )
     
@@ -586,7 +591,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     let listModel = await self.listModel
     let isSecure = self.appSettingsStore.state.isSecureMode
     var listItemsConfigurations = listModel.listItemsConfigurations
-    var items = [WalletBalanceListItem: WalletBalanceListCell.Configuration]()
+    var items = [WalletBalance.ListItem: WalletBalanceListCell.Configuration]()
     
     for item in stakingItems {
       guard case let .staking(stakingItem) = item.balanceItem else { continue }
@@ -602,7 +607,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
       listItemsConfigurations[stakingItem.id] = cellConfiguration
       
-      let item = WalletBalanceListItem(
+      let item = WalletBalance.ListItem(
         identifier: stakingItem.id) { [weak self] in
           guard let self,
                 let poolInfo = stakingItem.poolInfo else { return }
@@ -624,8 +629,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderModel(state: WalletTotalBalanceModel.State) -> BalanceHeaderView.Model {
-    let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
-    
     let addressButtonText: String = {
       if self.appSettings.addressCopyCount > 2 {
         state.address.toShort()
@@ -633,86 +636,44 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
       }
     }()
-    
-    let addressButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
-      textStyle: .body2,
-      textColor: .Text.secondary,
-      contentAlpha: [.normal: 1, .highlighted: 0.48],
-      action: { [weak self] in
+
+    let statusViewConfiguration: BalanceHeaderBalanceStatusView.Configuration = {
+      let action = {  [weak self] in
         guard let self else { return }
         self.didTapCopy(address: state.address.toString(),
-                         toastConfiguration: state.wallet.copyToastConfiguration())
+                        toastConfiguration: state.wallet.copyToastConfiguration())
         self.appSettings.addressCopyCount += 1
         if self.appSettings.addressCopyCount <= 3 {
           didUpdateTotalBalanceState(state)
         }
       }
-    )
-    
-    let balanceColor: UIColor
-    let backup: BalanceHeaderAmountView.Configuration.Backup
-    let backupWarningState = BalanceBackupWarningCheck().check(
-      wallet: state.wallet,
-      tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
-    )
-    switch backupWarningState {
-    case .error:
-      balanceColor = .Accent.red
-      backup = .backup(color: .Accent.red, closure: { [weak self] in
-        self?.didTapBackup?(state.wallet)
-      })
-    case .warning:
-      balanceColor = .Accent.orange
-      backup = .backup(color: .Accent.orange, closure: { [weak self] in
-        self?.didTapBackup?(state.wallet)
-      })
-    case .none:
-      balanceColor = .Text.primary
-      backup = .none
-    }
-  
-    let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
-    let balanceConfiguration = BalanceHeaderAmountView.Configuration(
-      balanceButtonModel: BalanceHeaderAmountButton.Model(
-        balance: totalBalanceMapped,
-        balanceColor: balanceColor,
-        state: secureState,
-        tapHandler: { [weak self] in
-          guard let self else { return }
-          Task {
-            await self.appSettingsStore.toggleIsSecureMode()
-          }
-        }
-      ),
-      batteryButtonConfiguration: createBatteryButtonConfiguration(
-        wallet: state.wallet,
-        batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance
-      ),
-      backup: backup
-    )
-    
-    let stateDate: String? = {
-      guard let totalBalanceState = state.totalBalanceState else { return nil }
-      switch totalBalanceState {
-      case .current, .none:
-        return nil
-      case .previous(let totalBalance):
-        return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
+      
+      if let connectionStatusModel = self.createConnectionStatusModel(
+        backgroundUpdateState: state.backgroundUpdateConnectionState, 
+        isLoading: state.isLoadingBalance
+      ) {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .connection(connectionStatusModel), 
+          action: action
+        )
+      } else if let totalBalanceState = state.totalBalanceState, case let .previous(totalBalance) = totalBalanceState {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .updated(TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))),
+          action: action
+        )
+      } else {
+        return BalanceHeaderBalanceStatusView.Configuration(
+          state: .address(addressButtonText, tags: state.wallet.balanceTagConfigurations()),
+          action: action
+        )
       }
     }()
     
     let headerModel = BalanceHeaderBalanceView.Model(
-      balanceConfiguration: balanceConfiguration,
-      addressButtonConfiguration: addressButtonConfiguration,
-      connectionStatusModel: self.createConnectionStatusModel(
-        backgroundUpdateState: state.backgroundUpdateConnectionState,
-        isLoading: state.isLoadingBalance
-      ),
-      tags: state.wallet.balanceTagConfigurations(),
-      stateDate: stateDate
+      amountViewConfiguration: createAmountViewConfiguration(state: state),
+      statusViewConfiguration: statusViewConfiguration
     )
-    
+
     let model = BalanceHeaderView.Model(
       balanceModel: headerModel,
       buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
@@ -720,7 +681,72 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     return model
   }
   
-  func createBatteryButtonConfiguration(wallet: Wallet, batteryBalance: BatteryBalance?) -> BalanceHeaderBatteryButton.Configuration? {
+  func createAmountViewConfiguration(state: WalletTotalBalanceModel.State) -> BalanceHeaderBalanceAmountView.Configuration {
+    let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
+    
+    let backupWarningState = BalanceBackupWarningCheck().check(
+      wallet: state.wallet,
+      tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
+    )
+    let balanceColor: UIColor
+    var backupButton: BalanceHeaderBalanceAmountView.Configuration.BackupButton?
+    switch backupWarningState {
+    case .error:
+      balanceColor = .Accent.red
+      backupButton = BalanceHeaderBalanceAmountView.Configuration.BackupButton(
+        color: .Accent.red,
+        action: { [weak self] in
+          self?.didTapBackup?(state.wallet)
+        }
+      )
+    case .warning:
+      balanceColor = .Accent.orange
+      backupButton = BalanceHeaderBalanceAmountView.Configuration.BackupButton(
+        color: .Accent.orange,
+        action: { [weak self] in
+          self?.didTapBackup?(state.wallet)
+        }
+      )
+    case .none:
+      balanceColor = .Text.primary
+      backupButton = nil
+    }
+    
+    let amountButtonConfiguration: BalanceHeaderBalanceAmountButton.Configuration = {
+      let amountButtonState: BalanceHeaderBalanceAmountButton.State
+      if state.isSecure {
+        amountButtonState = .secure(color: balanceColor)
+      } else {
+        amountButtonState = .amount(
+          BalanceHeaderBalanceAmountButton.State.Amount(
+            balance: totalBalanceMapped,
+            color: balanceColor
+          )
+        )
+      }
+      
+      return BalanceHeaderBalanceAmountButton.Configuration(
+        state: amountButtonState,
+        action: { [weak self] in
+          self?.appSettingsStore.toggleIsSecureMode()
+        }
+      )
+    }()
+    
+    let batteryButtonConfiguration = createBatteryButtonConfiguration(
+      wallet: state.wallet,
+      batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance
+    )
+    
+    return BalanceHeaderBalanceAmountView.Configuration(
+      amountButtonConfiguration: amountButtonConfiguration,
+      batteryButtonConfiguration: batteryButtonConfiguration,
+      backupButton: backupButton
+    )
+  }
+  
+  func createBatteryButtonConfiguration(wallet: Wallet,
+                                        batteryBalance: BatteryBalance?) -> BalanceHeaderBalanceBatteryButton.Configuration? {
     guard wallet.kind == .regular else { return nil }
     let state: BatteryView.State
     switch batteryBalance?.batteryState {
@@ -729,7 +755,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     case .empty, .none:
       state = .emptyTinted
     }
-    return BalanceHeaderBatteryButton.Configuration(
+    return BalanceHeaderBalanceBatteryButton.Configuration(
       batteryConfiguration: state,
       action: { [weak self] in
         self?.didTapBattery?(wallet)
@@ -746,10 +772,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> ConnectionStatusView.Model? {
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> BalanceHeaderBalanceConnectionStatusView.Model? {
     switch (backgroundUpdateState, isLoading) {
     case (.connecting, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
@@ -757,19 +783,19 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     case (.connected, false):
       return nil
     case (.connected, true):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
     case (.disconnected, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
     case (.noConnection, _):
-      return ConnectionStatusView.Model(
+      return BalanceHeaderBalanceConnectionStatusView.Model(
         title: TKLocales.ConnectionStatus.noInternet,
         titleColor: .Accent.orange,
         isLoading: false
@@ -778,7 +804,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
-    let flags = configuration.flags(isTestnet: wallet.isTestnet)
     let sendButton: WalletBalanceHeaderButtonsView.Model.Button = {
       WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.send,
@@ -807,7 +832,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let swapButton: WalletBalanceHeaderButtonsView.Model.Button? = {
-      guard !flags.isSwapDisable else { return nil }
+      guard !TKFeatureFlags.provider.isSwapDisable else { return nil }
       return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
@@ -819,7 +844,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }()
     
     let buyButton: WalletBalanceHeaderButtonsView.Model.Button? = {
-      guard !flags.isExchangeMethodsDisable else { return nil }
+      guard !TKFeatureFlags.provider.isExchangeMethodsDisable else { return nil }
       return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,
         icon: .TKUIKit.Icons.Size28.usd,

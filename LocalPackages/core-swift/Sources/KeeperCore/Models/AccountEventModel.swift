@@ -36,6 +36,18 @@ public struct AccountEventModel {
       public let name: String?
       public let collectionName: String?
       public let image: URL?
+      
+      public init(nft: NFT, 
+                  isSuspecious: Bool,
+                  name: String?,
+                  collectionName: String?,
+                  image: URL?) {
+        self.nft = nft
+        self.isSuspecious = isSuspecious
+        self.name = name
+        self.collectionName = collectionName
+        self.image = image
+      }
     }
     
     public enum EncryptedComment {
@@ -56,18 +68,18 @@ public struct AccountEventModel {
     public let nft: ActionNFT?
     public let stakingImplementation: StakingPoolImplementation?
     
-    init(eventType: ActionType,
-         stakingImplementation: StakingPoolImplementation? = nil,
-         amount: String?,
-         subamount: String?,
-         leftTopDescription: String?,
-         leftBottomDescription: String?,
-         rightTopDescription: String?,
-         status: String?,
-         comment: String?,
-         encryptedComment: EncryptedComment? = nil,
-         description: String? = nil,
-         nft: ActionNFT?) {
+    public init(eventType: ActionType,
+                stakingImplementation: StakingPoolImplementation? = nil,
+                amount: String?,
+                subamount: String?,
+                leftTopDescription: String?,
+                leftBottomDescription: String?,
+                rightTopDescription: String?,
+                status: String?,
+                comment: String?,
+                encryptedComment: EncryptedComment? = nil,
+                description: String? = nil,
+                nft: ActionNFT?) {
       self.eventType = eventType
       self.amount = amount
       self.subamount = subamount
@@ -87,4 +99,14 @@ public struct AccountEventModel {
   public let actions: [Action]
   public let accountEvent: AccountEvent
   public let date: Date
+  
+  public init(eventId: String, 
+              actions: [Action],
+              accountEvent: AccountEvent,
+              date: Date) {
+    self.eventId = eventId
+    self.actions = actions
+    self.accountEvent = accountEvent
+    self.date = date
+  }
 }

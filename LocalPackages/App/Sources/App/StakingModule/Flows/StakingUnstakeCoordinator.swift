@@ -9,7 +9,6 @@ import BigInt
 
 final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  var didFinish: (() -> Void)?
   var didClose: (() -> Void)?
   
   private weak var confirmationCoordinator: StakingConfirmationCoordinator?
@@ -71,7 +70,7 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
     )
     
     module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     }
     
     module.output.didConfirm = { [weak self] item in
@@ -99,8 +98,8 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
       router: router
     )
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
+    coordinator.didFinish = { [weak self] in
+      self?.removeChild($0)
     }
     
     coordinator.didClose = { [weak self, weak coordinator] in

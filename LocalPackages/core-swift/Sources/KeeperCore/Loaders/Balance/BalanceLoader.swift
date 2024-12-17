@@ -69,6 +69,7 @@ public final class BalanceLoader {
           }
           await group.waitForAll()
         }
+        try? await Task.sleep(nanoseconds: 500_000_000)
       }
     }
     allWalletsBalanceLoadTask = task

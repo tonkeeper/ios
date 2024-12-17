@@ -4,7 +4,7 @@ import TonSwift
 
 public protocol SendService {
   func loadSeqno(wallet: Wallet) async throws -> UInt64
-  func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> TonAPI.MessageConsequences
+  func loadTransactionInfo(boc: String, wallet: Wallet, params: [EmulateMessageToWalletRequestParamsInner]?) async throws -> TonAPI.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
   func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload
@@ -22,9 +22,9 @@ final class SendServiceImplementation: SendService {
     try await UInt64(apiProvider.api(wallet.isTestnet).getSeqno(address: wallet.address))
   }
   
-  func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> TonAPI.MessageConsequences {
+  func loadTransactionInfo(boc: String, wallet: Wallet, params: [EmulateMessageToWalletRequestParamsInner]?) async throws -> TonAPI.MessageConsequences {
     try await apiProvider.api(wallet.isTestnet)
-      .emulateMessageWallet(boc: boc)
+      .emulateMessageWallet(boc: boc, params: params)
   }
   
   func sendTransaction(boc: String, wallet: Wallet) async throws {
@@ -54,5 +54,9 @@ final class SendServiceImplementation: SendService {
 public extension SendService {
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = TonSwift.DEFAULT_TTL) async -> UInt64 {
     return await getTimeoutSafely(wallet: wallet, TTL: TTL)
+  }
+  
+  func loadTransactionInfo(boc: String, wallet: Wallet, params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TonAPI.MessageConsequences {
+    try await loadTransactionInfo(boc: boc, wallet: wallet, params: params)
   }
 }

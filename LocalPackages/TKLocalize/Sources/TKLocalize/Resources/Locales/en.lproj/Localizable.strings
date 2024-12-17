@@ -45,6 +45,11 @@
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
 "camera_permission.button" = "Open Settings";
 
+"country_picker.title" = "Choose your country";
+"country_picker.search" = "Search";
+"country_picker.auto" = "Auto";
+"country_picker.all_regions" = "All Regions";
+
 "collectibles.title" = "Collectibles";
 "collectibles.collection_hidden" = "Collection hidden";
 "collectibles.nft_hidden" = "NFT hidden";
@@ -61,6 +66,10 @@
 "history.placeholder.subtitle" = "Make your first transaction!";
 "history.placeholder.buttons.receive" = "Receive";
 "history.placeholder.buttons.buy" = "Buy Toncoin";
+
+"bridge_web.refresh" = "Refresh";
+"bridge_web.share" = "Share";
+"bridge_web.copy_link" = "Copy link";
 
 "browser.tab.explore" = "Explore";
 "browser.tab.connected" = "Connected";
@@ -113,6 +122,8 @@
 "settings.items.notifications" = "Notifications";
 "settings.items.wallet_w5" = "Wallet W5";
 "settings.items.wallet_v4R2" = "Wallet v4R2";
+"settings.items.battery" = "Battery";
+"settings.items.connected_apps" = "Connected Apps";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -149,6 +160,21 @@
 "settings.notifications.title" = "Notifications";
 "settings.notifications.notifications_item.title" = "Push notifications";
 "settings.notifications.notifications_item.caption" = "Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.";
+"settings.notifications.notifications_disabled.title" = "Notifications are disabled";
+"settings.notifications.notifications_disabled.caption" = "You turned off notifications in\U00A0your phone’s settings. To\U00A0activate notifications, go to\U00A0Settings on\U00A0this device.";
+"settings.notifications.notifications_disabled.action_title" = "Settings";
+
+"settings.connected_apps.title" = "Apps";
+"settings.connected_apps.disconnect" = "Disconnect";
+"settings.connected_apps.disconnect_all_apps" = "Disconnect All Apps";
+"settings.connected_apps.apps" = "Apps";
+
+"settings.connected_apps.disconnect_all_title" = "Disconnect All Apps?";
+"settings.connected_apps.disconnect_item_title" = "Disconnect %@?";
+"settings.connected_apps.actions.disconnect" = "Disconnect";
+"settings.connected_apps.actions.cancel" = "Cancel";
+
+"settings.connected_apps.empty.title" = "No connected apps";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";
@@ -170,6 +196,26 @@
 "currency.items.krw" = "South Korean Won";
 "currency.items.idr" = "Indonesian Rupiah";
 "currency.items.inr" = "Indian Rupee";
+"currency.items.uzs" = "Uzbekistani sum";
+"currency.items.byn" = "Belarusian ruble";
+"currency.items.brl" = "Brazilian Real";
+"currency.items.try" = "Turkish Lira";
+"currency.items.ngn" = "Nigerian Naira";
+"currency.items.thb" = "Thai baht";
+"currency.items.bdt" = "Bangladeshi taka";
+"currency.items.cad" = "Canadian Dollar";
+"currency.items.ils" = "Israeli Sheqel";
+"currency.items.gel" = "Georgian lari";
+"currency.items.vhd" = "Vietnamese dong";
+"currency.items.ZAR" = "South African rand";
+"currency.items.ARS" = "Argentine peso";
+"currency.items.COP" = "Colombian peso";
+"currency.items.ETB" = "Ethiopian birr";
+"currency.items.KES" = "Kenyan shilling";
+"currency.items.UGX" = "Ugandan shilling";
+"currency.items.VES" = "Venezuelan bolívar";
+"currency.items.BTC" = "Bitcoin";
+"currency.items.TON" = "Toncoin";
 
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";
@@ -252,6 +298,7 @@
 "connection_status.updated_at" = "Updated %@";
 
 "token.unverified" = "Unverified token";
+"token.view_details" = "View details";
 
 "onboarding.caption" = "Create a new wallet or add an existing one";
 "onboarding.buttons.create_new" = "Create New Wallet";
@@ -311,7 +358,6 @@
 
 "keystone.scan.subtitle" = "Open Keystone » Connect Software Wallet » Tonkeeper";
 "keystone.scan.about_keystone_button" = "About Keystone";
-
 
 "chart.price" = "Price";
 
@@ -517,7 +563,7 @@
 
 "staking_list.max_apy" = "MAX APY";
 "staking_list.apy" = "APY";
-"staking_list.minimum_deposit_description" = "Minimum deposit %@";
+"staking_list.minimum_deposit_description" = "Min. deposit %@";
 
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
@@ -621,3 +667,7 @@
 "battery.recharge.сustom_input.title" = "Other";
 "battery.recharge.сustom_input.caption" = "Enter amount manually";
 "battery.recharge.toast.success" = "Battery will charge in a few minutes";
+
+"staking_input.available_balance" = "Available: %@";
+"staking_input.insufficient_balance" = "Insufficient balance";
+"staking_input.minimum_balance" = "Minimum %@";

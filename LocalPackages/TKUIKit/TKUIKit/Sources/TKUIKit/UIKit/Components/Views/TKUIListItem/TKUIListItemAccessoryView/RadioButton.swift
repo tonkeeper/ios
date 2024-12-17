@@ -9,8 +9,12 @@ public final class RadioButton: UIControl {
   private let outerLayer = CAShapeLayer()
   private let innerLayer = CAShapeLayer()
   
-  public var didToggle: ((_ isSelected: Bool) -> Void)?
-  
+  public var didToggle: ((_ isSelected: Bool) -> Void)? {
+    didSet {
+      isUserInteractionEnabled = (didToggle != nil)
+    }
+  }
+
   public var tintColors: [TKRadioButtonState: UIColor] = [:] {
     didSet {
       updateAppearance()
@@ -74,11 +78,21 @@ public final class RadioButton: UIControl {
 // MARK: - Private methods
 
 private extension RadioButton {
+
   func setup() {
     updateAppearance()
+    configureAction()
+
     setNeedsLayout()
   }
-  
+
+  func configureAction() {
+    addAction(UIAction(handler: { [weak self] _ in
+      let isSelected = self?.isSelected ?? false
+      self?.didToggle?(isSelected)
+    }), for: .touchUpInside)
+  }
+
   func updateAppearance() {
     let diameter = size * 0.8
     let lineWidth: CGFloat = diameter * 0.1

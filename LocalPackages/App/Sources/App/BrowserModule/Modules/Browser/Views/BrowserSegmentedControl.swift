@@ -68,6 +68,28 @@ final class BrowserSegmentedControl: UIView, ConfigurableView {
     )
     connectedButtonTapAction = model.connectedButton.tapAction
   }
+  
+  func selectExploreButton() {
+    guard !exploreButton.isSelected else { return }
+    exploreButton.isSelected = true
+    connectedButton.isSelected = false
+    selectionIndicatorView.snp.remakeConstraints { make in
+      make.edges.equalTo(exploreButton)
+    }
+    animateLayout()
+    exploreButtonTapAction?()
+  }
+  
+  func selectConnectedButton() {
+    guard !connectedButton.isSelected else { return }
+    connectedButton.isSelected = true
+    exploreButton.isSelected = false
+    selectionIndicatorView.snp.remakeConstraints { make in
+      make.edges.equalTo(connectedButton)
+    }
+    animateLayout()
+    connectedButtonTapAction?()
+  }
 }
 
 private extension BrowserSegmentedControl {
@@ -78,11 +100,11 @@ private extension BrowserSegmentedControl {
     exploreButton.isSelected = true
     
     connectedButton.addAction(UIAction(handler: { [weak self] _ in
-      self?.didTapConnectedButton()
+      self?.selectConnectedButton()
     }), for: .touchUpInside)
     
     exploreButton.addAction(UIAction(handler: { [weak self] _ in
-      self?.didTapExploreButton()
+      self?.selectExploreButton()
     }), for: .touchUpInside)
     
     addSubview(buttonContainer)
@@ -112,28 +134,6 @@ private extension BrowserSegmentedControl {
     selectionIndicatorView.snp.makeConstraints { make in
       make.edges.equalTo(exploreButton)
     }
-  }
-  
-  func didTapExploreButton() {
-    guard !exploreButton.isSelected else { return }
-    exploreButton.isSelected = true
-    connectedButton.isSelected = false
-    selectionIndicatorView.snp.remakeConstraints { make in
-      make.edges.equalTo(exploreButton)
-    }
-    animateLayout()
-    exploreButtonTapAction?()
-  }
-  
-  func didTapConnectedButton() {
-    guard !connectedButton.isSelected else { return }
-    connectedButton.isSelected = true
-    exploreButton.isSelected = false
-    selectionIndicatorView.snp.remakeConstraints { make in
-      make.edges.equalTo(connectedButton)
-    }
-    animateLayout()
-    connectedButtonTapAction?()
   }
   
   func createButton() -> UIButton {

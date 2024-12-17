@@ -32,6 +32,11 @@ public final class Configuration {
       await loadConfiguration().mainnet.tonApiV2Key
     }
   }
+  public var stories: [String] {
+    get async {
+      await loadConfiguration().mainnet.stories ?? []
+    }
+  }
   public func scamApiURL(isTestnet: Bool) async -> URL? {
     isTestnet
     ? await loadConfiguration().testnet.scamApiURL
