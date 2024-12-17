@@ -4,7 +4,8 @@ import BigInt
 
 public struct JettonTransferBuilder {
   private init() {}
-  public static func createWalletTransfer(wallet: Wallet,
+  public static func createWalletTransfer(transferAmount: BigUInt,
+                                          wallet: Wallet,
                                           seqno: UInt64,
                                           tokenAddress: Address,
                                           value: BigUInt,
@@ -27,6 +28,7 @@ public struct JettonTransferBuilder {
           bounce: isBounceable,
           to: recipientAddress,
           from: responseAddress ?? sender,
+          transferAmount: transferAmount,
           comment: comment,
           customPayload: customPayload,
           stateInit: stateInit

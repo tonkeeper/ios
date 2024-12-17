@@ -85,28 +85,28 @@ public struct TransferService {
   }
   
   public func emulate(wallet: Wallet,
-                      transfer: Transfer) async throws -> TransferEmulationResult {
+                      transfer: Transfer,
+                      params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
     let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
     
     
     if let tonProofToken,
        await isRelayerAvailable(wallet: wallet, tonProofToken: tonProofToken, transfer: transfer),
-       let excessAccount = batteryConfig?.excessAccount,
-       let excessAddress = try? Address.parse(excessAccount),
        await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
        await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
       return try await emulateWithBattery(
         wallet: wallet,
         transfer: transfer,
-        excessAddress: excessAddress,
+        excessAddress: wallet.address,
         tonProofToken: tonProofToken,
-        transferType: .battery(excessAddress: excessAddress)
+        transferType: .battery(excessAddress: wallet.address)
       )
     } else {
       return try await defaultEmulate(
         wallet: wallet,
-        transfer: transfer
+        transfer: transfer,
+        params: params
       )
     }
   }
@@ -161,7 +161,8 @@ public struct TransferService {
   }
   
   private func defaultEmulate(wallet: Wallet,
-                              transfer: Transfer) async throws -> TransferEmulationResult {
+                              transfer: Transfer,
+                              params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -179,7 +180,8 @@ public struct TransferService {
     )
     let transactionInfo = try await sendService.loadTransactionInfo(
       boc: signed.toBoc().hexString(),
-      wallet: wallet)
+      wallet: wallet,
+      params: params)
     return TransferEmulationResult(
       transactionInfo: transactionInfo,
       transferType: .default
@@ -228,7 +230,7 @@ public struct TransferService {
         seqno: seqno,
         timeout: timeout
       )
-    case let .jetton(jettonItem, amount, recipient, comment):
+    case let .jetton(jettonItem, transferAmount, amount, recipient, comment):
       var customPayload: Cell?
       var stateInit: TonSwift.StateInit?
       
@@ -245,6 +247,7 @@ public struct TransferService {
       return TransferData(
         transfer: .jetton(
           TransferData.Jetton(
+            transferAmount: transferAmount,
             jettonAddress: jettonItem.walletAddress,
             amount: amount,
             recipient: recipient.recipientAddress.address,
