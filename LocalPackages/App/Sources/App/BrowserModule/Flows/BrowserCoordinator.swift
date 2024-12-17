@@ -182,7 +182,10 @@ public extension BrowserCoordinator {
   }
 
   private func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
-    let webViewController = TKWebViewController(url: url)
+    let deeplinkHandler = TKWebViewControllerNavigationHandler { [weak self] deeplink in
+      _ = self?.handleDeeplink(deeplink: deeplink)
+    }
+    let webViewController = TKWebViewController(url: url, handler: deeplinkHandler)
     let navigationController = UINavigationController(rootViewController: webViewController)
     navigationController.modalPresentationStyle = .fullScreen
     navigationController.configureTransparentAppearance()

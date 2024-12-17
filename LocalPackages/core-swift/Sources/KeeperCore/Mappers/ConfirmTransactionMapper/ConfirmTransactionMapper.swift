@@ -30,7 +30,7 @@ struct ConfirmTransactionMapper {
                           totalBalanceStore: TotalBalanceStore,
                           nftsCollection: NFTsCollection,
                           wallet: Wallet,
-                          confirmModel: ConfirmTransactionController.ConfirmModel?
+                          confirmModel: ConfirmTransactionModel.ConfirmModel?
   ) throws -> ConfirmTransactionModel {
 
     let descriptionProvider = TonConnectConfirmationAccountEventRightTopDescriptionProvider(
