@@ -22,6 +22,21 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     return scrollView
   }()
   
+  private let switchWordsCountButtonsContainer: UIView = {
+    let contentView = UIView()
+    return contentView
+  }()
+  
+  private let switchWordsCountButtonsStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .horizontal
+    stackView.spacing = 4
+    stackView.backgroundColor = .Button.tertiaryBackground
+    stackView.directionalLayoutMargins = .switchWordsCountButtonsStackViewPadding
+    stackView.layer.cornerRadius = 22
+    return stackView
+  }()
+    
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -39,6 +54,17 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   var inputTextFields = [TKMnemonicTextField]()
   
   let continueButton = TKButton()
+  
+  private let set24WordsButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .small)
+    let button = TKButton(configuration: configuration)
+    return button
+  }()
+  private let set12WordsButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .small)
+    let button = TKButton(configuration: configuration)
+    return button
+  }()
   
   let suggestsView = TKInputRecoveryPhraseSuggestsView()
   let pasteButton = TKButton()
@@ -90,19 +116,45 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
       public let shouldPaste: (String) -> Bool
       public let didTapReturn: (() -> Void)?
     }
+    
+    public struct SwitchWordsCountButtonsModel {
+      public let selected: Int
+      public let didUpdateWordsCount: (Int) -> Void
+      public let set12WordsButtonTitle: String
+      public let set24WordsButtonTitle: String
+    }
 
     public let titleDescriptionModel: TKTitleDescriptionView.Model
+    public let switchWordsCountButtonsModel: SwitchWordsCountButtonsModel
     public let inputs: [InputModel]
     
     public init(titleDescriptionModel: TKTitleDescriptionView.Model,
+                switchWordsCountButtonsModel: SwitchWordsCountButtonsModel,
                 inputs: [InputModel]) {
       self.titleDescriptionModel = titleDescriptionModel
+      self.switchWordsCountButtonsModel = switchWordsCountButtonsModel
       self.inputs = inputs
     }
   }
   
   public func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
+    
+    set12WordsButton.configuration = .actionButtonConfiguration(category: model.switchWordsCountButtonsModel.selected == 12 ? .secondary : .tertiary, size: .small)
+
+    set24WordsButton.configuration = .actionButtonConfiguration(category: model.switchWordsCountButtonsModel.selected == 24 ? .secondary : .tertiary, size: .small)
+
+    
+    set12WordsButton.configuration.content = .init(title: .plainString(model.switchWordsCountButtonsModel.set12WordsButtonTitle))
+    set24WordsButton.configuration.content = .init(title: .plainString(model.switchWordsCountButtonsModel.set24WordsButtonTitle))
+    
+    set12WordsButton.configuration.action = {
+      model.switchWordsCountButtonsModel.didUpdateWordsCount(12)
+    }
+    
+    set24WordsButton.configuration.action = {
+      model.switchWordsCountButtonsModel.didUpdateWordsCount(24)
+    }
     
     inputTextFields.forEach { $0.removeFromSuperview() }
     inputTextFields = []
@@ -190,6 +242,11 @@ private extension TKInputRecoveryPhraseView {
     scrollView.addSubview(contentStackView)
     
     contentStackView.addArrangedSubview(titleDescriptionView)
+    
+    contentStackView.addArrangedSubview(switchWordsCountButtonsStackView)
+    switchWordsCountButtonsStackView.addArrangedSubview(set24WordsButton)
+    switchWordsCountButtonsStackView.addArrangedSubview(set12WordsButton)
+
     contentStackView.addArrangedSubview(continueButton)
     
     addSubview(pasteButton)
@@ -249,5 +306,12 @@ private extension NSDirectionalEdgeInsets {
     leading: 32,
     bottom: 0,
     trailing: 32
+  )
+  
+  static let switchWordsCountButtonsStackViewPadding = NSDirectionalEdgeInsets(
+    top: 4,
+    leading: 4,
+    bottom: 4,
+    trailing: 4
   )
 }

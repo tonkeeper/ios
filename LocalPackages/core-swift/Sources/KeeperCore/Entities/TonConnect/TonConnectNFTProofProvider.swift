@@ -23,7 +23,7 @@ public struct TonConnectNFTProofProvider {
     }
 
     let mnemonic = try await mnemonicRepository.getMnemonic(wallet: wallet, password: passcode)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
 
     let privateKey = keyPair.privateKey
     let walletAddress = try wallet.address

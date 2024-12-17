@@ -227,7 +227,7 @@ private extension WalletTransferSignCoordinator {
               wallet: wallet,
               password: passcode
             )
-            let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+            let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
             let privateKey = keyPair.privateKey
             let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
               .createUnsignedWalletTransfer(

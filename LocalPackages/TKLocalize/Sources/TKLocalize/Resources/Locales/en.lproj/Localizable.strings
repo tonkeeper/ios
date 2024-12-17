@@ -312,7 +312,9 @@
 "passcode.logout_confirmation_description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
 "import_wallet.title" = "Enter recovery phrase";
-"import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+"import_wallet.description" = "To restore access to your wallet, enter the 24 or 12 secret recovery words given to you when you created your wallet.";
+"import_wallet.set_12_words" = "12 words";
+"import_wallet.set_24_words" = "24 words";
 
 "choose_wallets.title" = "Choose Wallets";
 "choose_wallets.description" = "Choose wallets you want to add.";
@@ -334,7 +336,7 @@
 "add_wallet.items.new_wallet.subtitle" = "Create new wallet";
 
 "add_wallet.items.existing_wallet.title" = "Existing Wallet";
-"add_wallet.items.existing_wallet.subtitle" = "Import wallet with a 24 secret recovery words";
+"add_wallet.items.existing_wallet.subtitle" = "Import wallet with 12 or 24 secret recovery words";
 
 "add_wallet.items.watch_only.title" = "Watch Account";
 "add_wallet.items.watch_only.subtitle" = "For monitor wallet activity without recovery phrase";

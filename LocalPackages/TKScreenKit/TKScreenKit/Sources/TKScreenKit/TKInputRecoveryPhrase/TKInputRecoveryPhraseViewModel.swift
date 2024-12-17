@@ -76,7 +76,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   // MARK: - State
   
-  private var phrase = Array(repeating: "", count: .wordsCount)
+  private var wordsCount: Int = 24
+  private var phrase: [String]
   private var activeIndex: Int?
   
   private var continueButtonConfiguration: TKButton.Configuration {
@@ -89,6 +90,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   private let title: String
   private let caption: String
+  private let set12WordsButtonTitle: String
+  private let set24WordsButtonTitle: String
   private let continueButtonTitle: String
   private let pasteButtonTitle: String
   private let validator: TKInputRecoveryPhraseValidator
@@ -102,16 +105,22 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   init(title: String, 
        caption: String,
+       set12WordsButtonTitle: String,
+       set24WordsButtonTitle: String,
        continueButtonTitle: String,
        pasteButtonTitle: String,
        validator: TKInputRecoveryPhraseValidator,
        suggestsProvider: TKInputRecoveryPhraseSuggestsProvider) {
     self.title = title
     self.caption = caption
+    self.set12WordsButtonTitle = set12WordsButtonTitle
+    self.set24WordsButtonTitle = set24WordsButtonTitle
     self.continueButtonTitle = continueButtonTitle
     self.pasteButtonTitle = pasteButtonTitle
     self.validator = validator
     self.suggestsProvider = suggestsProvider
+    self.phrase = Array(repeating: "", count: wordsCount)
+
     
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     continueButtonConfiguration.content.title = .plainString(continueButtonTitle)
@@ -126,7 +135,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
       bottomDescription: caption
     )
     
-    let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<Int.wordsCount)
+    let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<wordsCount)
       .map { index in
         TKInputRecoveryPhraseView.Model.InputModel(
           index: index + 1,
@@ -150,6 +159,9 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     
     return TKInputRecoveryPhraseView.Model(
       titleDescriptionModel: titleDescriptionModel,
+      switchWordsCountButtonsModel: .init(selected: wordsCount, didUpdateWordsCount: { [weak self] wordsCount in
+        self?.didUpdateWordsCount(wordsCount)
+      }, set12WordsButtonTitle: set12WordsButtonTitle, set24WordsButtonTitle: set24WordsButtonTitle),
       inputs: inputs
     )
   }
@@ -180,12 +192,18 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     }
   }
   
+  func didUpdateWordsCount(_ wordsCount: Int) {
+    self.wordsCount = wordsCount
+    self.phrase = Array(repeating: "", count: wordsCount)
+    didUpdateModel?(createModel())
+  }
+  
   func shouldPaste(text: String, index: Int) -> Bool {
     guard index == 0 else { return false }
     let phrase = text
       .components(separatedBy: CharacterSet([" ", ",", "\n"]))
       .filter { !$0.isEmpty }
-      .prefix(.wordsCount)
+      .prefix(wordsCount)
     phrase.enumerated().forEach { index, word in
       self.phrase[index] = word
     }
@@ -200,7 +218,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
           self.didUpdateText?(index, word)
           self.didUpdateInputValidationState?(index, wordsValidation[index])
         }
-        if phrase.count == .wordsCount {
+        if phrase.count == self.wordsCount {
           self.didPastePhrase?()
         } else {
           self.didPaste?(phrase.count)
@@ -278,14 +296,10 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
   func setSuggest(suggest: String, index: Int) {
     phrase[index] = suggest
     didUpdateText?(index, suggest)
-    if index < .wordsCount - 1 {
+    if index < wordsCount - 1 {
       didPaste?(index + 1)
     } else {
       didPastePhrase?()
     }
   }
-}
-
-private extension Int {
-  static let wordsCount = 24
 }

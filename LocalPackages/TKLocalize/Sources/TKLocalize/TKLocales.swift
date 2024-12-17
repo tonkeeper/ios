@@ -109,8 +109,8 @@ public enum TKLocales {
     public static let title = TKLocales.tr("Localizable", "add_wallet.title", fallback: "Add Wallet")
     public enum Items {
       public enum ExistingWallet {
-        /// Import wallet with a 24 secret recovery words
-        public static let subtitle = TKLocales.tr("Localizable", "add_wallet.items.existing_wallet.subtitle", fallback: "Import wallet with a 24 secret recovery words")
+        /// Import wallet with 12 or 24 secret recovery words
+        public static let subtitle = TKLocales.tr("Localizable", "add_wallet.items.existing_wallet.subtitle", fallback: "Import wallet with 12 or 24 secret recovery words")
         /// Existing Wallet
         public static let title = TKLocales.tr("Localizable", "add_wallet.items.existing_wallet.title", fallback: "Existing Wallet")
       }
@@ -801,8 +801,12 @@ public enum TKLocales {
     }
   }
   public enum ImportWallet {
-    /// When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.
-    public static let description = TKLocales.tr("Localizable", "import_wallet.description", fallback: "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.")
+    /// To restore access to your wallet, enter the 24 or 12 secret recovery words given to you when you created your wallet.
+    public static let description = TKLocales.tr("Localizable", "import_wallet.description", fallback: "To restore access to your wallet, enter the 24 or 12 secret recovery words given to you when you created your wallet.")
+    /// 12 words
+    public static let set12Words = TKLocales.tr("Localizable", "import_wallet.set_12_words", fallback: "12 words")
+    /// 24 words
+    public static let set24Words = TKLocales.tr("Localizable", "import_wallet.set_24_words", fallback: "24 words")
     /// Enter recovery phrase
     public static let title = TKLocales.tr("Localizable", "import_wallet.title", fallback: "Enter recovery phrase")
   }

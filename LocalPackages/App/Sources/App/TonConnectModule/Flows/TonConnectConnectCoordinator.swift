@@ -337,7 +337,7 @@ private extension TonConnectConnectCoordinator {
     ) else { throw ConnectError.noPasscode }
     
     let mnemonic = try await keeperCoreMainAssembly.secureAssembly.mnemonicsRepository().getMnemonic(wallet: wallet, password: passcode)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
     let privateKey = keyPair.privateKey
     
     let signature: TonConnect.Signature = .init(signatureData: signatureData, privateKey: privateKey)

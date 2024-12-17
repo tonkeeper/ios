@@ -14,6 +14,9 @@ struct AddWalletInputRecoveryPhraseValidator: TKInputRecoveryPhraseValidator {
     if (Mnemonic.isMultiAccountSeed(mnemonicArray: phrase)) {
       return .multiaccount
     }
+    if (Mnemonic.isValidBip39Mnemonic(mnemonicArray: phrase)) {
+      return .ton
+    }
     return .invalid
   }
 }
