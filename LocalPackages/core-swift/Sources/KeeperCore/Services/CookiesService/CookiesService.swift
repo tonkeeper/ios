@@ -3,12 +3,12 @@ import WebKit
 
 public protocol CookiesService: AnyObject {
   func saveCookiesState(hosts: [String], wallet: Wallet) async
-  func restoreCookies(for wallet: Wallet)
+  func restoreCookies(for wallet: Wallet) async
 
   func removeAllStorageCookies(for wallet: Wallet)
   func removeCookies(for host: String, wallet: Wallet) async
   func removeStorageCookie(_ cookie: HTTPCookie) async
-  func removeAllSessionCookies(_ completion: @escaping (() -> Void))
+  func removeAllSessionCookies() async
 }
 
 final class CookiesServiceImplementation: CookiesService {
@@ -35,13 +35,14 @@ final class CookiesServiceImplementation: CookiesService {
     try? cookiesRepository.save(filteredCookies, for: wallet)
   }
 
-  func restoreCookies(for wallet: Wallet) {
+  func restoreCookies(for wallet: Wallet) async {
     let bridgeCookies = cookiesRepository.fetchCookies(for: wallet)
-    bridgeCookies.forEach {
+    await bridgeCookies.asyncForEach {
       guard let cookie = $0.asHttpCookie else {
         return
       }
-      webDataStore.httpCookieStore.setCookie(cookie)
+
+      await webDataStore.httpCookieStore.setCookie(cookie)
     }
   }
 
@@ -58,11 +59,10 @@ final class CookiesServiceImplementation: CookiesService {
     }
   }
 
-  func removeAllSessionCookies(_ completion: @escaping (() -> Void)) {
-    DispatchQueue.main.async {
-      self.webDataStore.fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
-        self.webDataStore.removeData(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes(), for: records, completionHandler: completion)
-      }
+  func removeAllSessionCookies() async {
+    let cookies = await webDataStore.httpCookieStore.allCookies()
+    await cookies.asyncForEach { cookie in
+     await webDataStore.httpCookieStore.deleteCookie(cookie)
     }
   }
 

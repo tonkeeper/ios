@@ -34,10 +34,7 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
       case .willChangeActiveWallet(let wallet):
         observer.saveCookiesState(wallet: wallet)
       case .didChangeActiveWallet(let wallet):
-        observer.clearCookieSession() {
-          observer.restoreCookiesState(wallet: wallet)
-        }
-        observer.update()
+        observer.restoreCookieSession(wallet: wallet)
       case .didDeleteWallet(let wallet):
         observer.clearCookies(for: wallet)
       default:
@@ -56,6 +53,15 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
     }
   }
 
+  private func restoreCookieSession(wallet: Wallet) {
+    Task {
+      await clearCookieSession()
+      await restoreCookiesState(wallet: wallet)
+
+      update()
+    }
+  }
+
   private func saveCookiesState(wallet: Wallet) {
     cookiesService.removeAllStorageCookies(for: wallet)
 
@@ -67,12 +73,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
     }
   }
 
-  private func restoreCookiesState(wallet: Wallet) {
-    cookiesService.restoreCookies(for: wallet)
+  private func restoreCookiesState(wallet: Wallet) async {
+    await cookiesService.restoreCookies(for: wallet)
   }
 
-  private func clearCookieSession(_ completion: @escaping (() -> Void)) {
-    cookiesService.removeAllSessionCookies(completion)
+  private func clearCookieSession() async {
+    await cookiesService.removeAllSessionCookies()
   }
 
   private func clearCookies(for wallet: Wallet) {
