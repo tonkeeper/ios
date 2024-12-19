@@ -22,6 +22,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
   public var didRequestOpenDefi: ((_ wallet: Wallet) -> Void)?
 
+  private var infoWindowRouter: WindowRouter?
+
   public init(
     router: ViewControllerRouter,
     dapp: Dapp,
@@ -185,14 +187,16 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
   }
 
-#warning("")
   private func openSend(wallet: Wallet,
                         dapp: Dapp,
                         appRequest: TonConnect.AppRequest,
                         fromViewController: UIViewController,
                         completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
     guard let windowScene = fromViewController.view.window?.windowScene,
-          let request = appRequest.params.first else { return }
+          let request = appRequest.params.first else {
+      return
+    }
+
     SignRawPresenter.presentSignRaw(
       windowScene: windowScene,
       windowLevel: .signRaw,
@@ -211,88 +215,21 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                                        wallet: wallet,
                                        coordinator: coordinator,
                                        router: router)
+      },
+      didRequestReplanishWallet: { [weak self] wallet, context in
+        self?.router.dismiss(animated: true, completion: {
+          switch context {
+          case .inApp:
+            self?.didRequestOpenBuySell?(wallet)
+          case .defi:
+            self?.didRequestOpenDefi?(wallet)
+          case .battery:
+            return
+          }
+        })
       }
     )
   }
-
-//  let model = try await confirmTransactionController.createRequestModel()
-//           if let confirmModel = model.confirmModel {
-//             let (token, balance) = confirmModel.token
-//
-//             let trustCoins: [Address] = [
-//               JettonMasterAddress.tonUSDT,
-//               JettonMasterAddress.NOT,
-//               JettonMasterAddress.HMSTR
-//             ]
-//
-//             let isConfirmFlowAvailable: Bool
-//             let isInAppPurchase: Bool
-//             switch token {
-//             case .ton:
-//               isConfirmFlowAvailable = confirmModel.tonBalance >= confirmModel.requiredAmount
-//               isInAppPurchase = true
-//             case .jetton(let item):
-//               let isFeeEnough = confirmModel.fee <= confirmModel.tonBalance
-//               isConfirmFlowAvailable = confirmModel.requiredAmount <= balance && isFeeEnough
-//               isInAppPurchase = trustCoins.contains(item.jettonInfo.address)
-//             }
-//
-//             guard isConfirmFlowAvailable else {
-//               startInsufficientFlow(
-//                 wallet: wallet,
-//                 model: confirmModel,
-//                 isInAppPurchaseFlowAvailable: isInAppPurchase)
-//               completion(.error(.userDeclinedTransaction))
-//               return
-//             }
-//           }
-
-//  @MainActor
-//  private func startInsufficientFlow(
-//    wallet: Wallet,
-//    model: ConfirmTransactionController.ConfirmModel,
-//    isInAppPurchaseFlowAvailable: Bool
-//  ) {
-//    let viewController = InfoPopupBottomSheetViewController()
-//    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-//    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
-//      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
-//    )
-//
-//    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-//    let buttonTitle: String
-//    switch model.token.token {
-//    case .ton:
-//      buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(model.token.token.symbol)
-//    case .jetton:
-//      buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
-//    }
-//    buyButtonConfiguration.content = TKButton.Configuration.Content(
-//      title: .plainString(buttonTitle)
-//    )
-//    buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
-//      bottomSheetViewController?.dismiss() {
-//        self?.router.dismiss(animated: true) {
-//          if isInAppPurchaseFlowAvailable {
-//            self?.didRequestOpenBuySell?(wallet)
-//          } else {
-//            self?.didRequestOpenDefi?(wallet)
-//          }
-//        }
-//      }
-//    }
-//    let configuration = configurationBuilder.insufficientTokenConfiguration(
-//      walletLabel: wallet.metaData.label,
-//      tokenSymbol: model.token.token.symbol,
-//      tokenFractionalDigits: model.token.token.fractionDigits,
-//      required: BigUInt(integerLiteral: UInt64(model.requiredAmount)),
-//      available: BigUInt(integerLiteral: UInt64(model.token.availableBalance)),
-//      buttons: [buyButtonConfiguration]
-//    )
-//    viewController.configuration = configuration
-//    ToastPresenter.hideAll()
-//    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-//  }
 
   @MainActor
   func didRequireSign(transferData: TransferData,

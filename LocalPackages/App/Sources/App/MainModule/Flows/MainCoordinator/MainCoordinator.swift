@@ -425,7 +425,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
 
-#warning("")
   func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink, fromStories: Bool) -> Bool {
     switch deeplink {
     case let .transfer(data):

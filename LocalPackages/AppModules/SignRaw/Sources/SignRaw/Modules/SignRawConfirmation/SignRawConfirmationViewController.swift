@@ -1,24 +1,24 @@
 import UIKit
 import TKUIKit
 
-final class SignRawConfirmationViewController: GenericViewViewController<SignRawConfirmationView>, TKBottomSheetScrollContentViewController {
+public final class SignRawConfirmationViewController: GenericViewViewController<SignRawConfirmationView>, TKBottomSheetScrollContentViewController {
   private let viewModel: SignRawConfirmationViewModel
   
   private let popUpViewController = TKPopUp.ViewController()
   
   // MARK: - TKBottomSheetScrollContentViewController
   
-  var scrollView: UIScrollView {
+  public var scrollView: UIScrollView {
     popUpViewController.scrollView
   }
   
-  var didUpdateHeight: (() -> Void)?
+  public var didUpdateHeight: (() -> Void)?
   
-  var headerItem: TKUIKit.TKPullCardHeaderItem?
+  public var headerItem: TKUIKit.TKPullCardHeaderItem?
   
-  var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
+  public var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
   
-  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
+  public func calculateHeight(withWidth width: CGFloat) -> CGFloat {
     popUpViewController.calculateHeight(withWidth: width)
   }
   
@@ -31,7 +31,7 @@ final class SignRawConfirmationViewController: GenericViewViewController<SignRaw
     fatalError("init(coder:) has not been implemented")
   }
   
-  override func viewDidLoad() {
+  public override func viewDidLoad() {
     super.viewDidLoad()
     
     setup()

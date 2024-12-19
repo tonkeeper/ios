@@ -4,9 +4,9 @@ import KeeperCore
 import Mapping
 
 @MainActor
-struct SignRawConfirmationAssembly {
+public struct SignRawConfirmationAssembly {
   private init() {}
-  static func module(wallet: Wallet,
+  public static func module(wallet: Wallet,
                      transferProvider: @escaping () async throws -> Transfer,
                      resultHandler: SignRawControllerResultHandler?,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -26,7 +26,8 @@ struct SignRawConfirmationAssembly {
         nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore, 
+        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+        balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
         accountEventMapper: AccountEventMapper(
           dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
@@ -45,3 +46,4 @@ struct SignRawConfirmationAssembly {
     return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }
+
