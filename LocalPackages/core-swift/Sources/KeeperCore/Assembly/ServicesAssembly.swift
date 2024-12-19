@@ -131,6 +131,10 @@ public final class ServicesAssembly {
     DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
+  public func dappFetchService() -> DappFetchService {
+    DappFetchServiceImplementation(apiProvider: apiAssembly.apiProvider)
+  }
+  
   public func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }

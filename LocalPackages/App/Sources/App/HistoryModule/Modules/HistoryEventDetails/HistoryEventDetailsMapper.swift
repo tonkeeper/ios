@@ -385,7 +385,7 @@ final class HistoryEventDetailsMapper {
     if let comment = action.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(.comment(comment))
     }
-    if let encryptedComment = action.encryptedComment {
+    if let encryptedComment = action.encryptedComment, !activityEvent.isScam {
       listItems.append(
         createEncryptedCommentListItem(
           encryptedComment: encryptedComment,

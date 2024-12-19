@@ -177,9 +177,9 @@ public extension Wallet {
     case .signer:
       return false
     case .ledger:
-      return false
+      return true
     case .keystone:
-      return false
+      return true
     }
   }
   

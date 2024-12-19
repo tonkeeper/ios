@@ -5,9 +5,7 @@ import TKScreenKit
 import TKCore
 import KeeperCore
 
-final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
-  
+final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {  
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -38,13 +36,13 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     
     viewController.didTapCancel = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss(completion: {
-        self?.didFinish?()
+        self?.didFinish?(self)
       })
     }
     
     bottomSheetViewController.didClose = { [weak self] isInteractivly in
       guard !isInteractivly else {
-        self?.didFinish?()
+        self?.didFinish?(self)
         return
       }
       self?.openPasscodeInput()
@@ -60,7 +58,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
-        self?.didFinish?()
+        self?.didFinish?(self)
       },
       onInput: { [weak self, wallet, keeperCoreMainAssembly] passcode in
         guard let self else { return }
@@ -97,7 +95,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     
     module.viewController.setupLeftCloseButton { [weak self, weak navigationController] in
       navigationController?.dismiss(animated: true, completion: {
-        self?.didFinish?()
+        self?.didFinish?(self)
       })
     }
     

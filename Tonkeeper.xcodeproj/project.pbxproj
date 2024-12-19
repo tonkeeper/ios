@@ -12,6 +12,8 @@
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
+		7D1BB5BC2CFD0CA90021B4EA /* WalletExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */; };
+		7D1BB5BE2CFD0CAE0021B4EA /* WalletExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */; };
 		7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */; };
 		7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
 		7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
@@ -149,6 +151,7 @@
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7D1BB5BA2CFCFF0E0021B4EA /* WalletExtensions */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = WalletExtensions; sourceTree = "<group>"; };
 		7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TonkeeperWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonkeeperWidgetBundle.swift; sourceTree = "<group>"; };
 		7D3F25E22AC19418002DF1B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -165,6 +168,10 @@
 		7D6587BF2CE670AA009797E8 /* TKFeatureFlags */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKFeatureFlags; sourceTree = "<group>"; };
 		7D6A3DDC2CB00CB8008314E1 /* TKStories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKStories; sourceTree = "<group>"; };
 		7D6C62D02CF4BF6D00A40892 /* Stories */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Stories; sourceTree = "<group>"; };
+		7D8916702CFFEA5300E32E93 /* Mapping */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Mapping; sourceTree = "<group>"; };
+		7D8916712CFFEB0E00E32E93 /* UIComponents */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = UIComponents; sourceTree = "<group>"; };
+		7D8916722CFFEEAB00E32E93 /* Resources */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Resources; sourceTree = "<group>"; };
+		7D8916732CFFF02E00E32E93 /* Core */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Core; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetEntry.swift; sourceTree = "<group>"; };
@@ -185,6 +192,7 @@
 		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7DA6C14E2CFA2D1900E6B688 /* SignRaw */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = SignRaw; sourceTree = "<group>"; };
 		7DAF89E22CDAC08600D58260 /* TKKeychain */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKKeychain; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
@@ -223,6 +231,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C3CC74472BE11F0F006022FE /* TKUIKitDynamic in Frameworks */,
+				7D1BB5BE2CFD0CAE0021B4EA /* WalletExtensions in Frameworks */,
 				C365E2712BDA6944006D33B9 /* TKChart in Frameworks */,
 				7DCE736A2CE269FB00FD4C72 /* TKCore in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
@@ -255,6 +264,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D1BB5BC2CFD0CA90021B4EA /* WalletExtensions in Frameworks */,
 				7DCE73702CE26A0C00FD4C72 /* WalletCore in Frameworks */,
 				7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */,
 				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
@@ -346,6 +356,12 @@
 		7D6C62CF2CF4BE9600A40892 /* AppModules */ = {
 			isa = PBXGroup;
 			children = (
+				7D8916732CFFF02E00E32E93 /* Core */,
+				7D8916722CFFEEAB00E32E93 /* Resources */,
+				7D8916712CFFEB0E00E32E93 /* UIComponents */,
+				7D8916702CFFEA5300E32E93 /* Mapping */,
+				7D1BB5BA2CFCFF0E0021B4EA /* WalletExtensions */,
+				7DA6C14E2CFA2D1900E6B688 /* SignRaw */,
 				7D6C62D02CF4BF6D00A40892 /* Stories */,
 			);
 			path = AppModules;
@@ -495,6 +511,7 @@
 				50C356512BE39C0500539266 /* TKLocalize */,
 				7DCE73692CE269FB00FD4C72 /* TKCore */,
 				7DCE736B2CE269FE00FD4C72 /* WalletCore */,
+				7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -555,6 +572,7 @@
 				7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */,
 				7DCE736D2CE26A0800FD4C72 /* TKCore */,
 				7DCE736F2CE26A0C00FD4C72 /* WalletCore */,
+				7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */,
 			);
 			productName = TonkeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */;
@@ -1562,6 +1580,14 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
+		};
+		7D1BB5BB2CFD0CA90021B4EA /* WalletExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WalletExtensions;
+		};
+		7D1BB5BD2CFD0CAE0021B4EA /* WalletExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = WalletExtensions;
 		};
 		7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */ = {
 			isa = XCSwiftPackageProductDependency;

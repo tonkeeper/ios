@@ -317,32 +317,41 @@ public class TonTransport {
       switch dnsPayload.record {
       case .wallet(let walletRecord):
         try builder.store(data: "wallet".data(using: .utf8)!.sha256())
-        if let wallet = walletRecord {
-          bytes += putUint8(1) + putUint8(0) + putAddress(wallet.address)
-          try wallet.address.storeTo(builder: builder)
+        if let walletRecord {
+          bytes += putUint8(1) + putUint8(0) + putAddress(walletRecord.address) + putUint8(walletRecord.capabilities == nil ? 0 : 1)
+          let rb = try Builder()
+            .store(uint: 0x9fd3, bits: 16)
+            .store(walletRecord.address)
+            .store(uint: walletRecord.capabilities == nil ? 0 : 1, bits: 8)
           
-          if let capabilities = wallet.capabilities {
-            bytes += putUint8(1)
-            try builder.store(bit: capabilities.isWallet)
+          if let capabilities = walletRecord.capabilities {
+            bytes += putUint8(capabilities.isWallet ? 1 : 0)
             if capabilities.isWallet {
-              try builder.store(uint: 0x2177, bits: 16)
+              try rb
+                .store(bit: true)
+                .store(uint: 0x2177, bits: 16)
+            } else {
+              try rb
+                .store(bit: false)
             }
-          } else {
-            bytes += putUint8(0)
           }
+          try builder.store(ref: rb.endCell())
         } else {
           bytes += putUint8(0) + putUint8(0)
         }
       case .unknown(let key, let value):
-          if key.count != 32 {
-            throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "DNS record key length must be 32 bytes long"])
-          }
-          try builder.store(data: key)
-          bytes += putUint8(value != nil ? 1 : 0) + putUint8(1)
-          if let recordValue = value {
-              bytes += putCellRef(recordValue)
-              try builder.storeMaybe(ref: recordValue)
-          }
+        guard key.count == 32 else {
+          throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "DNS record key length must be 32 bytes long"])
+        }
+        try builder.store(data: key)
+        bytes += putUint8(value == nil ? 0 : 1)
+        bytes += putUint8(1)
+        bytes += key
+        
+        if let value {
+          bytes += putCellRef(value)
+          try builder.storeMaybe(ref: value)
+        }
       }
       
       payload = try builder.endCell()

@@ -24,6 +24,7 @@ public struct TransferData {
   }
   
   public struct Jetton {
+    public let transferAmount: BigUInt
     public let jettonAddress: Address
     public let amount: BigUInt
     public let recipient: Address
@@ -33,7 +34,8 @@ public struct TransferData {
     public let customPayload: Cell?
     public let stateInit: StateInit?
     
-    public init(jettonAddress: Address,
+    public init(transferAmount: BigUInt,
+                jettonAddress: Address,
                 amount: BigUInt,
                 recipient: Address,
                 responseAddress: Address?,
@@ -42,6 +44,7 @@ public struct TransferData {
                 customPayload: Cell? = nil,
                 stateInit: StateInit? = nil
     ) {
+      self.transferAmount = transferAmount
       self.jettonAddress = jettonAddress
       self.amount = amount
       self.recipient = recipient
@@ -183,6 +186,7 @@ public struct TransferData {
     case nft(NFT)
     case swap(Swap)
     case tonConnect(TonConnect)
+    case stonfiSwap(TonConnect)
     case changeDNSRecord(ChangeDNSRecord)
     case stake(Stake)
   }

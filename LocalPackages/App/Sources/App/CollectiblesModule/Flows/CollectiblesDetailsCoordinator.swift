@@ -215,12 +215,11 @@ private extension CollectiblesDetailsCoordinator {
       recipient: recipient
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+    sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
       self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
       self?.didPerformTransaction?()
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+      self?.removeChild($0)
     }
     
     self.sendTokenCoordinator = sendTokenCoordinator
@@ -350,11 +349,10 @@ private extension CollectiblesDetailsCoordinator {
       self?.removeChild(coordinator)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.didPerformTransaction?()
       self?.router.dismiss()
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     linkDNSCoordinator = coordinator
@@ -379,11 +377,10 @@ private extension CollectiblesDetailsCoordinator {
       self?.removeChild(coordinator)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.didPerformTransaction?()
       self?.router.dismiss()
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     linkDNSCoordinator = coordinator
@@ -412,11 +409,10 @@ private extension CollectiblesDetailsCoordinator {
       self?.removeChild(coordinator)
     }
     
-    coordinator.didFinish = { [weak self, weak coordinator] in
+    coordinator.didFinish = { [weak self] in
       self?.didPerformTransaction?()
       self?.router.dismiss()
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+      self?.removeChild($0)
     }
     
     renewDNSCoordinator = coordinator

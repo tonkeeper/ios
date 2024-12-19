@@ -11,6 +11,9 @@ public protocol Coordinator: AnyObject {
 }
 
 open class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
+  
+  public var didFinish: ((RouterCoordinator?) -> Void)?
+  
   public let router: CoordinatorRouter
   private var children = [Coordinator]()
   

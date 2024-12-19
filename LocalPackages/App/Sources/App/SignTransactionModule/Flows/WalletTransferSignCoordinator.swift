@@ -251,7 +251,7 @@ private extension WalletTransferSignCoordinator {
   func handleLedgerSign(transaction: Transaction, ledgerDevice: Wallet.LedgerDevice) async -> Data? {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async {
-        let module = LedgerConfirmAssembly.module(transaction: transaction,
+        let module = LedgerConfirmAssembly.module(confirmItem: .transaction(transaction),
                                                   wallet: self.wallet,
                                                   ledgerDevice: ledgerDevice,
                                                   coreAssembly: self.coreAssembly)

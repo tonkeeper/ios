@@ -134,7 +134,7 @@ public extension FiatMethodItem {
     
     let mercuryoSecret = mercuryoSecret ?? ""
 
-    guard let signature = (walletAddress.toString() + mercuryoSecret).data(using: .utf8)?.sha256().hexString() else { return }
+    guard let signature = (walletAddress.toString() + mercuryoSecret).data(using: .utf8)?.sha512().hexString() else { return }
     urlString += "&signature=\(signature)"
   }
 }

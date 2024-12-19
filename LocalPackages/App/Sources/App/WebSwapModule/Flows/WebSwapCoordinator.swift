@@ -6,12 +6,13 @@ import TKCore
 import KeeperCore
 import TonSwift
 import TKLocalize
+import SignRaw
 
 public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didClose: (() -> Void)?
   
-  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let wallet: Wallet
   private let fromToken: String?
@@ -38,10 +39,10 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
   }
   
   public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
-    if let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator {
-      return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
-    }
-    return false
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
   }
 }
 
@@ -73,48 +74,70 @@ private extension WebSwapCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openSend(signRequest: SendTransactionSignRequest,
+  func openSend(signRequest: SignRawRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
-    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
-      return
-    }
-
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
+    guard let windowScene = router.rootViewController.view.window?.windowScene else { return }
+    SignRawPresenter.presentSignRaw(
+      windowScene: windowScene,
+      windowLevel: .signRaw,
       wallet: wallet,
-      confirmator: StonfiSwapSignTransactionConfirmationCoordinatorConfirmator(
-        signRequest: signRequest,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
-        responseHandler: { result in
-          completion(result)
-        }
-      ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: signRequest.params
-        )
-      ),
+      transferProvider: { .stonfiSwap(signRequest) },
+      resultHandler: ResultHandler(completion: completion),
+      coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+      didRequireSign: { [weak self] transferData, wallet, coordinator, router in
+        try await self?.didRequireSign(transferData: transferData,
+                                       wallet: wallet,
+                                       coordinator: coordinator,
+                                       router: router)
+      }
     )
+  }
+  
+  @MainActor
+  func didRequireSign(transferData: TransferData, 
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    let coordinator = WalletTransferSignCoordinator(
+      router: router,
+      wallet: wallet,
+      transferData: transferData,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
     
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    self.walletTransferSignCoordinator = coordinator
+    
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+  
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
     }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    self.signTransactionConfirmationCoordinator = coordinator
-    
-    addChild(coordinator)
-    coordinator.start()
+  }
+}
+
+private struct ResultHandler: SignRawControllerResultHandler {
+  
+  private let completion: (SendTransactionSignResult) -> Void
+  
+  init(completion: @escaping (SendTransactionSignResult) -> Void) {
+    self.completion = completion
+  }
+  
+  func didConfirm(boc: String) {
+    completion(.response(boc))
+  }
+  
+  func didFail(error: any Error) {
+    completion(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    completion(.error(.userDeclinedTransaction))
   }
 }

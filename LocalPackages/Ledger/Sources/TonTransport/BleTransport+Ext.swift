@@ -74,6 +74,7 @@ public enum TransportStatusCodes: UInt16 {
   case unknownApdu = 0x6d02
   case userRefusedOnDevice = 0x5501
   case notEnoughSpace = 0x5102
+  case txParsingFailed = 0xB010
 }
 
 extension BleTransportError: Equatable {

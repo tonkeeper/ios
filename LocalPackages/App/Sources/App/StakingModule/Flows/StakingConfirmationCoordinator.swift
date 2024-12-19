@@ -8,7 +8,6 @@ import TonSwift
 
 final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  var didFinish: (() -> Void)?
   var didClose: (() -> Void)?
   
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
@@ -92,7 +91,7 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
     }
     
     router.push(viewController: module.view, onPopClosures: { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(self)
     })
   }
 }

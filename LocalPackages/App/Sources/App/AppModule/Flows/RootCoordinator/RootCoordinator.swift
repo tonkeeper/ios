@@ -74,6 +74,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
       }
     }
+    sendFirstLaunchAnalyticsEvent()
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -358,6 +359,16 @@ private extension RootCoordinator {
     if animated {
       UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
     }
+  }
+  
+  func sendFirstLaunchAnalyticsEvent() {
+    let analyticsProvider = dependencies.coreAssembly.analyticsProvider
+    let appSettings = dependencies.coreAssembly.appSettings
+    
+    let firstLaunchTimestamp = appSettings.firstLaunchDate
+    guard firstLaunchTimestamp == nil else { return }
+    appSettings.firstLaunchDate = Date()
+    analyticsProvider.logEvent(eventKey: .firstLaunch)
   }
 }
 

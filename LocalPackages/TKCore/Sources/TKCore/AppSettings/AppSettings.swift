@@ -65,6 +65,18 @@ public final class AppSettings {
       userDefaults.setValue(newValue, forKey: .didMigrateTonConnectAppVaultKey)
     }
   }
+  
+  public var firstLaunchDate: Date? {
+    get {
+      guard let timestamp = userDefaults.value(forKey: .firstLaunchTimestamp) as? TimeInterval else {
+        return nil
+      }
+      return Date(timeIntervalSince1970: timestamp)
+    }
+    set {
+      userDefaults.setValue(newValue?.timeIntervalSince1970, forKey: .firstLaunchTimestamp)
+    }
+  }
 }
 
 private extension String {
@@ -75,4 +87,5 @@ private extension String {
   static let fcmToken = "fcm_token"
   static let addressCopyCount = "address_copy_count"
   static let didMigrateTonConnectAppVaultKey = "did_migrate_ton_connect_apps_vault"
+  static let firstLaunchTimestamp = "first_launch_timestamp"
 }

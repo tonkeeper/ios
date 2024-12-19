@@ -1,9 +1,11 @@
 import UIKit
+import WebKit
 import TKUIKit
 import Stories
 import KeeperCore
 import TKLocalize
 import TKCore
+import TKFeatureFlags
 
 final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
   
@@ -34,6 +36,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     if let seedPhraseRecoverySection = createSeedPhraseRecoverySection() {
       sections.append(seedPhraseRecoverySection)
     }
+    sections.append(createSwapSection())
     
     return SettingsListState(
       sections: sections
@@ -58,8 +61,23 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     ]
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 0,
+      topPadding: 16,
       bottomPadding: 0
+    ))
+  }
+  
+  private func createSwapSection() -> SettingsListSection {
+    let items = [
+      createSwapURLItem(),
+      clearCookiesItem()
+    ]
+    return SettingsListSection.listItems(SettingsListItemsSection(
+      items: items,
+      topPadding: 16,
+      bottomPadding: 0,
+      headerConfiguration: SettingsListSectionHeaderView.Configuration(
+        title: "Swap"
+      )
     ))
   }
   
@@ -95,12 +113,79 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func createSwapURLItem() -> SettingsListItem {
+
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Tonkeeper Swap"
+          )
+        )
+      )
+    )
+
+    let isTonkeeperSwapOn = TKFeatureFlags.localProvider.isTonkeeperSwapOn
+    let isEnabled = isTonkeeperSwapOn
+    let action: (Bool) -> Void = { isOn in
+      TKFeatureFlags.localProvider.isTonkeeperSwapOn = isOn
+    }
+
+    return SettingsListItem(
+      id: .swapURLItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .switch(
+        TKListItemSwitchAccessoryView.Configuration(
+          isOn: isTonkeeperSwapOn,
+          isEnable: true,
+          action: { isEnabled in
+            action(isEnabled)
+          }
+        )
+      ),
+      onSelection: { [weak self] _ in
+        guard let self else { return }
+        action(!isEnabled)
+        let state = self.createState()
+        self.didUpdateState?(state)
+      }
+    )
+  }
+  
+  private func clearCookiesItem() -> SettingsListItem {
+
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Clear cookies"
+          )
+        )
+      )
+    )
+    return SettingsListItem(
+      id: .clearCookiesItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .none,
+      onSelection: { _ in
+        HTTPCookieStorage.shared.removeCookies(since: Date.distantPast)
+        print("[WebCacheCleaner] All cookies deleted")
+        
+        WKWebsiteDataStore.default().fetchDataRecords(ofTypes: WKWebsiteDataStore.allWebsiteDataTypes()) { records in
+          records.forEach { record in
+            WKWebsiteDataStore.default().removeData(ofTypes: record.dataTypes, for: [record], completionHandler: {})
+            print("[WebCacheCleaner] Record \(record) deleted")
+          }
+        }
+      }
+    )
+  }
 }
 
 private extension String {
   static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
   static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
-  static let installIdIdentifier = "installIDIdentifier"
-  static let privacyPolicyIdentifier = "privacyPolicyIdentifier"
-  static let montserratFontIdentifier = "montserratFontIdentifier"
+  static let swapURLItemIdentifier = "swapURLItemIdentifier"
+  static let clearCookiesItemIdentifier = "swapURLItemIdentifier"
 }

@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import TKScreenKit
 import TKUIKit
+import SignRaw
 import FirebasePerformance
 
 @MainActor
@@ -54,6 +55,23 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         fromViewController: moduleView,
         completion: completion)
     }
+    
+    messageHandler.fetch = { [weak self] url, params, completion in
+      guard let self else {
+        completion(.error(.unknownError))
+        return
+      }
+      Task {
+        do {
+          let data = try await self.keeperCoreMainAssembly.servicesAssembly.dappFetchService().fetch(url, params: params)
+          completion(.response(data))
+          
+        } catch {
+          completion(.error(.unknownError))
+          print(error)
+        }
+      }
+    }
 
     messageHandler.reconnect = {
       [weak self] dapp,
@@ -75,10 +93,17 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
     }
 
+    weak var moduleView = module.view
     messageHandler.send = {
       [weak self] app, request, completion in
-      guard let self else { return }
-      self.openSend(dapp: dapp, appRequest: request, completion: completion)
+      guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
+      self.openSend(
+        wallet: wallet,
+        dapp: dapp,
+        appRequest: request,
+        fromViewController: moduleView,
+        completion: completion
+      )
     }
 
     module.view.modalPresentationStyle = .fullScreen
@@ -157,50 +182,84 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
   }
 
-  private func openSend(dapp: Dapp,
+  private func openSend(wallet: Wallet,
+                        dapp: Dapp,
                         appRequest: TonConnect.AppRequest,
+                        fromViewController: UIViewController,
                         completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
-    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
-          let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-          let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
-      completion(.error(.unknownApp))
-      return
-    }
-
-    guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = TKWindow(windowScene: windowScene)
-    let coordinator = SignTransactionConfirmationCoordinator(
-      router: WindowRouter(window: window),
+    guard let windowScene = fromViewController.view.window?.windowScene,
+          let request = appRequest.params.first else { return }
+    SignRawPresenter.presentSignRaw(
+      windowScene: windowScene,
+      windowLevel: .signRaw,
       wallet: wallet,
-      confirmator: BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator(
+      transferProvider: {
+        .signRaw(request, forceRelayer: false)
+      },
+      resultHandler: DappSignRawResultHandler(
         appRequest: appRequest,
-        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
-        connectionResponseHandler: { result in
-          completion(result)
-        }
+        connectionResponseHandler: completion
       ),
-      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
-        wallet: wallet,
-        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
-          signTransactionParams: appRequest.params
-        )
-      ),
+      coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
+      didRequireSign: { [weak self] transferData, wallet, coordinator, router in
+        try await self?.didRequireSign(transferData: transferData,
+                                       wallet: wallet,
+                                       coordinator: coordinator,
+                                       router: router)
+      }
     )
+  }
+  
+  @MainActor
+  func didRequireSign(transferData: TransferData,
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    let coordinator = WalletTransferSignCoordinator(
+      router: router,
+      wallet: wallet,
+      transferData: transferData,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
 
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+  
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
     }
+  }
+}
 
-    coordinator.didConfirm = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-
-    addChild(coordinator)
-    coordinator.start()
+private struct DappSignRawResultHandler: SignRawControllerResultHandler {
+  private let appRequest: TonConnect.AppRequest
+  private let connectionResponseHandler: (TonConnectAppsStore.SendTransactionResult) -> Void
+  
+  init(appRequest: TonConnect.AppRequest, 
+       connectionResponseHandler: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    self.appRequest = appRequest
+    self.connectionResponseHandler = connectionResponseHandler
+  }
+  
+  func didConfirm(boc: String) {
+    let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
+      .init(result: boc,
+            id: appRequest.id)
+    )
+    guard let response = try? JSONEncoder().encode(sendTransactionResponse) else { return }
+    connectionResponseHandler(.response(response))
+  }
+  
+  func didFail(error: any Error) {
+    connectionResponseHandler(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    connectionResponseHandler(.error(.userDeclinedTransaction))
   }
 }

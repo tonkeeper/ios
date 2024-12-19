@@ -13,7 +13,6 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   var didCancel: (() -> Void)?
-  var didFinish: (() -> Void)?
     
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
@@ -109,7 +108,7 @@ private extension LinkDNSCoordinator {
     
     module.output.didLink = { [weak self, weak bottomSheetViewController] in
       bottomSheetViewController?.dismiss(completion: {
-        self?.didFinish?()
+        self?.didFinish?(self)
       })
     }
     

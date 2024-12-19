@@ -172,7 +172,7 @@ public enum TonPayloadFormat {
         let receiverAddress: Address = try slice.loadType()
         let excessesAddress: Address = try slice.loadType()
         let customPayload = try slice.loadBoolean() ? try slice.loadRef() : nil
-        let forwardAmount: Coins = try slice.loadType()
+        let forwardAmount: Coins = try slice.loadCoins()
         let forwardPayload = try slice.loadBoolean() ? try slice.loadRef() : nil
         try slice.endParse()
         
@@ -191,7 +191,7 @@ public enum TonPayloadFormat {
         let newOwnerAddress: Address = try slice.loadType()
         let excessesAddress: Address = try slice.loadType()
         let customPayload = try slice.loadBoolean() ? try slice.loadRef() : nil
-        let forwardAmount: Coins = try slice.loadType()
+        let forwardAmount = try slice.loadCoins()
         let forwardPayload = try slice.loadBoolean() ? try slice.loadRef() : nil
         try slice.endParse()
         

@@ -741,7 +741,7 @@ private extension WalletAccount {
     let friendlyAddress = FriendlyAddress(
       address: address,
       testOnly: isTestnet,
-      bounceable: !isTestnet
+      bounceable: !isWallet
     )
     return friendlyAddress.toShort()
   }

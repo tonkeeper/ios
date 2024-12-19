@@ -11,6 +11,11 @@ public protocol TonConnectAppsStoreObserver: AnyObject {
 
 public final class TonConnectAppsStore {
   
+  public enum FetchResult {
+    case response(Data)
+    case error(TonConnect.FetchEventError.ErrorCode)
+  }
+  
   public enum ConnectResult {
     case response(Data)
     case error(TonConnect.ConnectEventError.Error)
@@ -28,14 +33,13 @@ public final class TonConnectAppsStore {
   }
 
   public func connect(wallet: Wallet,
-                      passcode: String,
                       parameters: TonConnectParameters,
-                      manifest: TonConnectManifest) async throws {
+                      manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws {
     let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
       wallet: wallet,
-      passcode: passcode,
       parameters: parameters,
-      manifest: manifest
+      manifest: manifest,
+      signTonProofHandler: signTonProofHandler
     )
     let sessionCrypto = try TonConnectSessionCrypto()
     let encrypted = try tonConnectService.encryptSuccessResponse(
@@ -60,15 +64,15 @@ public final class TonConnectAppsStore {
   }
   
   public func connectBridgeDapp(wallet: Wallet,
-                                passcode: String,
                                 parameters: TonConnectParameters,
-                                manifest: TonConnectManifest) async -> ConnectResult {
+                                manifest: TonConnectManifest,
+                                signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async -> ConnectResult {
     do {
       let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
         wallet: wallet,
-        passcode: passcode,
         parameters: parameters,
-        manifest: manifest
+        manifest: manifest,
+        signTonProofHandler: signTonProofHandler
       )
       let response = try JSONEncoder().encode(connectEventSuccessResponse)
       let sessionCrypto = try TonConnectSessionCrypto()
