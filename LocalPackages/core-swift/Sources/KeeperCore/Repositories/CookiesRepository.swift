@@ -29,14 +29,14 @@ public struct CookieBridgeModel: Codable, Equatable {
   }
 }
 
-public protocol CookiesRepositoryProtocol {
-  func save(_ cookies: [CookieBridgeModel], for wallet: Wallet)
+public protocol CookiesRepository {
+  func save(_ cookies: [CookieBridgeModel], for wallet: Wallet) throws
   func fetchCookies(for wallet: Wallet) -> [CookieBridgeModel]
-  func remove(_ cookie: CookieBridgeModel, for wallet: Wallet)
-  func removeCookies(for wallet: Wallet)
+  func remove(_ cookie: CookieBridgeModel, for wallet: Wallet)  throws
+  func removeCookies(for wallet: Wallet) throws
 }
 
-struct CookiesRepository: CookiesRepositoryProtocol {
+struct CookiesRepositoryImplementation: CookiesRepository {
 
   private let fileVault: FileSystemVault<[CookieBridgeModel], String>
 
@@ -44,11 +44,9 @@ struct CookiesRepository: CookiesRepositoryProtocol {
     self.fileVault = fileVault
   }
 
-  func save(_ cookies: [CookieBridgeModel], for wallet: Wallet) {
-    do {
-      let key = try wallet.friendlyAddress.toString()
-      try fileVault.saveItem(cookies, key: key)
-    } catch { }
+  func save(_ cookies: [CookieBridgeModel], for wallet: Wallet) throws {
+    let key = try wallet.friendlyAddress.toString()
+    try fileVault.saveItem(cookies, key: key)
   }
 
   func fetchCookies(for wallet: Wallet) -> [CookieBridgeModel] {
@@ -61,21 +59,17 @@ struct CookiesRepository: CookiesRepositoryProtocol {
     }
   }
 
-  func remove(_ cookie: CookieBridgeModel, for wallet: Wallet) {
-    do {
-      let key = try wallet.friendlyAddress.toString()
-      var cookies = try fileVault.loadItem(key: key)
-      if let index = cookies.firstIndex(of: cookie) {
-        cookies.remove(at: index)
-      }
-      try fileVault.saveItem(cookies, key: key)
-    } catch {  }
+  func remove(_ cookie: CookieBridgeModel, for wallet: Wallet)  throws {
+    let key = try wallet.friendlyAddress.toString()
+    var cookies = try fileVault.loadItem(key: key)
+    if let index = cookies.firstIndex(of: cookie) {
+      cookies.remove(at: index)
+    }
+    try fileVault.saveItem(cookies, key: key)
   }
 
-  func removeCookies(for wallet: Wallet) {
-    do {
-      let key = try wallet.friendlyAddress.toString()
-      try fileVault.deleteItem(key: key)
-    } catch { }
+  func removeCookies(for wallet: Wallet) throws {
+    let key = try wallet.friendlyAddress.toString()
+    try fileVault.deleteItem(key: key)
   }
 }

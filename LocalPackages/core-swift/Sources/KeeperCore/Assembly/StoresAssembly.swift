@@ -275,7 +275,7 @@ public final class StoresAssembly {
 
   private weak var _connectedAppsStore: ConnectedAppsStore?
   public func connectedAppsStore(tonConnectAppsStore: TonConnectAppsStore,
-                                 cookiesService: CookiesServiceProtocol) -> ConnectedAppsStore {
+                                 cookiesService: CookiesService) -> ConnectedAppsStore {
     if let _connectedAppsStore {
       return _connectedAppsStore
     } else {

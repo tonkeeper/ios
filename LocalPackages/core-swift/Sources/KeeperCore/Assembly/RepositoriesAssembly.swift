@@ -72,7 +72,7 @@ public struct RepositoriesAssembly {
     TonProofTokenRepository(keychainVault: coreAssembly.keychainVault)
   }
 
-  public func cookiesRepository() -> CookiesRepositoryProtocol {
-    CookiesRepository(fileVault: coreAssembly.fileSystemVault())
+  public func cookiesRepository() -> CookiesRepository {
+    CookiesRepositoryImplementation(fileVault: coreAssembly.fileSystemVault())
   }
 }

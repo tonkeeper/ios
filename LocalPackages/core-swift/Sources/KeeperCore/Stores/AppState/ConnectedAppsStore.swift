@@ -8,12 +8,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
 
   private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
-  private let cookiesService: CookiesServiceProtocol
+  private let cookiesService: CookiesService
 
   public init(
     walletsStore: WalletsStore,
     tonConnectAppsStore: TonConnectAppsStore,
-    cookiesService: CookiesServiceProtocol) {
+    cookiesService: CookiesService) {
       self.walletsStore = walletsStore
       self.tonConnectAppsStore = tonConnectAppsStore
       self.cookiesService = cookiesService
@@ -58,8 +58,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
 
   private func saveCookiesState(wallet: Wallet) {
     cookiesService.removeAllStorageCookies(for: wallet)
-    if let connectedApps = try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps {
-      cookiesService.saveCookiesState(hosts: connectedApps.map { $0.manifest.host }, wallet: wallet)
+
+    Task {
+      guard let connectedApps = try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps else {
+        return
+      }
+      await cookiesService.saveCookiesState(hosts: connectedApps.map { $0.manifest.host }, wallet: wallet)
     }
   }
 
@@ -75,12 +79,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
     cookiesService.removeAllStorageCookies(for: wallet)
   }
 
-  public func deleteApp(_ app: TonConnectApp) {
+  public func deleteApp(_ app: TonConnectApp) async {
     guard let wallet = try? walletsStore.activeWallet else {
       return
     }
 
-    cookiesService.removeCookies(for: app.manifest.host, wallet: wallet)
+    await cookiesService.removeCookies(for: app.manifest.host, wallet: wallet)
     tonConnectAppsStore.deleteConnectedApp(wallet: wallet, app: app)
     update()
   }
