@@ -15,7 +15,7 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
+
   public override func viewDidLoad() {
     super.viewDidLoad()
     
@@ -59,8 +59,16 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
 
 private extension TKInputRecoveryPhraseViewController {
   func setupBindings() {
-    viewModel.didUpdateModel = { [customView] model in
-      customView.configure(model: model)
+    viewModel.didUpdateHeaderModel = { [weak customView] model in
+      customView?.titleDescriptionModel = model
+    }
+    
+    viewModel.didUpdateSeedPhraseSegmenteControl = { [weak customView] model in
+      customView?.seedPhraseInputControlModel = model
+    }
+    
+    viewModel.didUpdateInputFields = { [weak customView] inputs in
+      customView?.inputs = inputs
     }
     
     viewModel.showToast = { configuration in

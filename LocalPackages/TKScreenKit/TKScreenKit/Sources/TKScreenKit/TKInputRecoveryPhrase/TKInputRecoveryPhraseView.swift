@@ -2,8 +2,41 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
+public final class TKInputRecoveryPhraseView: UIView {
+
+  public struct InputFieldModel {
+    public let index: Int
+    public let didUpdateText: (String) -> Void
+    public let didBeignEditing: () -> Void
+    public let didEndEditing: () -> Void
+    public let shouldPaste: (String) -> Bool
+    public let didTapReturn: (() -> Void)?
+  }
   
+  public struct SegmentedControlModel {
+    public let tabs: [String]
+    public let selectedIndex: Int
+    public let selectionClosure: (Int) -> Void
+  }
+  
+  public var titleDescriptionModel = TKTitleDescriptionView.Model(title: "") {
+    didSet {
+      updateTitleDescriptionView()
+    }
+  }
+  
+  public var seedPhraseInputControlModel: SegmentedControlModel? {
+    didSet {
+      updateSeedPhraseModeSegmentedControl()
+    }
+  }
+  
+  public var inputs = [InputFieldModel]() {
+    didSet {
+      updateInputs()
+    }
+  }
+
   var bannerViewProvider: (() -> UIView)? {
     didSet {
       bannerView?.removeFromSuperview()
@@ -21,27 +54,18 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     scrollView.showsVerticalScrollIndicator = false
     return scrollView
   }()
-  
-  private let switchWordsCountButtonsContainer: UIView = {
-    let contentView = UIView()
-    return contentView
-  }()
-  
-  private let switchWordsCountButtonsStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.spacing = 4
-    stackView.backgroundColor = .Button.tertiaryBackground
-    stackView.directionalLayoutMargins = .switchWordsCountButtonsStackViewPadding
-    stackView.layer.cornerRadius = 22
-    return stackView
-  }()
-    
+
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
     stackView.isLayoutMarginsRelativeArrangement = true
     stackView.directionalLayoutMargins = .contentStackViewPadding
+    return stackView
+  }()
+  
+  let inputStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
     return stackView
   }()
   
@@ -55,7 +79,8 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   
   let continueButton = TKButton()
   
-  private let wordsNumSegmentedControl = TKInputRecoveryPhraseWordsNumSegmentedControl()
+  private let seedPhraseModeSegmentedControl = TKSegmentedControl()
+  private let seedPhraseModeSegmentedControlContainer = UIView()
   
   let suggestsView = TKInputRecoveryPhraseSuggestsView()
   let pasteButton = TKButton()
@@ -96,107 +121,29 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     suggestsView.frame = CGRect(x: 0, y: 0, width: bounds.width, height: 52)
   }
   
-  // MARK: - ConfigurableView
-  
-  public struct Model {
-    public struct InputModel {
-      public let index: Int
-      public let didUpdateText: (String) -> Void
-      public let didBeignEditing: () -> Void
-      public let didEndEditing: () -> Void
-      public let shouldPaste: (String) -> Bool
-      public let didTapReturn: (() -> Void)?
-    }
-    
-    public struct SwitchWordsCountButtonsModel {
-      public let selected: Int
-      public let didUpdateWordsCount: (Int) -> Void
-      public let set12WordsButtonTitle: String
-      public let set24WordsButtonTitle: String
-    }
-
-    public let titleDescriptionModel: TKTitleDescriptionView.Model
-    public let switchWordsCountButtonsModel: SwitchWordsCountButtonsModel
-    public let inputs: [InputModel]
-    
-    public init(titleDescriptionModel: TKTitleDescriptionView.Model,
-                switchWordsCountButtonsModel: SwitchWordsCountButtonsModel,
-                inputs: [InputModel]) {
-      self.titleDescriptionModel = titleDescriptionModel
-      self.switchWordsCountButtonsModel = switchWordsCountButtonsModel
-      self.inputs = inputs
-    }
-  }
-  
-  public func configure(model: Model) {
-    titleDescriptionView.configure(model: model.titleDescriptionModel)
-    
-    wordsNumSegmentedControl.configure(model: .init(tabs: [model.switchWordsCountButtonsModel.set24WordsButtonTitle, model.switchWordsCountButtonsModel.set12WordsButtonTitle]))
-    
-    wordsNumSegmentedControl.selectedIndex = model.switchWordsCountButtonsModel.selected == 24 ? 0 : 1
-    wordsNumSegmentedControl.didSelectTab = { tab in
-      model.switchWordsCountButtonsModel.didUpdateWordsCount(tab == 0 ? 24 : 12)
-    }
-    
-    inputTextFields.forEach { $0.removeFromSuperview() }
-    inputTextFields = []
-    model.inputs.enumerated()
-      .forEach { index, inputModel in
-        let textField = TKMnemonicTextField()
-        textField.accessoryView = suggestsView
-        textField.indexNumber = inputModel.index
-        textField.didUpdateText = { text in
-          inputModel.didUpdateText(text)
-        }
-        textField.didBeginEditing = {
-          inputModel.didBeignEditing()
-        }
-        textField.didEndEditing = {
-          inputModel.didEndEditing()
-        }
-        textField.shouldPaste = { text in
-          inputModel.shouldPaste(text)
-        }
-        textField.didTapReturn = {
-          inputModel.didTapReturn?()
-        }
-
-        contentStackView.addArrangedSubview(textField)
-        if index == inputTextFields.count - 1 {
-          contentStackView.setCustomSpacing(.afterWordInputSpacing + 16, after: textField)
-        } else {
-          contentStackView.setCustomSpacing(.afterWordInputSpacing, after: textField)
-        }
-        inputTextFields.append(textField)
-      }
-    contentStackView.addArrangedSubview(continueButton)
-    contentStackView.setCustomSpacing(32, after: continueButton)
-  }
-  
   func scrollToInput(at index: Int,
                      animationDuration: TimeInterval) {
     guard inputTextFields.count > index else { return }
     let inputTextField = inputTextFields[index]
-    let convertedFrame = scrollView.convert(inputTextField.frame, to: inputTextField.superview)
+    let fieldConvertedFrame = scrollView.convert(inputTextField.frame, from: inputStackView)
+    
+    var topInset = titleDescriptionView.frame.maxY
+    if let bannerView {
+      topInset = bannerView.frame.maxY - .afterWordInputSpacing
+    }
+    if !seedPhraseModeSegmentedControlContainer.isHidden {
+      topInset = seedPhraseModeSegmentedControlContainer.frame.maxY - .afterWordInputSpacing
+    }
+    
     let scrollViewMaxOrigin = scrollView.contentSize.height
     - scrollView.frame.height
     + scrollView.contentInset.bottom
     
-    let maxY: CGFloat
-    if let bannerView {
-      maxY = bannerView.frame.maxY - .afterWordInputSpacing
-    } else {
-      maxY = titleDescriptionView.frame.maxY
-    }
     
-    let originY = min(
-      convertedFrame.origin.y
-      - maxY
-      - convertedFrame.size.height,
-      scrollViewMaxOrigin
-    )
+    let yContentOffset = min(fieldConvertedFrame.minY - topInset, scrollViewMaxOrigin)
+
     UIView.animate(withDuration: animationDuration) {
-      self.scrollView.contentOffset = .init(x: 0, y: originY)
+      self.scrollView.contentOffset = .init(x: 0, y: yContentOffset)
     }
   }
   
@@ -220,18 +167,24 @@ private extension TKInputRecoveryPhraseView {
     
     suggestsView.alpha = 0
     
-    addSubview(scrollView)
-    scrollView.addSubview(contentStackView)
-    
     contentStackView.addArrangedSubview(titleDescriptionView)
-    
-    contentStackView.addArrangedSubview(wordsNumSegmentedControl)
-
+    contentStackView.addArrangedSubview(seedPhraseModeSegmentedControlContainer)
+    contentStackView.setCustomSpacing(12, after: seedPhraseModeSegmentedControlContainer)
+    contentStackView.addArrangedSubview(inputStackView)
+    contentStackView.setCustomSpacing(16, after: inputStackView)
     contentStackView.addArrangedSubview(continueButton)
     
+    
+    addSubview(scrollView)
     addSubview(pasteButton)
+    scrollView.addSubview(contentStackView)
+    seedPhraseModeSegmentedControlContainer.addSubview(seedPhraseModeSegmentedControl)
       
     setupConstraints()
+    
+    updateTitleDescriptionView()
+    updateSeedPhraseModeSegmentedControl()
+    updateInputs()
   }
   
   func setupConstraints() {
@@ -241,6 +194,13 @@ private extension TKInputRecoveryPhraseView {
     pasteButton.snp.makeConstraints { make in
       make.centerX.equalTo(self)
       make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+    }
+    
+    seedPhraseModeSegmentedControl.snp.makeConstraints { make in
+      make.left.greaterThanOrEqualTo(seedPhraseModeSegmentedControlContainer)
+      make.right.lessThanOrEqualTo(seedPhraseModeSegmentedControlContainer)
+      make.top.bottom.equalTo(seedPhraseModeSegmentedControlContainer)
+      make.centerX.equalTo(seedPhraseModeSegmentedControlContainer)
     }
     
     NSLayoutConstraint.activate([
@@ -256,6 +216,53 @@ private extension TKInputRecoveryPhraseView {
       contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
       contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
     ])
+  }
+  
+  func updateTitleDescriptionView() {
+    titleDescriptionView.configure(model: titleDescriptionModel)
+  }
+  
+  func updateSeedPhraseModeSegmentedControl() {
+    if let seedPhraseInputControlModel {
+      seedPhraseModeSegmentedControlContainer.isHidden = false
+      seedPhraseModeSegmentedControl.tabs = seedPhraseInputControlModel.tabs
+      seedPhraseModeSegmentedControl.selectedIndex = seedPhraseInputControlModel.selectedIndex
+      seedPhraseModeSegmentedControl.didSelectTab = { index in
+        seedPhraseInputControlModel.selectionClosure(index)
+      }
+    } else {
+      seedPhraseModeSegmentedControlContainer.isHidden = true
+    }
+  }
+  
+  func updateInputs() {
+    inputStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    inputTextFields = []
+    inputs.enumerated()
+      .forEach { index, inputModel in
+        let textField = TKMnemonicTextField()
+        textField.accessoryView = suggestsView
+        textField.indexNumber = inputModel.index
+        textField.didUpdateText = { text in
+          inputModel.didUpdateText(text)
+        }
+        textField.didBeginEditing = {
+          inputModel.didBeignEditing()
+        }
+        textField.didEndEditing = {
+          inputModel.didEndEditing()
+        }
+        textField.shouldPaste = { text in
+          inputModel.shouldPaste(text)
+        }
+        textField.didTapReturn = {
+          inputModel.didTapReturn?()
+        }
+
+        inputStackView.addArrangedSubview(textField)
+        inputStackView.setCustomSpacing(.afterWordInputSpacing, after: textField)
+        inputTextFields.append(textField)
+      }
   }
 }
 
