@@ -42,6 +42,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let reachabilityTracker: ReachabilityTracker
   let recipientResolver: RecipientResolver
   let jettonBalanceResolver: JettonBalanceResolver
+  private let cookiesController: KeeperCore.CookiesController
 
   var deeplinkHandleTask: Task<Void, Never>?
   
@@ -94,13 +95,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet)
       }
     )
-    
+    cookiesController = CookiesController(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      cookiesService: keeperCoreMainAssembly.servicesAssembly.cookiesService(),
+      tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+    )
     super.init(router: router)
     
     mainController.didReceiveTonConnectRequest = { [weak self] request, wallet, app in
       self?.handleTonConnectRequest(request, wallet: wallet, app: app)
     }
-    
+    cookiesController.start()
     appStateTracker.addObserver(self)
     reachabilityTracker.addObserver(self)
     

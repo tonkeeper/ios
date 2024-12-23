@@ -67,11 +67,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
         title: TKLocales.Settings.ConnectedApps.Actions.disconnect,
         style: .destructive
       ) { _ in
-        Task {
-          await apps.asyncForEach {
-            await connectedAppsStore.deleteApp($0)
-          }
-        }
+        apps.forEach { connectedAppsStore.deleteApp($0) }
       }
 
       self?.didRequestShowAlert?(title, [cancelAction, disconnectAction])
@@ -126,9 +122,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
           title: TKLocales.Settings.ConnectedApps.Actions.disconnect,
           style: .destructive
         ) { _ in
-          Task {
-            await connectedAppsStore.deleteApp(app)
-          }
+          connectedAppsStore.deleteApp(app)
         }
 
         self?.didRequestShowAlert?(title, [cancelAction, disconnectAction])

@@ -2,75 +2,48 @@ import Foundation
 import WebKit
 
 public protocol CookiesService: AnyObject {
-  func saveCookiesState(hosts: [String], wallet: Wallet) async
-  func restoreCookies(for wallet: Wallet) async
+  func fetchLocalCookies(for wallet: Wallet) -> [CookieBridgeModel]
+  func saveCookiesState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws
 
-  func removeAllStorageCookies(for wallet: Wallet)
-  func removeCookies(for host: String, wallet: Wallet) async
-  func removeStorageCookie(_ cookie: HTTPCookie) async
-  func removeAllSessionCookies() async
+  func remove(cookie: HTTPCookie, wallet: Wallet) throws
+  func removeAllStorageCookies(for wallet: Wallet) throws
 }
 
 final class CookiesServiceImplementation: CookiesService {
 
   private let cookiesRepository: CookiesRepository
 
-  private var webDataStore: WKWebsiteDataStore { .default() }
-
   init(cookiesRepository: CookiesRepository) {
     self.cookiesRepository = cookiesRepository
   }
 
-  func saveCookiesState(hosts: [String], wallet: Wallet) async {
-    let cookies = await webDataStore.httpCookieStore.allCookies()
-    let filteredCookies: [CookieBridgeModel] = cookies.compactMap {
+  // MARK: -  Fetch
+
+  func fetchLocalCookies(for wallet: Wallet) -> [CookieBridgeModel] {
+    cookiesRepository.fetchCookies(for: wallet)
+  }
+
+  // MARK: -  Save
+
+  func saveCookiesState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws {
+    let composedCookies: [CookieBridgeModel] = cookies.compactMap {
       guard hosts.contains($0.domain) else {
         return nil
       }
       return CookieBridgeModel(cookie: $0)
     }
 
-    guard !filteredCookies.isEmpty else { return }
-
-    try? cookiesRepository.save(filteredCookies, for: wallet)
+    try cookiesRepository.save(composedCookies, for: wallet)
   }
 
-  func restoreCookies(for wallet: Wallet) async {
-    let bridgeCookies = cookiesRepository.fetchCookies(for: wallet)
-    await bridgeCookies.asyncForEach {
-      guard let cookie = $0.asHttpCookie else {
-        return
-      }
+  // MARK: -  Remove
 
-      await webDataStore.httpCookieStore.setCookie(cookie)
-    }
+  func remove(cookie: HTTPCookie, wallet: Wallet) throws {
+    let bridgeCookie = CookieBridgeModel(cookie: cookie)
+    try cookiesRepository.remove(bridgeCookie, for: wallet)
   }
 
-  func removeCookies(for host: String, wallet: Wallet) async {
-    let cookies = await webDataStore.httpCookieStore.allCookies()
-    await cookies.asyncForEach { cookie in
-      guard host.contains(cookie.domain) else {
-        return
-      }
-
-      let bridgeCookie = CookieBridgeModel(cookie: cookie)
-      try? self.cookiesRepository.remove(bridgeCookie, for: wallet)
-      await self.removeStorageCookie(cookie)
-    }
-  }
-
-  func removeAllSessionCookies() async {
-    let cookies = await webDataStore.httpCookieStore.allCookies()
-    await cookies.asyncForEach { cookie in
-     await webDataStore.httpCookieStore.deleteCookie(cookie)
-    }
-  }
-
-  func removeStorageCookie(_ cookie: HTTPCookie) async {
-    await webDataStore.httpCookieStore.deleteCookie(cookie)
-  }
-
-  func removeAllStorageCookies(for wallet: Wallet) {
-    try? cookiesRepository.removeCookies(for: wallet)
+  func removeAllStorageCookies(for wallet: Wallet) throws {
+    try cookiesRepository.removeCookies(for: wallet)
   }
 }

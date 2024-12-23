@@ -31,12 +31,8 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
     tonConnectAppsStore.addObserver(self)
     walletsStore.addObserver(self) { observer, event in
       switch event {
-      case .willChangeActiveWallet(let wallet):
-        observer.saveCookiesState(wallet: wallet)
-      case .didChangeActiveWallet(let wallet):
-        observer.restoreCookieSession(wallet: wallet)
-      case .didDeleteWallet(let wallet):
-        observer.clearCookies(for: wallet)
+      case .didChangeActiveWallet:
+        observer.update()
       default:
         break
       }
@@ -53,44 +49,11 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
     }
   }
 
-  private func restoreCookieSession(wallet: Wallet) {
-    Task {
-      await clearCookieSession()
-      await restoreCookiesState(wallet: wallet)
-
-      update()
-    }
-  }
-
-  private func saveCookiesState(wallet: Wallet) {
-    cookiesService.removeAllStorageCookies(for: wallet)
-
-    Task {
-      guard let connectedApps = try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps else {
-        return
-      }
-      await cookiesService.saveCookiesState(hosts: connectedApps.map { $0.manifest.host }, wallet: wallet)
-    }
-  }
-
-  private func restoreCookiesState(wallet: Wallet) async {
-    await cookiesService.restoreCookies(for: wallet)
-  }
-
-  private func clearCookieSession() async {
-    await cookiesService.removeAllSessionCookies()
-  }
-
-  private func clearCookies(for wallet: Wallet) {
-    cookiesService.removeAllStorageCookies(for: wallet)
-  }
-
-  public func deleteApp(_ app: TonConnectApp) async {
+  public func deleteApp(_ app: TonConnectApp) {
     guard let wallet = try? walletsStore.activeWallet else {
       return
     }
 
-    await cookiesService.removeCookies(for: app.manifest.host, wallet: wallet)
     tonConnectAppsStore.deleteConnectedApp(wallet: wallet, app: app)
     update()
   }

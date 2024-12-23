@@ -116,13 +116,7 @@ private extension BrowserConnectedViewModelImplementation {
             title: app.manifest.name,
             configuration: configuration,
             deleteHandler: { [weak self] in
-              guard let self else {
-                return
-              }
-
-              Task {
-                await self.connectedAppsStore.deleteApp(app)
-              }
+              self?.connectedAppsStore.deleteApp(app)
             }
           )
         }

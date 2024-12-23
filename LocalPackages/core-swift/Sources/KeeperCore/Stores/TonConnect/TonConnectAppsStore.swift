@@ -3,6 +3,7 @@ import TonSwift
 
 public enum TonConnectAppsStoreEvent {
   case didUpdateApps
+  case didDisconnect(app: TonConnectApp, wallet: Wallet)
 }
 
 public protocol TonConnectAppsStoreObserver: AnyObject {
@@ -114,7 +115,8 @@ public final class TonConnectAppsStore {
       return
     }
     try? tonConnectService.disconnectApp(app, wallet: wallet)
-    notifyObservers(event:.didUpdateApps)
+    notifyObservers(event: .didUpdateApps)
+    notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
   }
   
   public func connectedApps(forWallet wallet: Wallet) throws -> TonConnectApps {
@@ -123,6 +125,7 @@ public final class TonConnectAppsStore {
   
   public func deleteConnectedApp(wallet: Wallet, app: TonConnectApp) {
     try? tonConnectService.disconnectApp(app, wallet: wallet)
+    notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
   }
   
   public func getLastEventId() -> String? {

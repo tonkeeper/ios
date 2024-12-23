@@ -142,10 +142,10 @@ final class WalletBalanceSetupModel {
     case .empty: break
     case .wallets(let walletsState):
       let isBiometryEnable = securityStore.getState().isBiometryEnable
-      let isSetupFinished = walletsState.activeWalelt.setupSettings.isSetupFinished
-      let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWalelt]?.isOn ?? false
+      let isSetupFinished = walletsState.activeWallet.setupSettings.isSetupFinished
+      let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWallet]?.isOn ?? false
       let state = calculateState(
-        wallet: walletsState.activeWalelt,
+        wallet: walletsState.activeWallet,
         isSetupFinished: isSetupFinished,
         isBiometryEnable: isBiometryEnable,
         isNotificationsOn: isNotificationsOn
