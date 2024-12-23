@@ -460,8 +460,7 @@ private extension SettingsCoordinator {
   func openConnectedApps(wallet: Wallet) {
     let tonConnectAppsStore = keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
     let connectedAppsStore = keeperCoreMainAssembly.storesAssembly.connectedAppsStore(
-      tonConnectAppsStore: tonConnectAppsStore,
-      cookiesService: keeperCoreMainAssembly.servicesAssembly.cookiesService()
+      tonConnectAppsStore: tonConnectAppsStore
     )
     let configurator = SettingsListConnectedAppsConfigurator(connectedAppsStore: connectedAppsStore)
     configurator.didRequestShowAlert = { [weak self] title, actions in

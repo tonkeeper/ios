@@ -8,15 +8,12 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
 
   private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
-  private let cookiesService: CookiesService
 
   public init(
     walletsStore: WalletsStore,
-    tonConnectAppsStore: TonConnectAppsStore,
-    cookiesService: CookiesService) {
+    tonConnectAppsStore: TonConnectAppsStore) {
       self.walletsStore = walletsStore
       self.tonConnectAppsStore = tonConnectAppsStore
-      self.cookiesService = cookiesService
 
       super.init(state: [])
 

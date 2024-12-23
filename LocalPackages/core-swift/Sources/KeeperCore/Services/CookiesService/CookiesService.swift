@@ -3,7 +3,7 @@ import WebKit
 
 public protocol CookiesService: AnyObject {
   func fetchLocalCookies(for wallet: Wallet) -> [CookieBridgeModel]
-  func saveCookiesState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws
+  func saveState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws
 
   func remove(cookie: HTTPCookie, wallet: Wallet) throws
   func removeAllStorageCookies(for wallet: Wallet) throws
@@ -25,7 +25,7 @@ final class CookiesServiceImplementation: CookiesService {
 
   // MARK: -  Save
 
-  func saveCookiesState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws {
+  func saveState(hosts: [String], cookies: [HTTPCookie], wallet: Wallet) throws {
     let composedCookies: [CookieBridgeModel] = cookies.compactMap {
       guard hosts.contains($0.domain) else {
         return nil

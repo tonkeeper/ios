@@ -20,7 +20,8 @@ public final class CookiesController {
       switch event {
       case let .didChangeActiveWallet(previousWallet, activeWallet):
         Task {
-          await observer.saveCookiesState(for: previousWallet)
+          let httpCookies = await observer.saveCookiesState(for: previousWallet)
+          await observer.clearCurrentCookieSession(httpCookies)
           await observer.restoreCookieSession(wallet: activeWallet)
         }
       case .didDeleteWallet(let wallet):
@@ -33,24 +34,27 @@ public final class CookiesController {
     tonConnectAppsStore.addObserver(self)
   }
 
-  private func saveCookiesState(for wallet: Wallet) async {
+  private func saveCookiesState(for wallet: Wallet) async -> [HTTPCookie] {
     clearCookies(for: wallet)
 
     guard let connectedApps = try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps else {
-      return
+      return []
     }
 
     let cookies = await WKWebsiteDataStore.default().httpCookieStore.allCookies()
     let hosts = connectedApps.map { $0.manifest.host }
-    try? cookiesService.saveCookiesState(hosts: hosts, cookies: cookies, wallet: wallet)
+    try? cookiesService.saveState(hosts: hosts, cookies: cookies, wallet: wallet)
+
+    return cookies
+  }
+
+  private func clearCurrentCookieSession(_ cookies: [HTTPCookie]) async {
+    await cookies.asyncForEach { cookie in
+      await WKWebsiteDataStore.default().httpCookieStore.deleteCookie(cookie)
+    }
   }
 
   private func restoreCookieSession(wallet: Wallet) async {
-    let cookies = await WKWebsiteDataStore.default().httpCookieStore.allCookies()
-    await cookies.asyncForEach { cookie in
-     await WKWebsiteDataStore.default().httpCookieStore.deleteCookie(cookie)
-    }
-
     let localCookies = cookiesService.fetchLocalCookies(for: wallet)
     await localCookies.asyncForEach {
       guard let cookie = $0.asHttpCookie else {
