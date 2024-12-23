@@ -143,7 +143,7 @@ struct MergeMigration {
           }
           for wallet in missedTonProofWallets {
             guard let mnemonic = try? await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode),
-                  let keyPair = try? TonSwift.Mnemonic.mnemonicToPrivateKey(
+                  let keyPair = try? TonSwift.Mnemonic.anyMnemonicToPrivateKey(
                     mnemonicArray: mnemonic.mnemonicWords) else { continue }
             let pair = WalletPrivateKeyPair(
               wallet: wallet,

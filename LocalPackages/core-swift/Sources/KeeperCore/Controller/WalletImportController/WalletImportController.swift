@@ -16,7 +16,7 @@ public final class WalletImportController {
   
   public func findActiveWallets(phrase: [String], isTestnet: Bool) async throws -> [ActiveWalletModel] {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
     let currency = (try? currencyService.getActiveCurrency()) ?? .USD

@@ -19,7 +19,7 @@ public final class WalletAddController {
   
   public func createWallet(metaData: WalletMetaData, passcode: String) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew(wordsCount: 24))
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
     let walletIdentity = WalletIdentity(
@@ -49,7 +49,7 @@ public final class WalletAddController {
   }
   public func addWalletRevision(wallet: Wallet, revision: WalletContractVersion,  passcode: String) async throws {
     let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
     
@@ -94,7 +94,7 @@ public final class WalletAddController {
                             passcode: String,
                             isTestnet: Bool) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
     

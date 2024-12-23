@@ -311,7 +311,9 @@
 "passcode.logout_confirmation_description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
 
 "import_wallet.title" = "Введите секретный ключ";
-"import_wallet.description" = "Чтобы восстановить доступ, введите 24 секретных слова, которые вы получили при создании кошелька.";
+"import_wallet.description" = "Чтобы восстановить доступ, введите 12 или 24 секретных слова, которые вы получили при создании кошелька.";
+"import_wallet.set_12_words" = "12 слов";
+"import_wallet.set_24_words" = "24 слова";
 
 "choose_wallets.title" = "Выберите кошельки";
 "choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";
@@ -333,7 +335,7 @@
 "add_wallet.items.new_wallet.subtitle" = "Создать новый кошелёк";
 
 "add_wallet.items.existing_wallet.title" = "Существующий кошелёк";
-"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов";
+"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 12 или 24 слов";
 
 "add_wallet.items.watch_only.title" = "Аккаунт для просмотра";
 "add_wallet.items.watch_only.subtitle" = "Для отслеживания активности кошелька без ввода секретного ключа";
