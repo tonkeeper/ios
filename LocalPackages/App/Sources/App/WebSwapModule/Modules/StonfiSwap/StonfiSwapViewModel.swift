@@ -165,7 +165,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
                                             }
                                             
                                             if (message.status === 'fulfilled') {
-                                                promise.resolve(JSON.parse(message.data));
+                                                promise.resolve(message.data);
                                             } else {
                                                 promise.reject(new Error(message.data));
                                             }

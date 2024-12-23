@@ -33,7 +33,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
           return BigUInt(100000000)
         }
         let emulationExtra = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
-        let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
+        let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
         var transferAmount = emulationExtra + minimumTransferAmount
         transferAmount = transferAmount < minimumTransferAmount
         ? minimumTransferAmount
