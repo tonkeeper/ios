@@ -20,6 +20,10 @@ public final class CookiesController {
       switch event {
       case let .didChangeActiveWallet(previousWallet, activeWallet):
         Task {
+          guard previousWallet != activeWallet else {
+            return
+          }
+          
           let httpCookies = await observer.saveCookiesState(for: previousWallet)
           await observer.clearCurrentCookieSession(httpCookies)
           await observer.restoreCookieSession(wallet: activeWallet)

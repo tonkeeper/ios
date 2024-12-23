@@ -1,5 +1,4 @@
 import Foundation
-import WebKit
 
 public protocol CookiesService: AnyObject {
   func fetchLocalCookies(for wallet: Wallet) -> [CookieBridgeModel]
