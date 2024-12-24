@@ -456,6 +456,15 @@ private extension SettingsCoordinator {
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
+  
+  func getRNPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.rnMnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
+  }
 
   func openConnectedApps(wallet: Wallet) {
     let tonConnectAppsStore = keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
@@ -479,30 +488,15 @@ private extension SettingsCoordinator {
       uniqueIdProvider: coreAssembly.uniqueIdProvider,
       storiesService: storiesAssembly.storiesService()
     )
-    let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
-    let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()
     configuration.didSelectRNWalletsSeedPhrases = {
       Task { @MainActor [weak self] in
         guard let self,
-        let passcode = await self.getPasscode() else { return }
-        
-        let rnWalletsStore: RNWalletsStore? = try? await rnAsyncStorage.getValue(key: "walletsStore")
-        let rnWallets = rnWalletsStore?.wallets ?? []
-        let rnWalletsItems = rnWallets.map { SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
-          name: $0.name, identifier: $0.identifier
-        )}
-        let wallets = (try? keeperInfoRepository.getKeeperInfo().wallets) ?? []
-        let walletsItems = wallets.map {
-          SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
-            name: $0.metaData.label, identifier: $0.id
-          )
-        }
-        
+        let passcode = await self.getRNPasscode() else { return }
         let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
         guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
           return
         }
-        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: Array(Set(rnWalletsItems + walletsItems)))
+        self.openRNSeedPhrases(mnemonics: mnemonics)
       }
     }
     
@@ -512,10 +506,9 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
-  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem]) {
+  func openRNSeedPhrases(mnemonics: Mnemonics) {
     let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
-      mnemonics: mnemonics,
-      wallets: wallets
+      mnemonics: mnemonics
     )
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
