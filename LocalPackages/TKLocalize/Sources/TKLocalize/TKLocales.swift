@@ -845,6 +845,10 @@ public enum TKLocales {
       public enum Confirm {
         /// Confirm your transaction on Ledger
         public static let description = TKLocales.tr("Localizable", "ledger_confirm.steps.confirm.description", fallback: "Confirm your transaction on Ledger")
+        /// Confirm transaction #%@ on Ledger
+        public static func descriptionNumerated(_ p1: Any) -> String {
+          return TKLocales.tr("Localizable", "ledger_confirm.steps.confirm.description_numerated", String(describing: p1), fallback: "Confirm transaction #%@ on Ledger")
+        }
       }
       public enum ConfirmProof {
         /// Verify domain on Ledger

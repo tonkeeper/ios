@@ -11,7 +11,7 @@ enum LedgerConfirmError: Error {
 
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
-  var didSign: ((Data) -> Void)? { get set }
+  var didSign: ((LedgerConfirmSignedItem) -> Void)? { get set }
   var didError: ((_ error: LedgerConfirmError) -> Void)? { get set }
 }
 
@@ -34,13 +34,13 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
     case idle
     case bluetoothConnected
     case tonAppOpened
-    case confirmed
+    case confirmed(Int)
   }
   
   // MARK: - LedgerConnectModuleOutput
   
   var didCancel: (() -> Void)?
-  var didSign: ((Data) -> Void)?
+  var didSign: ((LedgerConfirmSignedItem) -> Void)?
   var didError: ((_ error: LedgerConfirmError) -> Void)?
   
   // MARK: - LedgerConnectViewModel
@@ -81,14 +81,14 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
-  private let confirmItem: LedgedConfirmConfirmItem
+  private let confirmItem: LedgerConfirmConfirmItem
   private let wallet: Wallet
   private let ledgerDevice: Wallet.LedgerDevice
   private let bleTransport: BleTransportProtocol
   
   // MARK: - Init
   
-  init(confirmItem: LedgedConfirmConfirmItem,
+  init(confirmItem: LedgerConfirmConfirmItem,
        wallet: Wallet,
        ledgerDevice: Wallet.LedgerDevice,
        bleTransport: BleTransportProtocol) {
@@ -172,7 +172,7 @@ private extension LedgerConfirmViewModelImplementation {
         }
         return .success(())
       }
-    case .signatureData(_):
+    case .signatureData(_), .transactions(_):
       guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
         return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
       }
@@ -222,16 +222,26 @@ private extension LedgerConfirmViewModelImplementation {
           let signature = try await tonTransport.signTransaction(
             path: accountPath,
             transaction: transaction)
-          self.setConfirmed()
-          self.didSign?(signature)
+          self.setConfirmed(idx: 0)
+          self.didSign?(.transaction(signature))
+        case .transactions(let transactions):
+          var signatures: [Data] = []
+          for (idx, transaction) in transactions.enumerated() {
+            let signature = try await tonTransport.signTransaction(
+              path: accountPath,
+              transaction: transaction)
+            self.setConfirmed(idx: idx)
+            signatures.append(signature)
+          }
+          self.didSign?(.transactions(signatures))
         case .signatureData(let signatureData):
           let signed = try await tonTransport.signAddressProof(
             path: accountPath,
             domain: signatureData.domain.value,
             timestamp: signatureData.timestamp,
             payload: signatureData.payload)
-          self.setConfirmed()
-          self.didSign?(signed)
+          self.setConfirmed(idx: 0)
+          self.didSign?(.proof(signed))
         }
       } catch {
         defer {
@@ -258,8 +268,8 @@ private extension LedgerConfirmViewModelImplementation {
     self.state = .tonAppOpened
   }
   
-  func setConfirmed() {
-    self.state = .confirmed
+  func setConfirmed(idx: Int) {
+    self.state = .confirmed(idx)
   }
   
   func updateModel() {
@@ -268,9 +278,8 @@ private extension LedgerConfirmViewModelImplementation {
         bluetoothViewModel: createBluetoothModel(),
         stepModels: [
           createConnectStepModel(),
-          createTonAppStepModel(),
-          createConfirmStepModel()
-        ]
+          createTonAppStepModel()
+        ] + createConfirmStepsModel()
       ),
       cancelButton: createCancelButtonModel()
     )
@@ -343,32 +352,61 @@ private extension LedgerConfirmViewModelImplementation {
     )
   }
   
-  func createConfirmStepModel() -> LedgerStepView.Model {
-    let stepState: LedgerStepView.State
-    switch state {
-    case .idle:
-      stepState = .idle
-    case .bluetoothConnected:
-      stepState = .idle
-    case .tonAppOpened:
-      stepState = .inProgress
-    case .confirmed:
-      stepState = .done
-    }
-    
-    let content: String = {
-      switch self.confirmItem {
-      case .transaction(_):
-        return TKLocales.LedgerConfirm.Steps.Confirm.description
-      case .signatureData(_): 
-        return TKLocales.LedgerConfirm.Steps.ConfirmProof.description
+  func createConfirmStepsModel() -> [LedgerStepView.Model] {
+    switch self.confirmItem {
+    case .signatureData(_), .transaction(_):
+      let stepState: LedgerStepView.State
+      switch state {
+      case .idle:
+        stepState = .idle
+      case .bluetoothConnected:
+        stepState = .idle
+      case .tonAppOpened:
+        stepState = .inProgress
+      case .confirmed(_):
+        stepState = .done
       }
-    }()
-    
-    return LedgerStepView.Model(
-      content: content,
-      linkButton: nil,
-      state: stepState
-    )
+      
+      let content: String = {
+        switch self.confirmItem {
+        case .transaction(_), .transactions(_):
+          return TKLocales.LedgerConfirm.Steps.Confirm.description
+        case .signatureData(_):
+          return TKLocales.LedgerConfirm.Steps.ConfirmProof.description
+        }
+      }()
+      
+      return [LedgerStepView.Model(
+        content: content,
+        linkButton: nil,
+        state: stepState
+      )]
+    case .transactions(let transactions):
+      return transactions.enumerated().map { (idx, transaction) in
+        let stepState: LedgerStepView.State
+        switch state {
+        case .idle:
+          stepState = .idle
+        case .bluetoothConnected:
+          stepState = .idle
+        case .tonAppOpened:
+          stepState = idx == 0 ? .inProgress : .idle
+        case .confirmed(let confirmedIndex):
+          if (confirmedIndex >= idx) {
+            stepState = .done
+          } else if (idx == confirmedIndex + 1) {
+            stepState = .inProgress
+          } else {
+            stepState = .idle
+          }
+        }
+        
+        return LedgerStepView.Model(
+          content: TKLocales.LedgerConfirm.Steps.Confirm.descriptionNumerated(idx + 1),
+          linkButton: nil,
+          state: stepState
+        )
+      }
+    }
   }
 }

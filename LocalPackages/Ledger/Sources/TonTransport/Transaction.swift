@@ -38,6 +38,7 @@ public struct Transaction {
     
     var transactionItems = [Transaction]()
     
+    var i: UInt64 = 0
     while slice.remainingRefs > 0 {
       let sendMode = try slice.loadUint(bits: 8)
       let messageCell = try slice.loadRef()
@@ -50,7 +51,7 @@ public struct Transaction {
           Transaction(
             destination: info.dest,
             sendMode: SendMode(rawValue: UInt8(sendMode)) ?? .walletDefault(),
-            seqno: seqno,
+            seqno: seqno + i,
             timeout: timeout,
             bounceable: info.bounce,
             coins: info.value.coins,
@@ -58,6 +59,7 @@ public struct Transaction {
             payload: message.body.bits.length > 0 || message.body.refs.count > 0 ? try TonPayloadFormat.from(cell: message.body) : nil
           )
         )
+        i += 1
       case .externalOutInfo:
         continue
       }
