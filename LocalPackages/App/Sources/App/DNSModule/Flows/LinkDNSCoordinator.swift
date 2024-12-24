@@ -132,7 +132,9 @@ private extension LinkDNSCoordinator {
         
         switch result {
         case .signed(let data):
-          return data
+          return .boc(data)
+        case .signedMany(let data):
+          return .batch(data)
         case .cancel:
           return nil
         case .failed(let error):

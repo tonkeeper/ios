@@ -78,7 +78,7 @@ extension MainCoordinator {
   func didRequireSign(transferData: TransferData,
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> String? {
+                      router: ViewControllerRouter) async throws -> WalletSignedData? {
     let coordinator = WalletTransferSignCoordinator(
       router: router,
       wallet: wallet,
@@ -92,7 +92,9 @@ extension MainCoordinator {
   
     switch result {
     case .signed(let data):
-      return data
+      return .boc(data)
+    case .signedMany(let data):
+      return .batch(data)
     case .cancel:
       return nil
     case .failed(let error):

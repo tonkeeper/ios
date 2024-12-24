@@ -58,7 +58,7 @@ public struct TransferService {
   public func sendTransaction(wallet: Wallet,
                               transfer: Transfer,
                               transferType: TransferType,
-                              signClosure: (TransferData) async throws -> String) async throws -> String {
+                              signClosure: (TransferData) async throws -> WalletSignedData) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -66,22 +66,43 @@ public struct TransferService {
       seqno: seqno,
       transferType: transferType
     )
-    let boc = try await signClosure(transferData)
-    switch transferType {
-    case .default:
-      try await sendService.sendTransaction(
-        boc: boc,
-        wallet: wallet
-      )
-    case .battery:
-      let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
-      try await batteryService.sendTransaction(
-        wallet: wallet,
-        boc: boc,
-        tonProofToken: tonProofToken
-      )
+    let signedData = try await signClosure(transferData)
+    switch signedData {
+    case .boc(let boc):
+      switch transferType {
+      case .default:
+        try await sendService.sendTransaction(
+          boc: boc,
+          wallet: wallet
+        )
+      case .battery:
+        let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
+        try await batteryService.sendTransaction(
+          wallet: wallet,
+          boc: boc,
+          tonProofToken: tonProofToken
+        )
+      }
+      return boc
+    case .batch(let batch):
+      switch transferType {
+      case .default:
+        try await sendService.sendTransactions(
+          batch: batch,
+          wallet: wallet
+        )
+      case .battery:
+        let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
+        for boc in batch {
+          try await batteryService.sendTransaction(
+            wallet: wallet,
+            boc: boc,
+            tonProofToken: tonProofToken
+          )
+        }
+      }
+      return batch[0]
     }
-    return boc
   }
   
   public func emulate(wallet: Wallet,

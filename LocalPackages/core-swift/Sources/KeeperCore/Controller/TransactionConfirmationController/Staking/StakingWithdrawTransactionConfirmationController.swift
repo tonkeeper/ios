@@ -22,8 +22,13 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
   
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
     do {
-      let transactionBoc = try await createSignedBoc()
-      try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
+      let signedTransaction = try await createSignedBoc()
+      switch signedTransaction {
+      case .boc(let transactionBoc):
+        try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
+      case .batch(let batch):
+        try await sendService.sendTransactions(batch: batch, wallet: wallet)
+      }
       return .success(())
     } catch TransactionConfirmationError.failedToSign {
       return .failure(.failedToSign)
@@ -32,7 +37,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     }
   }
   
-  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> WalletSignedData?)?
 
   @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
   
@@ -98,7 +103,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     return try signed.toBoc().hexString()
   }
   
-  private func createSignedBoc() async throws -> String {
+  private func createSignedBoc() async throws -> WalletSignedData {
     let transferData = try await createTransferData()
     return try await signTransfer(transferData)
   }
@@ -213,7 +218,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     return converted
   }
   
-  func signTransfer(_ transferData: TransferData) async throws -> String {
+  func signTransfer(_ transferData: TransferData) async throws -> WalletSignedData {
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData

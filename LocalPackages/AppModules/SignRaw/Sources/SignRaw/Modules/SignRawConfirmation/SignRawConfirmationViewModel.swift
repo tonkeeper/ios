@@ -6,7 +6,7 @@ import WalletExtensions
 
 @MainActor
 protocol SignRawConfirmationModuleOutput: AnyObject {
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> WalletSignedData?)? { get set }
   var didConfirm: (() -> Void)? { get set }
 }
 
@@ -28,7 +28,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   
   // MARK: - SignRawConfirmationModuleOutput
   
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> WalletSignedData?)?
   var didConfirm: (() -> Void)?
   
   // MARK: - SignRawConfirmationModuleInput

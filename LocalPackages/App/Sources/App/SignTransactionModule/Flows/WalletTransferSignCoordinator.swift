@@ -21,6 +21,7 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
   }
   
   enum Result {
+    case signedMany([String])
     case signed(String)
     case failed(WalletTransferSignError)
     case cancel
@@ -28,6 +29,7 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
   
   var didFail: ((WalletTransferSignError) -> Void)?
   var didSign: ((String) -> Void)?
+  var didSignMany: (([String]) -> Void)?
   var didCancel: (() -> Void)?
   
   var externalSignHandler: ((Data?) -> Void)?
@@ -58,6 +60,12 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
       return await withCheckedContinuation { [weak parentCoordinator] (continuation: CheckedContinuation<WalletTransferSignCoordinator.Result, Never>) in
         didSign = { [weak parentCoordinator, weak self] in
           continuation.resume(returning: .signed($0))
+          guard let self else { return }
+          parentCoordinator?.removeChild(self)
+        }
+        
+        didSignMany = { [weak parentCoordinator, weak self] in
+          continuation.resume(returning: .signedMany($0))
           guard let self else { return }
           parentCoordinator?.removeChild(self)
         }
@@ -216,7 +224,7 @@ private extension WalletTransferSignCoordinator {
             ).toBoc().base64EncodedString()
             signedBocs.append(signedBoc)
           }
-          // didSignMany?(signedBocs)
+          didSignMany?(signedBocs)
         } catch {
           self.didCancel?()
         }

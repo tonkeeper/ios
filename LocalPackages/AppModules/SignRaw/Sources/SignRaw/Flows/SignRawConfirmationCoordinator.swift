@@ -7,7 +7,7 @@ import KeeperCore
 @MainActor
 public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
   
-  var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> WalletSignedData?)?
 
   private let wallet: Wallet
   private let transferProvider: () async throws -> Transfer

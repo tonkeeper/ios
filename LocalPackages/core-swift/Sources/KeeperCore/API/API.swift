@@ -291,6 +291,17 @@ extension API {
     }
     try await performRequest(request: request)
   }
+  
+  func sendTransactions(batch: [String]) async throws {
+    let request = try await createRequest {
+      return BlockchainAPI.sendBlockchainMessageWithRequestBuilder(
+        sendBlockchainMessageRequest: SendBlockchainMessageRequest(
+          batch: batch
+        )
+      )
+    }
+    try await performRequest(request: request)
+  }
 }
 
 // MARK: - NFTs
