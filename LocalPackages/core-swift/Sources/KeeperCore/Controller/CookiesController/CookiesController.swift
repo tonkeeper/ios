@@ -23,7 +23,7 @@ public final class CookiesController {
           guard previousWallet != activeWallet else {
             return
           }
-          
+
           let httpCookies = await observer.saveCookiesState(for: previousWallet)
           await observer.clearCurrentCookieSession(httpCookies)
           await observer.restoreCookieSession(wallet: activeWallet)
@@ -45,7 +45,7 @@ public final class CookiesController {
       return []
     }
 
-    let cookies = await WKWebsiteDataStore.default().httpCookieStore.allCookies()
+    let cookies = await fetchAllCookies()
     let hosts = connectedApps.map { $0.manifest.host }
     try? cookiesService.saveState(hosts: hosts, cookies: cookies, wallet: wallet)
 
@@ -54,7 +54,9 @@ public final class CookiesController {
 
   private func clearCurrentCookieSession(_ cookies: [HTTPCookie]) async {
     await cookies.asyncForEach { cookie in
-      await WKWebsiteDataStore.default().httpCookieStore.deleteCookie(cookie)
+      await MainActor.run {
+        WKWebsiteDataStore.default().httpCookieStore.delete(cookie)
+      }
     }
   }
 
@@ -77,16 +79,26 @@ public final class CookiesController {
 
   private func deleteApp(app: TonConnectApp, wallet: Wallet) {
     Task {
-      let cookies = await WKWebsiteDataStore.default().httpCookieStore.allCookies()
+      let cookies = await fetchAllCookies()
       await cookies.asyncForEach { cookie in
         guard app.manifest.host.contains(cookie.domain) else {
           return
         }
 
         try? cookiesService.remove(cookie: cookie, wallet: wallet)
-        await WKWebsiteDataStore.default().httpCookieStore.deleteCookie(cookie)
+        await MainActor.run {
+          WKWebsiteDataStore.default().httpCookieStore.delete(cookie)
+        }
       }
     }
+  }
+}
+
+private extension CookiesController {
+
+  @MainActor
+  private func fetchAllCookies() async -> [HTTPCookie] {
+    await WKWebsiteDataStore.default().httpCookieStore.allCookies()
   }
 }
 
