@@ -32,7 +32,8 @@ public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoo
       wallet: wallet,
       parameters: parameters,
       manifest: manifest,
-      signTonProofHandler: signTonProofHandler
+      signTonProofHandler: signTonProofHandler,
+      keeperVersion: InfoProvider.appVersion()
     )
   }
   
@@ -59,7 +60,8 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
       wallet: wallet,
       parameters: parameters,
       manifest: manifest,
-      signTonProofHandler: signTonProofHandler
+      signTonProofHandler: signTonProofHandler,
+      keeperVersion: InfoProvider.appVersion()
     )
     connectionResponseHandler(response)
   }

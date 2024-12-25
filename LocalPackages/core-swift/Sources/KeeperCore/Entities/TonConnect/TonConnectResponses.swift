@@ -11,13 +11,10 @@ public extension TonConnect {
   struct DeviceInfo: Encodable {
     public let platform = "iphone"
     public let appName = "Tonkeeper"
-    public let appVersion = "3.4.0"
     public let maxProtocolVersion = 2
-    public let features = [
-      FeatureCompatible.legacy(Feature()),
-      FeatureCompatible.feature(Feature())
-    ]
-    
+    public let features: [FeatureCompatible]
+    public let appVersion: String
+
     public enum FeatureCompatible: Encodable {
       case feature(Feature)
       case legacy(Feature)
@@ -35,11 +32,22 @@ public extension TonConnect {
     
     public struct Feature: Encodable {
       public let name = "SendTransaction"
-      public let maxMessages = 4
+      public let maxMessages: Int
+      
+      public init(maxMessages: Int) {
+        self.maxMessages = maxMessages
+      }
     }
     
-    public init() {}
+    public init(maxMessages: Int, appVersion: String) {
+      self.appVersion = appVersion
+      self.features = [
+       FeatureCompatible.legacy(Feature(maxMessages: maxMessages)),
+       FeatureCompatible.feature(Feature(maxMessages: maxMessages))
+     ]
+    }
   }
+  
   struct ConnectEventSuccess: Encodable {
     public struct Payload: Encodable {
       public let items: [ConnectItemReply]

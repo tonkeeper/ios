@@ -15,14 +15,16 @@ public protocol TonConnectService {
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest, signTonProofHandler:  @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws -> TonConnect.ConnectEventSuccess
+    manifest: TonConnectManifest, signTonProofHandler:  @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
+    keeperVersion: String) async throws -> TonConnect.ConnectEventSuccess
   func encryptSuccessResponse(
     _ successResponse: TonConnect.ConnectEventSuccess,
     parameters: TonConnectParameters,
     sessionCrypto: TonConnectSessionCrypto) throws -> String
   func buildReconnectConnectEventSuccessResponse(
     wallet: Wallet,
-    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess
+    manifest: TonConnectManifest,
+    keeperVersion: String) throws -> TonConnect.ConnectEventSuccess
   func storeConnectedApp(wallet: Wallet, sessionCrypto: TonConnectSessionCrypto, parameters: TonConnectParameters, manifest: TonConnectManifest) throws
   func confirmConnectionRequest(body: String,
                                 sessionCrypto: TonConnectSessionCrypto,
@@ -93,7 +95,8 @@ final class TonConnectServiceImplementation: TonConnectService {
   
   func buildReconnectConnectEventSuccessResponse(
     wallet: Wallet,
-    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
+    manifest: TonConnectManifest,
+    keeperVersion: String) throws -> TonConnect.ConnectEventSuccess {
       guard wallet.isTonconnectAvailable else {
         throw
           TonConnectServiceError.unsupportedWalletKind(
@@ -102,6 +105,7 @@ final class TonConnectServiceImplementation: TonConnectService {
       }
       let successResponse = try TonConnectResponseBuilder.buildReconnectConnectEventSuccessResponse(
         wallet: wallet,
+        keeperVersion: keeperVersion,
         manifest: manifest
       )
       return successResponse
@@ -111,7 +115,8 @@ final class TonConnectServiceImplementation: TonConnectService {
     wallet: Wallet,
     parameters: TonConnectParameters,
     manifest: TonConnectManifest,
-    signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws -> TonConnect.ConnectEventSuccess {
+    signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
+    keeperVersion: String) async throws -> TonConnect.ConnectEventSuccess {
       guard wallet.isTonconnectAvailable else {
         throw
           TonConnectServiceError.unsupportedWalletKind(
@@ -122,6 +127,7 @@ final class TonConnectServiceImplementation: TonConnectService {
           .buildConnectEventSuccesResponse(
               requestPayloadItems: parameters.requestPayload.items,
               wallet: wallet,
+              keeperVersion: keeperVersion,
               manifest: manifest,
               signTonProof: signTonProofHandler
           )
