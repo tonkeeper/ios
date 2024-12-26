@@ -51,7 +51,7 @@ public protocol SignRawControllerResultHandler {
 
 public final class SignRawController {
   
-  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   private let wallet: Wallet
   private let transferProvider: () async throws -> Transfer

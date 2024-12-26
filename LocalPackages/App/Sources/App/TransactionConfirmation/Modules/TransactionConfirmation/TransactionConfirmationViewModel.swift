@@ -6,7 +6,7 @@ import BigInt
 
 @MainActor
 protocol TransactionConfirmationOutput: AnyObject {
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -22,7 +22,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   // MARK: - TransactionConfirmationOutput
   
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel

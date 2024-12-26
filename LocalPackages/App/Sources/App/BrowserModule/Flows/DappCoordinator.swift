@@ -212,7 +212,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   func didRequireSign(transferData: TransferData,
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> String? {
+                      router: ViewControllerRouter) async throws -> SignedTransactions? {
     let coordinator = WalletTransferSignCoordinator(
       router: router,
       wallet: wallet,

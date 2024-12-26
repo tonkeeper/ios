@@ -21,13 +21,13 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
   }
   
   enum Result {
-    case signed(String)
+    case signed([String])
     case failed(WalletTransferSignError)
     case cancel
   }
   
   var didFail: ((WalletTransferSignError) -> Void)?
-  var didSign: ((String) -> Void)?
+  var didSign: (([String]) -> Void)?
   var didCancel: (() -> Void)?
   
   var externalSignHandler: ((Data?) -> Void)?
@@ -108,7 +108,7 @@ private extension WalletTransferSignCoordinator {
             seqno: transferData.seqno,
             signed: signedData
           ).toBoc().base64EncodedString()
-          self.didSign?(signedBoc)
+          self.didSign?([signedBoc])
         } catch {
           self.didCancel?()
         }
@@ -135,7 +135,7 @@ private extension WalletTransferSignCoordinator {
             seqno: transferData.seqno,
             signed: signedData
           ).toBoc().base64EncodedString()
-          self.didSign?(signedBoc)
+          self.didSign?([signedBoc])
         } catch {
           self.didCancel?()
         }
@@ -168,7 +168,7 @@ private extension WalletTransferSignCoordinator {
             seqno: transferData.seqno,
             signed: signature
           ).toBoc().base64EncodedString()
-          self.didSign?(signedBoc)
+          self.didSign?([signedBoc])
         } catch {
           self.didCancel?()
         }
@@ -185,22 +185,38 @@ private extension WalletTransferSignCoordinator {
           guard !transactions.isEmpty else {
             throw ExtenalSignError.cancelled
           }
-          let transaction = transactions[0]
           guard let signedData = await handleLedgerSign(
-            transaction: transaction,
+            transactions: transactions,
             ledgerDevice: ledgerDevice
           ) else {
             throw ExtenalSignError.cancelled
           }
-          let signingMessage = try TonTransport.buildTransfer(transaction: transaction).signingMessage
-          let signedBoc = try TransferSigner.signWalletTransfer(
-            signingMessage,
-            signaturePosition: walletTransfer.signaturePosition,
-            wallet: wallet,
-            seqno: transferData.seqno,
-            signed: signedData
-          ).toBoc().base64EncodedString()
-          didSign?(signedBoc)
+          
+          var signedBocs: [String] = []
+          for (idx, transaction) in transactions.enumerated() {
+            let signingMessage = try TonTransport.buildTransfer(transaction: transaction).signingMessage
+            
+            let signed: Data = try {
+              switch signedData {
+              case .proof(_):
+                throw ExtenalSignError.cancelled
+              case .transaction(let signed):
+                return signed
+              case .transactions(let signed):
+                return signed[idx]
+              }
+            }()
+            
+            let signedBoc = try TransferSigner.signWalletTransfer(
+              signingMessage,
+              signaturePosition: walletTransfer.signaturePosition,
+              wallet: wallet,
+              seqno: transferData.seqno,
+              signed: signed
+            ).toBoc().base64EncodedString()
+            signedBocs.append(signedBoc)
+          }
+          didSign?(signedBocs)
         } catch {
           self.didCancel?()
         }
@@ -239,7 +255,7 @@ private extension WalletTransferSignCoordinator {
               seqno: transferData.seqno,
               signer: WalletTransferSecretKeySigner(secretKey: privateKey.data)
             )
-            self.didSign?(try signed.toBoc().base64EncodedString())
+            self.didSign?([try signed.toBoc().base64EncodedString()])
           } catch {
             self.didFail?(.failedToSign(error))
           }
@@ -248,10 +264,11 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleLedgerSign(transaction: Transaction, ledgerDevice: Wallet.LedgerDevice) async -> Data? {
+  func handleLedgerSign(transactions: [Transaction], ledgerDevice: Wallet.LedgerDevice) async -> LedgerConfirmSignedItem? {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async {
-        let module = LedgerConfirmAssembly.module(confirmItem: .transaction(transaction),
+        let confirmItem: LedgerConfirmConfirmItem = transactions.count == 1 ? .transaction(transactions[0]) : .transactions(transactions)
+        let module = LedgerConfirmAssembly.module(confirmItem: confirmItem,
                                                   wallet: self.wallet,
                                                   ledgerDevice: ledgerDevice,
                                                   coreAssembly: self.coreAssembly)

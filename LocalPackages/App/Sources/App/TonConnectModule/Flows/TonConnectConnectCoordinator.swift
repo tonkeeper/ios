@@ -313,7 +313,12 @@ private extension TonConnectConnectCoordinator {
         
         module.output.didSign = { [weak bottomSheetViewController] signature in
           bottomSheetViewController?.dismiss(completion: {
-            continuation.resume(returning: signature)
+            switch (signature) {
+            case.proof(let data):
+              continuation.resume(returning: data)
+            default:
+              continuation.resume(throwing: ConnectError.unknown)
+            }
           })
         }
         

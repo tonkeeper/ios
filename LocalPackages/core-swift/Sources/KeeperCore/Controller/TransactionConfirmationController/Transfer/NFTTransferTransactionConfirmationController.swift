@@ -57,7 +57,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     }
   }
   
-  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
   @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
@@ -138,7 +138,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  func signTransfer(_ transferData: TransferData) async throws -> String {
+  func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
