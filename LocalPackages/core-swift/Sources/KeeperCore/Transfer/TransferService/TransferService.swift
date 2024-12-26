@@ -3,6 +3,10 @@ import TonSwift
 import BigInt
 import TonAPI
 
+public enum Error: Swift.Error {
+  case nothingToSend
+}
+
 public struct TransferEmulationResult {
   public let transactionInfo: MessageConsequences
   public let transferType: TransferType
@@ -68,6 +72,10 @@ public struct TransferService {
     )
     let signedTransactions = try await signClosure(transferData)
     
+    if (signedTransactions.isEmpty) {
+      throw Error.nothingToSend
+    }
+    
     if (signedTransactions.count == 1) {
       let boc = signedTransactions[0]
       switch transferType {
@@ -110,7 +118,6 @@ public struct TransferService {
                       transfer: Transfer,
                       params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
-    let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
     
     
     if let tonProofToken,
