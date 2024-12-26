@@ -1,4 +1,5 @@
 import Foundation
+import TKCore
 import KeeperCore
 
 protocol DappViewModel: AnyObject {
@@ -89,11 +90,14 @@ final class DappViewModelImplementation: DappViewModel {
   
   private let dapp: Dapp
   private let messageHandler: DappMessageHandler
+  private let wallet: Wallet?
   
   init(dapp: Dapp,
-       messageHandler: DappMessageHandler) {
+       messageHandler: DappMessageHandler,
+       wallet: Wallet?) {
     self.dapp = dapp
     self.messageHandler = messageHandler
+    self.wallet = wallet
   }
   
   private func sendResponse(_ response: DappBridgeResponse) {
@@ -109,7 +113,7 @@ final class DappViewModelImplementation: DappViewModel {
   }
   
   var jsInjection: String? {
-    let deviceInfo = TonConnect.DeviceInfo()
+    let deviceInfo = TonConnect.DeviceInfo(maxMessages: (try? wallet?.contract.maxMessages) ?? 4, appVersion: InfoProvider.appVersion())
     let info = Info(
       isWalletBrowser: true,
       deviceInfo: deviceInfo,
