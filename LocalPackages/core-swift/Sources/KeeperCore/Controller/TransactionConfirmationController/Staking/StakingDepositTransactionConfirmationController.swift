@@ -22,12 +22,16 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
     do {
-      let signedTransaction = try await createSignedBoc()
-      switch signedTransaction {
-      case .boc(let transactionBoc):
-        try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-      case .batch(let batch):
-        try await sendService.sendTransactions(batch: batch, wallet: wallet)
+      let signedTransactions = try await createSignedBoc()
+      
+      if (signedTransactions.isEmpty) {
+        return .failure(.failedToSendTransaction)
+      }
+      
+      if (signedTransactions.count == 1) {
+        try await sendService.sendTransaction(boc: signedTransactions[0], wallet: wallet)
+      } else {
+        try await sendService.sendTransactions(batch: signedTransactions, wallet: wallet)
       }
       return .success(())
     } catch TransactionConfirmationError.failedToSign {
@@ -37,7 +41,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     }
   }
   
-  public var signHandler: ((TransferData, Wallet) async throws -> WalletSignedData?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
 
   private var fee: TransactionConfirmationModel.Fee = .loading
   
@@ -103,7 +107,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     return try signed.toBoc().hexString()
   }
   
-  private func createSignedBoc() async throws -> WalletSignedData {
+  private func createSignedBoc() async throws -> SignedTransactions {
     let transferData = try await createTransferData()
     return try await signTransfer(transferData)
   }
@@ -198,7 +202,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     return amount + stakingPool.implementation.depositExtraFee
   }
   
-  func signTransfer(_ transferData: TransferData) async throws -> WalletSignedData {
+  func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData

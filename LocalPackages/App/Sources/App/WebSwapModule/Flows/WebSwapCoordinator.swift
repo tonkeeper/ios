@@ -98,7 +98,7 @@ private extension WebSwapCoordinator {
   func didRequireSign(transferData: TransferData, 
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> WalletSignedData? {
+                      router: ViewControllerRouter) async throws -> SignedTransactions? {
     let coordinator = WalletTransferSignCoordinator(
       router: router,
       wallet: wallet,
@@ -112,9 +112,7 @@ private extension WebSwapCoordinator {
   
     switch result {
     case .signed(let data):
-      return .boc(data)
-    case .signedMany(let data):
-      return .batch(data)
+      return data
     case .cancel:
       return nil
     case .failed(let error):

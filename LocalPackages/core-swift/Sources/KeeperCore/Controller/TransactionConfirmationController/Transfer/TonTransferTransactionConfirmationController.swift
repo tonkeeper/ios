@@ -43,7 +43,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     }
   }
   
-  public var signHandler: ((TransferData, Wallet) async throws -> WalletSignedData?)?
+  public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
   @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
@@ -150,7 +150,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  func signTransfer(_ transferData: TransferData) async throws -> WalletSignedData {
+  func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData

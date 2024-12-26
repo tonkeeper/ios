@@ -78,9 +78,7 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
     
       switch result {
       case .signed(let data):
-        return .boc(data)
-      case .signedMany(let data):
-        return .batch(data)
+        return data
       case .cancel:
         return nil
       case .failed(let error):

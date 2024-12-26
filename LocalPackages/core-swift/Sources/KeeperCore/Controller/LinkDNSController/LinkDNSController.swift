@@ -21,7 +21,7 @@ public final class LinkDNSController {
   }
   
   public func emulate(dnsLink: DNSLink) async throws -> SendTransactionModel {
-    let signedData = try await createSignedData(dnsLink: dnsLink) { transferData in
+    let signedTransactions = try await createSignedTransactions(dnsLink: dnsLink) { transferData in
       let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
         .createUnsignedWalletTransfer(
           wallet: wallet
@@ -33,55 +33,46 @@ public final class LinkDNSController {
         signer: WalletTransferEmptyKeySigner()
       )
       
-      return try .boc(signed.toBoc().hexString())
+      return [try signed.toBoc().hexString()]
     }
     
-    switch signedData {
-    case .boc(let boc):
-      let transactionInfo = try await sendService.loadTransactionInfo(
-        boc: boc,
-        wallet: wallet
-      )
-      
-      return try SendTransactionModel(
-        accountEvent: transactionInfo.event,
-        risk: transactionInfo.risk,
-        transaction: transactionInfo.trace.transaction
-      )
-    case .batch(let batch):
-      let boc = batch[0]
-      let transactionInfo = try await sendService.loadTransactionInfo(
-        boc: boc,
-        wallet: wallet
-      )
-      
-      return try SendTransactionModel(
-        accountEvent: transactionInfo.event,
-        risk: transactionInfo.risk,
-        transaction: transactionInfo.trace.transaction
-      )
-    }
+    let boc = signedTransactions[0]
+    
+    let transactionInfo = try await sendService.loadTransactionInfo(
+      boc: boc,
+      wallet: wallet
+    )
+    
+    return try SendTransactionModel(
+      accountEvent: transactionInfo.event,
+      risk: transactionInfo.risk,
+      transaction: transactionInfo.trace.transaction
+    )
   }
 
   public func sendLinkTransaction(dnsLink: DNSLink,
-                                  signClosure: (TransferData) async throws -> WalletSignedData?) async throws {
+                                  signClosure: (TransferData) async throws -> SignedTransactions?) async throws {
     let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
     if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
       throw Error.indexerOffline
     }
     
-    let signedData = try await createSignedData(dnsLink: dnsLink) { transferData in
-      guard let signedData = try await signClosure(transferData) else {
+    let signedTransactions = try await createSignedTransactions(dnsLink: dnsLink) { transferData in
+      guard let signedTransactions = try await signClosure(transferData) else {
         throw Error.failedToSign
       }
-      return signedData
+      return signedTransactions
     }
+    
+    if (signedTransactions.isEmpty) {
+      throw Error.failedToSign
+    }
+    
     do {
-      switch signedData {
-      case .boc(let boc):
-        try await sendService.sendTransaction(boc: boc, wallet: wallet)
-      case .batch(let batch):
-        try await sendService.sendTransactions(batch: batch, wallet: wallet)
+      if (signedTransactions.count == 1) {
+        try await sendService.sendTransaction(boc: signedTransactions[0], wallet: wallet)
+      } else {
+        try await sendService.sendTransactions(batch: signedTransactions, wallet: wallet)
       }
       NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
@@ -91,7 +82,7 @@ public final class LinkDNSController {
 }
 
 private extension LinkDNSController {
-  func createSignedData(dnsLink: DNSLink, signClosure: (TransferData) async throws -> WalletSignedData) async throws -> WalletSignedData {
+  func createSignedTransactions(dnsLink: DNSLink, signClosure: (TransferData) async throws -> SignedTransactions) async throws -> SignedTransactions {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let linkAmount = OP_AMOUNT.CHANGE_DNS_RECORD

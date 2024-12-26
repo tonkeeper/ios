@@ -58,7 +58,7 @@ public struct TransferService {
   public func sendTransaction(wallet: Wallet,
                               transfer: Transfer,
                               transferType: TransferType,
-                              signClosure: (TransferData) async throws -> WalletSignedData) async throws -> String {
+                              signClosure: (TransferData) async throws -> SignedTransactions) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -66,9 +66,10 @@ public struct TransferService {
       seqno: seqno,
       transferType: transferType
     )
-    let signedData = try await signClosure(transferData)
-    switch signedData {
-    case .boc(let boc):
+    let signedTransactions = try await signClosure(transferData)
+    
+    if (signedTransactions.count == 1) {
+      let boc = signedTransactions[0]
       switch transferType {
       case .default:
         try await sendService.sendTransaction(
@@ -83,17 +84,16 @@ public struct TransferService {
           tonProofToken: tonProofToken
         )
       }
-      return boc
-    case .batch(let batch):
+    } else {
       switch transferType {
       case .default:
         try await sendService.sendTransactions(
-          batch: batch,
+          batch: signedTransactions,
           wallet: wallet
         )
       case .battery:
         let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
-        for boc in batch {
+        for boc in signedTransactions {
           try await batteryService.sendTransaction(
             wallet: wallet,
             boc: boc,
@@ -101,8 +101,9 @@ public struct TransferService {
           )
         }
       }
-      return batch[0]
     }
+    
+    return signedTransactions[0]
   }
   
   public func emulate(wallet: Wallet,
