@@ -3,7 +3,7 @@ import TonSwift
 import BigInt
 import TonAPI
 
-public enum Error: Swift.Error {
+public enum TransferError: Swift.Error {
   case nothingToSend
 }
 
@@ -73,7 +73,7 @@ public struct TransferService {
     let signedTransactions = try await signClosure(transferData)
     
     if (signedTransactions.isEmpty) {
-      throw Error.nothingToSend
+      throw TransferError.nothingToSend
     }
     
     if (signedTransactions.count == 1) {
