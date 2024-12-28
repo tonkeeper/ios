@@ -34,8 +34,10 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       appSettings: dependencies.coreAssembly.appSettings,
       uniqueIdProvider: dependencies.coreAssembly.uniqueIdProvider,
       pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
-      pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
-      walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
+      pushNotificationAPI: dependencies.keeperCoreRootAssembly.mainAssembly().apiAssembly.pushNotificationsAPI,
+      walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore,
+      tonConnectAppsStore: dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectAppsStore,
+      tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
     )
     super.init(router: router)
   }

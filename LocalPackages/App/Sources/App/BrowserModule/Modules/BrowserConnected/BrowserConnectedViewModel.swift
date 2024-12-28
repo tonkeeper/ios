@@ -75,12 +75,21 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   
   // MARK: - Dependencies
   
+  private let walletsStore: WalletsStore
   private let connectedAppsStore: ConnectedAppsStore
+  private let notificationsService: NotificationsService
+  private let pushTokenProvider: PushNotificationTokenProvider
 
   // MARK: - Init
   
-  init(connectedAppsStore: ConnectedAppsStore) {
+  init(walletsStore: WalletsStore,
+       connectedAppsStore: ConnectedAppsStore,
+       notificationsService: NotificationsService,
+       pushTokenProvider: PushNotificationTokenProvider) {
+    self.walletsStore = walletsStore
     self.connectedAppsStore = connectedAppsStore
+    self.notificationsService = notificationsService
+    self.pushTokenProvider = pushTokenProvider
   }
 }
 
@@ -117,6 +126,16 @@ private extension BrowserConnectedViewModelImplementation {
             configuration: configuration,
             deleteHandler: { [weak self] in
               self?.connectedAppsStore.deleteApp(app)
+              Task { [weak self] in
+                guard let self else { return }
+                guard let token = await self.pushTokenProvider.getToken(),
+                      let wallet = try? walletsStore.activeWallet else { return }
+                _ = try? await notificationsService.turnOffDappNotifications(
+                  wallet: wallet,
+                  manifest: app.manifest,
+                  sessionId: app.clientId,
+                  token: token)
+              }
             }
           )
         }

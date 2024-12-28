@@ -439,8 +439,14 @@ private extension SettingsCoordinator {
     let configuration = SettingsListNotificationsConfigurator(
     wallet: wallet,
     walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+    notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
+      walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+      tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+    ),
     tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
-    urlOpener: coreAssembly.urlOpener())
+    urlOpener: coreAssembly.urlOpener(),
+    pushTokenProvider: PushNotificationTokenProvider()
+    )
     
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()

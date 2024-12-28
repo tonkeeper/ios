@@ -119,6 +119,11 @@ private extension TonConnectConnectCoordinator {
       manifest: manifest,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+      notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
+        walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+        tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+      ),
+      pushTokenProvider: PushNotificationTokenProvider(),
       showWalletPicker: showWalletPicker,
       isSafeMode: {
         switch flow {

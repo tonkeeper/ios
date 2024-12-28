@@ -46,6 +46,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   var deeplinkHandleTask: Task<Void, Never>?
   
   private var sendTransactionNotificationToken: NSObjectProtocol?
+  private var openPushNotificationNotificationToken: NSObjectProtocol?
 
   private var deeplinkRouter: ContainerViewControllerRouter<UIViewController>?
 
@@ -126,6 +127,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
       }
     }
+    
+    openPushNotificationNotificationToken = NotificationCenter.default.addObserver(
+      forName: NSNotification.Name(rawValue: "PushNotificationOpen"),
+      object: nil,
+      queue: .main) { [weak self] notification in
+        guard let self else { return }
+        
+        if let link = notification.userInfo?["link"] as? String,
+           let linkURL = URL(string: link) {
+          openURL(linkURL, title: nil)
+          return
+        }
+        
+        if let dappUrl = notification.userInfo?["dapp_url"] as? String,
+           let dappUrlURL = URL(string: dappUrl) {
+          openURL(dappUrlURL, title: nil)
+          return
+        }
+      }
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {

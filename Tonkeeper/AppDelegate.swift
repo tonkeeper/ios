@@ -43,6 +43,13 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     return [.banner]
   }
   
+  func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    NotificationCenter.default.post(
+      name: NSNotification.Name(rawValue: "PushNotificationOpen"),
+      object: nil,
+      userInfo: response.notification.request.content.userInfo)
+  }
+  
   func clearBadgeCount() {
     if #available(iOS 16.0, *) {
       UNUserNotificationCenter.current().setBadgeCount(0)

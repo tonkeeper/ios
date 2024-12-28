@@ -19,7 +19,7 @@ public final class MainAssembly {
   public let tonConnectAssembly: TonConnectAssembly
   public let loadersAssembly: LoadersAssembly
   public let backgroundUpdateAssembly: BackgroundUpdateAssembly
-  let apiAssembly: APIAssembly
+  public let apiAssembly: APIAssembly
   public let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly

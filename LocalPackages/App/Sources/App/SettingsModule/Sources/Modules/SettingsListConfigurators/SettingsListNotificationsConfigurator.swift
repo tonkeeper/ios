@@ -33,24 +33,37 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   
   private let wallet: Wallet
   private let walletNotificationStore: WalletNotificationStore
+  private let notificationsService: NotificationsService
   private let tonConnectAppsStore: TonConnectAppsStore
   private let urlOpener: URLOpener
+  private let pushTokenProvider: PushNotificationTokenProvider
   
   // MARK: - Init
   init(wallet: Wallet,
        walletNotificationStore: WalletNotificationStore,
+       notificationsService: NotificationsService,
        tonConnectAppsStore: TonConnectAppsStore,
-       urlOpener: URLOpener) {
+       urlOpener: URLOpener,
+       pushTokenProvider: PushNotificationTokenProvider) {
     self.wallet = wallet
     self.walletNotificationStore = walletNotificationStore
+    self.notificationsService = notificationsService
     self.tonConnectAppsStore = tonConnectAppsStore
     self.urlOpener = urlOpener
+    self.pushTokenProvider = pushTokenProvider
     
     notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
       self?.updateIsPushAvailable()
     })
     
     tonConnectAppsStore.addObserver(self)
+    
+    walletNotificationStore.addObserver(self) { observer, event in
+      DispatchQueue.main.async {
+        let state = observer.createState()
+        observer.didUpdateState?(state)
+      }
+    }
   }
   
   deinit {
@@ -207,8 +220,37 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     
     let action: (Bool) -> Void = { [weak self, wallet] isOn in
       guard let self else { return }
-      Task {
-        await self.walletNotificationStore.setNotificationsIsOn(isOn, wallet: wallet, dappHost: app.manifest.host)
+      Task { [weak self] in
+        guard let self else { return }
+        guard let token = await pushTokenProvider.getToken() else {
+          await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+          return
+        }
+        if isOn {
+          let result = (try? await notificationsService.turnOnDappNotifications(
+            wallet: wallet,
+            manifest: app.manifest,
+            sessionId: app.clientId,
+            token: token)) ?? false
+          if !result {
+            await MainActor.run {
+              ToastPresenter.showToast(configuration:.failed)
+            }
+            await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+          }
+        } else {
+          let result = (try? await notificationsService.turnOffDappNotifications(
+            wallet: wallet,
+            manifest: app.manifest,
+            sessionId: app.clientId,
+            token: token)) ?? false
+          if !result {
+            await MainActor.run {
+              ToastPresenter.showToast(configuration:.failed)
+            }
+            await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+          }
+        }
       }
     }
     
