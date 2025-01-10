@@ -11,6 +11,8 @@ public struct BigIntAmountFormatter {
                      fractionDigits: Int,
                      maximumFractionDigits: Int) -> String {
     guard !amount.isZero else { return "0" }
+    let fractionDigits = abs(fractionDigits)
+    let maximumFractionDigits = abs(maximumFractionDigits)
     let initialString = amount.description
     if initialString.count < fractionDigits {
       let significantLength = initialString.count
