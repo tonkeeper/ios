@@ -401,7 +401,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       fromToken = TonInfo.symbol
       toToken = nil
     case .jetton(let jetton):
-      fromToken = jetton.jettonInfo.symbol
+      fromToken = jetton.jettonInfo.address.toRaw()
       toToken = TonInfo.symbol
     }
     
