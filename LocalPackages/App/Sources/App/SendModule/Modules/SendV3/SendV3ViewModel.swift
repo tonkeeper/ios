@@ -109,7 +109,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   func setAmount(amount: BigUInt?) {
     guard let amount else { return }
-    didInputAmount(amount.description)
+    sendItem = .token(.ton, amount: amount)
+    didInputAmount(sendController.convertAmountToInputString(amount: amount, token: .ton))
   }
   
   func setComment(comment: String?) {
