@@ -494,15 +494,26 @@ private extension SettingsCoordinator {
       uniqueIdProvider: coreAssembly.uniqueIdProvider,
       storiesService: storiesAssembly.storiesService()
     )
-    configuration.didSelectRNWalletsSeedPhrases = {
+    configuration.didSelectRNSeedPhrasesRecovery = {
       Task { @MainActor [weak self] in
         guard let self,
-        let passcode = await self.getRNPasscode() else { return }
+              let passcode = await self.getRNPasscode() else { return }
         let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
         guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
           return
         }
-        self.openRNSeedPhrases(mnemonics: mnemonics)
+        self.openSeedPhrases(mnemonics: mnemonics)
+      }
+    }
+    configuration.didSelectSeedPhrasesRecovery = {
+      Task { @MainActor [weak self] in
+        guard let self,
+              let passcode = await self.getPasscode() else { return }
+        let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.mnemonicsVault()
+        guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
+          return
+        }
+        self.openSeedPhrases(mnemonics: mnemonics)
       }
     }
     
@@ -512,7 +523,7 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
-  func openRNSeedPhrases(mnemonics: Mnemonics) {
+  func openSeedPhrases(mnemonics: Mnemonics) {
     let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
       mnemonics: mnemonics
     )

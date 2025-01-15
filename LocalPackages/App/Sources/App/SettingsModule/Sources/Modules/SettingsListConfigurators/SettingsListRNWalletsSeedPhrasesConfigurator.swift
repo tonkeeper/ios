@@ -56,7 +56,7 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
           titleViewConfiguration: TKListItemTitleView.Configuration(title: label)
         )))
     return SettingsListItem(
-      id: .version4SeedPhrasesIdentifier,
+      id: UUID().uuidString,
       cellConfiguration: cellConfiguration,
       accessory: .none,
       onSelection: { _ in
@@ -66,8 +66,4 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
       }
     )
   }
-}
-
-private extension String {
-  static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
 }

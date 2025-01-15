@@ -9,7 +9,8 @@ import TKFeatureFlags
 
 final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
   
-  var didSelectRNWalletsSeedPhrases: (() -> Void)?
+  var didSelectRNSeedPhrasesRecovery: (() -> Void)?
+  var didSelectSeedPhrasesRecovery: (() -> Void)?
 
   // MARK: - SettingsListV2Configurator
   
@@ -46,11 +47,12 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
   private func createSeedPhraseRecoverySection() -> SettingsListSection? {
     guard !UIApplication.shared.isAppStoreEnvironment else { return nil }
     let items = [
-      createRNSeedPhrasesItem()
+      createRNSeedPhrasesItem(),
+      createSeedPhraseRecoveryItem()
     ]
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 0,
+      topPadding: 16,
       bottomPadding: 0
     ))
   }
@@ -85,14 +87,30 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: "Pre 5.0.0 seed phrases")
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: "Pre 5.0.0 seed phrases recovery")
         )))
     return SettingsListItem(
       id: .version4SeedPhrasesIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .none,
       onSelection: { [weak self] _ in
-        self?.didSelectRNWalletsSeedPhrases?()
+        self?.didSelectRNSeedPhrasesRecovery?()
+      }
+    )
+  }
+  
+  private func createSeedPhraseRecoveryItem() -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: "5 version seed phrases recovery")
+        )))
+    return SettingsListItem(
+      id: .version5SeedPhrasesIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .none,
+      onSelection: { [weak self] _ in
+        self?.didSelectSeedPhrasesRecovery?()
       }
     )
   }
@@ -185,7 +203,8 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
 private extension String {
   static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
+  static let version5SeedPhrasesIdentifier = "version5SeedPhrasesIdentifier"
   static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
   static let swapURLItemIdentifier = "swapURLItemIdentifier"
-  static let clearCookiesItemIdentifier = "swapURLItemIdentifier"
+  static let clearCookiesItemIdentifier = "clearCookiesItemIdentifier"
 }

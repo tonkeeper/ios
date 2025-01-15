@@ -125,6 +125,12 @@ public struct MnemonicsVault {
     let query = getPasswordQuery()
     try keychainVault.delete(query)
   }
+  
+  public func getMnemonics(password: String) async throws -> Mnemonics {
+    let encryptedMnemonics = try loadEncryptedMnemonics()
+    let mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
+    return mnemonics
+  }
 }
 
 private extension MnemonicsVault {
