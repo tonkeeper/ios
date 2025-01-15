@@ -50,7 +50,7 @@ public struct TonkeeperDeeplinkParser {
       resolvingAgainstBaseURL: true
     )
     
-    let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "exp"]
+    let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "exp", "success_ret"]
     
     if let queryItems = components?.queryItems {
       for item in queryItems {
@@ -100,6 +100,14 @@ public struct TonkeeperDeeplinkParser {
       }
       return Int64(exp)
     }()
+    
+    let successReturn: URL? = {
+      guard let urlString = components?.queryItems?.first(where: { $0.name == "success_ret" })?.value,
+            let url = URL(string: urlString) else {
+        return nil
+      }
+      return url
+    }()
         
     if (bin != nil || stateInit != nil) {
       if (comment != nil) {
@@ -108,7 +116,16 @@ public struct TonkeeperDeeplinkParser {
       return .signRawTransfer(.init(recipient: recipient, amount: amount, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
     }
     
-    return .sendTransfer(.init(recipient: recipient, amount: amount, comment: comment, jettonAddress: jettonAddress, expirationTimestamp: expirationTimestamp))
+    return .sendTransfer(
+      Deeplink.TransferData(
+        recipient: recipient,
+        amount: amount,
+        comment: comment,
+        jettonAddress: jettonAddress,
+        expirationTimestamp: expirationTimestamp,
+        successReturn: successReturn
+      )
+    )
   }
   
   func parsePool(url: URL) throws -> Address {

@@ -30,7 +30,16 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
     do {
       _ = try Address.parse(qrCode)
       // QR code is a valid address, so we should resolve it as transfer with recipient
-      let tonTransfer = Deeplink.transfer(.sendTransfer(.init(recipient: qrCode, amount: nil, comment: nil, jettonAddress: nil, expirationTimestamp: nil)))
+      let tonTransfer = Deeplink.transfer(
+        .sendTransfer(
+          Deeplink.TransferData(
+            recipient: qrCode,
+            amount: nil,
+            comment: nil,
+            jettonAddress: nil,
+            expirationTimestamp: nil,
+            successReturn: nil)
+      ))
       return tonTransfer
     } catch {}
     return try deeplinkParser.parse(string: qrCode)

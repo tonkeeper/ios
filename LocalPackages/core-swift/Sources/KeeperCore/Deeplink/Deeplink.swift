@@ -9,6 +9,7 @@ public enum Deeplink: Equatable {
     public let comment: String?
     public let jettonAddress: Address?
     public let expirationTimestamp: Int64?
+    public let successReturn: URL?
   }
   
   public struct RawTransferData: Equatable {

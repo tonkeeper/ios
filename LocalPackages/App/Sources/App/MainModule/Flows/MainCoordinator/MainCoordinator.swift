@@ -354,7 +354,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.present(navigationController)
   }
   
-  func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil, amount: BigUInt?, comment: String?) {
+  func openSend(wallet: Wallet,
+                token: Token,
+                recipient: Recipient? = nil,
+                amount: BigUInt?,
+                comment: String?,
+                successReturn: URL? = nil) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
@@ -374,6 +379,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
       self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
+      self?.removeChild($0)
+    }
+    
+    sendTokenCoordinator.didSendSuccessfully = { [weak self, weak navigationController] in
+      self?.sendTokenCoordinator = nil
+      navigationController?.dismiss(animated: true, completion: { [weak self] in
+        guard let successReturn else { return }
+        self?.openURL(successReturn, title: nil)
+      })
       self?.removeChild($0)
     }
     
@@ -455,7 +469,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           amount: sendTransferData.amount,
           comment: sendTransferData.comment,
           jettonAddress: sendTransferData.jettonAddress,
-          expirationTimestamp: sendTransferData.expirationTimestamp
+          expirationTimestamp: sendTransferData.expirationTimestamp,
+          successReturn: sendTransferData.successReturn
         )
         return true
       case .signRawTransfer(let signRawTransferData):

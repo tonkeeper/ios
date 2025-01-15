@@ -10,7 +10,8 @@ extension MainCoordinator {
                         amount: BigUInt?,
                         comment: String?,
                         jettonAddress: Address?,
-                        expirationTimestamp: Int64?) {
+                        expirationTimestamp: Int64?,
+                        successReturn: URL?) {
     deeplinkHandleTask?.cancel()
 
     ToastPresenter.hideAll()
@@ -62,7 +63,8 @@ extension MainCoordinator {
             token: token,
             recipient: recipient,
             amount: amount,
-            comment: comment
+            comment: comment,
+            successReturn: successReturn
           )
         }
       } catch JettonBalanceResolverError.unknownJetton {

@@ -8,6 +8,8 @@ import TonSwift
 import BigInt
 
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var didSendSuccessfully: ((SendTokenCoordinator?) -> Void)?
     
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
@@ -160,6 +162,10 @@ private extension SendTokenCoordinator {
     
     module.output.didClose = { [weak self] in
       self?.didFinish?(self)
+    }
+    
+    module.output.didConfirmTransaction = { [weak self] in
+      self?.didSendSuccessfully?(self)
     }
     
     router.push(viewController: module.view)
