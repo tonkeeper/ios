@@ -411,7 +411,7 @@
 "event_details.payload" = "Payload";
 "event_details.unstake_request" = "Unstake Request";
 "event_details.unstake_amount" = "Unstake amount";
-"event_details.wallet_initialized" = "Walelt initialized";
+"event_details.wallet_initialized" = "Wallet initialized";
 "event_details.unknown" = "Unknown";
 "event_details.unknown_description" = "Something happened but we don't understand what.";
 

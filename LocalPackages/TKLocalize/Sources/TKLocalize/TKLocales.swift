@@ -744,8 +744,8 @@ public enum TKLocales {
     }
     /// Unstake Request
     public static let unstakeRequest = TKLocales.tr("Localizable", "event_details.unstake_request", fallback: "Unstake Request")
-    /// Walelt initialized
-    public static let walletInitialized = TKLocales.tr("Localizable", "event_details.wallet_initialized", fallback: "Walelt initialized")
+    /// Wallet initialized
+    public static let walletInitialized = TKLocales.tr("Localizable", "event_details.wallet_initialized", fallback: "Wallet initialized")
     public enum Recipient {
       /// Recipient address
       public static let address = TKLocales.tr("Localizable", "event_details.recipient.address", fallback: "Recipient address")
