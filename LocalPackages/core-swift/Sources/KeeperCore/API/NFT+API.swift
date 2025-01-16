@@ -17,7 +17,6 @@ extension NFT {
     var imageURL: URL?
     var description: String?
     var collection: NFTCollection?
-    var isHidden = false
     
     if let ownerAccountAddress = nftItem.owner,
        let ownerWalletAccount = try? WalletAccount(accountAddress: ownerAccountAddress) {
@@ -27,8 +26,15 @@ extension NFT {
     name = nftItem.metadata["name"]?.value as? String
     imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
     description = nftItem.metadata["description"]?.value as? String
-    isHidden = (nftItem.metadata["render_type"]?.value as? String) == "hidden"
-    
+    var renderType: RenderType? = {
+      if let apiRenderType = nftItem.metadata["render_type"]?.value as? String,
+         let renderType = RenderType(rawValue: apiRenderType) {
+        return renderType
+      } else {
+        return nil
+      }
+    }()
+
     var attributes = [Attribute]()
     if let attributesValue = nftItem.metadata["attributes"]?.value as? [AnyObject] {
       attributes = attributesValue
@@ -114,8 +120,8 @@ extension NFT {
     self.dns = nftItem.dns
     self.programmaticButtons = buttons
     self.sale = sale
-    self.isHidden = isHidden
     self.trust = trust
+    self.renderType = renderType
   }
   
   static private func mapPreviews(_ previews: [TonAPI.ImagePreview]?) -> Preview {
