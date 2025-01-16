@@ -131,19 +131,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     openPushNotificationNotificationToken = NotificationCenter.default.addObserver(
       forName: NSNotification.Name(rawValue: "PushNotificationOpen"),
       object: nil,
-      queue: .main) { [weak self] notification in
-        guard let self else { return }
-        
-        if let link = notification.userInfo?["link"] as? String,
-           let linkURL = URL(string: link) {
-          openURL(linkURL, title: nil)
-          return
-        }
-        
-        if let dappUrl = notification.userInfo?["dapp_url"] as? String,
-           let dappUrlURL = URL(string: dappUrl) {
-          openURL(dappUrlURL, title: nil)
-          return
+      queue: .main) { notification in
+        Task { @MainActor [weak self]  in
+          self?.didOpenAppWithPushNotificationTapHandler(userInfo: notification.userInfo)
         }
       }
   }
@@ -1340,6 +1330,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
+  }
+  
+  private func didOpenAppWithPushNotificationTapHandler(userInfo: [AnyHashable: Any]?) {
+    coreAssembly.analyticsProvider.logEvent(eventKey: .pushClick)
+    
+    if let link = userInfo?["link"] as? String,
+       let linkURL = URL(string: link) {
+      openURL(linkURL, title: nil)
+      return
+    }
+    
+    if let dappUrl = userInfo?["dapp_url"] as? String,
+       let dappUrlURL = URL(string: dappUrl) {
+      openURL(dappUrlURL, title: nil)
+      return
+    }
   }
 }
 
