@@ -12,7 +12,8 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
   }()
   
   let titleDescriptionView: TKTitleDescriptionView = {
-    let view = TKTitleDescriptionView(size: .big)
+    var bounds = UIScreen.main.bounds
+    let view = TKTitleDescriptionView(size: bounds.height > 568 ? .big : .small)
     view.padding = .titleDescriptionPadding
     return view
   }()

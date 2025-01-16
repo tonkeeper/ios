@@ -6,6 +6,7 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
   public enum Size {
     case big
     case medium
+    case small
     
     var titleTextStyle: TKTextStyle {
       switch self {
@@ -13,6 +14,17 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
         return .h2
       case .medium:
         return .h3
+      case .small:
+        return .label1
+      }
+    }
+    
+    var descriptionTextStyle: TKTextStyle {
+      switch self {
+      case .big, .medium:
+        return .body1
+      case .small:
+        return .body3
       }
     }
   }
@@ -83,7 +95,7 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
       topDescriptionLabel.numberOfLines = 0
       topDescriptionLabel.attributedText = topDescription
         .withTextStyle(
-          .body1,
+          size.descriptionTextStyle,
           color: .Text.secondary,
           alignment: .center,
           lineBreakMode: .byWordWrapping
@@ -107,7 +119,7 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
       bottomDescriptionLabel.numberOfLines = 0
       bottomDescriptionLabel.attributedText = bottomDescription
         .withTextStyle(
-          .body1,
+          size.descriptionTextStyle,
           color: .Text.secondary,
           alignment: .center,
           lineBreakMode: .byWordWrapping
