@@ -107,7 +107,8 @@ final class HistoryEventDetailsMapper {
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .none,
       currency: .TON)
-    let fiatFee = convertTonToFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
+    
+    let fiatFee = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
     
     let title: String?
     switch eventAction.type {
@@ -322,7 +323,7 @@ final class HistoryEventDetailsMapper {
       type: amountType,
       currency: .TON)
     
-    let fiatPrice = convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
+    let fiatPrice = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
     
     return Model(
       headerImage: .image(.ton),
