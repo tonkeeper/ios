@@ -59,13 +59,15 @@ private extension AccountEventMapper {
                  nftProvider: (Address) -> NFT?,
                  decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action? {
     
+    let status: AccountEventStatus = accountEvent.isInProgress ? .ok : action.status
+    
     switch action.type {
     case .tonTransfer(let tonTransfer):
       return mapTonTransferAction(tonTransfer,
                                   accountEvent: accountEvent,
                                   preview: action.preview,
                                   rightTopDescription: rightTopDescription,
-                                  status: action.status.rawValue,
+                                  status: status.rawValue,
                                   isTestnet: isTestnet,
                                   decryptedCommentProvider: decryptedCommentProvider)
     case .jettonTransfer(let jettonTransfer):
@@ -73,7 +75,7 @@ private extension AccountEventMapper {
                                      accountEvent: accountEvent,
                                      preview: action.preview,
                                      rightTopDescription: rightTopDescription,
-                                     status: action.status.rawValue,
+                                     status: status.rawValue,
                                      isTestnet: isTestnet,
                                      decryptedCommentProvider: decryptedCommentProvider)
     case .jettonMint(let jettonMint):
@@ -81,20 +83,20 @@ private extension AccountEventMapper {
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
-                                 status: action.status.rawValue)
+                                 status: status.rawValue)
     case .jettonBurn(let jettonBurn):
       return mapJettonBurnAction(jettonBurn,
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
-                                 status: action.status.rawValue)
+                                 status: status.rawValue)
     case .auctionBid(let auctionBid):
       return mapAuctionBidAction(auctionBid,
                                  nftManagmentStore: nftManagmentStore,
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
-                                 status: action.status.rawValue,
+                                 status: status.rawValue,
                                  isTestnet: isTestnet)
     case .nftPurchase(let nftPurchase):
       return mapNFTPurchaseAction(nftPurchase,
@@ -102,21 +104,21 @@ private extension AccountEventMapper {
                                   accountEvent: accountEvent,
                                   preview: action.preview,
                                   rightTopDescription: rightTopDescription,
-                                  status: action.status.rawValue,
+                                  status: status.rawValue,
                                   isTestnet: isTestnet)
     case .contractDeploy(let contractDeploy):
       return mapContractDeployAction(contractDeploy,
                                      accountEvent: accountEvent,
                                      preview: action.preview,
                                      rightTopDescription: rightTopDescription,
-                                     status: action.status.rawValue,
+                                     status: status.rawValue,
                                      isTestnet: isTestnet)
     case .smartContractExec(let smartContractExec):
       return mapSmartContractExecAction(smartContractExec,
                                         accountEvent: accountEvent,
                                         preview: action.preview,
                                         rightTopDescription: rightTopDescription,
-                                        status: action.status.rawValue,
+                                        status: status.rawValue,
                                         isTestnet: isTestnet)
     case .nftItemTransfer(let nftItemTransfer):
       return mapItemTransferAction(nftItemTransfer,
@@ -124,7 +126,7 @@ private extension AccountEventMapper {
                                    accountEvent: accountEvent,
                                    preview: action.preview,
                                    rightTopDescription: rightTopDescription,
-                                   status: action.status.rawValue,
+                                   status: status.rawValue,
                                    isTestnet: isTestnet,
                                    nftProvider: nftProvider,
                                    decryptedCommentProvider: decryptedCommentProvider)
@@ -133,25 +135,25 @@ private extension AccountEventMapper {
                                    accountEvent: accountEvent,
                                    preview: action.preview,
                                    rightTopDescription: rightTopDescription,
-                                   status: action.status.rawValue)
+                                   status: status.rawValue)
     case .withdrawStake(let withdrawStake):
       return mapWithdrawStakeAction(withdrawStake,
                                     accountEvent: accountEvent,
                                     preview: action.preview,
                                     rightTopDescription: rightTopDescription,
-                                    status: action.status.rawValue)
+                                    status: status.rawValue)
     case .withdrawStakeRequest(let withdrawStakeRequest):
       return mapWithdrawStakeRequestAction(withdrawStakeRequest,
                                            accountEvent: accountEvent,
                                            preview: action.preview,
                                            rightTopDescription: rightTopDescription,
-                                           status: action.status.rawValue)
+                                           status: status.rawValue)
     case .jettonSwap(let jettonSwap):
       return mapJettonSwapAction(jettonSwap,
                                  accountEvent: accountEvent,
                                  preview: action.preview,
                                  rightTopDescription: rightTopDescription,
-                                 status: action.status.rawValue,
+                                 status: status.rawValue,
                                  isTestnet: isTestnet)
     case .domainRenew(let domainRenew):
       return mapDomainRenewAction(
@@ -159,7 +161,7 @@ private extension AccountEventMapper {
         accountEvent: accountEvent,
         preview: action.preview,
         rightTopDescription: rightTopDescription,
-        status: action.status.rawValue,
+        status: status.rawValue,
         isTestnet: isTestnet)
     case .unknown:
       return mapUnknownAction(rightTopDescription: rightTopDescription)
