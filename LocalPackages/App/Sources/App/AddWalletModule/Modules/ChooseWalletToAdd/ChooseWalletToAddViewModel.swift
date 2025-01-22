@@ -119,7 +119,7 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
     
     let title = walletModel.address.toShortString(bounceable: false, isTestonly: isTestnet)
     var subtitle = !configuration.showRevision ? tonAmount : "\(walletModel.revision.rawValue) · \(tonAmount)"
-    if !walletModel.balance.jettonsBalance.isEmpty || !walletModel.nfts.isEmpty {
+    if !walletModel.balance.jettonsBalance.filter({ !$0.quantity.isZero }).isEmpty || !walletModel.nfts.isEmpty {
       subtitle.append(", " + TKLocales.ChooseWallets.tokens)
     }
     if (walletModel.isAdded) {

@@ -15,7 +15,7 @@ public struct Balance: Codable, Equatable {
 
 public extension Balance {
   var isEmpty: Bool {
-    tonBalance.amount == 0 && jettonsBalance.isEmpty
+    tonBalance.amount == 0 && jettonsBalance.filter({ !$0.quantity.isZero }).isEmpty
   }
 }
 
