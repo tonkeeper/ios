@@ -273,6 +273,10 @@ private extension BuySellListViewModelImplementation {
             return category.items.filter { item in
               // Filter by country code all items except swap items
               methods.contains(item.id) || item.id.contains("swap")
+            }.sorted { lhs, rhs in
+              let lhsIdx = methods.firstIndex(of: lhs.id) ?? .max
+              let rhsIdx = methods.firstIndex(of: rhs.id) ?? .max
+              return lhsIdx < rhsIdx
             }
           } else {
             return category.items
