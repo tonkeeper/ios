@@ -6,7 +6,8 @@ import BigInt
 
 @MainActor
 protocol TransactionConfirmationOutput: AnyObject {
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
+  var didConfirmTransaction: (() -> Void)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -22,7 +23,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   // MARK: - TransactionConfirmationOutput
   
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
+  var didConfirmTransaction: (() -> Void)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel
@@ -464,6 +466,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           self.state = .success
           try await Task.sleep(nanoseconds: 1_000_000_000)
           NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
+          didConfirmTransaction?()
         case .failure(let error):
           handleError(error)
           self.state = .failed

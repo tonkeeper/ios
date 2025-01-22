@@ -74,6 +74,8 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   private let manifest: TonConnectManifest
   private let walletsStore: WalletsStore
   private let walletNotificationStore: WalletNotificationStore
+  private let notificationsService: NotificationsService
+  private let pushTokenProvider: PushNotificationTokenProvider
   private let showWalletPicker: Bool
   private let isSafeMode: Bool
 
@@ -83,6 +85,8 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
        manifest: TonConnectManifest,
        walletsStore: WalletsStore,
        walletNotificationStore: WalletNotificationStore,
+       notificationsService: NotificationsService,
+       pushTokenProvider: PushNotificationTokenProvider,
        showWalletPicker: Bool,
        isSafeMode: Bool
   ) {
@@ -90,6 +94,8 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
     self.manifest = manifest
     self.walletsStore = walletsStore
     self.walletNotificationStore = walletNotificationStore
+    self.notificationsService = notificationsService
+    self.pushTokenProvider = pushTokenProvider
     self.showWalletPicker = showWalletPicker
     self.isSafeMode = isSafeMode
 
@@ -118,7 +124,8 @@ private extension TonConnectConnectViewModelImplementation {
       connectAction: { [weak self, walletNotificationStore, manifest] in
         guard let self, let connect else { return }
         connectingState = .process
-        Task {
+        Task { [weak self] in
+          guard let self else { return }
           let isSuccess = await connect(
             TonConnectConnectParameters(
               parameters: self.parameters,
@@ -127,7 +134,16 @@ private extension TonConnectConnectViewModelImplementation {
             )
           )
           if isSuccess && self.isNotificationsOn {
-            await walletNotificationStore.setNotificationsIsOn(true, wallet: selectedWallet, dappHost: manifest.host)
+            if let token = await self.pushTokenProvider.getToken() {
+              let result = (try? await notificationsService.turnOnDappNotifications(
+                wallet: selectedWallet,
+                manifest: manifest,
+                sessionId: nil,
+                token: token)) ?? false
+              if result {
+                await walletNotificationStore.setNotificationsIsOn(true, wallet: selectedWallet, dappHost: manifest.host)
+              }
+            }
           }
           
           await MainActor.run {

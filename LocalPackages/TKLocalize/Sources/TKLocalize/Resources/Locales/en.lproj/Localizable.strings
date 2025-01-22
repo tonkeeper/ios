@@ -312,7 +312,9 @@
 "passcode.logout_confirmation_description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
 "import_wallet.title" = "Enter recovery phrase";
-"import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+"import_wallet.description" = "To restore access to your wallet, enter the 24 or 12 secret recovery words given to you when you created your wallet.";
+"import_wallet.set_12_words" = "12 words";
+"import_wallet.set_24_words" = "24 words";
 
 "choose_wallets.title" = "Choose Wallets";
 "choose_wallets.description" = "Choose wallets you want to add.";
@@ -334,7 +336,7 @@
 "add_wallet.items.new_wallet.subtitle" = "Create new wallet";
 
 "add_wallet.items.existing_wallet.title" = "Existing Wallet";
-"add_wallet.items.existing_wallet.subtitle" = "Import wallet with a 24 secret recovery words";
+"add_wallet.items.existing_wallet.subtitle" = "Import wallet with 12 or 24 secret recovery words";
 
 "add_wallet.items.watch_only.title" = "Watch Account";
 "add_wallet.items.watch_only.subtitle" = "For monitor wallet activity without recovery phrase";
@@ -409,7 +411,7 @@
 "event_details.payload" = "Payload";
 "event_details.unstake_request" = "Unstake Request";
 "event_details.unstake_amount" = "Unstake amount";
-"event_details.wallet_initialized" = "Walelt initialized";
+"event_details.wallet_initialized" = "Wallet initialized";
 "event_details.unknown" = "Unknown";
 "event_details.unknown_description" = "Something happened but we don't understand what.";
 
@@ -447,6 +449,7 @@
 "ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
 "ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
 "ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";
+"ledger_confirm.steps.confirm.description_numerated" = "Confirm transaction #%@ on Ledger";
 "ledger_confirm.steps.confirm_proof.description" = "Verify domain on Ledger";
 
 "ledger_version_update.title" = "Update TON app in Ledger to the %@ version";

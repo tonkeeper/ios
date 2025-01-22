@@ -17,7 +17,7 @@ final class EncryptedCommentServiceImplementation: EncryptedCommentService {
       wallet: wallet,
       password: passcode
     )
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
     
     return try CommentDecryptor(
       privateKey: keyPair.privateKey,

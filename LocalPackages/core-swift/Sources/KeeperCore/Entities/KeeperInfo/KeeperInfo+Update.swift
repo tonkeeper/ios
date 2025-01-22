@@ -267,6 +267,7 @@ extension KeeperInfo {
   
   func updateWallet(_ wallet: Wallet,
                     notificationsIsOn: Bool) -> KeeperInfo {
+    guard let wallet = wallets.first(where: { $0.id == wallet.id }) else { return self }
     let notificationSettings = NotificationSettings(
       isOn: notificationsIsOn,
       dapps: wallet.notificationSettings.dapps
@@ -276,6 +277,7 @@ extension KeeperInfo {
   
   func updateWallet(_ wallet: Wallet,
                     dappsNotifications: [String: Bool]) -> KeeperInfo {
+    guard let wallet = wallets.first(where: { $0.id == wallet.id }) else { return self }
     let notificationSettings = NotificationSettings(
       isOn: wallet.notificationSettings.isOn,
       dapps: dappsNotifications

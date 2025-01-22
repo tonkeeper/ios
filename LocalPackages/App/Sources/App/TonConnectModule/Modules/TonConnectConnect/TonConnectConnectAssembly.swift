@@ -11,6 +11,8 @@ struct TonConnectConnectAssembly {
     manifest: TonConnectManifest,
     walletsStore: WalletsStore,
     walletNotificationStore: WalletNotificationStore,
+    notificationsService: NotificationsService,
+    pushTokenProvider: PushNotificationTokenProvider,
     showWalletPicker: Bool,
     isSafeMode: Bool
   ) -> MVVMModule<
@@ -23,6 +25,8 @@ struct TonConnectConnectAssembly {
       manifest: manifest,
       walletsStore: walletsStore,
       walletNotificationStore: walletNotificationStore,
+      notificationsService: notificationsService,
+      pushTokenProvider: pushTokenProvider,
       showWalletPicker: showWalletPicker,
       isSafeMode: isSafeMode
     )

@@ -135,7 +135,7 @@ final class WalletsControllerTests: XCTestCase {
     
     func test_get_private_key_for_regular_wallet() throws {
         let mnemonic1 = try Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew())
-        let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic1.mnemonicWords)
+        let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic1.mnemonicWords)
         try walletsController.addWallet(with: mnemonic1)
         
         let privateKey = try walletsController.getWalletPrivateKey(try walletsController.activeWallet)

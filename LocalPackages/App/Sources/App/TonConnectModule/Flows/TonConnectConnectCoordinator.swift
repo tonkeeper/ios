@@ -32,7 +32,8 @@ public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoo
       wallet: wallet,
       parameters: parameters,
       manifest: manifest,
-      signTonProofHandler: signTonProofHandler
+      signTonProofHandler: signTonProofHandler,
+      keeperVersion: InfoProvider.appVersion()
     )
   }
   
@@ -59,7 +60,8 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
       wallet: wallet,
       parameters: parameters,
       manifest: manifest,
-      signTonProofHandler: signTonProofHandler
+      signTonProofHandler: signTonProofHandler,
+      keeperVersion: InfoProvider.appVersion()
     )
     connectionResponseHandler(response)
   }
@@ -117,6 +119,11 @@ private extension TonConnectConnectCoordinator {
       manifest: manifest,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+      notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
+        walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+        tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+      ),
+      pushTokenProvider: PushNotificationTokenProvider(),
       showWalletPicker: showWalletPicker,
       isSafeMode: {
         switch flow {
@@ -311,7 +318,12 @@ private extension TonConnectConnectCoordinator {
         
         module.output.didSign = { [weak bottomSheetViewController] signature in
           bottomSheetViewController?.dismiss(completion: {
-            continuation.resume(returning: signature)
+            switch (signature) {
+            case.proof(let data):
+              continuation.resume(returning: data)
+            default:
+              continuation.resume(throwing: ConnectError.unknown)
+            }
           })
         }
         
@@ -337,7 +349,7 @@ private extension TonConnectConnectCoordinator {
     ) else { throw ConnectError.noPasscode }
     
     let mnemonic = try await keeperCoreMainAssembly.secureAssembly.mnemonicsRepository().getMnemonic(wallet: wallet, password: passcode)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
     let privateKey = keyPair.privateKey
     
     let signature: TonConnect.Signature = .init(signatureData: signatureData, privateKey: privateKey)

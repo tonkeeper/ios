@@ -7,11 +7,6 @@ import TKCore
 
 final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurator {
   
-  struct WalletItem: Equatable, Hashable {
-    let name: String
-    let identifier: String
-  }
-
   // MARK: - SettingsListV2Configurator
   
   var title: String { "Seed phrases" }
@@ -23,11 +18,9 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
   }
   
   private let mnemonics: Mnemonics
-  private let wallets: [WalletItem]
   
-  init(mnemonics: Mnemonics, wallets: [WalletItem]) {
+  init(mnemonics: Mnemonics) {
     self.mnemonics = mnemonics
-    self.wallets = wallets
   }
   
   private func createState() -> SettingsListState {
@@ -50,11 +43,8 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
   }
   
   private func createSeedPhrasesItems() -> [SettingsListItem] {
-    let items = wallets.compactMap { wallet -> SettingsListItem? in
-      guard let mnemonic = mnemonics[wallet.identifier] else {
-        return nil
-      }
-      return createSeedPhrasesItem(mnemonic: mnemonic, label: wallet.name)
+    let items = mnemonics.values.compactMap { mnemonic -> SettingsListItem? in
+      return createSeedPhrasesItem(mnemonic: mnemonic, label: UUID().uuidString)
     }
     return items
   }
@@ -66,7 +56,7 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
           titleViewConfiguration: TKListItemTitleView.Configuration(title: label)
         )))
     return SettingsListItem(
-      id: .version4SeedPhrasesIdentifier,
+      id: UUID().uuidString,
       cellConfiguration: cellConfiguration,
       accessory: .none,
       onSelection: { _ in
@@ -76,8 +66,4 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
       }
     )
   }
-}
-
-private extension String {
-  static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
 }

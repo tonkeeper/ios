@@ -2,6 +2,12 @@ import Foundation
 import TonSwift
 
 public struct NFT: Codable, Equatable {
+  public enum RenderType: String, Codable {
+    case hidden
+    case ticket
+  }
+  
+  
   public let address: Address
   public let owner: WalletAccount?
   public let name: String?
@@ -13,8 +19,12 @@ public struct NFT: Codable, Equatable {
   public let programmaticButtons: [Button]?
   public let dns: String?
   public let sale: Sale?
-  public let isHidden: Bool
   public let trust: Trust
+  public let renderType: RenderType?
+  
+  public var isHidden: Bool {
+    renderType == .hidden
+  }
   
   public var isUnverified: Bool {
     switch trust {

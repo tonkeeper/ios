@@ -95,10 +95,6 @@ public final class CoreAssembly {
     PushNotificationTokenProvider()
   }
   
-  public var pushNotificationAPI: PushNotificationsAPI {
-    PushNotificationsAPI(urlSession: .shared)
-  }
-  
   public var keychainVault: TKKeychainVault {
     TKKeychainVaultImplementation(keychain: TKKeychainImplementation())
   }

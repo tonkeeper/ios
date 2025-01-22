@@ -42,6 +42,8 @@ private extension ImportWalletCoordinator {
     let inputRecoveryPhrase = TKInputRecoveryPhraseAssembly.module(
       title: TKLocales.ImportWallet.title,
       caption: TKLocales.ImportWallet.description,
+      set12WordsButtonTitle: TKLocales.ImportWallet.set12Words,
+      set24WordsButtonTitle: TKLocales.ImportWallet.set24Words,
       continueButtonTitle: TKLocales.Actions.continueAction,
       pasteButtonTitle: TKLocales.Actions.paste,
       validator: AddWalletInputRecoveryPhraseValidator(),
@@ -82,6 +84,7 @@ private extension ImportWalletCoordinator {
           handleActiveWallets(phrase: phrase, activeWalletModels: activeWallets)
         }
       } catch {
+        print(error)
         await MainActor.run {
           completion()
         }

@@ -42,15 +42,12 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
 
   private func openDappModule(_ dapp: Dapp) {
+    let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
     let messageHandler = DefaultDappMessageHandler()
-    let module = DappAssembly.module(
-      dapp: dapp,
-      analyticsProvider: coreAssembly.analyticsProvider,
-      deeplinkHandler: { deeplink in
-        self.didHandleDeeplink?(deeplink)
-      },
-      messageHandler: messageHandler)
-
+    let module = DappAssembly.module(dapp: dapp, analyticsProvider: coreAssembly.analyticsProvider, deeplinkHandler: { deeplink in
+      self.didHandleDeeplink?(deeplink)
+    }, messageHandler: messageHandler, wallet: wallet)
+    
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else {
         completion(.error(.unknownError))
@@ -86,7 +83,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
-        appUrl: dapp.url
+        appUrl: dapp.url,
+        keeperVersion: InfoProvider.appVersion()
       )
       completion(result)
     }
@@ -235,7 +233,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   func didRequireSign(transferData: TransferData,
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> String? {
+                      router: ViewControllerRouter) async throws -> SignedTransactions? {
     let coordinator = WalletTransferSignCoordinator(
       router: router,
       wallet: wallet,

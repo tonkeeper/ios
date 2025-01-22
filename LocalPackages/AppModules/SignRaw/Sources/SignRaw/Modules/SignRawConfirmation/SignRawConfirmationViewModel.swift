@@ -5,8 +5,8 @@ import KeeperCore
 import WalletExtensions
 
 @MainActor
-public protocol SignRawConfirmationModuleOutput: AnyObject {
-  var didRequireSign: ((TransferData, Wallet) async throws -> String?)? { get set }
+protocol SignRawConfirmationModuleOutput: AnyObject {
+  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirm: (() -> Void)? { get set }
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)? { get set }
   var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ model: SignRawConfirmationModel.ProvisionModel) -> Void)? { get set }
@@ -30,10 +30,11 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
 
   // MARK: - SignRawConfirmationModuleOutput
   
-  public var didRequireSign: ((TransferData, Wallet) async throws -> String?)?
+  public var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   public var didConfirm: (() -> Void)?
   public var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
   public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ model: SignRawConfirmationModel.ProvisionModel) -> Void)?
+
 
   // MARK: - SignRawConfirmationModuleInput
   

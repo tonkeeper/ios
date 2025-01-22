@@ -34,12 +34,14 @@ public final class TonConnectAppsStore {
 
   public func connect(wallet: Wallet,
                       parameters: TonConnectParameters,
-                      manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async throws {
+                      manifest: TonConnectManifest, signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
+                      keeperVersion: String) async throws {
     let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
       wallet: wallet,
       parameters: parameters,
       manifest: manifest,
-      signTonProofHandler: signTonProofHandler
+      signTonProofHandler: signTonProofHandler,
+      keeperVersion: keeperVersion
     )
     let sessionCrypto = try TonConnectSessionCrypto()
     let encrypted = try tonConnectService.encryptSuccessResponse(
@@ -66,13 +68,15 @@ public final class TonConnectAppsStore {
   public func connectBridgeDapp(wallet: Wallet,
                                 parameters: TonConnectParameters,
                                 manifest: TonConnectManifest,
-                                signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply) async -> ConnectResult {
+                                signTonProofHandler: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply,
+                                keeperVersion: String) async -> ConnectResult {
     do {
       let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
         wallet: wallet,
         parameters: parameters,
         manifest: manifest,
-        signTonProofHandler: signTonProofHandler
+        signTonProofHandler: signTonProofHandler,
+        keeperVersion: keeperVersion
       )
       let response = try JSONEncoder().encode(connectEventSuccessResponse)
       let sessionCrypto = try TonConnectSessionCrypto()
@@ -89,7 +93,7 @@ public final class TonConnectAppsStore {
     }
   }
   
-  public func reconnectBridgeDapp(wallet: Wallet, appUrl: URL?) -> ConnectResult {
+  public func reconnectBridgeDapp(wallet: Wallet, appUrl: URL?, keeperVersion: String) -> ConnectResult {
     guard let app = try? connectedApps(forWallet: wallet).apps.first(where: {
       $0.manifest.url.host == appUrl?.host
     }) else {
@@ -98,7 +102,8 @@ public final class TonConnectAppsStore {
     do {
       let response = try tonConnectService.buildReconnectConnectEventSuccessResponse(
         wallet: wallet,
-        manifest: app.manifest
+        manifest: app.manifest,
+        keeperVersion: keeperVersion
       )
       let responseData = try JSONEncoder().encode(response)
       return .response(responseData)
