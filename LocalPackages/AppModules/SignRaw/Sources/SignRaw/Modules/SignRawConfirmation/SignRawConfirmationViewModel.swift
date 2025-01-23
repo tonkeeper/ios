@@ -5,7 +5,7 @@ import KeeperCore
 import WalletExtensions
 
 @MainActor
-protocol SignRawConfirmationModuleOutput: AnyObject {
+public protocol SignRawConfirmationModuleOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirm: (() -> Void)? { get set }
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)? { get set }

@@ -4,7 +4,12 @@ import BigInt
 
 public enum JettonBalanceResolverError: Swift.Error {
   case unknownJetton
-  case insufficientFunds(jettonInfo: JettonInfo, balance: BigUInt, wallet: Wallet)
+  case insufficientFunds(
+    jettonInfo: JettonInfo,
+    balance: BigUInt,
+    wallet: Wallet,
+    isInAppPurchaseAvailable: Bool
+  )
 }
 
 public protocol JettonBalanceResolver {
@@ -30,12 +35,22 @@ public struct JettonBalanceResolverImplementation: JettonBalanceResolver {
       throw JettonBalanceResolverError.unknownJetton
     }
 
+    let trustCoins: [Address] = [
+      JettonMasterAddress.tonUSDT,
+      JettonMasterAddress.NOT,
+      JettonMasterAddress.HMSTR
+    ]
+    let isInAppPurchase = trustCoins.contains(jettonInfo.address)
     guard let balance = balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
-      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, balance: 0, wallet: wallet)
+      throw JettonBalanceResolverError.insufficientFunds(
+        jettonInfo: jettonInfo, balance: 0, wallet: wallet, isInAppPurchaseAvailable: isInAppPurchase
+      )
     }
     
     guard let jettonBalance = balance.first(where: { $0.item.jettonInfo.address == jettonAddress }) else {
-      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, balance: 0, wallet: wallet)
+      throw JettonBalanceResolverError.insufficientFunds(
+        jettonInfo: jettonInfo, balance: 0, wallet: wallet, isInAppPurchaseAvailable: isInAppPurchase
+      )
     }
     
     return jettonBalance

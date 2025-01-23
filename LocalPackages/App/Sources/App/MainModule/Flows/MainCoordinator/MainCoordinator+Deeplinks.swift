@@ -13,6 +13,7 @@ extension MainCoordinator {
                         jettonAddress: Address?,
                         expirationTimestamp: Int64?,
                         successReturn: URL?) {
+
     deeplinkHandleTask?.cancel()
 
     ToastPresenter.hideAll()
@@ -28,55 +29,37 @@ extension MainCoordinator {
       }
     }
 
-    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    let trustCoins: [Address] = [
-      JettonMasterAddress.tonUSDT,
-      JettonMasterAddress.NOT,
-      JettonMasterAddress.HMSTR
-    ]
-
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try walletsStore.activeWallet
-        
+        let wallet = try keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
+        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
+
         let token: Token
+
         if let jettonAddress {
           let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
-          if let amount, jettonBalance.quantity < amount {
-            await MainActor.run {
-              ToastPresenter.hideAll()
-              let isInAppPurchase = trustCoins.contains(jettonAddress)
-              var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-              buyButtonConfiguration.content = TKButton.Configuration.Content(
-                title: .plainString(TKLocales.InsufficientFunds.rechargeWallet)
-              )
-              buyButtonConfiguration.action = { [weak self] in
-                self?.router.dismiss(animated: true) {
-                  if isInAppPurchase {
-                    self?.openBuy(wallet: wallet)
-                  } else {
-                    self?.router.select(index: 2)
-                    self?.browserCoordinator?.router.popToRoot()
-                    self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
-                  }
-                }
-              }
-              self.openInsufficientFundsPopup(
-                wallet: wallet,
-                jettonInfo: jettonBalance.item.jettonInfo,
-                requiredAmount: amount,
-                availableAmount: jettonBalance.quantity,
-                buttons: [buyButtonConfiguration]
-              )
-            }
-            return
-          }
+          let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
+            wallet: wallet,
+            recipient: recipient,
+            jettonItem: jettonBalance.item,
+            amount: amount ?? 0,
+            comment: nil
+          )
+          let fundsVaildator = InsufficientFundsValidator(
+            balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore
+          )
+
+          try await fundsVaildator.validateJettonFundsIfNeeded(
+            wallet: wallet,
+            confirmationController: jettonTransferController,
+            jettonBalance: jettonBalance,
+            amount: amount
+          )
+
           token = .jetton(jettonBalance.item)
         } else {
           token = .ton
         }
-        
-        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
         
         guard !Task.isCancelled else { return }
         await MainActor.run {
@@ -102,33 +85,62 @@ extension MainCoordinator {
             )
           )
         }
-      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, wallet) {
+      } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, wallet, isInappPurchaseAvailable) {
+        await MainActor.run { [weak self] in
+          self?.deeplinkHandleTask = nil
+
+          ToastPresenter.hideAll()
+
+          self?.configureAndShowInsufficientPopup(wallet: wallet,
+                                                  buttonTitle: TKLocales.InsufficientFunds.rechargeWallet,
+                                                  amount: amount,
+                                                  tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
+                                                  fractionDigits: jettonInfo.fractionDigits,
+                                                  balance: balance,
+                                                  isInAppPurchase: isInappPurchaseAvailable)
+        }
+      } catch let InsufficientFundsError.blockchainFee(wallet, balance, amount) {
+        await MainActor.run { [weak self] in
+          self?.deeplinkHandleTask = nil
+
+          ToastPresenter.hideAll()
+
+          guard let self else {
+            return
+          }
+
+          let tonToken = Token.ton
+          let amountFormatter = self.keeperCoreMainAssembly.formattersAssembly.amountFormatter
+          let feeFormatted = amountFormatter.formatAmount(amount, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
+          let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
+          let caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
+          let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(tonToken.symbol)
+
+          self.configureAndShowInsufficientPopup(
+            wallet: wallet,
+            caption: caption,
+            buttonTitle: buttonTitle,
+            amount: amount,
+            tokenSymbol: tonToken.symbol,
+            fractionDigits: tonToken.fractionDigits,
+            balance: balance,
+            isInAppPurchase: true
+          )
+        }
+      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, wallet, isInAppPurchaseAvailable) {
         await MainActor.run { [weak self, jettonInfo] in
           self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
 
-          let isInAppPurchase = trustCoins.contains(jettonInfo.address)
-          var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-          let tokenTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonInfo.symbol ?? jettonInfo.name)
-          buyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(tokenTitle))
-          buyButtonConfiguration.action = { [weak self] in
-            self?.router.dismiss(animated: true) {
-              if isInAppPurchase {
-                self?.openBuy(wallet: wallet)
-              } else {
-                self?.router.select(index: 2)
-                self?.browserCoordinator?.router.popToRoot()
-                self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
-              }
-            }
-          }
-
-          self?.openInsufficientFundsPopup(
+          let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonInfo.symbol ?? jettonInfo.name)
+          self?.configureAndShowInsufficientPopup(
             wallet: wallet,
-            jettonInfo: jettonInfo,
-            requiredAmount: amount ?? 0,
-            availableAmount: balance,
-            buttons: [buyButtonConfiguration]
+            buttonTitle: buttonTitle,
+            amount: amount,
+            tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
+            fractionDigits: jettonInfo.fractionDigits,
+            balance: balance,
+            isInAppPurchase: isInAppPurchaseAvailable
           )
         }
       } catch {
@@ -142,11 +154,51 @@ extension MainCoordinator {
     
     self.deeplinkHandleTask = deeplinkHandleTask
   }
-  
+
+  private func configureAndShowInsufficientPopup(wallet: Wallet,
+                                                 caption: String? = nil,
+                                                 buttonTitle: String,
+                                                 amount: BigUInt?,
+                                                 tokenSymbol: String,
+                                                 fractionDigits: Int,
+                                                 balance: BigUInt,
+                                                 isInAppPurchase: Bool) {
+    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    buyButtonConfiguration.content = TKButton.Configuration.Content(
+      title: .plainString(buttonTitle)
+    )
+    buyButtonConfiguration.action = { [weak self] in
+      self?.router.dismiss(animated: true) {
+        if isInAppPurchase {
+          self?.openBuy(wallet: wallet)
+        } else {
+          self?.router.select(index: 2)
+          self?.browserCoordinator?.router.popToRoot()
+          self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
+        }
+      }
+    }
+
+    let builder = InfoPopupBottomSheetConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    let configuration = builder.insufficientTokenConfiguration(
+      walletLabel: wallet.metaData.label,
+      caption: caption,
+      tokenSymbol: tokenSymbol,
+      tokenFractionalDigits: fractionDigits,
+      required: amount ?? 0,
+      available: balance,
+      buttons: [buyButtonConfiguration]
+    )
+
+    openInsufficientFundsPopup(configuration: configuration)
+  }
+
   func openSignRawSendDeeplink(recipient: String,
-                        amount: BigUInt?,
-                        bin: String?,
-                        stateInit: String?,
+                               amount: BigUInt?,
+                               bin: String?,
+                               stateInit: String?,
                                expirationTimestamp: Int64?) {
     deeplinkHandleTask?.cancel()
     

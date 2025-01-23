@@ -11,7 +11,7 @@ import TonSwift
 @MainActor
 public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
 
-  var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> String?)?
+  var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> SignedTransactions?)?
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
   var didRequestReplanishWallet: ((_ wallet: Wallet, _ context: ReplanishBalanceContext) -> Void)?
 
@@ -164,6 +164,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     }
     let configuration = configurationBuilder.insufficientTokenConfiguration(
       walletLabel: wallet.metaData.label,
+      caption: nil,
       tokenSymbol: model.token.token.symbol,
       tokenFractionalDigits: model.token.token.fractionDigits,
       required: BigUInt(integerLiteral: UInt64(model.requiredAmount)),

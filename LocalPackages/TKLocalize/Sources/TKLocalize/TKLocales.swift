@@ -815,6 +815,11 @@ public enum TKLocales {
     public static func buyTokenTitle(_ p1: Any) -> String {
       return TKLocales.tr("Localizable", "insufficientFunds.buy_token_title", String(describing: p1), fallback: "Buy %@")
     }
+    /// Required for blockchain fees: %@ TON.
+    /// Your balance: %@ TON.
+    public static func feeRequired(_ p1: Any, _ p2: Any) -> String {
+      return TKLocales.tr("Localizable", "insufficientFunds.fee_required", String(describing: p1), String(describing: p2), fallback: "Required for blockchain fees: %@ TON.\nYour balance: %@ TON.")
+    }
     /// Insufficient balance
     public static let insufficientBalance = TKLocales.tr("Localizable", "insufficientFunds.insufficient_balance", fallback: "Insufficient balance")
     /// Recharge Wallet

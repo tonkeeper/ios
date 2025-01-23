@@ -1245,30 +1245,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     coordinator.start()
   }
   
-  func openInsufficientFundsPopup(
-    wallet: Wallet,
-    jettonInfo: JettonInfo,
-    requiredAmount: BigUInt,
-    availableAmount: BigUInt,
-    buttons: [TKButton.Configuration]
-  ) {
+  func openInsufficientFundsPopup(configuration: InfoPopupBottomSheetViewController.Configuration) {
     let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-    
-    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
-    )
-
-    let tokenSymbol = jettonInfo.symbol ?? jettonInfo.name
-
-    let configuration = configurationBuilder.insufficientTokenConfiguration(
-      walletLabel: wallet.metaData.label,
-      tokenSymbol: tokenSymbol,
-      tokenFractionalDigits: jettonInfo.fractionDigits,
-      required: requiredAmount,
-      available: availableAmount,
-      buttons: buttons
-    )
     viewController.configuration = configuration
     router.dismiss(animated: true) { [router] in
       bottomSheetViewController.present(fromViewController: router.rootViewController)

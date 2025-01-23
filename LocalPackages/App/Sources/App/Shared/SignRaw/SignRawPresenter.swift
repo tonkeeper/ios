@@ -32,7 +32,7 @@ public final class SignRawPresenter {
       coreAssembly: coreAssembly
     )
     coordinator.didRequireSign = { [weak coordinator] transferData, wallet, viewController in
-      guard let coordinator else { return nil}
+      guard let coordinator else { return nil }
       return try await didRequireSign?(transferData, wallet, coordinator, ViewControllerRouter(rootViewController: viewController))
     }
     
