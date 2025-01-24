@@ -278,7 +278,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
       _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
-    collectiblesCoordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase, wallet in
+    collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInAppPurchase, wallet in
       self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
     }
 
@@ -384,7 +384,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.removeChild($0)
     }
 
-    sendTokenCoordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase in
+    sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInAppPurchase in
       self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
     }
 

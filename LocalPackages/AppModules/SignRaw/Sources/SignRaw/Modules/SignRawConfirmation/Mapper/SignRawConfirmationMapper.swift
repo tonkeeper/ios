@@ -14,14 +14,6 @@ public struct SignRawConfirmationModel {
     let isRisk: Bool
   }
 
-  public typealias TransactionTokenInfo = (token: Token, availableBalance: BigUInt)
-  public struct ProvisionModel {
-    public let fee: UInt64
-    public let tonBalance: UInt64
-    public let requiredAmount: UInt64
-    public let token: TransactionTokenInfo
-  }
-
   let contentModel: AccountEventCellContentView.Model
   let risk: Risk?
 }
@@ -31,7 +23,6 @@ struct SignRawConfirmationMapper {
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let totalBalanceStore: TotalBalanceStore
-  private let balanceStore: BalanceStore
   private let nftManagmentStore: WalletNFTsManagementStore
   private let accountEventMapper: Mapping.AccountEventMapper
   private let accountEventModelMapper: Mapping.AccountEventModelMapper
@@ -42,7 +33,6 @@ struct SignRawConfirmationMapper {
               tonRatesStore: TonRatesStore,
               currencyStore: CurrencyStore,
               totalBalanceStore: TotalBalanceStore,
-              balanceStore: BalanceStore,
               nftManagmentStore: WalletNFTsManagementStore,
               accountEventMapper: Mapping.AccountEventMapper,
               accountEventModelMapper: Mapping.AccountEventModelMapper,
@@ -52,7 +42,6 @@ struct SignRawConfirmationMapper {
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.totalBalanceStore = totalBalanceStore
-    self.balanceStore = balanceStore
     self.nftManagmentStore = nftManagmentStore
     self.accountEventMapper = accountEventMapper
     self.accountEventModelMapper = accountEventModelMapper

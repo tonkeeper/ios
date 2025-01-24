@@ -27,7 +27,6 @@ public struct SignRawConfirmationAssembly {
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
         totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-        balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
         nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
         accountEventMapper: AccountEventMapper(
           dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,

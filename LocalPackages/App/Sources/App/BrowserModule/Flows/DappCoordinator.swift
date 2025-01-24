@@ -4,9 +4,7 @@ import TKCore
 import KeeperCore
 import TKScreenKit
 import TKUIKit
-import BigInt
 import TKLocalize
-import TonSwift
 import SignRaw
 import FirebasePerformance
 
@@ -20,8 +18,6 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
   public var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInAppPurchase: Bool) -> Void)?
-
-  private var infoWindowRouter: WindowRouter?
 
   public init(
     router: ViewControllerRouter,

@@ -10,7 +10,7 @@ import BigInt
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didSendSuccessfully: ((SendTokenCoordinator?) -> Void)?
-  var didRequestOpenSendBuy: ((_ isInAppPurchase: Bool) -> Void)?
+  var didRequestOpenBuySell: ((_ isInAppPurchase: Bool) -> Void)?
 
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
@@ -207,7 +207,7 @@ private extension SendTokenCoordinator {
     )
     buyButtonConfiguration.action = { [weak self] in
       self?.router.dismiss(animated: true) {
-        self?.didRequestOpenSendBuy?(isInAppPurchase)
+        self?.didRequestOpenBuySell?(isInAppPurchase)
         self?.didFinish?(self)
       }
     }
