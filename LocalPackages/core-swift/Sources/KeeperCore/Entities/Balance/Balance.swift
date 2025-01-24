@@ -14,8 +14,11 @@ public struct Balance: Codable, Equatable {
 }
 
 public extension Balance {
+  var isEmptyJettonsBalance: Bool {
+    jettonsBalance.filter({ !$0.quantity.isZero && $0.item.jettonInfo.verification != .blacklist }).isEmpty
+  }
   var isEmpty: Bool {
-    tonBalance.amount == 0 && jettonsBalance.filter({ !$0.quantity.isZero }).isEmpty
+    tonBalance.amount == 0 && isEmptyJettonsBalance
   }
 }
 
