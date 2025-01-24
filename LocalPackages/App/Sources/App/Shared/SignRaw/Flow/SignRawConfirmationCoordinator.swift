@@ -13,13 +13,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
 
   var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> SignedTransactions?)?
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
-  var didRequestReplanishWallet: ((_ wallet: Wallet, _ context: ReplanishBalanceContext) -> Void)?
-
-  public enum ReplanishBalanceContext {
-    case inApp
-    case defi
-    case battery
-  }
+  var didRequestReplanishWallet: ((_ wallet: Wallet, _ isInAppPurchase: Bool) -> Void)?
 
   private let wallet: Wallet
   private let transferProvider: () async throws -> Transfer
@@ -77,24 +71,60 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     module.output.didRequestShowInfoPopup = { [weak self] title, caption in
       self?.openInfoPopup(title: title, caption: caption)
     }
-    module.output.didRequireShowInsufficientPopup = { [weak self, weak containerViewController] wallet, provisionModel in
-      let trustCoins: [Address] = [
-        JettonMasterAddress.tonUSDT,
-        JettonMasterAddress.NOT,
-        JettonMasterAddress.HMSTR
-      ]
-      let token = provisionModel.token.token
-      let isInAppPurchase: Bool
-      switch token {
-      case .ton:
-        isInAppPurchase = true
-      case .jetton(let info):
-        isInAppPurchase = trustCoins.contains(info.jettonInfo.address)
+    module.output.didRequireShowInsufficientPopup = { [weak self, weak containerViewController] wallet, error in
+      guard let self else { return }
+      let symbol: String
+      let fractionDigits: Int
+      let buttonTitle: String
+      let caption: String?
+      let amount: BigUInt
+      let availableBalance: BigUInt
+      let inAppPurchase: Bool
+
+      switch error {
+      case let .blockchainFee(_, balance, requiredAmount):
+        let token = Token.ton
+        symbol = token.symbol
+        fractionDigits = token.fractionDigits
+        amount = requiredAmount
+        availableBalance = balance
+
+        let amountFormatter = self.keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let feeFormatted = amountFormatter.formatAmount(amount, fractionDigits: fractionDigits, maximumFractionDigits: 2)
+        let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: fractionDigits, maximumFractionDigits: 2)
+        caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
+        buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(token.symbol)
+        inAppPurchase = true
+      case let .insufficientFunds(jettonInfo, balance, requiredAmount, _, isInappPurchaseAvailable):
+        caption = nil
+        amount = requiredAmount
+        availableBalance = balance
+
+        if let jettonInfo {
+          fractionDigits = jettonInfo.fractionDigits
+          symbol = jettonInfo.symbol ?? jettonInfo.name
+          buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
+        } else {
+          fractionDigits = Token.ton.fractionDigits
+          symbol = Token.ton.symbol
+          buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
+        }
+        inAppPurchase = isInappPurchaseAvailable
       }
+
       moduleInput?.cancel()
-      containerViewController?.dismiss(completion: {
-        self?.startInsufficientFlow(wallet: wallet, model: provisionModel, isInAppPurchaseFlowAvailable: isInAppPurchase)
-      })
+      containerViewController?.dismiss {
+        self.startInsufficientFlow(
+          wallet: wallet,
+          caption: caption,
+          buttonTitle: buttonTitle,
+          symbol: symbol,
+          fractionDigits: fractionDigits,
+          required: amount,
+          available: availableBalance,
+          isInAppPurchaseFlowAvailable: inAppPurchase
+        )
+      }
     }
 
     containerViewController.present(fromViewController: rootViewController)
@@ -127,7 +157,12 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
   @MainActor
   private func startInsufficientFlow(
     wallet: Wallet,
-    model: SignRawConfirmationModel.ProvisionModel,
+    caption: String?,
+    buttonTitle: String,
+    symbol: String,
+    fractionDigits: Int,
+    required: BigUInt,
+    available: BigUInt,
     isInAppPurchaseFlowAvailable: Bool
   ) {
     guard let rootViewController = router.window.rootViewController else {
@@ -141,20 +176,12 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     )
 
     var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    let buttonTitle: String
-    switch model.token.token {
-    case .ton:
-      buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(model.token.token.symbol)
-    case .jetton:
-      buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
-    }
     buyButtonConfiguration.content = TKButton.Configuration.Content(
       title: .plainString(buttonTitle)
     )
     buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss() {
-        let context: ReplanishBalanceContext = isInAppPurchaseFlowAvailable ? .inApp : .defi
-        self?.didRequestReplanishWallet?(wallet, context)
+        self?.didRequestReplanishWallet?(wallet, isInAppPurchaseFlowAvailable)
         self?.didFinish?(self)
       }
     }
@@ -164,11 +191,11 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     }
     let configuration = configurationBuilder.insufficientTokenConfiguration(
       walletLabel: wallet.metaData.label,
-      caption: nil,
-      tokenSymbol: model.token.token.symbol,
-      tokenFractionalDigits: model.token.token.fractionDigits,
-      required: BigUInt(integerLiteral: UInt64(model.requiredAmount)),
-      available: BigUInt(integerLiteral: UInt64(model.token.availableBalance)),
+      caption: caption,
+      tokenSymbol: symbol,
+      tokenFractionalDigits: fractionDigits,
+      required: required,
+      available: available,
       buttons: [buyButtonConfiguration]
     )
     viewController.configuration = configuration

@@ -17,7 +17,7 @@ public final class SignRawPresenter {
     coreAssembly: TKCore.CoreAssembly,
     keeperCoreMainAssembly: KeeperCore.MainAssembly,
     didRequireSign: ((TransferData, Wallet, Coordinator, ViewControllerRouter) async throws -> SignedTransactions?)?,
-    didRequestReplanishWallet: ((Wallet, SignRawConfirmationCoordinator.ReplanishBalanceContext) -> Void)? = nil
+    didRequestReplanishWallet: ((Wallet, Bool) -> Void)? = nil
   ) {
     hideSignRawForWindowSceneIfNeed(windowScene)
     let window = TKWindow(windowScene: windowScene)

@@ -19,8 +19,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
-  public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
-  public var didRequestOpenDefi: ((_ wallet: Wallet) -> Void)?
+  public var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInAppPurchase: Bool) -> Void)?
 
   private var infoWindowRouter: WindowRouter?
 
@@ -214,17 +213,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                                        coordinator: coordinator,
                                        router: router)
       },
-      didRequestReplanishWallet: { [weak self] wallet, context in
-        self?.router.dismiss(animated: true, completion: {
-          switch context {
-          case .inApp:
-            self?.didRequestOpenBuySell?(wallet)
-          case .defi:
-            self?.didRequestOpenDefi?(wallet)
-          case .battery:
-            return
-          }
-        })
+      didRequestReplanishWallet: { [weak self] wallet, isInAppPurchase in
+        self?.router.dismiss(animated: true) {
+          self?.didRequestOpenBuySell?(wallet, isInAppPurchase)
+        }
       }
     )
   }

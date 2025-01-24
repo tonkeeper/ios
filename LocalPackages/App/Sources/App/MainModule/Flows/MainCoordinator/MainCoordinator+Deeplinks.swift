@@ -46,14 +46,14 @@ extension MainCoordinator {
             comment: nil
           )
           let fundsVaildator = InsufficientFundsValidator(
-            balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore
+            balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
+            jettonBalanceResolver: self.jettonBalanceResolver
           )
 
           try await fundsVaildator.validateJettonFundsIfNeeded(
             wallet: wallet,
-            confirmationController: jettonTransferController,
-            jettonBalance: jettonBalance,
-            amount: amount
+            sendItem: .token(.jetton(jettonBalance.item), amount: amount ?? 0),
+            confirmationController: jettonTransferController
           )
 
           token = .jetton(jettonBalance.item)
@@ -85,17 +85,18 @@ extension MainCoordinator {
             )
           )
         }
-      } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, wallet, isInappPurchaseAvailable) {
+      } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInappPurchaseAvailable) {
         await MainActor.run { [weak self] in
           self?.deeplinkHandleTask = nil
 
           ToastPresenter.hideAll()
 
+
           self?.configureAndShowInsufficientPopup(wallet: wallet,
                                                   buttonTitle: TKLocales.InsufficientFunds.rechargeWallet,
-                                                  amount: amount,
-                                                  tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
-                                                  fractionDigits: jettonInfo.fractionDigits,
+                                                  amount: requiredAmount,
+                                                  tokenSymbol: jettonInfo?.symbol ?? jettonInfo?.name,
+                                                  fractionDigits: jettonInfo?.fractionDigits ?? 2,
                                                   balance: balance,
                                                   isInAppPurchase: isInappPurchaseAvailable)
         }
@@ -159,7 +160,7 @@ extension MainCoordinator {
                                                  caption: String? = nil,
                                                  buttonTitle: String,
                                                  amount: BigUInt?,
-                                                 tokenSymbol: String,
+                                                 tokenSymbol: String?,
                                                  fractionDigits: Int,
                                                  balance: BigUInt,
                                                  isInAppPurchase: Bool) {
@@ -185,7 +186,7 @@ extension MainCoordinator {
     let configuration = builder.insufficientTokenConfiguration(
       walletLabel: wallet.metaData.label,
       caption: caption,
-      tokenSymbol: tokenSymbol,
+      tokenSymbol: tokenSymbol ?? Token.ton.symbol,
       tokenFractionalDigits: fractionDigits,
       required: amount ?? 0,
       available: balance,

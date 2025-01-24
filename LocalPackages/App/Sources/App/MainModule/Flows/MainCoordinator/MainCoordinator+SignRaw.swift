@@ -24,20 +24,10 @@ extension MainCoordinator {
                                        coordinator: coordinator,
                                        router: router)
       },
-      didRequestReplanishWallet: { [weak self] wallet, context in
-        self?.router.dismiss(animated: true, completion: {
-          switch context {
-          case .inApp:
-            self?.openBuy(wallet: wallet)
-          case .defi:
-            self?.router.select(index: 2)
-            self?.browserCoordinator?.router.popToRoot()
-            self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: false)
-          case .battery:
-            break
-          }
+      didRequestReplanishWallet: { [weak self] wallet, isInAppPurchase in
+        self?.router.dismiss(animated: true) {
+          self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
         }
-        )
       }
     )
   }

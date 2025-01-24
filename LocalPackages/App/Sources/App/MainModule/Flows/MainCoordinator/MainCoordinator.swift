@@ -278,6 +278,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
       _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
+    collectiblesCoordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase, wallet in
+      self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
+    }
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
@@ -380,7 +383,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
       self?.removeChild($0)
     }
-    
+
+    sendTokenCoordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase in
+      self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
+    }
+
     self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)
@@ -1103,7 +1110,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
     }
   }
-  
+
+  func openBuy(wallet: Wallet, isInAppPurchase: Bool) {
+    if isInAppPurchase {
+      openBuy(wallet: wallet)
+    } else {
+      router.select(index: 2)
+      browserCoordinator?.router.popToRoot()
+      browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
+    }
+  }
+
   func openBuy(wallet: Wallet) {
     let coordinator = BuyCoordinator(
       wallet: wallet,

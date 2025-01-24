@@ -9,7 +9,7 @@ public protocol SignRawConfirmationModuleOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirm: (() -> Void)? { get set }
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)? { get set }
-  var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ model: SignRawConfirmationModel.ProvisionModel) -> Void)? { get set }
+  var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)? { get set }
 }
 
 @MainActor
@@ -33,7 +33,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
   public var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   public var didConfirm: (() -> Void)?
   public var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
-  public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ model: SignRawConfirmationModel.ProvisionModel) -> Void)?
+  public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)?
 
 
   // MARK: - SignRawConfirmationModuleInput
@@ -97,44 +97,35 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
   private let wallet: Wallet
   private let signRawController: SignRawController
   private let signRawConfirmationMapper: SignRawConfirmationMapper
-  
+  private let fundsValidator: InsufficientFundsValidator
+
   init(wallet: Wallet,
        signRawController: SignRawController,
-       signRawConfirmationMapper: SignRawConfirmationMapper) {
+       signRawConfirmationMapper: SignRawConfirmationMapper,
+       fundsValidator: InsufficientFundsValidator) {
     self.wallet = wallet
     self.signRawController = signRawController
     self.signRawConfirmationMapper = signRawConfirmationMapper
+    self.fundsValidator = fundsValidator
   }
   
   private func emulate() {
     Task { [weak self] in
       guard let self else { return }
+
       do {
         let emulationResult = try await signRawController.emulate()
         let model = signRawConfirmationMapper.mapEmulationResult(emulation: emulationResult, wallet: wallet)
-        if let provisionModel = model.provisionModel, isInsufficientBalanceFlow(model: provisionModel) {
-          self.didRequireShowInsufficientPopup?(self.wallet, provisionModel)
-          state.emulationState = .fail
-          return
-        }
+        try fundsValidator.validateEmulationResultIfNeeded(emulationResult, wallet: wallet)
         state.emulationState = .success(model: model, transferType: emulationResult.transferType)
       } catch {
+        if let error = error as? InsufficientFundsError {
+          self.didRequireShowInsufficientPopup?(self.wallet, error)
+        }
+
         state.emulationState = .fail
       }
     }
-  }
-
-  private func isInsufficientBalanceFlow(model: SignRawConfirmationModel.ProvisionModel) -> Bool {
-    var isInsufficientFlow = false
-    let (token, availableBalance) = model.token
-    switch token {
-    case .ton:
-      isInsufficientFlow = model.requiredAmount > model.tonBalance
-    case .jetton(let info):
-      let isFeeEnough = model.fee <= model.tonBalance
-      isInsufficientFlow = !(isFeeEnough && model.requiredAmount <= availableBalance)
-    }
-    return isInsufficientFlow
   }
 
   private func updateConfiguration() {

@@ -95,15 +95,10 @@ private extension BrowserCoordinator {
     coordinator.didHandleDeeplink = { [weak self] deeplink in
       _ = self?.didHandleDeeplink?(deeplink)
     }
-    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet in
-      self?.removeChild(coordinator)
-      self?.openBuySell(wallet: wallet, isInAppPurchase: true)
-    }
-    coordinator.didRequestOpenDefi = { [weak self, weak coordinator] wallet in
-      guard let self else { return }
 
-      self.removeChild(coordinator)
-      self.openBuySell(wallet: wallet, isInAppPurchase: false)
+    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInAppPurchase in
+      self?.removeChild(coordinator)
+      self?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
     }
 
     addChild(coordinator)

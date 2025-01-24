@@ -24,7 +24,6 @@ public struct SignRawConfirmationModel {
 
   let contentModel: AccountEventCellContentView.Model
   let risk: Risk?
-  let provisionModel: ProvisionModel?
 }
 
 struct SignRawConfirmationMapper {
@@ -64,8 +63,7 @@ struct SignRawConfirmationMapper {
   func mapEmulationResult(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel {
     SignRawConfirmationModel(
       contentModel: mapSuccessEmulationResult(signRawEmulation: emulation, wallet: wallet),
-      risk: mapRisk(emulation: emulation, wallet: wallet),
-      provisionModel: mapProvisionModel(emulation: emulation, wallet: wallet)
+      risk: mapRisk(emulation: emulation, wallet: wallet)
     )
   }
   
@@ -161,56 +159,6 @@ struct SignRawConfirmationMapper {
       title: title,
       caption: caption,
       isRisk: isRisk
-    )
-  }
-
-  private func mapProvisionModel(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel.ProvisionModel? {
-    guard let walletBalance = balanceStore.getState()[wallet]?.walletBalance else {
-      return nil
-    }
-
-    let tonBalance = UInt64(walletBalance.balance.tonBalance.amount)
-    let tonRisk = emulation.risk.ton
-
-    var requiredAmount: UInt64?
-    var token: Token?
-    var availableBalance: BigUInt?
-
-    let fee = emulation.fee
-    let transferAmount: BigUInt = {
-      let feeConverted = BigUInt(fee)
-      let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
-      var transferAmount = feeConverted + minimumTransferAmount
-      transferAmount = transferAmount < minimumTransferAmount
-      ? minimumTransferAmount
-      : transferAmount
-      return transferAmount
-    }()
-    if !emulation.risk.jettons.isEmpty {
-      emulation.risk.jettons.forEach { jetton in
-        guard let balance = walletBalance.balance.jettonsBalance.first(with: jetton.walletAddress, at: \.item.walletAddress) else {
-          return
-        }
-
-        requiredAmount = UInt64(jetton.quantity)
-        availableBalance = balance.quantity
-        token = .jetton(balance.item)
-      }
-    } else {
-      requiredAmount = emulation.risk.ton + UInt64(transferAmount)
-      availableBalance = BigUInt(tonBalance)
-      token = .ton
-    }
-
-    guard let requiredAmount, let token, let availableBalance else {
-      return nil
-    }
-
-    return .init(
-      fee: UInt64(transferAmount),
-      tonBalance: tonBalance,
-      requiredAmount: requiredAmount,
-      token: (token: token, availableBalance: availableBalance)
     )
   }
 }

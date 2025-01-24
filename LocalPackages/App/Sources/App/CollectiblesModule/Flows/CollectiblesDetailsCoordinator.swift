@@ -13,6 +13,7 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   var didPerformTransaction: (() -> Void)?
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+  var didRequestOpenSendBuy: ((_ isInAppPurchase: Bool) -> Void)?
 
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var linkDNSCoordinator: LinkDNSCoordinator?
@@ -221,7 +222,14 @@ private extension CollectiblesDetailsCoordinator {
       self?.didPerformTransaction?()
       self?.removeChild($0)
     }
-    
+
+    sendTokenCoordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase in
+      self?.router.dismiss(animated: true) {
+        self?.didRequestOpenSendBuy?(isInAppPurchase)
+        self?.didClose?()
+      }
+    }
+
     self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)

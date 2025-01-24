@@ -10,6 +10,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
+  var didRequestOpenSendBuy: ((_ isInAppPurchase: Bool, _ wallet: Wallet) -> Void)?
 
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
 
@@ -100,6 +101,10 @@ private extension CollectiblesCoordinator {
 
     coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
       self?.didRequestDeeplinkHandling?(deeplink)
+    }
+
+    coordinator.didRequestOpenSendBuy = { [weak self] isInAppPurchase in
+      self?.didRequestOpenSendBuy?(isInAppPurchase, wallet)
     }
 
     self.detailsCoordinator = coordinator
