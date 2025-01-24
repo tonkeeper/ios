@@ -50,7 +50,7 @@ extension MainCoordinator {
             jettonBalanceResolver: self.jettonBalanceResolver
           )
 
-          try await fundsVaildator.validateJettonFundsIfNeeded(
+          try await fundsVaildator.validateFundsIfNeeded(
             wallet: wallet,
             sendItem: .token(.jetton(jettonBalance.item), amount: amount ?? 0),
             confirmationController: jettonTransferController

@@ -152,7 +152,7 @@ private extension SendTokenCoordinator {
       )
     }
     do {
-      try await fundsValidator.validateJettonFundsIfNeeded(
+      try await fundsValidator.validateFundsIfNeeded(
         wallet: wallet, sendItem: sendItem, confirmationController: transactionConfirmationController
       )
     } catch let InsufficientFundsError.blockchainFee(wallet, balance, amount) {

@@ -28,9 +28,9 @@ public final class InsufficientFundsValidator {
     self.jettonBalanceResolver = jettonBalanceResolver
   }
 
-  public func validateJettonFundsIfNeeded(wallet: Wallet,
-                                          sendItem: SendItem,
-                                          confirmationController: TransactionConfirmationController) async throws {
+  public func validateFundsIfNeeded(wallet: Wallet,
+                                    sendItem: SendItem,
+                                    confirmationController: TransactionConfirmationController) async throws {
     let tonBalanceAmount = balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? 0
     let formattedTonBalance = BigUInt(tonBalanceAmount)
     let emulation = await confirmationController.emulate()
