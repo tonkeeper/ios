@@ -3,6 +3,10 @@ import TonSwift
 import BigInt
 import TonAPI
 
+public enum TransferError: Swift.Error {
+  case nothingToSend
+}
+
 public struct TransferEmulationResult {
   public let transactionInfo: MessageConsequences
   public let transferType: TransferType
@@ -58,7 +62,7 @@ public struct TransferService {
   public func sendTransaction(wallet: Wallet,
                               transfer: Transfer,
                               transferType: TransferType,
-                              signClosure: (TransferData) async throws -> String) async throws -> String {
+                              signClosure: (TransferData) async throws -> SignedTransactions) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -66,29 +70,54 @@ public struct TransferService {
       seqno: seqno,
       transferType: transferType
     )
-    let boc = try await signClosure(transferData)
-    switch transferType {
-    case .default:
-      try await sendService.sendTransaction(
-        boc: boc,
-        wallet: wallet
-      )
-    case .battery:
-      let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
-      try await batteryService.sendTransaction(
-        wallet: wallet,
-        boc: boc,
-        tonProofToken: tonProofToken
-      )
+    let signedTransactions = try await signClosure(transferData)
+    
+    if (signedTransactions.isEmpty) {
+      throw TransferError.nothingToSend
     }
-    return boc
+    
+    if (signedTransactions.count == 1) {
+      let boc = signedTransactions[0]
+      switch transferType {
+      case .default:
+        try await sendService.sendTransaction(
+          boc: boc,
+          wallet: wallet
+        )
+      case .battery:
+        let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
+        try await batteryService.sendTransaction(
+          wallet: wallet,
+          boc: boc,
+          tonProofToken: tonProofToken
+        )
+      }
+    } else {
+      switch transferType {
+      case .default:
+        try await sendService.sendTransactions(
+          batch: signedTransactions,
+          wallet: wallet
+        )
+      case .battery:
+        let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
+        for boc in signedTransactions {
+          try await batteryService.sendTransaction(
+            wallet: wallet,
+            boc: boc,
+            tonProofToken: tonProofToken
+          )
+        }
+      }
+    }
+    
+    return signedTransactions[0]
   }
   
   public func emulate(wallet: Wallet,
                       transfer: Transfer,
                       params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
-    let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
     
     
     if let tonProofToken,

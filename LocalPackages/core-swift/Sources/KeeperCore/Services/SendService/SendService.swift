@@ -6,6 +6,7 @@ public protocol SendService {
   func loadSeqno(wallet: Wallet) async throws -> UInt64
   func loadTransactionInfo(boc: String, wallet: Wallet, params: [EmulateMessageToWalletRequestParamsInner]?) async throws -> TonAPI.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
+  func sendTransactions(batch: [String], wallet: Wallet) async throws
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
   func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload
   func getIndexingLatency(wallet: Wallet) async throws -> Int
@@ -30,6 +31,11 @@ final class SendServiceImplementation: SendService {
   func sendTransaction(boc: String, wallet: Wallet) async throws {
     try await apiProvider.api(wallet.isTestnet)
       .sendTransaction(boc: boc)
+  }
+  
+  func sendTransactions(batch: [String], wallet: Wallet) async throws {
+    try await apiProvider.api(wallet.isTestnet)
+      .sendTransactions(batch: batch)
   }
   
   func getIndexingLatency(wallet: Wallet) async throws -> Int {

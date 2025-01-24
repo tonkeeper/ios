@@ -47,6 +47,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   var deeplinkHandleTask: Task<Void, Never>?
   
   private var sendTransactionNotificationToken: NSObjectProtocol?
+  private var openPushNotificationNotificationToken: NSObjectProtocol?
 
   private var deeplinkRouter: ContainerViewControllerRouter<UIViewController>?
 
@@ -131,6 +132,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
       }
     }
+    
+    openPushNotificationNotificationToken = NotificationCenter.default.addObserver(
+      forName: NSNotification.Name(rawValue: "PushNotificationOpen"),
+      object: nil,
+      queue: .main) { notification in
+        Task { @MainActor [weak self]  in
+          self?.didOpenAppWithPushNotificationTapHandler(userInfo: notification.userInfo)
+        }
+      }
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
@@ -339,7 +349,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.present(navigationController)
   }
   
-  func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil, amount: BigUInt?, comment: String?) {
+  func openSend(wallet: Wallet,
+                token: Token,
+                recipient: Recipient? = nil,
+                amount: BigUInt?,
+                comment: String?,
+                successReturn: URL? = nil) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
@@ -359,6 +374,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
       self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
+      self?.removeChild($0)
+    }
+    
+    sendTokenCoordinator.didSendSuccessfully = { [weak self, weak navigationController] in
+      self?.sendTokenCoordinator = nil
+      navigationController?.dismiss(animated: true, completion: { [weak self] in
+        guard let successReturn else { return }
+        self?.openURL(successReturn, title: nil)
+      })
       self?.removeChild($0)
     }
     
@@ -386,7 +410,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       fromToken = TonInfo.symbol
       toToken = nil
     case .jetton(let jetton):
-      fromToken = jetton.jettonInfo.symbol
+      fromToken = jetton.jettonInfo.address.toRaw()
       toToken = TonInfo.symbol
     }
     
@@ -440,7 +464,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
           amount: sendTransferData.amount,
           comment: sendTransferData.comment,
           jettonAddress: sendTransferData.jettonAddress,
-          expirationTimestamp: sendTransferData.expirationTimestamp
+          expirationTimestamp: sendTransferData.expirationTimestamp,
+          successReturn: sendTransferData.successReturn
         )
         return true
       case .signRawTransfer(let signRawTransferData):
@@ -1310,6 +1335,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
+  }
+  
+  private func didOpenAppWithPushNotificationTapHandler(userInfo: [AnyHashable: Any]?) {
+    coreAssembly.analyticsProvider.logEvent(eventKey: .pushClick)
+    
+    if let link = userInfo?["link"] as? String,
+       let linkURL = URL(string: link) {
+      openURL(linkURL, title: nil)
+      return
+    }
+    
+    if let dappUrl = userInfo?["dapp_url"] as? String,
+       let dappUrlURL = URL(string: dappUrl) {
+      openURL(dappUrlURL, title: nil)
+      return
+    }
   }
 }
 

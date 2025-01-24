@@ -10,23 +10,30 @@ final class PushNotificationManager {
   
   private let queue = DispatchQueue(label: "PushNotificationManagerQueue", qos: .userInitiated)
   private var notificationsUpdateTask = [Wallet: Task<Void, Never>]()
+  private var dappTasks = [String: Task<Void, Never>]()
   
   private let appSettings: AppSettings
   private let uniqueIdProvider: UniqueIdProvider
   private let pushNotificationTokenProvider: PushNotificationTokenProvider
   private let pushNotificationAPI: PushNotificationsAPI
   private let walletNotificationsStore: WalletNotificationStore
+  private let tonConnectAppsStore: TonConnectAppsStore
+  private let tonProofTokenService: TonProofTokenService
   
   init(appSettings: AppSettings,
        uniqueIdProvider: UniqueIdProvider,
        pushNotificationTokenProvider: PushNotificationTokenProvider,
        pushNotificationAPI: PushNotificationsAPI,
-       walletNotificationsStore: WalletNotificationStore) {
+       walletNotificationsStore: WalletNotificationStore,
+       tonConnectAppsStore: TonConnectAppsStore,
+       tonProofTokenService: TonProofTokenService) {
     self.appSettings = appSettings
     self.uniqueIdProvider = uniqueIdProvider
     self.pushNotificationTokenProvider = pushNotificationTokenProvider
     self.pushNotificationAPI = pushNotificationAPI
     self.walletNotificationsStore = walletNotificationsStore
+    self.tonConnectAppsStore = tonConnectAppsStore
+    self.tonProofTokenService = tonProofTokenService
   }
   
   func setup() {
@@ -82,7 +89,6 @@ final class PushNotificationManager {
         unsubscribePushNotifications(wallet: wallet)
       }
     case .didUpdateDappNotificationsIsOn:
-      // TODO: send notification
       break
     }
   }

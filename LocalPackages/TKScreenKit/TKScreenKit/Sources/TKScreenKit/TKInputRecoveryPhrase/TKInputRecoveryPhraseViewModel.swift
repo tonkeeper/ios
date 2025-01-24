@@ -8,7 +8,9 @@ public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
 
 protocol TKInputRecoveryPhraseViewModel: AnyObject {
   var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
-  var didUpdateModel: ((TKInputRecoveryPhraseView.Model) -> Void)? { get set }
+  var didUpdateHeaderModel: ((TKTitleDescriptionView.Model) -> Void)? { get set }
+  var didUpdateInputFields: (([TKInputRecoveryPhraseView.InputFieldModel]) -> Void)? { get set }
+  var didUpdateSeedPhraseSegmenteControl: ((TKInputRecoveryPhraseView.SegmentedControlModel) -> Void)? { get set }
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdatePasteButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdatePasteButtonIsHidden: ((Bool) -> Void)? { get set }
@@ -47,7 +49,9 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   // MARK: - TKInputRecoveryPhraseViewModel
   
-  var didUpdateModel: ((TKInputRecoveryPhraseView.Model) -> Void)?
+  var didUpdateHeaderModel: ((TKTitleDescriptionView.Model) -> Void)?
+  var didUpdateInputFields: (([TKInputRecoveryPhraseView.InputFieldModel]) -> Void)?
+  var didUpdateSeedPhraseSegmenteControl: ((TKInputRecoveryPhraseView.SegmentedControlModel) -> Void)?
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)?
   var didUpdatePasteButton: ((TKButton.Configuration) -> Void)?
   var didUpdatePasteButtonIsHidden: ((Bool) -> Void)?
@@ -59,24 +63,31 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   var didUpdateSuggests: ((TKInputRecoveryPhraseSuggestsView.Model) -> Void)?
   
   func viewDidLoad() {
-    continueButtonConfiguration.action = { [weak self] in
-      self?.didTapContinueButton()
-    }
-    didUpdateModel?(createModel())
-    
-    var pasteButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .medium)
-    pasteButtonConfiguration.content.title = .plainString(pasteButtonTitle)
-    pasteButtonConfiguration.action = { [weak self] in
-      guard UIPasteboard.general.hasStrings,
-            let string = UIPasteboard.general.string else { return }
-      _ = self?.shouldPaste(text: string, index: 0)
-    }
-    didUpdatePasteButton?(pasteButtonConfiguration)
+    setup()
   }
   
   // MARK: - State
   
-  private var phrase = Array(repeating: "", count: .wordsCount)
+  private enum WordsMode {
+    case mode24
+    case mode12
+    
+    var wordsCount: Int {
+      switch self {
+      case .mode24:
+        return 24
+      case .mode12:
+        return 12
+      }
+    }
+  }
+  
+  private var mode: WordsMode = .mode24 {
+    didSet {
+      didUpdateWordsMode()
+    }
+  }
+  private var phrase: [String]
   private var activeIndex: Int?
   
   private var continueButtonConfiguration: TKButton.Configuration {
@@ -89,6 +100,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   private let title: String
   private let caption: String
+  private let set12WordsButtonTitle: String
+  private let set24WordsButtonTitle: String
   private let continueButtonTitle: String
   private let pasteButtonTitle: String
   private let validator: TKInputRecoveryPhraseValidator
@@ -97,21 +110,32 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   // MARK: - Sync queue
   
   private let dispatchQueue = DispatchQueue(label: "TKInputRecoveryPhraseViewModelImplementationQueue")
+  private var wordValidationTasks = [Int: Task<Void, Never>]()
+  private var formValidationTask: Task<Void, Never>?
+  private var suggestsTasks = [Int: Task<Void, Never>]()
+  private var continueValidationTask: Task<Void, Never>?
+  private var updateSuggestTask: Task<Void, Never>?
   
   // MARK: - Init
   
   init(title: String, 
        caption: String,
+       set12WordsButtonTitle: String,
+       set24WordsButtonTitle: String,
        continueButtonTitle: String,
        pasteButtonTitle: String,
        validator: TKInputRecoveryPhraseValidator,
        suggestsProvider: TKInputRecoveryPhraseSuggestsProvider) {
     self.title = title
     self.caption = caption
+    self.set12WordsButtonTitle = set12WordsButtonTitle
+    self.set24WordsButtonTitle = set24WordsButtonTitle
     self.continueButtonTitle = continueButtonTitle
     self.pasteButtonTitle = pasteButtonTitle
     self.validator = validator
     self.suggestsProvider = suggestsProvider
+    self.phrase = Array(repeating: "", count: mode.wordsCount)
+
     
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     continueButtonConfiguration.content.title = .plainString(continueButtonTitle)
@@ -120,15 +144,54 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 }
 
 private extension TKInputRecoveryPhraseViewModelImplementation {
-  func createModel() -> TKInputRecoveryPhraseView.Model {
+  func setup() {
+    setupTitleDescription()
+    setupSeedPhraseModeSegmentedControl()
+    setupInputFields()
+    
+    continueButtonConfiguration.action = { [weak self] in
+      self?.didTapContinueButton()
+    }
+    var pasteButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .medium)
+    pasteButtonConfiguration.content.title = .plainString(pasteButtonTitle)
+    pasteButtonConfiguration.action = { [weak self] in
+      guard UIPasteboard.general.hasStrings,
+            let string = UIPasteboard.general.string else { return }
+      _ = self?.shouldPaste(text: string, index: 0)
+    }
+    didUpdatePasteButton?(pasteButtonConfiguration)
+  }
+  
+  func setupTitleDescription() {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
       title: title,
       bottomDescription: caption
     )
-    
-    let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<Int.wordsCount)
+    didUpdateHeaderModel?(titleDescriptionModel)
+  }
+  
+  func setupSeedPhraseModeSegmentedControl() {
+    let model = TKInputRecoveryPhraseView.SegmentedControlModel(
+      tabs: [set24WordsButtonTitle, set12WordsButtonTitle],
+      selectedIndex: 0,
+      selectionClosure: { [weak self] index in
+        switch index {
+        case 0:
+          self?.mode = .mode24
+        case 1:
+          self?.mode = .mode12
+        default:
+          break
+        }
+      }
+    )
+    didUpdateSeedPhraseSegmenteControl?(model)
+  }
+  
+  func setupInputFields() {
+    let inputs: [TKInputRecoveryPhraseView.InputFieldModel] = (0..<mode.wordsCount)
       .map { index in
-        TKInputRecoveryPhraseView.Model.InputModel(
+        TKInputRecoveryPhraseView.InputFieldModel(
           index: index + 1,
           didUpdateText: { [weak self] text in
             self?.didUpdateText(text, index: index)
@@ -147,11 +210,17 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
           }
         )
       }
-    
-    return TKInputRecoveryPhraseView.Model(
-      titleDescriptionModel: titleDescriptionModel,
-      inputs: inputs
-    )
+    didUpdateInputFields?(inputs)
+  }
+  
+  func didUpdateWordsMode() {
+    formValidationTask?.cancel()
+    wordValidationTasks.values.forEach { $0.cancel() }
+    wordValidationTasks.removeAll()
+    suggestsTasks.values.forEach { $0.cancel() }
+    suggestsTasks.removeAll()
+    phrase = Array(repeating: "", count: mode.wordsCount)
+    setupInputFields()
   }
   
   func didUpdateText(_ text: String, index: Int) {
@@ -170,37 +239,50 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
   
   func didEndEditing(index: Int) {
     activeIndex = nil
+    validateInput(index: index)
+  }
+  
+  func validateInput(index: Int) {
+    guard phrase.count > index else { return }
     let word = phrase[index]
-    dispatchQueue.async { [weak self] in
+    let task = Task(priority: .userInitiated) { [weak self] in
       guard let self = self else { return }
       let isValid = self.validator.validateWord(word) || word.isEmpty
-      DispatchQueue.main.async {
+      guard !Task.isCancelled else { return }
+      await MainActor.run {
         self.didUpdateInputValidationState?(index, isValid)
       }
     }
+    wordValidationTasks[index]?.cancel()
+    wordValidationTasks[index] = task
   }
-  
+
   func shouldPaste(text: String, index: Int) -> Bool {
+    let wordsCount = mode.wordsCount
     guard index == 0 else { return false }
     let phrase = text
       .components(separatedBy: CharacterSet([" ", ",", "\n"]))
       .filter { !$0.isEmpty }
-      .prefix(.wordsCount)
+      .prefix(wordsCount)
     phrase.enumerated().forEach { index, word in
       self.phrase[index] = word
     }
     didUpdatePasteButtonIsHidden?(true)
-    dispatchQueue.async {
-      let wordsValidation = phrase.map {
+    
+    phrase.enumerated().forEach { index, word in
+      self.didUpdateText?(index, word)
+    }
+    
+    let task = Task(priority: .userInitiated) {
+      let validation = phrase.map {
         self.validator.validateWord($0)
       }
-      
-      DispatchQueue.main.async {
+      guard !Task.isCancelled else { return }
+      await MainActor.run {
         phrase.enumerated().forEach { index, word in
-          self.didUpdateText?(index, word)
-          self.didUpdateInputValidationState?(index, wordsValidation[index])
+          self.didUpdateInputValidationState?(index, validation[index])
         }
-        if phrase.count == .wordsCount {
+        if phrase.count == wordsCount {
           self.didPastePhrase?()
         } else {
           self.didPaste?(phrase.count)
@@ -208,58 +290,74 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
       }
     }
     
+    formValidationTask?.cancel()
+    formValidationTask = task
     return false
   }
 
   func checkForApplyingSuggestion(index: Int) {
-    dispatchQueue.async {
-      guard let input = self.phrase[safe: index] else {
-        return
-      }
-
+    guard let input = self.phrase[safe: index] else {
+      return
+    }
+    let task = Task(priority: .userInitiated) { [weak self] in
+      guard let self else { return }
       let suggests = self.suggestsProvider.suggestsFor(input: input)
       guard let suggest = suggests.first else { return }
-      DispatchQueue.main.async {
+      guard !Task.isCancelled else { return }
+      await MainActor.run {
         self.setSuggest(suggest: suggest, index: index)
       }
     }
+    
+    suggestsTasks[index]?.cancel()
+    suggestsTasks[index] = task
   }
 
   func didTapContinueButton() {
     continueButtonConfiguration.showsLoader = true
-    dispatchQueue.async { [weak self, phrase] in
+    
+    formValidationTask?.cancel()
+    wordValidationTasks.values.forEach { $0.cancel() }
+    wordValidationTasks.removeAll()
+    
+    continueValidationTask?.cancel()
+    continueValidationTask = Task(priority: .userInitiated, operation: { [weak self, phrase] in
       guard let self = self else { return }
       let validationResult = self.validator.validatePhrase(phrase)
-      
       switch validationResult {
         case .invalid:
           let wordsValidation = phrase.map {
             self.validator.validateWord($0)
           }
-          DispatchQueue.main.async {
-            self.continueButtonConfiguration.showsLoader = false
-            wordsValidation.enumerated().forEach { index, isValid in
-              self.didUpdateInputValidationState?(index, isValid)
-            }
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+          self.continueButtonConfiguration.showsLoader = false
+          wordsValidation.enumerated().forEach { index, isValid in
+            self.didUpdateInputValidationState?(index, isValid)
           }
+        }
         case .multiaccount:
-          DispatchQueue.main.async {
-            self.continueButtonConfiguration.showsLoader = false
-            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.multiaccountError))
-          }
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+          self.continueButtonConfiguration.showsLoader = false
+          self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.multiaccountError))
+        }
         case .ton:
-          DispatchQueue.main.async {
-            self.didInputRecoveryPhrase?(phrase, {
-              self.continueButtonConfiguration.showsLoader = false
-            })
-          }
+        await MainActor.run {
+          guard !Task.isCancelled else { return }
+          self.didInputRecoveryPhrase?(phrase, {
+            self.continueButtonConfiguration.showsLoader = false
+          })
+        }
       }
-    }
+    })
   }
 
   func updateSuggests(index: Int) {
+    updateSuggestTask?.cancel()
+    guard phrase.count > index else { return }
     let input = phrase[index]
-    dispatchQueue.async { [weak self] in
+    updateSuggestTask = Task(priority: .userInitiated) { [weak self] in
       guard let self = self else { return }
       let suggests = self.suggestsProvider.suggestsFor(input: input)
       let model = TKInputRecoveryPhraseSuggestsView.Model(
@@ -269,7 +367,8 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
             self?.setSuggest(suggest: suggestText, index: activeIndex)
         }}
       )
-      DispatchQueue.main.async {
+      guard !Task.isCancelled else { return }
+      await MainActor.run {
         self.didUpdateSuggests?(model)
       }
     }
@@ -278,14 +377,10 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
   func setSuggest(suggest: String, index: Int) {
     phrase[index] = suggest
     didUpdateText?(index, suggest)
-    if index < .wordsCount - 1 {
+    if index < mode.wordsCount - 1 {
       didPaste?(index + 1)
     } else {
       didPastePhrase?()
     }
   }
-}
-
-private extension Int {
-  static let wordsCount = 24
 }

@@ -107,7 +107,10 @@ final class HistoryEventDetailsMapper {
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .none,
       currency: .TON)
-    let fiatFee = convertTonToFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
+    
+    let fiatFee = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
+    
+    let status: AccountEventStatus = event.accountEvent.isInProgress ? .ok : eventAction.status
     
     let title: String?
     switch eventAction.type {
@@ -118,7 +121,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
     case let .jettonTransfer(jettonTransfer):
@@ -128,7 +131,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
     case let .nftItemTransfer(nftItemTransfer):
@@ -138,7 +141,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
     case let .nftPurchase(nftPurchase):
@@ -148,7 +151,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .domainRenew(domainRenew):
       return mapDomainRenew(
@@ -157,7 +160,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         description: eventAction.preview.description)
     case .unknown:
       return mapUnknownAction(
@@ -172,7 +175,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status)
+        status: status)
     case let .jettonBurn(jettonBurn):
       return mapJettonBurn(
         activityEvent: event.accountEvent,
@@ -180,7 +183,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status)
+        status: status)
     case let .jettonMint(jettonMint):
       return mapJettonMint(
         activityEvent: event.accountEvent,
@@ -188,7 +191,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .jettonSwap(jettonSwap):
       return mapJettonSwap(
@@ -197,7 +200,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .auctionBid(auctionBid):
       return mapAuctionBid(
@@ -206,7 +209,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status)
+        status: status)
     case let .depositStake(depositStake):
       return mapDepositStake(
         activityEvent: event.accountEvent,
@@ -214,7 +217,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .smartContractExec(smartContractExec):
       return mapSmartContractExec(
@@ -223,7 +226,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .withdrawStake(withdrawStake):
       return mapWithdrawStake(
@@ -232,7 +235,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case let .withdrawStakeRequest(withdrawStakeRequest):
       return mapWithdrawStakeRequest(
@@ -241,7 +244,7 @@ final class HistoryEventDetailsMapper {
         date: date,
         fee: fee,
         feeConverted: fiatFee,
-        status: eventAction.status,
+        status: status,
         isTestnet: isTestnet)
     case .subscribe:
       title = "None"
@@ -322,7 +325,7 @@ final class HistoryEventDetailsMapper {
       type: amountType,
       currency: .TON)
     
-    let fiatPrice = convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
+    let fiatPrice = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
     
     return Model(
       headerImage: .image(.ton),

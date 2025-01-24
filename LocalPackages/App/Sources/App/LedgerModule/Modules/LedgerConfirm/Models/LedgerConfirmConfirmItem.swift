@@ -2,7 +2,8 @@ import Foundation
 import KeeperCore
 import TonTransport
 
-enum LedgedConfirmConfirmItem {
+enum LedgerConfirmConfirmItem {
   case transaction(Transaction)
+  case transactions([Transaction])
   case signatureData(TonConnect.SignatureData)
 }

@@ -6,7 +6,7 @@ import StreamURLSessionTransport
 import EventSource
 import OpenAPIRuntime
 
-final class APIAssembly {
+public final class APIAssembly {
   
   let configurationAssembly: ConfigurationAssembly
 
@@ -42,6 +42,10 @@ final class APIAssembly {
       configuration: configurationAssembly.configuration,
       requestCreationQueue: apiRequestCreationQueue
     )
+  }()
+  
+  public lazy var pushNotificationsAPI: PushNotificationsAPI = {
+    PushNotificationsAPI(urlSession: .shared)
   }()
   
   private lazy var apiRequestCreationQueue = DispatchQueue(label: "APIRequestCreationQueue")

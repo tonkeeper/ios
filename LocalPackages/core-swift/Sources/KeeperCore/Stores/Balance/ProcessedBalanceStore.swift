@@ -131,7 +131,7 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
     
     let tonItem = processTonBalance(
       tonBalance: walletBalance.balance.tonBalance,
-      tonRates: tonRates,
+      tonRates: wallet.isTestnet ? .none : tonRates,
       currency: currency
     )
     

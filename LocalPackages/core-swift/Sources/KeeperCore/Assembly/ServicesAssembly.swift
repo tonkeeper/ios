@@ -160,6 +160,16 @@ public final class ServicesAssembly {
       api: apiAssembly.api
     )
   }
+  
+  public func notificationsService(walletNotificationsStore: WalletNotificationStore,
+                                   tonConnectAppsStore: TonConnectAppsStore) -> NotificationsService {
+    NotificationsServiceImplementation(
+      pushNotificationAPI: apiAssembly.pushNotificationsAPI,
+      walletNotificationsStore: walletNotificationsStore,
+      tonConnectAppsStore: tonConnectAppsStore,
+      tonProofTokenService: tonProofTokenService()
+    )
+  }
 
   public func cookiesService() -> CookiesService {
     CookiesServiceImplementation(cookiesRepository: repositoriesAssembly.cookiesRepository())

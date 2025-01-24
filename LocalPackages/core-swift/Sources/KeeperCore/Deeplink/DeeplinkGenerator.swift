@@ -12,7 +12,7 @@ public struct DeeplinkGenerator {
                                        comment: String? = nil,
                                        jettonAddress: Address?) throws -> String {
     var urlComponents = URLComponents()
-    urlComponents.scheme = "tonkeeper"
+    urlComponents.scheme = "ton"
     urlComponents.host = "transfer"
     urlComponents.path = "/\(addressString)"
     if let amount {

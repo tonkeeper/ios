@@ -3,6 +3,7 @@ import TonSwift
 
 public struct TonConnectResponseBuilder {
   static func buildReconnectConnectEventSuccessResponse(wallet: Wallet,
+                                                        keeperVersion: String,
                                                         manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
     let address = try wallet.address
     
@@ -15,7 +16,7 @@ public struct TonConnectResponseBuilder {
     
     let successEvent = TonConnect.ConnectEventSuccess(
       payload: .init(items: replyItems,
-                     device: .init())
+                     device: .init(maxMessages: try wallet.contract.maxMessages, appVersion: keeperVersion))
     )
     return successEvent
   }
@@ -23,6 +24,7 @@ public struct TonConnectResponseBuilder {
   // Build connect response with private key provided
   static func buildConnectEventSuccesResponse(requestPayloadItems: [TonConnectRequestPayload.Item],
                                               wallet: Wallet,
+                                              keeperVersion: String,
                                               walletPrivateKey: TonSwift.PrivateKey,
                                               manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
     let address = try wallet.address
@@ -49,7 +51,7 @@ public struct TonConnectResponseBuilder {
     }
     let successEvent = TonConnect.ConnectEventSuccess(
       payload: .init(items: replyItems,
-                     device: .init())
+                     device: .init(maxMessages: try wallet.contract.maxMessages, appVersion: keeperVersion))
     )
     return successEvent
   }
@@ -57,6 +59,7 @@ public struct TonConnectResponseBuilder {
   static func buildConnectEventSuccesResponse(
     requestPayloadItems: [TonConnectRequestPayload.Item],
     wallet: Wallet,
+    keeperVersion: String,
     manifest: TonConnectManifest,
     signTonProof: @escaping (_ payload: String) async throws -> TonConnect.ConnectItemReply
   ) async throws -> TonConnect.ConnectEventSuccess {
@@ -84,7 +87,7 @@ public struct TonConnectResponseBuilder {
     }
     
     let successEvent = TonConnect.ConnectEventSuccess(
-      payload: .init(items: replyItems, device: .init())
+      payload: .init(items: replyItems, device: .init(maxMessages: try wallet.contract.maxMessages, appVersion: keeperVersion))
     )
     return successEvent
   }

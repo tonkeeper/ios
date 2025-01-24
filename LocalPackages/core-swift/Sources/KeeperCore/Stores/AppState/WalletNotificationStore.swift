@@ -10,7 +10,11 @@ public final class WalletNotificationStore: Store<WalletNotificationStore.Event,
   public typealias State = [Wallet: NotificationsState]
   public enum Event {
     case didUpdateNotificationsIsOn(wallet: Wallet)
-    case didUpdateDappNotificationsIsOn(wallet: Wallet)
+    case didUpdateDappNotificationsIsOn(
+      wallet: Wallet,
+      dappHost: String,
+      isOn: Bool
+    )
   }
   
   private let keeperInfoStore: KeeperInfoStore
@@ -81,7 +85,13 @@ public final class WalletNotificationStore: Store<WalletNotificationStore.Event,
       updateState { _ in
         return StateUpdate(newState: state)
       } completion: { [weak self] state in
-        self?.sendEvent(.didUpdateDappNotificationsIsOn(wallet: wallet))
+        self?.sendEvent(
+          .didUpdateDappNotificationsIsOn(
+            wallet: wallet,
+            dappHost: dappHost,
+            isOn: isOn
+          )
+        )
         completion?(state)
       }
     }

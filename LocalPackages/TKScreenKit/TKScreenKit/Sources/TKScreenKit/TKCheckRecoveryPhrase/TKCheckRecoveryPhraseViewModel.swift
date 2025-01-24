@@ -45,10 +45,7 @@ final class TKCheckRecoveryPhraseViewModelImplementation: TKCheckRecoveryPhraseV
   
   // MARK: - State
   
-  private let indexes = Array(0..<Int.wordsCount)
-    .shuffled()
-    .prefix(3)
-    .sorted()
+  private let indexes: [Int]
   
   private var input = [Int: String]()
   private var continueButtonConfiguration: TKButton.Configuration {
@@ -71,6 +68,11 @@ final class TKCheckRecoveryPhraseViewModelImplementation: TKCheckRecoveryPhraseV
     )
     continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continueAction)
     self.continueButtonConfiguration = continueButtonConfiguration
+    
+    indexes = Array(0..<provider.phrase.count)
+      .shuffled()
+      .prefix(3)
+      .sorted()
   }
 }
 
@@ -136,6 +138,5 @@ private extension TKCheckRecoveryPhraseViewModelImplementation {
 }
 
 private extension Int {
-  static let wordsCount = 24
   static let checkWordsCount = 3
 }

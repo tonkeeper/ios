@@ -12,7 +12,13 @@ struct BrowserConnectedAssembly {
       tonConnectAppsStore: tonConnectStore
     )
     let viewModel = BrowserConnectedViewModelImplementation(
-      connectedAppsStore: connectedAppsStore
+      walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
+      connectedAppsStore: connectedAppsStore,
+      notificationsService: keeperCoreAssembly.servicesAssembly.notificationsService(
+        walletNotificationsStore: keeperCoreAssembly.storesAssembly.walletNotificationStore,
+        tonConnectAppsStore: keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
+      ),
+      pushTokenProvider: PushNotificationTokenProvider()
     )
     let viewController = BrowserConnectedViewController(
       viewModel: viewModel

@@ -53,6 +53,8 @@ public final class WalletNFTsManagedStore: Store<WalletNFTsManagedStore.Event, W
     let managementStoreState = walletNFTsManagementStore.state
     let nfts = walletNFTStore.state[wallet] ?? []
     return nfts.filter { nft in
+      guard !nft.isHidden else { return false }
+      
       let state: NFTsManagementState.NFTState?
       if let collection = nft.collection {
         state = managementStoreState.nftStates[.collection(collection.address)]

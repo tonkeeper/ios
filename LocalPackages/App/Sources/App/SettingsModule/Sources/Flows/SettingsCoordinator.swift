@@ -439,8 +439,14 @@ private extension SettingsCoordinator {
     let configuration = SettingsListNotificationsConfigurator(
     wallet: wallet,
     walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+    notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
+      walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+      tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+    ),
     tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
-    urlOpener: coreAssembly.urlOpener())
+    urlOpener: coreAssembly.urlOpener(),
+    pushTokenProvider: PushNotificationTokenProvider()
+    )
     
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
@@ -453,6 +459,15 @@ private extension SettingsCoordinator {
       parentCoordinator: self,
       parentRouter: router,
       mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
+  }
+  
+  func getRNPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.rnMnemonicsRepository(),
       securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
@@ -481,30 +496,26 @@ private extension SettingsCoordinator {
       uniqueIdProvider: coreAssembly.uniqueIdProvider,
       storiesService: storiesAssembly.storiesService()
     )
-    let rnAsyncStorage = self.keeperCoreMainAssembly.rnAssembly.rnAsyncStorage
-    let keeperInfoRepository = self.keeperCoreMainAssembly.repositoriesAssembly.keeperInfoRepository()
-    configuration.didSelectRNWalletsSeedPhrases = {
+    configuration.didSelectRNSeedPhrasesRecovery = {
       Task { @MainActor [weak self] in
         guard let self,
-        let passcode = await self.getPasscode() else { return }
-        
-        let rnWalletsStore: RNWalletsStore? = try? await rnAsyncStorage.getValue(key: "walletsStore")
-        let rnWallets = rnWalletsStore?.wallets ?? []
-        let rnWalletsItems = rnWallets.map { SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
-          name: $0.name, identifier: $0.identifier
-        )}
-        let wallets = (try? keeperInfoRepository.getKeeperInfo().wallets) ?? []
-        let walletsItems = wallets.map {
-          SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem(
-            name: $0.metaData.label, identifier: $0.id
-          )
-        }
-        
+              let passcode = await self.getRNPasscode() else { return }
         let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.rnMnemonicsVault()
         guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
           return
         }
-        self.openRNSeedPhrases(mnemonics: mnemonics, wallets: Array(Set(rnWalletsItems + walletsItems)))
+        self.openSeedPhrases(mnemonics: mnemonics)
+      }
+    }
+    configuration.didSelectSeedPhrasesRecovery = {
+      Task { @MainActor [weak self] in
+        guard let self,
+              let passcode = await self.getPasscode() else { return }
+        let mnemonicsVault = self.keeperCoreMainAssembly.coreAssembly.mnemonicsVault()
+        guard let mnemonics = try? await mnemonicsVault.getMnemonics(password: passcode) else {
+          return
+        }
+        self.openSeedPhrases(mnemonics: mnemonics)
       }
     }
     
@@ -514,10 +525,9 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
-  func openRNSeedPhrases(mnemonics: Mnemonics, wallets: [SettingsListRNWalletsSeedPhrasesConfigurator.WalletItem]) {
+  func openSeedPhrases(mnemonics: Mnemonics) {
     let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
-      mnemonics: mnemonics,
-      wallets: wallets
+      mnemonics: mnemonics
     )
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()

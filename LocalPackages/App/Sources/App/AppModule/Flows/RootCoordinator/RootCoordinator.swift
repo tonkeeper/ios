@@ -34,8 +34,10 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       appSettings: dependencies.coreAssembly.appSettings,
       uniqueIdProvider: dependencies.coreAssembly.uniqueIdProvider,
       pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
-      pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
-      walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
+      pushNotificationAPI: dependencies.keeperCoreRootAssembly.mainAssembly().apiAssembly.pushNotificationsAPI,
+      walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore,
+      tonConnectAppsStore: dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectAppsStore,
+      tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
     )
     super.init(router: router)
   }
@@ -114,7 +116,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         for wallet in missedTonProofWallets {
           do {
             let mnemonic = try await mnemonicRepository.getMnemonic(wallet: wallet, password: passcode)
-            let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+            let keyPair = try TonSwift.Mnemonic.anyMnemonicToPrivateKey(
               mnemonicArray: mnemonic.mnemonicWords
             )
             let pair = WalletPrivateKeyPair(

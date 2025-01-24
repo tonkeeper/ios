@@ -16,6 +16,8 @@ public enum EventKey: String {
   case storyPageView = "story_page_view"
   case storyClick = "story_click"
   
+  case pushClick = "push_click"
+  
   public var parameters: [String : Any] { [:] }
   public var key: String { rawValue }
 }
