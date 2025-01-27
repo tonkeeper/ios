@@ -389,7 +389,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)
-    sendTokenCoordinator.start()
+    
+    // If amount and recipient are set in deeplink, we should force confirmation screen
+    if let recipient = recipient, let amount = amount {
+      sendTokenCoordinator.openSendConfirmation(
+        sendModel: .init(
+          wallet: wallet,
+          recipient: recipient,
+          sendItem: .token(token, amount: amount),
+          comment: comment
+        )
+      )
+    } else {
+      sendTokenCoordinator.start()
+    }
 
     router.presentOverTopPresented(
       navigationController,
