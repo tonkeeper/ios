@@ -13,10 +13,11 @@ protocol DappViewModel: AnyObject {
   func reconnectIfNeeded()
 }
 
-final class DappViewModelImplementation: DappViewModel {  
+final class DappViewModelImplementation: DappViewModel {
+
   var didOpenApp: ((URL?, String?) -> Void)?
   var injectHandler: ((String) -> Void)?
-  
+
   func viewDidLoad() {
     didOpenApp?(dapp.url, dapp.name)
   }

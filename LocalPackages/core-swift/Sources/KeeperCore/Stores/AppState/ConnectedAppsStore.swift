@@ -8,15 +8,16 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
 
   private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
-  
-  public init(walletsStore: WalletsStore,
-       tonConnectAppsStore: TonConnectAppsStore) {
-    self.walletsStore = walletsStore
-    self.tonConnectAppsStore = tonConnectAppsStore
 
-    super.init(state: [])
+  public init(
+    walletsStore: WalletsStore,
+    tonConnectAppsStore: TonConnectAppsStore) {
+      self.walletsStore = walletsStore
+      self.tonConnectAppsStore = tonConnectAppsStore
 
-    bindDependencies()
+      super.init(state: [])
+
+      bindDependencies()
   }
 
   public override func createInitialState() -> [TonConnectApp] {
@@ -46,7 +47,10 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
   }
 
   public func deleteApp(_ app: TonConnectApp) {
-    guard let wallet = try? walletsStore.activeWallet else { return }
+    guard let wallet = try? walletsStore.activeWallet else {
+      return
+    }
+
     tonConnectAppsStore.deleteConnectedApp(wallet: wallet, app: app)
     update()
   }

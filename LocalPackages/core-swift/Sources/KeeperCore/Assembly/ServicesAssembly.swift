@@ -170,4 +170,8 @@ public final class ServicesAssembly {
       tonProofTokenService: tonProofTokenService()
     )
   }
+
+  public func cookiesService() -> CookiesService {
+    CookiesServiceImplementation(cookiesRepository: repositoriesAssembly.cookiesRepository())
+  }
 }

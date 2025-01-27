@@ -131,12 +131,14 @@ private extension TonConnectEventsStore {
 }
 
 extension TonConnectEventsStore: TonConnectAppsStoreObserver {
+  
   public nonisolated func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
     switch event {
     case .didUpdateApps:
       Task {
         await start()
       }
+    default: break
     }
   }
 }
