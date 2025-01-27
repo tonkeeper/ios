@@ -10,7 +10,7 @@ import BigInt
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didSendSuccessfully: ((SendTokenCoordinator?) -> Void)?
-  var didRequestOpenBuySell: ((_ isInAppPurchase: Bool) -> Void)?
+  var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
 
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
@@ -169,10 +169,10 @@ private extension SendTokenCoordinator {
         tokenSymbol: tonToken.symbol,
         fractionDigits: tonToken.fractionDigits,
         balance: balance,
-        isInAppPurchase: true
+        isInternalPurchasing: true
       )
       return nil
-    } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInappPurchaseAvailable) {
+    } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInternalPurchasing) {
       let tokenName = (jettonInfo?.symbol ?? jettonInfo?.name) ?? ""
       let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(tokenName)
       configureAndShowInsufficientPopup(
@@ -182,7 +182,7 @@ private extension SendTokenCoordinator {
         tokenSymbol: tokenName,
         fractionDigits: jettonInfo?.fractionDigits ?? 2,
         balance: balance,
-        isInAppPurchase: isInappPurchaseAvailable
+        isInternalPurchasing: isInternalPurchasing
       )
       return nil
     } catch {
@@ -198,14 +198,14 @@ private extension SendTokenCoordinator {
                                                  tokenSymbol: String?,
                                                  fractionDigits: Int,
                                                  balance: BigUInt,
-                                                 isInAppPurchase: Bool) {
+                                                 isInternalPurchasing: Bool) {
     var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
     buyButtonConfiguration.content = TKButton.Configuration.Content(
       title: .plainString(buttonTitle)
     )
     buyButtonConfiguration.action = { [weak self] in
       self?.router.dismiss(animated: true) {
-        self?.didRequestOpenBuySell?(isInAppPurchase)
+        self?.didRequestOpenBuySell?(isInternalPurchasing)
         self?.didFinish?(self)
       }
     }

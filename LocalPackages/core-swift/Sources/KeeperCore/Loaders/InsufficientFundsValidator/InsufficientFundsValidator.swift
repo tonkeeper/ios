@@ -9,7 +9,7 @@ public enum InsufficientFundsError: Swift.Error {
                          balance: BigUInt,
                          requiredAmount: BigUInt,
                          wallet: Wallet,
-                         isInappPurchaseAvailable: Bool)
+                         isInternalPurchasing: Bool)
 }
 
 public protocol InsufficientFundsValidator: AnyObject {
@@ -45,14 +45,14 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
       throw InsufficientFundsError.unknownJetton
     }
 
-    let isInAppPurchase = trustCoins.contains(jettonInfo.address)
+    let isInternalPurchasing = trustCoins.contains(jettonInfo.address)
     guard let balance = balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
       throw InsufficientFundsError.insufficientFunds(
         jettonInfo: jettonInfo,
         balance: 0,
         requiredAmount: requiredAmount,
         wallet: wallet,
-        isInappPurchaseAvailable: isInAppPurchase
+        isInternalPurchasing: isInternalPurchasing
       )
     }
 
@@ -62,7 +62,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
         balance: 0,
         requiredAmount: requiredAmount,
         wallet: wallet,
-        isInappPurchaseAvailable: isInAppPurchase
+        isInternalPurchasing: isInternalPurchasing
       )
     }
 
@@ -98,7 +98,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
         let requiredAmount = transferAmount + amount
         guard formattedTonBalance >= requiredAmount else {
           throw InsufficientFundsError.insufficientFunds(
-            jettonInfo: nil, balance: formattedTonBalance, requiredAmount: requiredAmount, wallet: wallet, isInappPurchaseAvailable: true
+            jettonInfo: nil, balance: formattedTonBalance, requiredAmount: requiredAmount, wallet: wallet, isInternalPurchasing: true
           )
         }
       case .jetton(let jettonItem):
@@ -112,7 +112,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
             balance: jettonBalance.quantity,
             requiredAmount: amount,
             wallet: wallet,
-            isInappPurchaseAvailable: trustCoins.contains(jettonBalance.item.jettonInfo.address)
+            isInternalPurchasing: trustCoins.contains(jettonBalance.item.jettonInfo.address)
           )
         }
 
@@ -184,7 +184,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           balance: availableBalance,
           requiredAmount: formattedRequiredAmount,
           wallet: wallet,
-          isInappPurchaseAvailable: true
+          isInternalPurchasing: true
         )
       }
     case .jetton(let jettonItem):
@@ -194,7 +194,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           balance: availableBalance,
           requiredAmount: formattedRequiredAmount,
           wallet: wallet,
-          isInappPurchaseAvailable: trustCoins.contains(jettonItem.jettonInfo.address)
+          isInternalPurchasing: trustCoins.contains(jettonItem.jettonInfo.address)
         )
       }
 

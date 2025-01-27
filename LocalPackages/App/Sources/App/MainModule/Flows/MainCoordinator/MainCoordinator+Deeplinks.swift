@@ -87,7 +87,7 @@ extension MainCoordinator {
             )
           )
         }
-      } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInappPurchaseAvailable) {
+      } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInternalPurchasing) {
         await MainActor.run { [weak self] in
           self?.deeplinkHandleTask = nil
 
@@ -100,7 +100,7 @@ extension MainCoordinator {
                                                   tokenSymbol: jettonInfo?.symbol ?? jettonInfo?.name,
                                                   fractionDigits: jettonInfo?.fractionDigits ?? 2,
                                                   balance: balance,
-                                                  isInAppPurchase: isInappPurchaseAvailable)
+                                                  isInternalPurchasing: isInternalPurchasing)
         }
       } catch let InsufficientFundsError.blockchainFee(wallet, balance, amount) {
         await MainActor.run { [weak self] in
@@ -127,7 +127,7 @@ extension MainCoordinator {
             tokenSymbol: tonToken.symbol,
             fractionDigits: tonToken.fractionDigits,
             balance: balance,
-            isInAppPurchase: true
+            isInternalPurchasing: true
           )
         }
       } catch {
@@ -149,14 +149,14 @@ extension MainCoordinator {
                                                  tokenSymbol: String?,
                                                  fractionDigits: Int,
                                                  balance: BigUInt,
-                                                 isInAppPurchase: Bool) {
+                                                 isInternalPurchasing: Bool) {
     var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
     buyButtonConfiguration.content = TKButton.Configuration.Content(
       title: .plainString(buttonTitle)
     )
     buyButtonConfiguration.action = { [weak self] in
       self?.router.dismiss(animated: true) {
-          self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
+          self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
       }
     }
 

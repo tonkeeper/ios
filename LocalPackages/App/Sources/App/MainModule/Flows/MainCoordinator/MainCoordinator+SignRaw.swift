@@ -24,9 +24,9 @@ extension MainCoordinator {
                                        coordinator: coordinator,
                                        router: router)
       },
-      didRequestReplanishWallet: { [weak self] wallet, isInAppPurchase in
+      didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
         self?.router.dismiss(animated: true) {
-          self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
+          self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
       }
     )

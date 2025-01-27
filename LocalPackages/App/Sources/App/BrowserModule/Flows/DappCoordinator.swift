@@ -17,7 +17,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
-  public var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInAppPurchase: Bool) -> Void)?
+  public var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
   public init(
     router: ViewControllerRouter,
@@ -209,9 +209,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                                        coordinator: coordinator,
                                        router: router)
       },
-      didRequestReplanishWallet: { [weak self] wallet, isInAppPurchase in
+      didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
         self?.router.dismiss(animated: true) {
-          self?.didRequestOpenBuySell?(wallet, isInAppPurchase)
+          self?.didRequestOpenBuySell?(wallet, isInternalPurchasing)
         }
       }
     )

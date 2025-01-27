@@ -13,7 +13,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
 
   var didRequireSign: ((TransferData, Wallet, UIViewController) async throws -> SignedTransactions?)?
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
-  var didRequestReplanishWallet: ((_ wallet: Wallet, _ isInAppPurchase: Bool) -> Void)?
+  var didRequestReplanishWallet: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
   private let wallet: Wallet
   private let transferProvider: () async throws -> Transfer
@@ -79,7 +79,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
       let caption: String?
       let amount: BigUInt
       let availableBalance: BigUInt
-      let inAppPurchase: Bool
+      let internalPurchasingFlow: Bool
 
       switch error {
       case let .blockchainFee(_, balance, requiredAmount):
@@ -94,8 +94,8 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
         let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: fractionDigits, maximumFractionDigits: 2)
         caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
         buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(token.symbol)
-        inAppPurchase = true
-      case let .insufficientFunds(jettonInfo, balance, requiredAmount, _, isInappPurchaseAvailable):
+        internalPurchasingFlow = true
+      case let .insufficientFunds(jettonInfo, balance, requiredAmount, _, isInternalPurchasing):
         caption = nil
         amount = requiredAmount
         availableBalance = balance
@@ -109,7 +109,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
           symbol = Token.ton.symbol
           buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
         }
-        inAppPurchase = isInappPurchaseAvailable
+        internalPurchasingFlow = isInternalPurchasing
       case .unknownJetton:
         return
       }
@@ -124,7 +124,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
           fractionDigits: fractionDigits,
           required: amount,
           available: availableBalance,
-          isInAppPurchaseFlowAvailable: inAppPurchase
+          isInternalPurchasing: internalPurchasingFlow
         )
       }
     }
@@ -165,7 +165,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     fractionDigits: Int,
     required: BigUInt,
     available: BigUInt,
-    isInAppPurchaseFlowAvailable: Bool
+    isInternalPurchasing: Bool
   ) {
     guard let rootViewController = router.window.rootViewController else {
       return
@@ -183,7 +183,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     )
     buyButtonConfiguration.action = { [weak bottomSheetViewController, weak self] in
       bottomSheetViewController?.dismiss() {
-        self?.didRequestReplanishWallet?(wallet, isInAppPurchaseFlowAvailable)
+        self?.didRequestReplanishWallet?(wallet, isInternalPurchasing)
         self?.didFinish?(self)
       }
     }

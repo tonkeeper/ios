@@ -96,9 +96,9 @@ private extension BrowserCoordinator {
       _ = self?.didHandleDeeplink?(deeplink)
     }
 
-    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInAppPurchase in
+    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInternalPurchasing in
       self?.removeChild(coordinator)
-      self?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
+      self?.openBuySell(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
     }
 
     addChild(coordinator)
@@ -144,10 +144,10 @@ private extension BrowserCoordinator {
 public extension BrowserCoordinator {
 
   @MainActor
-  func openBuySell(wallet: Wallet, isInAppPurchase: Bool) {
+  func openBuySell(wallet: Wallet, isInternalPurchasing: Bool) {
     let browserController = keeperCoreMainAssembly.browserExploreController()
     let lang = Locale.current.languageCode ?? "en"
-    if !isInAppPurchase,
+    if !isInternalPurchasing,
        let cachedCategories = try? browserController.getCachedPopularApps(lang: lang),
        let defiCategory = cachedCategories.categories.first(with: "defi", at: \.id) {
 
