@@ -10,7 +10,8 @@ import TKLocalize
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
-  
+  public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
+
   private var browserInput: BrowserModuleInput?
 
   private let coreAssembly: TKCore.CoreAssembly
@@ -98,7 +99,11 @@ private extension BrowserCoordinator {
 
     coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInternalPurchasing in
       self?.removeChild(coordinator)
-      self?.openBuySell(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+      if isInternalPurchasing {
+        self?.didRequestOpenBuySell?(wallet)
+      } else {
+        self?.openDefi()
+      }
     }
 
     addChild(coordinator)
@@ -144,46 +149,12 @@ private extension BrowserCoordinator {
 public extension BrowserCoordinator {
 
   @MainActor
-  func openBuySell(wallet: Wallet, isInternalPurchasing: Bool) {
+  func openDefi() {
     let browserController = keeperCoreMainAssembly.browserExploreController()
     let lang = Locale.current.languageCode ?? "en"
-    if !isInternalPurchasing,
-       let cachedCategories = try? browserController.getCachedPopularApps(lang: lang),
-       let defiCategory = cachedCategories.categories.first(with: "defi", at: \.id) {
-
-      self.openCategory(defiCategory)
+    guard let defiCategory = try? browserController.getCachedPopularApps(lang: lang).defiCategory else {
       return
     }
-
-    let coordinator = BuyCoordinator(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly,
-      router: ViewControllerRouter(rootViewController: router.rootViewController)
-    )
-
-    coordinator.didOpenItem = { [weak self] url, fromViewController in
-      self?.openBuySellItemURL(url, fromViewController: fromViewController)
-    }
-
-    coordinator.didClose = { [weak coordinator, weak self] in
-      self?.removeChild(coordinator)
-    }
-
-    router.dismiss(animated: true) { [weak self] in
-      self?.addChild(coordinator)
-      coordinator.start()
-    }
-  }
-
-  private func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
-    let deeplinkHandler = TKWebViewControllerNavigationHandler { [weak self] deeplink in
-      _ = self?.handleDeeplink(deeplink: deeplink)
-    }
-    let webViewController = TKWebViewController(url: url, handler: deeplinkHandler)
-    let navigationController = UINavigationController(rootViewController: webViewController)
-    navigationController.modalPresentationStyle = .fullScreen
-    navigationController.configureTransparentAppearance()
-    fromViewController.present(navigationController, animated: true)
+    openCategory(defiCategory)
   }
 }

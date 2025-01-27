@@ -275,7 +275,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
       _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
-    
+
+    browserCoordinator.didRequestOpenBuySell = { [weak self] wallet in
+      self?.openBuy(wallet: wallet)
+    }
+
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
@@ -1120,9 +1124,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     if isInternalPurchasing {
       openBuy(wallet: wallet)
     } else {
-      router.select(index: 2)
-      browserCoordinator?.router.popToRoot()
-      browserCoordinator?.openBuySell(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+      openBrowserDefiFlow()
     }
   }
 
@@ -1320,7 +1322,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.dismiss(animated: true)
     browserCoordinator?.openExplore()
   }
-  
+
+  private func openBrowserDefiFlow() {
+    guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
+    guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
+    router.rootViewController.navigationController?.popToRootViewController(animated: true)
+    router.rootViewController.selectedIndex = index
+    router.dismiss(animated: true)
+    browserCoordinator?.openDefi()
+  }
+
   private func decryptComment(wallet: Wallet,
                               payload: EncryptedCommentPayload,
                               eventId: String) {

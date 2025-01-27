@@ -28,3 +28,10 @@ public struct PopularAppsResponseData: Codable {
 public struct PopularAppsResponse: Codable {
   public let data: PopularAppsResponseData
 }
+
+public extension PopularAppsResponseData {
+
+  var defiCategory: PopularAppsCategory? {
+    categories.first(where: { $0.id == "defi" })
+  }
+}
