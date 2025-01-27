@@ -330,8 +330,10 @@ public class TonTransport {
               try rb
                 .store(bit: true)
                 .store(uint: 0x2177, bits: 16)
+            } else {
+              try rb
+                .store(bit: false)
             }
-            try rb.store(bit: false)
           }
           try builder.store(ref: rb.endCell())
         } else {
