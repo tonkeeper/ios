@@ -1313,22 +1313,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
   }
-  
-  private func openBrowserTabExplore() {
+
+  private func openBrowserTab() {
     guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
     router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
+  }
+
+  private func openBrowserTabExplore() {
+    openBrowserTab()
     browserCoordinator?.openExplore()
   }
 
   private func openBrowserDefiFlow() {
-    guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
-    guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
-    router.rootViewController.navigationController?.popToRootViewController(animated: true)
-    router.rootViewController.selectedIndex = index
-    router.dismiss(animated: true)
+    openBrowserTab()
     browserCoordinator?.openDefi()
   }
 
