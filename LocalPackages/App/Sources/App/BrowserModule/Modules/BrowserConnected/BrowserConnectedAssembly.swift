@@ -8,7 +8,9 @@ struct BrowserConnectedAssembly {
   -> MVVMModule<BrowserConnectedViewController, BrowserConnectedModuleOutput, Void> {
 
     let tonConnectStore = keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
-    let connectedAppsStore = keeperCoreAssembly.storesAssembly.connectedAppsStore(tonConnectAppsStore: tonConnectStore)
+    let connectedAppsStore = keeperCoreAssembly.storesAssembly.connectedAppsStore(
+      tonConnectAppsStore: tonConnectStore
+    )
     let viewModel = BrowserConnectedViewModelImplementation(
       walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
       connectedAppsStore: connectedAppsStore,

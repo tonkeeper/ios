@@ -23,8 +23,8 @@ final class HistoryContainerViewModelImplementation: HistoryContainerViewModel, 
     walletsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
         switch event {
-        case .didChangeActiveWallet(let wallet):
-          observer.didChangeWallet?(wallet)
+        case let .didChangeActiveWallet(_, previousWallet):
+          observer.didChangeWallet?(previousWallet)
         default: break
         }
       }

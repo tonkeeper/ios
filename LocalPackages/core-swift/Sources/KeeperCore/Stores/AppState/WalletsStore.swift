@@ -7,7 +7,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   
   public enum Event {
     case didAddWallets(wallets: [Wallet])
-    case didChangeActiveWallet(wallet: Wallet)
+    case didChangeActiveWallet(from: Wallet, to: Wallet)
     case didMoveWallet(fromIndex: Int, toIndex: Int)
     case didUpdateWalletMetaData(wallet: Wallet)
     case didUpdateWalletSetupSettings(wallet: Wallet)
@@ -19,7 +19,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   public enum State {
     public struct Wallets {
       public let wallets: [Wallet]
-      public let activeWalelt: Wallet
+      public let activeWallet: Wallet
     }
     
     case empty
@@ -38,7 +38,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
       get throws {
         switch self {
         case .empty: throw Error.noWallets
-        case .wallets(let state): return state.activeWalelt
+        case .wallets(let state): return state.activeWallet
         }
       }
     }
@@ -180,7 +180,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         return StateUpdate(newState: state)
       } completion: { [weak self] state in
         self?.sendEvent(.didAddWallets(wallets: wallets))
-        self?.sendEvent(.didChangeActiveWallet(wallet: activeWallet))
+        self?.sendEvent(.didChangeActiveWallet(from: activeWallet, to: activeWallet))
         completion(state)
       }
     }
@@ -188,6 +188,8 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   
   public func makeWalletActive(_ wallet: Wallet,
                                completion: @escaping (State) -> Void) {
+    let activeWallet = try? activeWallet
+
     keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
       let updateKeeperInfo = keeperInfo.updateActiveWallet(wallet)
@@ -198,7 +200,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
       updateState { _ in
         return StateUpdate(newState: state)
       } completion: { [weak self] state in
-        self?.sendEvent(.didChangeActiveWallet(wallet: wallet))
+        self?.sendEvent(.didChangeActiveWallet(from: activeWallet ?? wallet, to: wallet))
         completion(state)
       }
     }
@@ -241,7 +243,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
           self?.sendEvent(.didDeleteAll)
         case .wallets(let walletsState):
           self?.sendEvent(.didDeleteWallet(wallet: wallet))
-          self?.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
+          self?.sendEvent(.didChangeActiveWallet(from: wallet, to: walletsState.activeWallet))
         }
         completion(state)
       }
@@ -355,7 +357,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
   
   private func getState(keeperInfo: KeeperInfo?) -> State {
     if let keeperInfo = keeperInfoStore.getState() {
-      return .wallets(State.Wallets(wallets: keeperInfo.wallets, activeWalelt: keeperInfo.currentWallet))
+      return .wallets(State.Wallets(wallets: keeperInfo.wallets, activeWallet: keeperInfo.currentWallet))
     } else {
       return .empty
     }
