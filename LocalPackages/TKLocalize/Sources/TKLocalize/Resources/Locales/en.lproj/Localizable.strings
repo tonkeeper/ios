@@ -614,6 +614,7 @@
 "insufficientFunds.insufficient_balance" = "Insufficient balance";
 "insufficientFunds.buy_token_title" = "Buy %@";
 "insufficientFunds.fee_required" = "Required for blockchain fees: %@ TON.\nYour balance: %@ TON.";
+"insufficientFunds.unknown_token" = "Unknown token";
 
 "transaction_confirmation.confirm_action" = "Confirm action";
 "transaction_confirmation.wallet" = "Wallet";

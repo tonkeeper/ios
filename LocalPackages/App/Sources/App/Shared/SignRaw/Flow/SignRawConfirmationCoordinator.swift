@@ -110,6 +110,8 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
           buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
         }
         inAppPurchase = isInappPurchaseAvailable
+      case .unknownJetton:
+        return
       }
 
       moduleInput?.cancel()

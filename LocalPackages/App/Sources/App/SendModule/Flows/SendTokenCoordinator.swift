@@ -119,10 +119,8 @@ private extension SendTokenCoordinator {
     }
     ToastPresenter.showToast(configuration: .loading)
 
-    let fundsValidator = InsufficientFundsValidator(
-      balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-      jettonBalanceResolver: keeperCoreMainAssembly.loadersAssembly.jettonBalanceResolver()
-    )
+    let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
+
     guard let recipient = sendModel.recipient else { return nil }
     let transactionConfirmationController: TransactionConfirmationController
     switch sendModel.sendItem {

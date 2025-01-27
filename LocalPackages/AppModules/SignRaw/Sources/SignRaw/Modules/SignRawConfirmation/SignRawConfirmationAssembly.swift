@@ -39,8 +39,7 @@ public struct SignRawConfirmationAssembly {
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
       ),
-      fundsValidator: InsufficientFundsValidator(balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-                                                 jettonBalanceResolver: keeperCoreMainAssembly.loadersAssembly.jettonBalanceResolver())
+      fundsValidator: keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
     )
     let viewController = SignRawConfirmationViewController(viewModel: viewModel)
     

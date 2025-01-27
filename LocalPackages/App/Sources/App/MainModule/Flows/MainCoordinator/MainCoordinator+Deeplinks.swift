@@ -29,15 +29,21 @@ extension MainCoordinator {
       }
     }
 
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+
     let deeplinkHandleTask = Task {
       do {
-        let wallet = try keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
+        let wallet = try walletsStore.activeWallet
         let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
 
         let token: Token
 
         if let jettonAddress {
-          let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
+          let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
+          let jettonBalance = try await fundsValidator.resolveJettonBalance(
+            jettonAddress: jettonAddress, requiredAmount: amount ?? 0, wallet: wallet
+          )
+
           let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
             wallet: wallet,
             recipient: recipient,
@@ -45,12 +51,8 @@ extension MainCoordinator {
             amount: amount ?? 0,
             comment: nil
           )
-          let fundsVaildator = InsufficientFundsValidator(
-            balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-            jettonBalanceResolver: self.jettonBalanceResolver
-          )
 
-          try await fundsVaildator.validateFundsIfNeeded(
+          try await fundsValidator.validateFundsIfNeeded(
             wallet: wallet,
             sendItem: .token(.jetton(jettonBalance.item), amount: amount ?? 0),
             confirmationController: jettonTransferController
@@ -74,13 +76,13 @@ extension MainCoordinator {
             successReturn: successReturn
           )
         }
-      } catch JettonBalanceResolverError.unknownJetton {
+      } catch InsufficientFundsError.unknownJetton {
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           ToastPresenter.showToast(
             configuration: ToastPresenter.Configuration(
-              title: "Unknown token",
+              title: TKLocales.InsufficientFunds.unknownToken,
               dismissRule: .default
             )
           )
@@ -128,22 +130,6 @@ extension MainCoordinator {
             isInAppPurchase: true
           )
         }
-      } catch let JettonBalanceResolverError.insufficientFunds(jettonInfo, balance, wallet, isInAppPurchaseAvailable) {
-        await MainActor.run { [weak self, jettonInfo] in
-          self?.deeplinkHandleTask = nil
-          ToastPresenter.hideAll()
-
-          let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(jettonInfo.symbol ?? jettonInfo.name)
-          self?.configureAndShowInsufficientPopup(
-            wallet: wallet,
-            buttonTitle: buttonTitle,
-            amount: amount,
-            tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
-            fractionDigits: jettonInfo.fractionDigits,
-            balance: balance,
-            isInAppPurchase: isInAppPurchaseAvailable
-          )
-        }
       } catch {
         await MainActor.run {
           self.deeplinkHandleTask = nil
@@ -170,13 +156,7 @@ extension MainCoordinator {
     )
     buyButtonConfiguration.action = { [weak self] in
       self?.router.dismiss(animated: true) {
-        if isInAppPurchase {
-          self?.openBuy(wallet: wallet)
-        } else {
-          self?.router.select(index: 2)
-          self?.browserCoordinator?.router.popToRoot()
-          self?.browserCoordinator?.openBuySell(wallet: wallet, isInAppPurchase: isInAppPurchase)
-        }
+          self?.openBuy(wallet: wallet, isInAppPurchase: isInAppPurchase)
       }
     }
 

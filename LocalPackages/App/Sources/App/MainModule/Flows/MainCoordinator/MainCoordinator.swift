@@ -41,7 +41,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   let recipientResolver: RecipientResolver
-  let jettonBalanceResolver: JettonBalanceResolver
+  let insufficientFundsValidator: InsufficientFundsValidator
   private let cookiesController: KeeperCore.CookiesController
 
   var deeplinkHandleTask: Task<Void, Never>?
@@ -57,7 +57,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker,
        recipientResolver: RecipientResolver,
-       jettonBalanceResolver: JettonBalanceResolver) {
+       insufficientFundsValidator: InsufficientFundsValidator) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.mainController = keeperCoreMainAssembly.mainController()
@@ -88,7 +88,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
     self.recipientResolver = recipientResolver
-    self.jettonBalanceResolver = jettonBalanceResolver
+    self.insufficientFundsValidator = insufficientFundsValidator
     
     self.mainCoordinatorStateManager = MainCoordinatorStateManager(
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,

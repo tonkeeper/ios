@@ -600,6 +600,7 @@
 "insufficientFunds.insufficient_balance" = "Недостаточный баланс";
 "insufficientFunds.buy_token_title" = "Купить %@";
 "insufficientFunds.fee_required" = "Необходимо для оплаты комиссий блокчейна: %@ TON.\nВаш баланс: %@ TON.";
+"insufficientFunds.unknown_token" = "Неизвестный токен";
 
 "transaction_confirmation.confirm_action" = "Подтвердить действие";
 "transaction_confirmation.wallet" = "Кошелёк";

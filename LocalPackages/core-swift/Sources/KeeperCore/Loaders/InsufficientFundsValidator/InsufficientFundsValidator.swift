@@ -3,6 +3,7 @@ import BigInt
 import TonSwift
 
 public enum InsufficientFundsError: Swift.Error {
+  case unknownJetton
   case blockchainFee(wallet: Wallet, balance: BigUInt, amount: BigUInt)
   case insufficientFunds(jettonInfo: JettonInfo?,
                          balance: BigUInt,
@@ -11,10 +12,18 @@ public enum InsufficientFundsError: Swift.Error {
                          isInappPurchaseAvailable: Bool)
 }
 
-public final class InsufficientFundsValidator {
+public protocol InsufficientFundsValidator: AnyObject {
+  func resolveJettonBalance(jettonAddress: Address, requiredAmount: BigUInt, wallet: Wallet) async throws -> JettonBalance
+  func validateFundsIfNeeded(wallet: Wallet,
+                             sendItem: SendItem,
+                             confirmationController: TransactionConfirmationController) async throws
+  func validateEmulationResultIfNeeded(_ emulation: SignRawEmulation, wallet: Wallet) throws
+}
+
+final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator {
 
   private let balanceStore: BalanceStore
-  private let jettonBalanceResolver: JettonBalanceResolver
+  private let apiProvider: APIProvider
 
   private let trustCoins: [Address] = [
     JettonMasterAddress.tonUSDT,
@@ -22,15 +31,47 @@ public final class InsufficientFundsValidator {
     JettonMasterAddress.HMSTR
   ]
 
-  public init(balanceStore: BalanceStore,
-              jettonBalanceResolver: JettonBalanceResolver) {
+  init(balanceStore: BalanceStore,
+       apiProvider: APIProvider) {
     self.balanceStore = balanceStore
-    self.jettonBalanceResolver = jettonBalanceResolver
+    self.apiProvider = apiProvider
   }
 
-  public func validateFundsIfNeeded(wallet: Wallet,
-                                    sendItem: SendItem,
-                                    confirmationController: TransactionConfirmationController) async throws {
+  func resolveJettonBalance(jettonAddress: Address, requiredAmount: BigUInt, wallet: Wallet) async throws -> JettonBalance {
+    let jettonInfo: JettonInfo
+    do {
+      jettonInfo = try await apiProvider.api(wallet.isTestnet).resolveJetton(address: jettonAddress)
+    } catch {
+      throw InsufficientFundsError.unknownJetton
+    }
+
+    let isInAppPurchase = trustCoins.contains(jettonInfo.address)
+    guard let balance = balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
+      throw InsufficientFundsError.insufficientFunds(
+        jettonInfo: jettonInfo,
+        balance: 0,
+        requiredAmount: requiredAmount,
+        wallet: wallet,
+        isInappPurchaseAvailable: isInAppPurchase
+      )
+    }
+
+    guard let jettonBalance = balance.first(where: { $0.item.jettonInfo.address == jettonInfo.address }) else {
+      throw InsufficientFundsError.insufficientFunds(
+        jettonInfo: jettonInfo,
+        balance: 0,
+        requiredAmount: requiredAmount,
+        wallet: wallet,
+        isInappPurchaseAvailable: isInAppPurchase
+      )
+    }
+
+    return jettonBalance
+  }
+
+  func validateFundsIfNeeded(wallet: Wallet,
+                             sendItem: SendItem,
+                             confirmationController: TransactionConfirmationController) async throws {
     let tonBalanceAmount = balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? 0
     let formattedTonBalance = BigUInt(tonBalanceAmount)
     let emulation = await confirmationController.emulate()
@@ -61,7 +102,10 @@ public final class InsufficientFundsValidator {
           )
         }
       case .jetton(let jettonItem):
-        let jettonBalance = try await jettonBalanceResolver.resolveJetton(jettonAddress: jettonItem.jettonInfo.address, wallet: wallet)
+        let jettonBalance = try await resolveJettonBalance(
+          jettonAddress: jettonItem.jettonInfo.address, requiredAmount: amount, wallet: wallet
+        )
+
         guard jettonBalance.quantity >= amount else {
           throw InsufficientFundsError.insufficientFunds(
             jettonInfo: jettonBalance.item.jettonInfo,
@@ -78,6 +122,7 @@ public final class InsufficientFundsValidator {
            formattedTonBalance < fee {
           throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
         }
+        break
       }
     case .nft:
       if case .success = emulation,
@@ -89,7 +134,7 @@ public final class InsufficientFundsValidator {
     }
   }
 
-  public func validateEmulationResultIfNeeded(_ emulation: SignRawEmulation, wallet: Wallet) throws {
+  func validateEmulationResultIfNeeded(_ emulation: SignRawEmulation, wallet: Wallet) throws {
     guard let walletBalance = balanceStore.getState()[wallet]?.walletBalance else {
       return
     }
