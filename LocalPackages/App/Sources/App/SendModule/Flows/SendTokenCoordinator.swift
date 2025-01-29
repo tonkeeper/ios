@@ -37,7 +37,12 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   }
   
   public override func start() {
-    openSend()
+    // If amount and recipient are set, we should force confirmation screen
+    if isReadyForConfirmation() {
+      openSendConfirmation(sendModel: .init(wallet: wallet, recipient: recipient, sendItem: sendItem, comment: comment))
+    } else {
+      openSend()
+    }
   }
   
   public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
@@ -156,7 +161,16 @@ private extension SendTokenCoordinator {
 
 // MARK: - SendConfirmation
 
-extension SendTokenCoordinator {
+private extension SendTokenCoordinator {
+  func isReadyForConfirmation() -> Bool {
+    switch sendItem {
+    case .token(_, let amount):
+      return !amount.isZero && recipient != nil
+    case .nft:
+      return recipient != nil
+    }
+  }
+  
   func openSendConfirmation(sendModel: SendModel) {
     guard let recipient = sendModel.recipient else { return }
     let transactionConfirmationController: TransactionConfirmationController
