@@ -15,8 +15,8 @@ public enum InsufficientFundsError: Swift.Error {
 public protocol InsufficientFundsValidator: AnyObject {
   func resolveJettonBalance(jettonAddress: Address, requiredAmount: BigUInt, wallet: Wallet) async throws -> JettonBalance
   func validateFundsIfNeeded(wallet: Wallet,
-                             sendItem: SendItem,
                              confirmationController: TransactionConfirmationController) async throws
+  func validateFundsIfNeeded(wallet: Wallet, emulationModel: TransactionConfirmationModel) async throws
   func validateEmulationResultIfNeeded(_ emulation: SignRawEmulation, wallet: Wallet) throws
 }
 
@@ -70,17 +70,29 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
   }
 
   func validateFundsIfNeeded(wallet: Wallet,
-                             sendItem: SendItem,
                              confirmationController: TransactionConfirmationController) async throws {
-    let tonBalanceAmount = balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? 0
-    let formattedTonBalance = BigUInt(tonBalanceAmount)
-    let emulation = await confirmationController.emulate()
+    guard case .success = await confirmationController.emulate() else {
+      return
+    }
     let emulationModel = confirmationController.getModel()
 
-    switch sendItem {
-    case .token(let token, let amount):
-      switch token {
+    try await validateFundsIfNeeded(wallet: wallet, emulationModel: emulationModel)
+  }
+
+  func validateFundsIfNeeded(wallet: Wallet, emulationModel: TransactionConfirmationModel) async throws {
+    let tonBalanceAmount = balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? 0
+    let formattedTonBalance = BigUInt(tonBalanceAmount)
+
+    switch emulationModel.transaction {
+    case .staking:
+      return
+    case .transfer(let transfer):
+      switch transfer {
       case .ton:
+        guard let amount = emulationModel.amount?.amount.value else {
+          return
+        }
+
         guard case let .value(fee, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
               let fee = fee?.value else {
           return
@@ -101,9 +113,13 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
             jettonInfo: nil, balance: formattedTonBalance, requiredAmount: requiredAmount, wallet: wallet, isInternalPurchasing: true
           )
         }
-      case .jetton(let jettonItem):
+      case .jetton(let jettonInfo):
+        guard let amount = emulationModel.amount?.amount.value else {
+          return
+        }
+
         let jettonBalance = try await resolveJettonBalance(
-          jettonAddress: jettonItem.jettonInfo.address, requiredAmount: amount, wallet: wallet
+          jettonAddress: jettonInfo.address, requiredAmount: amount, wallet: wallet
         )
 
         guard jettonBalance.quantity >= amount else {
@@ -116,20 +132,17 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
 
-        if case .success = emulation,
-           case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
+        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
            let fee = emulationAmount?.value,
            formattedTonBalance < fee {
           throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
         }
-        break
-      }
-    case .nft:
-      if case .success = emulation,
-         case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
-         let fee = emulationAmount?.value,
-         formattedTonBalance < fee {
-        throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
+      case .nft:
+        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
+           let fee = emulationAmount?.value,
+           formattedTonBalance < fee {
+          throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
+        }
       }
     }
   }

@@ -54,7 +54,6 @@ extension MainCoordinator {
 
           try await fundsValidator.validateFundsIfNeeded(
             wallet: wallet,
-            sendItem: .token(.jetton(jettonBalance.item), amount: amount ?? 0),
             confirmationController: jettonTransferController
           )
 

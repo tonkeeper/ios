@@ -12,7 +12,8 @@ struct TransactionConfirmationAssembly {
     let viewModel = TransactionConfirmationViewModelImplementation(
       confirmationController: transactionConfirmationController,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-      decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
+      decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+      fundsValidator: keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
     )
     let viewController = TransactionConfirmationViewController(viewModel: viewModel)
     
