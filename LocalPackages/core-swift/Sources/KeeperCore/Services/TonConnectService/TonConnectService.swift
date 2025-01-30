@@ -337,6 +337,15 @@ private extension TonConnectServiceImplementation {
       )
     }
     
+    let batteryPayloads = parameters.messagesVariants?.battery.map { message in
+      TransferData.TonConnect.Payload(
+        value: BigInt(integerLiteral: message.amount),
+        recipientAddress: message.address,
+        stateInit: message.stateInit,
+        payload: message.payload
+      )
+    }
+    
     let transferData = TransferData(
       transfer: .tonConnect(
         TransferData.TonConnect(
