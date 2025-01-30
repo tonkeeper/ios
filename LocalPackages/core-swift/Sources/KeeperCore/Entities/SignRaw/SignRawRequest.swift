@@ -5,9 +5,15 @@ public struct SignRawRequest: Decodable {
   public let messages: [SignRawRequestMessage]
   public let validUntil: TimeInterval
   public let from: Address?
+  public let messagesVariants: MessagesVariants?
+  
+  public struct MessagesVariants: Decodable {
+    public let battery: [SignRawRequestMessage]
+  }
   
   enum CodingKeys: String, CodingKey {
     case messages
+    case messagesVariants
     case validUntil = "valid_until"
     case from
     case source
@@ -15,16 +21,20 @@ public struct SignRawRequest: Decodable {
   
   public init(messages: [SignRawRequestMessage],
               validUntil: TimeInterval,
-              from: Address?) {
+              from: Address?,
+              messagesVariants: MessagesVariants?) {
     self.messages = messages
     self.validUntil = validUntil
     self.from = from
+    self.messagesVariants = messagesVariants
   }
   
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     messages = try container.decode([SignRawRequestMessage].self, forKey: .messages)
     validUntil = try container.decode(TimeInterval.self, forKey: .validUntil)
+    
+    messagesVariants = try? container.decode(MessagesVariants.self, forKey: .messagesVariants)
     
     if let fromValue = try? container.decode(String.self, forKey: .from) {
       from = try Address.parse(fromValue)

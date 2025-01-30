@@ -57,7 +57,8 @@ struct BatteryRechargeSignRawBuilder {
       messages: try createMessages(toAddress: toAddress,
                                    batteryPayload: batteryPayload),
       validUntil: TimeInterval(validUntil),
-      from: try wallet.address
+      from: try wallet.address,
+      messagesVariants: nil
     )
     
     return .signRaw(request, forceRelayer: isForceRelayer)
