@@ -1,21 +1,50 @@
 import UIKit
+import AVKit
 import TKUIKit
+import TKLottieWebView
 
 final class NFTDetailsInformationView: UIView, ConfigurableView {
   
   struct Model {
-    struct Image {
-      let imageViewModel: TKImageView.Model
-      let isBlurVisible: Bool
+    enum Item {
+      case image(TKImageView.Model)
+      case lottieAnimation(URL)
+      case video(URL)
     }
-    let image: Image
+
+    let item: Item
+    let isBlurVisible: Bool
     let itemInformationViewModel: NFTDetailsItemInformationView.Model
     let collectionInformationViewModel: NFTDetailsCollectionInformationView.Model?
   }
   
   func configure(model: Model) {
-    imageView.configure(model: model.image.imageViewModel)
-    imageBlurView.isHidden = !model.image.isBlurVisible
+    imageItemContainerView.subviews.forEach { $0.removeFromSuperview() }
+    switch model.item {
+    case .image(let imageModel):
+      let imageView = TKImageView()
+      imageItemContainerView.insertSubview(imageView, belowSubview: imageBlurView)
+      imageView.configure(model: imageModel)
+      imageView.snp.makeConstraints { make in
+        make.edges.equalTo(imageItemContainerView)
+      }
+    case .lottieAnimation(let url):
+      let lottieWebView = TKLottieWebView()
+      lottieWebView.backgroundColor = .Background.content
+      imageItemContainerView.insertSubview(lottieWebView, belowSubview: imageBlurView)
+      lottieWebView.loadLottieAnimation(url: url)
+      lottieWebView.snp.makeConstraints { make in
+        make.edges.equalTo(imageItemContainerView)
+      }
+    case .video(let url):
+      let playerView = NFTDetailsPlayerView()
+      imageItemContainerView.insertSubview(playerView, belowSubview: imageBlurView)
+      playerView.play(url: url)
+      playerView.snp.makeConstraints { make in
+        make.edges.equalTo(imageItemContainerView)
+      }
+    }
+    imageBlurView.isHidden = !model.isBlurVisible
     itemInformationView.configure(model: model.itemInformationViewModel)
     if let collectionInformationViewModel = model.collectionInformationViewModel {
       separatorView.isHidden = false
@@ -28,7 +57,7 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
   }
   
   private let containerView = UIView()
-  private let imageView = TKImageView()
+  private let imageItemContainerView = UIView()
   private let imageBlurView = TKSecureBlurView()
   private let itemInformationView = NFTDetailsItemInformationView()
   private let separatorView = TKSeparatorView()
@@ -59,11 +88,11 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
     
     addSubview(containerView)
     containerView.addSubview(stackView)
-    stackView.addArrangedSubview(imageView)
+    stackView.addArrangedSubview(imageItemContainerView)
     stackView.addArrangedSubview(itemInformationView)
     stackView.addArrangedSubview(separatorView)
     stackView.addArrangedSubview(collectionInformationView)
-    imageView.addSubviews(imageBlurView)
+    imageItemContainerView.addSubviews(imageBlurView)
     
     setupConstraints()
   }
@@ -79,12 +108,12 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
       make.edges.equalTo(containerView)
     }
     
-    imageView.snp.makeConstraints { make in
-      make.height.equalTo(imageView.snp.width)
+    imageItemContainerView.snp.makeConstraints { make in
+      make.height.equalTo(imageItemContainerView.snp.width)
     }
     
     imageBlurView.snp.makeConstraints { make in
-      make.edges.equalTo(imageView)
+      make.edges.equalTo(imageItemContainerView)
     }
   }
 }

@@ -219,6 +219,7 @@
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperIntents.entitlements; sourceTree = "<group>"; };
 		C34C705F2BE1151300143AC8 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "core-swift"; sourceTree = "<group>"; };
+		C34E05A82D4BEA3C00EB2B35 /* TKLottieWebView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLottieWebView; sourceTree = "<group>"; };
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
@@ -470,6 +471,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				C34E05A82D4BEA3C00EB2B35 /* TKLottieWebView */,
 				7D6C62CF2CF4BE9600A40892 /* AppModules */,
 				7D6587BF2CE670AA009797E8 /* TKFeatureFlags */,
 				7DAF89E22CDAC08600D58260 /* TKKeychain */,
