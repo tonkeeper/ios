@@ -37,7 +37,12 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   }
   
   public override func start() {
-    openSend()
+    // If amount and recipient are set, we should force confirmation screen
+    if isReadyForConfirmation() {
+      openSendConfirmation(sendModel: .init(wallet: wallet, recipient: recipient, sendItem: sendItem, comment: comment))
+    } else {
+      openSend()
+    }
   }
   
   public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
@@ -101,6 +106,69 @@ private extension SendTokenCoordinator {
     }
     
     router.push(viewController: module.view, animated: false)
+  }
+  
+  func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
+    let model = SendTokenPickerModel(
+      wallet: wallet,
+      selectedToken: token,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
+    )
+    
+    let module = TokenPickerAssembly.module(
+      wallet: wallet,
+      model: model,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didSelectToken = { token in
+      completion(token)
+    }
+    
+    module.output.didFinish = {  [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: sourceViewController)
+  }
+  
+  func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
+    let scanModule = ScannerModule(
+      dependencies: ScannerModule.Dependencies(
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+      )
+    ).createScannerModule(configurator: DefaultScannerControllerConfigurator(),
+                          uiConfiguration: ScannerUIConfiguration(title: TKLocales.Scanner.title,
+                                                                  subtitle: nil,
+                                                                  isFlashlightVisible: true))
+    
+    let navigationController = TKNavigationController(rootViewController: scanModule.view)
+    navigationController.configureTransparentAppearance()
+    
+    scanModule.output.didScanDeeplink = { [weak self] deeplink in
+      self?.router.dismiss(completion: {
+        completion(deeplink)
+      })
+    }
+    
+    router.present(navigationController)
+  }
+}
+
+// MARK: - SendConfirmation
+
+private extension SendTokenCoordinator {
+  func isReadyForConfirmation() -> Bool {
+    switch sendItem {
+    case .token(_, let amount):
+      return !amount.isZero && recipient != nil
+    case .nft:
+      return recipient != nil
+    }
   }
   
   func openSendConfirmation(sendModel: SendModel) {
@@ -169,55 +237,5 @@ private extension SendTokenCoordinator {
     }
     
     router.push(viewController: module.view)
-  }
-  
-  func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
-    let model = SendTokenPickerModel(
-      wallet: wallet,
-      selectedToken: token,
-      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
-    )
-    
-    let module = TokenPickerAssembly.module(
-      wallet: wallet,
-      model: model,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly
-    )
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-    module.output.didSelectToken = { token in
-      completion(token)
-    }
-    
-    module.output.didFinish = {  [weak bottomSheetViewController] in
-      bottomSheetViewController?.dismiss()
-    }
-    
-    bottomSheetViewController.present(fromViewController: sourceViewController)
-  }
-  
-  func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
-    let scanModule = ScannerModule(
-      dependencies: ScannerModule.Dependencies(
-        coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
-      )
-    ).createScannerModule(configurator: DefaultScannerControllerConfigurator(),
-                          uiConfiguration: ScannerUIConfiguration(title: TKLocales.Scanner.title,
-                                                                  subtitle: nil,
-                                                                  isFlashlightVisible: true))
-    
-    let navigationController = TKNavigationController(rootViewController: scanModule.view)
-    navigationController.configureTransparentAppearance()
-    
-    scanModule.output.didScanDeeplink = { [weak self] deeplink in
-      self?.router.dismiss(completion: {
-        completion(deeplink)
-      })
-    }
-    
-    router.present(navigationController)
   }
 }
