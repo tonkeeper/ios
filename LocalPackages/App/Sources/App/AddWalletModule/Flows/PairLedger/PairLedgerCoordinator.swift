@@ -154,18 +154,11 @@ private extension PairLedgerCoordinator {
       return lLedgerAccount.path.index < rLedgetAcccount.path.index
     }
     do {
-      let wallets = try walletUpdateAssembly.servicesAssembly.walletsService().getWallets()
-      let addedIds = wallets.compactMap { wallet -> Int? in
-        guard case let .Ledger(_, _, device) = wallet.identity.kind,
-              device.deviceId == deviceId else { return nil }
-        return Int(device.accountIndex)
-      }
+      let wallets = try walletUpdateAssembly.servicesAssembly
+        .walletsService()
+        .getWallets()
       let mapped = sorted.map { model in
-        let isAdded: Bool = {
-          guard let account = ledgerAccounts
-            .first(where: { $0.id == model.id }) else { return false }
-          return addedIds.contains(account.path.index)
-        }()
+        let isAdded = isLedgerWalletAdded(walletModel: model, wallets: wallets, deviceId: deviceId)
         return ActiveWalletModel(
           id: model.id,
           revision: model.revision,
@@ -187,6 +180,22 @@ private extension PairLedgerCoordinator {
     case .v4R2:
       return WalletV4R2(publicKey: ledgerAccount.publicKey.data)
     }
+  }
+  
+  private func isLedgerWalletAdded(walletModel: ActiveWalletModel,
+                                   wallets: [Wallet],
+                                   deviceId: String) -> Bool {
+    for wallet in wallets {
+      do {
+        guard case let .Ledger(_, _, device) = wallet.identity.kind,
+              device.deviceId == deviceId,
+              try walletModel.address == wallet.address else { continue }
+        return true
+      } catch {
+        return false
+      }
+    }
+    return false
   }
 }
 
