@@ -195,7 +195,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
     }
     
     let sliderItem = TKPopUp.Component.Slider(
-      title: TKLocales.ConfirmSend.confirm,
+      title: TKLocales.Actions.confirm,
       isEnable: isEnable,
       didConfirm: { [weak self] in
         self?.confirmTransaction()

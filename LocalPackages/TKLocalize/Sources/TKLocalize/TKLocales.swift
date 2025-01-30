@@ -71,6 +71,8 @@ public enum TKLocales {
     public static let burnNft = TKLocales.tr("Localizable", "actions.burn_nft", fallback: "Burn NFT")
     /// Cancel
     public static let cancel = TKLocales.tr("Localizable", "actions.cancel", fallback: "Cancel")
+    /// Confirm
+    public static let confirm = TKLocales.tr("Localizable", "actions.confirm", fallback: "Confirm")
     /// Continue
     public static let continueAction = TKLocales.tr("Localizable", "actions.continue_action", fallback: "Continue")
     /// Copy

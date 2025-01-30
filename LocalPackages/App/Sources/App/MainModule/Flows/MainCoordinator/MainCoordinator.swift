@@ -400,6 +400,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)
+    
     sendTokenCoordinator.start()
 
     router.presentOverTopPresented(
