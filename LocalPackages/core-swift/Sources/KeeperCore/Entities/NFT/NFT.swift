@@ -22,7 +22,6 @@ public struct NFT: Codable, Equatable {
   public let trust: Trust
   public let renderType: RenderType?
   public let lottieURL: URL?
-  public let animationURL: URL?
   
   public var isHidden: Bool {
     renderType == .hidden

@@ -9,7 +9,6 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
     enum Item {
       case image(TKImageView.Model)
       case lottieAnimation(URL)
-      case video(URL)
     }
 
     let item: Item
@@ -34,13 +33,6 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
       imageItemContainerView.insertSubview(lottieWebView, belowSubview: imageBlurView)
       lottieWebView.loadLottieAnimation(url: url)
       lottieWebView.snp.makeConstraints { make in
-        make.edges.equalTo(imageItemContainerView)
-      }
-    case .video(let url):
-      let playerView = NFTDetailsPlayerView()
-      imageItemContainerView.insertSubview(playerView, belowSubview: imageBlurView)
-      playerView.play(url: url)
-      playerView.snp.makeConstraints { make in
         make.edges.equalTo(imageItemContainerView)
       }
     }

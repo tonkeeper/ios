@@ -257,8 +257,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     let item: NFTDetailsInformationView.Model.Item
     if let lottieUrl = nft.lottieURL {
       item = .lottieAnimation(lottieUrl)
-    } else if let animationURL = nft.animationURL {
-      item = .video(animationURL)
     } else {
       item = .image(TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none))
     }
