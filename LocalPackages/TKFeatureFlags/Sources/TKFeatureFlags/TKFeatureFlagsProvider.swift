@@ -3,10 +3,12 @@ import FirebaseRemoteConfig
 
 public enum FeatureFlag: String, CaseIterable {
   case isSwapDisable
+  case isStakingDisable
   case isExchangeMethodsDisable
   case isDappsDisable
   case isStoriesDisable
   case disableBatteryCryptoRechargeModule
+  case hardcodedCountryCode
   
   var key: String {
     self.rawValue
@@ -15,10 +17,12 @@ public enum FeatureFlag: String, CaseIterable {
 
 public protocol TKFeatureFlagsProvider {
   var isSwapDisable: Bool { get }
+  var isStakingDisable: Bool { get }
   var isExchangeMethodsDisable: Bool { get }
   var isDappsDisable: Bool { get }
   var isStoriesDisable: Bool { get }
   var isBatteryCryptoRechargeDisable: Bool { get }
+  var hardcodedCountryCode: String? { get }
   
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<FeatureFlag>, closure: @escaping (T, FeatureFlag) -> Void)
 }
@@ -26,6 +30,12 @@ public protocol TKFeatureFlagsProvider {
 final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
   var isSwapDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isSwapDisable.key).boolValue
+  }
+  var isStakingDisable: Bool {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isStakingDisable.key).boolValue
+  }
+  var hardcodedCountryCode: String? {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.hardcodedCountryCode.key).stringValue
   }
   var isExchangeMethodsDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isExchangeMethodsDisable.key).boolValue
@@ -50,6 +60,7 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
     
     remoteConfig.setDefaults([FeatureFlag.isSwapDisable.key: "true" as NSString,
                               FeatureFlag.isExchangeMethodsDisable.key: "true" as NSString,
+                              FeatureFlag.isStakingDisable.key: "true" as NSString,
                               FeatureFlag.isDappsDisable.key: "true" as NSString,
                               FeatureFlag.isStoriesDisable.key: "true" as NSString,
                               FeatureFlag.disableBatteryCryptoRechargeModule.key: "true" as NSString])

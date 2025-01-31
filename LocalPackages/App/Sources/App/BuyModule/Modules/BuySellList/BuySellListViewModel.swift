@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TKFeatureFlags
 
 protocol BuySellListModuleOutput: AnyObject {
   var didSelectURL: ((URL) -> Void)? { get set }
@@ -75,7 +76,11 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
         observer.buySellProviderState = observer.buySellProvider.state
       }
     }
-    selectedCountry = regionStore.state
+    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
+      selectedCountry = .hardcodedCountry(countryCode: hardcodedCountryCode)
+    } else {
+      selectedCountry = regionStore.state
+    }
     buySellProviderState = buySellProvider.state
     buySellProvider.load()
     updateCountryPickerButton()
@@ -169,6 +174,8 @@ private extension BuySellListViewModelImplementation {
     case .auto:
       title = Locale.current.regionCode ?? ""
     case .country(let countryCode):
+      title = countryCode
+    case .hardcodedCountry(let countryCode):
       title = countryCode
     }
   
@@ -290,6 +297,8 @@ private extension BuySellListViewModelImplementation {
           let region = Locale.current.regionCode
           return filterByCountryCode(items: fiatMethods, countryCode: region)
         case .country(let countryCode):
+          return filterByCountryCode(items: fiatMethods, countryCode: countryCode)
+        case .hardcodedCountry(let countryCode):
           return filterByCountryCode(items: fiatMethods, countryCode: countryCode)
         }
       }()
