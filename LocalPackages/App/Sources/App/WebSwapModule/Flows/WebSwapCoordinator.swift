@@ -57,10 +57,8 @@ private extension WebSwapCoordinator {
       messageHandler: messageHandler
     )
     
-    messageHandler.send = {
-      [weak self] request, completion in
-      guard let self else { return }
-      self.openSend(signRequest: request, completion: completion)
+    messageHandler.send = { [weak self] request, completion in
+      self?.openSend(signRequest: request, completion: completion)
     }
     
     messageHandler.close = {

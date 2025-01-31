@@ -5,6 +5,7 @@ import Resources
 import Core
 import KeeperCore
 import TonSwift
+import TKLocalize
 
 public struct AccountEventModelMapper {
   
@@ -255,7 +256,7 @@ public struct AccountEventModelMapper {
       imageModel: imageModel
     )
     
-    let title = "Fee".withTextStyle(
+    let title = TKLocales.EventDetails.fee.withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .left,

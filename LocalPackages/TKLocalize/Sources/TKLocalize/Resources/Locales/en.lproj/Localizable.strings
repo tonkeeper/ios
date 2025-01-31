@@ -580,6 +580,7 @@
 "ton_connect_mapper.allow_notifications" = "Allow Notifications";
 
 "ton_connect.connect_wallet" = "Connect wallet";
+"ton_connect.allow_notifications" = "Allow notifications";
 "ton_connect.open_browser_and_connect" = "Open Browser and Connect";
 "ton_connect.sure_check_service_address" = "Be sure to check the service address before connecting the wallet.";
 "ton_connect.sure_check_service_address_connect_without_checking" = "Be sure to check the service address before connecting · Connect without additional check in Browser";
@@ -604,6 +605,17 @@
 "decrypt_comment_popup.button" = "Decrypt the comment";
 
 "tick.do_not_show_again" = "Do not show again";
+
+// MARK: -  Insufficient Funds
+
+"insufficientFunds.title" = "Insufficient Funds";
+"insufficientFunds.Wallet.title" = "Insufficient Funds in\U00A0wallet %@";
+"insufficientFunds.to_be_paid_your_balance" = "To be paid: %@.\nYour balance: %@.";
+"insufficientFunds.recharge_wallet" = "Recharge Wallet";
+"insufficientFunds.insufficient_balance" = "Insufficient balance";
+"insufficientFunds.buy_token_title" = "Buy %@";
+"insufficientFunds.fee_required" = "Required for blockchain fees: %@ TON.\nYour balance: %@ TON.";
+"insufficientFunds.unknown_token" = "Unknown token";
 
 "transaction_confirmation.confirm_action" = "Confirm action";
 "transaction_confirmation.wallet" = "Wallet";

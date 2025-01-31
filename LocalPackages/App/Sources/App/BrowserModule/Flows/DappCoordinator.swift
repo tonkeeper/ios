@@ -4,6 +4,7 @@ import TKCore
 import KeeperCore
 import TKScreenKit
 import TKUIKit
+import TKLocalize
 import SignRaw
 import FirebasePerformance
 
@@ -15,6 +16,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let dapp: Dapp
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+
+  public var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
   public init(
     router: ViewControllerRouter,
@@ -69,9 +72,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       }
     }
 
-    messageHandler.reconnect = {
-      [weak self] dapp,
-      completion in
+    messageHandler.reconnect = { [weak self] dapp, completion in
       guard let self,
       let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
@@ -185,7 +186,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                         fromViewController: UIViewController,
                         completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
     guard let windowScene = fromViewController.view.window?.windowScene,
-          let request = appRequest.params.first else { return }
+          let request = appRequest.params.first else {
+      return
+    }
+
     SignRawPresenter.presentSignRaw(
       windowScene: windowScene,
       windowLevel: .signRaw,
@@ -204,10 +208,15 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                                        wallet: wallet,
                                        coordinator: coordinator,
                                        router: router)
+      },
+      didRequestReplanishWallet: { [weak self] wallet, isInternalPurchasing in
+        self?.router.dismiss(animated: true) {
+          self?.didRequestOpenBuySell?(wallet, isInternalPurchasing)
+        }
       }
     )
   }
-  
+
   @MainActor
   func didRequireSign(transferData: TransferData,
                       wallet: Wallet,

@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import SnapKit
+import TKLocalize
 
 final class SendV3AmountBalanceView: UIView {
   
@@ -56,12 +57,13 @@ final class SendV3AmountBalanceView: UIView {
     }
     
     insufficientLabel.isHidden = true
-    insufficientLabel.attributedText = "Insufficient balance".withTextStyle(
-      .body2,
-      color: .Accent.red,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
+    insufficientLabel.attributedText = TKLocales.InsufficientFunds.insufficientBalance
+      .withTextStyle(
+        .body2,
+        color: .Accent.red,
+        alignment: .right,
+        lineBreakMode: .byTruncatingTail
+      )
     
     convertedLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
     remainingView.setContentCompressionResistancePriority(.required, for: .horizontal)

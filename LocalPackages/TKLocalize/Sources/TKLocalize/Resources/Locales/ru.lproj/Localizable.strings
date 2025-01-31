@@ -567,6 +567,7 @@
 "ton_connect.sure_check_service_address_connect_without_checking" = "Обязательно проверьте адрес сервиса перед подключением · Подключиться без дополнительной проверки в браузере";
 
 "ton_connect.connect_wallet" = "Подключить кошелёк";
+"ton_connect.allow_notifications" = "Разрешить уведомления";
 "ton_connect.open_browser_and_connect" = "Открыть браузер и подключиться";
 "ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
 
@@ -590,6 +591,17 @@
 "decrypt_comment_popup.button" = "Расшифровать комментарий";
 
 "tick.do_not_show_again" = "Не показывать снова";
+
+// MARK: -  Insufficient Funds
+
+"insufficientFunds.title" = "Недостаточно средств";
+"insufficientFunds.Wallet.title" = "Недостаточно средств на\U00A0кошельке %@";
+"insufficientFunds.to_be_paid_your_balance" = "Необходимо: %@.\nВаш баланс: %@.";
+"insufficientFunds.recharge_wallet" = "Пополнить кошелёк";
+"insufficientFunds.insufficient_balance" = "Недостаточный баланс";
+"insufficientFunds.buy_token_title" = "Купить %@";
+"insufficientFunds.fee_required" = "Необходимо для оплаты комиссий блокчейна: %@ TON.\nВаш баланс: %@ TON.";
+"insufficientFunds.unknown_token" = "Неизвестный токен";
 
 "transaction_confirmation.confirm_action" = "Подтвердить действие";
 "transaction_confirmation.wallet" = "Кошелёк";

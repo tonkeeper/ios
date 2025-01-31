@@ -8,6 +8,7 @@ import BigInt
 protocol TransactionConfirmationOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirmTransaction: (() -> Void)? { get set }
+  var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -25,6 +26,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   var didConfirmTransaction: (() -> Void)?
+  var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel
@@ -38,12 +40,23 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     let model = confirmationController.getModel()
     update(with: model)
+
+    let wallet = model.wallet
     Task {
       let result = await confirmationController.emulate()
       if case let .failure(error) = result {
        handleError(error)
       }
+
       let model = confirmationController.getModel()
+      do {
+        try await fundsValidator.validateFundsIfNeeded(wallet: wallet, emulationModel: model)
+      } catch {
+        if let error = error as? InsufficientFundsError {
+          didProduceInsufficientFundsError?(error)
+        }
+      }
+
       update(with: model)
     }
   }
@@ -73,15 +86,18 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private let confirmationController: TransactionConfirmationController
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
-  
+  private let fundsValidator: InsufficientFundsValidator
+
   // MARK: - Init
   
   init(confirmationController: TransactionConfirmationController,
        amountFormatter: AmountFormatter,
-       decimalFormatter: DecimalAmountFormatter) {
+       decimalFormatter: DecimalAmountFormatter,
+       fundsValidator: InsufficientFundsValidator) {
     self.confirmationController = confirmationController
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
+    self.fundsValidator = fundsValidator
   }
   
   // MARK: - Private

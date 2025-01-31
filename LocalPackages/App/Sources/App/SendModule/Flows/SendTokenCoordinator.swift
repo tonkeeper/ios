@@ -10,7 +10,8 @@ import BigInt
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didSendSuccessfully: ((SendTokenCoordinator?) -> Void)?
-    
+  var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
+
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let wallet: Wallet
@@ -60,6 +61,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
 }
 
 private extension SendTokenCoordinator {
+
   func openSend() {
     let module = SendV3Assembly.module(
       wallet: wallet,
@@ -162,6 +164,7 @@ private extension SendTokenCoordinator {
 // MARK: - SendConfirmation
 
 private extension SendTokenCoordinator {
+
   func isReadyForConfirmation() -> Bool {
     switch sendItem {
     case .token(_, let amount):
@@ -170,7 +173,49 @@ private extension SendTokenCoordinator {
       return recipient != nil
     }
   }
-  
+
+  func configureAndShowInsufficientPopup(wallet: Wallet,
+                                         caption: String? = nil,
+                                         buttonTitle: String,
+                                         amount: BigUInt?,
+                                         tokenSymbol: String?,
+                                         fractionDigits: Int,
+                                         balance: BigUInt,
+                                         isInternalPurchasing: Bool) {
+    var buyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    buyButtonConfiguration.content = TKButton.Configuration.Content(
+      title: .plainString(buttonTitle)
+    )
+    buyButtonConfiguration.action = { [weak self] in
+      self?.router.dismiss(animated: true) {
+        self?.didRequestOpenBuySell?(isInternalPurchasing)
+        self?.didFinish?(self)
+      }
+    }
+
+    let builder = InfoPopupBottomSheetConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    let configuration = builder.insufficientTokenConfiguration(
+      walletLabel: wallet.metaData.label,
+      caption: caption,
+      tokenSymbol: tokenSymbol ?? Token.ton.symbol,
+      tokenFractionalDigits: fractionDigits,
+      required: amount ?? 0,
+      available: balance,
+      buttons: [buyButtonConfiguration]
+    )
+
+    openInsufficientFundsPopup(configuration: configuration)
+  }
+
+  func openInsufficientFundsPopup(configuration: InfoPopupBottomSheetViewController.Configuration) {
+    let viewController = InfoPopupBottomSheetViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    viewController.configuration = configuration
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+
   func openSendConfirmation(sendModel: SendModel) {
     guard let recipient = sendModel.recipient else { return }
     let transactionConfirmationController: TransactionConfirmationController
@@ -192,15 +237,15 @@ private extension SendTokenCoordinator {
           amount: amount,
           comment: sendModel.comment)
       }
-      case .nft(let nft):
-        transactionConfirmationController = keeperCoreMainAssembly.nftTransferTransactionConfirmationController(
-          wallet: wallet,
-          recipient: recipient,
-          nft: nft,
-          comment: sendModel.comment
-        )
-      }
-    
+    case .nft(let nft):
+      transactionConfirmationController = keeperCoreMainAssembly.nftTransferTransactionConfirmationController(
+        wallet: wallet,
+        recipient: recipient,
+        nft: nft,
+        comment: sendModel.comment
+      )
+    }
+
     let module = TransactionConfirmationAssembly.module(
       transactionConfirmationController: transactionConfirmationController,
       keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -212,12 +257,13 @@ private extension SendTokenCoordinator {
         wallet: wallet,
         transferData: walletTransfer,
         keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly)
-      
+        coreAssembly: coreAssembly
+      )
+
       self.walletTransferSignCoordinator = coordinator
-      
+
       let result = await coordinator.handleSign(parentCoordinator: self)
-    
+
       switch result {
       case .signed(let data):
         return data
@@ -227,15 +273,54 @@ private extension SendTokenCoordinator {
         throw error
       }
     }
-    
+
     module.output.didClose = { [weak self] in
       self?.didFinish?(self)
     }
-    
+
     module.output.didConfirmTransaction = { [weak self] in
       self?.didSendSuccessfully?(self)
     }
-    
+
+    module.output.didProduceInsufficientFundsError = { [weak self] error in
+      guard let self else {
+        return
+      }
+      
+      switch error {
+      case .unknownJetton:
+        ToastPresenter.showToast(configuration: .failed)
+      case let .blockchainFee(wallet, balance, amount):
+        let tonToken = Token.ton
+        let amountFormatter = self.keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        let feeFormatted = amountFormatter.formatAmount(amount, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
+        let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
+        let caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
+        let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(tonToken.symbol)
+
+        configureAndShowInsufficientPopup(
+          wallet: wallet,
+          caption: caption,
+          buttonTitle: buttonTitle,
+          amount: amount,
+          tokenSymbol: tonToken.symbol,
+          fractionDigits: tonToken.fractionDigits,
+          balance: balance,
+          isInternalPurchasing: true
+        )
+      case let .insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInternalPurchasing):
+        self.configureAndShowInsufficientPopup(
+          wallet: wallet,
+          buttonTitle: TKLocales.InsufficientFunds.rechargeWallet,
+          amount: requiredAmount,
+          tokenSymbol: jettonInfo?.symbol ?? jettonInfo?.name,
+          fractionDigits: jettonInfo?.fractionDigits ?? 2,
+          balance: balance,
+          isInternalPurchasing: isInternalPurchasing
+        )
+      }
+    }
+
     router.push(viewController: module.view)
   }
 }

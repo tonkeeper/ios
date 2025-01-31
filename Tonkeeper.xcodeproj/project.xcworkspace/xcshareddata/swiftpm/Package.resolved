@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/BlockchainCommons/BCSwiftTags",
       "state" : {
-        "revision" : "edb94b337d03e01c871db895c65d8fd3b6d43c9c",
-        "version" : "0.1.2"
+        "revision" : "ced8d92c7cc53375cdf9806c59251fe0161f02ec",
+        "version" : "0.2.3"
       }
     },
     {
