@@ -37,13 +37,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     confirmationController.signHandler = { [weak self] transferData, wallet in
       try await self?.didRequireSign?(transferData, wallet)
     }
-    
+
+    state = .processing
     let model = confirmationController.getModel()
     update(with: model)
 
     let wallet = model.wallet
     Task {
       let result = await confirmationController.emulate()
+      state = .idle
       if case let .failure(error) = result {
        handleError(error)
       }
@@ -469,25 +471,39 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         return TKLocales.TransactionConfirmation.Buttons.confirmAndSend
       }
     }()
-    
+
     var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     btnConf.content = .init(title: .plainString(buttonTitle))
     btnConf.action = { [weak self] in
       Task { [weak self] in
         guard let self else { return }
+
         self.state = .processing
-        let result = await self.confirmationController.sendTransaction()
-        switch result {
-        case .success:
-          self.state = .success
-          try await Task.sleep(nanoseconds: 1_000_000_000)
-          NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
-          didConfirmTransaction?()
-        case .failure(let error):
-          handleError(error)
+        
+        do {
+          try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
+
+          let result = await self.confirmationController.sendTransaction()
+          switch result {
+          case .success:
+            self.state = .success
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
+            didConfirmTransaction?()
+          case .failure(let error):
+            handleError(error)
+            self.state = .failed
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            self.state = .idle
+          }
+        } catch {
           self.state = .failed
           try? await Task.sleep(nanoseconds: 1_500_000_000)
           self.state = .idle
+
+          if let error = error as? InsufficientFundsError {
+            didProduceInsufficientFundsError?(error)
+          }
         }
       }
     }
