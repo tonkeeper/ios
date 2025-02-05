@@ -223,6 +223,7 @@
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
+		C3D1EF422D537E260075CDAF /* TKAppInfo */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKAppInfo; sourceTree = "<group>"; };
 		E66F82AA2C2F2BB00009E7C2 /* Ledger */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Ledger; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -471,6 +472,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				C3D1EF422D537E260075CDAF /* TKAppInfo */,
 				C34E05A82D4BEA3C00EB2B35 /* TKLottieWebView */,
 				7D6C62CF2CF4BE9600A40892 /* AppModules */,
 				7D6587BF2CE670AA009797E8 /* TKFeatureFlags */,
