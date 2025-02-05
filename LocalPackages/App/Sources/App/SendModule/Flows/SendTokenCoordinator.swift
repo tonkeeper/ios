@@ -286,39 +286,61 @@ private extension SendTokenCoordinator {
       guard let self else {
         return
       }
-      
+
+      let symbol: String
+      let fractionDigits: Int
+      let buttonTitle: String
+      let caption: String?
+      let amount: BigUInt
+      let availableBalance: BigUInt
+      let internalPurchasingFlow: Bool
+
       switch error {
       case .unknownJetton:
         ToastPresenter.showToast(configuration: .failed)
-      case let .blockchainFee(wallet, balance, amount):
+        return
+      case let .blockchainFee(_, balance, requiredAmount):
         let tonToken = Token.ton
+        let token = Token.ton
+        symbol = token.symbol
+        fractionDigits = token.fractionDigits
+        amount = requiredAmount
+        availableBalance = balance
+
         let amountFormatter = self.keeperCoreMainAssembly.formattersAssembly.amountFormatter
         let feeFormatted = amountFormatter.formatAmount(amount, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
         let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
-        let caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
-        let buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(tonToken.symbol)
+        caption = TKLocales.InsufficientFunds.feeRequired(feeFormatted, balanceFormatted)
+        buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(tonToken.symbol)
 
-        configureAndShowInsufficientPopup(
-          wallet: wallet,
-          caption: caption,
-          buttonTitle: buttonTitle,
-          amount: amount,
-          tokenSymbol: tonToken.symbol,
-          fractionDigits: tonToken.fractionDigits,
-          balance: balance,
-          isInternalPurchasing: true
-        )
-      case let .insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInternalPurchasing):
-        self.configureAndShowInsufficientPopup(
-          wallet: wallet,
-          buttonTitle: TKLocales.InsufficientFunds.rechargeWallet,
-          amount: requiredAmount,
-          tokenSymbol: jettonInfo?.symbol ?? jettonInfo?.name,
-          fractionDigits: jettonInfo?.fractionDigits ?? 2,
-          balance: balance,
-          isInternalPurchasing: isInternalPurchasing
-        )
+        internalPurchasingFlow = true
+      case let .insufficientFunds(jettonInfo, balance, requiredAmount, _, isInternalPurchasing):
+        caption = nil
+        amount = requiredAmount
+        availableBalance = balance
+
+        if let jettonInfo {
+          fractionDigits = jettonInfo.fractionDigits
+          symbol = jettonInfo.symbol ?? jettonInfo.name
+          buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
+        } else {
+          fractionDigits = Token.ton.fractionDigits
+          symbol = Token.ton.symbol
+          buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
+        }
+
+        internalPurchasingFlow = isInternalPurchasing
       }
+
+      self.configureAndShowInsufficientPopup(
+        wallet: self.wallet,
+        caption: caption,
+        buttonTitle: buttonTitle,
+        amount: amount,
+        tokenSymbol: symbol,
+        fractionDigits: fractionDigits,
+        balance: availableBalance,
+        isInternalPurchasing: internalPurchasingFlow)
     }
 
     router.push(viewController: module.view)
