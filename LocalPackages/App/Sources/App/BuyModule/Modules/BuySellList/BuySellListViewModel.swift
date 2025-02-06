@@ -168,6 +168,7 @@ private extension BuySellListViewModelImplementation {
 
   func updateCountryPickerButton() {
     let title: String
+    var disabled: Bool = false
     switch selectedCountry {
     case .all:
       title = "🌍"
@@ -177,6 +178,7 @@ private extension BuySellListViewModelImplementation {
       title = countryCode
     case .hardcodedCountry(let countryCode):
       title = countryCode
+      disabled = true
     }
   
     didUpdateHeaderLeftButton?(
@@ -185,7 +187,8 @@ private extension BuySellListViewModelImplementation {
         action: { [weak self] in
           guard let self else { return }
           self.didSelectCountryPicker?(selectedCountry)
-        }
+        },
+        isEnabled: !disabled
       )
     )
   }

@@ -133,6 +133,7 @@ private extension BrowserViewModelImplementation {
 
   func updateCountryPickerButton() {
     let title: String
+    var disabled: Bool = false
     switch selectedCountry {
     case .all:
       title = "🌍"
@@ -142,9 +143,10 @@ private extension BrowserViewModelImplementation {
       title = countryCode
     case .hardcodedCountry(let countryCode):
       title = countryCode
+      disabled = true
     }
 
-    let model = BrowserHeaderRightButtonModel(title: title) { [weak self] in
+    let model = BrowserHeaderRightButtonModel(title: title, disabled: disabled) { [weak self] in
       guard let self = self else {
         return
       }
