@@ -40,7 +40,14 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   public override func start() {
     // If amount and recipient are set, we should force confirmation screen
     if isReadyForConfirmation() {
-      openSendConfirmation(sendModel: .init(wallet: wallet, recipient: recipient, sendItem: sendItem, comment: comment))
+      let sendModel = SendModel(
+        wallet: wallet,
+        recipient: recipient,
+        sendItem: sendItem,
+        comment: comment,
+        isMaxAmount: false
+      )
+      openSendConfirmation(sendModel: sendModel)
     } else {
       openSend()
     }
@@ -227,7 +234,8 @@ private extension SendTokenCoordinator {
           wallet: wallet,
           recipient: recipient,
           amount: amount,
-          comment: sendModel.comment
+          comment: sendModel.comment,
+          isMaxAmount: sendModel.isMaxAmount
         )
       case .jetton(let jettonItem):
         transactionConfirmationController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(

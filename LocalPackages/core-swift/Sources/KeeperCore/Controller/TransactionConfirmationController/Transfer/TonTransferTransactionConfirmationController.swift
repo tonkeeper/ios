@@ -52,6 +52,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   private let recipient: Recipient
   private let amount: BigUInt
   private let comment: String?
+  private let isMaxAmount: Bool
   private let sendService: SendService
   private let blockchainService: BlockchainService
   private let ratesStore: TonRatesStore
@@ -62,6 +63,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
        recipient: Recipient,
        amount: BigUInt,
        comment: String?,
+       isMaxAmount: Bool,
        sendService: SendService,
        blockchainService: BlockchainService,
        ratesStore: TonRatesStore,
@@ -71,6 +73,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     self.recipient = recipient
     self.amount = amount
     self.comment = comment
+    self.isMaxAmount = isMaxAmount
     self.sendService = sendService
     self.blockchainService = blockchainService
     self.ratesStore = ratesStore
@@ -86,7 +89,8 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
       transaction: .transfer(.ton),
       amount: getAmountValue(),
       fee: fee,
-      comment: comment
+      comment: comment,
+      isMaxAmount: isMaxAmount
     )
   }
   

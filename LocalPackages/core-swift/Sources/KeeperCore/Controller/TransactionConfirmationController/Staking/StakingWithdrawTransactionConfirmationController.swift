@@ -87,7 +87,8 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         )
       ),
       amount: getAmountValue(),
-      fee: fee
+      fee: fee,
+      isMaxAmount: false
     )
   }
   

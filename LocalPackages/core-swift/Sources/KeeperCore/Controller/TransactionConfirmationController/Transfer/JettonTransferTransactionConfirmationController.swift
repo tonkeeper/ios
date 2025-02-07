@@ -105,7 +105,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       transaction: .transfer(.jetton(jettonItem.jettonInfo)),
       amount: getAmountValue(),
       fee: fee,
-      comment: comment
+      comment: comment,
+      isMaxAmount: false
     )
   }
   
