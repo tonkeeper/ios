@@ -80,11 +80,6 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
   }
 
   func validateFundsIfNeeded(wallet: Wallet, emulationModel: TransactionConfirmationModel) async throws {
-    // should ignore validation if trying to transfer all tokens
-    guard !emulationModel.isMaxAmount else {
-      return
-    }
-
     let tonBalanceAmount = balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? 0
     let formattedTonBalance = BigUInt(tonBalanceAmount)
 
@@ -93,7 +88,12 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
       return
     case .transfer(let transfer):
       switch transfer {
-      case .ton:
+      case .ton(let isMaxAmount):
+        // should ignore validation if trying to transfer all tokens
+        guard !isMaxAmount else {
+          return
+        }
+
         guard let amount = emulationModel.amount?.amount.value else {
           return
         }

@@ -100,8 +100,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       transaction: .transfer(.nft(nft)),
       amount: nil,
       fee: fee,
-      comment: comment,
-      isMaxAmount: false
+      comment: comment
     )
   }
   

@@ -86,11 +86,10 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
       wallet: wallet,
       recipient: recipient.recipientAddress.name,
       recipientAddress: recipient.recipientAddress.addressString,
-      transaction: .transfer(.ton),
+      transaction: .transfer(.ton(isMaxAmount)),
       amount: getAmountValue(),
       fee: fee,
-      comment: comment,
-      isMaxAmount: isMaxAmount
+      comment: comment
     )
   }
   

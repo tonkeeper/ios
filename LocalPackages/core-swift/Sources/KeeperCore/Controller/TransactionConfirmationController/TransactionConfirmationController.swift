@@ -12,9 +12,10 @@ public struct TransactionConfirmationModel {
       public let pool: StackingPoolInfo
       public let flow: Flow
     }
-    
+
+    public typealias IsMaxAmount = Bool
     public enum Transfer {
-      case ton
+      case ton(IsMaxAmount)
       case jetton(JettonInfo)
       case nft(NFT)
     }
@@ -46,7 +47,6 @@ public struct TransactionConfirmationModel {
   public let amount: (amount: Amount, converted: Amount?)?
   public let fee: Fee
   public let comment: String?
-  public let isMaxAmount: Bool
 
   init(wallet: Wallet, 
        recipient: String?,
@@ -54,8 +54,7 @@ public struct TransactionConfirmationModel {
        transaction: Transaction,
        amount: (amount: Amount, converted: Amount?)?,
        fee: Fee,
-       comment: String? = nil,
-       isMaxAmount: Bool) {
+       comment: String? = nil) {
     self.wallet = wallet
     self.recipient = recipient
     self.recipientAddress = recipientAddress
@@ -63,7 +62,6 @@ public struct TransactionConfirmationModel {
     self.amount = amount
     self.fee = fee
     self.comment = comment
-    self.isMaxAmount = isMaxAmount
   }
 }
 
