@@ -71,9 +71,6 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
 
   func validateFundsIfNeeded(wallet: Wallet,
                              confirmationController: TransactionConfirmationController) async throws {
-    guard case .success = await confirmationController.emulate() else {
-      return
-    }
     let emulationModel = confirmationController.getModel()
 
     try await validateFundsIfNeeded(wallet: wallet, emulationModel: emulationModel)
@@ -91,6 +88,12 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
       case .ton:
         guard let amount = emulationModel.amount?.amount.value else {
           return
+        }
+
+        guard tonBalanceAmount > 0 else {
+          throw InsufficientFundsError.insufficientFunds(
+            jettonInfo: nil, balance: 0, requiredAmount: amount, wallet: wallet, isInternalPurchasing: true
+          )
         }
 
         guard case let .value(fee, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
