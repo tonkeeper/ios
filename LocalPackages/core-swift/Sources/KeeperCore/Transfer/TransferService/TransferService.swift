@@ -5,22 +5,49 @@ import TonAPI
 
 public enum TransferError: Swift.Error {
   case nothingToSend
+  case unsupportedTransfer
 }
 
 public struct TransferEmulationResult {
-  public let transactionInfo: MessageConsequences
+  public struct Fee {
+    public let token: Token
+    public let amount: BigUInt
+    
+    public var jettonInfo: JettonInfo? {
+      switch token {
+      case .ton:
+        return nil
+      case .jetton(let jettonItem):
+        return jettonItem.jettonInfo
+      }
+    }
+  }
+
   public let transferType: TransferType
+  public let fee: Fee
+  public let transactionInfo: MessageConsequences?
+  public let isGaslessAvailable: Bool
 }
 
 public enum TransferType {
   case `default`
   case battery(excessAddress: Address)
+  case gasless(excessAddress: Address, fee: BigUInt)
   
   public var isBattery: Bool {
     switch self {
-    case .default:
+    case .default, .gasless:
       return false
     case .battery:
+      return true
+    }
+  }
+  
+  public var isGasless: Bool {
+    switch self {
+    case .default, .battery:
+      return false
+    case .gasless:
       return true
     }
   }
@@ -30,6 +57,8 @@ public enum TransferType {
     case .default:
       return nil
     case .battery(let excessAddress):
+      return excessAddress
+    case .gasless(let excessAddress, _):
       return excessAddress
     }
   }
@@ -84,7 +113,7 @@ public struct TransferService {
           boc: boc,
           wallet: wallet
         )
-      case .battery:
+      case .battery, .gasless:
         let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
         try await batteryService.sendTransaction(
           wallet: wallet,
@@ -99,7 +128,7 @@ public struct TransferService {
           batch: signedTransactions,
           wallet: wallet
         )
-      case .battery:
+      case .battery, .gasless:
         let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
         for boc in signedTransactions {
           try await batteryService.sendTransaction(
@@ -116,26 +145,119 @@ public struct TransferService {
   
   public func emulate(wallet: Wallet,
                       transfer: Transfer,
-                      params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
+                      params: [EmulateMessageToWalletRequestParamsInner]? = nil,
+                      ignoreGasless: Bool = false,
+                      withoutRelayer: Bool = false,
+                      isPreferGasless: Bool = true) async throws -> TransferEmulationResult {
     let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
+    let isRelayer: Bool = await {
+      guard let tonProofToken else { return false }
+      return await isRelayerAvailable(wallet: wallet, tonProofToken: tonProofToken, transfer: transfer)
+    }()
+    let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
+    let isGaslessToken: Bool = await {
+      guard case .jetton(let jettonItem, _, _, _, _) = transfer else {
+        return false
+      }
+      do {
+        let rechargeMethods = try await batteryService.loadRechargeMethods(wallet: wallet, includeRechargeOnly: false)
+        return rechargeMethods.contains(where: {
+          $0.supportGasless && $0.jettonMasterAddress == jettonItem.jettonInfo.address
+        })
+      } catch {
+        return false
+      }
+    }()
     
+    let isGaslessAvailable: Bool = {
+      guard wallet.isGaslessAvailable,
+            tonProofToken != nil,
+            let _ = try? batteryConfig?.excessAddress,
+            isGaslessToken else {
+        return false
+      }
+      return true
+    }()
     
-    if let tonProofToken,
-       await isRelayerAvailable(wallet: wallet, tonProofToken: tonProofToken, transfer: transfer),
-       await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
-       await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
-      return try await emulateWithBattery(
-        wallet: wallet,
-        transfer: transfer,
-        excessAddress: wallet.address,
-        tonProofToken: tonProofToken,
-        transferType: .battery(excessAddress: wallet.address)
-      )
-    } else {
+    if ignoreGasless && withoutRelayer {
       return try await defaultEmulate(
         wallet: wallet,
         transfer: transfer,
-        params: params
+        params: params,
+        isGaslessAvailable: isGaslessAvailable
+      )
+    } else if isRelayer,
+              !withoutRelayer,
+              let tonProofToken,
+              await configuration.isBatteryEnable(isTestnet: wallet.isTestnet),
+              await configuration.isBatterySendEnable(isTestnet: wallet.isTestnet) {
+      do {
+        return try await emulateWithBattery(
+          wallet: wallet,
+          transfer: transfer,
+          excessAddress: wallet.address,
+          tonProofToken: tonProofToken,
+          transferType: .battery(excessAddress: wallet.address)
+        )
+      } catch {
+        return try await emulate(
+          wallet: wallet,
+          transfer: transfer,
+          params: params,
+          withoutRelayer: true,
+          isPreferGasless: isPreferGasless
+        )
+      }
+    } else if !ignoreGasless,
+              wallet.isGaslessAvailable,
+              isPreferGasless,
+              let tonProofToken,
+              let excessesAddress = try? batteryConfig?.excessAddress,
+              isGaslessToken {
+      do {
+        return try await emulateWithGasless(
+          wallet: wallet,
+          transfer: transfer,
+          excessAddress: excessesAddress,
+          tonProofToken: tonProofToken,
+          transferType: .gasless(excessAddress: excessesAddress, fee: 1)
+        )
+      } catch {
+        return try await emulate(
+          wallet: wallet,
+          transfer: transfer,
+          params: params,
+          ignoreGasless: true
+        )
+      }
+    } else {
+      let result = try await defaultEmulate(
+        wallet: wallet,
+        transfer: transfer,
+        params: params,
+        isGaslessAvailable: isGaslessAvailable
+      )
+      if case .ton = transfer {
+        return result
+      }
+      
+      guard wallet.isGaslessAvailable,
+            let tonProofToken,
+            let excessesAddress = try? batteryConfig?.excessAddress,
+            isGaslessToken else {
+        return result
+      }
+      let tonBalance = (try? await balanceService.loadWalletBalance(wallet: wallet, currency: .USD).balance.tonBalance.amount) ?? 0
+      let amount = result.fee.amount + BigUInt(50000000)
+      guard amount > tonBalance else {
+        return result
+      }
+      return try await emulateWithGasless(
+        wallet: wallet,
+        transfer: transfer,
+        excessAddress: excessesAddress,
+        tonProofToken: tonProofToken,
+        transferType: .gasless(excessAddress: excessesAddress, fee: 1)
       )
     }
   }
@@ -169,19 +291,23 @@ public struct TransferService {
         )
         if transactionInfo.isBatteryAvailable {
           return TransferEmulationResult(
+            transferType: .battery(excessAddress: excessAddress),
+            fee: TransferEmulationResult.Fee(token: .ton, amount: BigUInt(abs(transactionInfo.info.event.extra))),
             transactionInfo: transactionInfo.info,
-            transferType: .battery(excessAddress: excessAddress)
+            isGaslessAvailable: false
           )
         } else {
           return try await defaultEmulate(
             wallet: wallet,
-            transfer: transfer
+            transfer: transfer,
+            isGaslessAvailable: false
           )
         }
       } catch {
         return try await defaultEmulate(
           wallet: wallet,
-          transfer: transfer
+          transfer: transfer,
+          isGaslessAvailable: false
         )
       }
     } catch {
@@ -189,9 +315,49 @@ public struct TransferService {
     }
   }
   
+  private func emulateWithGasless(wallet: Wallet,
+                                  transfer: Transfer,
+                                  excessAddress: Address,
+                                  tonProofToken: String,
+                                  transferType: TransferType) async throws -> TransferEmulationResult {
+    guard case .jetton(let jettonItem, _, _, _, _) = transfer else {
+      throw TransferError.unsupportedTransfer
+    }
+    
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let transferData = try await createTransferData(
+      wallet: wallet,
+      transfer: transfer,
+      seqno: seqno,
+      transferType: transferType
+    )
+    let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
+      .createUnsignedWalletTransfer(wallet: wallet)
+    let signed = try TransferSigner.signWalletTransfer(
+      walletTransfer,
+      wallet: wallet,
+      seqno: transferData.seqno,
+      signer: WalletTransferEmptyKeySigner()
+    )
+    
+    let comission = try await batteryService.loadGasslessCommission(
+      wallet: wallet,
+      tonProofToken: tonProofToken,
+      jettonMasterAddress: jettonItem.jettonInfo.address.toRaw(),
+      boc: signed.toBoc().base64EncodedString())
+    let fee = BigUInt(stringLiteral: comission)
+    return TransferEmulationResult(
+      transferType: .gasless(excessAddress: excessAddress, fee: fee),
+      fee: TransferEmulationResult.Fee(token: .jetton(jettonItem), amount: fee),
+      transactionInfo: nil,
+      isGaslessAvailable: true
+    )
+  }
+  
   private func defaultEmulate(wallet: Wallet,
                               transfer: Transfer,
-                              params: [EmulateMessageToWalletRequestParamsInner]? = nil) async throws -> TransferEmulationResult {
+                              params: [EmulateMessageToWalletRequestParamsInner]? = nil,
+                              isGaslessAvailable: Bool) async throws -> TransferEmulationResult {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
@@ -212,8 +378,10 @@ public struct TransferService {
       wallet: wallet,
       params: params)
     return TransferEmulationResult(
+      transferType: .default,
+      fee: TransferEmulationResult.Fee(token: .ton, amount: BigUInt(abs(transactionInfo.event.extra))),
       transactionInfo: transactionInfo,
-      transferType: .default
+      isGaslessAvailable: isGaslessAvailable
     )
   }
   
@@ -228,6 +396,8 @@ public struct TransferService {
         return .ext
       case .battery:
         return wallet.isW5Generation ? .int : .ext
+      case .gasless:
+        return .int
       }
     }()
     let responseAddress: Address? = transferType.excessAddress
@@ -273,6 +443,23 @@ public struct TransferService {
         }
       }
       
+      var additionalInternalMessages = [MessageRelaxed]()
+      if case .gasless(let excessAddress, let fee) = transferType {
+        let customPayload = Builder()
+        try customPayload.store(uint: OpCodes.GASLESS, bits: 32)
+        
+        additionalInternalMessages = [
+          try JettonTransferMessage.internalMessage(
+            jettonAddress: jettonItem.walletAddress,
+            amount: BigInt(fee),
+            bounce: true,
+            to: excessAddress,
+            from: excessAddress,
+            forwardPayload: customPayload.endCell()
+          )
+        ]
+      }
+      
       return TransferData(
         transfer: .jetton(
           TransferData.Jetton(
@@ -283,7 +470,8 @@ public struct TransferService {
             responseAddress: responseAddress,
             comment: comment,
             customPayload: customPayload,
-            stateInit: stateInit
+            stateInit: stateInit,
+            additionalInternalMessages: additionalInternalMessages
           )
         ),
         wallet: wallet,

@@ -15,11 +15,11 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         transfer: .ton(amount: amount, recipient: recipient, comment: comment)
       )
       self.emulationResult = result
-      updateFee(emulationResult: emulationResult)
+      await updateFee(emulationResult: emulationResult)
       return .success(())
     } catch {
       self.emulationResult = nil
-      updateFee(emulationResult: nil)
+      await updateFee(emulationResult: nil)
       return .failure(.failedToCalculateFee)
     }
   }
@@ -57,6 +57,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let transferService: TransferService
+  private let ratesService: RatesService
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -66,7 +67,8 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
        blockchainService: BlockchainService,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       transferService: TransferService) {
+       transferService: TransferService,
+       ratesService: RatesService) {
     self.wallet = wallet
     self.recipient = recipient
     self.amount = amount
@@ -76,6 +78,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
     self.transferService = transferService
+    self.ratesService = ratesService
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -90,19 +93,20 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  private func updateFee(emulationResult: TransferEmulationResult?) {
+  private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, converted: nil, isBattery: false)
+      fee = .value(nil, converted: nil, isBattery: false, gasless: nil)
       return
     }
-    let fee = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
+    let fee = emulationResult.fee
     
     var convertedFee: TransactionConfirmationModel.Amount?
     let currency = currencyStore.getState()
-    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
+    let rates: Rates.Rate? = await getFeeRate(fee: fee, currency: currency)
+    if let rates = rates {
       let rateConverter = RateConverter()
       let converted = rateConverter.convert(
-        amount: fee,
+        amount: fee.amount,
         amountFractionLength: TonInfo.fractionDigits,
         rate: rates
       )
@@ -115,11 +119,12 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     
     self.fee = .value(
       TransactionConfirmationModel.Amount(
-        value: fee,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
+        value: fee.amount,
+        decimals: fee.token.fractionDigits,
+        item: .symbol(fee.token.symbol)
       ),
-      converted: convertedFee
+      converted: convertedFee,
+      gasless: nil
     )
   }
   
@@ -150,9 +155,35 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
+  private func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
+  }
+  
+  func getFeeRate(fee: TransferEmulationResult.Fee, currency: Currency) async -> Rates.Rate? {
+    do {
+      let jettons: [JettonInfo] = {
+        switch fee.token {
+        case .ton:
+          return []
+        case .jetton(let jettonItem):
+          return [jettonItem.jettonInfo]
+        }
+      }()
+      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
+      switch fee.token {
+      case .ton:
+        return rates.ton
+          .first(where: { $0.currency == currency })
+      case .jetton(let jettonItem):
+        return rates.jettonsRates
+          .first(where: { $0.jettonInfo.address == jettonItem.jettonInfo.address })?
+          .rates
+          .first(where: { $0.currency == currency })
+      }
+    } catch {
+      return nil
+    }
   }
 }

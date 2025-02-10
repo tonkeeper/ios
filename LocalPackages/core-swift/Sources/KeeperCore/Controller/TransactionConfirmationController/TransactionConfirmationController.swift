@@ -34,8 +34,13 @@ public struct TransactionConfirmationModel {
   }
   
   public enum Fee {
+    public enum Gasless {
+      case ton
+      case jetton(JettonInfo)
+    }
+    
     case loading
-    case value(Amount?, converted: Amount?, isBattery: Bool = false)
+    case value(Amount?, converted: Amount?, isBattery: Bool = false, gasless: Gasless?)
   }
 
   
@@ -76,4 +81,10 @@ public protocol TransactionConfirmationController: AnyObject {
   func getModel() -> TransactionConfirmationModel
   func emulate() async -> Result<Void, TransactionConfirmationError>
   func sendTransaction() async -> Result<Void, TransactionConfirmationError>
+  
+  func toggleIsPreferGasless()
+}
+
+public extension TransactionConfirmationController {
+  func toggleIsPreferGasless() {}
 }

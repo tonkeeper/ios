@@ -51,6 +51,10 @@ public protocol SignRawControllerResultHandler {
 
 public final class SignRawController {
   
+  public enum Error: Swift.Error {
+    case noEmulationResult
+  }
+  
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   private let wallet: Wallet
@@ -101,10 +105,13 @@ public final class SignRawController {
       wallet: wallet,
       transfer: try await transferProvider()
     )
-    let event = try AccountEvent(accountEvent: result.transactionInfo.event)
-    let fee = UInt64(abs(result.transactionInfo.event.extra))
+    guard let transactionInfo = result.transactionInfo else {
+      throw Error.noEmulationResult
+    }
+    let event = try AccountEvent(accountEvent: transactionInfo.event)
+    let fee = UInt64(abs(transactionInfo.event.extra))
     let nfts = try await loadEventNFTs(event: event)
-    let risk = handleRisk(risk: result.transactionInfo.risk)
+    let risk = handleRisk(risk: transactionInfo.risk)
     let currency = currencyStore.state
     var feeConverted: SignRawEmulation.FeeConverted?
     if let rates = tonRatesStore.state.first(where: { $0.currency == currency }) {

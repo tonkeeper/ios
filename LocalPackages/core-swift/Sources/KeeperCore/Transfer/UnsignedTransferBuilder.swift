@@ -50,7 +50,8 @@ public struct UnsignedTransferBuilder {
         timeout: transferData.timeout,
         customPayload: jetton.customPayload,
         stateInit: jetton.stateInit,
-        messageType: transferData.messageType
+        messageType: transferData.messageType,
+        additionalInternalMessages: jetton.additionalInternalMessages
       )
     case .nft(let nft):
       return try NFTTransferBuilder.createWalletTransfer(

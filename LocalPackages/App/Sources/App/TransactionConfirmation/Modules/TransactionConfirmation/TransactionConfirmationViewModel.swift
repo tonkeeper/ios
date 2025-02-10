@@ -38,14 +38,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     let model = confirmationController.getModel()
     update(with: model)
-    Task {
-      let result = await confirmationController.emulate()
-      if case let .failure(error) = result {
-       handleError(error)
-      }
-      let model = confirmationController.getModel()
-      update(with: model)
-    }
+    update()
   }
   
   func didTapCloseButton() {
@@ -68,6 +61,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
   }
   
+  private var updateTask: Task<Void, Never>?
+  
   // MARK: - Dependencies
   
   private let confirmationController: TransactionConfirmationController
@@ -85,6 +80,19 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   }
   
   // MARK: - Private
+  
+  private func update() {
+    self.updateTask?.cancel()
+    self.updateTask = Task {
+      self.state = .idle
+      let result = await confirmationController.emulate()
+      if case let .failure(error) = result {
+       handleError(error)
+      }
+      let model = confirmationController.getModel()
+      update(with: model)
+    }
+  }
   
   @MainActor
   private func update(with model: TransactionConfirmationModel) {
@@ -390,13 +398,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private func createFeeListItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
     var copyValue: String?
     var caption: NSAttributedString?
+    var captionButton: TKPlainButton.Model?
     let value: TKListContainerItemView.Model.Value
     switch transaction.fee {
     case .loading:
       value = .loading
     case let .value(feeValue,
                     feeConverted,
-                    isBattery):
+                    isBattery,
+                    gasless):
       if let feeValue {
         let feeValueFormatted = formatValueItem(
           amount: feeValue.value,
@@ -424,12 +434,33 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
         ))
       }
-      caption = isBattery ? TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary) : nil
+      if isBattery {
+        caption = TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary)
+        captionButton = nil
+      } else if let gasless {
+        caption = nil
+        let captionButtonTitle: String = {
+          switch gasless {
+          case .ton:
+            return "Tap to pay in \(TonInfo.symbol)"
+          case .jetton(let jettonInfo):
+            return "Tap to pay in \(jettonInfo.symbol ?? jettonInfo.name)"
+          }
+        }()
+        captionButton = TKPlainButton.Model(title: captionButtonTitle.withTextStyle(.body2, color: .Text.tertiary), action: { [weak self] in
+          self?.confirmationController.toggleIsPreferGasless()
+          self?.update()
+        })
+      } else {
+        caption = nil
+        captionButton = nil
+      }
     }
     
     return TKListContainerItemView.Model(
       title: TKLocales.EventDetails.fee,
       caption: caption,
+      captionButtonModel: captionButton,
       value: value,
       action: .copy(copyValue: copyValue)
     )
