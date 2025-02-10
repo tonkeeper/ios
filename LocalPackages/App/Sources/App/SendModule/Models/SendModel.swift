@@ -7,16 +7,17 @@ struct SendModel {
   let recipient: Recipient?
   let sendItem: SendItem
   let comment: String?
-  
+  let isMaxAmount: Bool
+
   init(wallet: Wallet,
        recipient: Recipient?,
        sendItem: SendItem,
-       comment: String?) {
+       comment: String?,
+       isMaxAmount: Bool) {
     self.wallet = wallet
     self.recipient = recipient
     self.sendItem = sendItem
     self.comment = comment
+    self.isMaxAmount = isMaxAmount
   }
 }
-
-

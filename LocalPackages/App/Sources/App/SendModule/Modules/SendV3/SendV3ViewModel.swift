@@ -198,6 +198,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
           self.amountInput = unformatted
           self.sendItem = .token(token, amount: amount.amount)
           self.isAmountValid = isAmountValid
+          self.isMaxAmount = false
           updateConverted()
           updateRemaining()
           update()
@@ -234,6 +235,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
           self.amountInput = sendAmountTextFieldFormatter.unformatString(formatted) ?? ""
           self.sendItem = .token(token, amount: amount)
           self.isAmountValid = !amount.isZero
+          self.isMaxAmount = true
           updateRemaining()
           updateConverted()
           update()
@@ -314,7 +316,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       update()
     }
   }
-  
+  private var isMaxAmount: Bool = false
+
   // MARK: - Formatters
   
   let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
@@ -398,10 +401,14 @@ private extension SendV3ViewModelImplementation {
         isActivity: isResolving,
         action: { [weak self] in
           guard let self else { return }
-          let sendModel = SendModel(wallet: wallet,
-                                    recipient: recipient,
-                                    sendItem: sendItem,
-                                    comment: commentInput)
+
+          let sendModel = SendModel(
+            wallet: wallet,
+            recipient: recipient,
+            sendItem: sendItem,
+            comment: commentInput,
+            isMaxAmount: isMaxAmount
+          )
           didContinueSend?(sendModel)
         }
       )
