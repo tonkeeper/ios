@@ -53,7 +53,7 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     bindRegion()
     
     if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
-      selectedCountry = .hardcodedCountry(countryCode: hardcodedCountryCode)
+      selectedCountry = .country(countryCode: hardcodedCountryCode)
     } else {
       selectedCountry = regionStore.getState()
     }
@@ -133,7 +133,7 @@ private extension BrowserViewModelImplementation {
 
   func updateCountryPickerButton() {
     let title: String
-    var disabled: Bool = false
+    let isEnabled: Bool = !TKFeatureFlags.provider.isCountryPickerDisable
     switch selectedCountry {
     case .all:
       title = "🌍"
@@ -141,12 +141,9 @@ private extension BrowserViewModelImplementation {
       title = Locale.current.regionCode ?? ""
     case .country(let countryCode):
       title = countryCode
-    case .hardcodedCountry(let countryCode):
-      title = countryCode
-      disabled = true
     }
 
-    let model = BrowserHeaderRightButtonModel(title: title, disabled: disabled) { [weak self] in
+    let model = BrowserHeaderRightButtonModel(title: title, isEnabled: isEnabled) { [weak self] in
       guard let self = self else {
         return
       }

@@ -29,7 +29,7 @@ final class BrowserHeaderView: UIView {
     rightButton.configure(
       model: TKUIButtonTitleIconContentView.Model(title: model.title)
     )
-    rightButton.isEnabled = !(model.disabled ?? false)
+    rightButton.isEnabled = model.isEnabled
     rightButton.addTapAction(model.action)
     rightButtonContainer.addSubview(rightButton)
     rightButton.snp.makeConstraints { make in

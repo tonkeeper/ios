@@ -9,6 +9,7 @@ public enum FeatureFlag: String, CaseIterable {
   case isStoriesDisable
   case disableBatteryCryptoRechargeModule
   case hardcodedCountryCode
+  case isCountryPickerDisable
   
   var key: String {
     self.rawValue
@@ -23,6 +24,7 @@ public protocol TKFeatureFlagsProvider {
   var isStoriesDisable: Bool { get }
   var isBatteryCryptoRechargeDisable: Bool { get }
   var hardcodedCountryCode: String? { get }
+  var isCountryPickerDisable: Bool { get }
   
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<FeatureFlag>, closure: @escaping (T, FeatureFlag) -> Void)
 }
@@ -30,6 +32,9 @@ public protocol TKFeatureFlagsProvider {
 final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
   var isSwapDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isSwapDisable.key).boolValue
+  }
+  var isCountryPickerDisable: Bool {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isCountryPickerDisable.key).boolValue
   }
   var isStakingDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isStakingDisable.key).boolValue

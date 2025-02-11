@@ -2,6 +2,6 @@ import Foundation
 
 struct BrowserHeaderRightButtonModel {
   let title: String?
-  let disabled: Bool?
+  let isEnabled: Bool
   let action: (() -> Void)
 }

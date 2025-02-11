@@ -59,7 +59,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 
   private func bindRegion() {
     if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
-      selectedCountry = .hardcodedCountry(countryCode: hardcodedCountryCode)
+      selectedCountry = .country(countryCode: hardcodedCountryCode)
     } else {
       selectedCountry = regionStore.getState()
     }
@@ -151,8 +151,6 @@ private extension BrowserExploreViewModelImplementation {
     case .all:
       filter = nil
     case let .country(countryCode):
-      filter = countryCode
-    case let .hardcodedCountry(countryCode):
       filter = countryCode
     }
     return filter

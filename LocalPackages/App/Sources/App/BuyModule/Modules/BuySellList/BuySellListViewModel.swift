@@ -77,7 +77,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
       }
     }
     if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
-      selectedCountry = .hardcodedCountry(countryCode: hardcodedCountryCode)
+      selectedCountry = .country(countryCode: hardcodedCountryCode)
     } else {
       selectedCountry = regionStore.state
     }
@@ -168,7 +168,7 @@ private extension BuySellListViewModelImplementation {
 
   func updateCountryPickerButton() {
     let title: String
-    var disabled: Bool = false
+    let isEnabled: Bool = !TKFeatureFlags.provider.isCountryPickerDisable
     switch selectedCountry {
     case .all:
       title = "🌍"
@@ -176,9 +176,6 @@ private extension BuySellListViewModelImplementation {
       title = Locale.current.regionCode ?? ""
     case .country(let countryCode):
       title = countryCode
-    case .hardcodedCountry(let countryCode):
-      title = countryCode
-      disabled = true
     }
   
     didUpdateHeaderLeftButton?(
@@ -188,7 +185,7 @@ private extension BuySellListViewModelImplementation {
           guard let self else { return }
           self.didSelectCountryPicker?(selectedCountry)
         },
-        isEnabled: !disabled
+        isEnabled: isEnabled
       )
     )
   }
@@ -278,11 +275,12 @@ private extension BuySellListViewModelImplementation {
       
       let filteredItems: [FiatMethodItem] = {
         func filterByCountryCode(items: FiatMethods, countryCode: String?) -> [FiatMethodItem] {
+          let shouldSkipSwapItems = TKFeatureFlags.provider.hardcodedCountryCode == nil
           if let methods = fiatMethods.layoutByCountry
             .first(where: { $0.countryCode == countryCode })?.methods {
             return category.items.filter { item in
               // Filter by country code all items except swap items
-              methods.contains(item.id) || item.id.contains("swap")
+              methods.contains(item.id) || (shouldSkipSwapItems && item.id.contains("swap"))
             }.sorted { lhs, rhs in
               let lhsIdx = methods.firstIndex(of: lhs.id) ?? .max
               let rhsIdx = methods.firstIndex(of: rhs.id) ?? .max
@@ -300,8 +298,6 @@ private extension BuySellListViewModelImplementation {
           let region = Locale.current.regionCode
           return filterByCountryCode(items: fiatMethods, countryCode: region)
         case .country(let countryCode):
-          return filterByCountryCode(items: fiatMethods, countryCode: countryCode)
-        case .hardcodedCountry(let countryCode):
           return filterByCountryCode(items: fiatMethods, countryCode: countryCode)
         }
       }()
@@ -339,6 +335,7 @@ private extension BuySellListViewModelImplementation {
             mode: .widthToFit
           )
         )
+        buttonConfiguration.isEnabled = !TKFeatureFlags.provider.isCountryPickerDisable
         snapshot.appendSections([.button(id: category.hashValue)])
         snapshot.appendItems([buttonItem], toSection: .button(id: category.hashValue))
         
