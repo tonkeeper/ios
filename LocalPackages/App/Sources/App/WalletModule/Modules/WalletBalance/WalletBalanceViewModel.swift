@@ -855,8 +855,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
     }()
     
-    let stakeButton: WalletBalanceHeaderButtonsView.Model.Button = {
-      WalletBalanceHeaderButtonsView.Model.Button(
+    let stakeButton: WalletBalanceHeaderButtonsView.Model.Button? = {
+      guard !TKFeatureFlags.provider.isStakingDisable else { return nil }
+      return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: wallet.isStakeEnable,

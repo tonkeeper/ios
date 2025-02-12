@@ -43,6 +43,15 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
       .init(name: "chainName", value: chainName),
       .init(name: "platform", value: appInfoProvider.platform)
     ]
+    
+    if let storeCountryCode = appInfoProvider.storeCountryCode {
+      components.queryItems?.append(.init(name: "store_country_code", value: storeCountryCode))
+    }
+    
+    if let deviceCountryCode = appInfoProvider.deviceCountryCode {
+      components.queryItems?.append(.init(name: "device_country_code", value: deviceCountryCode))
+    }
+    
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(RemoteConfigurations.self, from: data)
@@ -78,9 +87,19 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
       .init(name: "chainName", value: "mainnet"),
       .init(name: "platform", value: appInfoProvider.platform)
     ]
+    
     if let countryCode = countryCode {
       components.queryItems?.append(URLQueryItem(name: "countryCode", value: countryCode))
     }
+    
+    if let storeCountryCode = appInfoProvider.storeCountryCode {
+      components.queryItems?.append(.init(name: "store_country_code", value: storeCountryCode))
+    }
+    
+    if let deviceCountryCode = appInfoProvider.deviceCountryCode {
+      components.queryItems?.append(.init(name: "device_country_code", value: deviceCountryCode))
+    }
+    
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(FiatMethodsResponse.self, from: data)
@@ -99,6 +118,15 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
       .init(name: "build", value: appInfoProvider.version),
       .init(name: "platform", value: appInfoProvider.platform)
     ]
+    
+    if let storeCountryCode = appInfoProvider.storeCountryCode {
+      components.queryItems?.append(.init(name: "store_country_code", value: storeCountryCode))
+    }
+    
+    if let deviceCountryCode = appInfoProvider.deviceCountryCode {
+      components.queryItems?.append(.init(name: "device_country_code", value: deviceCountryCode))
+    }
+    
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(PopularAppsResponse.self, from: data)
