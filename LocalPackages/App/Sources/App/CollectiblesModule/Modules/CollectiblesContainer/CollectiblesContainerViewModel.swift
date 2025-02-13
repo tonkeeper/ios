@@ -23,8 +23,8 @@ final class CollectiblesContainerViewModelImplementation: CollectiblesContainerV
     walletsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
         switch event {
-        case .didChangeActiveWallet(let wallet):
-          observer.didChangeWallet?(wallet)
+        case let .didChangeActiveWallet(_, activeWallet):
+          observer.didChangeWallet?(activeWallet)
         default: break
         }
       }

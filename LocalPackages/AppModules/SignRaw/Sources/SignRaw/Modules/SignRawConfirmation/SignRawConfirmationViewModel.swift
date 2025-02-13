@@ -5,18 +5,20 @@ import KeeperCore
 import WalletExtensions
 
 @MainActor
-protocol SignRawConfirmationModuleOutput: AnyObject {
+public protocol SignRawConfirmationModuleOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirm: (() -> Void)? { get set }
+  var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)? { get set }
+  var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)? { get set }
 }
 
 @MainActor
-protocol SignRawConfirmationModuleInput: AnyObject {
+public protocol SignRawConfirmationModuleInput: AnyObject {
   func cancel()
 }
 
 @MainActor
-protocol SignRawConfirmationViewModel: AnyObject {
+public protocol SignRawConfirmationViewModel: AnyObject {
   var didUpdateHeader: ((TKUIKit.TKPullCardHeaderItem) -> Void)? { get set }
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
   
@@ -24,25 +26,28 @@ protocol SignRawConfirmationViewModel: AnyObject {
 }
 
 @MainActor
-final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewModel, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput {
-  
+public final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewModel, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput {
+
   // MARK: - SignRawConfirmationModuleOutput
   
-  var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
-  var didConfirm: (() -> Void)?
-  
+  public var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
+  public var didConfirm: (() -> Void)?
+  public var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
+  public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)?
+
+
   // MARK: - SignRawConfirmationModuleInput
   
-  func cancel() {
+  public func cancel() {
     signRawController.cancel()
   }
   
   // MARK: - SignRawConfirmationViewModel
   
-  var didUpdateHeader: ((TKPullCardHeaderItem) -> Void)?
-  var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
+  public var didUpdateHeader: ((TKPullCardHeaderItem) -> Void)?
+  public var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   
-  func viewDidLoad() {
+  public func viewDidLoad() {
     signRawController.signHandler = { [weak self] transferData, wallet in
       try await self?.didRequireSign?(transferData, wallet)
     }
@@ -92,28 +97,37 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   private let wallet: Wallet
   private let signRawController: SignRawController
   private let signRawConfirmationMapper: SignRawConfirmationMapper
-  
+  private let fundsValidator: InsufficientFundsValidator
+
   init(wallet: Wallet,
        signRawController: SignRawController,
-       signRawConfirmationMapper: SignRawConfirmationMapper) {
+       signRawConfirmationMapper: SignRawConfirmationMapper,
+       fundsValidator: InsufficientFundsValidator) {
     self.wallet = wallet
     self.signRawController = signRawController
     self.signRawConfirmationMapper = signRawConfirmationMapper
+    self.fundsValidator = fundsValidator
   }
   
   private func emulate() {
     Task { [weak self] in
       guard let self else { return }
+
       do {
         let emulationResult = try await signRawController.emulate()
         let model = signRawConfirmationMapper.mapEmulationResult(emulation: emulationResult, wallet: wallet)
+        try fundsValidator.validateEmulationResultIfNeeded(emulationResult, wallet: wallet)
         state.emulationState = .success(model: model, transferType: emulationResult.transferType)
       } catch {
+        if let error = error as? InsufficientFundsError {
+          self.didRequireShowInsufficientPopup?(self.wallet, error)
+        }
+
         state.emulationState = .fail
       }
     }
   }
-  
+
   private func updateConfiguration() {
     var items = [TKPopUp.Item]()
     if let loaderItem = createLoaderItem() {
@@ -181,7 +195,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     }
     
     let sliderItem = TKPopUp.Component.Slider(
-      title: "Confirm",
+      title: TKLocales.Actions.confirm,
       isEnable: isEnable,
       didConfirm: { [weak self] in
         self?.confirmTransaction()
@@ -199,7 +213,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
   private func createRiskItem() -> TKPopUp.Item {
     let failedItem: () -> TKPopUp.Item = {
       return TKPopUp.Component.LabelComponent(
-        text: "Failed".withTextStyle(
+        text: TKLocales.State.failed.withTextStyle(
           .body2,
           color: .Text.secondary,
           alignment: .center,
@@ -211,7 +225,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
     
     let loadingItem: () -> TKPopUp.Item = {
       return TKPopUp.Component.LabelComponent(
-        text: "Loading".withTextStyle(
+        text: TKLocales.Toast.loading.withTextStyle(
           .body2,
           color: .Text.secondary,
           alignment: .center,
@@ -220,7 +234,7 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         numberOfLines: 1
       )
     }
-    
+
     switch state.emulationState {
     case .emulating:
       return loadingItem()
@@ -230,8 +244,11 @@ final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewM
         bottomSpace: 0,
         title: risk.title,
         isRisk: risk.isRisk,
-        action: {
-          
+        action: { [weak self] in
+          guard let self, let risk = model.risk else {
+            return
+          }
+          self.didRequestShowInfoPopup?(risk.title, risk.caption)
         }
       )
       return signRawRiskItem

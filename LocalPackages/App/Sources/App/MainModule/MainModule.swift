@@ -21,7 +21,7 @@ struct MainModule {
       appStateTracker: dependencies.coreAssembly.appStateTracker,
       reachabilityTracker: dependencies.coreAssembly.reachabilityTracker,
       recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver(),
-      jettonBalanceResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.jettonBalanceResolver()
+      insufficientFundsValidator: dependencies.keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
       
     )
     return coordinator

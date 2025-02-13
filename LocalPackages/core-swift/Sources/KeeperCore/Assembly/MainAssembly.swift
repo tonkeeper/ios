@@ -166,12 +166,14 @@ public final class MainAssembly {
   public func tonTransferTransactionConfirmationController(wallet: Wallet,
                                                            recipient: Recipient,
                                                            amount: BigUInt,
-                                                           comment: String?) -> TransactionConfirmationController {
+                                                           comment: String?,
+                                                           isMaxAmount: Bool) -> TransactionConfirmationController {
     TonTransferTransactionConfirmationController(
       wallet: wallet,
       recipient: recipient,
       amount: amount,
       comment: comment,
+      isMaxAmount: isMaxAmount,
       sendService: servicesAssembly.sendService(),
       blockchainService: servicesAssembly.blockchainService(),
       ratesStore: storesAssembly.tonRatesStore,

@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SignRawConfirmationView: UIView {
+public final class SignRawConfirmationView: UIView {
   private let contentContainer = UIView()
   
   // MARK: - Init

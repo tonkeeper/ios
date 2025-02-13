@@ -59,6 +59,7 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
       let leftButton = TKUIHeaderTitleIconButton()
       leftButton.configure(model: leftButtonModel.model)
       leftButton.addTapAction(leftButtonModel.action)
+      leftButton.isEnabled = leftButtonModel.isEnabled ?? true
       leftButtonContainer.addSubview(leftButton)
       leftButton.translatesAutoresizingMaskIntoConstraints = false
       NSLayoutConstraint.activate([

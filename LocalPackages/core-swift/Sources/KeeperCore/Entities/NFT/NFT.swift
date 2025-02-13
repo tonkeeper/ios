@@ -21,6 +21,7 @@ public struct NFT: Codable, Equatable {
   public let sale: Sale?
   public let trust: Trust
   public let renderType: RenderType?
+  public let lottieURL: URL?
   
   public var isHidden: Bool {
     renderType == .hidden

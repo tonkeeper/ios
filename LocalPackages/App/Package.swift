@@ -21,6 +21,7 @@ let package = Package(
     .package(path: "../TKScreenKit"),
     .package(path: "../TKStories"),
     .package(path: "../TKFeatureFlags"),
+    .package(path: "../TKLottieWebView"),
     .package(path: "../AppModules/Stories"),
     .package(path: "../AppModules/SignRaw")
   ],
@@ -39,7 +40,8 @@ let package = Package(
         .product(name: "TKStories", package: "TKStories"),
         .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
         .product(name: "Stories", package: "Stories"),
-        .product(name: "SignRaw", package: "SignRaw")
+        .product(name: "SignRaw", package: "SignRaw"),
+        .product(name: "TKLottieWebView", package: "TKLottieWebView")
       ],
       resources: [.process("Resources")]
     )

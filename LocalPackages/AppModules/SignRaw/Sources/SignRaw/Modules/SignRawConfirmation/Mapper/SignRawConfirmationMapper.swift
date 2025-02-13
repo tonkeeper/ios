@@ -6,14 +6,14 @@ import KeeperCore
 import BigInt
 import TKLocalize
 
-struct SignRawConfirmationModel {
+public struct SignRawConfirmationModel {
   struct Risk {
     let total: String
     let title: String
     let caption: String
     let isRisk: Bool
   }
-  
+
   let contentModel: AccountEventCellContentView.Model
   let risk: Risk?
 }
@@ -50,7 +50,7 @@ struct SignRawConfirmationMapper {
   }
   
   func mapEmulationResult(emulation: SignRawEmulation, wallet: Wallet) -> SignRawConfirmationModel {
-    return SignRawConfirmationModel(
+    SignRawConfirmationModel(
       contentModel: mapSuccessEmulationResult(signRawEmulation: emulation, wallet: wallet),
       risk: mapRisk(emulation: emulation, wallet: wallet)
     )

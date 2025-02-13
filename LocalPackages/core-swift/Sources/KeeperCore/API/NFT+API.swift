@@ -17,6 +17,7 @@ extension NFT {
     var imageURL: URL?
     var description: String?
     var collection: NFTCollection?
+    var lottieURL: URL?
     
     if let ownerAccountAddress = nftItem.owner,
        let ownerWalletAccount = try? WalletAccount(accountAddress: ownerAccountAddress) {
@@ -25,6 +26,7 @@ extension NFT {
     
     name = nftItem.metadata["name"]?.value as? String
     imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
+    lottieURL = (nftItem.metadata["lottie"]?.value as? String).flatMap { URL(string: $0) }
     description = nftItem.metadata["description"]?.value as? String
     var renderType: RenderType? = {
       if let apiRenderType = nftItem.metadata["render_type"]?.value as? String,
@@ -113,6 +115,7 @@ extension NFT {
     self.owner = owner
     self.name = name
     self.imageURL = imageURL
+    self.lottieURL = lottieURL
     self.description = description
     self.attributes = attributes
     self.preview = Self.mapPreviews(nftItem.previews)

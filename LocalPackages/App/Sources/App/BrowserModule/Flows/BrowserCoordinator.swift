@@ -10,7 +10,8 @@ import TKLocalize
 public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
-  
+  public var didRequestOpenBuySell: ((_ wallet: Wallet) -> Void)?
+
   private var browserInput: BrowserModuleInput?
 
   private let coreAssembly: TKCore.CoreAssembly
@@ -96,6 +97,15 @@ private extension BrowserCoordinator {
       _ = self?.didHandleDeeplink?(deeplink)
     }
 
+    coordinator.didRequestOpenBuySell = { [weak self, weak coordinator] wallet, isInternalPurchasing in
+      self?.removeChild(coordinator)
+      if isInternalPurchasing {
+        self?.didRequestOpenBuySell?(wallet)
+      } else {
+        self?.openDefi()
+      }
+    }
+
     addChild(coordinator)
     coordinator.start()
   }
@@ -133,5 +143,18 @@ private extension BrowserCoordinator {
     }
 
     fromViewController.present(navigationController, animated: true)
+  }
+}
+
+public extension BrowserCoordinator {
+
+  @MainActor
+  func openDefi() {
+    let browserController = keeperCoreMainAssembly.browserExploreController()
+    let lang = Locale.current.languageCode ?? "en"
+    guard let defiCategory = try? browserController.getCachedPopularApps(lang: lang).defiCategory else {
+      return
+    }
+    openCategory(defiCategory)
   }
 }

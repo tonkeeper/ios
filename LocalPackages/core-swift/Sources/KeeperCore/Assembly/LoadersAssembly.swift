@@ -118,9 +118,9 @@ public final class LoadersAssembly {
       dnsService: servicesAssembly.dnsService()
     )
   }
-  
-  public func jettonBalanceResolver() -> JettonBalanceResolver {
-    JettonBalanceResolverImplementation(
+
+  public func insufficientFundsValidator() -> InsufficientFundsValidator {
+    InsufficientFundsValidatorImplementation(
       balanceStore: storesAssembly.balanceStore,
       apiProvider: apiAssembly.apiProvider
     )

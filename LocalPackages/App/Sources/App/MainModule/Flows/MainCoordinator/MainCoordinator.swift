@@ -25,7 +25,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private var walletCoordinator: WalletCoordinator?
   private var historyCoordinator: HistoryCoordinator?
-  private var browserCoordinator: BrowserCoordinator?
+  var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
   weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
@@ -41,7 +41,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   let recipientResolver: RecipientResolver
-  let jettonBalanceResolver: JettonBalanceResolver
+  let insufficientFundsValidator: InsufficientFundsValidator
+  private let cookiesController: KeeperCore.CookiesController
 
   var deeplinkHandleTask: Task<Void, Never>?
   
@@ -56,7 +57,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker,
        recipientResolver: RecipientResolver,
-       jettonBalanceResolver: JettonBalanceResolver) {
+       insufficientFundsValidator: InsufficientFundsValidator) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.mainController = keeperCoreMainAssembly.mainController()
@@ -87,7 +88,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
     self.recipientResolver = recipientResolver
-    self.jettonBalanceResolver = jettonBalanceResolver
+    self.insufficientFundsValidator = insufficientFundsValidator
     
     self.mainCoordinatorStateManager = MainCoordinatorStateManager(
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
@@ -95,13 +96,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet)
       }
     )
-    
+    cookiesController = CookiesController(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      cookiesService: keeperCoreMainAssembly.servicesAssembly.cookiesService(),
+      tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+    )
     super.init(router: router)
     
     mainController.didReceiveTonConnectRequest = { [weak self] request, wallet, app in
       self?.handleTonConnectRequest(request, wallet: wallet, app: app)
     }
-    
+    cookiesController.start()
     appStateTracker.addObserver(self)
     reachabilityTracker.addObserver(self)
     
@@ -270,13 +275,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     browserCoordinator.didHandleDeeplink = { [weak self] deeplink in
       _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
     }
-    
+
+    browserCoordinator.didRequestOpenBuySell = { [weak self] wallet in
+      self?.openBuy(wallet: wallet)
+    }
+
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
     collectiblesCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
     }
     collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
       _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false)
+    }
+    collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
+      self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
     }
 
     self.walletCoordinator = walletCoordinator
@@ -380,10 +392,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
       self?.removeChild($0)
     }
-    
+
+    sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
+      self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
+    }
+
     self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)
+    
     sendTokenCoordinator.start()
 
     router.presentOverTopPresented(
@@ -1103,7 +1120,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
     }
   }
-  
+
+  func openBuy(wallet: Wallet, isInternalPurchasing: Bool) {
+    if isInternalPurchasing {
+      openBuy(wallet: wallet)
+    } else {
+      openBrowserDefiFlow()
+    }
+  }
+
   func openBuy(wallet: Wallet) {
     let coordinator = BuyCoordinator(
       wallet: wallet,
@@ -1112,10 +1137,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
     
-    coordinator.didOpenItem = { url, fromViewController in
-      self.openBuySellItemURL(url, fromViewController: fromViewController)
+    coordinator.didOpenItem = { [weak self] url, fromViewController in
+      self?.openBuySellItemURL(url, fromViewController: fromViewController)
     }
-    
+
+    coordinator.didClose = { [weak coordinator, weak self] in
+      self?.removeChild(coordinator)
+    }
+
     self.router.dismiss(animated: true) { [weak self] in
       self?.addChild(coordinator)
       coordinator.start()
@@ -1241,22 +1270,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     coordinator.start()
   }
   
-  func openInsufficientFundsPopup(jettonInfo: JettonInfo, requiredAmount: BigUInt, availableAmount: BigUInt) {
+  func openInsufficientFundsPopup(configuration: InfoPopupBottomSheetViewController.Configuration) {
     let viewController = InfoPopupBottomSheetViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-    
-    let configurationBuilder = InfoPopupBottomSheetConfigurationBuilder(
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
-    )
-    let configuration = configurationBuilder.insufficientTokenConfiguration(
-      tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
-      tokenFractionalDigits: jettonInfo.fractionDigits,
-      required: requiredAmount,
-      available: availableAmount,
-      okAction: { [weak bottomSheetViewController] in
-        bottomSheetViewController?.dismiss()
-      }
-    )
     viewController.configuration = configuration
     router.dismiss(animated: true) { [router] in
       bottomSheetViewController.present(fromViewController: router.rootViewController)
@@ -1298,16 +1314,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
   }
-  
-  private func openBrowserTabExplore() {
+
+  private func openBrowserTab() {
     guard let browserViewController = browserCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: browserViewController) else { return }
     router.rootViewController.navigationController?.popToRootViewController(animated: true)
     router.rootViewController.selectedIndex = index
     router.dismiss(animated: true)
+  }
+
+  private func openBrowserTabExplore() {
+    openBrowserTab()
     browserCoordinator?.openExplore()
   }
-  
+
+  private func openBrowserDefiFlow() {
+    openBrowserTab()
+    browserCoordinator?.openDefi()
+  }
+
   private func decryptComment(wallet: Wallet,
                               payload: EncryptedCommentPayload,
                               eventId: String) {
@@ -1352,6 +1377,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 // MARK: - Ton Connect
 
 private extension MainCoordinator {
+
   func handleTonConnectRequest(_ request: TonConnect.AppRequest,
                                wallet: Wallet,
                                app: TonConnectApp) {

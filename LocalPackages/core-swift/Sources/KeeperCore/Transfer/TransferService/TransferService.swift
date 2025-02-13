@@ -508,7 +508,7 @@ public struct TransferService {
           signRawRequest: signRawRequest,
           seqno: seqno,
           timout: timeout,
-          excessesAddress: transferType.excessAddress
+          transferType: transferType
         ),
         wallet: wallet,
         messageType: messageType,
@@ -522,7 +522,7 @@ public struct TransferService {
           signRawRequest: signRawRequest,
           seqno: seqno,
           timout: timeout,
-          excessesAddress: transferType.excessAddress
+          transferType: transferType
         ),
         wallet: wallet,
         messageType: messageType,
@@ -551,7 +551,32 @@ public struct TransferService {
                                           signRawRequest: SignRawRequest,
                                           seqno: UInt64,
                                           timout: UInt64,
-                                          excessesAddress: Address?) async throws -> TransferData.Transfer {
+                                          transferType: TransferType) async throws -> TransferData.Transfer {
+  
+    let payloads = try await getTonconnectPayloads(wallet: wallet, signRawRequest: signRawRequest, transferType: transferType)
+    
+    let transfer = TransferData.Transfer.tonConnect(
+      TransferData.TonConnect(
+        payloads: payloads,
+        sender: signRawRequest.from
+      )
+    )
+    return transfer
+  }
+  
+  private func getTonconnectPayloads(wallet: Wallet, signRawRequest: SignRawRequest, transferType: TransferType) async throws -> [TransferData.TonConnect.Payload] {
+    
+    if case .battery = transferType, let batteryMessageVariant = signRawRequest.messagesVariants?.battery {
+      return batteryMessageVariant.map {
+        return TransferData.TonConnect.Payload(
+          value: BigInt(integerLiteral: Int64($0.amount)),
+          recipientAddress: $0.address,
+          stateInit: $0.stateInit,
+          payload: $0.payload
+        )
+      }
+    }
+    
     let jettonsBalance = try await balanceService.loadWalletBalance(
       wallet: wallet,
       currency: .USD
@@ -595,10 +620,9 @@ public struct TransferService {
         payload: payload
       ))
     }
-
-    let payloads: [TransferData.TonConnect.Payload] = try rebuildedMessages.map {
+    return try rebuildedMessages.map {
       var resultPayload: String? = $0.payload
-      if let payload = $0.payload, let excessesAddress {
+      if let payload = $0.payload, let excessesAddress = transferType.excessAddress {
         var payloadCell = try Cell.fromBase64(src: payload.fixBase64())
         payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)
         resultPayload = try payloadCell.toBoc().base64EncodedString()
@@ -611,14 +635,6 @@ public struct TransferService {
         payload: resultPayload
       )
     }
-    
-    let transfer = TransferData.Transfer.tonConnect(
-      TransferData.TonConnect(
-        payloads: payloads,
-        sender: signRawRequest.from
-      )
-    )
-    return transfer
   }
   
   private func rebuildPayloadWithExcessesAddress(payload: Cell, _ excessesAddress: Address) throws -> Cell {
@@ -631,21 +647,6 @@ public struct TransferService {
     let builder = Builder()
   
     switch Int32(opcode) {
-    case OpCodes.STONFI_SWAP:
-      try builder.store(uint: OpCodes.STONFI_SWAP, bits: 32)
-      try builder.store(payloadSlice.loadType() as Address)
-      try builder.store(payloadSlice.loadCoins())
-      try builder.store(payloadSlice.loadType() as Address)
-      try builder.store(bit: true)
-      try builder.store(excessesAddress)
-    case OpCodes.STONFI_SWAP_V2:
-      try builder.store(uint: OpCodes.STONFI_SWAP_V2, bits: 32)
-      try builder.store(payloadSlice.loadType() as Address)
-      try builder.store(payloadSlice.loadType() as Address)
-      let _ : TonSwift.AnyAddress = try payloadSlice.loadType()
-      try builder.store(excessesAddress)
-      try builder.store(uint: payloadSlice.loadUint(bits: 64), bits: 64)
-      try builder.store(ref: payloadSlice.loadRef())
     case OpCodes.JETTON_TRANSFER:
       try builder.store(uint: OpCodes.JETTON_TRANSFER, bits: 32)
       try builder.store(uint: payloadSlice.loadUint(bits: 64), bits: 64)

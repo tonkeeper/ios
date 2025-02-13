@@ -4,6 +4,7 @@ import TKCore
 import TKLocalize
 import KeeperCore
 import BigInt
+import TKLocalize
 
 protocol StakingInputModuleOutput: AnyObject {
   var didUpdateInputAmount: ((BigUInt) -> Void)? { get set }

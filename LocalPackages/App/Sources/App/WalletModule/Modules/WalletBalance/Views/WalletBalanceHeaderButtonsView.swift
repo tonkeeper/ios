@@ -45,7 +45,7 @@ final class WalletBalanceHeaderButtonsView: UIView, ConfigurableView {
     let scanButton: Button
     let swapButton: Button?
     let buyButton: Button?
-    let stakeButton: Button
+    let stakeButton: Button?
   }
   
   func configure(model: Model) {
@@ -56,17 +56,19 @@ final class WalletBalanceHeaderButtonsView: UIView, ConfigurableView {
     
     bottomRowStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
     
-    bottomRowStackView.addArrangedSubview(stakeButton)
-    stakeButton.configuration = buttonConfiguration(model: model.stakeButton)
-    
     if let modelSwapButton = model.swapButton {
-      bottomRowStackView.insertArrangedSubview(swapButton, at: 0)
+      bottomRowStackView.addArrangedSubview(swapButton)
       swapButton.configuration = buttonConfiguration(model: modelSwapButton)
     }
     if let modelBuyButton = model.buyButton {
-      bottomRowStackView.insertArrangedSubview(buyButton, at: 1)
+      bottomRowStackView.addArrangedSubview(buyButton)
       buyButton.configuration = buttonConfiguration(model: modelBuyButton)
     }
+    if let modelStakeButton = model.stakeButton {
+      bottomRowStackView.addArrangedSubview(stakeButton)
+      stakeButton.configuration = buttonConfiguration(model: modelStakeButton)
+    }
+    
     switch bottomRowStackView.arrangedSubviews.count {
     case 1:
       bottomRowStackView.insertArrangedSubview(UIView(), at: 0)

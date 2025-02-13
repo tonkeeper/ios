@@ -4,7 +4,7 @@ import KeeperCore
 
 struct DappAssembly {
   private init() {}
-  static func module(dapp: Dapp, 
+  static func module(dapp: Dapp,
                      analyticsProvider: AnalyticsProvider,
                      deeplinkHandler: @escaping ((_ deeplink: Deeplink) -> Void), messageHandler: DappMessageHandler,
                      wallet: Wallet?)

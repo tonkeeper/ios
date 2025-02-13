@@ -8,6 +8,7 @@ import BigInt
 protocol TransactionConfirmationOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirmTransaction: (() -> Void)? { get set }
+  var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)? { get set }
   var didClose: (() -> Void)? { get set }
 }
 
@@ -25,6 +26,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   var didConfirmTransaction: (() -> Void)?
+  var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)?
   var didClose: (() -> Void)?
   
   // MARK: - TransactionConfirmationViewModel
@@ -35,10 +37,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     confirmationController.signHandler = { [weak self] transferData, wallet in
       try await self?.didRequireSign?(transferData, wallet)
     }
-    
+
+    state = .processing
     let model = confirmationController.getModel()
     update(with: model)
     update()
+
+    let wallet = model.wallet
+    Task {
+      let result = await confirmationController.emulate()
+      state = .idle
+      if case let .failure(error) = result {
+       handleError(error)
+      }
+
+      let model = confirmationController.getModel()
+      do {
+        try await fundsValidator.validateFundsIfNeeded(wallet: wallet, emulationModel: model)
+      } catch {
+        if let error = error as? InsufficientFundsError {
+          didProduceInsufficientFundsError?(error)
+        }
+      }
+
+      update(with: model)
+    }
   }
   
   func didTapCloseButton() {
@@ -68,15 +91,18 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private let confirmationController: TransactionConfirmationController
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
-  
+  private let fundsValidator: InsufficientFundsValidator
+
   // MARK: - Init
   
   init(confirmationController: TransactionConfirmationController,
        amountFormatter: AmountFormatter,
-       decimalFormatter: DecimalAmountFormatter) {
+       decimalFormatter: DecimalAmountFormatter,
+       fundsValidator: InsufficientFundsValidator) {
     self.confirmationController = confirmationController
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
+    self.fundsValidator = fundsValidator
   }
   
   // MARK: - Private
@@ -484,25 +510,39 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         return TKLocales.TransactionConfirmation.Buttons.confirmAndSend
       }
     }()
-    
+
     var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     btnConf.content = .init(title: .plainString(buttonTitle))
     btnConf.action = { [weak self] in
       Task { [weak self] in
         guard let self else { return }
+
         self.state = .processing
-        let result = await self.confirmationController.sendTransaction()
-        switch result {
-        case .success:
-          self.state = .success
-          try await Task.sleep(nanoseconds: 1_000_000_000)
-          NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
-          didConfirmTransaction?()
-        case .failure(let error):
-          handleError(error)
+        
+        do {
+          try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
+
+          let result = await self.confirmationController.sendTransaction()
+          switch result {
+          case .success:
+            self.state = .success
+            try await Task.sleep(nanoseconds: 1_000_000_000)
+            NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
+            didConfirmTransaction?()
+          case .failure(let error):
+            handleError(error)
+            self.state = .failed
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            self.state = .idle
+          }
+        } catch {
           self.state = .failed
           try? await Task.sleep(nanoseconds: 1_500_000_000)
           self.state = .idle
+
+          if let error = error as? InsufficientFundsError {
+            didProduceInsufficientFundsError?(error)
+          }
         }
       }
     }

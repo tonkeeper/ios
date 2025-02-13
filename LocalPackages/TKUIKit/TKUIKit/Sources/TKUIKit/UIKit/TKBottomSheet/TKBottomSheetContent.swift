@@ -4,10 +4,12 @@ public struct TKPullCardHeaderItem {
   public struct LeftButton {
     let model: TKUIHeaderTitleIconButton.Model
     let action: (() -> Void)
+    let isEnabled: Bool
     
-    public init(model: TKUIHeaderTitleIconButton.Model, action: @escaping (() -> Void)) {
+    public init(model: TKUIHeaderTitleIconButton.Model, action: @escaping (() -> Void), isEnabled: Bool = true) {
       self.model = model
       self.action = action
+      self.isEnabled = isEnabled
     }
   }
   

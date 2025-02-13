@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TKFeatureFlags
 
 protocol BuySellListModuleOutput: AnyObject {
   var didSelectURL: ((URL) -> Void)? { get set }
@@ -75,7 +76,11 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
         observer.buySellProviderState = observer.buySellProvider.state
       }
     }
-    selectedCountry = regionStore.state
+    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
+      selectedCountry = .country(countryCode: hardcodedCountryCode)
+    } else {
+      selectedCountry = regionStore.state
+    }
     buySellProviderState = buySellProvider.state
     buySellProvider.load()
     updateCountryPickerButton()
@@ -163,6 +168,7 @@ private extension BuySellListViewModelImplementation {
 
   func updateCountryPickerButton() {
     let title: String
+    let isEnabled: Bool = !TKFeatureFlags.provider.isCountryPickerDisable
     switch selectedCountry {
     case .all:
       title = "🌍"
@@ -178,7 +184,8 @@ private extension BuySellListViewModelImplementation {
         action: { [weak self] in
           guard let self else { return }
           self.didSelectCountryPicker?(selectedCountry)
-        }
+        },
+        isEnabled: isEnabled
       )
     )
   }
@@ -268,11 +275,12 @@ private extension BuySellListViewModelImplementation {
       
       let filteredItems: [FiatMethodItem] = {
         func filterByCountryCode(items: FiatMethods, countryCode: String?) -> [FiatMethodItem] {
+          let shouldSkipSwapItems = TKFeatureFlags.provider.hardcodedCountryCode == nil
           if let methods = fiatMethods.layoutByCountry
             .first(where: { $0.countryCode == countryCode })?.methods {
             return category.items.filter { item in
               // Filter by country code all items except swap items
-              methods.contains(item.id) || item.id.contains("swap")
+              methods.contains(item.id) || (shouldSkipSwapItems && item.id.contains("swap"))
             }.sorted { lhs, rhs in
               let lhsIdx = methods.firstIndex(of: lhs.id) ?? .max
               let rhsIdx = methods.firstIndex(of: rhs.id) ?? .max
@@ -327,6 +335,7 @@ private extension BuySellListViewModelImplementation {
             mode: .widthToFit
           )
         )
+        buttonConfiguration.isEnabled = !TKFeatureFlags.provider.isCountryPickerDisable
         snapshot.appendSections([.button(id: category.hashValue)])
         snapshot.appendItems([buttonItem], toSection: .button(id: category.hashValue))
         

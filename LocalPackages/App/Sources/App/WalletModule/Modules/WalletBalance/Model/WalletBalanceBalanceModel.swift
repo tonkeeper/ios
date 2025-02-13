@@ -104,7 +104,7 @@ final class WalletBalanceBalanceModel {
         switch walletsStore.getState() {
         case .empty: break
         case .wallets(let state):
-          guard state.activeWalelt == wallet else { return }
+          guard state.activeWallet == wallet else { return }
           await self.actor.addTask(block: { await self.updateItems() })
         }
       }
@@ -118,7 +118,7 @@ final class WalletBalanceBalanceModel {
         switch walletsStore.getState() {
         case .empty: break
         case .wallets(let state):
-          guard state.activeWalelt == wallet else { return }
+          guard state.activeWallet == wallet else { return }
           await self.actor.addTask(block: { await self.updateItems() })
         }
       }
@@ -137,10 +137,10 @@ final class WalletBalanceBalanceModel {
     case .empty: break
     case .wallets(let walletsState):
       let isSecureMode = appSettingsStore.state.isSecureMode
-      let balanceState = balanceStore.state[walletsState.activeWalelt]
-      let stakingPools = stackingPoolsStore.state[walletsState.activeWalelt]
+      let balanceState = balanceStore.state[walletsState.activeWallet]
+      let stakingPools = stackingPoolsStore.state[walletsState.activeWallet]
       let items = createItems(
-        wallet: walletsState.activeWalelt,
+        wallet: walletsState.activeWallet,
         balanceState: balanceState,
         stakingPools: stakingPools ?? [],
         isSecureMode: isSecureMode
