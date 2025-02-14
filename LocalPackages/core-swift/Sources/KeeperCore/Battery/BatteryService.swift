@@ -11,6 +11,10 @@ public protocol BatteryService {
   func getRechargeMethods(wallet: Wallet, includeRechargeOnly: Bool) -> [BatteryRechargeMethod]
   func loadBatteryConfig(wallet: Wallet) async throws -> Config
   func loadTransactionInfo(wallet: Wallet, boc: String, tonProofToken: String) async throws -> (info: TonAPI.MessageConsequences, isBatteryAvailable: Bool)
+  func loadGasslessCommission(wallet: Wallet,
+                              tonProofToken: String,
+                              jettonMasterAddress: String,
+                              boc: String) async throws -> String
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws
   func makePurchase(wallet: Wallet, tonProofToken: String, transactionId: String, promocode: String?) async throws -> IOSBatteryPurchaseStatus
   func verifyPromocode(wallet: Wallet, promocode: String) async throws
@@ -92,6 +96,19 @@ final class BatteryServiceImplementation: BatteryService {
     return (result, response.isBatteryAvailable)
   }
   
+  func loadGasslessCommission(wallet: Wallet,
+                              tonProofToken: String,
+                              jettonMasterAddress: String,
+                              boc: String) async throws -> String {
+    let response = try await batteryAPIProvider
+      .api(wallet.isTestnet)
+      .gasslessEmulate(
+        tonProofToken: tonProofToken,
+        jettonMasterAddress: jettonMasterAddress,
+        boc: boc)
+    return response
+  }
+  
   func sendTransaction(wallet: Wallet, boc: String, tonProofToken: String) async throws {
     try await batteryAPIProvider
       .api(wallet.isTestnet)
@@ -110,3 +127,13 @@ final class BatteryServiceImplementation: BatteryService {
       .verifyPromocode(promocode: promocode)
   }
 }
+
+
+extension Config {
+  var excessAddress: Address {
+    get throws {
+      try Address.parse(excessAccount)
+    }
+  }
+}
+

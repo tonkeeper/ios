@@ -33,6 +33,7 @@ public struct TransferData {
     public let comment: String?
     public let customPayload: Cell?
     public let stateInit: StateInit?
+    public let additionalInternalMessages: [MessageRelaxed]
     
     public init(transferAmount: BigUInt,
                 jettonAddress: Address,
@@ -42,7 +43,8 @@ public struct TransferData {
                 isBouncable: Bool = true,
                 comment: String?,
                 customPayload: Cell? = nil,
-                stateInit: StateInit? = nil
+                stateInit: StateInit? = nil,
+                additionalInternalMessages: [MessageRelaxed]
     ) {
       self.transferAmount = transferAmount
       self.jettonAddress = jettonAddress
@@ -53,6 +55,7 @@ public struct TransferData {
       self.comment = comment
       self.customPayload = customPayload
       self.stateInit = stateInit
+      self.additionalInternalMessages = additionalInternalMessages
     }
   }
   

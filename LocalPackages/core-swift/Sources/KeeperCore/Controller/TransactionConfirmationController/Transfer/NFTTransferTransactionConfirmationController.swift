@@ -17,11 +17,11 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))]
       )
       self.emulationResult = result
-      updateFee(emulationResult: emulationResult)
+      await updateFee(emulationResult: emulationResult)
       return .success(())
     } catch {
       self.emulationResult = nil
-      updateFee(emulationResult: nil)
+      await updateFee(emulationResult: nil)
       return .failure(.failedToCalculateFee)
     }
   }
@@ -32,7 +32,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         guard let emulationResult else {
           return BigUInt(100000000)
         }
-        let emulationExtra = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
+        let emulationExtra = emulationResult.fee.amount
         let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
         var transferAmount = emulationExtra + minimumTransferAmount
         transferAmount = transferAmount < minimumTransferAmount
@@ -71,6 +71,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let transferService: TransferService
+  private let ratesService: RatesService
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -80,7 +81,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
        blockchainService: BlockchainService,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       transferService: TransferService) {
+       transferService: TransferService,
+       ratesService: RatesService) {
     self.wallet = wallet
     self.recipient = recipient
     self.nft = nft
@@ -90,6 +92,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
     self.transferService = transferService
+    self.ratesService = ratesService
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -104,19 +107,20 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     )
   }
   
-  private func updateFee(emulationResult: TransferEmulationResult?) {
+  private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, converted: nil, isBattery: false)
+      fee = .value(nil, converted: nil, isBattery: false, gasless: nil)
       return
     }
-    let fee = BigUInt(UInt64(abs(emulationResult.transactionInfo.event.extra)))
+    let fee = emulationResult.fee
     
     var convertedFee: TransactionConfirmationModel.Amount?
     let currency = currencyStore.getState()
-    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
+    let rates: Rates.Rate? = await getFeeRate(fee: fee, currency: currency)
+    if let rates = rates {
       let rateConverter = RateConverter()
       let converted = rateConverter.convert(
-        amount: fee,
+        amount: fee.amount,
         amountFractionLength: TonInfo.fractionDigits,
         rate: rates
       )
@@ -129,12 +133,13 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     
     self.fee = .value(
       TransactionConfirmationModel.Amount(
-        value: fee,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
+        value: fee.amount,
+        decimals: fee.token.fractionDigits,
+        item: .symbol(fee.token.symbol)
       ),
       converted: convertedFee,
-      isBattery: emulationResult.transferType.isBattery
+      isBattery: emulationResult.transferType.isBattery,
+      gasless: nil
     )
   }
   
@@ -142,5 +147,31 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
+  }
+  
+  func getFeeRate(fee: TransferEmulationResult.Fee, currency: Currency) async -> Rates.Rate? {
+    do {
+      let jettons: [JettonInfo] = {
+        switch fee.token {
+        case .ton:
+          return []
+        case .jetton(let jettonItem):
+          return [jettonItem.jettonInfo]
+        }
+      }()
+      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
+      switch fee.token {
+      case .ton:
+        return rates.ton
+          .first(where: { $0.currency == currency })
+      case .jetton(let jettonItem):
+        return rates.jettonsRates
+          .first(where: { $0.jettonInfo.address == jettonItem.jettonInfo.address })?
+          .rates
+          .first(where: { $0.currency == currency })
+      }
+    } catch {
+      return nil
+    }
   }
 }

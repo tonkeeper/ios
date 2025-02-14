@@ -158,7 +158,8 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferService: transferAssembly.transferService()
+      transferService: transferAssembly.transferService(),
+      ratesService: servicesAssembly.ratesService()
     )
   }
   
@@ -177,7 +178,8 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferService: transferAssembly.transferService()
+      transferService: transferAssembly.transferService(),
+      ratesService: servicesAssembly.ratesService()
     )
   }
   
@@ -194,7 +196,8 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      transferService: transferAssembly.transferService()
+      transferService: transferAssembly.transferService(),
+      ratesService: servicesAssembly.ratesService()
     )
   }
   

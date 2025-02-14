@@ -101,7 +101,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
 
-        guard case let .value(fee, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
+        guard case let .value(fee, _/*converted*/, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
               let fee = fee?.value else {
           return
         }
@@ -140,13 +140,13 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
 
-        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
+        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
            let fee = emulationAmount?.value,
            formattedTonBalance < fee {
           throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
         }
       case .nft:
-        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/) = emulationModel.fee,
+        if case let .value(emulationAmount, _/*converted*/, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
            let fee = emulationAmount?.value,
            formattedTonBalance < fee {
           throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)

@@ -15,7 +15,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
       updateFee(transactionInfo: transactionInfo)
       return .success(())
     } catch {
-      fee = .value(nil, converted: nil)
+      fee = .value(nil, converted: nil, gasless: nil)
       return .failure(.failedToCalculateFee)
     }
   }
@@ -166,7 +166,8 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         decimals: TonInfo.fractionDigits,
         item: .currency(.TON)
       ),
-      converted: convertedFee
+      converted: convertedFee,
+      gasless: nil
     )
   }
   

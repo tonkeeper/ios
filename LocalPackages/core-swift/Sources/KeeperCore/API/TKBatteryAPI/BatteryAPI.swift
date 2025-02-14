@@ -102,6 +102,21 @@ extension BatteryAPI {
     return (responseData, isBatteryAvailable)
   }
   
+  func gasslessEmulate(tonProofToken: String, jettonMasterAddress: String, boc: String) async throws -> String {
+    let request = try await createRequest {
+      return DefaultAPI.estimateGaslessCostWithRequestBuilder(
+        jettonMaster: jettonMasterAddress,
+        estimateGaslessCostRequest: EstimateGaslessCostRequest(
+          battery: false,
+          payload: boc
+        ),
+        xTonConnectAuth: tonProofToken
+      )
+    }
+    let response = try await request.execute()
+    return response.body.commission
+  }
+  
   func sendMessage(tonProofToken: String, boc: String) async throws {
     let request = try await createRequest {
       return DefaultAPI.sendMessageWithRequestBuilder(

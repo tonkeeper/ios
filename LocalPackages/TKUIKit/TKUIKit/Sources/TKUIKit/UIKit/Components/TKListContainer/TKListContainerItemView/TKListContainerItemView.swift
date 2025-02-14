@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKListContainerItemView: UIView, ConfigurableView {
+public final class TKListContainerItemView: TKPassthroughView, ConfigurableView {
   
   public struct Model: TKListContainerReconfigurableItem {
     public enum Value {
@@ -21,6 +21,7 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     public let title: String
     public let titleIcon: Icon?
     public let caption: NSAttributedString?
+    public let captionButtonModel: TKPlainButton.Model?
     public let value: Value
     public var action: TKListContainerItemAction?
     
@@ -38,12 +39,14 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
                 title: String,
                 titleIcon: Icon? = nil,
                 caption: NSAttributedString? = nil,
+                captionButtonModel: TKPlainButton.Model? = nil,
                 value: Value,
                 action: TKListContainerItemAction?) {
       self.id = id
       self.title = title
       self.titleIcon = titleIcon
       self.caption = caption
+      self.captionButtonModel = captionButtonModel
       self.value = value
       self.action = action
     }
@@ -57,6 +60,12 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
       lineBreakMode: .byTruncatingTail
     )
     captionLabel.attributedText = model.caption
+    if let captionButtonModel = model.captionButtonModel {
+      captionButton.configure(model: captionButtonModel)
+      captionButton.isHidden = false
+    } else {
+      captionButton.isHidden = true
+    }
     titleIconImageView.image = model.titleIcon?.image
     titleIconImageView.tintColor = model.titleIcon?.tintColor
     valueViewContainer.subviews.forEach { $0.removeFromSuperview() }
@@ -90,15 +99,16 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
 
   private let titleLabel = UILabel()
   private let captionLabel = UILabel()
+  private let captionButton = TKPlainButton()
   private let titleIconImageView = UIImageView()
   private let titleVerticalStackView: UIStackView = {
-    let stackView = UIStackView()
+    let stackView = TKPassthroughStackView()
     stackView.axis = .vertical
     return stackView
   }()
   
   private let valueStackView: UIStackView = {
-    let stackView = UIStackView()
+    let stackView = TKPassthroughStackView()
     stackView.axis = .vertical
     return stackView
   }()
@@ -121,10 +131,12 @@ public final class TKListContainerItemView: UIView, ConfigurableView {
     
     titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     captionLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    captionButton.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     stackView.addArrangedSubview(titleVerticalStackView)
     titleVerticalStackView.addArrangedSubview(titleContainerView)
     titleVerticalStackView.addArrangedSubview(captionLabel)
+    titleVerticalStackView.addArrangedSubview(captionButton)
     titleContainerView.addSubview(titleLabel)
     titleContainerView.addSubview(titleIconImageView)
     

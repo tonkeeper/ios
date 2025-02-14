@@ -41,7 +41,7 @@ public final class TKListContainerView: UIView {
   private var contentViews = [String: UIView]()
   
   private let stackView: UIStackView = {
-    let stackView = UIStackView()
+    let stackView = TKPassthroughStackView()
     stackView.axis = .vertical
     return stackView
   }()
@@ -86,7 +86,6 @@ public final class TKListContainerView: UIView {
 
       let createView = { (id: String?) in
         let contentView = item.element.getView()
-        contentView.isUserInteractionEnabled = false
         let itemView = TKListContainerItemViewContainer()
         itemView.setContentView(contentView)
         let isSeparatorVisible = (configuration.items.count - 1) != item.offset

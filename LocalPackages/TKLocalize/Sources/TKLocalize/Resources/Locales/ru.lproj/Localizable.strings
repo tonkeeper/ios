@@ -618,6 +618,7 @@
 "transaction_confirmation.buttons.confirm_and_stake" = "Подтвердить и внести";
 "transaction_confirmation.buttons.confirm_and_unstake" = "Подтвердить и отправить";
 "transaction_confirmation.buttons.confirm_and_collect" = "Подтвердить";
+"transaction_confirmation.tap_to_pay" = "Оплатить в %@";
 
 "battery.refill.title" = "Батарейка Tonkeeper";
 "battery.refill.empty_caption" = "Обменивайте через Tonkeeper, отправляйте токены.";

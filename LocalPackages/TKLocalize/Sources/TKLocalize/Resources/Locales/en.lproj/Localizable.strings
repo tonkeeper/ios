@@ -632,6 +632,7 @@
 "transaction_confirmation.buttons.confirm_and_stake" = "Confirm and Stake";
 "transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
 "transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";
+"transaction_confirmation.tap_to_pay" = "Tap to pay in %@";
 
 "battery.refill.title" = "Tonkeeper Battery";
 "battery.refill.empty_caption" = "Swap via Tonkeeper, send tokens and unstake TON.";

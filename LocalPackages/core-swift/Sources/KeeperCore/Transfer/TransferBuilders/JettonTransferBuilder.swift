@@ -16,7 +16,8 @@ public struct JettonTransferBuilder {
                                           timeout: UInt64?,
                                           customPayload: Cell? = nil,
                                           stateInit: StateInit? = nil,
-                                          messageType: MessageType) throws -> WalletTransfer {
+                                          messageType: MessageType,
+                                          additionalInternalMessages: [MessageRelaxed]) throws -> WalletTransfer {
     try WalletTransferBuilder.buildWalletTransfer(
       wallet: wallet,
       sender: try wallet.address,
@@ -33,7 +34,7 @@ public struct JettonTransferBuilder {
           customPayload: customPayload,
           stateInit: stateInit
         )
-        return [internalMessage]
+        return CollectionOfOne(internalMessage) + additionalInternalMessages
       },
       timeout: timeout,
       messageType: messageType
