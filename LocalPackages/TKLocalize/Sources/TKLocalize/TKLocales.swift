@@ -1504,6 +1504,10 @@ public enum TKLocales {
     public static let fee = TKLocales.tr("Localizable", "transaction_confirmation.fee", fallback: "Fee")
     /// Recipient
     public static let recipient = TKLocales.tr("Localizable", "transaction_confirmation.recipient", fallback: "Recipient")
+    /// Tap to pay in %@
+    public static func tapToPay(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "transaction_confirmation.tap_to_pay", String(describing: p1), fallback: "Tap to pay in %@")
+    }
     /// Unstake
     public static let unstake = TKLocales.tr("Localizable", "transaction_confirmation.unstake", fallback: "Unstake")
     /// Unstake amount

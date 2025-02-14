@@ -468,9 +468,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         let captionButtonTitle: String = {
           switch gasless {
           case .ton:
-            return "Tap to pay in \(TonInfo.symbol)"
+            return TKLocales.TransactionConfirmation.tapToPay(TonInfo.symbol)
           case .jetton(let jettonInfo):
-            return "Tap to pay in \(jettonInfo.symbol ?? jettonInfo.name)"
+            return TKLocales.TransactionConfirmation.tapToPay(jettonInfo.symbol ?? jettonInfo.name)
           }
         }()
         captionButton = TKPlainButton.Model(title: captionButtonTitle.withTextStyle(.body2, color: .Text.tertiary), action: { [weak self] in
