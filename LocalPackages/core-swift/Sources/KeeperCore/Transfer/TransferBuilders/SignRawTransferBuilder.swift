@@ -33,7 +33,7 @@ public struct SignRawTransferBuilder {
       if let stateInitString = payload.stateInit, !stateInitString.isEmpty {
         stateInit = try StateInit.loadFrom(
           slice: try Cell
-            .fromBase64(src: stateInitString)
+            .fromBase64(src: stateInitString.fixBase64())
             .toSlice()
         )
       }
