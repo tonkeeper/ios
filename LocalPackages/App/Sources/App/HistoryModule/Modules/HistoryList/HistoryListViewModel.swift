@@ -68,7 +68,9 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
       }
     }
     setInitialState()
-    paginationLoader.reload()
+    paginationLoader.reload(force: true)
+    
+    subscribeAppStateNotifications()
   }
   
   func loadNextPage() {
@@ -77,7 +79,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   }
   
   func reload() {
-    paginationLoader.reload()
+    paginationLoader.reload(force: true)
   }
   
   func getEventCellConfiguration(eventID: HistoryList.EventID) -> HistoryCell.Model? {
@@ -152,6 +154,10 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     self.accountEventMapper = accountEventMapper
     self.historyEventMapper = historyEventMapper
     self.nftManagmentStore = nftManagmentStore
+  }
+  
+  deinit {
+    unsubscribeAppStateNotifications()
   }
 
   private func setInitialState() {
@@ -458,6 +464,31 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     }
     return dateFormatter.string(from: date).capitalized
   }
+  
+  
+  func subscribeAppStateNotifications() {
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(didBecomeActive),
+                                           name: UIApplication.didBecomeActiveNotification,
+                                           object: nil)
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(didEnterBackground),
+                                           name: UIApplication.didEnterBackgroundNotification,
+                                           object: nil)
+  }
+  
+  func unsubscribeAppStateNotifications() {
+    NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
+    NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
+  }
+  
+  @objc
+  func didBecomeActive() {
+    paginationLoader.reload(force: false)
+  }
+  
+  @objc
+  func didEnterBackground() {}
 }
 
 private extension HistoryList.Snapshot {

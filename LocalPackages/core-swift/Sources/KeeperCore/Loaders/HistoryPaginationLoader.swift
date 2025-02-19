@@ -21,6 +21,7 @@ public final class HistoryPaginationLoader {
   private let queue = DispatchQueue(label: "HistoryPaginationLoaderQueue")
   private var state: State = .idle
   private var nextFrom: Int64?
+  private var lastReloadDate: Date?
   
   private let wallet: Wallet
   private let loader: HistoryListLoader
@@ -34,12 +35,26 @@ public final class HistoryPaginationLoader {
     self.nftService = nftService
   }
   
-  public func reload() {
+  public func reload(force: Bool) {
     queue.async {
+      let needToReload: Bool = {
+        guard let lastReloadDate = self.lastReloadDate else {
+          return true
+        }
+        let currentDate = Date()
+        let diff = currentDate.timeIntervalSince(lastReloadDate)
+        return diff >= .notForceReloadDelay
+      }()
+      
+      guard needToReload || force else {
+        return
+      }
+      
       if case let .loading(task) = self.state {
         task.cancel()
       }
       self.nextFrom = nil
+      self.lastReloadDate = Date()
             
       let task = Task {
         do {
@@ -129,4 +144,8 @@ public final class HistoryPaginationLoader {
 
 private extension Int {
   static let limit: Int = 50
+}
+
+private extension TimeInterval {
+  static let notForceReloadDelay: TimeInterval = 1
 }
