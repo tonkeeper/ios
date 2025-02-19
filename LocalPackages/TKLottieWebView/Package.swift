@@ -10,9 +10,15 @@ let package = Package(
       name: "TKLottieWebView",
       targets: ["TKLottieWebView"]),
   ],
+  dependencies: [
+    .package(path: "../TKAppInfo")
+  ],
   targets: [
     .target(
       name: "TKLottieWebView",
+      dependencies: [
+        .product(name: "TKAppInfo", package: "TKAppInfo")
+      ],
       resources: [.process("Resources")]),
   ]
 )

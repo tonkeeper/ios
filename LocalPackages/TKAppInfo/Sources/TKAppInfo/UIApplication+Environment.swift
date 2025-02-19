@@ -5,6 +5,14 @@ public extension UIApplication {
     !hasEmbeddedMobileProvision && !isAppStoreReceiptSandbox
   }
   
+  var isDebug: Bool {
+#if DEBUG
+    return true
+#else
+    return false
+#endif
+  }
+  
   private var hasEmbeddedMobileProvision: Bool {
     Bundle.main.path(forResource: "embedded", ofType: "mobileprovision") != nil
   }

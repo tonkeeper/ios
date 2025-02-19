@@ -1,5 +1,6 @@
 import WebKit
 import UIKit
+import TKAppInfo
 
 public final class TKLottieWebView: UIView {
   private let webView = WKWebView()
@@ -19,6 +20,9 @@ public final class TKLottieWebView: UIView {
     super.init(frame: frame)
     
     webView.isOpaque = false
+    if #available(iOS 16.4, *), !UIApplication.shared.isAppStoreEnvironment || UIApplication.shared.isDebug {
+      webView.isInspectable = true
+    }
     
     addSubview(webView)
     webView.translatesAutoresizingMaskIntoConstraints = false

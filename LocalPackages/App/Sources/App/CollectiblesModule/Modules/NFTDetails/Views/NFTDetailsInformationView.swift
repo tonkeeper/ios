@@ -11,7 +11,8 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
       case lottieAnimation(URL)
     }
 
-    let item: Item
+    let image: TKImageView.Model
+    let lottieAnimation: URL?
     let isBlurVisible: Bool
     let itemInformationViewModel: NFTDetailsItemInformationView.Model
     let collectionInformationViewModel: NFTDetailsCollectionInformationView.Model?
@@ -19,23 +20,23 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     imageItemContainerView.subviews.forEach { $0.removeFromSuperview() }
-    switch model.item {
-    case .image(let imageModel):
-      let imageView = TKImageView()
-      imageItemContainerView.insertSubview(imageView, belowSubview: imageBlurView)
-      imageView.configure(model: imageModel)
-      imageView.snp.makeConstraints { make in
-        make.edges.equalTo(imageItemContainerView)
-      }
-    case .lottieAnimation(let url):
+    
+    let imageView = TKImageView()
+    imageItemContainerView.insertSubview(imageView, belowSubview: imageBlurView)
+    imageView.configure(model: model.image)
+    imageView.snp.makeConstraints { make in
+      make.edges.equalTo(imageItemContainerView)
+    }
+    
+    if let lottieAnimation = model.lottieAnimation {
       let lottieWebView = TKLottieWebView()
-      lottieWebView.backgroundColor = .Background.content
       imageItemContainerView.insertSubview(lottieWebView, belowSubview: imageBlurView)
-      lottieWebView.loadLottieAnimation(url: url)
+      lottieWebView.loadLottieAnimation(url: lottieAnimation)
       lottieWebView.snp.makeConstraints { make in
         make.edges.equalTo(imageItemContainerView)
       }
     }
+
     imageBlurView.isHidden = !model.isBlurVisible
     itemInformationView.configure(model: model.itemInformationViewModel)
     if let collectionInformationViewModel = model.collectionInformationViewModel {

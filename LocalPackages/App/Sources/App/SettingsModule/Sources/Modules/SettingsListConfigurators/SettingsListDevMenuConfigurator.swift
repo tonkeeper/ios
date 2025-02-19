@@ -6,6 +6,7 @@ import KeeperCore
 import TKLocalize
 import TKCore
 import TKFeatureFlags
+import TKAppInfo
 
 final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
   
