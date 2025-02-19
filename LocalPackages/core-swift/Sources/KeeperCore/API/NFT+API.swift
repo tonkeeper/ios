@@ -28,7 +28,7 @@ extension NFT {
     imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
     lottieURL = (nftItem.metadata["lottie"]?.value as? String).flatMap { URL(string: $0) }
     description = nftItem.metadata["description"]?.value as? String
-    var renderType: RenderType? = {
+    let renderType: RenderType? = {
       if let apiRenderType = nftItem.metadata["render_type"]?.value as? String,
          let renderType = RenderType(rawValue: apiRenderType) {
         return renderType

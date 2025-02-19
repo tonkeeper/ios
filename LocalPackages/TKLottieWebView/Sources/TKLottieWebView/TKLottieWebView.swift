@@ -23,7 +23,6 @@ public final class TKLottieWebView: UIView {
     if #available(iOS 16.4, *), !UIApplication.shared.isAppStoreEnvironment || UIApplication.shared.isDebug {
       webView.isInspectable = true
     }
-
     
     addSubview(webView)
     webView.translatesAutoresizingMaskIntoConstraints = false

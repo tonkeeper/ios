@@ -255,7 +255,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   private func createInformationViewModel(isSecureMode: Bool) -> NFTDetailsInformationView.Model {
 
     let item: NFTDetailsInformationView.Model.Item
-    if let lottieUrl = nft.lottieURL {
+    if let lottieUrl = nft.proxyLottieURL {
       item = .lottieAnimation(lottieUrl)
     } else {
       item = .image(TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none))
@@ -288,7 +288,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }()
     
     return NFTDetailsInformationView.Model(
-      item: item,
+      image: TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none),
+      lottieAnimation: nft.proxyLottieURL,
       isBlurVisible: isSecureMode,
       itemInformationViewModel: itemInformationViewModel,
       collectionInformationViewModel: collectionInformationViewModel
