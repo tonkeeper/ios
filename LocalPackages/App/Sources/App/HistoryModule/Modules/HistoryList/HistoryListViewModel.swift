@@ -53,7 +53,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     backgroundUpdate.addEventObserver(self) { observer, wallet, _ in
       guard wallet == observer.wallet else { return }
       observer.queue.async {
-        observer.paginationLoader.reload()
+        observer.paginationLoader.reload(force: true)
       }
     }
 
