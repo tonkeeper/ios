@@ -39,29 +39,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     state = .processing
-    let model = confirmationController.getModel()
-    update(with: model)
     update()
-
-    let wallet = model.wallet
-    Task {
-      let result = await confirmationController.emulate()
-      state = .idle
-      if case let .failure(error) = result {
-       handleError(error)
-      }
-
-      let model = confirmationController.getModel()
-      do {
-        try await fundsValidator.validateFundsIfNeeded(wallet: wallet, emulationModel: model)
-      } catch {
-        if let error = error as? InsufficientFundsError {
-          didProduceInsufficientFundsError?(error)
-        }
-      }
-
-      update(with: model)
-    }
   }
   
   func didTapCloseButton() {
@@ -83,6 +61,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       update(with: model)
     }
   }
+  private var amountRate: Rates.Rate?
+  private var feeRate: Rates.Rate?
   
   private var updateTask: Task<Void, Never>?
   
@@ -92,17 +72,23 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   private let fundsValidator: InsufficientFundsValidator
+  private let currencyStore: CurrencyStore
+  private let ratesService: RatesService
 
   // MARK: - Init
   
   init(confirmationController: TransactionConfirmationController,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter,
-       fundsValidator: InsufficientFundsValidator) {
+       fundsValidator: InsufficientFundsValidator,
+       currencyStore: CurrencyStore,
+       ratesService: RatesService) {
     self.confirmationController = confirmationController
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
     self.fundsValidator = fundsValidator
+    self.currencyStore = currencyStore
+    self.ratesService = ratesService
   }
   
   // MARK: - Private
@@ -116,12 +102,28 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
        handleError(error)
       }
       let model = confirmationController.getModel()
+      let currency = currencyStore.state
+      let rates = await getRates(model: model, currency: currency)
+      guard !Task.isCancelled else { return }
+      self.amountRate = rates.valueRate
+      self.feeRate = rates.feeRate
       update(with: model)
+      
+      do {
+        try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
+      } catch {
+        guard !Task.isCancelled else { return }
+        if let error = error as? InsufficientFundsError {
+          didProduceInsufficientFundsError?(error)
+        }
+      }
     }
   }
   
   @MainActor
   private func update(with model: TransactionConfirmationModel) {
+    let currency = currencyStore.state
+    
     var items = [TKPopUp.Item]()
     
     items.append(createHeaderImageItem(transaction: model))
@@ -163,7 +165,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
     items.append(TKPopUp.Component.GroupComponent(
       padding: UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16),
-      items: [createListItem(transaction: model)]
+      items: [createListItem(transaction: model, amountRate: amountRate, feeRate: feeRate, currency: currency)]
     ))
     
     let bottomItems: [TKPopUp.Item] = [
@@ -256,7 +258,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
   }
   
-  private func createListItem(transaction: TransactionConfirmationModel) -> TKPopUp.Item {
+  private func createListItem(transaction: TransactionConfirmationModel,
+                              amountRate: Rates.Rate?,
+                              feeRate: Rates.Rate?,
+                              currency: Currency) -> TKPopUp.Item {
     var items = [TKListContainerItem]()
     
     items.append(
@@ -268,7 +273,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     if let recipientAddress = createRecipientAddresItem(transaction: transaction) {
       items.append(recipientAddress)
     }
-    if let amountItem = createAmountItem(transaction: transaction) {
+    if let amountItem = createAmountItem(transaction: transaction, rate: amountRate, currency: currency) {
       items.append(amountItem)
     }
     if let apyItem = createAPYItem(transaction: transaction) {
@@ -277,7 +282,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       )
     }
     items.append(
-      createFeeListItem(transaction: transaction)
+      createFeeListItem(transaction: transaction, rate: feeRate, currency: currency)
     )
     if let commentItem = createCommentItem(transaction: transaction) {
       items.append(commentItem)
@@ -371,7 +376,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
-  private func createAmountItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model? {
+  private func createAmountItem(transaction: TransactionConfirmationModel,
+                                rate: Rates.Rate?,
+                                currency: Currency) -> TKListContainerItemView.Model? {
     let title: String
     switch transaction.transaction {
     case .staking(let staking):
@@ -394,18 +401,23 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     
     let value: TKListContainerItemView.Model.Value
     let valueFormatted = formatValueItem(
-      amount: amount.amount.value,
-      fractionDigits: amount.amount.decimals,
-      maximumFractionDigits: amount.amount.decimals,
-      item: amount.amount.item
+      amount: amount.value,
+      fractionDigits: amount.token.fractionDigits,
+      maximumFractionDigits: amount.token.fractionDigits,
+      symbol: amount.token.symbol
     )
     var convertedFormatted: String?
-    if let converted = amount.converted {
+    if let rate {
+      let converted = RateConverter().convert(
+        amount: amount.value,
+        amountFractionLength: amount.token.fractionDigits,
+        rate: rate
+      )
       let formatted = formatValueItem(
-        amount: converted.value,
-        fractionDigits: converted.decimals,
+        amount: converted.amount,
+        fractionDigits: converted.fractionLength,
         maximumFractionDigits: 2,
-        item: converted.item
+        symbol: currency.symbol
       )
       convertedFormatted = formatted
     }
@@ -421,7 +433,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
-  private func createFeeListItem(transaction: TransactionConfirmationModel) -> TKListContainerItemView.Model {
+  private func createFeeListItem(transaction: TransactionConfirmationModel,
+                                 rate: Rates.Rate?,
+                                 currency: Currency) -> TKListContainerItemView.Model {
     var copyValue: String?
     var caption: NSAttributedString?
     var captionButton: TKPlainButton.Model?
@@ -429,27 +443,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     switch transaction.fee {
     case .loading:
       value = .loading
-    case let .value(feeValue,
-                    feeConverted,
+    case let .value(amount,
                     isBattery,
                     gasless):
-      if let feeValue {
+      if let amount {
         let feeValueFormatted = formatValueItem(
-          amount: feeValue.value,
-          fractionDigits: feeValue.decimals,
-          maximumFractionDigits: feeValue.decimals,
-          item: feeValue.item
+          amount: amount.value,
+          fractionDigits: amount.token.fractionDigits,
+          maximumFractionDigits: amount.token.fractionDigits,
+          symbol: amount.token.symbol
         )
         copyValue = feeValueFormatted
         var feeConvertedFormatted: String?
-        if let feeConverted {
-          let formatted = formatValueItem(
-            amount: feeConverted.value,
-            fractionDigits: feeConverted.decimals,
-            maximumFractionDigits: 2,
-            item: feeConverted.item
+        if let rate {
+          let converted = RateConverter().convert(
+            amount: amount.value,
+            amountFractionLength: amount.token.fractionDigits,
+            rate: rate
           )
-          feeConvertedFormatted = "\(String.almostEqual) \(formatted)"
+          let formatted = formatValueItem(
+            amount: converted.amount,
+            fractionDigits: converted.fractionLength,
+            maximumFractionDigits: 2,
+            symbol: currency.symbol
+          )
+          feeConvertedFormatted = formatted
         }
         value = .value(TKListContainerItemDefaultValueView.Model(
           topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(String.almostEqual) \(feeValueFormatted)"),
@@ -578,22 +596,64 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private func formatValueItem(amount: BigUInt,
                                fractionDigits: Int,
                                maximumFractionDigits: Int,
-                               item: TransactionConfirmationModel.Amount.Item) -> String {
-    switch item {
-    case .currency(let currency):
-      return amountFormatter.formatAmount(
-        amount,
-        fractionDigits: fractionDigits,
-        maximumFractionDigits: maximumFractionDigits,
-        currency: currency
-      )
-    case .symbol(let string):
-      return amountFormatter.formatAmount(
-        amount,
-        fractionDigits: fractionDigits,
-        maximumFractionDigits: maximumFractionDigits,
-        symbol: string
-      )
+                               symbol: String) -> String {
+    amountFormatter.formatAmount(
+      amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: maximumFractionDigits,
+      symbol: symbol
+    )
+  }
+  
+  private func getRates(model: TransactionConfirmationModel,
+                        currency: Currency) async -> (valueRate: Rates.Rate?, feeRate: Rates.Rate?) {
+    let valueToken = model.amount?.token
+    let feeToken: Token? = {
+      switch model.fee {
+      case .loading:
+        return nil
+      case .value(let amount, _, _):
+        return amount?.token
+      }
+    }()
+
+    let jettons: [JettonInfo] = [valueToken, feeToken].compactMap { token -> JettonInfo? in
+      switch token {
+      case .ton:
+        return nil
+      case .jetton(let jettonItem):
+        return jettonItem.jettonInfo
+      case nil:
+        return nil
+      }
+    }
+    
+    do {
+      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
+      let valueRate = {
+        switch valueToken {
+        case .ton:
+          return rates.ton.first(where: { $0.currency == currency })
+        case .jetton(let jettonItem):
+          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency })
+        case nil:
+          return nil
+        }
+      }()
+      let feeRate = {
+        switch feeToken {
+        case .ton:
+          return rates.ton.first(where: { $0.currency == currency })
+        case .jetton(let jettonItem):
+          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency })
+        case nil:
+          return nil
+        }
+      }()
+      
+      return (valueRate, feeRate)
+    } catch {
+      return (nil, nil)
     }
   }
 }

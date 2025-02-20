@@ -23,17 +23,7 @@ public struct TransactionConfirmationModel {
     case staking(Staking)
     case transfer(Transfer)
   }
-  
-  public struct Amount {
-    public enum Item {
-      case currency(Currency)
-      case symbol(String)
-    }
-    public let value: BigUInt
-    public let decimals: Int
-    public let item: Item
-  }
-  
+
   public enum Fee {
     public enum Gasless {
       case ton
@@ -41,15 +31,19 @@ public struct TransactionConfirmationModel {
     }
     
     case loading
-    case value(Amount?, converted: Amount?, isBattery: Bool = false, gasless: Gasless?)
+    case value(Amount?, isBattery: Bool = false, gasless: Gasless?)
+  }
+  
+  public struct Amount {
+    public let token: Token
+    public let value: BigUInt
   }
 
-  
   public let wallet: Wallet
   public let recipient: String?
   public let recipientAddress: String?
   public let transaction: Transaction
-  public let amount: (amount: Amount, converted: Amount?)?
+  public let amount: Amount?
   public let fee: Fee
   public let comment: String?
 
@@ -57,7 +51,7 @@ public struct TransactionConfirmationModel {
        recipient: String?,
        recipientAddress: String?,
        transaction: Transaction,
-       amount: (amount: Amount, converted: Amount?)?,
+       amount: Amount?,
        fee: Fee,
        comment: String? = nil) {
     self.wallet = wallet

@@ -68,7 +68,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func ratesService() -> RatesService {
+  public func ratesService() -> RatesService {
     RatesServiceImplementation(
       api: apiAssembly.api,
       ratesRepository: repositoriesAssembly.ratesRepository()

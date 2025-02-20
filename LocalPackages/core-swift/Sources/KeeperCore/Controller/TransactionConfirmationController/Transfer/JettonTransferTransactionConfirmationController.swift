@@ -122,27 +122,10 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, converted: nil, isBattery: false, gasless: nil)
+      fee = .value(nil, isBattery: false, gasless: nil)
       return
     }
     let fee = emulationResult.fee
-    
-    var convertedFee: TransactionConfirmationModel.Amount?
-    let currency = currencyStore.getState()
-    let rates: Rates.Rate? = await getFeeRate(fee: fee, currency: currency)
-    if let rates = rates {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: fee.amount,
-        amountFractionLength: fee.token.fractionDigits,
-        rate: rates
-      )
-      convertedFee = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
     
     let gasless: TransactionConfirmationModel.Fee.Gasless?
     switch emulationResult.transferType {
@@ -165,41 +148,20 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     
     self.fee = .value(
       TransactionConfirmationModel.Amount(
-        value: fee.amount,
-        decimals: fee.token.fractionDigits,
-        item: .symbol(fee.token.symbol)
+        token: fee.token,
+        value: fee.amount
       ),
-      converted: convertedFee,
       isBattery: emulationResult.transferType.isBattery,
       gasless: gasless
     )
   }
   
-  private func getAmountValue() -> (amount: TransactionConfirmationModel.Amount, converted: TransactionConfirmationModel.Amount?) {
-    let currency = currencyStore.state
-    var convertedAmount: TransactionConfirmationModel.Amount?
-    
-    if let balance = balanceStore.state[wallet]?.walletBalance.balance.jettonsBalance.first(where: { $0.item.jettonInfo.address == jettonItem.jettonInfo.address }),
-       let rate = balance.rates.first(where: { $0.value.currency == currency })?.value {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: amount,
-        amountFractionLength: jettonItem.jettonInfo.fractionDigits,
-        rate: rate
-      )
-      convertedAmount = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
+  private func getAmountValue() -> TransactionConfirmationModel.Amount {
     return (
       TransactionConfirmationModel.Amount(
-        value: amount,
-        decimals: jettonItem.jettonInfo.fractionDigits,
-        item: .symbol(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)
-      ),
-      convertedAmount
+        token: .jetton(jettonItem),
+        value: amount
+      )
     )
   }
   
@@ -207,31 +169,5 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
-  }
-  
-  func getFeeRate(fee: TransferEmulationResult.Fee, currency: Currency) async -> Rates.Rate? {
-    do {
-      let jettons: [JettonInfo] = {
-        switch fee.token {
-        case .ton:
-          return []
-        case .jetton(let jettonItem):
-          return [jettonItem.jettonInfo]
-        }
-      }()
-      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
-      switch fee.token {
-      case .ton:
-        return rates.ton
-          .first(where: { $0.currency == currency })
-      case .jetton(let jettonItem):
-        return rates.jettonsRates
-          .first(where: { $0.jettonInfo.address == jettonItem.jettonInfo.address })?
-          .rates
-          .first(where: { $0.currency == currency })
-      }
-    } catch {
-      return nil
-    }
   }
 }

@@ -15,7 +15,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
       updateFee(transactionInfo: transactionInfo)
       return .success(())
     } catch {
-      fee = .value(nil, converted: nil, gasless: nil)
+      fee = .value(nil, gasless: nil)
       return .failure(.failedToCalculateFee)
     }
   }
@@ -146,56 +146,21 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     let fee = BigUInt(abs(transactionInfo.event.extra))
     let extraFee = fee + stakingPool.implementation.extraFee
     
-    var convertedFee: TransactionConfirmationModel.Amount?
-    let currency = currencyStore.getState()
-    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: extraFee,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rates
-      )
-      convertedFee = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
-    
     self.fee = .value(
       TransactionConfirmationModel.Amount(
-        value: extraFee,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
+        token: .ton,
+        value: extraFee
       ),
-      converted: convertedFee,
       gasless: nil
     )
   }
   
-  private func getAmountValue() -> (amount: TransactionConfirmationModel.Amount, converted: TransactionConfirmationModel.Amount?) {
-    let currency = currencyStore.getState()
-    var convertedAmount: TransactionConfirmationModel.Amount?
-    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: amount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rates
-      )
-      convertedAmount = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
+  private func getAmountValue() -> TransactionConfirmationModel.Amount {
     return (
       TransactionConfirmationModel.Amount(
-        value: amount,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
-      ),
-      convertedAmount
+        token: .ton,
+        value: amount
+      )
     )
   }
   

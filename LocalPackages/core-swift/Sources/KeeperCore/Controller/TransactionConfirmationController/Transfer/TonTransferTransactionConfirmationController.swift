@@ -98,63 +98,24 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, converted: nil, isBattery: false, gasless: nil)
+      fee = .value(nil, isBattery: false, gasless: nil)
       return
     }
     let fee = emulationResult.fee
     
-    var convertedFee: TransactionConfirmationModel.Amount?
-    let currency = currencyStore.getState()
-    let rates: Rates.Rate? = await getFeeRate(fee: fee, currency: currency)
-    if let rates = rates {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: fee.amount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rates
-      )
-      convertedFee = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
-    
     self.fee = .value(
       TransactionConfirmationModel.Amount(
-        value: fee.amount,
-        decimals: fee.token.fractionDigits,
-        item: .symbol(fee.token.symbol)
+        token: fee.token,
+        value: fee.amount
       ),
-      converted: convertedFee,
       gasless: nil
     )
   }
   
-  private func getAmountValue() -> (amount: TransactionConfirmationModel.Amount, converted: TransactionConfirmationModel.Amount?) {
-    let currency = currencyStore.state
-    var convertedAmount: TransactionConfirmationModel.Amount?
-    
-    if let rate = ratesStore.state.first(where: { $0.currency == currency }) {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: amount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rate
-      )
-      convertedAmount = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
-    }
-    return (
-      TransactionConfirmationModel.Amount(
-        value: amount,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
-      ),
-      convertedAmount
+  private func getAmountValue() -> TransactionConfirmationModel.Amount {
+    return TransactionConfirmationModel.Amount(
+      token: .ton,
+      value: amount
     )
   }
   
@@ -162,31 +123,5 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     guard let signHandler,
           let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
     return signedData
-  }
-  
-  func getFeeRate(fee: TransferEmulationResult.Fee, currency: Currency) async -> Rates.Rate? {
-    do {
-      let jettons: [JettonInfo] = {
-        switch fee.token {
-        case .ton:
-          return []
-        case .jetton(let jettonItem):
-          return [jettonItem.jettonInfo]
-        }
-      }()
-      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
-      switch fee.token {
-      case .ton:
-        return rates.ton
-          .first(where: { $0.currency == currency })
-      case .jetton(let jettonItem):
-        return rates.jettonsRates
-          .first(where: { $0.jettonInfo.address == jettonItem.jettonInfo.address })?
-          .rates
-          .first(where: { $0.currency == currency })
-      }
-    } catch {
-      return nil
-    }
   }
 }
