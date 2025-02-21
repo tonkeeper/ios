@@ -440,67 +440,65 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     var caption: NSAttributedString?
     var captionButton: TKPlainButton.Model?
     let value: TKListContainerItemView.Model.Value
-    switch transaction.fee {
+    switch transaction.feeState {
     case .loading:
       value = .loading
-    case let .value(amount,
-                    isBattery,
-                    gasless):
-      if let amount {
-        let feeValueFormatted = formatValueItem(
-          amount: amount.value,
-          fractionDigits: amount.token.fractionDigits,
-          maximumFractionDigits: amount.token.fractionDigits,
-          symbol: amount.token.symbol
+    case .fee(let fee):
+      let feeValueFormatted = formatValueItem(
+        amount: fee.amount.value,
+        fractionDigits: fee.amount.token.fractionDigits,
+        maximumFractionDigits: fee.amount.token.fractionDigits,
+        symbol: fee.amount.token.symbol
+      )
+      copyValue = feeValueFormatted
+      var feeConvertedFormatted: String?
+      if let rate {
+        let converted = RateConverter().convert(
+          amount: fee.amount.value,
+          amountFractionLength: fee.amount.token.fractionDigits,
+          rate: rate
         )
-        copyValue = feeValueFormatted
-        var feeConvertedFormatted: String?
-        if let rate {
-          let converted = RateConverter().convert(
-            amount: amount.value,
-            amountFractionLength: amount.token.fractionDigits,
-            rate: rate
-          )
-          let formatted = formatValueItem(
-            amount: converted.amount,
-            fractionDigits: converted.fractionLength,
-            maximumFractionDigits: 2,
-            symbol: currency.symbol
-          )
-          feeConvertedFormatted = formatted
-        }
-        value = .value(TKListContainerItemDefaultValueView.Model(
-          topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(String.almostEqual) \(feeValueFormatted)"),
-          bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: feeConvertedFormatted)
-        ))
-      } else {
-        value = .value(TKListContainerItemDefaultValueView.Model(
-          topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
-        ))
+        let formatted = formatValueItem(
+          amount: converted.amount,
+          fractionDigits: converted.fractionLength,
+          maximumFractionDigits: 2,
+          symbol: currency.symbol
+        )
+        feeConvertedFormatted = formatted
       }
-      if isBattery {
+      value = .value(TKListContainerItemDefaultValueView.Model(
+        topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(String.almostEqual) \(feeValueFormatted)"),
+        bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: feeConvertedFormatted)
+      ))
+      
+      
+      switch fee.type {
+      case .default:
+        caption = nil
+        captionButton = nil
+      case .battery:
         caption = TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary)
         captionButton = nil
-      } else if let gasless {
+      case .gasless(let toggleOption):
         caption = nil
         let captionButtonTitle: String = {
-          switch gasless {
+          switch toggleOption {
           case .ton:
             return TKLocales.TransactionConfirmation.tapToPay(TonInfo.symbol)
-          case .jetton(let jettonInfo):
-            return TKLocales.TransactionConfirmation.tapToPay(jettonInfo.symbol ?? jettonInfo.name)
+          case .jetton(let jettonItem):
+            return TKLocales.TransactionConfirmation.tapToPay(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)
           }
         }()
         captionButton = TKPlainButton.Model(title: captionButtonTitle.withTextStyle(.body2, color: .Text.tertiary), action: { [weak self] in
           self?.confirmationController.toggleIsPreferGasless()
           self?.update()
         })
-      } else {
-        caption = nil
-        captionButton = nil
       }
+    case .none:
+      value = .value(TKListContainerItemDefaultValueView.Model(
+        topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
+      ))
     }
-    
     return TKListContainerItemView.Model(
       title: TKLocales.EventDetails.fee,
       caption: caption,
@@ -609,11 +607,13 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                         currency: Currency) async -> (valueRate: Rates.Rate?, feeRate: Rates.Rate?) {
     let valueToken = model.amount?.token
     let feeToken: Token? = {
-      switch model.fee {
+      switch model.feeState {
       case .loading:
         return nil
-      case .value(let amount, _, _):
-        return amount?.token
+      case let .fee(fee):
+        return fee.amount.token
+      case .none:
+        return nil
       }
     }()
 

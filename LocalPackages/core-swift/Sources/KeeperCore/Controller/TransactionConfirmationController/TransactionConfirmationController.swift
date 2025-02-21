@@ -24,27 +24,34 @@ public struct TransactionConfirmationModel {
     case transfer(Transfer)
   }
 
-  public enum Fee {
-    public enum Gasless {
-      case ton
-      case jetton(JettonInfo)
-    }
-    
-    case loading
-    case value(Amount?, isBattery: Bool = false, gasless: Gasless?)
-  }
-  
   public struct Amount {
     public let token: Token
     public let value: BigUInt
   }
-
+  
+  public enum FeeState {
+    case none
+    case loading
+    case fee(Fee)
+  }
+  
+  public struct Fee {
+    public let amount: Amount
+    public let type: FeeType
+  }
+  
+  public enum FeeType {
+    case `default`
+    case battery
+    case gasless(toggleOption: Token)
+  }
+  
   public let wallet: Wallet
   public let recipient: String?
   public let recipientAddress: String?
   public let transaction: Transaction
   public let amount: Amount?
-  public let fee: Fee
+  public let feeState: FeeState
   public let comment: String?
 
   init(wallet: Wallet, 
@@ -52,14 +59,14 @@ public struct TransactionConfirmationModel {
        recipientAddress: String?,
        transaction: Transaction,
        amount: Amount?,
-       fee: Fee,
+       feeState: FeeState,
        comment: String? = nil) {
     self.wallet = wallet
     self.recipient = recipient
     self.recipientAddress = recipientAddress
     self.transaction = transaction
     self.amount = amount
-    self.fee = fee
+    self.feeState = feeState
     self.comment = comment
   }
 }

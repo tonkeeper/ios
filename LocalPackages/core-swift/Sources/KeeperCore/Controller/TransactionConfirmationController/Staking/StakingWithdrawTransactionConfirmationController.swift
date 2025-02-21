@@ -15,7 +15,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
       updateFee(transactionInfo: transactionInfo)
       return .success(())
     } catch {
-      fee = .value(nil, gasless: nil)
+      feeState = .none
       return .failure(.failedToCalculateFee)
     }
   }
@@ -43,7 +43,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
   
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
 
-  @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
+  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
   
   private let wallet: Wallet
   private let stakingPool: StackingPoolInfo
@@ -87,7 +87,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         )
       ),
       amount: getAmountValue(),
-      fee: fee
+      feeState: feeState
     )
   }
   
@@ -144,11 +144,14 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     let fee = BigUInt(abs(transactionInfo.event.extra))
     let extraFee = fee + stakingPool.implementation.extraFee
     
-    self.fee = .value(
-      TransactionConfirmationModel.Amount(
-        token: .ton,
-        value: extraFee),
-      gasless: nil
+    self.feeState = .fee(
+      TransactionConfirmationModel.Fee(
+        amount: TransactionConfirmationModel.Amount(
+          token: .ton,
+          value: extraFee
+        ),
+        type: .default
+      )
     )
   }
   

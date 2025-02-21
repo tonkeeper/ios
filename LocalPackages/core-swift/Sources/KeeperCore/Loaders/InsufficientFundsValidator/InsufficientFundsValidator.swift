@@ -100,14 +100,13 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
             jettonInfo: nil, balance: 0, requiredAmount: amount, wallet: wallet, isInternalPurchasing: true
           )
         }
-
-        guard case let .value(fee, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
-              let fee = fee?.value else {
+        
+        guard case let .fee(fee) = emulationModel.feeState else {
           return
         }
 
         let transferAmount: BigUInt = {
-          let feeConverted = BigUInt(fee)
+          let feeConverted = BigUInt(fee.amount.value)
           let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
           var transferAmount = feeConverted + minimumTransferAmount
           transferAmount = transferAmount < minimumTransferAmount
@@ -140,16 +139,32 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
 
-        if case let .value(emulationAmount, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
-           let fee = emulationAmount?.value,
-           formattedTonBalance < fee {
-          throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
+        if case let .fee(fee) = emulationModel.feeState {
+          switch fee.type {
+          case .default:
+            if formattedTonBalance < fee.amount.value {
+              throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
+            }
+          case .battery:
+            break
+          case .gasless(let toggleOption):
+            switch fee.amount.token {
+            case .ton:
+              if formattedTonBalance < fee.amount.value {
+                throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
+              }
+            case .jetton(let jettonItem):
+              let requiredAmount = amount + fee.amount.value
+              if requiredAmount > jettonBalance.quantity {
+                throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: jettonBalance.quantity, amount: requiredAmount)
+              }
+            }
+          }
         }
       case .nft:
-        if case let .value(emulationAmount, _/*isBattery*/, _/*gasless*/) = emulationModel.fee,
-           let fee = emulationAmount?.value,
-           formattedTonBalance < fee {
-          throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee)
+        if case let .fee(fee) = emulationModel.feeState,
+           formattedTonBalance < fee.amount.value {
+          throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
         }
       }
     }

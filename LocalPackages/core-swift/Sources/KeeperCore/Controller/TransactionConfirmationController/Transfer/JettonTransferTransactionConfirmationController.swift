@@ -67,7 +67,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
-  @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
+  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
   
   private let wallet: Wallet
   private let recipient: Recipient
@@ -115,44 +115,51 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       recipientAddress: recipient.recipientAddress.addressString,
       transaction: .transfer(.jetton(jettonItem.jettonInfo)),
       amount: getAmountValue(),
-      fee: fee,
+      feeState: feeState,
       comment: comment
     )
   }
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, isBattery: false, gasless: nil)
+      feeState = .none
       return
     }
     let fee = emulationResult.fee
     
-    let gasless: TransactionConfirmationModel.Fee.Gasless?
+    let feeType: TransactionConfirmationModel.FeeType
     switch emulationResult.transferType {
     case .battery:
-      gasless = nil
+      feeType = .battery
     case .gasless(_, _):
       switch emulationResult.fee.token {
       case .ton:
-        gasless = .jetton(jettonItem.jettonInfo)
+        feeType = .gasless(
+          toggleOption: .jetton(jettonItem)
+        )
       case .jetton:
-        gasless = .ton
+        feeType = .gasless(
+          toggleOption: .ton
+        )
       }
     case .default:
       if emulationResult.isGaslessAvailable {
-        gasless = .jetton(jettonItem.jettonInfo)
+        feeType = .gasless(
+          toggleOption: .jetton(jettonItem)
+        )
       } else {
-        gasless = nil
+        feeType = .default
       }
     }
     
-    self.fee = .value(
-      TransactionConfirmationModel.Amount(
-        token: fee.token,
-        value: fee.amount
-      ),
-      isBattery: emulationResult.transferType.isBattery,
-      gasless: gasless
+    self.feeState = TransactionConfirmationModel.FeeState.fee(
+      TransactionConfirmationModel.Fee(
+        amount: TransactionConfirmationModel.Amount(
+          token: fee.token,
+          value: fee.amount
+        ),
+        type: feeType
+      )
     )
   }
   

@@ -60,7 +60,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
-  @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
+  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
   
   private let wallet: Wallet
   private let recipient: Recipient
@@ -102,25 +102,29 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       recipientAddress: recipient.recipientAddress.addressString,
       transaction: .transfer(.nft(nft)),
       amount: nil,
-      fee: fee,
+      feeState: feeState,
       comment: comment
     )
   }
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      fee = .value(nil, isBattery: false, gasless: nil)
+      feeState = .none
       return
     }
     let fee = emulationResult.fee
     
-    self.fee = .value(
-      TransactionConfirmationModel.Amount(
-        token: fee.token,
-        value: fee.amount
-      ),
-      isBattery: emulationResult.transferType.isBattery,
-      gasless: nil
+    let feeType: TransactionConfirmationModel.FeeType
+    feeType = emulationResult.transferType.isBattery ? .battery : .default
+    
+    self.feeState = .fee(
+      TransactionConfirmationModel.Fee(
+        amount: TransactionConfirmationModel.Amount(
+          token: fee.token,
+          value: fee.amount
+        ),
+        type: feeType
+      )
     )
   }
   
