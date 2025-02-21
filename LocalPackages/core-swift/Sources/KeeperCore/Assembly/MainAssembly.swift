@@ -155,11 +155,11 @@ public final class MainAssembly {
       comment: comment,
       sendService: servicesAssembly.sendService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       transferService: transferAssembly.transferService(),
-      ratesService: servicesAssembly.ratesService()
+      ratesService: servicesAssembly.ratesService(),
+      balanceService: servicesAssembly.balanceService()
     )
   }
   

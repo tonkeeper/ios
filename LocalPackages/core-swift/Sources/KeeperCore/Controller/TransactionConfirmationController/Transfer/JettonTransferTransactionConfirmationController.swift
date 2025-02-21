@@ -13,9 +13,20 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   func emulate() async -> Result<Void, TransactionConfirmationError> {
     do {
+      let isMax = await {
+        do {
+          let balance = try await balanceService.loadWalletBalance(wallet: wallet, currency: .USD)
+          let jettonBalance = balance.balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonItem.jettonInfo })
+          return jettonBalance?.quantity == amount
+        } catch {
+          return false
+        }
+      }()
+      self.isMax = isMax
+
       let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .jetton(jettonItem, transferAmount: BigUInt(1000000000), amount: amount, recipient: recipient, comment: comment),
+        transfer: .jetton(jettonItem, transferAmount: BigUInt(1000000000), amount: isMax ? 1 : amount, recipient: recipient, comment: comment),
         params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))],
         isPreferGasless: preferGasless
       )
@@ -45,7 +56,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       }()
       try await transferService.sendTransaction(
         wallet: wallet,
-        transfer: .jetton(jettonItem, transferAmount: transferAmount, amount: amount, recipient: recipient, comment: comment),
+        transfer: .jetton(jettonItem, transferAmount: transferAmount, amount: getAmountValue().value, recipient: recipient, comment: comment),
         transferType: emulationResult?.transferType ?? .default,
         signClosure: { [weak self, wallet] transferData in
           guard let signed = try? await self?.signHandler?(transferData, wallet) else {
@@ -68,7 +79,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   
   @Atomic private var emulationResult: TransferEmulationResult?
   @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
-  
+  @Atomic private var isMax: Bool = false
+
   private let wallet: Wallet
   private let recipient: Recipient
   private let jettonItem: JettonItem
@@ -76,11 +88,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let comment: String?
   private let sendService: SendService
   private let blockchainService: BlockchainService
-  private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let transferService: TransferService
   private let ratesService: RatesService
+  private let balanceService: BalanceService
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -89,11 +101,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
        comment: String?,
        sendService: SendService,
        blockchainService: BlockchainService,
-       balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        transferService: TransferService,
-       ratesService: RatesService) {
+       ratesService: RatesService,
+       balanceService: BalanceService) {
     self.wallet = wallet
     self.recipient = recipient
     self.jettonItem = jettonItem
@@ -101,11 +113,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     self.comment = comment
     self.sendService = sendService
     self.blockchainService = blockchainService
-    self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
     self.transferService = transferService
     self.ratesService = ratesService
+    self.balanceService = balanceService
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -164,10 +176,33 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   }
   
   private func getAmountValue() -> TransactionConfirmationModel.Amount {
+    let amount: () -> BigUInt = {
+      if self.isMax {
+        switch self.feeState {
+        case .none, .loading:
+          return self.amount
+        case .fee(let fee):
+          switch fee.type {
+          case .battery, .default:
+            return self.amount
+          case .gasless(_):
+            switch fee.amount.token {
+            case .ton:
+              return self.amount
+            case .jetton:
+              return self.amount - fee.amount.value
+            }
+          }
+        }
+      } else {
+        return self.amount
+      }
+    }
+    
     return (
       TransactionConfirmationModel.Amount(
         token: .jetton(jettonItem),
-        value: amount
+        value: amount()
       )
     )
   }
