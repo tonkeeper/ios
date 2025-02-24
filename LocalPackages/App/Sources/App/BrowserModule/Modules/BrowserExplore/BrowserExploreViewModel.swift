@@ -244,7 +244,7 @@ private extension BrowserExploreViewModelImplementation {
     let filter = composeCountryFilter()
 
     return categories.compactMap { category in
-      let items: [TKUIListItemCell.Configuration?] = category.apps.compactMap {
+      let items: [BrowserAppCollectionViewCell.Configuration?] = category.apps.compactMap {
         if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
           return nil
         }
@@ -252,66 +252,25 @@ private extension BrowserExploreViewModelImplementation {
         return mapDapp($0)
       }
       
+      let categoryTitle = category.id == "digital_nomads" ? nil : category.title
+      
       return BrowserExploreSection.regular(
-        title: category.title ?? "",
+        title: categoryTitle,
         hasAll: items.count > 3,
         items: items
       )
     }
   }
   
-  func mapDapp(_ dapp: Dapp) -> TKUIListItemCell.Configuration? {
-    let id = UUID().uuidString
-    return TKUIListItemCell.Configuration(
-      id: id,
-      listItemConfiguration: TKUIListItemView.Configuration(
-        iconConfiguration: TKUIListItemIconView.Configuration(
-          iconConfiguration: .image(
-            TKUIListItemImageIconView.Configuration(
-              image: .asyncImage(
-                dapp.icon,
-                TKCore.ImageDownloadTask(
-                  closure: {
-                    [imageLoader] imageView,
-                    size,
-                    cornerRadius in
-                    return imageLoader.loadImage(
-                      url: dapp.icon,
-                      imageView: imageView,
-                      size: size,
-                      cornerRadius: cornerRadius
-                    )
-                  }
-                )
-              ),
-              tintColor: .clear,
-              backgroundColor: .clear,
-              size: CGSize(width: 44, height: 44),
-              cornerRadius: 12
-            )
-          ),
-          alignment: .center
-        ),
-        contentConfiguration: TKUIListItemContentView.Configuration(
-          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: dapp.name.withTextStyle(.label2, color: .Text.primary),
-            tagViewModel: nil,
-            subtitle: nil,
-            description: dapp.description?.withTextStyle(.body3Alternate, color: .Text.secondary),
-            descriptionNumberOfLines: 2
-          ),
-          rightItemConfiguration: nil,
-          isVerticalCenter: true
-        ),
-        accessoryConfiguration: .image(.init(image: .TKUIKit.Icons.Size16.chevronRight, tintColor: .Icon.tertiary, padding: .zero))
-      ),
-      selectionClosure: { [weak self] in
-        self?.didSelectDapp?(dapp)
-        self?.analyticsProvider.logEvent(eventKey: .clickDapp,
-                                         args: ["name": dapp.name,
-                                                "url": dapp.url.absoluteString,
-                                                "from": "browser"])
-      }
+  func mapDapp(_ dapp: Dapp) -> BrowserAppCollectionViewCell.Configuration {
+    return BrowserAppCollectionViewCell.Configuration(
+      id: UUID(),
+      title: dapp.name,
+      iconModel: TKImageView.Model(
+        image: .urlImage(dapp.icon),
+        size: .size(CGSize(width: 64, height: 64)),
+        corners: .cornerRadius(cornerRadius: 16)
+      )
     )
   }
   

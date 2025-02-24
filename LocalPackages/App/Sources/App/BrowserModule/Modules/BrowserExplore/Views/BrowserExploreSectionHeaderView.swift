@@ -77,8 +77,9 @@ private extension BrowserExploreSectionHeaderView {
   
   func setupConstraints() {
     stackView.snp.makeConstraints { make in
-      make.top.left.bottom.equalTo(self).priority(.medium)
+      make.top.bottom.equalTo(self).priority(.medium)
       make.right.equalTo(self).inset(18).priority(.medium)
+      make.left.equalTo(self).inset(4).priority(.medium)
     }
   }
   
