@@ -165,7 +165,7 @@ extension API {
     let balances = response.balances
       .compactMap { jetton in
         do {
-          let quantity = BigUInt(stringLiteral: jetton.balance)
+          let quantity = BigUInt(jetton.balance) ?? 0
           let walletAddress = try Address.parse(jetton.walletAddress.address)
           let rates = mapJettonRates(rates: jetton.price)
           let jettonInfo = try JettonInfo(jettonPreview: jetton.jetton, extensions: jetton.extensions)
