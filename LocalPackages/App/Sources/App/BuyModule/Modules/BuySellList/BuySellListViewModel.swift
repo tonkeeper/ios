@@ -7,7 +7,7 @@ import TKFeatureFlags
 
 protocol BuySellListModuleOutput: AnyObject {
   var didSelectURL: ((URL) -> Void)? { get set }
-  var didSelectItem: ((BuySellItem) -> Void)? { get set }
+  var didSelectItem: ((BuySellItem, _ openClosure: @escaping () -> Void) -> Void)? { get set }
   var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
 }
 
@@ -40,7 +40,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   }
   
   var didSelectURL: ((URL) -> Void)?
-  var didSelectItem: ((BuySellItem) -> Void)?
+  var didSelectItem: ((BuySellItem, _ openClosure: @escaping () -> Void) -> Void)?
   var didSelectCountryPicker: ((SelectedCountry) -> Void)?
   
   func setSelectedCountry(_ selectedCountry: SelectedCountry) {
@@ -144,6 +144,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   private let configuration: Configuration
   private let regionStore: RegionStore
   private let appSettings: AppSettings
+  private let analyticsProvider: AnalyticsProvider
   
   // MARK: - Init
   
@@ -153,7 +154,8 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
        currencyStore: CurrencyStore,
        regionStore: RegionStore,
        configuration: Configuration,
-       appSettings: AppSettings) {
+       appSettings: AppSettings,
+       analyticsProvider: AnalyticsProvider) {
     self.wallet = wallet
     self.buySellProvider = buySellProvider
     self.walletsStore = walletsStore
@@ -161,6 +163,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     self.regionStore = regionStore
     self.configuration = configuration
     self.appSettings = appSettings
+    self.analyticsProvider = analyticsProvider
   }
 }
 
@@ -233,12 +236,12 @@ private extension BuySellListViewModelImplementation {
     
     for category in (fiatMethods?.buy ?? []) {
       for item in category.items {
-        cellModels[item.id] = mapBuySellItem(item)
+        cellModels[item.id] = mapBuySellItem(item, category: category, section: .buy)
       }
     }
     for category in (fiatMethods?.sell ?? []) {
       for item in category.items {
-        cellModels[item.id] = mapBuySellItem(item)
+        cellModels[item.id] = mapBuySellItem(item, category: category, section: .sell)
       }
     }
     self.cellModels = cellModels
@@ -377,7 +380,13 @@ private extension BuySellListViewModelImplementation {
     updateSnapshot(fiatMethods: fiatMethods)
   }
   
-  func mapBuySellItem(_ item: FiatMethodItem) -> TKUIListItemCell.Configuration {
+  enum Section: String {
+    case buy
+    case sell
+  }
+  func mapBuySellItem(_ item: FiatMethodItem,
+                      category: FiatMethodCategory,
+                      section: Section) -> TKUIListItemCell.Configuration {
     let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image = .asyncImage(item.iconURL, TKCore.ImageDownloadTask(
       closure: {
         [imageLoader] imageView,
@@ -460,9 +469,23 @@ private extension BuySellListViewModelImplementation {
             await MainActor.run {
               if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {
                 self.didSelectURL?(url)
+                self.logOnrampSelectAnalyticsEvent(
+                  item: item,
+                  category: category,
+                  section: section,
+                  url: url)
               } else {
                 let buySellItem = BuySellItem(fiatItem: item, actionUrl: url)
-                self.didSelectItem?(buySellItem)
+                self.didSelectItem?(
+                  buySellItem,
+                  { [weak self] in
+                    self?.logOnrampSelectAnalyticsEvent(
+                      item: item,
+                      category: category,
+                      section: section,
+                      url: url
+                    )
+                })
               }
             }
           } catch {
@@ -470,6 +493,42 @@ private extension BuySellListViewModelImplementation {
           }
         }
       }
+    )
+  }
+  
+  @MainActor
+  func logOnrampSelectAnalyticsEvent(item: FiatMethodItem,
+                                     category: FiatMethodCategory,
+                                     section: Section,
+                                     url: URL) {
+    let placement = {
+      if category.type != "swap" && !category.type.contains("_") {
+        category.type + "_ton"
+      } else {
+        category.type
+      }
+    }()
+    
+    let location = {
+      switch regionStore.getState() {
+      case .country(let countryCode):
+        return countryCode.lowercased()
+      case .all:
+        return "null"
+      case .auto:
+        return Locale.current.regionCode?.lowercased() ?? "null"
+      }
+    }()
+    
+    analyticsProvider.logEvent(
+      eventKey: .onrampClick,
+      args: [
+        "type": section.rawValue,
+        "placement": placement,
+        "location": location,
+        "name": item.title,
+        "url": url.absoluteString
+      ]
     )
   }
 }

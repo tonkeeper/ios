@@ -14,7 +14,8 @@ struct BuySellListAssembly {
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       regionStore: keeperCoreMainAssembly.storesAssembly.regionStore,
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
-      appSettings: coreAssembly.appSettings
+      appSettings: coreAssembly.appSettings,
+      analyticsProvider: coreAssembly.analyticsProvider
     )
     
     let viewController = BuySellListViewController(viewModel: viewModel)

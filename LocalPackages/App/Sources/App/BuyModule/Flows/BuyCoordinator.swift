@@ -44,9 +44,13 @@ private extension BuyCoordinator {
       self?.didOpenItem?(url, bottomSheetViewController)
     }
     
-    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
+    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item, openClosure in
       guard let bottomSheetViewController else { return }
-      self?.openWarning(item: item, fromViewController: bottomSheetViewController)
+      self?.openWarning(
+        item: item,
+        fromViewController: bottomSheetViewController,
+        openClosure: openClosure
+      )
     }
     
     module.output.didSelectCountryPicker = { [weak self, weak bottomSheetViewController] selectedCountry in
@@ -67,7 +71,9 @@ private extension BuyCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openWarning(item: BuySellItem, fromViewController: UIViewController) {
+  func openWarning(item: BuySellItem,
+                   fromViewController: UIViewController,
+                   openClosure: @escaping () -> Void) {
     let module = BuyListPopUpAssembly.module(
       buySellItemModel: item,
       appSettings: coreAssembly.appSettings,
@@ -81,6 +87,7 @@ private extension BuyCoordinator {
       guard let bottomSheetViewController else { return }
       bottomSheetViewController.dismiss {
         self?.didOpenItem?(item.actionUrl, fromViewController)
+        openClosure()
       }
     }
   }

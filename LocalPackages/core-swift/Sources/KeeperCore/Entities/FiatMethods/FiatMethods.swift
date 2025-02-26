@@ -45,6 +45,7 @@ public struct FiatMethodCategory: Codable, Equatable, Hashable {
     case NOT
   }
   
+  public let type: String
   public let title: String?
   public let subtitle: String?
   public let items: [FiatMethodItem]
@@ -52,6 +53,7 @@ public struct FiatMethodCategory: Codable, Equatable, Hashable {
   
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
+    type = try container.decode(String.self, forKey: .type)
     title = try container.decodeIfPresent(String.self, forKey: .title)
     subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle)
     items = try container.decode([FiatMethodItem].self, forKey: .items)
