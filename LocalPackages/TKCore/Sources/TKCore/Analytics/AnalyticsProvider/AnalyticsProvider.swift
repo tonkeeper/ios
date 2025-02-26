@@ -18,6 +18,9 @@ public enum EventKey: String {
   
   case pushClick = "push_click"
   
+  case onrampOpen = "onramp_open"
+  case onrampClick = "onramp_click"
+  
   public var parameters: [String : Any] { [:] }
   public var key: String { rawValue }
 }
@@ -36,7 +39,7 @@ public struct AnalyticsProvider {
   private let services: [AnalyticsService]
   private let uniqueIdProvider: UniqueIdProvider
   
-  public init(analyticsServices: AnalyticsService...,
+  public init(analyticsServices: [AnalyticsService],
               uniqueIdProvider: UniqueIdProvider) {
     self.services = analyticsServices
     self.uniqueIdProvider = uniqueIdProvider

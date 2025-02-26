@@ -30,8 +30,15 @@ public final class CoreAssembly {
   }
   
   public lazy var analyticsProvider: AnalyticsProvider = {
-    AnalyticsProvider(
-      analyticsServices: AptabaseService(),
+    let analyticsServices: [AnalyticsService]
+#if DEBUG
+    analyticsServices = [ConsoleAnalyticsLogger(), AptabaseService()]
+#else
+    analyticsServices = [AptabaseService()]
+#endif
+    
+    return AnalyticsProvider(
+      analyticsServices: analyticsServices,
       uniqueIdProvider: uniqueIdProvider
     )
   }()

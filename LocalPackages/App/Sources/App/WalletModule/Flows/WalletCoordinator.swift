@@ -117,7 +117,12 @@ private extension WalletCoordinator {
       self?.didTapScan?()
     }
     
-    module.output.didTapBuy = { [weak self] wallet in
+    module.output.didTapBuy = { [weak self, weak coreAssembly] wallet in
+      let analyticsProvider = coreAssembly?.analyticsProvider
+      analyticsProvider?.logEvent(eventKey: .onrampOpen,
+                                  args: [
+                                    "from": "wallet"
+                                  ])
       self?.didTapBuy?(wallet)
     }
     
