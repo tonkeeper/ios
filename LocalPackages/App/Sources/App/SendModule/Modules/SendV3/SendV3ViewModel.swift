@@ -176,7 +176,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         guard !error.isCancelledError else { return }
         await MainActor.run {
           self.recipient = recipient
-          self.isRecipientValid = true
+          self.isRecipientValid = false
           self.isResolving = false
           self.isCommentRequired = false
         }

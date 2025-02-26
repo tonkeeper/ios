@@ -9,6 +9,7 @@ public struct RecipientResolverImplementation: RecipientResolver {
   
   public enum Error: Swift.Error {
     case failedResolve(string: String)
+    case incorrectNet(sender: Network, recipient: Network)
   }
   
   private let knownAccountsProvider: KnownAccountsProvider
@@ -23,6 +24,10 @@ public struct RecipientResolverImplementation: RecipientResolver {
   public func resolverRecipient(string: String, isTestnet: Bool) async throws -> Recipient {
     
     if let friendlyAddress = try? FriendlyAddress(string: string) {
+      guard friendlyAddress.isTestOnly == isTestnet else {
+        throw Error.incorrectNet(sender: isTestnet ? .testnet : .mainnet,
+                                 recipient: friendlyAddress.isTestOnly ? .testnet : .mainnet)
+      }
       return Recipient(
         recipientAddress: .friendly(friendlyAddress),
         isMemoRequired: await isMemoRequired(for: friendlyAddress.address)
