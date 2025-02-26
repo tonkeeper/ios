@@ -270,7 +270,10 @@ private extension BrowserExploreViewModelImplementation {
         image: .urlImage(dapp.icon),
         size: .size(CGSize(width: 64, height: 64)),
         corners: .cornerRadius(cornerRadius: 16)
-      )
+      ),
+      selectionClosure: { [weak self] in
+        self?.didSelectDapp?(dapp)
+      }
     )
   }
   

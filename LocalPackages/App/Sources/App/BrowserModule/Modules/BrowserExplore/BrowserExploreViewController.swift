@@ -70,7 +70,7 @@ extension BrowserExploreViewController: UICollectionViewDelegate {
       .snapshot()
       .itemIdentifiers(inSection: dataSource.snapshot().sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case let listItem as TKUIListItemCell.Configuration:
+    case let listItem as BrowserAppCollectionViewCell.Configuration:
       listItem.selectionClosure?()
     default: break
     }
