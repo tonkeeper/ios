@@ -37,7 +37,7 @@ final class TKListContainerFullValueItemView: UIView {
   
   private let configuration: Configuration
   
-  private let stackView = UIStackView()
+  private let stackView = TKPassthroughStackView()
   private let titleLabel = UILabel()
   private let valueLabel = UILabel()
 
@@ -49,6 +49,11 @@ final class TKListContainerFullValueItemView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+    let view = super.hitTest(point, with: event)
+    return view is UIControl ? view : nil
   }
   
   private func setup() {

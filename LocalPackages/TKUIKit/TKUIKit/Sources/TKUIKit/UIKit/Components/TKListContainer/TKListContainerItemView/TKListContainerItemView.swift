@@ -87,7 +87,7 @@ public final class TKListContainerItemView: TKPassthroughView, ConfigurableView 
   }
   
   private let stackView: UIStackView = {
-    let stackView = UIStackView()
+    let stackView = TKPassthroughStackView()
     stackView.axis = .horizontal
     stackView.alignment = .top
     stackView.distribution = .fill
@@ -101,13 +101,13 @@ public final class TKListContainerItemView: TKPassthroughView, ConfigurableView 
   private let captionLabel = UILabel()
   private let captionButton = TKPlainButton()
   private let titleIconImageView = UIImageView()
-  private let titleVerticalStackView: UIStackView = {
+  private let titleVerticalStackView: TKPassthroughStackView = {
     let stackView = TKPassthroughStackView()
     stackView.axis = .vertical
     return stackView
   }()
   
-  private let valueStackView: UIStackView = {
+  private let valueStackView: TKPassthroughStackView = {
     let stackView = TKPassthroughStackView()
     stackView.axis = .vertical
     return stackView
