@@ -4,13 +4,13 @@ public final class TKIconButton: UIControl {
   
   public override var isHighlighted: Bool {
     didSet {
-      stackView.alpha = isHighlighted ? 0.48 : 1
+      updateState()
     }
   }
   
   public override var isEnabled: Bool {
     didSet {
-      stackView.alpha = isEnabled ? 1 : 0.32
+      updateState()
     }
   }
   
@@ -91,5 +91,16 @@ public final class TKIconButton: UIControl {
     iconImageView.image = configuration.icon
     
     isEnabled = configuration.isEnable
+  }
+  
+  private func updateState() {
+    switch (isEnabled, isHighlighted) {
+    case (false, _):
+      stackView.alpha = 0.32
+    case (true, true):
+      stackView.alpha = 0.48
+    case (true, false):
+      stackView.alpha = 1
+    }
   }
 }
