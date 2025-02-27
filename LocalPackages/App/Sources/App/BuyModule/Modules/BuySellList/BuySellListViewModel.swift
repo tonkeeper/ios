@@ -76,7 +76,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
         observer.buySellProviderState = observer.buySellProvider.state
       }
     }
-    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
+    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode, hardcodedCountryCode != "" {
       selectedCountry = .country(countryCode: hardcodedCountryCode)
     } else {
       selectedCountry = regionStore.state

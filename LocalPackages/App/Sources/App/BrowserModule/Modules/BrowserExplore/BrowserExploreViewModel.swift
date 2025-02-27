@@ -58,7 +58,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   }
 
   private func bindRegion() {
-    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode {
+    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode, hardcodedCountryCode != "" {
       selectedCountry = .country(countryCode: hardcodedCountryCode)
     } else {
       selectedCountry = regionStore.getState()
@@ -270,7 +270,10 @@ private extension BrowserExploreViewModelImplementation {
         image: .urlImage(dapp.icon),
         size: .size(CGSize(width: 64, height: 64)),
         corners: .cornerRadius(cornerRadius: 16)
-      )
+      ),
+      selectionClosure: { [weak self] in
+        self?.didSelectDapp?(dapp)
+      }
     )
   }
   

@@ -32,6 +32,7 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
     let id: UUID
     let title: NSAttributedString
     let iconModel: TKImageView.Model
+    let selectionClosure: (() -> Void)?
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(id)
@@ -43,7 +44,8 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
     
     init(id: UUID,
          title: String,
-         iconModel: TKImageView.Model) {
+         iconModel: TKImageView.Model,
+         selectionClosure: (() -> Void)?) {
       self.id = id
       self.title = title.withTextStyle(
         .body3,
@@ -52,6 +54,7 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
         lineBreakMode: .byTruncatingTail
       )
       self.iconModel = iconModel
+      self.selectionClosure = selectionClosure
     }
   }
   
