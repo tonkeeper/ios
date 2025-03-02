@@ -29,7 +29,7 @@ public struct TransferEmulationResult {
   public let isGaslessAvailable: Bool
 }
 
-public enum TransferType: Equatable {
+public enum TransferType {
   case `default`
   case battery(excessAddress: Address)
   case gasless(excessAddress: Address, fee: BigUInt)
@@ -95,9 +95,15 @@ public struct TransferService {
     
     // TODO: kinda bullshit, should do something with this
     var transferType = transferType
-    if case .battery(let excessAddress) = transferType {
+    if case .battery = transferType {
       let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
-      transferType = .battery(excessAddress: try! batteryConfig?.excessAddress ?? wallet.address)
+      let updatedExcessAddress: Address
+      if let excessAddress = try? batteryConfig?.excessAddress {
+        updatedExcessAddress = excessAddress
+      } else {
+        updatedExcessAddress = try wallet.address
+      }
+      transferType = .battery(excessAddress: updatedExcessAddress)
     }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
