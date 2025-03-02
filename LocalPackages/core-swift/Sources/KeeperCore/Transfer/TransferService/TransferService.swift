@@ -92,6 +92,19 @@ public struct TransferService {
                               transfer: Transfer,
                               transferType: TransferType,
                               signClosure: (TransferData) async throws -> SignedTransactions) async throws -> String {
+    
+    // TODO: kinda bullshit, should do something with this
+    var transferType = transferType
+    if case .battery = transferType {
+      let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
+      let updatedExcessAddress: Address
+      if let excessAddress = try? batteryConfig?.excessAddress {
+        updatedExcessAddress = excessAddress
+      } else {
+        updatedExcessAddress = try wallet.address
+      }
+      transferType = .battery(excessAddress: updatedExcessAddress)
+    }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let transferData = try await createTransferData(
       wallet: wallet,
