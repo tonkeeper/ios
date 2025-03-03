@@ -4,7 +4,7 @@ import TKUIKit
 enum BrowserExplore {
   enum Section: Hashable {
     case empty
-    case apps(id: String, header: AppsSectionHeader?, isMultilineAppsTitle: Bool)
+    case apps(id: String, header: AppsSectionHeader?, twoLinesAppsTitle: Bool)
     case featured
     case ads
     

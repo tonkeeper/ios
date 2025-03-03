@@ -362,7 +362,7 @@ private extension BrowserExploreViewModelImplementation {
           return nil
         }
         
-        let configuration = mapApp(app)
+        let configuration = mapApp(app, isTwoLinesTitle: category.id == "digital_nomads")
         return .app(
           Browser.AppItem(
             id: UUID().uuidString,
@@ -392,20 +392,21 @@ private extension BrowserExploreViewModelImplementation {
         )
       }
     }()
-    let isMultilineAppsTitle = category.id == "digital_nomads"
+    let twoLinesAppsTitle = category.id == "digital_nomads"
     let section = BrowserExplore.Section.apps(
       id: category.id,
       header: header,
-      isMultilineAppsTitle: isMultilineAppsTitle
+      twoLinesAppsTitle: twoLinesAppsTitle
     )
     
     return (section: section, items: items)
   }
   
-  func mapApp(_ app: PopularApp) -> BrowserAppCollectionViewCell.Configuration {
+  func mapApp(_ app: PopularApp, isTwoLinesTitle: Bool) -> BrowserAppCollectionViewCell.Configuration {
     return BrowserAppCollectionViewCell.Configuration(
       id: app.id,
       title: app.name,
+      isTwoLinesTitle: isTwoLinesTitle,
       iconModel: TKImageView.Model(
         image: .urlImage(app.icon),
         size: .size(CGSize(width: 64, height: 64)),

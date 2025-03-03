@@ -21,8 +21,8 @@ final class BrowserConnectedViewController: GenericViewViewController<BrowserCon
   private lazy var dataSource = createDataSource()
     
   private lazy var appCellConfiguration = UICollectionView.CellRegistration<
-    BrowserConnectedAppCell,
-    BrowserConnectedAppCell.Configuration
+    BrowserAppCollectionViewCell,
+    BrowserAppCollectionViewCell.Configuration
   > { [weak self]
     cell, indexPath, itemIdentifier in
     cell.configure(configuration: itemIdentifier)

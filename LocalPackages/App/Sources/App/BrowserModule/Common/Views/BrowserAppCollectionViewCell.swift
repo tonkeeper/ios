@@ -31,6 +31,7 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
   struct Configuration: Hashable {
     let id: String
     let title: NSAttributedString
+    let isTwoLinesTitle: Bool
     let iconModel: TKImageView.Model
     
     func hash(into hasher: inout Hasher) {
@@ -43,6 +44,7 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
     
     init(id: String,
          title: String,
+         isTwoLinesTitle: Bool,
          iconModel: TKImageView.Model) {
       self.id = id
       self.title = title.withTextStyle(
@@ -51,12 +53,14 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
         alignment: .center,
         lineBreakMode: .byTruncatingTail
       )
+      self.isTwoLinesTitle = isTwoLinesTitle
       self.iconModel = iconModel
     }
   }
   
   func configure(configuration: Configuration) {
     titleLabel.attributedText = configuration.title
+    titleLabel.numberOfLines = configuration.isTwoLinesTitle ? 2 : 1
     iconImageView.configure(model: configuration.iconModel)
     setNeedsLayout()
   }

@@ -10,7 +10,7 @@ enum BrowserConnected {
   struct Item: Hashable {
     let identifier: String
     let title: String
-    let configuration: BrowserConnectedAppCell.Configuration
+    let configuration: BrowserAppCollectionViewCell.Configuration
     let deleteHandler: (() -> Void)?
 
     static func ==(lhs: Item, rhs: Item) -> Bool {

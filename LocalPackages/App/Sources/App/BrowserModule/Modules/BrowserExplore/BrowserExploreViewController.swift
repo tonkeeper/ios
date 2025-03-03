@@ -119,10 +119,10 @@ private extension BrowserExploreViewController {
       switch section {
       case .empty:
         return createEmptySectionLayout()
-      case let .apps(_, header, isMultilineAppsTitle):
+      case let .apps(_, header, twoLinesAppsTitle):
         return BrowserCollectionLayout.appsSectionLayout(
           hasSectionTitle: header != nil,
-          multilineAppsTitle: isMultilineAppsTitle
+          twoLinesAppsTitle: twoLinesAppsTitle
         )
       case .featured:
         return createFeaturedSectionLayout()

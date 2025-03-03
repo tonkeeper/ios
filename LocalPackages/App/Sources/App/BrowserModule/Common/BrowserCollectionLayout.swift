@@ -2,10 +2,10 @@ import UIKit
 
 enum BrowserCollectionLayout {
   static func appsSectionLayout(hasSectionTitle: Bool,
-                                multilineAppsTitle: Bool) -> NSCollectionLayoutSection {
+                                twoLinesAppsTitle: Bool) -> NSCollectionLayoutSection {
     
     let itemHeight: NSCollectionLayoutDimension
-    if multilineAppsTitle {
+    if twoLinesAppsTitle {
       itemHeight = .estimated(104)
     } else {
       itemHeight = .absolute(104)

@@ -105,19 +105,15 @@ private extension BrowserConnectedViewModelImplementation {
       switch section {
       case .apps:
         let items = connectedApps.compactMap { app in
-          let downloadTask = TKCore.ImageDownloadTask() { [imageLoader] imageView, size, cornerRadius in
-            imageLoader.loadImage(
-              url: app.manifest.iconUrl,
-              imageView: imageView,
-              size: size,
-              cornerRadius: cornerRadius
-            )
-          }
-
-          let configuration = BrowserConnectedAppCell.Configuration(
+          let configuration = BrowserAppCollectionViewCell.Configuration(
+            id: UUID().uuidString,
             title: app.manifest.name,
-            iconUrl: app.manifest.iconUrl,
-            iconDownloadTask: downloadTask
+            isTwoLinesTitle: false,
+            iconModel: TKImageView.Model(
+              image: .urlImage(app.manifest.iconUrl),
+              size: .size(CGSize(width: 64, height: 64)),
+              corners: .cornerRadius(cornerRadius: 16)
+            )
           )
 
           return BrowserConnected.Item(
