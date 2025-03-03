@@ -77,6 +77,10 @@
 "browser.tab.connected" = "Подключенные";
 "browser.list.all" = "Все";
 
+"browser.explore.empty.title" = "Используйте Tonkeeper с приложениями и сервисами TON.";
+"browser.explore.empty.caption" = "Исследуйте приложения и сервисы, в которых вы можете использовать Tonkeeper для входа и платежей.";
+"browser.explore.empty.learn_more" = "Подробнее";
+
 "browser.connected_apps.empty_title" = "Ваши приложения будут здесь";
 "browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Tonkeeper.";
 "browser.connected_apps.disconnect.title" = "Отключить";

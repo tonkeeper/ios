@@ -422,6 +422,16 @@ public enum TKLocales {
         public static let title = TKLocales.tr("Localizable", "browser.connected_apps.disconnect.title", fallback: "Remove")
       }
     }
+    public enum Explore {
+      public enum Empty {
+        /// Explore apps and services where you can use Tonkeeper for sign-in and payments.
+        public static let caption = TKLocales.tr("Localizable", "browser.explore.empty.caption", fallback: "Explore apps and services where you can use Tonkeeper for sign-in and payments.")
+        /// Learn more
+        public static let learnMore = TKLocales.tr("Localizable", "browser.explore.empty.learn_more", fallback: "Learn more")
+        /// Use Tonkeeper with all TON apps and services
+        public static let title = TKLocales.tr("Localizable", "browser.explore.empty.title", fallback: "Use Tonkeeper with all TON apps and services")
+      }
+    }
     public enum List {
       /// All
       public static let all = TKLocales.tr("Localizable", "browser.list.all", fallback: "All")

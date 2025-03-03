@@ -76,6 +76,10 @@
 "browser.tab.connected" = "Connected";
 "browser.list.all" = "All";
 
+"browser.explore.empty.title" = "Use Tonkeeper with all TON apps and services";
+"browser.explore.empty.caption" = "Explore apps and services where you can use Tonkeeper for sign-in and payments.";
+"browser.explore.empty.learn_more" = "Learn more";
+
 "browser.connected_apps.empty_title" = "Connected apps will be\U00A0shown here";
 "browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Tonkeeper browser.";
 "browser.connected_apps.disconnect.title" = "Remove";

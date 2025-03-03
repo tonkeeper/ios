@@ -194,10 +194,10 @@ private extension BrowserExploreViewModelImplementation {
       category: .primary,
       size: .small
     )
-    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Learn more"))
+    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Browser.Explore.Empty.learnMore))
     let emptyViewModel = BrowserExploreEmptyView.Model(
-      title: "Use Tonkeeper with all TON apps and services",
-      caption: "Explore apps and services where you can use Tonkeeper for sign-in and payments.",
+      title: TKLocales.Browser.Explore.Empty.title,
+      caption: TKLocales.Browser.Explore.Empty.caption,
       button: buttonConfiguration
     )
     
