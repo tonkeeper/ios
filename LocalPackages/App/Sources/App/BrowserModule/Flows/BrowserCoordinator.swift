@@ -52,6 +52,10 @@ private extension BrowserCoordinator {
     module.output.didSelectDapp = { [weak self, unowned router] dapp in
       self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
+    
+    module.output.didOpenDeeplink = { [weak self] deeplink in
+      self?.didHandleDeeplink?(deeplink)
+    }
 
     module.output.didSelectCountryPicker = { [weak self] selectedCountry in
       guard let self = self else {

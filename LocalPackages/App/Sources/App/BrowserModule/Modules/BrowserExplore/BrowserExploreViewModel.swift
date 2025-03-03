@@ -9,6 +9,7 @@ import TKFeatureFlags
 protocol BrowserExploreModuleOutput: AnyObject {
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
   var didSelectDapp: ((Dapp) -> Void)? { get set }
+  var didOpenDeeplink: ((Deeplink) -> Void)? { get set }
 }
 
 @MainActor
@@ -31,6 +32,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
+  var didOpenDeeplink: ((Deeplink) -> Void)?
 
   private var selectedCountry: SelectedCountry = .auto
 
@@ -218,11 +220,14 @@ private extension BrowserExploreViewModelImplementation {
     var snapshot = BrowserExplore.Snapshot()
     
     var featuredCategory: PopularAppsCategory?
+    var adsCategory: PopularAppsCategory?
     var categories = [PopularAppsCategory]()
 
     content.categories.forEach { category in
       if category.id == "featured" {
         featuredCategory = category
+      } else if category.id == "ads" {
+        adsCategory = category
       } else {
         categories.append(category)
       }
@@ -244,6 +249,71 @@ private extension BrowserExploreViewModelImplementation {
         snapshot.appendItems([.featured], toSection: .featured)
       }
     }
+    
+    if let adsCategory {
+      let filteredItems = adsCategory.apps.filter {
+        if let filter, isDappContainsCountriesFilter(filter, app: $0) {
+          return false
+        }
+        return true
+      }
+      if !filteredItems.isEmpty {
+        let items: [BrowserExplore.Item] = filteredItems.map { item in
+          
+          let configuration = TKListItemCell.Configuration(
+            listItemContentViewConfiguration: TKListItemContentView.Configuration(
+              iconViewConfiguration: TKListItemIconView.Configuration(
+                content: .image(
+                  TKImageView.Model(
+                    image: .urlImage(item.icon),
+                    size: .size(CGSize(width: 44, height: 44)),
+                    corners: .cornerRadius(cornerRadius: 12)
+                  )
+                ),
+                alignment: .center,
+                cornerRadius: 12,
+                backgroundColor: .clear,
+                size: CGSize(width: 44, height: 44)
+              ),
+              textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                titleViewConfiguration: TKListItemTitleView.Configuration(title: item.name),
+                captionViewsConfigurations: [
+                  TKListItemTextView.Configuration(text: item.description, color: .Text.secondary, textStyle: .body2)
+                ]
+              )
+            )
+          )
+          
+          let buttonAccessory: TKListItemButtonAccessoryView.Configuration? = {
+            guard let button = item.button else { return nil }
+            return TKListItemButtonAccessoryView.Configuration(
+              title: button.title,
+              category: .tertiary) { [weak self] in
+                switch button.type {
+                case .deeplink(let url):
+                  do {
+                    let deeplink = try DeeplinkParser().parse(string: url.absoluteString)
+                    self?.didOpenDeeplink?(deeplink)
+                  } catch {
+                    break
+                  }
+                default: break
+                }
+              }
+          }()
+          
+          return .ads(BrowserExplore.AdsItem(
+            identifier: UUID().uuidString,
+            configuration: configuration,
+            buttonAccessory: buttonAccessory
+          ))
+        }
+        snapshot.appendSections([.ads])
+        snapshot.appendItems(items, toSection: .ads)
+      }
+    }
+    
+    
     let filterValue = composeCountryFilter()
     for category in categories {
       let (section, items) = mapCategory(category, filterValue: filterValue)

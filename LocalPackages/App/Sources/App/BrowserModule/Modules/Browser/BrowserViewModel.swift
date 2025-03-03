@@ -17,6 +17,7 @@ protocol BrowserModuleOutput: AnyObject {
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
   var didSelectDapp: ((Dapp) -> Void)? { get set }
   var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
+  var didOpenDeeplink: ((Deeplink) -> Void)? { get set }
 }
 
 @MainActor
@@ -40,6 +41,7 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
   var didSelectCountryPicker: ((SelectedCountry) -> Void)?
+  var didOpenDeeplink: ((Deeplink) -> Void)?
 
   // MARK: - BrowserViewModel
 
@@ -101,6 +103,10 @@ private extension BrowserViewModelImplementation {
     
     exploreModuleOutput.didSelectDapp = { [weak self] dapp in
       self?.didSelectDapp?(dapp)
+    }
+    
+    exploreModuleOutput.didOpenDeeplink = { [weak self] deeplink in
+      self?.didOpenDeeplink?(deeplink)
     }
     
     connectedModuleOutput.didSelectDapp = { [weak self] dapp in

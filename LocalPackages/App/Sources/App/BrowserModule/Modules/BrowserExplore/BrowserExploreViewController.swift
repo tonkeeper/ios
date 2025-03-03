@@ -109,7 +109,6 @@ private extension BrowserExploreViewController {
   func createLayout() -> UICollectionViewCompositionalLayout {
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
-    configuration.interSectionSpacing = 16
     
     let layout = UICollectionViewCompositionalLayout(sectionProvider: {
       [weak self] sectionIndex, environment -> NSCollectionLayoutSection? in
@@ -127,6 +126,8 @@ private extension BrowserExploreViewController {
         )
       case .featured:
         return createFeaturedSectionLayout()
+      case .ads:
+        return createAdsSectionLayout()
       }
     }, configuration: configuration)
     
@@ -177,7 +178,17 @@ private extension BrowserExploreViewController {
     
     let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
     let section = NSCollectionLayoutSection(group: group)
+    section.contentInsets = .init(top: 0, leading: 0, bottom: 16, trailing: 0)
     return section
+  }
+  
+  func createAdsSectionLayout() -> NSCollectionLayoutSection {
+    let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+    sectionLayout.contentInsets.bottom = 16
+    sectionLayout.contentInsets.leading = 16
+    sectionLayout.contentInsets.trailing = 16
+    
+    return sectionLayout
   }
   
   func createDataSource() -> BrowserExplore.DataSource {
@@ -185,7 +196,7 @@ private extension BrowserExploreViewController {
     let connectedAppCellConfiguration = UICollectionView.CellRegistration<BrowserAppCollectionViewCell, BrowserAppCollectionViewCell.Configuration> { cell, indexPath, itemIdentifier in
       cell.configure(configuration: itemIdentifier)
     }
-    
+    let listItemCellConfiguration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
     let dataSource = BrowserExplore.DataSource(collectionView: customView.collectionView) {
       [weak self] collectionView, indexPath, itemIdentifier in
       guard let self else { return UICollectionViewCell() }
@@ -213,6 +224,22 @@ private extension BrowserExploreViewController {
           for: indexPath
         )
         (cell as? TKContainerCollectionViewCell)?.setContentView(featuredView)
+        return cell
+      case .ads(let adsItem):
+        let cell = collectionView.dequeueConfiguredReusableCell(
+          using: listItemCellConfiguration,
+          for: indexPath,
+          item: adsItem.configuration)
+        cell.isHiglightable = false
+        
+        if let buttonAccessory = adsItem.buttonAccessory {
+          let accessoryButton = TKListItemButtonAccessoryView()
+          accessoryButton.configuration = buttonAccessory
+          cell.defaultAccessoryViews = [accessoryButton]
+        } else {
+          cell.defaultAccessoryViews = []
+        }
+
         return cell
       }
     }
