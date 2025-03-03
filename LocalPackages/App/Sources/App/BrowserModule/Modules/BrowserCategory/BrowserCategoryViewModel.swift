@@ -70,7 +70,7 @@ private extension BrowserCategoryViewModelImplementation {
     return BrowserCategorySection.regular(items: items)
   }
   
-  func mapDapp(_ dapp: Dapp) -> TKUIListItemCell.Configuration? {
+  func mapDapp(_ dapp: PopularApp) -> TKUIListItemCell.Configuration? {
     let id = UUID().uuidString
     return TKUIListItemCell.Configuration(
       id: id,
@@ -116,6 +116,7 @@ private extension BrowserCategoryViewModelImplementation {
         accessoryConfiguration: .image(.init(image: .TKUIKit.Icons.Size16.chevronRight, tintColor: .Icon.tertiary, padding: .zero))
       ),
       selectionClosure: { [weak self] in
+        guard let dapp = Dapp(popularApp: dapp) else { return }
         self?.didSelectDapp?(dapp)
       }
     )

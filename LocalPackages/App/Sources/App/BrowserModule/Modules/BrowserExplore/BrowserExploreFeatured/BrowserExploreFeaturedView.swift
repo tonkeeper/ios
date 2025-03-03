@@ -12,7 +12,7 @@ final class BrowserExploreFeaturedView: UIView {
   
   private let imageLoader = ImageLoader()
   
-  var dapps = [Dapp]() {
+  var dapps = [PopularApp]() {
     didSet {
       guard dapps != oldValue else { return }
       let models = dapps.map { dapp in
@@ -264,7 +264,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     }
   }
   
-  func mapDapp(_ dapp: Dapp) -> BrowserExploreFeaturedCell.Model {
+  func mapDapp(_ dapp: PopularApp) -> BrowserExploreFeaturedCell.Model {
     
     let textColor: UIColor
     if let itemTextColor = dapp.textColor {
@@ -329,6 +329,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
       posterImageTask: posterImageTask,
       listModel: listModel,
       tapClosure: { [weak self] in
+        guard let dapp = Dapp(popularApp: dapp) else { return }
         self?.didSelectApp?(dapp)
       }
     )

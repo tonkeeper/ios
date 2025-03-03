@@ -27,6 +27,18 @@ public struct Dapp: Codable {
     self.excludeCountries = excludeCountries
     self.includeCountries = includeCountries
   }
+  
+  public init?(popularApp: PopularApp) {
+    guard let url = popularApp.url else { return nil }
+    self.name = popularApp.name
+    self.description = popularApp.description
+    self.icon = popularApp.icon
+    self.poster = popularApp.poster
+    self.url = url
+    self.textColor = popularApp.textColor
+    self.excludeCountries = popularApp.excludeCountries
+    self.includeCountries = popularApp.includeCountries
+  }
 }
 
 // MARK: -  Equatable

@@ -5,11 +5,13 @@ import TKCore
 import TKLocalize
 import TKFeatureFlags
 
+@MainActor
 protocol BrowserModuleInput: AnyObject {
   func updateSelectedCountry(_ selectedCountry: SelectedCountry)
   func openExplore()
 }
 
+@MainActor
 protocol BrowserModuleOutput: AnyObject {
   var didTapSearch: (() -> Void)? { get set }
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
@@ -17,6 +19,7 @@ protocol BrowserModuleOutput: AnyObject {
   var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
 }
 
+@MainActor
 protocol BrowserViewModel: AnyObject {
   var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)? { get set }
   var didSelectExplore: (() -> Void)? { get set }
@@ -28,6 +31,7 @@ protocol BrowserViewModel: AnyObject {
   func didTapSearchBar()
 }
 
+@MainActor
 final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutput {
 
   // MARK: - BrowserModuleOutput

@@ -5,26 +5,30 @@ import TKCore
 import TKLocalize
 import TKFeatureFlags
 
+@MainActor
 protocol BrowserExploreModuleOutput: AnyObject {
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
   var didSelectDapp: ((Dapp) -> Void)? { get set }
 }
 
+@MainActor
 protocol BrowserExploreViewModel: AnyObject {
-  var didUpdateViewState: ((BrowserExploreView.State) -> Void)? { get set }
-  var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)? { get set }
-  var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
+  var didUpdateSnapshot: ((BrowserExplore.Snapshot) -> Void)? { get set }
+  var didUpdateFeaturedItems: (([PopularApp]) -> Void)? { get set }
+  var didUpdateEmptyView: ((BrowserExploreEmptyView.Model) -> Void)? { get set }
+  var didUpdateIsRefreshEnable: ((_ isEnable: Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func didSelectCategoryAll(index: Int)
   func selectFeaturedApp(dapp: Dapp)
+  func reload()
 }
 
+@MainActor
 final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, BrowserExploreModuleOutput {
   
   // MARK: - BrowserExploreModuleOutput
   
-  var didUpdateViewState: ((BrowserExploreView.State) -> Void)?
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
 
@@ -32,53 +36,11 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 
   // MARK: - BrowserExploreViewModel
   
-  var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)?
-  var didUpdateFeaturedItems: (([Dapp]) -> Void)?
+  var didUpdateSnapshot: ((BrowserExplore.Snapshot) -> Void)?
+  var didUpdateFeaturedItems: (([PopularApp]) -> Void)?
+  var didUpdateEmptyView: ((BrowserExploreEmptyView.Model) -> Void)?
+  var didUpdateIsRefreshEnable: ((_ isEnable: Bool) -> Void)?
   
-  func viewDidLoad() {
-    walletStore.addObserver(self) { observer, event in
-      switch event {
-      case .didChangeActiveWallet(let wallet):
-        Task {
-          await observer.reloadContent()
-        }
-      default:
-        break
-      }
-    }
-    TKFeatureFlags.provider.addObserver(self, flags: [.isDappsDisable]) { observer, _ in
-      Task {
-        await observer.reloadContent()
-      }
-    }
-    Task {
-      bindRegion()
-      await reloadContent()
-    }
-  }
-
-  private func bindRegion() {
-    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode, hardcodedCountryCode != "" {
-      selectedCountry = .country(countryCode: hardcodedCountryCode)
-    } else {
-      selectedCountry = regionStore.getState()
-    }
-
-    regionStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateRegion(let country):
-        guard observer.selectedCountry != country else {
-          return
-        }
-
-        observer.selectedCountry = country
-        Task {
-          await observer.reloadContent()
-        }
-      }
-    }
-  }
-
   func didSelectCategoryAll(index: Int) {
     let categoryIndex = max(index - 1, 0)
     guard categoryIndex < categories.count else { return }
@@ -95,12 +57,21 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   // MARK: - State
   
+  private enum State {
+    case empty
+    case loading
+    case content(popularAppsData: PopularAppsResponseData)
+  }
+  private var state: State = .empty {
+    didSet {
+      didUpdateState()
+    }
+  }
+  
+  private var loadingTask: Task<Void, Never>?
+  
   private var categories = [PopularAppsCategory]()
   private var featuredCategory: PopularAppsCategory?
-  
-  // MARK: - Image Loading
-  
-  private let imageLoader = ImageLoader()
 
   // MARK: - Dependencies
 
@@ -120,29 +91,170 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
     self.regionStore = regionStore
     self.analyticsProvider = analyticsProvider
   }
+  
+  func viewDidLoad() {
+    regionStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateRegion(let country):
+        DispatchQueue.main.async {
+          guard observer.selectedCountry != country else {
+            return
+          }
+          
+          observer.selectedCountry = country
+          observer.didUpdateRegion()
+        }
+      }
+    }
+    
+    TKFeatureFlags.provider.addObserver(self, flags: [.isDappsDisable]) { observer, _ in
+      DispatchQueue.main.async {
+        observer.didUpdateDappFeatureFlag()
+      }
+    }
+    
+    if let hardcodedCountryCode = TKFeatureFlags.provider.hardcodedCountryCode, hardcodedCountryCode != "" {
+      selectedCountry = .country(countryCode: hardcodedCountryCode)
+    } else {
+      selectedCountry = regionStore.getState()
+    }
+    
+    let isDappDisable = TKFeatureFlags.provider.isDappsDisable
+    didUpdateIsRefreshEnable?(!isDappDisable)
+    if isDappDisable {
+      state = .empty
+    } else {
+      if let cached = getCachedPopularApps() {
+        state = .content(popularAppsData: cached)
+      } else {
+        state = .loading
+      }
+    }
+    
+    if !isDappDisable {
+      loadPopularApps()
+    }
+  }
+  
+  func reload() {
+    loadPopularApps()
+  }
+  
+  private func loadPopularApps() {
+    if let loadingTask {
+      loadingTask.cancel()
+    }
+    
+    let loadingTask = Task { [weak self] in
+      guard let self else { return }
+      let lang = Locale.current.languageCode ?? "en"
+      do {
+        let loaded = try await browserExploreController.loadPopularApps(lang: lang)
+        try Task.checkCancellation()
+        self.state = .content(popularAppsData: loaded)
+      } catch {
+        guard !error.isCancelledError else { return }
+        self.state = .empty
+      }
+    }
+    self.loadingTask = loadingTask
+  }
+
+  private func getCachedPopularApps() -> PopularAppsResponseData? {
+    let lang = Locale.current.languageCode ?? "en"
+    return try? browserExploreController.getCachedPopularApps(lang: lang)
+  }
 }
 
 private extension BrowserExploreViewModelImplementation {
-
-  func reloadContent() async {
-    guard !TKFeatureFlags.provider.isDappsDisable else {
-      await setEmptyState()
-      return 
-    }
-    
-    let lang = Locale.current.languageCode ?? "en"
-    if let cached = try? browserExploreController.getCachedPopularApps(lang: lang) {
-      await handle(popularAppsData: cached)
-    }
-    
-    do {
-      let loaded = try await browserExploreController.loadPopularApps(lang: lang)
-      await handle(popularAppsData: loaded)
-    } catch {
-      await setEmptyState()
+  
+  func didUpdateRegion() {
+    didUpdateState()
+  }
+  
+  func didUpdateDappFeatureFlag() {
+    didUpdateState()
+  }
+  
+  func didUpdateState() {
+    switch state {
+    case .content(let popularAppsData):
+      showContent(content: popularAppsData)
+    case .empty:
+      showEmptyState()
+    case .loading:
+      break
     }
   }
+  
+  func showEmptyState() {
+    var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .small
+    )
+    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Learn more"))
+    let emptyViewModel = BrowserExploreEmptyView.Model(
+      title: "Use Tonkeeper with all TON apps and services",
+      caption: "Explore apps and services where you can use Tonkeeper for sign-in and payments.",
+      button: buttonConfiguration
+    )
+    
+    didUpdateEmptyView?(emptyViewModel)
+    
+    didUpdateFeaturedItems?([])
+    
+    var snapshot = BrowserExplore.Snapshot()
+    snapshot.appendSections([.empty])
+    snapshot.appendItems([.empty], toSection: .empty)
+    didUpdateSnapshot?(snapshot)
+  }
+  
+  func showContent(content: PopularAppsResponseData) {
+    guard !content.apps.isEmpty else {
+      showEmptyState()
+      return
+    }
+    
+    var snapshot = BrowserExplore.Snapshot()
+    
+    var featuredCategory: PopularAppsCategory?
+    var categories = [PopularAppsCategory]()
 
+    content.categories.forEach { category in
+      if category.id == "featured" {
+        featuredCategory = category
+      } else {
+        categories.append(category)
+      }
+    }
+    
+    let filter = composeCountryFilter()
+    
+    var featuredItems = [PopularApp]()
+    if let featuredCategory {
+      let filteredFeaturedItems = featuredCategory.apps.filter {
+        if let filter, isDappContainsCountriesFilter(filter, app: $0) {
+          return false
+        }
+        return true
+      }
+      featuredItems = filteredFeaturedItems
+      if !featuredItems.isEmpty {
+        snapshot.appendSections([.featured])
+        snapshot.appendItems([.featured], toSection: .featured)
+      }
+    }
+    let filterValue = composeCountryFilter()
+    for category in categories {
+      let (section, items) = mapCategory(category, filterValue: filterValue)
+      snapshot.appendSections([section])
+      snapshot.appendItems(items, toSection: section)
+    }
+    
+    didUpdateFeaturedItems?(featuredItems)
+    didUpdateSnapshot?(snapshot)
+  }
+  
   func composeCountryFilter() -> String? {
     let filter: String?
     switch selectedCountry {
@@ -156,13 +268,13 @@ private extension BrowserExploreViewModelImplementation {
     return filter
   }
 
-  func isDappContainsCountriesFilter(_ filter: String, dapp: Dapp) -> Bool {
-    if let excludeCountries = dapp.excludeCountries,
+  func isDappContainsCountriesFilter(_ filter: String, app: PopularApp) -> Bool {
+    if let excludeCountries = app.excludeCountries,
        excludeCountries.contains(where: { $0 == filter }) {
       return true
     }
 
-    if let includeCountries = dapp.includeCountries,
+    if let includeCountries = app.includeCountries,
        !includeCountries.contains(where: { $0 == filter }) {
       return true
     }
@@ -170,124 +282,65 @@ private extension BrowserExploreViewModelImplementation {
     return false
   }
 
-  func handle(popularAppsData: PopularAppsResponseData) async {
-    guard !popularAppsData.apps.isEmpty else {
-      await setEmptyState()
-      return
-    }
-
-    var featuredCategory: PopularAppsCategory?
-    var categories = [PopularAppsCategory]()
-    popularAppsData.categories.forEach { category in
-      if category.id == "featured" {
-        featuredCategory = category
-      } else {
-        categories.append(category)
-      }
-    }
-
-    let filter = composeCountryFilter()
-
-    var featuredItems = [Dapp]()
-    var sections = [BrowserExploreSection]()
-    if let featuredCategory {
-      let filteredFeaturedItems = featuredCategory.apps.filter {
-        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
-          return false
-        }
-        return true
-      }
-      featuredItems = filteredFeaturedItems
-      if !featuredItems.isEmpty {
-        sections.append(.featured(items: [.banner]))
-      }
-    }
-    
-    sections.append(contentsOf: mapCategories(categories))
-
-    await MainActor.run { [categories, featuredCategory, sections, featuredItems] in
-      self.categories = categories
-      self.featuredCategory = featuredCategory
-      updateSnapshot(sections: sections)
-      didUpdateFeaturedItems?(featuredItems)
-      didUpdateViewState?(BrowserExploreView.State.data)
-    }
-  }
-  
-  func setEmptyState() async {
-    let featuredItems = [Dapp]()
-    let sections = [BrowserExploreSection]()
-    let categories = [PopularAppsCategory]()
-    var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-      category: .primary,
-      size: .small
-    )
-    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Learn more"))
-    let state: BrowserExploreView.State = .empty(
-      BrowserExploreEmptyView.Model(
-        title: "Use Tonkeeper with all TON apps and services",
-        caption: "Explore apps and services where you can use Tonkeeper for sign-in and payments.",
-        button: buttonConfiguration
-      )
-    )
-    
-    await MainActor.run {
-      self.categories = categories
-      self.featuredCategory = nil
-      updateSnapshot(sections: sections)
-      didUpdateFeaturedItems?(featuredItems)
-      didUpdateViewState?(state)
-    }
-  }
-  
-  func mapCategories(_ categories: [PopularAppsCategory]) -> [BrowserExploreSection] {
-    let filter = composeCountryFilter()
-
-    return categories.compactMap { category in
-      let items: [BrowserAppCollectionViewCell.Configuration?] = category.apps.compactMap {
-        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
+  func mapCategory(_ category: PopularAppsCategory, filterValue: String?) -> (section: BrowserExplore.Section, items: [BrowserExplore.Item]) {
+    var items = [BrowserExplore.Item]()
+    let chunks = category.apps.chunked(into: 4)
+    for chunk in chunks {
+      guard chunk.count > 2 else { continue }
+      items.append(contentsOf: chunk.compactMap { app in
+        if let filterValue, isDappContainsCountriesFilter(filterValue, app: app) {
           return nil
         }
-
-        return mapDapp($0)
-      }
-      
-      let categoryTitle = category.id == "digital_nomads" ? nil : category.title
-      
-      return BrowserExploreSection.regular(
-        title: categoryTitle,
-        hasAll: items.count > 3,
-        items: items
-      )
+        
+        let configuration = mapApp(app)
+        return .app(
+          Browser.AppItem(
+            id: UUID().uuidString,
+            configuration: configuration,
+            selectionHandler: { [weak self] in
+              guard let dapp = Dapp(popularApp: app) else { return }
+              self?.didSelectDapp?(dapp)
+            },
+            longPressHandler: {
+              
+            }
+          )
+        )
+      })
     }
+
+    let header: BrowserExplore.AppsSectionHeader? = {
+      if category.id == "digital_nomads" {
+        return nil
+      } else {
+        return BrowserExplore.AppsSectionHeader(
+          title: category.title ?? "",
+          hasAll: category.apps.count > 4,
+          allTapHandler: { [weak self] in
+            self?.didSelectCategory?(category)
+          }
+        )
+      }
+    }()
+    let isMultilineAppsTitle = category.id == "digital_nomads"
+    let section = BrowserExplore.Section.apps(
+      id: category.id,
+      header: header,
+      isMultilineAppsTitle: isMultilineAppsTitle
+    )
+    
+    return (section: section, items: items)
   }
   
-  func mapDapp(_ dapp: Dapp) -> BrowserAppCollectionViewCell.Configuration {
+  func mapApp(_ app: PopularApp) -> BrowserAppCollectionViewCell.Configuration {
     return BrowserAppCollectionViewCell.Configuration(
-      id: UUID(),
-      title: dapp.name,
+      id: app.id,
+      title: app.name,
       iconModel: TKImageView.Model(
-        image: .urlImage(dapp.icon),
+        image: .urlImage(app.icon),
         size: .size(CGSize(width: 64, height: 64)),
         corners: .cornerRadius(cornerRadius: 16)
-      ),
-      selectionClosure: { [weak self] in
-        self?.didSelectDapp?(dapp)
-      }
+      )
     )
-  }
-  
-  func updateSnapshot(sections: [BrowserExploreSection]) {
-    var snapshot = NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>()
-    snapshot.appendSections(sections)
-    for section in sections {
-      switch section {
-      case .regular(_, _, let items):
-        snapshot.appendItems(items, toSection: section)
-      case .featured(let items):
-        snapshot.appendItems(items, toSection: section)
-      }
-    }
-    didUpdateSnapshot?(snapshot)
   }
 }

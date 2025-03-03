@@ -29,10 +29,9 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
   }
   
   struct Configuration: Hashable {
-    let id: UUID
+    let id: String
     let title: NSAttributedString
     let iconModel: TKImageView.Model
-    let selectionClosure: (() -> Void)?
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(id)
@@ -42,10 +41,9 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
       return lhs.id == rhs.id
     }
     
-    init(id: UUID,
+    init(id: String,
          title: String,
-         iconModel: TKImageView.Model,
-         selectionClosure: (() -> Void)?) {
+         iconModel: TKImageView.Model) {
       self.id = id
       self.title = title.withTextStyle(
         .body3,
@@ -54,7 +52,6 @@ final class BrowserAppCollectionViewCell: UICollectionViewCell, ReusableView, TK
         lineBreakMode: .byTruncatingTail
       )
       self.iconModel = iconModel
-      self.selectionClosure = selectionClosure
     }
   }
   
@@ -71,13 +68,13 @@ private extension BrowserAppCollectionViewCell {
     addSubview(iconImageView)
     
     iconImageView.snp.makeConstraints { make in
-      make.top.equalTo(self)
+      make.top.equalTo(self).offset(8)
       make.centerX.equalTo(self)
       make.size.equalTo(64)
     }
     
     titleLabel.snp.makeConstraints { make in
-      make.top.equalTo(iconImageView.snp.bottom)
+      make.top.equalTo(iconImageView.snp.bottom).offset(8)
       make.left.right.equalTo(self)
       make.bottom.equalTo(self).offset(-8)
     }

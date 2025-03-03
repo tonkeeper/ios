@@ -70,6 +70,7 @@ private extension BrowserExploreSectionHeaderView {
     stackView.addArrangedSubview(allButton)
     
     allButton.setContentHuggingPriority(.required, for: .horizontal)
+    allButton.setContentCompressionResistancePriority(.required, for: .horizontal)
     titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
     
     setupConstraints()
@@ -77,9 +78,9 @@ private extension BrowserExploreSectionHeaderView {
   
   func setupConstraints() {
     stackView.snp.makeConstraints { make in
-      make.top.bottom.equalTo(self).priority(.medium)
-      make.right.equalTo(self).inset(18).priority(.medium)
-      make.left.equalTo(self).inset(4).priority(.medium)
+      make.top.bottom.equalTo(self)
+      make.right.equalTo(self).inset(4)
+      make.left.equalTo(self).inset(4)
     }
   }
   

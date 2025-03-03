@@ -313,9 +313,9 @@ extension MainCoordinator {
       }
 
       var isDappHandlingApproved = false
-      if let _ = popularAppsResponse.apps.first(with: url.host, at: \.url.host) {
+      if let _ = popularAppsResponse.apps.first(with: url.host, at: \.url?.host) {
         isDappHandlingApproved = true
-      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url.host, at: \.url.host) }) {
+      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url.host, at: \.url?.host) }) {
         isDappHandlingApproved = true
       }
 

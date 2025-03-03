@@ -54,7 +54,7 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
       updateSnapshot()
     }
   }
-  private var dapps = [Dapp]() {
+  private var dapps = [PopularApp]() {
     didSet {
       updateSnapshot()
     }
@@ -109,16 +109,24 @@ private extension BrowserSearchViewModelImplementation {
     }
     
     if !dapps.isEmpty {
-      let items = dapps.map { dapp in
-        return BrowserSearch.Item(
-          identifier: dapp.url.absoluteString,
-          configuration: mapDapp(dapp),
+      var items = [BrowserSearch.Item]()
+      var identifiers = Set<String>()
+      for dapp in dapps {
+        guard let url = dapp.url else { continue }
+        guard !identifiers.contains(dapp.id) else { continue }
+        let item = BrowserSearch.Item(
+          identifier: dapp.id,
+          configuration: mapDapp(dapp, url: url),
           isHighlighted: false) { [weak self] in
-        self?.didSelectDapp?(dapp)
-      }}
+            guard let dapp = Dapp(popularApp: dapp) else { return }
+            self?.didSelectDapp?(dapp)
+          }
+        items.append(item)
+        identifiers.insert(dapp.id)
+      }
       snapshot.appendItems(items, toSection: .dapps)
     }
-    
+  
     if !searchSuggestions.isEmpty {
       let headerModel = BrowserSearchListSectionHeaderView.Model(
         titleModel: TKListTitleView.Model(
@@ -152,7 +160,7 @@ private extension BrowserSearchViewModelImplementation {
 
   func searchPopularApps(input: String) {
     guard !input.isEmpty else {
-      dapps = [Dapp]()
+      dapps = [PopularApp]()
       suggestionsTask?.cancel()
       searchSuggestions = [SearchEngineSuggestion]()
       urlSuggestion = nil
@@ -163,7 +171,10 @@ private extension BrowserSearchViewModelImplementation {
     if let popularApps = try? popularAppsService.getPopularApps(lang: lang) {
       let filtered = popularApps.categories
         .flatMap { $0.apps }
-        .filter { $0.name.contains(input) || $0.url.absoluteString.contains(input) }
+        .filter { app in
+          guard let url = app.url else { return false }
+          return app.name.contains(input) || url.absoluteString.contains(input)
+        }
         .removingDuplicatedElements()
         .prefix(3)
       self.dapps = Array(filtered)
@@ -267,7 +278,7 @@ private extension BrowserSearchViewModelImplementation {
     )
   }
 
-  func mapDapp(_ dapp: Dapp) -> TKListItemCell.Configuration {
+  func mapDapp(_ dapp: PopularApp, url: URL) -> TKListItemCell.Configuration {
     TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: TKListItemIconView.Configuration(
@@ -283,7 +294,7 @@ private extension BrowserSearchViewModelImplementation {
           ),
           captionViewsConfigurations: [
             TKListItemTextView.Configuration(
-              text: dapp.url.absoluteString,
+              text: url.absoluteString,
               color: .Text.secondary,
               textStyle: .body2)
           ]

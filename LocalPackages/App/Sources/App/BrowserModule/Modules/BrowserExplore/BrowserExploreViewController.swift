@@ -5,32 +5,14 @@ import TKLocalize
 
 final class BrowserExploreViewController: GenericViewViewController<BrowserExploreView>, ScrollViewController {
   
-  typealias DataSource = UICollectionViewDiffableDataSource<BrowserExploreSection, AnyHashable>
-  private let viewModel: BrowserExploreViewModel
-  
   private let featuredView = BrowserExploreFeaturedView()
-  
-  private lazy var dataSource = createDataSource()
-  
-  var isHorizontalScrollingEnabled = false
-  
-  private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
-    cell, indexPath, itemIdentifier in
-    cell.configure(configuration: itemIdentifier)
-    cell.isFirstInSection = { ip in
-      return ip.item % 3 == 0
-    }
-    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-      guard let collectionView else { return false }
-      return (ip.item + 1) % 3 == 0 || ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-    }
-  }
-  
+  private lazy var dataSource: BrowserExplore.DataSource = createDataSource()
   lazy var layout = createLayout()
   
-  private lazy var sectionHeaderRegistration = UICollectionView.SupplementaryRegistration<BrowserExploreSectionHeaderView>(
-    elementKind: BrowserExploreSectionHeaderView.reuseIdentifier) { _, _, _ in }
+  private let emptyView = BrowserExploreEmptyView()
+  private let refreshControl = UIRefreshControl()
   
+  private let viewModel: BrowserExploreViewModel
   
   init(viewModel: BrowserExploreViewModel) {
     self.viewModel = viewModel
@@ -65,14 +47,16 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
 }
 
 extension BrowserExploreViewController: UICollectionViewDelegate {
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+  func collectionView(_ collectionView: UICollectionView,
+                      didSelectItemAt indexPath: IndexPath) {
     let item = dataSource
       .snapshot()
       .itemIdentifiers(inSection: dataSource.snapshot().sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case let listItem as BrowserAppCollectionViewCell.Configuration:
-      listItem.selectionClosure?()
-    default: break
+    case .app(let appItem):
+      appItem.selectionHandler?()
+    default:
+      break
     }
   }
 }
@@ -83,7 +67,15 @@ private extension BrowserExploreViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
-    customView.collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "ContainerCell")
+    customView.collectionView.register(
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+    )
+    customView.collectionView.refreshControl = refreshControl
+    
+    refreshControl.addAction(UIAction(handler: { [weak self] _ in
+      self?.viewModel.reload()
+    }), for: .valueChanged)
     
     featuredView.didSelectApp = { [weak self] dapp in
       self?.viewModel.selectFeaturedApp(dapp: dapp)
@@ -92,7 +84,12 @@ private extension BrowserExploreViewController {
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false)
+      if #available(iOS 15.0, *) {
+        self?.dataSource.applySnapshotUsingReloadData(snapshot)
+      } else {
+        self?.dataSource.apply(snapshot, animatingDifferences: false)
+      }
+      self?.refreshControl.endRefreshing()
     }
     
     viewModel.didUpdateFeaturedItems = { [weak self] dapps in
@@ -104,8 +101,8 @@ private extension BrowserExploreViewController {
       }
     }
     
-    viewModel.didUpdateViewState = { [weak self] state in
-      self?.customView.state = state
+    viewModel.didUpdateEmptyView = { [weak self] model in
+      self?.emptyView.configure(model: model)
     }
   }
   
@@ -121,73 +118,51 @@ private extension BrowserExploreViewController {
       let snapshot = dataSource.snapshot()
       let section = snapshot.sectionIdentifiers[sectionIndex]
       switch section {
-      case let .regular(title,_ ,_):
-        return regularSectionLayout(
-          snapshot: snapshot,
-          hasTitle: title != nil,
-          section: section,
-          environment: environment
+      case .empty:
+        return createEmptySectionLayout()
+      case let .apps(_, header, isMultilineAppsTitle):
+        return BrowserCollectionLayout.appsSectionLayout(
+          hasSectionTitle: header != nil,
+          multilineAppsTitle: isMultilineAppsTitle
         )
       case .featured:
-        return featuredSectionLayout(environment: environment)
+        return createFeaturedSectionLayout()
       }
     }, configuration: configuration)
     
     return layout
   }
   
-  func regularSectionLayout(snapshot: NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>,
-                            hasTitle: Bool,
-                            section: BrowserExploreSection,
-                            environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+  func createEmptySectionLayout() -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1/4),
-      heightDimension: .absolute(104)
+      widthDimension: .fractionalWidth(1),
+      heightDimension: .estimated(188)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
-    item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
-
     let groupSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1),
-      heightDimension: .estimated(104)
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(188)
     )
-    
     let group: NSCollectionLayoutGroup
-  
     if #available(iOS 16.0, *) {
       group = NSCollectionLayoutGroup.horizontalGroup(
         with: groupSize,
         repeatingSubitem: item,
-        count: 4
+        count: 1
       )
     } else {
       group = NSCollectionLayoutGroup.horizontal(
         layoutSize: groupSize,
         subitem: item,
-        count: 4
+        count: 1
       )
     }
-    
     let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = .init(top: 10, leading: 12, bottom: 16, trailing: 12)
-    
-    if hasTitle {
-      let headerSize = NSCollectionLayoutSize(
-        widthDimension: .fractionalWidth(1.0),
-        heightDimension: .estimated(56)
-      )
-      let header = NSCollectionLayoutBoundarySupplementaryItem(
-        layoutSize: headerSize,
-        elementKind: BrowserExploreSectionHeaderView.reuseIdentifier,
-        alignment: .top
-      )
-      section.boundarySupplementaryItems = [header]
-    }
-    
+    section.contentInsets = NSDirectionalEdgeInsets(top: 4, leading: 16, bottom: 16, trailing: 16)
     return section
   }
   
-  func featuredSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+  func createFeaturedSectionLayout() -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
       heightDimension: .fractionalWidth(0.46)
@@ -205,55 +180,70 @@ private extension BrowserExploreViewController {
     return section
   }
   
-  func createDataSource() -> DataSource {
+  func createDataSource() -> BrowserExplore.DataSource {
+    
     let connectedAppCellConfiguration = UICollectionView.CellRegistration<BrowserAppCollectionViewCell, BrowserAppCollectionViewCell.Configuration> { cell, indexPath, itemIdentifier in
       cell.configure(configuration: itemIdentifier)
     }
     
-    let dataSource = DataSource(collectionView: customView.collectionView) { [featuredView] collectionView, indexPath, itemIdentifier in
+    let dataSource = BrowserExplore.DataSource(collectionView: customView.collectionView) {
+      [weak self] collectionView, indexPath, itemIdentifier in
+      guard let self else { return UICollectionViewCell() }
       switch itemIdentifier {
-      case let item as BrowserAppCollectionViewCell.Configuration:
-        return collectionView.dequeueConfiguredReusableCell(using: connectedAppCellConfiguration, for: indexPath, item: item)
-      case _ as BrowserExploreFeatureSectionItem:
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ContainerCell", for: indexPath)
-        cell.contentView.addSubview(featuredView)
-        featuredView.snp.makeConstraints { make in
-          make.edges.equalTo(cell.contentView)
+      case .app(let appItem):
+        let cell = collectionView.dequeueConfiguredReusableCell(
+          using: connectedAppCellConfiguration,
+          for: indexPath,
+          item: appItem.configuration
+        )
+        cell.didLongPress = {
+          appItem.longPressHandler?()
         }
         return cell
-      default: return nil
+      case .empty:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        (cell as? TKContainerCollectionViewCell)?.setContentView(emptyView)
+        return cell
+      case .featured:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        (cell as? TKContainerCollectionViewCell)?.setContentView(featuredView)
+        return cell
       }
     }
     
+    let sectionHeaderRegistration = UICollectionView.SupplementaryRegistration<BrowserExploreSectionHeaderView>(
+      elementKind: BrowserExploreSectionHeaderView.reuseIdentifier) { _, _, _ in }
     dataSource.supplementaryViewProvider = {
-      [weak self, sectionHeaderRegistration, dataSource] collectionView, elementKind, indexPath in
-      guard let self else { return nil }
-      switch elementKind {
-      case BrowserExploreSectionHeaderView.reuseIdentifier:
-        let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
-        switch section {
-        case let .regular(title, hasAll, _):
-          let sectionHeader = collectionView.dequeueConfiguredReusableSupplementary(
-            using: sectionHeaderRegistration,
-            for: indexPath
+      collectionView, _, indexPath in
+      let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
+      switch section {
+      case let .apps(_, header, _):
+        guard let header = header else { return nil }
+        let headerView = collectionView.dequeueConfiguredReusableSupplementary(
+          using: sectionHeaderRegistration,
+          for: indexPath
+        )
+        
+        headerView.configure(
+          model: BrowserExploreSectionHeaderView.Model(
+            title: header.title,
+            isAllHidden: !header.hasAll,
+            allTapAction: {
+              header.allTapHandler?()
+            }
           )
-          
-          sectionHeader.configure(model: BrowserExploreSectionHeaderView.Model(
-            title: title ?? "",
-            isAllHidden: !hasAll,
-            allTapAction: { [weak self] in
-              self?.viewModel.didSelectCategoryAll(index: indexPath.section)
-            })
-          )
-          return sectionHeader
-        case .featured:
-          return nil
-        }
+        )
+        return headerView
       default:
         return nil
       }
     }
-    
     return dataSource
   }
 }

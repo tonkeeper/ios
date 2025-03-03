@@ -2,6 +2,7 @@ import Foundation
 import TKCore
 import KeeperCore
 
+@MainActor
 struct BrowserAssembly {
   private init() {}
   static func module(
