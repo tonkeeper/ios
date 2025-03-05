@@ -41,91 +41,39 @@ final class BatteryRefillRechargeMethodsModel {
     }
   }
   
-  private var rechargeMethods = [BatteryRechargeMethod]()
+  private var rechargeMethods = [RechargeMethodItem]()
   private var loadingTask: Task<Void, Never>?
   private var isLoading: Bool {
     loadingTask == nil
   }
   
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStore
-  private let batteryService: BatteryService
+  private let rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStore,
-       batteryService: BatteryService) {
+       rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider) {
     self.wallet = wallet
-    self.balanceStore = balanceStore
-    self.batteryService = batteryService
+    self.rechargeMethodsProvider = rechargeMethodsProvider
   }
   
   func loadMethods() {
-    if let loadingTask = loadingTask {
-      loadingTask.cancel()
-    }
-    let task = Task {
-      let methods: [BatteryRechargeMethod] = await {
-        (try? await batteryService.loadRechargeMethods(wallet: wallet, includeRechargeOnly: false)) ?? []
-      }()
-      await MainActor.run {
-        self.rechargeMethods = methods
-        self.loadingTask = nil
-        updateState()
-      }
-    }
-    self.loadingTask = task
-    updateState()
-  }
-  
-  private func updateState() {
     guard !TKFeatureFlags.provider.isBatteryCryptoRechargeDisable else {
       state = .idle(items: [])
       return
     }
     
-    guard let balance = balanceStore.getState()[wallet]?.balance else {
-      state = .idle(items: [])
-      return
+    if let loadingTask = loadingTask {
+      loadingTask.cancel()
     }
-    
-    let rechargeMethods = rechargeMethods
-      .filter { $0.supportRecharge }
-    
-    var tonRechargeMethods = [BatteryRechargeMethod]()
-    var jettonRechargeMethods = [BatteryRechargeMethod]()
-    var jettonMasterAddresses = [Address]()
-    rechargeMethods.forEach {
-      switch $0.token {
-      case .ton: tonRechargeMethods.append($0)
-      case .jetton(let jetton):
-        jettonRechargeMethods.append($0)
-        jettonMasterAddresses.append(jetton.jettonMasterAddress)
+    let task = Task { [weak self] in
+      guard let self else { return }
+      let methods = await rechargeMethodsProvider.getAllRechargeMethods()
+      await MainActor.run {
+        self.rechargeMethods = methods
+        self.loadingTask = nil
+        self.state = .idle(items: methods)
       }
     }
-    
-    let balanceJettonItems = balance.jettonsBalance
-      .filter { balanceJetton in
-        balanceJetton.jettonBalance.quantity > 0 &&
-        jettonMasterAddresses.contains(balanceJetton.jettonBalance.item.jettonInfo.address)
-      }
-    
-    let items = jettonRechargeMethods.compactMap { rechargeMethod -> RechargeMethodItem? in
-      guard let jettonBalance = balanceJettonItems.first(where: { $0.jettonBalance.item.jettonInfo.address == rechargeMethod.jettonMasterAddress  }) else {
-        return nil
-      }
-      return RechargeMethodItem.token(
-        token: .jetton(jettonBalance.jettonBalance.item)
-      )
-    }
-    
-    var result = items
-    if !tonRechargeMethods.isEmpty, balance.tonBalance.tonBalance.amount > 0 {
-      result.append(.token(token: .ton))
-    }
-    if !result.isEmpty {
-      let giftItem = result[0]
-      result.append(.gift(token: giftItem.token))
-      self.state = .idle(items: result)
-    }
+    self.loadingTask = task
   }
 }

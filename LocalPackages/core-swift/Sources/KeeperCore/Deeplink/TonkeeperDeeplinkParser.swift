@@ -240,7 +240,15 @@ public struct TonkeeperDeeplinkParser {
     )
     
     let promocode = components?.queryItems?.first(where: { $0.name == "promocode" })?.value
-    return Deeplink.Battery(promocode: promocode)
+    let masterJettonAddress: Address? = {
+      guard let jettonValue = components?.queryItems?.first(where: { $0.name == "jetton" })?.value else {
+        return nil
+      }
+      return try? Address.parse(jettonValue)
+    }()
+    
+    return Deeplink.Battery(promocode: promocode,
+                            masterJettonAddress: masterJettonAddress)
   }
   
   private func parseStory(url: URL) throws -> String {

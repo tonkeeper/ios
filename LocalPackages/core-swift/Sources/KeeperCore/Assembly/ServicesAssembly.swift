@@ -33,7 +33,7 @@ public final class ServicesAssembly {
     WalletsServiceImplementation(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
   }
   
-  func balanceService() -> BalanceService {
+  public func balanceService() -> BalanceService {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),

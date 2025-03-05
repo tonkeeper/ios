@@ -5,6 +5,7 @@ import TKCore
 import TKLocalize
 import KeeperCore
 import SignRaw
+import TonSwift
 
 public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -12,17 +13,30 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
   
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
+  private var isNeedToOpenRecharge: Bool = false
+  
   private let wallet: Wallet
+  private let jettonMasterAddress: Address?
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+  private let promocodeStore: BatteryPromocodeStore
+  private let batteryCryptoRechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider
   
   init(router: NavigationControllerRouter,
        wallet: Wallet,
+       jettonMasterAddress: Address?,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly) {
     self.wallet = wallet
+    self.jettonMasterAddress = jettonMasterAddress
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
+    self.batteryCryptoRechargeMethodsProvider = BatteryCryptoRechargeMethodsProvider(
+      wallet: wallet,
+      balanceService: keeperCoreMainAssembly.servicesAssembly.balanceService(),
+      batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService()
+    )
     super.init(router: router)
   }
   
@@ -36,15 +50,21 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
     walletTransferSignCoordinator.externalSignHandler = nil
     return true
   }
+  
+  func didAppear() {
+    if isNeedToOpenRecharge {
+      isNeedToOpenRecharge = false
+      openBatteryRechargeIfNeeded(rechargeMethodsProvider: batteryCryptoRechargeMethodsProvider, promocodeStore: promocodeStore)
+    }
+  }
 }
 
 private extension BatteryRefillCoordinator {
   func openBatteryRefill() {
-    let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
-    
     let module = BatteryRefillAssembly.module(
       wallet: wallet,
       promocodeStore: promocodeStore,
+      rechargeMethodsProvider: batteryCryptoRechargeMethodsProvider,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
@@ -63,23 +83,26 @@ private extension BatteryRefillCoordinator {
     }
     
     module.output.didTapRecharge = { [weak self] rechargeMethod in
-      switch rechargeMethod {
-      case let .token(token):
-        self?.openRecharge(token: token,
-                           isGift: false,
-                           promocodeStore: promocodeStore)
-      case let .gift(token):
-        self?.openRecharge(token: token,
-                           isGift: true,
-                           promocodeStore: promocodeStore)
-      }
+      guard let self else { return }
+      openRecharge(item: rechargeMethod, promocodeStore: promocodeStore)
     }
     
     module.output.didOpenRefundURL = { [weak self] url, title in
       self?.didOpenRefundURL?(url, title)
     }
     
-    router.push(viewController: module.view, animated: true)
+    router.push(viewController: module.view, animated: false, completion:  { [weak self] in
+      guard let self else { return }
+      guard router.rootViewController.presentingViewController != nil  else {
+        self.isNeedToOpenRecharge = true
+        return
+      }
+      
+      openBatteryRechargeIfNeeded(
+        rechargeMethodsProvider: batteryCryptoRechargeMethodsProvider,
+        promocodeStore: promocodeStore
+      )
+    })
   }
   
   func openSupportedTransactions(wallet: Wallet) {
@@ -101,12 +124,22 @@ private extension BatteryRefillCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openRecharge(token: Token,
-                    isGift: Bool,
+  func openRecharge(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem,
                     promocodeStore: BatteryPromocodeStore) {
+    let rechargeToken: Token
+    let isGift: Bool
+    switch item {
+    case .token(let token):
+      rechargeToken = token
+      isGift = false
+    case .gift(let token):
+      rechargeToken = token
+      isGift = true
+    }
+    
     let module = BatteryRechargeAssembly.module(
       wallet: wallet,
-      token: token,
+      token: rechargeToken,
       isGift: isGift,
       promocodeStore: promocodeStore,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -208,6 +241,23 @@ private extension BatteryRefillCoordinator {
       return nil
     case .failed(let error):
       throw error
+    }
+  }
+  
+  @MainActor
+  func openBatteryRechargeIfNeeded(rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider,
+                                   promocodeStore: BatteryPromocodeStore) {
+    guard let jettonMasterAddress else { return }
+    ToastPresenter.showToast(configuration: .loading)
+    Task {
+      guard let item = await rechargeMethodsProvider.getRechargeMethod(jettonMasterAddress: jettonMasterAddress) else {
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(configuration: .failed)
+        return
+      }
+      
+      ToastPresenter.hideAll()
+      openRecharge(item: item, promocodeStore: promocodeStore)
     }
   }
 }

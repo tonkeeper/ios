@@ -461,7 +461,10 @@ extension MainCoordinator {
       }
     }
     
-    self.openBattery(wallet: wallet)
+    self.openBattery(
+      wallet: wallet,
+      jettonMasterAddress: payload.masterJettonAddress
+    )
   }
   
   func handleStoryDeeplink(storyId: String) {

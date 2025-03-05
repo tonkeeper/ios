@@ -32,6 +32,7 @@ public enum Deeplink: Equatable {
   
   public struct Battery: Equatable {
     public let promocode: String?
+    public let masterJettonAddress: Address?
   }
   
   case transfer(Transfer)

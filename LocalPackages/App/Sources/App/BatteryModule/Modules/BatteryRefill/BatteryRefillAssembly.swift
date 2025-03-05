@@ -6,6 +6,7 @@ struct BatteryRefillAssembly {
   private init() {}
   static func module(wallet: Wallet,
                      promocodeStore: BatteryPromocodeStore,
+                     rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRefillViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
     
@@ -29,8 +30,7 @@ struct BatteryRefillAssembly {
       ),
       rechargeMethodsModel: BatteryRefillRechargeMethodsModel(
         wallet: wallet,
-        balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService()
+        rechargeMethodsProvider: rechargeMethodsProvider
       ),
       headerModel: BatteryRefillHeaderModel(
         wallet: wallet,
