@@ -180,6 +180,10 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
     var requiredAmount: UInt64?
     var token: Token?
     var availableBalance: BigUInt?
+    
+    guard !emulation.transferType.isBattery, !emulation.transferType.isGasless else {
+      return
+    }
 
     let fee = emulation.fee
     let transferAmount: BigUInt = {
