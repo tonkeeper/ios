@@ -33,7 +33,7 @@ extension HistoryCellActionView {
       
       init(encryptedText: String, action: @escaping () -> Void) {
         let count = encryptedText.count / 2 - 64
-        let string = String(repeating: "0", count: count)
+        let string = String(repeating: "0", count: max(count, 1))
         self.state = .encrypted(text: string.withTextStyle(.body2, color: .Bubble.foreground))
         self.action = action
       }
