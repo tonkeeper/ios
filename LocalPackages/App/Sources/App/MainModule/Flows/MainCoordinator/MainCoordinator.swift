@@ -256,7 +256,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     walletCoordinator.didTapBattery = { [weak self] wallet in
-      self?.openBattery(wallet: wallet)
+      self?.openBattery(
+        wallet: wallet
+      )
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
@@ -784,7 +786,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                                        wallet: wallet)
         
     coordinator.didTapBattery = { [weak self] wallet in
-      self?.openBattery(wallet: wallet)
+      self?.openBattery(
+        wallet: wallet
+      )
     }
     
     coordinator.didFinish = { [weak self] in
@@ -1201,13 +1205,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     navigationController.pushViewController(module.viewController, animated: true)
   }
   
-  func openBattery(wallet: Wallet) {
+  func openBattery(wallet: Wallet, jettonMasterAddress: Address? = nil) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = BatteryRefillCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
+      jettonMasterAddress: jettonMasterAddress,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
@@ -1227,7 +1232,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     coordinator.start(deeplink: nil)
     
     self.router.dismiss(animated: true) { [weak self] in
-      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.router.present(navigationController,
+                           completion: {
+        coordinator.didAppear()
+      },
+                           onDismiss: { [weak self, weak coordinator] in
         self?.removeChild(coordinator)
       })
     }
