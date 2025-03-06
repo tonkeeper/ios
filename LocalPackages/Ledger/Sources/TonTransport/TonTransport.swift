@@ -14,9 +14,32 @@ public struct LedgerTransfer {
   }
 }
 
+public enum TonTransportError: Swift.Error, LocalizedError {
+  case invalidResponse
+  case invalidDomain
+  case invalidPayload
+  case packageTooLarge(length: Int)
+  case signatureIsInvalid
+  
+  public var errorDescription: String? {
+    switch self {
+    case .invalidResponse:
+      "Invalid response"
+    case .invalidDomain:
+      "Invalid domain"
+    case .invalidPayload:
+      "Invalid payload"
+    case .packageTooLarge(let length):
+      "Package too large (\(length))"
+    case .signatureIsInvalid:
+      "Signature is invalid"
+    }
+  }
+}
+
 public class TonTransport {
   private let transport: BleTransportProtocol
-  private let lockQueue = DispatchQueue(label: "TonTransportQueue")
+  private let serialTasks = SerialTasks<Data>()
   
   static let LEDGER_SYSTEM: UInt8 = 0xB0
   static let LEDGER_CLA: UInt8 = 0xE0
@@ -48,48 +71,44 @@ public class TonTransport {
   }
   
   private func doRequest(ins: UInt8, p1: UInt8, p2: UInt8, data: Data) async throws -> Data {
-    return try await withCheckedThrowingContinuation { continuation in
-      lockQueue.async {
-        Task {
-          do {
-            let response = try await self.transport.send(system: TonTransport.LEDGER_CLA, command: ins, p1: p1, p2: p2, data: data, responseCodes: nil)
-            let result = response.subdata(in: 0..<response.count - 2)
-            continuation.resume(returning: result)
-          } catch {
-            continuation.resume(throwing: error)
-          }
-        }
-      }
+    try await serialTasks.add {
+      let response = try await self.transport.send(
+        system: TonTransport.LEDGER_CLA,
+        command: ins,
+        p1: p1,
+        p2: p2,
+        data: data,
+        responseCodes: nil)
+      let result = response.subdata(in: 0..<response.count - 2)
+      return result
     }
   }
   
   private func getCurrentApp() async throws -> (String, String) {
-    return try await withCheckedThrowingContinuation { continuation in
-      lockQueue.async {
-        Task {
-          do {
-            let response = try await self.transport.send(system: TonTransport.LEDGER_SYSTEM, command: 0x01, p1: 0x00, p2: 0x00, data: Data(), responseCodes: nil)
-            
-            let data = response.subdata(in: 0..<(response.count - 2))
-            
-            guard data[0] == 0x01 else {
-              throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
-            }
-            
-            let nameLength = Int(data[1])
-            let nameData = data.subdata(in: 2..<(2 + nameLength))
-            let name = String(data: nameData, encoding: .utf8) ?? ""
-            let versionLength = Int(data[2 + nameLength])
-            let versionData = data.subdata(in: (3 + nameLength)..<(3 + nameLength + versionLength))
-            let version = String(data: versionData, encoding: .utf8) ?? ""
-            let result = (name, version)
-            continuation.resume(returning: result)
-          } catch {
-            continuation.resume(throwing: error)
-          }
-        }
+    let data = try await serialTasks.add {
+      let response = try await self.transport.send(
+        system: TonTransport.LEDGER_SYSTEM,
+        command: 0x01,
+        p1: 0x00,
+        p2: 0x00,
+        data: Data(),
+        responseCodes: nil)
+      let data = response.subdata(in: 0..<(response.count - 2))
+      guard !data.isEmpty,
+            data[0] == 0x01 else {
+        throw TonTransportError.invalidResponse
       }
+      return data
     }
+    
+    let nameLength = Int(data[1])
+    let nameData = data.subdata(in: 2..<(2 + nameLength))
+    let name = String(data: nameData, encoding: .utf8) ?? ""
+    let versionLength = Int(data[2 + nameLength])
+    let versionData = data.subdata(in: (3 + nameLength)..<(3 + nameLength + versionLength))
+    let version = String(data: versionData, encoding: .utf8) ?? ""
+    let result = (name, version)
+    return result
   }
   
   public func isAppOpen() async throws -> (Bool, String) {
@@ -515,25 +534,43 @@ public class TonTransport {
     return LedgerTransfer(signingMessage: transfer, package: Data(pkg))
   }
   
-  public func signAddressProof(path: AccountPath, domain: String, timestamp: UInt64, payload: String) async throws -> Data {
+  public func signAddressProof(path: AccountPath,
+                               domain: String,
+                               timestamp: UInt64,
+                               payload: String) async throws -> Data {
     let publicKey = try await getAccount(path: path).publicKey
     
-    let domainData = domain.data(using: .utf8)!
+    guard let domainData = domain.data(using: .utf8) else {
+      throw TonTransportError.invalidDomain
+    }
+    guard let payloadData = payload.data(using: .utf8) else {
+      throw TonTransportError.invalidPayload
+    }
     let timestampData = Data(try TonTransport.putUint64(BigUInt(timestamp)))
-    let payloadData = payload.data(using: .utf8)!
+    let pkg = path.data
+    + Data(TonTransport.putUint8(UInt8(domainData.count)))
+    + domainData
+    + timestampData
+    + payloadData
     
-    let pkg: Data = path.data + Data(TonTransport.putUint8(UInt8(domainData.count))) + domainData + timestampData + payloadData
-    
-    let res = try await doRequest(ins: TonTransport.INS_PROOF, p1: 0x01, p2: 0x00, data: pkg)
+    guard pkg.count <= 255 else {
+      throw TonTransportError.packageTooLarge(length: pkg.count)
+    }
+    let res = try await doRequest(
+      ins: TonTransport.INS_PROOF,
+      p1: 0x01,
+      p2: 0x00,
+      data: pkg
+    )
     let signature = res.subdata(in: 1..<65)
     let hash = res.subdata(in: (2 + 64)..<(2 + 64 + 32))
     
-    let isValidSignature = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey.data).isValidSignature(signature, for: hash)
+    let isValidSignature = try Curve25519.Signing.PublicKey(rawRepresentation: publicKey.data)
+      .isValidSignature(signature, for: hash)
     
-    if !isValidSignature {
-      throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Received signature is invalid"])
+    guard isValidSignature else {
+      throw TonTransportError.signatureIsInvalid
     }
-    
     return signature
   }
   

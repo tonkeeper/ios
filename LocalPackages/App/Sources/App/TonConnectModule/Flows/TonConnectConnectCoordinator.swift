@@ -64,6 +64,10 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
       keeperVersion: InfoProvider.appVersion()
     )
     connectionResponseHandler(response)
+    guard case let .error(error) = response else {
+      return
+    }
+    throw error
   }
 }
 
@@ -199,12 +203,17 @@ private extension TonConnectConnectCoordinator {
       
       switch (wallet.identity.kind) {
       case .Ledger(_, _, let ledgerDevice):
-        return await .tonProofSigned(
-          .success(.init(data: signatureData,
-                         signature: try self.handleLedgerProof(fromViewController: fromViewController,
-                                                               signatureData: signatureData,
-                                                               wallet: wallet,
-                                                               ledgerDevice: ledgerDevice)))
+        let signature = try await self.handleLedgerProof(fromViewController: fromViewController,
+                                                         signatureData: signatureData,
+                                                         wallet: wallet,
+                                                         ledgerDevice: ledgerDevice)
+        return .tonProofSigned(
+          TonConnect.TonProofItemReplySigned.success(
+            TonConnect.TonProofItemReplySignedSuccess(
+              data: signatureData,
+              signature: signature
+            )
+          )
         )
       case .Keystone(let publicKey, let xfp, let path, let walletContractVersion):
         return await .tonProofSigned(

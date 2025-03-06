@@ -215,7 +215,8 @@ private extension LedgerConfirmViewModelImplementation {
   
   func sign(tonTransport: TonTransport) {
     let accountPath = AccountPath(index: ledgerDevice.accountIndex)
-    Task { @MainActor in
+    Task { @MainActor [weak self] in
+      guard let self else { return }
       do {
         switch confirmItem {
         case .transaction(let transaction):
@@ -247,9 +248,17 @@ private extension LedgerConfirmViewModelImplementation {
         defer {
           self.didCancel?()
         }
-        if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
-          return
-        } else {
+        switch error {
+        case let transportError as TransportStatusError:
+          switch transportError {
+          case .deniedByUser:
+            return
+          default:
+            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+          }
+        case let tonTransportError as TonTransportError:
+          self.showToast?(ToastPresenter.Configuration(title: tonTransportError.localizedDescription))
+        default:
           self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
         }
       }
