@@ -43,11 +43,15 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
     do {
       let transferAmount: BigUInt = {
+        let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
         guard let emulationResult else {
           return BigUInt(100000000)
         }
+        if case .gasless = emulationResult.transferType {
+          return minimumTransferAmount
+        }
+        
         let emulationExtra = emulationResult.fee.amount
-        let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
         var transferAmount = emulationExtra + minimumTransferAmount
         transferAmount = transferAmount < minimumTransferAmount
         ? minimumTransferAmount
