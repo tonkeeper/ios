@@ -71,7 +71,6 @@ private extension BrowserExploreViewController {
       TKContainerCollectionViewCell.self,
       forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
     )
-    customView.collectionView.refreshControl = refreshControl
     
     refreshControl.addAction(UIAction(handler: { [weak self] _ in
       self?.viewModel.reload()
@@ -103,6 +102,11 @@ private extension BrowserExploreViewController {
     
     viewModel.didUpdateEmptyView = { [weak self] model in
       self?.emptyView.configure(model: model)
+    }
+    
+    viewModel.didUpdateIsRefreshEnable = { [weak self] isEnable in
+      guard let self else { return }
+      customView.collectionView.refreshControl = isEnable ? refreshControl : nil
     }
   }
   
