@@ -44,6 +44,10 @@ private extension HistoryEventDetailsViewController {
       self?.popUpViewController.configuration = configuration
       self?.didUpdateHeight?()
     }
+    
+    viewModel.didUpdateHeaderItem = { [weak self] headerItem in
+      self?.didUpdatePullCardHeaderItem?(headerItem)
+    }
   }
   
   func setup() {

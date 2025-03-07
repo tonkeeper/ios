@@ -184,7 +184,7 @@ private extension BuySellListViewModelImplementation {
     didUpdateHeaderLeftButton?(
       TKPullCardHeaderItem.LeftButton(
         model: TKUIHeaderTitleIconButton.Model(title: title),
-        action: { [weak self] in
+        action: { [weak self] _ in
           guard let self else { return }
           self.didSelectCountryPicker?(selectedCountry)
         },

@@ -16,7 +16,7 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
   }
   
   let label = UILabel()
-  private let moreButton = MoreButton()
+  private let moreButton = TKMoreButton()
   
   private var cachedWidth: CGFloat?
   
@@ -48,7 +48,7 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
   
   struct Model {
     let text: NSAttributedString?
-    let readMoreText: NSAttributedString
+    let readMoreText: String?
     
     init(text: String?, readMoreText: String) {
       self.text = text?.withTextStyle(
@@ -57,12 +57,7 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
         alignment: .left,
         lineBreakMode: .byWordWrapping
       )
-      self.readMoreText = readMoreText.withTextStyle(
-        .body2,
-        color: .Text.accent,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      )
+      self.readMoreText = readMoreText
     }
   }
   
@@ -78,7 +73,7 @@ final class NFTDetailsMoreTextView: TKView, ConfigurableView {
   
   func configure(model: Model) {
     label.attributedText = model.text
-    moreButton.label.attributedText = model.readMoreText
+    moreButton.configuration = .init(title: model.readMoreText)
     cachedWidth = nil
     
     setNeedsLayout()

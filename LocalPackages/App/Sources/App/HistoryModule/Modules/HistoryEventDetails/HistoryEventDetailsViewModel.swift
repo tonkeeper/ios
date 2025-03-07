@@ -5,28 +5,34 @@ import TKCore
 import KeeperCore
 import TKLocalize
 
+@MainActor
 protocol HistoryEventDetailsModuleOutput: AnyObject {
   var didTapOpenTransactionInTonviewer: (() -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)? { get set }
+  var didFinish: (() -> Void)? { get set }
 }
 
+@MainActor
 protocol HistoryEventDetailsViewModel: AnyObject {
-  
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
+  var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)? { get set }
   
   func viewDidLoad()
 }
 
+@MainActor
 final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewModel, HistoryEventDetailsModuleOutput {
   
   // MARK: - HistoryEventDetailsModuleOutput
   
   var didTapOpenTransactionInTonviewer: (() -> Void)?
   var didSelectEncryptedComment: ((Wallet, EncryptedCommentPayload, String) -> Void)?
+  var didFinish: (() -> Void)?
   
   // MARK: - HistoryEventDetailsViewModel
   
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
+  var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   
   func viewDidLoad() {
     setupContent()
@@ -50,17 +56,20 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   private let event: AccountEventDetailsEvent
   private let historyEventDetailsMapper: HistoryEventDetailsMapper
   private let decryptedCommentStore: DecryptedCommentStore
+  private let transactionsManagementStore: TransactionsManagement.Store
   
   // MARK: - Init
   
   init(wallet: Wallet,
        event: AccountEventDetailsEvent,
        historyEventDetailsMapper: HistoryEventDetailsMapper,
-       decryptedCommentStore: DecryptedCommentStore) {
+       decryptedCommentStore: DecryptedCommentStore,
+       transactionsManagementStore: TransactionsManagement.Store) {
     self.wallet = wallet
     self.event = event
     self.historyEventDetailsMapper = historyEventDetailsMapper
     self.decryptedCommentStore = decryptedCommentStore
+    self.transactionsManagementStore = transactionsManagementStore
   }
 }
 
@@ -139,14 +148,98 @@ private extension HistoryEventDetailsViewModelImplementation {
       )
     }
     
-    items.append(TKPopUp.Component.GroupComponent(
-      padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
-      items: [configureTransactionButton()]
-    ))
+    let isManagementButtonVisible: Bool = {
+      guard let management = model.management else { return false }
+      return management.state == nil && management.isManagementAvailable
+    }()
     
+    if isManagementButtonVisible {
+      items.append(TKPopUp.Component.GroupComponent(
+        padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
+        items: [configureTransactionManagementBlock()]
+      ))
+    } else {
+      items.append(TKPopUp.Component.GroupComponent(
+        padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
+        items: [configureTransactionButton()]
+      ))
+    }
+
     let configuration = TKPopUp.Configuration(items: items)
     
     didUpdateConfiguration?(configuration)
+    
+    configureHeader(model: model)
+  }
+  
+  func configureHeader(model: HistoryEventDetailsMapper.Model) {
+    let buttonModel = TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.ellipses)
+    let headerButton = TKPullCardHeaderItem.LeftButton(model: buttonModel, action: { [weak self] targetView in
+      guard let self else {
+        return
+      }
+
+      TKPopupMenuController.show(
+        sourceView: targetView,
+        position: .bottomLeft(inset: 8),
+        width: 0,
+        items: setupMenuItems(model: model),
+        isSelectable: false,
+        selectedIndex: nil
+      )
+    }, isEnabled: true)
+
+    
+    let headerItem = TKPullCardHeaderItem(
+      title: .title(title: "", subtitle: nil),
+      leftButton: headerButton
+    )
+    didUpdateHeaderItem?(headerItem)
+  }
+  
+  func setupMenuItems(model: HistoryEventDetailsMapper.Model) -> [TKPopupMenuItem] {
+    var menuItems = [TKPopupMenuItem]()
+    if let management = model.management,
+       management.isManagementAvailable,
+       wallet.isReportSpamAvailable {
+      let title: String = {
+        switch management.state {
+        case .normal:
+          TKLocales.EventDetails.reportSpam
+        case .spam:
+          TKLocales.EventDetails.notSpam
+        case .none:
+          model.isScam ? TKLocales.EventDetails.notSpam : TKLocales.EventDetails.reportSpam
+        }
+      }()
+      
+      let action: () -> Void = { [weak self] in
+        switch management.state {
+        case .normal:
+          self?.reportSpam()
+        case .spam:
+          self?.notSpam()
+        case .none:
+          model.isScam ? self?.notSpam() : self?.reportSpam()
+        }
+      }
+      
+      menuItems.append(
+        TKPopupMenuItem(
+          title: title,
+          icon: .TKUIKit.Icons.Size16.block,
+          selectionHandler: action
+        )
+      )
+    }
+    
+    let tonViewerItem = TKPopupMenuItem(
+      title: TKLocales.Actions.viewOnTonviewier,
+      icon: .TKUIKit.Icons.Size16.globe,
+      selectionHandler: { [weak self] in self?.didTapOpenTransactionInTonviewer?() }
+    )
+    menuItems.append(tonViewerItem)
+    return menuItems
   }
   
   func configureSpamItem(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Item? {
@@ -390,6 +483,43 @@ private extension HistoryEventDetailsViewModelImplementation {
       bottomSpace: 32
     )
   }
+  
+  func configureTransactionManagementBlock() -> HistoryEventDetailsSpamManagementComponent {
+    return HistoryEventDetailsSpamManagementComponent(
+      configuration: HistoryEventDetailsSpamManagementComponentView.Configuration(
+        reportSpamTitle: TKLocales.EventDetails.reportSpam,
+        reportSpamAction: { [weak self] in
+          self?.reportSpam()
+        },
+        notSpamTitle: TKLocales.EventDetails.notSpam,
+        notSpamAction: { [weak self] in
+          self?.notSpam()
+        }
+      ),
+      bottomSpace: 32
+    )
+  }
+    
+    func reportSpam() {
+      Task { [weak self] in
+        guard let self else { return }
+        ToastPresenter.showToast(configuration: .loading)
+        await transactionsManagementStore.markAsSpam(event.accountEvent.eventId)
+        self.didFinish?()
+        ToastPresenter.hideAll()
+        ToastPresenter.showToast(
+          configuration: ToastPresenter.Configuration(title: TKLocales.EventDetails.transactionMarkedAsSpam, dismissRule: .default)
+        )
+      }
+    }
+    
+    func notSpam() {
+      Task { [weak self] in
+        guard let self else { return }
+        await transactionsManagementStore.markAsNormal(event.accountEvent.eventId)
+        setupContent()
+      }
+    }
 }
 
 private extension TokenImage {

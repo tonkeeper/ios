@@ -287,7 +287,7 @@ private extension WalletsListViewModelImplementation {
     var leftButton: TKPullCardHeaderItem.LeftButton?
     if model.isEditable {
       leftButton = TKPullCardHeaderItem.LeftButton(
-        model: leftButtonModel) { [weak self] in
+        model: leftButtonModel) { [weak self] _ in
           self?.isEditing.toggle()
         }
     }

@@ -2,12 +2,27 @@ import UIKit
 
 public struct TKPullCardHeaderItem {
   public struct LeftButton {
-    let model: TKUIHeaderTitleIconButton.Model
-    let action: (() -> Void)
+    enum Model {
+      case icon(TKUIHeaderIconButton.Model)
+      case titleIcon(TKUIHeaderTitleIconButton.Model)
+    }
+    
+    let model: Model
+    let action: ((_ button: UIControl) -> Void)
     let isEnabled: Bool
     
-    public init(model: TKUIHeaderTitleIconButton.Model, action: @escaping (() -> Void), isEnabled: Bool = true) {
-      self.model = model
+    public init(model: TKUIHeaderTitleIconButton.Model,
+                action: @escaping ((_ button: UIControl) -> Void),
+                isEnabled: Bool = true) {
+      self.model = .titleIcon(model)
+      self.action = action
+      self.isEnabled = isEnabled
+    }
+    
+    public init(model: TKUIHeaderIconButton.Model,
+                action: @escaping ((_ button: UIControl) -> Void),
+                isEnabled: Bool = true) {
+      self.model = .icon(model)
       self.action = action
       self.isEnabled = isEnabled
     }

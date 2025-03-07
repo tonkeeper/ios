@@ -22,8 +22,12 @@ public final class Assembly {
   public lazy var repositoriesAssembly = RepositoriesAssembly(
     coreAssembly: coreAssembly
   )
-  public lazy var secureAssembly = SecureAssembly(
+  private lazy var secureAssembly = SecureAssembly(
     coreAssembly: coreAssembly
+  )
+  public lazy var transactionsManagementAssembly = TransactionsManagementAssembly(
+    coreAssembly: coreAssembly,
+    scamAPIAssembly: scamAPIAssembly
   )
   private lazy var configurationAssembly = ConfigurationAssembly(
     tonkeeperApiAssembly: tonkeeperApiAssembly,
@@ -119,7 +123,8 @@ public extension Assembly {
       loadersAssembly: loadersAssembly,
       backgroundUpdateAssembly: backgroundUpdateAssembly,
       rnAssembly: rnAssembly,
-      secureAssembly: secureAssembly
+      secureAssembly: secureAssembly,
+      transactionsManagementAssembly: transactionsManagementAssembly
     )
   }
   

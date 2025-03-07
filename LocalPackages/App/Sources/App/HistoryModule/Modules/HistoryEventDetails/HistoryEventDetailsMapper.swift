@@ -23,6 +23,11 @@ final class HistoryEventDetailsMapper {
       case decrypted(String?)
     }
     
+    struct Management {
+      let state: TransactionsManagement.TransactionState?
+      let isManagementAvailable: Bool
+    }
+    
     enum ListItem {
       case recipient(value: String, copyValue: String)
       case recipientAddress(value: String, copyValue: String)
@@ -45,6 +50,7 @@ final class HistoryEventDetailsMapper {
     let nftModel: NFT?
     let status: String?
     let isScam: Bool
+    let management: Management?
     let listItems: [ListItem]
     
     init(headerImage: HeaderImage? = nil,
@@ -55,6 +61,7 @@ final class HistoryEventDetailsMapper {
          nftModel: NFT? = nil,
          status: String? = nil,
          isScam: Bool,
+         management: Management? = nil,
          listItems: [ListItem] = []) {
       self.headerImage = headerImage
       self.title = title
@@ -64,16 +71,21 @@ final class HistoryEventDetailsMapper {
       self.nftModel = nftModel
       self.status = status
       self.isScam = isScam
+      self.management = management
       self.listItems = listItems
     }
   }
   
+  private let wallet: Wallet
   private let amountMapper: AccountEventAmountMapper
+  private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
   private let nftManagmentStore: WalletNFTsManagementStore
+  private let transactionsManagementStore: TransactionsManagement.Store
   private let isTestnet: Bool
+  private let configuration: Configuration
   
   private let rateConverter = RateConverter()
   private let dateFormatter: DateFormatter = {
@@ -83,18 +95,26 @@ final class HistoryEventDetailsMapper {
     return formatter
   }()
   
-  init(amountMapper: AccountEventAmountMapper, 
+  init(wallet: Wallet,
+       amountMapper: AccountEventAmountMapper,
+       balanceStore: BalanceStore,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        nftService: NFTService,
        nftManagmentStore: WalletNFTsManagementStore,
-       isTestnet: Bool) {
+       transactionsManagementStore: TransactionsManagement.Store,
+       isTestnet: Bool,
+       configuration: Configuration) {
+    self.wallet = wallet
     self.amountMapper = amountMapper
+    self.balanceStore = balanceStore
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.nftService = nftService
     self.nftManagmentStore = nftManagmentStore
+    self.transactionsManagementStore = transactionsManagementStore
     self.isTestnet = isTestnet
+    self.configuration = configuration
   }
   
   func mapEvent(event: AccountEventDetailsEvent,
@@ -318,22 +338,41 @@ final class HistoryEventDetailsMapper {
       )
     }
     
+    let tonAmount = UInt64(abs(tonTransfer.amount))
+    
     let title = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(abs(tonTransfer.amount))),
+      amount: BigUInt(integerLiteral: tonAmount),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       type: amountType,
       currency: .TON)
     
     let fiatPrice = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
-    
+    let isScam = activityEvent.isScam || transactionsManagementStore.state.states[activityEvent.eventId] == .spam
+    let management: Model.Management? = {
+      guard transferDirection == .receive else { return nil }
+      let isManagementAvailable: Bool = {
+        let compareResult = NSDecimalNumber(value: tonAmount)
+          .compare(configuration.reportAmount(isTestnet: isTestnet).multiplying(byPowerOf10: Int16(TonInfo.fractionDigits)))
+        if compareResult == .orderedAscending || compareResult == .orderedSame {
+          return true
+        } else {
+          return false
+        }
+      }()
+      return Model.Management(
+        state: transactionsManagementStore.state.states[activityEvent.eventId],
+        isManagementAvailable: isManagementAvailable
+      )
+    }()
     return Model(
       headerImage: .image(.ton),
       title: title,
       date: dateFormatted,
       fiatPrice: fiatPrice,
       status: status.rawValue,
-      isScam: activityEvent.isScam,
+      isScam: isScam,
+      management: management,
       listItems: listItems
     )
   }
@@ -413,13 +452,45 @@ final class HistoryEventDetailsMapper {
       headerImage = .image(.url(imageUrl))
     }
     
+    let isScam = activityEvent.isScam || transactionsManagementStore.state.states[activityEvent.eventId] == .spam
+
+    let management: Model.Management? = {
+      guard transferDirection == .receive else { return nil }
+      let isManagementAvailable: Bool = {
+        guard let balance = balanceStore.state[wallet]?.walletBalance.balance.jettonsBalance
+          .first(where: { $0.item.jettonInfo == action.jettonInfo }) else {
+          return false
+        }
+        guard let rate = balance.rates.first(where: { $0.key == .TON })?.value else {
+          return false
+        }
+        let tonAmount = RateConverter().convertToDecimal(
+          amount: action.amount,
+          amountFractionLength: balance.item.jettonInfo.fractionDigits,
+          rate: rate)
+
+        let compareResult = NSDecimalNumber(decimal: tonAmount)
+          .compare(configuration.reportAmount(isTestnet: isTestnet).multiplying(byPowerOf10: Int16(TonInfo.fractionDigits)))
+        if compareResult == .orderedAscending || compareResult == .orderedSame {
+          return true
+        } else {
+          return false
+        }
+      }()
+      return Model.Management(
+        state: transactionsManagementStore.state.states[activityEvent.eventId],
+        isManagementAvailable: isManagementAvailable
+      )
+    }()
+    
     return Model(
       headerImage: headerImage,
       title: title,
       date: dateFormatted,
       fiatPrice: fiatPrice,
       status: status.rawValue,
-      isScam: activityEvent.isScam,
+      isScam: isScam,
+      management: management,
       listItems: listItems
     )
   }
