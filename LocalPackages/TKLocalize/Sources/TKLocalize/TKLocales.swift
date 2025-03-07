@@ -786,6 +786,12 @@ public enum TKLocales {
   public enum History {
     /// History
     public static let title = TKLocales.tr("Localizable", "history.title", fallback: "History")
+    public enum Event {
+      public enum Comment {
+        /// More
+        public static let more = TKLocales.tr("Localizable", "history.event.comment.more", fallback: "More")
+      }
+    }
     public enum Placeholder {
       /// Make your first transaction!
       public static let subtitle = TKLocales.tr("Localizable", "history.placeholder.subtitle", fallback: "Make your first transaction!")

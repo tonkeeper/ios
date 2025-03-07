@@ -68,6 +68,8 @@
 "history.placeholder.buttons.receive" = "Receive";
 "history.placeholder.buttons.buy" = "Buy Toncoin";
 
+"history.event.comment.more" = "More";
+
 "bridge_web.refresh" = "Refresh";
 "bridge_web.share" = "Share";
 "bridge_web.copy_link" = "Copy link";

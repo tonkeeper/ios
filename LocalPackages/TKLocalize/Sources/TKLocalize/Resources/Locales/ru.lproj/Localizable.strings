@@ -69,6 +69,8 @@
 "history.placeholder.buttons.receive" = "Получить";
 "history.placeholder.buttons.buy" = "Купить Toncoin";
 
+"history.event.comment.more" = "Раскрыть";
+
 "bridge_web.refresh" = "Обновить";
 "bridge_web.share" = "Поделиться";
 "bridge_web.copy_link" = "Скопировать ссылку";
