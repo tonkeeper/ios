@@ -19,6 +19,7 @@ public struct AccountEventMapper {
   
   public func mapEvent(_ event: AccountEvent,
                        nftManagmentStore: WalletNFTsManagementStore,
+                       transactionManagementStore: TransactionsManagement.Store,
                        eventDate: Date,
                        accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
                        isTestnet: Bool,
@@ -33,6 +34,7 @@ public struct AccountEventMapper {
       return mapAction(
         action,
         nftManagmentStore: nftManagmentStore,
+        transactionManagementStore: transactionManagementStore,
         accountEvent: event,
         rightTopDescription: rightTopDescription,
         isTestnet: isTestnet,
@@ -52,6 +54,7 @@ public struct AccountEventMapper {
 private extension AccountEventMapper {
   func mapAction(_ action: AccountEventAction,
                  nftManagmentStore: WalletNFTsManagementStore,
+                 transactionManagementStore: TransactionsManagement.Store,
                  accountEvent: AccountEvent,
                  rightTopDescription: String?,
                  isTestnet: Bool,
@@ -68,6 +71,7 @@ private extension AccountEventMapper {
                                   rightTopDescription: rightTopDescription,
                                   status: status.rawValue,
                                   isTestnet: isTestnet,
+                                  transactionManagementState: transactionManagementStore.state.states[accountEvent.eventId],
                                   decryptedCommentProvider: decryptedCommentProvider)
     case .jettonTransfer(let jettonTransfer):
       return mapJettonTransferAction(jettonTransfer,
@@ -76,6 +80,7 @@ private extension AccountEventMapper {
                                      rightTopDescription: rightTopDescription,
                                      status: status.rawValue,
                                      isTestnet: isTestnet,
+                                     transactionManagementState: transactionManagementStore.state.states[accountEvent.eventId],
                                      decryptedCommentProvider: decryptedCommentProvider)
     case .jettonMint(let jettonMint):
       return mapJettonMintAction(jettonMint,
@@ -174,12 +179,13 @@ private extension AccountEventMapper {
                             rightTopDescription: String?,
                             status: String?,
                             isTestnet: Bool,
+                            transactionManagementState: TransactionsManagement.TransactionState?,
                             decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String
     let amountType: AccountEventActionAmountMapperActionType
     
-    if accountEvent.isScam {
+    if accountEvent.isScam || transactionManagementState == .spam {
       amountType = .income
       eventType = .spam
       leftTopDescription = action.sender.value(isTestnet: isTestnet)
@@ -232,11 +238,12 @@ private extension AccountEventMapper {
                                rightTopDescription: String?,
                                status: String?,
                                isTestnet: Bool,
+                               transactionManagementState: TransactionsManagement.TransactionState?,
                                decryptedCommentProvider: (_ payload: EncryptedCommentPayload) -> String?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String?
     let amountType: AccountEventActionAmountMapperActionType
-    if accountEvent.isScam {
+    if accountEvent.isScam || transactionManagementState == .spam {
       eventType = .spam
       leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
       amountType = .income

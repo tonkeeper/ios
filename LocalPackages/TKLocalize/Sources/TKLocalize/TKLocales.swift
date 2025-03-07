@@ -700,6 +700,8 @@ public enum TKLocales {
     public static let domainRenew = TKLocales.tr("Localizable", "event_details.domain_renew", fallback: "Domain Renew")
     /// Fee
     public static let fee = TKLocales.tr("Localizable", "event_details.fee", fallback: "Fee")
+    /// Not Spam
+    public static let notSpam = TKLocales.tr("Localizable", "event_details.not_spam", fallback: "Not Spam")
     /// Operation
     public static let operation = TKLocales.tr("Localizable", "event_details.operation", fallback: "Operation")
     /// Payload
@@ -722,6 +724,8 @@ public enum TKLocales {
     public static func renewedOn(_ p1: Any) -> String {
       return TKLocales.tr("Localizable", "event_details.renewed_on", String(describing: p1), fallback: "Renewed on %@")
     }
+    /// Report Spam
+    public static let reportSpam = TKLocales.tr("Localizable", "event_details.report_spam", fallback: "Report Spam")
     /// Sender
     public static let sender = TKLocales.tr("Localizable", "event_details.sender", fallback: "Sender")
     /// Sender address
@@ -744,6 +748,8 @@ public enum TKLocales {
     }
     /// Transaction 
     public static let transaction = TKLocales.tr("Localizable", "event_details.transaction", fallback: "Transaction ")
+    /// Transaction marked as Spam
+    public static let transactionMarkedAsSpam = TKLocales.tr("Localizable", "event_details.transaction_marked_as_spam", fallback: "Transaction marked as Spam")
     /// Unknown
     public static let unknown = TKLocales.tr("Localizable", "event_details.unknown", fallback: "Unknown")
     /// Something happened but we don't understand what.

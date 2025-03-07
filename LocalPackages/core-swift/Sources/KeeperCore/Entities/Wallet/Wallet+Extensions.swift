@@ -334,10 +334,7 @@ public extension Wallet {
   }
   
   var isReportSpamAvailable: Bool {
-    switch kind {
-    case .watchonly: return false
-    default: return true
-    }
+    kind != .watchonly && !isTestnet
   }
 }
 

@@ -3,6 +3,7 @@ import UIKit
 public enum TKPopupMenuPosition {
   case topRight
   case bottomRight(inset: CGFloat)
+  case bottomLeft(inset: CGFloat)
 }
 
 public final class TKPopupMenuController {

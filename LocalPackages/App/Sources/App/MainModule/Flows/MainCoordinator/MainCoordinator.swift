@@ -1163,9 +1163,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       urlOpener: coreAssembly.urlOpener(),
       isTestnet: isTestnet
     )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
+    }
+    
+    module.output.didFinish = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
     }
     
     module.output.didTapOpenTransactionInTonviewer = { [weak self, keeperCoreMainAssembly] in
@@ -1174,7 +1179,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openDapp(title: "Tonviewer", url: url)
     }
     
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     router.rootViewController.dismiss(animated: true) { [weak self] in
       guard let router = self?.router else { return }
       bottomSheetViewController.present(fromViewController: router.rootViewController)

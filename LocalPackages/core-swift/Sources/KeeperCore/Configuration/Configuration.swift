@@ -159,6 +159,12 @@ public final class Configuration {
     : !loadConfiguration().mainnet.disableBatterySend
   }
   
+  public func reportAmount(isTestnet: Bool) -> NSDecimalNumber {
+    isTestnet
+    ? configuration.testnet.reportAmountDecimalNumber
+    : configuration.mainnet.reportAmountDecimalNumber
+  }
+  
   public func isBatteryBeta(isTestnet: Bool) -> Bool {
     isTestnet ? configuration.testnet.isBatteryBeta : configuration.mainnet.isBatteryBeta
   }

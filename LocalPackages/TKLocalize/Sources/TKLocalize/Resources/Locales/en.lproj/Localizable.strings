@@ -105,6 +105,9 @@
 "event_details.description" = "Description";
 "event_details.operation" = "Operation";
 "event_details.swapped" = "Operation";
+"event_details.report_spam" = "Report Spam";
+"event_details.not_spam" = "Not Spam";
+"event_details.transaction_marked_as_spam" = "Transaction marked as Spam";
 
 "settings.title" = "Settings";
 "settings.items.security" = "Security";

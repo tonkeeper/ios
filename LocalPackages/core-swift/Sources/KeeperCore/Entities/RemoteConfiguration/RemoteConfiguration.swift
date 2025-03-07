@@ -30,6 +30,10 @@ public struct RemoteConfiguration: Equatable {
   public var batteryMaxInputAmountDecimaNumber: NSDecimalNumber {
     NSDecimalNumber.number(stringValue: batteryMaxInputAmount) ?? 3
   }
+  
+  public var reportAmountDecimalNumber: NSDecimalNumber {
+    NSDecimalNumber.number(stringValue: reportAmount) ?? 0.03
+  }
 
   public let tonapiV2Endpoint: String
   public let tonapiTestnetHost: String
@@ -60,6 +64,7 @@ public struct RemoteConfiguration: Equatable {
   public let scamApiURL: URL?
   public let flags: Flags
   public let stories: [String]?
+  public let reportAmount: String?
   
   
   enum CodingKeys: String, CodingKey {
@@ -92,6 +97,7 @@ public struct RemoteConfiguration: Equatable {
     case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
     case scamApiURL = "scam_api_url"
     case stories
+    case reportAmount
   }
 }
 
@@ -150,7 +156,8 @@ extension RemoteConfiguration {
       disableBatteryCryptoRechargeModule: true,
       scamApiURL: nil,
       flags: .default,
-      stories: []
+      stories: [],
+      reportAmount: nil
     )
   }
 }

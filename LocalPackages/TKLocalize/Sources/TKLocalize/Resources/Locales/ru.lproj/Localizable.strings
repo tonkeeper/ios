@@ -406,6 +406,9 @@
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";
 "event_details.transaction" = "Транзакция ";
+"event_details.report_spam" = "Пожаловаться";
+"event_details.not_spam" = "Это не спам";
+"event_details.transaction_marked_as_spam" = "Транзакция помечена как спам";
 
 "action_types.future.send" = "Отправить";
 "action_types.future.receive" = "Получить";

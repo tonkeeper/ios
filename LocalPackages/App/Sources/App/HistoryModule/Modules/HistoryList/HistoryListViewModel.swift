@@ -129,6 +129,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   private let accountEventMapper: AccountEventMapper
   private let historyEventMapper: HistoryEventMapper
   private let nftManagmentStore: WalletNFTsManagementStore
+  private let transactionsManagementStore: TransactionsManagement.Store
 
   // MARK: - Init
   
@@ -142,7 +143,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
        dateFormatter: DateFormatter,
        accountEventMapper: AccountEventMapper,
        historyEventMapper: HistoryEventMapper,
-       nftManagmentStore: WalletNFTsManagementStore) {
+       nftManagmentStore: WalletNFTsManagementStore,
+       transactionsManagementStore: TransactionsManagement.Store) {
     self.wallet = wallet
     self.paginationLoader = paginationLoader
     self.appSettingsStore = appSettingsStore
@@ -154,6 +156,9 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     self.accountEventMapper = accountEventMapper
     self.historyEventMapper = historyEventMapper
     self.nftManagmentStore = nftManagmentStore
+    self.transactionsManagementStore = transactionsManagementStore
+    
+    transactionsManagementStore.addObserver(self)
   }
   
   deinit {
@@ -373,6 +378,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     let eventModel = accountEventMapper.mapEvent(
       event,
       nftManagmentStore: nftManagmentStore,
+      transactionManagementStore: transactionsManagementStore,
       eventDate: event.date,
       accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
         dateFormatter: dateFormatter
@@ -489,6 +495,26 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   @objc
   func didEnterBackground() {}
+}
+
+extension HistoryListViewModelImplementation: TransactionsManagement.Store.Observer {
+  func didGetTransactionsManagementStore(_ store: TransactionsManagement.Store,
+                                         event: TransactionsManagement.Store.Event) {
+    queue.async { [weak self] in
+      switch event {
+      case .updateStates:
+        guard let self else { return }
+        let configurations = mapEventsCellConfigurations(events: events)
+        let snapshot = snapshot.reloadAllItemsSnapshot()
+        DispatchQueue.main.async {
+          self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+          self.eventHandler?(.snapshotUpdate(snapshot))
+        }
+      default:
+        break
+      }
+    }
+  }
 }
 
 private extension HistoryList.Snapshot {

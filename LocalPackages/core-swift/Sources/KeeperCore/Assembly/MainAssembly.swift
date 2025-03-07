@@ -24,6 +24,7 @@ public final class MainAssembly {
   public let rnAssembly: RNAssembly
   public let secureAssembly: SecureAssembly
   public let transferAssembly: TransferAssembly
+  public let transactionsManagementAssembly: TransactionsManagementAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -43,7 +44,8 @@ public final class MainAssembly {
        loadersAssembly: LoadersAssembly,
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        secureAssembly: SecureAssembly,
-       rnAssembly: RNAssembly) {
+       rnAssembly: RNAssembly,
+       transactionsManagementAssembly: TransactionsManagementAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -68,6 +70,7 @@ public final class MainAssembly {
       batteryAssembly: batteryAssembly,
       configurationAssembly: configurationAssembly
     )
+    self.transactionsManagementAssembly = transactionsManagementAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {

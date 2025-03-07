@@ -56,10 +56,25 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
     }
     leftButtonContainer.subviews.forEach { $0.removeFromSuperview() }
     if let leftButtonModel = model.leftButton {
-      let leftButton = TKUIHeaderTitleIconButton()
-      leftButton.configure(model: leftButtonModel.model)
-      leftButton.addTapAction(leftButtonModel.action)
-      leftButton.isEnabled = leftButtonModel.isEnabled ?? true
+      let leftButton: UIControl = {
+        switch leftButtonModel.model {
+        case .titleIcon(let model):
+          let button = TKUIHeaderTitleIconButton()
+          button.configure(model: model)
+          button.addTapAction { [unowned button] in
+            leftButtonModel.action(button)
+          }
+          return button
+        case .icon(let model):
+          let button = TKUIHeaderIconButton()
+          button.configure(model: model)
+          button.addTapAction { [unowned button] in
+            leftButtonModel.action(button)
+          }
+          return button
+        }
+      }()
+      leftButton.isEnabled = leftButtonModel.isEnabled
       leftButtonContainer.addSubview(leftButton)
       leftButton.translatesAutoresizingMaskIntoConstraints = false
       NSLayoutConstraint.activate([

@@ -20,7 +20,8 @@ struct HistoryListAssembly {
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
       accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
       historyEventMapper: historyEventMapper,
-      nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
+      nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
+      transactionsManagementStore: keeperCoreMainAssembly.transactionsManagementAssembly.transactionsManagementStore(wallet: wallet)
     )
     let viewController = HistoryListViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())
