@@ -14,9 +14,10 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     return view
   }()
   
+  lazy var textInputControl = TKTextInputTextFieldControl()
   lazy var walletNameTextField: TKTextField = {
     let textFieldInputView = TKTextFieldInputView(
-      textInputControl: TKTextInputTextFieldControl()
+      textInputControl: textInputControl
     )
     textFieldInputView.clearButtonMode = .never
     return TKTextField(

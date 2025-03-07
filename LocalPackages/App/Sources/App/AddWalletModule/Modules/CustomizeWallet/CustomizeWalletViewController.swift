@@ -22,6 +22,7 @@ final class CustomizeWalletViewController: GenericViewViewController<CustomizeWa
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    customView.textInputControl.delegate = self
     setupBindings()
     setupGestures()
     setupViewActions()
@@ -109,5 +110,12 @@ private extension CustomizeWalletViewController {
   
   @objc func resignGestureAction() {
     customView.walletNameTextField.resignFirstResponder()
+  }
+}
+
+extension CustomizeWalletViewController: UITextFieldDelegate {
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    textField.resignFirstResponder()
+    return true
   }
 }
