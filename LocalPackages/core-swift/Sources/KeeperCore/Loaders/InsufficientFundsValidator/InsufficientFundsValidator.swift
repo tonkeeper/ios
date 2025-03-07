@@ -177,7 +177,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
 
     let tonBalance = UInt64(walletBalance.balance.tonBalance.amount)
 
-    var requiredAmount: UInt64?
+    var requiredAmount: BigUInt?
     var token: Token?
     var availableBalance: BigUInt?
     
@@ -201,12 +201,12 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           return
         }
 
-        requiredAmount = UInt64(jetton.quantity)
+        requiredAmount = jetton.quantity
         availableBalance = balance.quantity
         token = .jetton(balance.item)
       }
     } else {
-      requiredAmount = emulation.risk.ton + UInt64(transferAmount)
+      requiredAmount = BigUInt(emulation.risk.ton) + transferAmount
       availableBalance = BigUInt(tonBalance)
       token = .ton
     }
