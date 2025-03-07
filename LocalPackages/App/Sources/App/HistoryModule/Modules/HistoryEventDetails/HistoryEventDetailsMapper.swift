@@ -348,7 +348,7 @@ final class HistoryEventDetailsMapper {
       currency: .TON)
     
     let fiatPrice = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(tonTransfer.amount))
-    let isScam = activityEvent.isScam || transactionsManagementStore.state.states[activityEvent.eventId] == .spam
+    let isScam = activityEvent.isScam && transactionsManagementStore.state.states[activityEvent.eventId] != .normal || transactionsManagementStore.state.states[activityEvent.eventId] == .spam
     let management: Model.Management? = {
       guard transferDirection == .receive else { return nil }
       let isManagementAvailable: Bool = {

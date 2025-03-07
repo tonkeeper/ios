@@ -185,7 +185,7 @@ private extension AccountEventMapper {
     let leftTopDescription: String
     let amountType: AccountEventActionAmountMapperActionType
     
-    if accountEvent.isScam || transactionManagementState == .spam {
+    if accountEvent.isScam && transactionManagementState != .normal || transactionManagementState == .spam {
       amountType = .income
       eventType = .spam
       leftTopDescription = action.sender.value(isTestnet: isTestnet)
@@ -243,7 +243,7 @@ private extension AccountEventMapper {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String?
     let amountType: AccountEventActionAmountMapperActionType
-    if accountEvent.isScam || transactionManagementState == .spam {
+    if accountEvent.isScam && transactionManagementState != .normal || transactionManagementState == .spam {
       eventType = .spam
       leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
       amountType = .income

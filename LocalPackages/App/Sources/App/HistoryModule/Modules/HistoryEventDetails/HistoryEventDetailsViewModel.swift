@@ -153,7 +153,7 @@ private extension HistoryEventDetailsViewModelImplementation {
       return management.state == nil && management.isManagementAvailable
     }()
     
-    if isManagementButtonVisible {
+    if isManagementButtonVisible && wallet.isReportSpamAvailable {
       items.append(TKPopUp.Component.GroupComponent(
         padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
         items: [configureTransactionManagementBlock()]
