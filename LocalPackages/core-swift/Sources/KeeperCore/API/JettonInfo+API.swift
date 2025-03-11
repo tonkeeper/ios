@@ -8,7 +8,6 @@ extension JettonInfo {
     address = tokenAddress
     fractionDigits = jettonPreview.decimals
     name = jettonPreview.name
-    symbol = jettonPreview.symbol
     imageURL = URL(string: jettonPreview.image)
     
     isTransferable = !(extensions?.contains("non_transferable") ?? false)
@@ -25,6 +24,7 @@ extension JettonInfo {
     case .unknownDefaultOpenApi:
       verification = .none
     }
+    symbol = verification == .blacklist ? "SCAM" : jettonPreview.symbol
     self.verification = verification
   }
 }

@@ -243,7 +243,7 @@ private extension AccountEventMapper {
     let eventType: AccountEventModel.Action.ActionType
     let leftTopDescription: String?
     let amountType: AccountEventActionAmountMapperActionType
-    if accountEvent.isScam && transactionManagementState != .normal || transactionManagementState == .spam {
+    if accountEvent.isScam && transactionManagementState != .normal || transactionManagementState == .spam || action.jettonInfo.verification == .blacklist {
       eventType = .spam
       leftTopDescription = action.sender?.value(isTestnet: isTestnet) ?? nil
       amountType = .income
@@ -295,6 +295,7 @@ private extension AccountEventMapper {
                            preview: AccountEventAction.SimplePreview,
                            rightTopDescription: String?,
                            status: String?) -> AccountEventModel.Action {
+    
     let amount = amountMapper.mapAmount(
       amount: action.amount,
       fractionDigits: action.jettonInfo.fractionDigits,
@@ -318,6 +319,7 @@ private extension AccountEventMapper {
                            preview: AccountEventAction.SimplePreview,
                            rightTopDescription: String?,
                            status: String?) -> AccountEventModel.Action {
+    
     let amount = amountMapper.mapAmount(
       amount: action.amount,
       fractionDigits: action.jettonInfo.fractionDigits,
