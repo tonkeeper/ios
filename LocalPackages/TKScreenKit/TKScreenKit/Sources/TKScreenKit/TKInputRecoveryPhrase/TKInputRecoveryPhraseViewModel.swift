@@ -261,7 +261,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     let wordsCount = mode.wordsCount
     guard index == 0 else { return false }
     let phrase = text
-      .components(separatedBy: CharacterSet([" ", ",", "\n"]))
+      .components(separatedBy: CharacterSet([" ", ",", "\n", "\u{00a0}"]))
       .filter { !$0.isEmpty }
       .prefix(wordsCount)
     phrase.enumerated().forEach { index, word in
