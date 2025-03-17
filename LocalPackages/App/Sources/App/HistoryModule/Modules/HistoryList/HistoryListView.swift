@@ -7,6 +7,7 @@ final class HistoryListView: UIView {
     frame: .zero, 
     collectionViewLayout: UICollectionViewLayout()
   )
+  let refreshControl = UIRefreshControl()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -24,7 +25,8 @@ private extension HistoryListView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     collectionView.showsVerticalScrollIndicator = false
-//    collectionView.contentInsetAdjustmentBehavior = .never
+    collectionView.contentInsetAdjustmentBehavior = .never
+    collectionView.refreshControl = refreshControl
 
     addSubview(collectionView)
     

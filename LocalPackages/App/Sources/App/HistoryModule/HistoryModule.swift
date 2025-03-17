@@ -28,7 +28,7 @@ struct HistoryModule {
   }
   
   func createTonHistoryListModule(
-    wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
+    wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     let listModule = HistoryListAssembly.module(
       wallet: wallet,
       paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTonEventsPaginationLoader(
@@ -36,7 +36,9 @@ struct HistoryModule {
       ),
       cacheProvider: HistoryListTonEventsCacheProvider(historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
+      filter: .none,
+      emptyViewProvider: nil
     )
     return listModule
   }
@@ -44,7 +46,7 @@ struct HistoryModule {
   func createJettonHistoryListModule(
     jettonInfo: JettonInfo,
     wallet: Wallet
-  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
+  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     let listModule = HistoryListAssembly.module(
       wallet: wallet,
       paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyJettonEventsPaginationLoader(
@@ -54,7 +56,9 @@ struct HistoryModule {
       cacheProvider: HistoryListJettonEventsCacheProvider(jettonInfo: jettonInfo,
                                                           historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
+      filter: .none,
+      emptyViewProvider: nil
     )
     return listModule
   }

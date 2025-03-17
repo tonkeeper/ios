@@ -51,14 +51,48 @@ private extension HistoryCoordinator {
         ),
         cacheProvider: HistoryListAllEventsCacheProvider(historyService: keeperCoreMainAssembly.servicesAssembly.historyService()),
         keeperCoreMainAssembly: keeperCoreMainAssembly,
-        historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+        historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
+        filter: .all,
+        emptyViewProvider: { filter in
+          switch filter {
+          case .all:
+            let emptyViewController = TKEmptyViewController()
+            emptyViewController.configure(
+              model: TKEmptyViewController.Model(
+                title: TKLocales.History.Placeholder.title,
+                caption: TKLocales.History.Placeholder.subtitle,
+                buttons: [
+                  TKEmptyViewController.Model.Button(
+                    title: TKLocales.History.Placeholder.Buttons.buy,
+                    action: { [weak self] in
+                      guard let self else { return }
+                      self.openBuy(wallet: wallet)
+                    }
+                  ),
+                  TKEmptyViewController.Model.Button(
+                    title: TKLocales.History.Placeholder.Buttons.receive,
+                    action: { [weak self] in
+                      guard let self else { return }
+                      self.openReceive(wallet: wallet)
+                    }
+                  )]
+              )
+            )
+            return .viewController(emptyViewController)
+          default:
+            return nil
+          }
+        }
       )
       
       let historyModule = HistoryAssembly.module(
         wallet: wallet,
         historyListViewController: listModule.view,
+        historyListModuleInput: listModule.input,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
+
+      weak var historyModuleInput = historyModule.input
       
       listModule.output.didSelectEvent = { [weak self] event in
         self?.openEventDetails(event: event, wallet: wallet)
@@ -69,21 +103,12 @@ private extension HistoryCoordinator {
         self.openNFTDetails(wallet: wallet, address: nftAddress)
       }
       
-      weak var historyInput = historyModule.input
-      listModule.output.didUpdateState = { hasEvents in
-        historyInput?.setHasEvents(hasEvents)
-      }
-      
       listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload, eventId in
         self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
       }
       
-      historyModule.output.didTapReceive = { [weak self] wallet in
-        self?.openReceive(wallet: wallet)
-      }
-
-      historyModule.output.didTapBuy = { [weak self] wallet in
-        self?.openBuy(wallet: wallet)
+      listModule.output.didUpdateState = { [weak self] state in
+        historyModuleInput?.setHistoryListState(state)
       }
       
       module.view.historyViewController = historyModule.view

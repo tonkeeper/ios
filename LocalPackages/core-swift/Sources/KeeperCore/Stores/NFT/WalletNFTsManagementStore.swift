@@ -56,57 +56,44 @@ public final class WalletNFTsManagementStore: Store<WalletNFTsManagementStore.Ev
 
   public func hideItem(_ item: NFTManagementItem,
                        completion: (() -> Void)? = nil) {
-    updateState { [accountNFTsManagementRepository, wallet] state in
-      var updatedNFTStates = state.nftStates
-      updatedNFTStates[item] = .hidden
-      let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
-      try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
-    } completion: { [weak self, wallet] _ in
-      self?.sendEvent(.didUpdateState(wallet: wallet))
-      completion?()
-    }
+    changeItemState(newState: .hidden,
+                    item: item,
+                    completion: completion)
   }
   
   public func showItem(_ item: NFTManagementItem,
                        completion: (() -> Void)? = nil) {
-    updateState { [accountNFTsManagementRepository, wallet] state in
-      var updatedNFTStates = state.nftStates
-      updatedNFTStates[item] = .visible
-      let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
-      try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
-    } completion: { [weak self, wallet] _ in
-      self?.sendEvent(.didUpdateState(wallet: wallet))
-      completion?()
-    }
+    changeItemState(newState: .visible,
+                    item: item,
+                    completion: completion)
   }
 
   public func approveItem(_ item: NFTManagementItem,
                           completion: (() -> Void)? = nil) {
-    updateState { [accountNFTsManagementRepository, wallet] state in
-      var updatedNFTStates = state.nftStates
-      updatedNFTStates[item] = .approved
-      let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
-      try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
-    } completion: { [weak self, wallet] _ in
-      self?.sendEvent(.didUpdateState(wallet: wallet))
-      completion?()
-    }
+    changeItemState(newState: .approved,
+                    item: item,
+                    completion: completion)
   }
 
   public func spamItem(_ item: NFTManagementItem,
                        completion: (() -> Void)? = nil) {
-    updateState { [accountNFTsManagementRepository, wallet] state in
-      var updatedNFTStates = state.nftStates
-      updatedNFTStates[item] = .spam
-      let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
-      try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
-    } completion: { [weak self, wallet] _ in
-      self?.sendEvent(.didUpdateState(wallet: wallet))
-      completion?()
-    }
+    changeItemState(newState: .spam,
+                    item: item,
+                    completion: completion)
   }
+  
+  private func changeItemState(newState: NFTsManagementState.NFTState,
+                                  item: NFTManagementItem,
+                                  completion: (() -> Void)? = nil) {
+       updateState { [accountNFTsManagementRepository, wallet] state in
+         var updatedNFTStates = state.nftStates
+         updatedNFTStates[item] = newState
+         let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
+         try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
+         return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
+      } completion: { [weak self, wallet] _ in
+        self?.sendEvent(.didUpdateState(wallet: wallet))
+        completion?()
+      }
+    }
 }

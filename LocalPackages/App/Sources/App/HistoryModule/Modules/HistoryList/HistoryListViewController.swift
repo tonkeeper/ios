@@ -10,15 +10,25 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
   typealias EventSectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
   typealias EventSectionHeaderConfiguration = UICollectionView.SupplementaryRegistration<EventSectionHeaderView>
   
+  var didScroll: ((_ scrollView: UIScrollView) -> Void)?
+  
   private lazy var dataSource = setupDataSource()
   private lazy var layout = setupLayout()
   
   private var headerViewController: UIViewController?
+  enum EmptyState {
+    case view(UIView)
+    case viewController(UIViewController)
+  }
+  private weak var emptyViewController: UIViewController?
+  private var emptyViewProvider: ((HistoryList.Filter) -> EmptyState?)?
 
   private let viewModel: HistoryListViewModel
   
-  init(viewModel: HistoryListViewModel) {
+  init(viewModel: HistoryListViewModel,
+       emptyViewProvider: ((HistoryList.Filter) -> EmptyState?)?) {
     self.viewModel = viewModel
+    self.emptyViewProvider = emptyViewProvider
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -35,6 +45,21 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
     viewModel.viewDidLoad()
   }
   
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    subscribeAppStateNotifications()
+  }
+  
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    unsubscribeAppStateNotifications()
+  }
+  
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    customView.collectionView.contentInset.bottom = view.safeAreaInsets.bottom
+  }
+  
   func setHeaderViewController(_ headerViewController: UIViewController?) {
     self.headerViewController?.willMove(toParent: nil)
     self.headerViewController?.removeFromParent()
@@ -48,13 +73,31 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
   }
   
   func scrollToTop() {
-    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
+    scrollToTop(animated: true)
+  }
+  
+  func scrollToTop(animated: Bool) {
+    guard customView.collectionView.realYOffset > 0 else { return }
     customView.collectionView.setContentOffset(
       CGPoint(x: 0,
               y: -customView.collectionView.adjustedContentInset.top),
-      animated: true
+      animated: animated
     )
   }
+  
+  var contentTopPadding: CGFloat {
+    get {
+      _contentTopPadding
+    }
+    set {
+      customView.collectionView.contentInset.top = newValue
+      if newValue != _contentTopPadding {
+        scrollToTop(animated: false)
+      }
+      _contentTopPadding = newValue
+    }
+  }
+  private var _contentTopPadding: CGFloat = 0
 }
 
 private extension HistoryListViewController {
@@ -62,17 +105,31 @@ private extension HistoryListViewController {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.prefetchDataSource = self
+    customView.collectionView.register(
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+    )
+    
+    customView.refreshControl.addAction(UIAction(handler: { [weak self] _ in
+      self?.viewModel.reload(force: true)
+    }), for: .valueChanged)
   
     setupBindings()
   }
   
   func setupBindings() {
-    viewModel.eventHandler = { [weak self] event in
+    viewModel.snapshotUpdate = { [weak self] snapshot in
       guard let self else { return }
-      switch event {
-      case .snapshotUpdate(let snapshot):
-        self.dataSource.apply(snapshot, animatingDifferences: false)
+      customView.refreshControl.endRefreshing()
+      if #available(iOS 15.0, *) {
+        dataSource.applySnapshotUsingReloadData(snapshot)
+      } else {
+        dataSource.apply(snapshot, animatingDifferences: false)
       }
+    }
+    
+    viewModel.scrollToTop = { [weak self] animated in
+      self?.scrollToTop(animated: animated)
     }
   }
   
@@ -92,7 +149,7 @@ private extension HistoryListViewController {
     configuration.boundarySupplementaryItems = [header]
     
     let layout = UICollectionViewCompositionalLayout(
-      sectionProvider: { [dataSource] sectionIndex, _ in
+      sectionProvider: { [dataSource] sectionIndex, environment in
         let snapshot = dataSource.snapshot()
         switch snapshot.sectionIdentifiers[sectionIndex] {
         case .events:
@@ -101,6 +158,8 @@ private extension HistoryListViewController {
           return .paginationSection
         case .shimmer:
           return .shimmerSection
+        case .empty:
+          return .emptySection()
         }
       },
       configuration: configuration
@@ -144,6 +203,32 @@ private extension HistoryListViewController {
           using: shimmerCellConfiguration,
           for: indexPath,
           item: HistoryListShimmerCell.Model())
+      case .empty:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        emptyViewController?.willMove(toParent: nil)
+        emptyViewController?.view.removeFromSuperview()
+        emptyViewController?.removeFromParent()
+        let height = collectionView.bounds.height - collectionView.adjustedContentInset.top - collectionView.adjustedContentInset.bottom
+        guard let emptyState = emptyViewProvider?(viewModel.filter) else { return cell }
+        switch emptyState {
+        case .view(let view):
+          (cell as? TKContainerCollectionViewCell)?.setContentView(view)
+          view.snp.makeConstraints { make in
+            make.height.equalTo(height)
+          }
+        case .viewController(let viewController):
+          addChild(viewController)
+          (cell as? TKContainerCollectionViewCell)?.setContentView(viewController.view)
+          viewController.didMove(toParent: self)
+          viewController.view.snp.makeConstraints { make in
+            make.height.equalTo(height)
+          }
+          emptyViewController = viewController
+        }
+        return cell
       }
     }
     
@@ -164,7 +249,7 @@ private extension HistoryListViewController {
             textStyle: .h3
           )
         )
-      case .pagination, .shimmer:
+      case .pagination, .shimmer, .empty:
         return
       }
     }
@@ -181,6 +266,22 @@ private extension HistoryListViewController {
     }
     
     return dataSource
+  }
+  
+  func subscribeAppStateNotifications() {
+    NotificationCenter.default.addObserver(self,
+                                           selector: #selector(didBecomeActive),
+                                           name: UIApplication.didBecomeActiveNotification,
+                                           object: nil)
+  }
+  
+  func unsubscribeAppStateNotifications() {
+    NotificationCenter.default.removeObserver(self, name: UIApplication.didBecomeActiveNotification, object: nil)
+  }
+  
+  @objc
+  func didBecomeActive() {
+    viewModel.reload(force: false)
   }
 }
   
@@ -260,6 +361,26 @@ private extension NSCollectionLayoutSection {
     let section = NSCollectionLayoutSection(group: group)
     return section
   }
+  
+  static func emptySection() -> NSCollectionLayoutSection {
+    let itemSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(200)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemSize)
+    
+    let groupSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(200)
+    )
+    
+    let group = NSCollectionLayoutGroup.horizontal(
+      layoutSize: groupSize,
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    return section
+  }
 }
 
 extension HistoryListViewController: UICollectionViewDelegate {
@@ -281,6 +402,10 @@ extension HistoryListViewController: UICollectionViewDelegate {
                       forItemAt indexPath: IndexPath) {
     (cell as? HistoryListShimmerCell)?.stopAnimation()
   }
+  
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    didScroll?(scrollView)
+  }
 }
 
 extension HistoryListViewController: UICollectionViewDataSourcePrefetching {
@@ -299,4 +424,10 @@ extension HistoryListViewController: UICollectionViewDataSourcePrefetching {
 private extension String {
   static let headerElementKind = "HeaderElementKind"
   static let eventSectionHeaderElementKind = "EventSectionHeaderElementKind"
+}
+
+extension UIScrollView {
+  var realYOffset: CGFloat {
+    max(0, contentOffset.y + adjustedContentInset.top)
+  }
 }

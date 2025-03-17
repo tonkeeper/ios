@@ -67,6 +67,8 @@
 "history.placeholder.subtitle" = "Make your first transaction!";
 "history.placeholder.buttons.receive" = "Receive";
 "history.placeholder.buttons.buy" = "Buy Toncoin";
+"history.tab.all" = "All";
+"history.tab.spam" = "Spam";
 
 "history.event.comment.more" = "More";
 

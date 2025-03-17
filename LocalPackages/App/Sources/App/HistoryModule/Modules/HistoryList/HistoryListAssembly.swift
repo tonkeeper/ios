@@ -8,22 +8,30 @@ struct HistoryListAssembly {
                      paginationLoader: HistoryPaginationLoader,
                      cacheProvider: HistoryListCacheProvider,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
+                     historyEventMapper: HistoryEventMapper,
+                     filter: HistoryList.Filter,
+                     emptyViewProvider: ((HistoryList.Filter) -> HistoryListViewController.EmptyState?)?) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    
     let viewModel = HistoryListViewModelImplementation(
       wallet: wallet,
-      paginationLoader: paginationLoader,
-      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      historyLoader: paginationLoader,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
       backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
       decryptedCommentStore: keeperCoreMainAssembly.storesAssembly.decryptedCommentStore,
-      nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
-      cacheProvider: cacheProvider,
-      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+      nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      transactionsManagementStore: keeperCoreMainAssembly.transactionsManagementAssembly.transactionsManagementStore(wallet: wallet),
       accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
       historyEventMapper: historyEventMapper,
-      nftManagmentStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
-      transactionsManagementStore: keeperCoreMainAssembly.transactionsManagementAssembly.transactionsManagementStore(wallet: wallet)
+      nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
+      cacheProvider: cacheProvider,
+      filter: filter
     )
-    let viewController = HistoryListViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: Void())
+
+    let viewController = HistoryListViewController(
+      viewModel: viewModel,
+      emptyViewProvider: emptyViewProvider
+    )
+    return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }

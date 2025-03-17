@@ -5,10 +5,10 @@ public final class HistoryPaginationLoader {
   public enum Event {
     case initialLoading
     case initialLoadingFailed
-    case initialLoaded(AccountEvents)
+    case initialLoaded([AccountEvent], hasMore: Bool)
     case pageLoading
     case pageLoadingFailed
-    case pageLoaded(AccountEvents)
+    case pageLoaded([AccountEvent], hasMore: Bool)
   }
   
   public var eventHandler: ((Event) -> Void)?
@@ -49,7 +49,7 @@ public final class HistoryPaginationLoader {
       guard needToReload || force else {
         return
       }
-      
+            
       if case let .loading(task) = self.state {
         task.cancel()
       }
@@ -60,9 +60,9 @@ public final class HistoryPaginationLoader {
         do {
           let events = try await self.loadNextPage(nextFrom: nil)
           try Task.checkCancellation()
-          self.queue.async {
+          self.queue.async { [events] in
             self.nextFrom = events.nextFrom
-            self.eventHandler?(.initialLoaded(events))
+            self.eventHandler?(.initialLoaded(events.events, hasMore: events.nextFrom != 0))
             self.state = .idle
           }
         } catch {
@@ -94,7 +94,7 @@ public final class HistoryPaginationLoader {
           try Task.checkCancellation()
           self.queue.async {
             self.nextFrom = events.nextFrom
-            self.eventHandler?(.pageLoaded(events))
+            self.eventHandler?(.pageLoaded(events.events, hasMore: events.nextFrom != 0))
             self.state = .idle
           }
         } catch {
@@ -143,7 +143,7 @@ public final class HistoryPaginationLoader {
 }
 
 private extension Int {
-  static let limit: Int = 50
+  static let limit: Int = 100
 }
 
 private extension TimeInterval {

@@ -16,15 +16,28 @@ enum HistoryList {
     case events(Section.ID)
     case pagination
     case shimmer
+    case empty
   }
 
   enum SnapshotItem: Hashable {
     case event(EventID)
     case pagination
     case shimmer
+    case empty
   }
-
+  
   typealias DataSource = UICollectionViewDiffableDataSource<SnapshotSection, SnapshotItem>
   typealias Snapshot = NSDiffableDataSourceSnapshot<SnapshotSection, SnapshotItem>
+  
+  enum State {
+    case loading
+    case empty
+    case content
+  }
+  
+  enum Filter {
+    case none
+    case all
+    case spam
+  }
 }
-

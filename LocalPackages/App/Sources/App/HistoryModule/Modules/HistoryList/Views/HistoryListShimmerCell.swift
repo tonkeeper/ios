@@ -70,18 +70,18 @@ private extension HistoryListShimmerCell {
     NSLayoutConstraint.activate([
       sectionHeaderShimmerView.topAnchor.constraint(equalTo: topAnchor),
       sectionHeaderShimmerView.leftAnchor.constraint(equalTo: leftAnchor, constant: 16),
-      sectionHeaderShimmerView.heightAnchor.constraint(equalToConstant: 25).withPriority(.defaultHigh),
+      sectionHeaderShimmerView.heightAnchor.constraint(equalToConstant: 25),
       sectionHeaderShimmerView.widthAnchor.constraint(equalToConstant: 95),
       
       cellsContainer.topAnchor.constraint(equalTo: sectionHeaderShimmerView.bottomAnchor, constant: 16),
       cellsContainer.leftAnchor.constraint(equalTo: leftAnchor, constant: 16),
-      cellsContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -16).withPriority(.defaultHigh),
-      cellsContainer.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
+      cellsContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -16),
+      cellsContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       stackView.topAnchor.constraint(equalTo: cellsContainer.topAnchor),
       stackView.leftAnchor.constraint(equalTo: cellsContainer.leftAnchor),
-      stackView.rightAnchor.constraint(equalTo: cellsContainer.rightAnchor).withPriority(.defaultHigh),
-      stackView.bottomAnchor.constraint(equalTo: cellsContainer.bottomAnchor).withPriority(.defaultHigh),
+      stackView.rightAnchor.constraint(equalTo: cellsContainer.rightAnchor),
+      stackView.bottomAnchor.constraint(equalTo: cellsContainer.bottomAnchor)
     ])
   }
 }

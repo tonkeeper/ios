@@ -811,6 +811,12 @@ public enum TKLocales {
         public static let receive = TKLocales.tr("Localizable", "history.placeholder.buttons.receive", fallback: "Receive")
       }
     }
+    public enum Tab {
+      /// All
+      public static let all = TKLocales.tr("Localizable", "history.tab.all", fallback: "All")
+      /// Spam
+      public static let spam = TKLocales.tr("Localizable", "history.tab.spam", fallback: "Spam")
+    }
   }
   public enum HomeScreenConfiguration {
     /// Home Screen
