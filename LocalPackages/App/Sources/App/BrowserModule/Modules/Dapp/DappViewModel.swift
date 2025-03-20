@@ -65,7 +65,7 @@ final class DappViewModelImplementation: DappViewModel {
       invocationId: invocationId,
       args: args
     )
-    
+        
     messageHandler.handleFunctionInvokeMessage(message, dapp: dapp) { [weak self] result in
       switch result {
       case .success(let data):
@@ -178,7 +178,12 @@ final class DappViewModelImplementation: DappViewModel {
                                             }
                                             
                                             if (message.status === 'fulfilled') {
-                                                promise.resolve(JSON.parse(message.data));
+                                                let messageData = JSON.parse(message.data);
+                                                try {
+                                                  messageData.result =  JSON.parse(messageData  .result);
+                                                } catch {}
+                                                
+                                                promise.resolve(messageData);
                                             } else {
                                                 promise.reject(new Error(message.data));
                                             }

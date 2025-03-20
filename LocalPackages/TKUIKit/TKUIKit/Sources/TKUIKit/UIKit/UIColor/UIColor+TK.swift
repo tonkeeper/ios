@@ -183,6 +183,9 @@ public extension UIColor {
     public static let white = UIColor {
       TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantWhite
     }
+    public static let black = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).constantBlack
+    }
   }
   
   static func named(_ name: String) -> UIColor {

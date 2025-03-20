@@ -157,7 +157,7 @@ public extension TonConnect.Signature {
   }
 }
 
-extension TonConnect.SendTransactionResponse: Encodable {
+extension TonConnect.SendResponse: Encodable {
   public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {

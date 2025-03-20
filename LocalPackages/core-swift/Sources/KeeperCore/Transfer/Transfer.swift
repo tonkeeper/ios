@@ -10,3 +10,4 @@ public enum Transfer {
   case signRaw(SignRawRequest, forceRelayer: Bool)
   case renewDNS(nft: NFT)
 }
+

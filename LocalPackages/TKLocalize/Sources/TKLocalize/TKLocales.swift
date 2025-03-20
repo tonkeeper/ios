@@ -1318,6 +1318,18 @@ public enum TKLocales {
     /// Touch ID
     public static let touchId = TKLocales.tr("Localizable", "settings_list_security_configurator.touch_id", fallback: "Touch ID")
   }
+  public enum SignData {
+    /// Carefully review the message, and if you agree, sign it.
+    public static let caption = TKLocales.tr("Localizable", "sign_data.caption", fallback: "Carefully review the message, and if you agree, sign it.")
+    /// Sign data
+    public static let title = TKLocales.tr("Localizable", "sign_data.title", fallback: "Sign data")
+    public enum BinaryContent {
+      /// You are signing blindly. Sign only from trusted sources.
+      public static let subtitle = TKLocales.tr("Localizable", "sign_data.binary_content.subtitle", fallback: "You are signing blindly. Sign only from trusted sources.")
+      /// Binary content
+      public static let title = TKLocales.tr("Localizable", "sign_data.binary_content.title", fallback: "Binary content")
+    }
+  }
   public enum SignOutFull {
     /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
     public static let description = TKLocales.tr("Localizable", "sign_out_full.description", fallback: "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.")

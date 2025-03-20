@@ -22,9 +22,9 @@ public final class TonConnectAppsStore {
     case error(TonConnect.ConnectEventError.Error)
   }
   
-  public enum SendTransactionResult {
+  public enum SendResult {
     case response(Data)
-    case error(TonConnect.SendTransactionResponseError.ErrorCode)
+    case error(TonConnect.SendResponseError.ErrorCode)
   }
   
   private let tonConnectService: TonConnectService

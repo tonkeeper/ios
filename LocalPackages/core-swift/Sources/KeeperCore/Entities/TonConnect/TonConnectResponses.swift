@@ -256,11 +256,11 @@ public extension TonConnect.TonProofItemReplySignedSuccess {
 }
 
 public extension TonConnect {
-  enum SendTransactionResponse {
-    case success(SendTransactionResponseSuccess)
-    case error(SendTransactionResponseError)
+  enum SendResponse {
+    case success(SendResponseSuccess)
+    case error(SendResponseError)
   }
-  struct SendTransactionResponseSuccess: Encodable {
+  struct SendResponseSuccess: Encodable {
     public let result: String
     public let id: String
     
@@ -285,7 +285,7 @@ public extension TonConnect {
     
   }
 
-  struct SendTransactionResponseError: Encodable {
+  struct SendResponseError: Encodable {
     public struct Error: Encodable {
       public let code: ErrorCode
       public let message: String
@@ -300,7 +300,7 @@ public extension TonConnect {
       case unknownError = 0
       case badRequest = 1
       case unknownApp = 10
-      case userDeclinedTransaction = 300
+      case userDeclinedAction = 300
       case methodNotSupported = 400
     }
     

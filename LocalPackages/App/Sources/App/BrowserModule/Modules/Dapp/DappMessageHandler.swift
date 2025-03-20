@@ -23,7 +23,7 @@ enum DappMessageHandlerResult {
     }
   }
   
-  init(_ result: TonConnectAppsStore.SendTransactionResult) {
+  init(_ result: TonConnectAppsStore.SendResult) {
     switch result {
     case .response(let data):
       self = .success(data)
@@ -42,9 +42,10 @@ final class DefaultDappMessageHandler: DappMessageHandler {
   var connect: ((Int, TonConnectRequestPayload, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
   var reconnect: ((Dapp, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
   var disconnect: ((Dapp) -> Void)?
-  var send: ((Dapp, TonConnect.AppRequest, @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) -> Void)?
+  var sendTransaction: ((Dapp, TonConnect.SendTransactionRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
   var fetch: ((String, [String: Any]?, @escaping (TonConnectAppsStore.FetchResult) -> Void) -> Void)?
-  
+  var signData: ((Dapp, TonConnect.SignDataRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
+
   func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
     switch message.type {
     case .connect:
@@ -67,6 +68,7 @@ final class DefaultDappMessageHandler: DappMessageHandler {
         completion(DappMessageHandlerResult(result))
       }
       reconnect?(dapp, reconnectCompletion)
+      
     case .tonapiFetch:
       guard message.args.count >= 1,
             let url = message.args[0] as? String,
@@ -84,13 +86,21 @@ final class DefaultDappMessageHandler: DappMessageHandler {
             let data = try? JSONSerialization.data(withJSONObject: message.args[0]),
             let request = try? JSONDecoder().decode(TonConnect.AppRequest.self, from: data)
       else {
-        completion(.failed(TonConnect.SendTransactionResponseError.ErrorCode.badRequest.rawValue))
+        completion(.failed(TonConnect.SendResponseError.ErrorCode.badRequest.rawValue))
         return
       }
-      let sendCompletion: ((TonConnectAppsStore.SendTransactionResult) -> Void) = { result in
+      
+      let sendCompletion: ((TonConnectAppsStore.SendResult) -> Void) = { result in
         completion(DappMessageHandlerResult(result))
       }
-      send?(dapp, request, sendCompletion)
+      
+      switch request {
+      case .sendTransaction(let sendTransactionRequest):
+        sendTransaction?(dapp, sendTransactionRequest, sendCompletion)
+      case .signData(let signDataRequest):
+        signData?(dapp, signDataRequest, sendCompletion)
+        break
+      }
     case .disconnect:
       disconnect?(dapp)
     }

@@ -41,12 +41,19 @@ public protocol TonConnectService {
                                    parameters: SendTransactionParam,
                                    signClosure: (TransferData) async throws -> String) async throws -> String
   
-  func cancelRequest(appRequest: TonConnect.AppRequest,
+  func cancelRequest(appRequest: TonConnect.SendTransactionRequest,
                      app: TonConnectApp) async throws
   
   func confirmRequest(boc: String,
-                      appRequest: TonConnect.AppRequest,
+                      appRequest: TonConnect.SendTransactionRequest,
                       app: TonConnectApp) async throws
+  
+  func cancelSignRequest(appRequest: TonConnect.SignDataRequest,
+                     app: TonConnectApp) async throws
+  
+  func confirmSignRequest(signedJSON: String,
+                          appRequest: TonConnect.SignDataRequest,
+                          app: TonConnectApp) async throws
   
   func getLastEventId() throws -> String
   func saveLastEventId(_ lastEventId: String) throws
@@ -190,11 +197,11 @@ final class TonConnectServiceImplementation: TonConnectService {
     try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
   }
   
-  func cancelRequest(appRequest: TonConnect.AppRequest, app: TonConnectApp) async throws {
+  func cancelRequest(appRequest: TonConnect.SendTransactionRequest, app: TonConnectApp) async throws {
     let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
     let body = try TonConnectResponseBuilder.buildSendTransactionResponseError(
         sessionCrypto: sessionCrypto,
-        errorCode: .userDeclinedTransaction,
+        errorCode: .userDeclinedAction,
         id: appRequest.id,
         clientId: app.clientId)
     _ = try await apiClient.message(
@@ -205,7 +212,35 @@ final class TonConnectServiceImplementation: TonConnectService {
     )
   }
   
-  func confirmRequest(boc: String, appRequest: TonConnect.AppRequest, app: TonConnectApp) async throws {
+  func confirmSignRequest(signedJSON: String, appRequest: TonConnect.SignDataRequest, app: TonConnectApp) async throws {
+    let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+    let body = try TonConnectResponseBuilder
+      .buildSignDataResponseSuccess(sessionCrypto: sessionCrypto, signedJSON: signedJSON, id: appRequest.id, clientId: app.clientId)
+    
+    _ = try await apiClient.message(
+        query: .init(client_id: sessionCrypto.sessionId,
+                     to: app.clientId,
+                     ttl: 300),
+        body: .plainText(.init(stringLiteral: body))
+    )
+  }
+  
+  func cancelSignRequest(appRequest: TonConnect.SignDataRequest, app: TonConnectApp) async throws {
+    let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+    let body = try TonConnectResponseBuilder.buildSendTransactionResponseError(
+        sessionCrypto: sessionCrypto,
+        errorCode: .userDeclinedAction,
+        id: appRequest.id,
+        clientId: app.clientId)
+    _ = try await apiClient.message(
+        query: .init(client_id: sessionCrypto.sessionId,
+                     to: app.clientId,
+                     ttl: 300),
+        body: .plainText(.init(stringLiteral: body))
+    )
+  }
+  
+  func confirmRequest(boc: String, appRequest: TonConnect.SendTransactionRequest, app: TonConnectApp) async throws {
     let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
     let body = try TonConnectResponseBuilder
         .buildSendTransactionResponseSuccess(sessionCrypto: sessionCrypto,

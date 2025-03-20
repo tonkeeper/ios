@@ -136,6 +136,6 @@ private struct ResultHandler: SignRawControllerResultHandler {
   }
   
   func didCancel() {
-    completion(.error(.userDeclinedTransaction))
+    completion(.error(.userDeclinedAction))
   }
 }

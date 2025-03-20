@@ -689,3 +689,8 @@
 "staking_input.available_balance" = "Available: %@";
 "staking_input.insufficient_balance" = "Insufficient balance";
 "staking_input.minimum_balance" = "Minimum %@";
+
+"sign_data.title" = "Sign data";
+"sign_data.caption" = "Carefully review the message, and if you agree,\nsign it.";
+"sign_data.binary_content.title" = "Binary content";
+"sign_data.binary_content.subtitle" = "You are signing blindly. Sign only from trusted sources.";

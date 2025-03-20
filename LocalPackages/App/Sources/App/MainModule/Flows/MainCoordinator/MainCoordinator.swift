@@ -1345,7 +1345,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     openBrowserTab()
     browserCoordinator?.openDefi()
   }
-
+  
   private func decryptComment(wallet: Wallet,
                               payload: EncryptedCommentPayload,
                               eventId: String) {
@@ -1390,14 +1390,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 // MARK: - Ton Connect
 
 private extension MainCoordinator {
-
-  func handleTonConnectRequest(_ request: TonConnect.AppRequest,
+  
+  func handleTonConnectRequest(_ appRequest: TonConnect.AppRequest,
                                wallet: Wallet,
                                app: TonConnectApp) {
-    guard let signRawRequest = request.params.first else { return }
-    openSignRaw(wallet: wallet, transferProvider: {
-      .signRaw(signRawRequest, forceRelayer: false)
-    }, resultHandler: BridgeSignRawResultHandler(app: app, appRequest: request, tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()))
+    switch appRequest {
+    case .sendTransaction(let request):
+      guard let signRawRequest = request.params.first else { return }
+      
+      openSignRaw(wallet: wallet, transferProvider: {
+        .signRaw(signRawRequest, forceRelayer: false)
+      }, resultHandler: BridgeSignRawResultHandler(app: app, appRequest: request, tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()))
+    case .signData(let request):
+      openSignData(wallet: wallet, dappUrl: app.manifest.host, signRequest: request, resultHandler: BridgeSignDataResultHandler(app: app, appRequest: request, tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()))
+    }
   }
 }
 

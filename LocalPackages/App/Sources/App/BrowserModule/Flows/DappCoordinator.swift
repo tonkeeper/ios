@@ -8,6 +8,10 @@ import TKLocalize
 import SignRaw
 import FirebasePerformance
 
+enum DidRequireSignError: Swift.Error {
+  case unknown
+}
+
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
@@ -92,7 +96,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     weak var moduleView = module.view
-    messageHandler.send = {
+    messageHandler.sendTransaction = {
       [weak self] app, request, completion in
       guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
       self.openSend(
@@ -103,11 +107,24 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         completion: completion
       )
     }
-
+    
+    messageHandler.signData = {
+      [weak self] app, request, completion in
+      guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
+      self.openSignData(
+        wallet: wallet,
+        dappUrl: dapp.url.host ?? "",
+        appRequest: request,
+        fromViewController: moduleView,
+        router: router,
+        completion: completion
+      )
+    }
+    
     module.view.modalPresentationStyle = .fullScreen
     router.rootViewController.topPresentedViewController().present(module.view, animated: true)
   }
-
+  
   private func performConnect(protocolVersion: Int,
                               payload: TonConnectRequestPayload,
                               fromViewController: UIViewController,
@@ -164,27 +181,61 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-
+      
       coordinator.didCancel = { [weak self, weak coordinator] in
         guard let coordinator else { return }
         self?.removeChild(coordinator)
       }
-
+      
       coordinator.didConnect = { [weak self, weak coordinator] in
         guard let coordinator else { return }
         self?.removeChild(coordinator)
       }
-
+      
       addChild(coordinator)
       coordinator.start()
     }
   }
 
+  private func openSignData(wallet: Wallet,
+                            dappUrl: String,
+                            appRequest: TonConnect.SignDataRequest,
+                            fromViewController: UIViewController,
+                            router: ViewControllerRouter,
+                            completion: @escaping (TonConnectAppsStore.SendResult) -> Void) {
+    
+    let signHandler = DappSignDataResultHandler(appRequest: appRequest, connectionResponseHandler: completion)
+    
+    guard let windowScene = fromViewController.view.window?.windowScene else {
+      return
+    }
+    
+    SignDataPresenter.presentSignData(
+      windowScene: windowScene,
+      windowLevel: .signData,
+      wallet: wallet,
+      dappUrl: dappUrl,
+      request: appRequest,
+      resultHandler: signHandler,
+      didRequireSign: {[weak self] request, dappUrl, wallet, router in
+        guard let self else {
+          throw DidRequireSignError.unknown
+        }
+        return try await self.didRequireSign(
+          request: request,
+          dappUrl: dappUrl,
+          wallet: wallet,
+          coordinator: self,
+          router: router
+        )
+      })
+  }
+  
   private func openSend(wallet: Wallet,
                         dapp: Dapp,
-                        appRequest: TonConnect.AppRequest,
+                        appRequest: TonConnect.SendTransactionRequest,
                         fromViewController: UIViewController,
-                        completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+                        completion: @escaping (TonConnectAppsStore.SendResult) -> Void) {
     guard let windowScene = fromViewController.view.window?.windowScene,
           let request = appRequest.params.first else {
       return
@@ -240,20 +291,41 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       throw error
     }
   }
+  
+  @MainActor
+  func didRequireSign(request: TonConnect.SignDataRequest,
+                      dappUrl: String,
+                      wallet: Wallet,
+                      coordinator: Coordinator,
+                      router: ViewControllerRouter) async throws -> String? {
+    
+    let coordinator = SignDataSignCoordinator(router: router, wallet: wallet, dappUrl: dappUrl, request: request, keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
+
+    let result = await coordinator.handleSign(parentCoordinator: coordinator)
+      
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      return nil
+    case .failed(let error):
+      throw error
+    }
+  }
 }
 
 private struct DappSignRawResultHandler: SignRawControllerResultHandler {
-  private let appRequest: TonConnect.AppRequest
-  private let connectionResponseHandler: (TonConnectAppsStore.SendTransactionResult) -> Void
+  private let appRequest: TonConnect.SendTransactionRequest
+  private let connectionResponseHandler: (TonConnectAppsStore.SendResult) -> Void
   
-  init(appRequest: TonConnect.AppRequest, 
-       connectionResponseHandler: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+  init(appRequest: TonConnect.SendTransactionRequest,
+       connectionResponseHandler: @escaping (TonConnectAppsStore.SendResult) -> Void) {
     self.appRequest = appRequest
     self.connectionResponseHandler = connectionResponseHandler
   }
   
   func didConfirm(boc: String) {
-    let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
+    let sendTransactionResponse = TonConnect.SendResponse.success(
       .init(result: boc,
             id: appRequest.id)
     )
@@ -266,6 +338,34 @@ private struct DappSignRawResultHandler: SignRawControllerResultHandler {
   }
   
   func didCancel() {
-    connectionResponseHandler(.error(.userDeclinedTransaction))
+    connectionResponseHandler(.error(.userDeclinedAction))
+  }
+}
+
+private struct DappSignDataResultHandler: SignDataResultHandler {
+  private let appRequest: TonConnect.SignDataRequest
+  private let connectionResponseHandler: (TonConnectAppsStore.SendResult) -> Void
+  
+  init(appRequest: TonConnect.SignDataRequest,
+       connectionResponseHandler: @escaping (TonConnectAppsStore.SendResult) -> Void) {
+    self.appRequest = appRequest
+    self.connectionResponseHandler = connectionResponseHandler
+  }
+  
+  func didSign(signedData: String) {
+    let signDataResponse = TonConnect.SendResponse.success(
+      .init(result: signedData,
+            id: appRequest.id)
+    )
+    guard let response = try? JSONEncoder().encode(signDataResponse) else { return }
+    connectionResponseHandler(.response(response))
+  }
+  
+  func didFail(error: any Error) {
+    connectionResponseHandler(.error(.unknownError))
+  }
+  
+  func didCancel() {
+    connectionResponseHandler(.error(.userDeclinedAction))
   }
 }

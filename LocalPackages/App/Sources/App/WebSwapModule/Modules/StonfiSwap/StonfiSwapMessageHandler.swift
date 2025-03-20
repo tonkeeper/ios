@@ -32,7 +32,7 @@ final class DefaultStonfiSwapMessageHandler: StonfiSwapMessageHandler {
             let data = try? JSONSerialization.data(withJSONObject: message.args),
             let request = try? JSONDecoder().decode(StonfiSwapSignRawRequest.self, from: data)
       else {
-        completion(.failed(TonConnect.SendTransactionResponseError.ErrorCode.badRequest.rawValue))
+        completion(.failed(TonConnect.SendResponseError.ErrorCode.badRequest.rawValue))
         return
       }
       

@@ -133,6 +133,11 @@ public extension TKTextStyle {
     lineHeight: 24
   )
   
+  static let body1Mono: TKTextStyle = .init(
+    font: .monospacedSystemFont(ofSize: 16, weight: .medium),
+    lineHeight: 24
+  )
+  
   static let body2: TKTextStyle = .init(
     font: .montserratMedium(size: 14),
     lineHeight: 20

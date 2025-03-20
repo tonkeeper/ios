@@ -98,8 +98,29 @@ public struct TonConnectResponseBuilder {
     id: String,
     clientId: String
   ) throws -> String {
-    let response = TonConnect.SendTransactionResponse.success(
+    let response = TonConnect.SendResponse.success(
       .init(result: boc,
+            id: id)
+    )
+    let transactionResponseData = try JSONEncoder().encode(response)
+    guard let receiverPublicKey = Data(hex: clientId) else { return "" }
+    
+    let encryptedTransactionResponse = try sessionCrypto.encrypt(
+      message: transactionResponseData,
+      receiverPublicKey: receiverPublicKey
+    )
+    
+    return encryptedTransactionResponse.base64EncodedString()
+  }
+  
+  public static func buildSignDataResponseSuccess(
+    sessionCrypto: TonConnectSessionCrypto,
+    signedJSON: String,
+    id: String,
+    clientId: String
+  ) throws -> String {
+    let response = TonConnect.SendResponse.success(
+      .init(result: signedJSON,
             id: id)
     )
     let transactionResponseData = try JSONEncoder().encode(response)
@@ -115,11 +136,11 @@ public struct TonConnectResponseBuilder {
   
   static func buildSendTransactionResponseError(
     sessionCrypto: TonConnectSessionCrypto,
-    errorCode: TonConnect.SendTransactionResponseError.ErrorCode,
+    errorCode: TonConnect.SendResponseError.ErrorCode,
     id: String,
     clientId: String
   ) throws -> String {
-    let response = TonConnect.SendTransactionResponse.error(
+    let response = TonConnect.SendResponse.error(
       .init(id: id,
             error: .init(code: errorCode,
                          message: "")

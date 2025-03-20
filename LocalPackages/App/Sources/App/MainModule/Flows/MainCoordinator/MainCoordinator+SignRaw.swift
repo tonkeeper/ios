@@ -109,11 +109,11 @@ extension MainCoordinator {
 
 struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
   private let app: TonConnectApp
-  private let appRequest: TonConnect.AppRequest
+  private let appRequest: TonConnect.SendTransactionRequest
   private let tonConnectService: TonConnectService
   
   init(app: TonConnectApp,
-       appRequest: TonConnect.AppRequest,
+       appRequest: TonConnect.SendTransactionRequest,
        tonConnectService: TonConnectService) {
     self.app = app
     self.appRequest = appRequest
@@ -135,3 +135,26 @@ struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
   }
 }
 
+struct BridgeSignDataResultHandler: SignDataResultHandler {
+  func didCancel() {}
+  
+  func didSign(signedData: String) {
+    Task {
+      try await tonConnectService.confirmSignRequest(signedJSON: signedData, appRequest: appRequest, app: app)
+    }
+  }
+  
+  private let app: TonConnectApp
+  private let appRequest: TonConnect.SignDataRequest
+  private let tonConnectService: TonConnectService
+  
+  init(app: TonConnectApp,
+       appRequest: TonConnect.SignDataRequest,
+       tonConnectService: TonConnectService) {
+    self.app = app
+    self.appRequest = appRequest
+    self.tonConnectService = tonConnectService
+  }
+  
+  func didFail(error: any Error) {}
+}
