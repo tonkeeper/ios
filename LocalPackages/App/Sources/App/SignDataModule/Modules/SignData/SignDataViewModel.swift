@@ -15,6 +15,11 @@ protocol SignDataModuleOutput: AnyObject {
 }
 
 @MainActor
+public protocol SignDataModuleInput: AnyObject {
+  func cancel()
+}
+
+@MainActor
 protocol SignDataViewModel: AnyObject {
   var didUpdateHeader: ((TKPullCardHeaderItem) -> Void)? { get set }
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
@@ -23,7 +28,7 @@ protocol SignDataViewModel: AnyObject {
 }
 
 @MainActor
-final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOutput {
+final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOutput, SignDataModuleInput {
   
   // MARK: - SignDataModuleOutput
   
@@ -31,6 +36,12 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
   var didFail: ((Swift.Error) -> Void)?
   var didCancel: (() -> Void)?
   var didConfirm: (() -> Void)?
+  
+  // MARK: - SignDataModuleInput
+  
+  public func cancel() {
+    resultHandler.didCancel()
+  }
 
   // MARK: - SignDataViewModel
   

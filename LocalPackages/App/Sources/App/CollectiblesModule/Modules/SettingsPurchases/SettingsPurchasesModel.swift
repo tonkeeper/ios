@@ -51,27 +51,7 @@ final class SettingsPurchasesModel {
     self.accountNFTsManagementStore = accountNFTsManagementStore
     self.updateQueue = updateQueue
     
-    walletNFTStore.addObserver(self) { observer, event in
-      observer.updateQueue.async {
-        switch event {
-        case .didUpdateNFTs(let wallet):
-          guard wallet == self.wallet else { return }
-          let state = observer.getState()
-          observer.didUpdate?(.didUpdateItems(state))
-        }
-      }
-    }
-    
-    accountNFTsManagementStore.addObserver(self) { observer, event in
-      observer.updateQueue.async {
-        switch event {
-        case .didUpdateState(let wallet):
-          guard wallet == self.wallet else { return }
-          let state = observer.getState()
-          observer.didUpdate?(.didUpdateManagementState(state))
-        }
-      }
-    }
+    Task { await walletNFTStore.addObserver(self) }
   }
   
   func hideItem(_ item: Item) {
@@ -88,106 +68,50 @@ final class SettingsPurchasesModel {
   }
   
   private func getState() -> State {
-    guard let nfts = walletNFTStore.state[wallet] else {
-      return State(
-        visible: [],
-        hidden: [],
-        approved: [],
-        spam: [],
-        collectionNfts: [:]
-      )
-    }
-    
     let managementState = accountNFTsManagementStore.getState()
-    let state = createState(nfts: nfts, managementState: managementState)
+    let state = createState(nfts: walletNFTStore.state.value.nfts, managementState: managementState)
     return state
   }
   
-  private func createState(nfts: [NFT], managementState: NFTsManagementState) -> State {
-    var items = [Item]()
+  private func createState(nfts: WalletNFTs, managementState: NFTsManagementState) -> State {
     var collectionNFTs = [NFTCollection: [NFT]]()
     var addedCollections = Set<NFTCollection>()
     
-    var visible = [Item]()
-    var hidden = [Item]()
-    var spam = [Item]()
-    var approved = [Item]()
-
-    for nft in nfts {
-      if let collection = nft.collection {
-        if !addedCollections.contains(collection) {
-          items.append(.collection(collection: collection))
-          addedCollections.insert(collection)
-          
-          switch nft.trust {
-          case .blacklist:
-            switch managementState.nftStates[.collection(collection.address)] {
-            case .none, .spam:
-              spam.append(.collection(collection: collection))
-            case .hidden:
-              hidden.append(.collection(collection: collection))
-            case .visible:
-              visible.append(.collection(collection: collection))
-            case .approved:
-              approved.append(.collection(collection: collection))
-            }
-          case .none, .whitelist, .graylist, .unknown:
-            switch managementState.nftStates[.collection(collection.address)] {
-            case .spam:
-              spam.append(.collection(collection: collection))
-            case .hidden:
-              hidden.append(.collection(collection: collection))
-            case .visible, .none:
-              visible.append(.collection(collection: collection))
-            case .approved:
-              approved.append(.collection(collection: collection))
-            }
+    func map(nfts: [NFT]) -> [Item] {
+      nfts.compactMap { nft in
+        if let collection = nft.collection {
+          if var nfts = collectionNFTs[collection] {
+            nfts.append(nft)
+            collectionNFTs[collection] = nfts
+          } else {
+            collectionNFTs[collection] = [nft]
           }
-        }
-        if var nfts = collectionNFTs[collection] {
-          nfts.append(nft)
-          collectionNFTs[collection] = nfts
+          if !addedCollections.contains(collection) {
+            addedCollections.insert(collection)
+            return .collection(collection: collection)
+          } else {
+            return nil
+          }
         } else {
-          collectionNFTs[collection] = [nft]
-        }
-        
-      } else {
-        items.append(.single(nft: nft))
-        
-        switch nft.trust {
-        case .blacklist:
-          switch managementState.nftStates[.singleItem(nft.address)] {
-          case .none, .spam:
-            spam.append(.single(nft: nft))
-          case .hidden:
-            hidden.append(.single(nft: nft))
-          case .visible:
-            visible.append(.single(nft: nft))
-          case .approved:
-            approved.append(.single(nft: nft))
-          }
-        case .none, .whitelist, .graylist, .unknown:
-          switch managementState.nftStates[.singleItem(nft.address)] {
-          case .spam:
-            spam.append(.single(nft: nft))
-          case .hidden:
-            hidden.append(.single(nft: nft))
-          case .visible, .none:
-            visible.append(.single(nft: nft))
-          case .approved:
-            approved.append(.single(nft: nft))
-          }
+          return .single(nft: nft)
         }
       }
     }
     
     return State(
-      visible: visible,
-      hidden: hidden,
-      approved: approved,
-      spam: spam,
+      visible: map(nfts: nfts.visible),
+      hidden: map(nfts: nfts.hidden),
+      approved: [],
+      spam: map(nfts: nfts.spam),
       collectionNfts: collectionNFTs
     )
+  }
+}
+
+extension SettingsPurchasesModel: WalletNFTStoreObserver {
+  func didUpdateNFTs(_ nfts: WalletNFTs) {
+    let state = getState()
+    didUpdate?(.didUpdateItems(state))
   }
 }
 

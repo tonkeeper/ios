@@ -21,7 +21,7 @@ struct SignDataModule {
     dappUrl: String,
     signRequest: TonConnect.SignDataRequest,
     resultHandler: SignDataResultHandler
-  ) -> MVVMModule<SignDataViewController, SignDataModuleOutput, Void> {
+  ) -> MVVMModule<SignDataViewController, SignDataModuleOutput, SignDataModuleInput> {
     return SignDataAssembly.module(
       wallet: wallet,
       dappUrl: dappUrl,

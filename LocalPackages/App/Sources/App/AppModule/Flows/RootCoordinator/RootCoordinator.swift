@@ -240,16 +240,7 @@ private extension RootCoordinator {
       
     showViewController(navigationController, animated: true)
   }
-  
-  // TODO: Delete after open beta
-  
-  func migrateTonConnectVaultIfNeeded() {
-    guard !dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault else { return }
-    let wallets = dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore.wallets
-    dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectService().migrateTonConnectAppsVault(wallets: wallets)
-    dependencies.coreAssembly.appSettings.didMigrateTonConnectAppVault = true
-  }
-  
+
   func handleMigrationResult(_ result: MergeMigration.MigrationResult,
                              completion: @escaping (_ isSuccess: Bool) -> Void) {
     let title: String

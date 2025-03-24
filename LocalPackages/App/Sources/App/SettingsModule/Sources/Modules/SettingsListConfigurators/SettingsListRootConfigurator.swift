@@ -844,6 +844,7 @@ private extension String {
   static let contactUsItemIdentifier = "ContactUsItem"
   static let rateItemIdentifier = "RateItem"
   static let legalItemIdentifier = "LegalItem"
+  static let signOutIdentifier = "SignOutIdentifier"
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
   static let notificationsIdentifier = "Notifications item"

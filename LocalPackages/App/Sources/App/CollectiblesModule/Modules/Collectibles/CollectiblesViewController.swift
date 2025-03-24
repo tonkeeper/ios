@@ -3,7 +3,7 @@ import TKUIKit
 import TKCoordinator
 import TKLocalize
 
-final class CollectiblesViewController: ContentListEmptyViewController {
+final class CollectiblesViewController: GenericViewViewController<CollectiblesView>, ScrollViewController {
 
   private let viewModel: CollectiblesViewModel
   private let collectiblesListViewController: CollectiblesListViewController
@@ -26,46 +26,57 @@ final class CollectiblesViewController: ContentListEmptyViewController {
     viewModel.viewDidLoad()
   }
   
-  override func scrollToTop() {
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    customView.navigationBar.layoutIfNeeded()
+    collectiblesListViewController.topInset = customView.navigationBar.bounds.height
+  }
+  
+  func scrollToTop() {
     collectiblesListViewController.scrollToTop()
   }
 }
 
 private extension CollectiblesViewController {
-
   func setup() {
     configureNavigationBar()
-
-    emptyViewController.configure(model: TKEmptyViewController.Model(
-      title: TKLocales.Purchases.emptyPlaceholder,
-      caption: nil,
-      buttons: []
-    ))
-    
-    setListViewController(collectiblesListViewController)
-
+    setupListViewController()
     setupBindings()
   }
 
   func configureNavigationBar() {
-    customView.navigationBarView.title = TKLocales.Collectibles.title
+    customView.navigationBar.title = TKLocales.Collectibles.title
+    customView.navigationBar.scrollView = collectiblesListViewController.customView.collectionView
   }
 
   func setupBindings() {
     viewModel.didUpdateIsLoading = { [weak self] isLoading in
-      self?.customView.navigationBarView.isConnecting = isLoading
-    }
-    
-    viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
-      if isEmpty {
-        self?.setState(.empty, animated: false)
-      } else {
-        self?.setState(.list, animated: false)
-      }
+      self?.customView.navigationBar.isLoading = isLoading
     }
 
     viewModel.didUpdateNavigationBarButtons = { [weak self] buttons in
-      self?.customView.navigationBarView.configuration = .init(rightButtonItems: buttons)
+      self?.customView.navigationBar.rightButtonItems = buttons
+    }
+  }
+  
+  func setupListViewController() {
+    addChild(collectiblesListViewController)
+    customView.listContainerView.addSubview(collectiblesListViewController.view)
+    collectiblesListViewController.didMove(toParent: self)
+    
+    collectiblesListViewController.view.snp.makeConstraints { make in
+      make.edges.equalTo(customView.listContainerView)
+    }
+    
+    collectiblesListViewController.didScroll = { [weak self] scrollView in
+      guard let self else { return }
+      let refreshControlHeight: CGFloat = {
+        guard let refreshControl = scrollView.refreshControl else { return 0 }
+        return refreshControl.isRefreshing ? refreshControl.bounds.height : 0
+      }()
+      let offset = min(0, scrollView.contentOffset.y + scrollView.adjustedContentInset.top - refreshControlHeight)
+      let navigationBarOffset = min(offset, customView.navigationBar.bounds.height)
+      customView.navigationBar.transform = CGAffineTransform(translationX: 0, y: -navigationBarOffset)  
     }
   }
 }

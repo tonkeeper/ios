@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKFeatureFlags
 
 final class MainCoordinatorStateManager {
   
@@ -16,15 +17,15 @@ final class MainCoordinatorStateManager {
   
   var didUpdateState: ((State) -> Void)?
   
-  private var walletNFTsManagedStore: WalletNFTsManagedStore?
+  private var walletNFTsStore: WalletNFTStore?
   
   private let walletsStore: WalletsStore
-  private let walletNFTsManagedStoreProvider: (Wallet) -> WalletNFTsManagedStore
+  private let walletNFTStoreProvider: (Wallet) -> WalletNFTStore
   
   init(walletsStore: WalletsStore,
-       walletNFTsManagedStoreProvider: @escaping (Wallet) -> WalletNFTsManagedStore) {
+       walletNFTStoreProvider: @escaping (Wallet) -> WalletNFTStore) {
     self.walletsStore = walletsStore
-    self.walletNFTsManagedStoreProvider = walletNFTsManagedStoreProvider
+    self.walletNFTStoreProvider = walletNFTStoreProvider
     
     updateWalletNFTsManagedStore()
     
@@ -43,7 +44,7 @@ final class MainCoordinatorStateManager {
   func getState() throws -> State {
     let wallet = try walletsStore.activeWallet
     
-    let nfts = walletNFTsManagedStore?.getState() ?? []
+    let nfts = walletNFTsStore?.state.value.nfts.visible ?? []
     let state = createState(activeWallet: wallet, nfts: nfts)
     return state
   }
@@ -52,10 +53,8 @@ final class MainCoordinatorStateManager {
     var tabs = [State.Tab]()
     tabs.append(.wallet)
     tabs.append(.history)
-    if activeWallet.isBrowserAvailable {
-      tabs.append(.browser)
-    }
-    if !nfts.isEmpty {
+    tabs.append(.browser)
+    if !TKFeatureFlags.provider.isPurchasesHiddenIfEmpty || !nfts.isEmpty {
       tabs.append(.purchases)
     }
     
@@ -70,14 +69,16 @@ final class MainCoordinatorStateManager {
   
   private func updateWalletNFTsManagedStore() {
     if let wallet = try? walletsStore.activeWallet {
-      self.walletNFTsManagedStore = walletNFTsManagedStoreProvider(wallet)
-      self.walletNFTsManagedStore?.addObserver(self, closure: { observer, event in
-        DispatchQueue.main.async {
-          observer.updateState()
-        }
-      })
+      self.walletNFTsStore = walletNFTStoreProvider(wallet)
+      Task { await self.walletNFTsStore?.addObserver(self) }
     } else {
-      self.walletNFTsManagedStore = nil
+      self.walletNFTsStore = nil
     }
+  }
+}
+
+extension MainCoordinatorStateManager: WalletNFTStoreObserver {
+  func didUpdateNFTs(_ nfts: WalletNFTs) {
+    Task { @MainActor in updateState() }
   }
 }

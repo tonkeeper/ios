@@ -694,3 +694,6 @@
 "sign_data.caption" = "Carefully review the message, and if you agree,\nsign it.";
 "sign_data.binary_content.title" = "Binary content";
 "sign_data.binary_content.subtitle" = "You are signing blindly. Sign only from trusted sources.";
+
+"dapp.disconnect_toast.title" = "Disconnect";
+"dapp.disconnect_toast.button" = "Disconnect";

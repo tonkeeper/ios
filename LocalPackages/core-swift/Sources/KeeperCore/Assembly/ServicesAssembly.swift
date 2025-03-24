@@ -102,7 +102,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func accountNftService() -> AccountNFTService {
+  public func accountNftService() -> AccountNFTService {
     AccountNFTServiceImplementation(
       apiProvider: apiAssembly.apiProvider,
       accountNFTRepository: repositoriesAssembly.accountsNftRepository(),

@@ -2,6 +2,7 @@ import Foundation
 import TKCore
 import KeeperCore
 
+@MainActor
 struct CollectiblesListAssembly {
   private init() {}
   static func module(
@@ -10,7 +11,7 @@ struct CollectiblesListAssembly {
   ) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void> {
     let viewModel = CollectiblesListViewModelImplementation(
       wallet: wallet,
-      walletNFTsManagedStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet),
+      walletNFTsStore:  keeperCoreMainAssembly.storesAssembly.walletNFTsStore(wallet: wallet, nftService: keeperCoreMainAssembly.servicesAssembly.accountNftService()),
       walletNftManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
     )

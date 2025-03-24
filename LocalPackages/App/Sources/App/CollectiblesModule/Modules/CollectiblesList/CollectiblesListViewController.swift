@@ -2,28 +2,20 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 
-enum CollectiblesListSection: Hashable {
-  case all
-}
-
-enum CollectiblesListItem: Hashable {
-  case nft(identifier: String)
-}
-
-final class CollectiblesListViewController: GenericViewViewController<CollectiblesListView>, ScrollViewController, ContentListEmptyViewControllerListViewController {
-  typealias Item = CollectiblesListItem
-  typealias Section = CollectiblesListSection
-  typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
-  typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
+final class CollectiblesListViewController: GenericViewViewController<CollectiblesListView>, ScrollViewController {
   typealias CollectibleCellConfiguration = UICollectionView.CellRegistration<CollectibleCollectionViewCell, String>
   
-  private lazy var dataSource = createDataSource()
-  private lazy var layout = createLayout()
+  var didScroll: ((_ scrollView: UIScrollView) -> Void)?
   
-  var scrollView: UIScrollView {
-    customView.collectionView
+  private lazy var dataSource = createDataSource()
+  
+  var topInset: CGFloat = 0 {
+    didSet {
+      customView.collectionView.setCollectionViewLayout(createLayout(), animated: false)
+    }
   }
   
+  private var emptyViewController = TKEmptyViewController()
   private let viewModel: CollectiblesListViewModel
   
   init(viewModel: CollectiblesListViewModel) {
@@ -55,17 +47,32 @@ final class CollectiblesListViewController: GenericViewViewController<Collectibl
 
 private extension CollectiblesListViewController {
   func setup() {
-    customView.collectionView.setCollectionViewLayout(layout, animated: true)
+    customView.collectionView.setCollectionViewLayout(createLayout(), animated: false)
     customView.collectionView.delegate = self
+    customView.collectionView.register(
+      TKContainerCollectionViewCell.self,
+      forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+    )
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false)
+      self?.customView.refreshControl.endRefreshing()
+      if #available(iOS 15.0, *) {
+        self?.dataSource.applySnapshotUsingReloadData(snapshot)
+      } else {
+        self?.dataSource.apply(snapshot, animatingDifferences: false)
+      }
+    }
+    viewModel.didUpdateEmptyViewModel = { [weak self] model in
+      self?.emptyViewController.configure(model: model)
+    }
+    viewModel.didStopLoading = { [weak self] in
+      self?.customView.refreshControl.endRefreshing()
     }
   }
   
-  func createDataSource() -> DataSource {
+  func createDataSource() -> CollectiblesList.DataSource {
     let nftCellConfiguration = CollectibleCellConfiguration {
       [weak viewModel] cell, indexPath, itemIdentifier in
       
@@ -73,8 +80,9 @@ private extension CollectiblesListViewController {
       cell.configure(model: model)
     }
     
-    let dataSource = DataSource(collectionView: customView.collectionView) {
-      collectionView, indexPath, itemIdentifier in
+    let dataSource = CollectiblesList.DataSource(collectionView: customView.collectionView) {
+      [weak self] collectionView, indexPath, itemIdentifier in
+      guard let self else { return nil }
       switch itemIdentifier {
       case .nft(let identifier):
         return collectionView.dequeueConfiguredReusableCell(
@@ -82,6 +90,29 @@ private extension CollectiblesListViewController {
           for: indexPath,
           item: identifier
         )
+      case .empty:
+        let cell = collectionView.dequeueReusableCell(
+          withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+          for: indexPath
+        )
+        emptyViewController.willMove(toParent: nil)
+        emptyViewController.view.removeFromSuperview()
+        emptyViewController.removeFromParent()
+        
+        addChild(emptyViewController)
+        (cell as? TKContainerCollectionViewCell)?.setContentView(emptyViewController.view)
+        emptyViewController.didMove(toParent: self)
+        
+        let height = collectionView.bounds.height
+        - collectionView.adjustedContentInset.top
+        - collectionView.adjustedContentInset.bottom
+        - topInset
+        
+        emptyViewController.view.snp.makeConstraints { make in
+          make.height.equalTo(height).priority(.high)
+        }
+        
+        return cell
       }
     }
     return dataSource
@@ -92,43 +123,87 @@ private extension CollectiblesListViewController {
     configuration.scrollDirection = .vertical
     
     let layout = UICollectionViewCompositionalLayout(
-      sectionProvider: { _, _ in
-        let item = NSCollectionLayoutItem(
-          layoutSize: NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1/3),
-            heightDimension: .estimated(166)
-          )
-        )
-        let group = NSCollectionLayoutGroup.horizontal(
-          layoutSize: NSCollectionLayoutSize(
-            widthDimension: .fractionalWidth(1),
-            heightDimension: .estimated(166)
-          ),
-          subitem: item,
-          count: 3
-        )
-        group.interItemSpacing = .fixed(8)
-        
-        let section = NSCollectionLayoutSection(group: group)
-        section.contentInsets = NSDirectionalEdgeInsets(
-          top: 0,
-          leading: 16,
-          bottom: 0,
-          trailing: 16
-        )
-        section.contentInsets.bottom = 16
-        section.interGroupSpacing = 8
-        return section
+      sectionProvider: { [weak self] sectionIndex, _ in
+        guard let self else { return nil }
+        let snapshot = dataSource.snapshot()
+        switch snapshot.sectionIdentifiers[sectionIndex] {
+        case .all:
+          return allSectionLayout()
+        case .empty:
+          return emptySectionLayout()
+        }
       },
       configuration: configuration
     )
+    
     return layout
+  }
+  
+  private func allSectionLayout() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(
+      layoutSize: NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1/3),
+        heightDimension: .estimated(166)
+      )
+    )
+    let group = NSCollectionLayoutGroup.horizontal(
+      layoutSize: NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1),
+        heightDimension: .estimated(166)
+      ),
+      subitem: item,
+      count: 3
+    )
+    group.interItemSpacing = .fixed(8)
+    
+    let section = NSCollectionLayoutSection(group: group)
+    section.contentInsets = NSDirectionalEdgeInsets(
+      top: 0,
+      leading: 16,
+      bottom: 0,
+      trailing: 16
+    )
+    section.contentInsets.bottom = 16
+    section.contentInsets.top = topInset
+    section.interGroupSpacing = 8
+    return section
+  }
+  
+  private func emptySectionLayout() -> NSCollectionLayoutSection {
+    let itemSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(200)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemSize)
+    
+    let groupSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(200)
+    )
+    
+    let group = NSCollectionLayoutGroup.horizontal(
+      layoutSize: groupSize,
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    section.contentInsets.top = topInset
+    return section
   }
 }
 
 extension CollectiblesListViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     viewModel.didSelectNftAt(index: indexPath.item)
+  }
+  
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    didScroll?(scrollView)
+  }
+  
+  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    if customView.refreshControl.isRefreshing {
+      viewModel.reload()
+    }
   }
 }
 

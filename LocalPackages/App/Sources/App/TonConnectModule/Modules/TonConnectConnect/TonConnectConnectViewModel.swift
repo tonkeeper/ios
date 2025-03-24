@@ -153,7 +153,8 @@ private extension TonConnectConnectViewModelImplementation {
               self.connectingState = .failed
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
+              guard let self else { return }
               self.connectingState = .idle
               guard isSuccess else {
                 return

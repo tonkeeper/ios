@@ -183,10 +183,6 @@ public extension Wallet {
     }
   }
   
-  var isBrowserAvailable: Bool {
-    true
-  }
-  
   var isGaslessAvailable: Bool {
     isW5Generation
   }

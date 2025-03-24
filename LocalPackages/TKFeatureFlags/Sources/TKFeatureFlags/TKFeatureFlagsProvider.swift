@@ -10,6 +10,7 @@ public enum FeatureFlag: String, CaseIterable {
   case disableBatteryCryptoRechargeModule
   case hardcodedCountryCode
   case isCountryPickerDisable
+  case isPurchasesHiddenIfEmpty
   
   var key: String {
     self.rawValue
@@ -25,6 +26,7 @@ public protocol TKFeatureFlagsProvider {
   var isBatteryCryptoRechargeDisable: Bool { get }
   var hardcodedCountryCode: String? { get }
   var isCountryPickerDisable: Bool { get }
+  var isPurchasesHiddenIfEmpty: Bool { get }
   
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<FeatureFlag>, closure: @escaping (T, FeatureFlag) -> Void)
 }
@@ -54,6 +56,9 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
   var isStoriesDisable: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isStoriesDisable.key).boolValue
   }
+  var isPurchasesHiddenIfEmpty: Bool {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isPurchasesHiddenIfEmpty.key).boolValue
+  }
   
   private var observers = [FeatureFlag: [UUID: (FeatureFlag) -> Void]]()
   
@@ -68,7 +73,9 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
                               FeatureFlag.isStakingDisable.key: "true" as NSString,
                               FeatureFlag.isDappsDisable.key: "true" as NSString,
                               FeatureFlag.isStoriesDisable.key: "true" as NSString,
-                              FeatureFlag.disableBatteryCryptoRechargeModule.key: "true" as NSString])
+                              FeatureFlag.disableBatteryCryptoRechargeModule.key: "true" as NSString,
+                              FeatureFlag.isPurchasesHiddenIfEmpty.key: "true" as NSString]
+    )
     
     remoteConfig.fetch { [weak self] status, error in
       if status == .success {

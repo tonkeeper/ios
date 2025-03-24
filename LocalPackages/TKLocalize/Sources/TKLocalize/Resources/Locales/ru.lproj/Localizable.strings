@@ -675,3 +675,6 @@
 "staking_input.available_balance" = "Доступно: %@";
 "staking_input.insufficient_balance" = "Недостаточно средств";
 "staking_input.minimum_balance" = "Минимально %@";
+
+"dapp.disconnect_toast.title" = "Отключить";
+"dapp.disconnect_toast.button" = "Отключить";

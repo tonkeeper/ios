@@ -10,7 +10,7 @@ struct SignDataAssembly {
     dappUrl: String,
     signRequest: TonConnect.SignDataRequest,
     resultHandler: SignDataResultHandler
-  ) -> MVVMModule<SignDataViewController, SignDataModuleOutput, Void> {
+  ) -> MVVMModule<SignDataViewController, SignDataModuleOutput, SignDataModuleInput> {
     let viewModel = SignDataViewModelImplementation(
       wallet: wallet,
       dappUrl: dappUrl,
@@ -19,6 +19,6 @@ struct SignDataAssembly {
     )
     
     let viewController = SignDataViewController(viewModel: viewModel)
-    return MVVMModule(view: viewController, output: viewModel, input: Void())
+    return MVVMModule(view: viewController, output: viewModel, input: viewModel)
   }
 }

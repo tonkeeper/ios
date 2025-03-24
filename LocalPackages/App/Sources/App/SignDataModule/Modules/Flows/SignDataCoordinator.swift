@@ -29,11 +29,13 @@ public final class SignDataCoordinator: RouterCoordinator<WindowRouter> {
       resultHandler: resultHandler
     )
         
+    weak var moduleInput = module.input
+
     let containerViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
     containerViewController.didClose = { [weak self] isInteractivly in
       guard let self else { return }
       guard isInteractivly else { return }
+      moduleInput?.cancel()
       self.didFinish?(self)
     }
     

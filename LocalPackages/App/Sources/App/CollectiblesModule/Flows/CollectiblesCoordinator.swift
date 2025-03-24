@@ -63,7 +63,7 @@ private extension CollectiblesCoordinator {
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
 
-      collectiblesModule.output.didTapCollectiblesDetails = { [weak self] in
+      collectiblesModule.output.didTapCollectiblesSettings = { [weak self] in
         guard let self else {
           return
         }

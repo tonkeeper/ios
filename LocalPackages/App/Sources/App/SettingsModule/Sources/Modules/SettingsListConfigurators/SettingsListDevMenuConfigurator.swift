@@ -38,7 +38,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     if let seedPhraseRecoverySection = createSeedPhraseRecoverySection() {
       sections.append(seedPhraseRecoverySection)
     }
-    sections.append(createSwapSection())
     
     return SettingsListState(
       sections: sections
@@ -66,21 +65,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       items: items,
       topPadding: 16,
       bottomPadding: 0
-    ))
-  }
-  
-  private func createSwapSection() -> SettingsListSection {
-    let items = [
-      createSwapURLItem(),
-      clearCookiesItem()
-    ]
-    return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 16,
-      bottomPadding: 0,
-      headerConfiguration: SettingsListSectionHeaderView.Configuration(
-        title: "Swap"
-      )
     ))
   }
   
@@ -129,45 +113,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       onSelection: { [weak self] _ in
         self?.storiesService.resetShownStories()
         ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
-      }
-    )
-  }
-  
-  private func createSwapURLItem() -> SettingsListItem {
-
-    let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentView.Configuration(
-        textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: "Tonkeeper Swap"
-          )
-        )
-      )
-    )
-
-    let isTonkeeperSwapOn = TKFeatureFlags.localProvider.isTonkeeperSwapOn
-    let isEnabled = isTonkeeperSwapOn
-    let action: (Bool) -> Void = { isOn in
-      TKFeatureFlags.localProvider.isTonkeeperSwapOn = isOn
-    }
-
-    return SettingsListItem(
-      id: .swapURLItemIdentifier,
-      cellConfiguration: cellConfiguration,
-      accessory: .switch(
-        TKListItemSwitchAccessoryView.Configuration(
-          isOn: isTonkeeperSwapOn,
-          isEnable: true,
-          action: { isEnabled in
-            action(isEnabled)
-          }
-        )
-      ),
-      onSelection: { [weak self] _ in
-        guard let self else { return }
-        action(!isEnabled)
-        let state = self.createState()
-        self.didUpdateState?(state)
       }
     )
   }

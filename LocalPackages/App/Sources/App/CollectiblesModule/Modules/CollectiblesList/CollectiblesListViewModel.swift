@@ -2,19 +2,26 @@ import Foundation
 import TKUIKit
 import KeeperCore
 import TonSwift
+import TKLocalize
 
+@MainActor
 protocol CollectiblesListModuleOutput: AnyObject {
   var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)? { get set }
 }
 
+@MainActor
 protocol CollectiblesListViewModel: AnyObject {
-  var didUpdateSnapshot: ((CollectiblesListViewController.Snapshot) -> Void)? { get set }
+  var didUpdateSnapshot: ((CollectiblesList.Snapshot) -> Void)? { get set }
+  var didUpdateEmptyViewModel: ((TKEmptyViewController.Model) -> Void)? { get set }
+  var didStopLoading: (() -> Void)? { get set }
   
   func viewDidLoad()
   func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model?
   func didSelectNftAt(index: Int)
+  func reload()
 }
 
+@MainActor
 final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, CollectiblesListModuleOutput {
   
   // MARK: - CollectiblesListModuleOutput
@@ -23,30 +30,22 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - CollectiblesListViewModel
   
-  var didUpdateSnapshot: ((CollectiblesListViewController.Snapshot) -> Void)?
-  var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)?
+  var didUpdateSnapshot: ((CollectiblesList.Snapshot) -> Void)?
+  var didUpdateEmptyViewModel: ((TKEmptyViewController.Model) -> Void)?
+  var didStopLoading: (() -> Void)?
   
   func viewDidLoad() {
-    walletNFTsManagedStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateNFTs(let wallet):
-        guard observer.wallet == wallet else { return }
-        DispatchQueue.main.async {
-          observer.update()
-        }
-      }
-    }
+    Task { await walletNFTsStore.addObserver(self) }
     
     appSettingsStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateIsSecureMode:
-        DispatchQueue.main.async {
-          observer.update()
-        }
+        observer.update()
       default: break
       }
     }
     
+    updateEmptyView()
     update()
   }
   
@@ -59,6 +58,10 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
       return
     }
     didSelectNFT?(nft, wallet)
+  }
+  
+  func reload() {
+    Task { await walletNFTsStore.loadNFTs() }
   }
   
   // MARK: - State
@@ -75,18 +78,18 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let walletNFTsManagedStore: WalletNFTsManagedStore
+  private let walletNFTsStore: WalletNFTStore
   private let walletNftManagementStore: WalletNFTsManagementStore
   private let appSettingsStore: AppSettingsStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletNFTsManagedStore: WalletNFTsManagedStore,
+       walletNFTsStore: WalletNFTStore,
        walletNftManagementStore: WalletNFTsManagementStore,
        appSettingsStore: AppSettingsStore) {
     self.wallet = wallet
-    self.walletNFTsManagedStore = walletNFTsManagedStore
+    self.walletNFTsStore = walletNFTsStore
     self.walletNftManagementStore = walletNftManagementStore
     self.appSettingsStore = appSettingsStore
   }
@@ -94,7 +97,7 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
 
 private extension CollectiblesListViewModelImplementation {
   func update() {
-    let nfts = walletNFTsManagedStore.getState()
+    let nfts = walletNFTsStore.state.value.nfts.visible
     let isSecureMode = appSettingsStore.getState().isSecureMode
     update(nfts: nfts, isSecureMode: isSecureMode)
   }
@@ -107,10 +110,24 @@ private extension CollectiblesListViewModelImplementation {
     self.didUpdateSnapshot?(snapshot)
   }
   
-  func createSnapshot(state: [NFT]) -> CollectiblesListViewController.Snapshot {
-    var snapshot = CollectiblesListViewController.Snapshot()
-    snapshot.appendSections([.all])
-    snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+  func updateEmptyView() {
+    didUpdateEmptyViewModel?(TKEmptyViewController.Model(
+      title: TKLocales.Purchases.emptyPlaceholder,
+      caption: nil,
+      buttons: []
+    ))
+  }
+  
+  func createSnapshot(state: [NFT]) -> CollectiblesList.Snapshot {
+    var snapshot = CollectiblesList.Snapshot()
+    if state.isEmpty {
+      snapshot.appendSections([.empty])
+      snapshot.appendItems([.empty], toSection: .empty)
+    } else {
+      snapshot.appendSections([.all])
+      snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+    }
+    
     if #available(iOS 15.0, *) {
       snapshot.reconfigureItems(snapshot.itemIdentifiers)
     } else {
@@ -136,5 +153,18 @@ private extension CollectiblesListViewModelImplementation {
       state = walletNftManagementStore.getState().nftStates[.singleItem(item.address)]
     }
     return state
+  }
+}
+
+extension CollectiblesListViewModelImplementation: WalletNFTStoreObserver {
+  nonisolated
+  func didUpdateNFTs(_ nfts: WalletNFTs) {
+    Task { @MainActor in update() }
+  }
+  
+  nonisolated
+  func didUpdateLoadingState(_ loadingState: WalletNFTStore.LoadingState) {
+    guard loadingState == .idle else { return }
+    Task { @MainActor [weak self] in self?.didStopLoading?() }
   }
 }

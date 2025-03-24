@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 
-final class HistoryListViewController: GenericViewViewController<HistoryListView>, ContentListEmptyViewControllerListViewController {
+final class HistoryListViewController: GenericViewViewController<HistoryListView> {
   typealias EventCellConfiguration = UICollectionView.CellRegistration<HistoryCell, HistoryList.EventID>
   typealias PaginationCellConfiguration = UICollectionView.CellRegistration<HistoryListPaginationCell, HistoryListPaginationCell.Model>
   typealias ShimmerCellConfiguration = UICollectionView.CellRegistration<HistoryListShimmerCell, HistoryListShimmerCell.Model>

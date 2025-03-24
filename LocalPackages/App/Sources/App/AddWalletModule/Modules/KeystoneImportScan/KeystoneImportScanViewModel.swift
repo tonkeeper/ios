@@ -31,7 +31,7 @@ final class KeystoneImportScanViewModelImplementation: KeystoneImportScanViewMod
       
       var xfp: String? = nil;
       var path: String? = nil;
-      var name = cryptoHDKey.name ?? cryptoHDKey.note ?? "Keystone"
+      let name = cryptoHDKey.name ?? cryptoHDKey.note ?? "Keystone"
       
       if let origin = cryptoHDKey.origin {
         if let sourceFingerprint = origin.sourceFingerprint {

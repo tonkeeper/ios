@@ -3,6 +3,8 @@ import TKUIKit
 
 final class CollectiblesListView: UIView {
   
+  let refreshControl = UIRefreshControl()
+  
   let collectionView = TKUICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
@@ -22,6 +24,8 @@ private extension CollectiblesListView {
   func setup() {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
+    collectionView.refreshControl = refreshControl
+    collectionView.showsVerticalScrollIndicator = false
     
     addSubview(collectionView)
     setupConstraints()

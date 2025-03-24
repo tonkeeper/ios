@@ -147,32 +147,17 @@ public final class StoresAssembly {
     return nftsStore
   }
   
-  private weak var _walletNFTsStore: WalletNFTStore?
-  public var walletNFTsStore: WalletNFTStore {
-    if let _walletNFTsStore {
-      return _walletNFTsStore
-    }
-    let walletNFTsStore = WalletNFTStore(
-      walletsStore: walletsStore,
-      nftStore: nftsStore,
-      repository: repositoriesAssembly.walletNFTRepository()
-    )
-    _walletNFTsStore = walletNFTsStore
-    return walletNFTsStore
-  }
-  
-  private var _walletNFTsManagedStores = [Wallet: Weak<WalletNFTsManagedStore>]()
-  public func walletNFTsManagedStore(wallet: Wallet) -> WalletNFTsManagedStore {
-    if let weakWrapper = _walletNFTsManagedStores[wallet],
+  private var _walletNFTsStores = [Wallet: Weak<WalletNFTStore>]()
+  public func walletNFTsStore(wallet: Wallet, nftService: AccountNFTService) -> WalletNFTStore {
+    if let weakWrapper = _walletNFTsStores[wallet],
        let store = weakWrapper.value {
       return store
     }
-    let store = WalletNFTsManagedStore(
-      wallet: wallet,
-      walletNFTStore: walletNFTsStore,
-      walletNFTsManagementStore: walletNFTsManagementStore(wallet: wallet)
-    )
-    _walletNFTsManagedStores[wallet] = Weak(value: store)
+    let store = WalletNFTStore(wallet: wallet,
+                               repository: repositoriesAssembly.walletNFTRepository(),
+                               nftManagementStore: walletNFTsManagementStore(wallet: wallet),
+                               nftsService: nftService)
+    _walletNFTsStores[wallet] = Weak(value: store)
     return store
   }
 

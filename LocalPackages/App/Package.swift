@@ -24,7 +24,8 @@ let package = Package(
     .package(path: "../TKLottieWebView"),
     .package(path: "../TKAppInfo"),
     .package(path: "../AppModules/Stories"),
-    .package(path: "../AppModules/SignRaw")
+    .package(path: "../AppModules/SignRaw"),
+    .package(path: "../AppModules/DisconnectDappToast")
   ],
   targets: [
     .target(
@@ -42,6 +43,7 @@ let package = Package(
         .product(name: "TKFeatureFlags", package: "TKFeatureFlags"),
         .product(name: "Stories", package: "Stories"),
         .product(name: "SignRaw", package: "SignRaw"),
+        .product(name: "DisconnectDappToast", package: "DisconnectDappToast"),
         .product(name: "TKLottieWebView", package: "TKLottieWebView"),
         .product(name: "TKAppInfo", package: "TKAppInfo")
       ],

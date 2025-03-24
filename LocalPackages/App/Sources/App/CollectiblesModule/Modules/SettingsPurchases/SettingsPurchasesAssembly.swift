@@ -12,7 +12,7 @@ struct SettingsPurchasesAssembly {
     let viewModel = SettingsPurchasesViewModelImplementation(
       model: SettingsPurchasesModel(
         wallet: wallet,
-        walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
+        walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore(wallet: wallet, nftService: keeperCoreMainAssembly.servicesAssembly.accountNftService()),
         accountNFTsManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
         updateQueue: updateQueue
       )

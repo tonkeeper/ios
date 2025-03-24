@@ -58,8 +58,6 @@ public protocol TonConnectService {
   func getLastEventId() throws -> String
   func saveLastEventId(_ lastEventId: String) throws
   func loadManifest(url: URL) async throws -> TonConnectManifest
-  
-  func migrateTonConnectAppsVault(wallets: [Wallet])
 }
 
 final class TonConnectServiceImplementation: TonConnectService {
@@ -67,7 +65,6 @@ final class TonConnectServiceImplementation: TonConnectService {
   private let apiClient: TonConnectAPI.Client
   private let mnemonicsRepository: MnemonicsRepository
   private let tonConnectAppsVault: TonConnectAppsVault
-  private let tonConnectAppsVaultLegacy: TonConnectAppsVaultLegacy
   private let tonConnectRepository: TonConnectRepository
   private let walletBalanceRepository: WalletBalanceRepository
   private let sendService: SendService
@@ -76,7 +73,6 @@ final class TonConnectServiceImplementation: TonConnectService {
        apiClient: TonConnectAPI.Client,
        mnemonicsRepository: MnemonicsRepository,
        tonConnectAppsVault: TonConnectAppsVault,
-       tonConnectAppsVaultLegacy: TonConnectAppsVaultLegacy,
        tonConnectRepository: TonConnectRepository,
        walletBalanceRepository: WalletBalanceRepository,
        sendService: SendService
@@ -85,7 +81,6 @@ final class TonConnectServiceImplementation: TonConnectService {
     self.apiClient = apiClient
     self.mnemonicsRepository = mnemonicsRepository
     self.tonConnectAppsVault = tonConnectAppsVault
-    self.tonConnectAppsVaultLegacy = tonConnectAppsVaultLegacy
     self.tonConnectRepository = tonConnectRepository
     self.walletBalanceRepository = walletBalanceRepository
     self.sendService = sendService
@@ -306,14 +301,6 @@ final class TonConnectServiceImplementation: TonConnectService {
     let (data, _) = try await urlSession.data(from: url)
     let jsonDecoder = JSONDecoder()
     return try jsonDecoder.decode(TonConnectManifest.self, from: data)
-  }
-  
-  func migrateTonConnectAppsVault(wallets: [Wallet]) {
-    let filteredWallets = wallets.filter { $0.isTonconnectAvailable }
-    for wallet in filteredWallets {
-      guard let apps = try? tonConnectAppsVaultLegacy.loadValue(key: wallet.address.toRaw()) else { continue }
-      try? tonConnectAppsVault.saveValue(apps, for: wallet)
-    }
   }
 }
 

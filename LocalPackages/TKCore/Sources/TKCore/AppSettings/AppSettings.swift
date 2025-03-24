@@ -55,17 +55,6 @@ public final class AppSettings {
     }
   }
   
-  // TODO: Delete after open beta
-  
-  public var didMigrateTonConnectAppVault: Bool {
-    get {
-      userDefaults.bool(forKey: .didMigrateTonConnectAppVaultKey)
-    }
-    set {
-      userDefaults.setValue(newValue, forKey: .didMigrateTonConnectAppVaultKey)
-    }
-  }
-  
   public var firstLaunchDate: Date? {
     get {
       guard let timestamp = userDefaults.value(forKey: .firstLaunchTimestamp) as? TimeInterval else {

@@ -222,6 +222,7 @@
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
+		C39757A52D8EF6C000774C74 /* DisconnectDappToast */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = DisconnectDappToast; sourceTree = "<group>"; };
 		C3D1EF422D537E260075CDAF /* TKAppInfo */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKAppInfo; sourceTree = "<group>"; };
 		E66F82AA2C2F2BB00009E7C2 /* Ledger */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Ledger; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -357,6 +358,7 @@
 		7D6C62CF2CF4BE9600A40892 /* AppModules */ = {
 			isa = PBXGroup;
 			children = (
+				C39757A52D8EF6C000774C74 /* DisconnectDappToast */,
 				7D8916732CFFF02E00E32E93 /* Core */,
 				7D8916722CFFEEAB00E32E93 /* Resources */,
 				7D8916712CFFEB0E00E32E93 /* UIComponents */,

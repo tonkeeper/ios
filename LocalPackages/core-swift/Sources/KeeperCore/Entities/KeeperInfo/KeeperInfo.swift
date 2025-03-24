@@ -71,15 +71,7 @@ extension KeeperInfo: Codable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     
-    // TODO: Delete after open beta
-    let wallets = try container.decode([Wallet].self, forKey: .wallets)
-    var filteredWallets = [Wallet]()
-    wallets.forEach { wallet in
-      guard !filteredWallets.contains(where: { $0.identity == wallet.identity || $0.id == wallet.id }) else { return }
-      filteredWallets.append(wallet)
-    }
-
-    self.wallets = filteredWallets
+    self.wallets = try container.decode([Wallet].self, forKey: .wallets)
     
     self.currentWallet = try container.decode(Wallet.self, forKey: .currentWallet)
     self.currency = try container.decode(Currency.self, forKey: .currency)

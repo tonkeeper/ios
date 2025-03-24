@@ -110,18 +110,6 @@ public final class WalletBalanceLoader {
   }
   
   private func loadNFTs() async {
-    do {
-      let nfts = try await self.accountNFTService.loadAccountNFTs(
-        wallet: wallet,
-        collectionAddress: nil,
-        limit: nil,
-        offset: nil,
-        isIndirectOwnership: true
-      )
-      try Task.checkCancellation()
-      await walletNFTSStore.setNFTs(nfts, wallet: wallet)
-    } catch {
-      guard error.isCancelledError else { return }
-    }
+    await walletNFTSStore.loadNFTs()
   }
 }

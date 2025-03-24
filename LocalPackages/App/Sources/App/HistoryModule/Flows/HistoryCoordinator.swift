@@ -107,7 +107,7 @@ private extension HistoryCoordinator {
         self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
       }
       
-      listModule.output.didUpdateState = { [weak self] state in
+      listModule.output.didUpdateState = { state in
         historyModuleInput?.setHistoryListState(state)
       }
       

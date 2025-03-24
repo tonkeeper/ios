@@ -36,8 +36,8 @@ public final class RNAsyncStorage {
   }
   
   public func getValue(key: String) async -> String? {
-    return await withCheckedContinuation { (continuation: CheckedContinuation<String?, Never>) in
-      queue.async { [weak self] in
+    return await withCheckedContinuation { [weak self] (continuation: CheckedContinuation<String?, Never>) in
+      self?.queue.async { [weak self] in
         guard let self else {
           continuation.resume(returning: nil)
           return

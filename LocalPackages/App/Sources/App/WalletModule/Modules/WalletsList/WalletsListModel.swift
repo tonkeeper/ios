@@ -112,7 +112,7 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   
   func getState() -> WalletsListModelState {
     let state = walletsStore.state
-    guard let activeWallet = try? state.activeWallet else {
+    guard let _ = try? state.activeWallet else {
       return WalletsListModelState(
         wallets: [],
         selectedWallet: nil

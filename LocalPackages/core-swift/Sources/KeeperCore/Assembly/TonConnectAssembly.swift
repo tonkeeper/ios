@@ -36,7 +36,6 @@ public final class TonConnectAssembly {
       apiClient: apiAssembly.tonConnectAPIClient(),
       mnemonicsRepository: secureAssembly.mnemonicsRepository(),
       tonConnectAppsVault: coreAssembly.tonConnectAppsVault(),
-      tonConnectAppsVaultLegacy: coreAssembly.tonConnectAppsVaultLegacy(),
       tonConnectRepository: tonConnectRepository(),
       walletBalanceRepository: repositoriesAssembly.walletBalanceRepository(),
       sendService: servicesAssembly.sendService()

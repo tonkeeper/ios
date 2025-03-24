@@ -651,6 +651,14 @@ public enum TKLocales {
     /// Customize your Wallet
     public static let title = TKLocales.tr("Localizable", "customize_wallet.title", fallback: "Customize your Wallet")
   }
+  public enum Dapp {
+    public enum DisconnectToast {
+      /// Disconnect
+      public static let button = TKLocales.tr("Localizable", "dapp.disconnect_toast.button", fallback: "Disconnect")
+      /// Disconnect
+      public static let title = TKLocales.tr("Localizable", "dapp.disconnect_toast.title", fallback: "Disconnect")
+    }
+  }
   public enum Dates {
     /// Today
     public static let today = TKLocales.tr("Localizable", "dates.today", fallback: "Today")
@@ -1319,8 +1327,9 @@ public enum TKLocales {
     public static let touchId = TKLocales.tr("Localizable", "settings_list_security_configurator.touch_id", fallback: "Touch ID")
   }
   public enum SignData {
-    /// Carefully review the message, and if you agree, sign it.
-    public static let caption = TKLocales.tr("Localizable", "sign_data.caption", fallback: "Carefully review the message, and if you agree, sign it.")
+    /// Carefully review the message, and if you agree,
+    /// sign it.
+    public static let caption = TKLocales.tr("Localizable", "sign_data.caption", fallback: "Carefully review the message, and if you agree,\nsign it.")
     /// Sign data
     public static let title = TKLocales.tr("Localizable", "sign_data.title", fallback: "Sign data")
     public enum BinaryContent {
