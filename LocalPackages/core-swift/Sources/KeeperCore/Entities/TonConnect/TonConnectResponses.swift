@@ -29,22 +29,53 @@ public extension TonConnect {
         }
       }
     }
+
+    public enum SignDataType: String, Encodable {
+      case text
+      case binary
+      case cell
+    }
     
-    public struct Feature: Encodable {
-      public let name = "SendTransaction"
-      public let maxMessages: Int
+    public enum Feature: Encodable {
+      case sendTransaction(maxMessages: Int)
+      case signData(types: [SignDataType])
+
+      var name: String {
+        switch self {
+        case .sendTransaction:
+          return "SendTransaction"
+        case .signData:
+          return "SignData"
+        }
+      }
       
-      public init(maxMessages: Int) {
-        self.maxMessages = maxMessages
+      private enum CodingKeys: String, CodingKey {
+        case name
+        case maxMessages
+        case types
+      }
+      
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .sendTransaction(let maxMessages):
+          try container.encode(name, forKey: .name)
+          try container.encode(maxMessages, forKey: .maxMessages)
+        case .signData(let types):
+          try container.encode(name, forKey: .name)
+          try container.encode(types, forKey: .types)
+        }
       }
     }
     
     public init(maxMessages: Int, appVersion: String) {
       self.appVersion = appVersion
       self.features = [
-       FeatureCompatible.legacy(Feature(maxMessages: maxMessages)),
-       FeatureCompatible.feature(Feature(maxMessages: maxMessages))
-     ]
+        FeatureCompatible.legacy(.sendTransaction(maxMessages: maxMessages)),
+        FeatureCompatible.feature(.sendTransaction(maxMessages: maxMessages)),
+        FeatureCompatible.legacy(.signData(types: [.text, .binary, .cell])),
+        FeatureCompatible.feature(.signData(types: [.text, .binary, .cell]))
+      ]
     }
   }
   
