@@ -32,9 +32,18 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         guard let emulationResult else {
           return BigUInt(100000000)
         }
-        let emulationExtra = emulationResult.fee.amount
+        let emulationExtra = emulationResult.extra.amount
         let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
-        var transferAmount = emulationExtra + minimumTransferAmount
+        
+        var transferAmount = {
+          switch emulationExtra {
+          case .Fee(let fee):
+            return fee + minimumTransferAmount
+          case .Refund(_):
+            return minimumTransferAmount
+          }
+        }()
+
         transferAmount = transferAmount < minimumTransferAmount
         ? minimumTransferAmount
         : transferAmount
@@ -60,7 +69,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
-  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
+  @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   
   private let wallet: Wallet
   private let recipient: Recipient
@@ -102,28 +111,42 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       recipientAddress: recipient.recipientAddress.addressString,
       transaction: .transfer(.nft(nft)),
       amount: nil,
-      feeState: feeState,
+      extraState: extraState,
       comment: comment
     )
   }
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      feeState = .none
+      extraState = .none
       return
     }
-    let fee = emulationResult.fee
+    let extra = emulationResult.extra
     
-    let feeType: TransactionConfirmationModel.FeeType
-    feeType = emulationResult.transferType.isBattery ? .battery : .default
+    let extraType: TransactionConfirmationModel.ExtraType
+    extraType = emulationResult.transferType.isBattery ? .battery : .default
     
-    self.feeState = .fee(
-      TransactionConfirmationModel.Fee(
-        amount: TransactionConfirmationModel.Amount(
-          token: fee.token,
-          value: fee.amount
-        ),
-        type: feeType
+    let (amount, isRefund) = {
+      switch extra.amount {
+      case .Fee(let fee):
+        return (fee, false)
+      case .Refund(let refund):
+        return (refund, true)
+      }
+    }()
+    
+    let confirmationModelAmount = TransactionConfirmationModel.Amount(
+      token: extra.token,
+      value: amount
+    )
+    
+    self.extraState = .extra(
+      isRefund ? .Refund(
+        amount: confirmationModelAmount,
+        type: extraType
+      ) : .Refund(
+        amount: confirmationModelAmount,
+        type: extraType
       )
     )
   }

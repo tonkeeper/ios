@@ -54,7 +54,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
         account: event.account,
         isScam: event.isScam,
         isInProgress: event.isInProgress,
-        fee: event.fee,
+        extra: event.extra,
         actions: filteredActions
       )
     }

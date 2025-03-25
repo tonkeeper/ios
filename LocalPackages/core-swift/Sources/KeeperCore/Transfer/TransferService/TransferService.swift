@@ -9,9 +9,14 @@ public enum TransferError: Swift.Error {
 }
 
 public struct TransferEmulationResult {
-  public struct Fee {
+  public struct Extra {
+    public enum Amount {
+      case Fee(BigUInt)
+      case Refund(BigUInt)
+    }
+    
     public let token: Token
-    public let amount: BigUInt
+    public let amount: Amount
     
     public var jettonInfo: JettonInfo? {
       switch token {
@@ -24,7 +29,7 @@ public struct TransferEmulationResult {
   }
 
   public let transferType: TransferType
-  public let fee: Fee
+  public let extra: Extra
   public let transactionInfo: MessageConsequences?
   public let isGaslessAvailable: Bool
 }
@@ -261,7 +266,15 @@ public struct TransferService {
         return result
       }
       let tonBalance = (try? await balanceService.loadWalletBalance(wallet: wallet, currency: .USD).balance.tonBalance.amount) ?? 0
-      let amount = result.fee.amount + BigUInt(50000000)
+      
+      let amount = {
+        switch result.extra.amount {
+        case .Fee(let fee):
+          return fee + BigUInt(50000000)
+        case .Refund(_):
+          return BigUInt(50000000)
+        }
+      }()
       guard amount > tonBalance else {
         return result
       }
@@ -305,7 +318,11 @@ public struct TransferService {
         if transactionInfo.isBatteryAvailable {
           return TransferEmulationResult(
             transferType: .battery(excessAddress: excessAddress),
-            fee: TransferEmulationResult.Fee(token: .ton, amount: BigUInt(abs(transactionInfo.info.event.extra))),
+            extra: TransferEmulationResult.Extra(
+              token: .ton, amount: transactionInfo.info.event.extra > 0 ?
+                .Refund(BigUInt(transactionInfo.info.event.extra)) :
+                .Fee(BigUInt(abs(transactionInfo.info.event.extra)))
+            ),
             transactionInfo: transactionInfo.info,
             isGaslessAvailable: false
           )
@@ -361,7 +378,7 @@ public struct TransferService {
     let fee = BigUInt(stringLiteral: comission)
     return TransferEmulationResult(
       transferType: .gasless(excessAddress: excessAddress, fee: fee),
-      fee: TransferEmulationResult.Fee(token: .jetton(jettonItem), amount: fee),
+      extra: TransferEmulationResult.Extra(token: .jetton(jettonItem), amount: .Fee(fee)),
       transactionInfo: nil,
       isGaslessAvailable: true
     )
@@ -392,7 +409,11 @@ public struct TransferService {
       params: params)
     return TransferEmulationResult(
       transferType: .default,
-      fee: TransferEmulationResult.Fee(token: .ton, amount: BigUInt(abs(transactionInfo.event.extra))),
+      extra: TransferEmulationResult.Extra(
+        token: .ton, amount: transactionInfo.event.extra > 0 ?
+          .Refund(BigUInt(transactionInfo.event.extra)) :
+          .Fee(BigUInt(abs(transactionInfo.event.extra)))
+      ),
       transactionInfo: transactionInfo,
       isGaslessAvailable: isGaslessAvailable
     )

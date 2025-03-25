@@ -287,6 +287,7 @@
 "confirm_send.token_transfer.title" = "Confirm action";
 "confirm_send.token_transfer.transfer" = "Transfer %@";
 "confirm_send.fee" = "Fee";
+"confirm_send.refund" = "Refund";
 "confirm_send.wallet" = "Wallet";
 "confirm_send.amount" = "Amount";
 "confirm_send.comment" = "Comment";
@@ -404,6 +405,7 @@
 "event_details.sender_address" = "Sender address";
 "event_details.sender" = "Sender";
 "event_details.fee" = "Fee";
+"event_details.refund" = "Refund";
 "event_details.recipient" = "Recipient";
 "event_details.recipient_address" = "Recipient address";
 "event_details.comment" = "Comment";

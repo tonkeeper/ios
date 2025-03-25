@@ -28,6 +28,7 @@ public struct SendConfirmationModel {
   public let amount: String?
   public let amountConverted: LoadableModelItem<String?>
   public let fee: LoadableModelItem<String>
+  public let isRefund: LoadableModelItem<Bool>
   public let feeConverted: LoadableModelItem<String?>
   public let comment: String?
 }

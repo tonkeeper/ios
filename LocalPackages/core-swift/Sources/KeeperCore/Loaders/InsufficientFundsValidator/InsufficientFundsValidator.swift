@@ -101,14 +101,21 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
         
-        guard case let .fee(fee) = emulationModel.feeState else {
+        guard case let .extra(extra) = emulationModel.extraState else {
           return
         }
 
         let transferAmount: BigUInt = {
-          let feeConverted = BigUInt(fee.amount.value)
           let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
-          var transferAmount = feeConverted + minimumTransferAmount
+          var transferAmount = {
+            switch extra {
+            case .Fee(let amount, _):
+              return amount.value + minimumTransferAmount
+            case .Refund(_, _):
+              return minimumTransferAmount
+            }
+          }()
+          
           transferAmount = transferAmount < minimumTransferAmount
           ? minimumTransferAmount
           : transferAmount
@@ -139,22 +146,32 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           )
         }
 
-        if case let .fee(fee) = emulationModel.feeState {
-          switch fee.type {
+        if case let .extra(extra) = emulationModel.extraState {
+          
+          let (extraAmount, type, isRefund) = {
+            switch extra {
+            case .Fee(let amount, let type):
+              return (amount, type, false)
+            case .Refund(let amount, let type):
+              return (amount, type, true)
+            }
+          }()
+          
+          switch type {
           case .default:
-            if formattedTonBalance < fee.amount.value {
-              throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
+            if !isRefund && formattedTonBalance < extraAmount.value {
+              throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: extraAmount.value)
             }
           case .battery:
             break
           case .gasless(let toggleOption):
-            switch fee.amount.token {
+            switch extraAmount.token {
             case .ton:
-              if formattedTonBalance < fee.amount.value {
-                throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
+              if formattedTonBalance < extraAmount.value {
+                throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: extraAmount.value)
               }
             case .jetton(let jettonItem):
-              let requiredAmount = amount + fee.amount.value
+              let requiredAmount = amount + extraAmount.value
               if requiredAmount > jettonBalance.quantity {
                 throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: jettonBalance.quantity, amount: requiredAmount)
               }
@@ -162,9 +179,19 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
           }
         }
       case .nft:
-        if case let .fee(fee) = emulationModel.feeState,
-           formattedTonBalance < fee.amount.value {
-          throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: fee.amount.value)
+        if case let .extra(extra) = emulationModel.extraState {
+          let (extraAmount, type, isRefund) = {
+            switch extra {
+            case .Fee(let amount, let type):
+              return (amount, type, false)
+            case .Refund(let amount, let type):
+              return (amount, type, true)
+            }
+          }()
+          
+          if !isRefund && formattedTonBalance < extraAmount.value {
+            throw InsufficientFundsError.blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: extraAmount.value)
+          }
         }
       }
     }

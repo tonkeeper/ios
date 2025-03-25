@@ -204,9 +204,18 @@ private extension SendConfirmationViewModelImplementation {
     case .value(let value):
       feeRightBottom = .value(value, numberOfLines: 1, isFullString: false)
     }
+    
+    let isRefund: Bool
+    switch sendConfirmationModel.isRefund {
+      case .loading:
+        isRefund = false
+      case .value(let value):
+        isRefund = value
+    }
+    
     listItems.append(
       TKModalCardViewController.Configuration.ListItem.defaultItem(
-        left: TKLocales.ConfirmSend.fee,
+        left: isRefund ? TKLocales.ConfirmSend.refund : TKLocales.ConfirmSend.fee,
         rightTop: feeRightTop,
         rightBottom: feeRightBottom
       )

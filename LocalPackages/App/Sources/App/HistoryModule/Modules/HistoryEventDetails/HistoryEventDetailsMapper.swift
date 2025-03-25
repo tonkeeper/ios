@@ -33,7 +33,7 @@ final class HistoryEventDetailsMapper {
       case recipientAddress(value: String, copyValue: String)
       case sender(value: String, copyValue: String)
       case senderAddress(value: String, copyValue: String)
-      case fee(value: String, converted: String?)
+      case extra(value: String, isRefund: Bool, converted: String?)
       case refund(value: String, converted: String?)
       case comment(String)
       case encryptedComment(EncryptedComment)
@@ -121,14 +121,28 @@ final class HistoryEventDetailsMapper {
                 decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
     let eventAction = event.action
     let date = dateFormatter.string(from: event.accountEvent.date)
-    let fee = amountMapper.mapAmount(
-      amount: BigUInt(integerLiteral: UInt64(abs(event.accountEvent.fee))),
+    
+    let extraUInt = {
+      switch event.accountEvent.extra {
+        case .Fee(let fee):
+          return fee
+        case .Refund(let refund):
+          return refund
+      }
+    }()
+    
+    let extra = amountMapper.mapAmount(
+      amount: BigUInt(integerLiteral: extraUInt),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       type: .none,
       currency: .TON)
+    let extraConverted = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(extraUInt))
     
-    let fiatFee = isTestnet ? nil : convertTonToFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
+    var isRefund = false
+    if case .Refund = event.accountEvent.extra {
+      isRefund = true
+    }
     
     let status: AccountEventStatus = event.accountEvent.isInProgress ? .ok : eventAction.status
     
@@ -139,8 +153,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         tonTransfer: tonTransfer,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
@@ -149,8 +164,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: jettonTransfer,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
@@ -159,8 +175,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         nftTransfer: nftItemTransfer,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet,
         decryptedCommentProvider: decryptedCommentProvider)
@@ -169,8 +186,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: nftPurchase,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .domainRenew(domainRenew):
@@ -178,39 +196,44 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: domainRenew,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         description: eventAction.preview.description)
     case .unknown:
       return mapUnknownAction(
         date: date,
-        fee: fee,
-        feeConverted: fiatFee
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund
       )
     case let .contractDeploy(contractDeploy):
       return mapContractDeploy(
         activityEvent: event.accountEvent,
         action: contractDeploy,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status)
     case let .jettonBurn(jettonBurn):
       return mapJettonBurn(
         activityEvent: event.accountEvent,
         action: jettonBurn,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status)
     case let .jettonMint(jettonMint):
       return mapJettonMint(
         activityEvent: event.accountEvent,
         action: jettonMint,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .jettonSwap(jettonSwap):
@@ -218,8 +241,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: jettonSwap,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .auctionBid(auctionBid):
@@ -227,16 +251,18 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: auctionBid,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status)
     case let .depositStake(depositStake):
       return mapDepositStake(
         activityEvent: event.accountEvent,
         action: depositStake,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .smartContractExec(smartContractExec):
@@ -244,8 +270,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         smartContractExec: smartContractExec,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .withdrawStake(withdrawStake):
@@ -253,8 +280,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: withdrawStake,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case let .withdrawStakeRequest(withdrawStakeRequest):
@@ -262,8 +290,9 @@ final class HistoryEventDetailsMapper {
         activityEvent: event.accountEvent,
         action: withdrawStakeRequest,
         date: date,
-        fee: fee,
-        feeConverted: fiatFee,
+        extra: extra,
+        extraConverted: extraConverted,
+        isRefund: isRefund,
         status: status,
         isTestnet: isTestnet)
     case .subscribe:
@@ -283,8 +312,9 @@ final class HistoryEventDetailsMapper {
   private func mapTonTransfer(activityEvent: AccountEvent,
                               tonTransfer: AccountEventAction.TonTransfer,
                               date: String,
-                              fee: String,
-                              feeConverted: String?,
+                              extra: String,
+                              extraConverted: String?,
+                              isRefund: Bool,
                               status: AccountEventStatus,
                               isTestnet: Bool,
                               decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
@@ -323,7 +353,7 @@ final class HistoryEventDetailsMapper {
         copyValue: tonTransfer.sender.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.sender.isWallet))
       )
     }
-    listItems.append(.fee(value: fee, converted: feeConverted))
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
     if let comment = tonTransfer.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(.comment(comment))
     }
@@ -380,8 +410,9 @@ final class HistoryEventDetailsMapper {
   func mapJettonTransfer(activityEvent: AccountEvent,
                          action: AccountEventAction.JettonTransfer,
                          date: String,
-                         fee: String,
-                         feeConverted: String?,
+                         extra: String,
+                         extraConverted: String?,
+                         isRefund: Bool,
                          status: AccountEventStatus,
                          isTestnet: Bool,
                          decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
@@ -423,7 +454,7 @@ final class HistoryEventDetailsMapper {
         )
       }
     }
-    listItems.append(.fee(value: fee, converted: feeConverted))
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
     if let comment = action.comment, !comment.isEmpty, !activityEvent.isScam {
       listItems.append(.comment(comment))
     }
@@ -498,8 +529,9 @@ final class HistoryEventDetailsMapper {
   func mapNFTTransfer(activityEvent: AccountEvent,
                       nftTransfer: AccountEventAction.NFTItemTransfer,
                       date: String,
-                      fee: String,
-                      feeConverted: String?,
+                      extra: String,
+                      extraConverted: String?,
+                      isRefund: Bool,
                       status: AccountEventStatus,
                       isTestnet: Bool,
                       decryptedCommentProvider: (_ eventId: String, _ payload: EncryptedCommentPayload) -> String?) -> Model {
@@ -547,13 +579,13 @@ final class HistoryEventDetailsMapper {
         date: dateFormatted,
         status: status.rawValue,
         isScam: activityEvent.isScam,
-        listItems: [.fee(value: fee, converted: feeConverted)]
+        listItems: [.extra(value: extra, isRefund: isRefund, converted: extraConverted)]
       )
     }
 
     let nftState = calculateNFTState(nft, nftManagmentStore: nftManagmentStore)
     let isScam = activityEvent.isScam || nftState == .spam
-    listItems.append(.fee(value: fee, converted: feeConverted))
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
     if let comment = nftTransfer.comment, !comment.isEmpty, !isScam {
       listItems.append(.comment(comment))
     }
@@ -592,8 +624,9 @@ final class HistoryEventDetailsMapper {
   func mapNFTPurchase(activityEvent: AccountEvent,
                       action: AccountEventAction.NFTPurchase,
                       date: String,
-                      fee: String,
-                      feeConverted: String?,
+                      extra: String,
+                      extraConverted: String?,
+                      isRefund: Bool,
                       status: AccountEventStatus,
                       isTestnet: Bool) -> Model {
     var listItems = [Model.ListItem]()
@@ -605,8 +638,8 @@ final class HistoryEventDetailsMapper {
     listItems.append(.senderAddress(value: action.seller.address.toString(testOnly: isTestnet, bounceable: !action.seller.isWallet),
                                     copyValue: action.seller.address.toString(testOnly: isTestnet, bounceable: !action.seller.isWallet)))
     
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     var headerImage: Model.HeaderImage?
     if let nftImageUrl = action.nft.imageURL {
       headerImage = .nft(nftImageUrl)
@@ -651,8 +684,9 @@ final class HistoryEventDetailsMapper {
   func mapDomainRenew(activityEvent: AccountEvent,
                       action: AccountEventAction.DomainRenew,
                       date: String,
-                      fee: String,
-                      feeConverted: String?,
+                      extra: String,
+                      extraConverted: String?,
+                      isRefund: Bool,
                       status: AccountEventStatus,
                       description: String) -> Model {
     let title = action.domain
@@ -665,8 +699,8 @@ final class HistoryEventDetailsMapper {
       listItems.append(.description(description))
     }
     
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     return Model(
       title: title,
       date: dateFormatted,
@@ -679,8 +713,9 @@ final class HistoryEventDetailsMapper {
   func mapJettonBurn(activityEvent: AccountEvent,
                      action: AccountEventAction.JettonBurn,
                      date: String,
-                     fee: String,
-                     feeConverted: String?,
+                     extra: String,
+                     extraConverted: String?,
+                     isRefund: Bool,
                      status: AccountEventStatus) -> Model {
     let title = amountMapper.mapAmount(
       amount: action.amount,
@@ -704,15 +739,16 @@ final class HistoryEventDetailsMapper {
       fiatPrice: fiatPrice,
       status: status.rawValue,
       isScam: activityEvent.isScam,
-      listItems: [.fee(value: fee, converted: feeConverted)]
+      listItems: [.extra(value: extra, isRefund: isRefund, converted: extraConverted)]
     )
   }
   
   func mapJettonMint(activityEvent: AccountEvent,
                      action: AccountEventAction.JettonMint,
                      date: String,
-                     fee: String,
-                     feeConverted: String?,
+                     extra: String,
+                     extraConverted: String?,
+                     isRefund: Bool,
                      status: AccountEventStatus,
                      isTestnet: Bool) -> Model {
     let title = amountMapper.mapAmount(
@@ -731,8 +767,8 @@ final class HistoryEventDetailsMapper {
       .recipientAddress(value: action.recipient.address.toString(testOnly: isTestnet, bounceable: !action.recipient.isWallet),
                         copyValue: action.recipient.address.toString(testOnly: isTestnet, bounceable: !action.recipient.isWallet))
     )
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     var headerImage: Model.HeaderImage?
     if let imageUrl = action.jettonInfo.imageURL {
       headerImage = .image(.url(imageUrl))
@@ -752,8 +788,9 @@ final class HistoryEventDetailsMapper {
   func mapJettonSwap(activityEvent: AccountEvent,
                      action: AccountEventAction.JettonSwap,
                      date: String,
-                     fee: String,
-                     feeConverted: String?,
+                     extra: String,
+                     extraConverted: String?,
+                     isRefund: Bool,
                      status: AccountEventStatus,
                      isTestnet: Bool) -> Model {
     let title: String? = {
@@ -822,8 +859,8 @@ final class HistoryEventDetailsMapper {
         copyValue: action.user.address.toString(testOnly: isTestnet, bounceable: !action.user.isWallet)
       )
     )
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     let headerImage: Model.HeaderImage = {
       let fromImage: TokenImage
       if let _ = action.tonIn {
@@ -861,8 +898,9 @@ final class HistoryEventDetailsMapper {
   func mapAuctionBid(activityEvent: AccountEvent,
                      action: AccountEventAction.AuctionBid,
                      date: String,
-                     fee: String,
-                     feeConverted: String?,
+                     extra: String,
+                     extraConverted: String?,
+                     isRefund: Bool,
                      status: AccountEventStatus) -> Model {
     var title: String?
     var fiatPrice: String?
@@ -884,8 +922,8 @@ final class HistoryEventDetailsMapper {
     if let issuer = action.nft?.collection?.name {
       listItems.append(.other(title: "Issuer", value: issuer, copyValue: issuer))
     }
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     return Model(
       title: title,
       date: dateString,
@@ -899,8 +937,9 @@ final class HistoryEventDetailsMapper {
   func mapDepositStake(activityEvent: AccountEvent,
                        action: AccountEventAction.DepositStake,
                        date: String,
-                       fee: String,
-                       feeConverted: String?,
+                       extra: String,
+                       extraConverted: String?,
+                       isRefund: Bool,
                        status: AccountEventStatus,
                        isTestnet: Bool) -> Model {
     let title = amountMapper.mapAmount(
@@ -919,8 +958,8 @@ final class HistoryEventDetailsMapper {
       value: action.pool.address.toString(testOnly: isTestnet, bounceable: !action.pool.isWallet),
       copyValue: action.pool.address.toString(testOnly: isTestnet, bounceable: !action.pool.isWallet))
     )
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     return Model(
       title: title,
       aboveTitle: nil,
@@ -935,8 +974,9 @@ final class HistoryEventDetailsMapper {
   func mapSmartContractExec(activityEvent: AccountEvent,
                             smartContractExec: AccountEventAction.SmartContractExec,
                             date: String,
-                            fee: String,
-                            feeConverted: String?,
+                            extra: String,
+                            extraConverted: String?,
+                            isRefund: Bool,
                             status: AccountEventStatus,
                             isTestnet: Bool) -> Model {
     let fiatPrice = convertTonToFiatString(amount: BigUInt(smartContractExec.tonAttached))
@@ -958,7 +998,7 @@ final class HistoryEventDetailsMapper {
     listItems.append(
       .operation(smartContractExec.operation)
     )
-    listItems.append(.fee(value: fee, converted: feeConverted))
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
     if let payload = smartContractExec.payload {
       listItems.append(.other(
         title: TKLocales.EventDetails.payload,
@@ -980,8 +1020,9 @@ final class HistoryEventDetailsMapper {
   func mapWithdrawStakeRequest(activityEvent: AccountEvent,
                                action: AccountEventAction.WithdrawStakeRequest,
                                date: String,
-                               fee: String,
-                               feeConverted: String?,
+                               extra: String,
+                               extraConverted: String?,
+                               isRefund: Bool,
                                status: AccountEventStatus,
                                isTestnet: Bool) -> Model {
     let title = TKLocales.EventDetails.unstakeRequest
@@ -1012,8 +1053,8 @@ final class HistoryEventDetailsMapper {
                               value: formattedAmount,
                               copyValue: formattedAmount))
     }
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     return Model(
       title: title,
       aboveTitle: nil,
@@ -1028,8 +1069,9 @@ final class HistoryEventDetailsMapper {
   func mapWithdrawStake(activityEvent: AccountEvent,
                         action: AccountEventAction.WithdrawStake,
                         date: String,
-                        fee: String,
-                        feeConverted: String?,
+                        extra: String,
+                        extraConverted: String?,
+                        isRefund: Bool,
                         status: AccountEventStatus,
                         isTestnet: Bool) -> Model {
     let amount = BigUInt(integerLiteral: UInt64(abs(action.amount)))
@@ -1057,8 +1099,8 @@ final class HistoryEventDetailsMapper {
         bounceable: !action.pool.isWallet
       ))
     )
-    listItems.append(.fee(value: fee, converted: feeConverted))
-    
+    listItems.append(.extra(value: extra, isRefund: isRefund, converted: extraConverted))
+
     return Model(
       title: title,
       date: dateString,
@@ -1072,8 +1114,9 @@ final class HistoryEventDetailsMapper {
   func mapContractDeploy(activityEvent: AccountEvent,
                          action: AccountEventAction.ContractDeploy,
                          date: String,
-                         fee: String,
-                         feeConverted: String?,
+                         extra: String,
+                         extraConverted: String?,
+                         isRefund: Bool,
                          status: AccountEventStatus) -> Model {
     let title = TKLocales.EventDetails.walletInitialized
     
@@ -1083,18 +1126,19 @@ final class HistoryEventDetailsMapper {
       fiatPrice: nil,
       status: status.rawValue,
       isScam: activityEvent.isScam,
-      listItems: [.fee(value: fee, converted: feeConverted)]
+      listItems: [.extra(value: extra, isRefund: isRefund, converted: extraConverted)]
     )
   }
   
   func mapUnknownAction(date: String, 
-                        fee: String,
-                        feeConverted: String?) -> Model {
+                        extra: String,
+                        extraConverted: String?,
+                        isRefund: Bool) -> Model {
     let title = TKLocales.EventDetails.unknown
     let listItems: [Model.ListItem] = [
       .operation(TKLocales.EventDetails.unknown),
       .description(TKLocales.EventDetails.unknownDescription),
-      .fee(value: fee, converted: feeConverted)
+      .extra(value: extra, isRefund: isRefund, converted: extraConverted)
     ]
     return Model(
       title: title,

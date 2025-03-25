@@ -439,23 +439,35 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     var copyValue: String?
     var caption: NSAttributedString?
     var captionButton: TKPlainButton.Model?
+    var isRefund: Bool = false
     let value: TKListContainerItemView.Model.Value
-    switch transaction.feeState {
+    switch transaction.extraState {
     case .loading:
       value = .loading
-    case .fee(let fee):
+    case .extra(let extra):
+      let (amount, type, refund) = {
+        switch extra {
+        case .Refund(let amount, let type):
+          return (amount, type, true)
+        case .Fee(let amount, let type):
+          return (amount, type, false)
+        }
+      }()
+      
+      isRefund = refund
+      
       let feeValueFormatted = formatValueItem(
-        amount: fee.amount.value,
-        fractionDigits: fee.amount.token.fractionDigits,
-        maximumFractionDigits: fee.amount.token.fractionDigits,
-        symbol: fee.amount.token.symbol
+        amount: amount.value,
+        fractionDigits: amount.token.fractionDigits,
+        maximumFractionDigits: amount.token.fractionDigits,
+        symbol: amount.token.symbol
       )
       copyValue = feeValueFormatted
       var feeConvertedFormatted: String?
       if let rate {
         let converted = RateConverter().convert(
-          amount: fee.amount.value,
-          amountFractionLength: fee.amount.token.fractionDigits,
+          amount: amount.value,
+          amountFractionLength: amount.token.fractionDigits,
           rate: rate
         )
         let formatted = formatValueItem(
@@ -472,7 +484,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       ))
       
       
-      switch fee.type {
+      switch type {
       case .default:
         caption = nil
         captionButton = nil
@@ -500,7 +512,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       ))
     }
     return TKListContainerItemView.Model(
-      title: TKLocales.EventDetails.fee,
+      title: isRefund ? TKLocales.EventDetails.refund : TKLocales.EventDetails.fee,
       caption: caption,
       captionButtonModel: captionButton,
       value: value,
@@ -607,11 +619,14 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                         currency: Currency) async -> (valueRate: Rates.Rate?, feeRate: Rates.Rate?) {
     let valueToken = model.amount?.token
     let feeToken: Token? = {
-      switch model.feeState {
+      switch model.extraState {
       case .loading:
         return nil
-      case let .fee(fee):
-        return fee.amount.token
+      case let .extra(extra):
+        switch extra {
+        case .Fee(let amount, _), .Refund(let amount, _):
+          return amount.token
+        }
       case .none:
         return nil
       }

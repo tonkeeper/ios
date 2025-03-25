@@ -15,7 +15,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
       updateFee(transactionInfo: transactionInfo)
       return .success(())
     } catch {
-      feeState = .none
+      extraState = .none
       return .failure(.failedToCalculateFee)
     }
   }
@@ -43,7 +43,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
 
-  private var feeState: TransactionConfirmationModel.FeeState = .loading
+  private var extraState: TransactionConfirmationModel.ExtraState = .loading
   
   private let wallet: Wallet
   private let stakingPool: StackingPoolInfo
@@ -87,7 +87,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
         )
       ),
       amount: getAmountValue(),
-      feeState: feeState
+      extraState: extraState
     )
   }
   
@@ -143,17 +143,18 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   }
   
   private func updateFee(transactionInfo: MessageConsequences) {
-    let fee = BigUInt(abs(transactionInfo.event.extra))
-    let extraFee = fee + stakingPool.implementation.extraFee
+    let isRefund = transactionInfo.event.extra > 0
+    let extra = BigUInt(abs(transactionInfo.event.extra))
+    let withExtraFee = isRefund ? stakingPool.implementation.extraFee : extra + stakingPool.implementation.extraFee
     
-    self.feeState = .fee(
-      TransactionConfirmationModel.Fee(
-        amount: TransactionConfirmationModel.Amount(
-          token: .ton,
-          value: extraFee
-        ),
-        type: .default
-      )
+    let confirmationmodelAmount = TransactionConfirmationModel.Amount(
+      token: .ton,
+      value: withExtraFee
+    )
+    
+    self.extraState = .extra(
+      isRefund ?
+        .Refund(amount: confirmationmodelAmount, type: .default) : .Fee(amount: confirmationmodelAmount, type: .default)
     )
   }
   

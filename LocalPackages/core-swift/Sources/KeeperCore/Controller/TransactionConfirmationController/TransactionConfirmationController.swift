@@ -29,18 +29,18 @@ public struct TransactionConfirmationModel {
     public let value: BigUInt
   }
   
-  public enum FeeState {
+  public enum ExtraState {
     case none
     case loading
-    case fee(Fee)
+    case extra(Extra)
   }
   
-  public struct Fee {
-    public let amount: Amount
-    public let type: FeeType
+  public enum Extra {
+    case Fee(amount: Amount, type: ExtraType)
+    case Refund(amount: Amount, type: ExtraType)
   }
   
-  public enum FeeType {
+  public enum ExtraType {
     case `default`
     case battery
     case gasless(toggleOption: Token)
@@ -51,7 +51,7 @@ public struct TransactionConfirmationModel {
   public let recipientAddress: String?
   public let transaction: Transaction
   public let amount: Amount?
-  public let feeState: FeeState
+  public let extraState: ExtraState
   public let comment: String?
 
   init(wallet: Wallet, 
@@ -59,14 +59,14 @@ public struct TransactionConfirmationModel {
        recipientAddress: String?,
        transaction: Transaction,
        amount: Amount?,
-       feeState: FeeState,
+       extraState: ExtraState,
        comment: String? = nil) {
     self.wallet = wallet
     self.recipient = recipient
     self.recipientAddress = recipientAddress
     self.transaction = transaction
     self.amount = amount
-    self.feeState = feeState
+    self.extraState = extraState
     self.comment = comment
   }
 }

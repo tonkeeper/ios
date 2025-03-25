@@ -516,6 +516,8 @@ public enum TKLocales {
     public static let confirmButton = TKLocales.tr("Localizable", "confirm_send.confirm_button", fallback: "Confirm and send")
     /// Fee
     public static let fee = TKLocales.tr("Localizable", "confirm_send.fee", fallback: "Fee")
+    /// Refund
+    public static let refund = TKLocales.tr("Localizable", "confirm_send.refund", fallback: "Refund")
     /// Wallet
     public static let wallet = TKLocales.tr("Localizable", "confirm_send.wallet", fallback: "Wallet")
     public enum Recipient {
@@ -728,6 +730,8 @@ public enum TKLocales {
     public static let recipient = TKLocales.tr("Localizable", "event_details.recipient", fallback: "Recipient")
     /// Recipient address
     public static let recipientAddress = TKLocales.tr("Localizable", "event_details.recipient_address", fallback: "Recipient address")
+    /// Refund
+    public static let refund = TKLocales.tr("Localizable", "event_details.refund", fallback: "Refund")
     /// Renewed on %@
     public static func renewedOn(_ p1: Any) -> String {
       return TKLocales.tr("Localizable", "event_details.renewed_on", String(describing: p1), fallback: "Renewed on %@")

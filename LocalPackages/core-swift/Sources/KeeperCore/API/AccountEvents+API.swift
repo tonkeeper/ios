@@ -10,7 +10,13 @@ extension AccountEvent {
     self.account = try WalletAccount(accountAddress: accountEvent.account)
     self.isScam = accountEvent.isScam
     self.isInProgress = accountEvent.inProgress
-    self.fee = accountEvent.extra
+    
+    if accountEvent.extra > 0 {
+      self.extra = .Refund(UInt64(accountEvent.extra))
+    } else {
+      self.extra = .Fee(UInt64(abs(accountEvent.extra)))
+    }
+    
     self.actions = accountEvent.actions.compactMap { action -> AccountEventAction? in
       do {
         let actionType: AccountEventAction.ActionType

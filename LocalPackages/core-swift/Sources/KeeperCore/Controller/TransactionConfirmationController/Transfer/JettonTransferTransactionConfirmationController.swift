@@ -51,8 +51,15 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
           return minimumTransferAmount
         }
         
-        let emulationExtra = emulationResult.fee.amount
-        var transferAmount = emulationExtra + minimumTransferAmount
+        var transferAmount = {
+          switch emulationResult.extra.amount {
+          case .Fee(let fee):
+            return fee + minimumTransferAmount
+          case .Refund(_):
+            return minimumTransferAmount
+          }
+        }()
+        
         transferAmount = transferAmount < minimumTransferAmount
         ? minimumTransferAmount
         : transferAmount
@@ -82,7 +89,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
-  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
+  @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   @Atomic private var isMax: Bool = false
 
   private let wallet: Wallet
@@ -131,70 +138,85 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       recipientAddress: recipient.recipientAddress.addressString,
       transaction: .transfer(.jetton(jettonItem.jettonInfo)),
       amount: getAmountValue(),
-      feeState: feeState,
+      extraState: extraState,
       comment: comment
     )
   }
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      feeState = .none
+      extraState = .none
       return
     }
-    let fee = emulationResult.fee
+    let extra = emulationResult.extra
     
-    let feeType: TransactionConfirmationModel.FeeType
+    let extraType: TransactionConfirmationModel.ExtraType
     switch emulationResult.transferType {
     case .battery:
-      feeType = .battery
+      extraType = .battery
     case .gasless(_, _):
-      switch emulationResult.fee.token {
+      switch emulationResult.extra.token {
       case .ton:
-        feeType = .gasless(
+        extraType = .gasless(
           toggleOption: .jetton(jettonItem)
         )
       case .jetton:
-        feeType = .gasless(
+        extraType = .gasless(
           toggleOption: .ton
         )
       }
     case .default:
       if emulationResult.isGaslessAvailable {
-        feeType = .gasless(
+        extraType = .gasless(
           toggleOption: .jetton(jettonItem)
         )
       } else {
-        feeType = .default
+        extraType = .default
       }
     }
     
-    self.feeState = TransactionConfirmationModel.FeeState.fee(
-      TransactionConfirmationModel.Fee(
-        amount: TransactionConfirmationModel.Amount(
-          token: fee.token,
-          value: fee.amount
-        ),
-        type: feeType
-      )
+    let (amount, isRefund) = {
+      switch extra.amount {
+      case .Fee(let amount):
+        return (amount, false)
+      case .Refund(let amount):
+        return (amount, true)
+      }
+    }()
+    
+    let confirmationModelAmount = TransactionConfirmationModel.Amount(
+      token: extra.token,
+      value: amount
+    )
+    
+    self.extraState = TransactionConfirmationModel.ExtraState.extra(
+      isRefund ? .Refund(amount: confirmationModelAmount, type: extraType) : .Fee(amount: confirmationModelAmount, type: extraType)
     )
   }
   
   private func getAmountValue() -> TransactionConfirmationModel.Amount {
     let amount: () -> BigUInt = {
       if self.isMax {
-        switch self.feeState {
+        switch self.extraState {
         case .none, .loading:
           return self.amount
-        case .fee(let fee):
-          switch fee.type {
+        case .extra(let extra):
+          let (amount, type) = {
+            switch extra {
+            case .Fee(let amount, let type), .Refund(let amount, let type):
+              return (amount, type)
+            }
+          }()
+          
+          switch type {
           case .battery, .default:
             return self.amount
           case .gasless(_):
-            switch fee.amount.token {
+            switch amount.token {
             case .ton:
               return self.amount
             case .jetton:
-              return self.amount - fee.amount.value
+              return self.amount - amount.value
             }
           }
         }

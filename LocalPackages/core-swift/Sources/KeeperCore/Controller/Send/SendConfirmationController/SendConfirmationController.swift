@@ -79,7 +79,7 @@ public final class SendConfirmationController {
 
 private extension SendConfirmationController {
   func buildInitialModel() async -> SendConfirmationModel {
-    return await buildModel(fee: .loading, feeConverted: .value(nil))
+    return await buildModel(fee: .loading, feeConverted: .value(nil), isRefund: .loading)
   }
   
   func buildEmulatedModel(fee: Int64?) async -> SendConfirmationModel {
@@ -117,11 +117,12 @@ private extension SendConfirmationController {
       feeConverted = .value(nil)
     }
     
-    return await buildModel(fee: feeItem, feeConverted: feeConverted)
+    return await buildModel(fee: feeItem, feeConverted: feeConverted, isRefund: .value(true))
   }
   
   func buildModel(fee: LoadableModelItem<String>,
-                  feeConverted: LoadableModelItem<String?>) async -> SendConfirmationModel {
+                  feeConverted: LoadableModelItem<String?>,
+                  isRefund: LoadableModelItem<Bool>) async -> SendConfirmationModel {
     let image: SendConfirmationModel.Image
     let titleType: SendConfirmationModel.TitleType
     let descriptionType: SendConfirmationModel.DescriptionType
@@ -202,6 +203,7 @@ private extension SendConfirmationController {
       amount: formattedAmount,
       amountConverted: .value(formattedConvertedAmount),
       fee: fee,
+      isRefund: isRefund,
       feeConverted: feeConverted,
       comment: comment
     )

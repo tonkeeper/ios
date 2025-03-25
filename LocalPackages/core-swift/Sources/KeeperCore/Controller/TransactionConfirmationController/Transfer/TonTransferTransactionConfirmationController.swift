@@ -46,7 +46,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
-  @Atomic private var feeState: TransactionConfirmationModel.FeeState = .loading
+  @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   
   private let wallet: Wallet
   private let recipient: Recipient
@@ -91,26 +91,39 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
       recipientAddress: recipient.recipientAddress.addressString,
       transaction: .transfer(.ton(isMaxAmount)),
       amount: getAmountValue(),
-      feeState: feeState,
+      extraState: extraState,
       comment: comment
     )
   }
   
   private func updateFee(emulationResult: TransferEmulationResult?) async {
     guard let emulationResult else {
-      feeState = .none
+      extraState = .none
       return
     }
-    let fee = emulationResult.fee
+    let extra = emulationResult.extra
     
-    self.feeState = .fee(
-      TransactionConfirmationModel.Fee(
-        amount: TransactionConfirmationModel.Amount(
-          token: fee.token,
-          value: fee.amount
-        ),
-        type: .default
-      )
+    let (amount, isRefund) = {
+      switch extra.amount {
+      case .Fee(let amount):
+        return (amount, false)
+      case .Refund(let amount):
+        return (amount, true)
+      }
+    }()
+    
+    let confirmationModelAmount = TransactionConfirmationModel.Amount(
+      token: extra.token,
+      value: amount
+    )
+    
+    self.extraState = .extra(
+      isRefund ?
+        .Refund(amount: confirmationModelAmount, type: .default) :
+          .Fee(
+            amount: confirmationModelAmount,
+            type: .default
+          )
     )
   }
   

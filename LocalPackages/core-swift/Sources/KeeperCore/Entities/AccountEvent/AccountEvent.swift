@@ -3,12 +3,17 @@ import Foundation
 public struct AccountEvent: Codable {
   public typealias EventID = String
   
+  public enum Extra: Codable {
+    case Fee(UInt64)
+    case Refund(UInt64)
+  }
+  
   public let eventId: EventID
   public let date: Date
   public let account: WalletAccount
   public let isScam: Bool
   public let isInProgress: Bool
-  public let fee: Int64
+  public let extra: Extra
   public let actions: [AccountEventAction]
   
   public init(eventId: EventID, 
@@ -16,14 +21,14 @@ public struct AccountEvent: Codable {
               account: WalletAccount,
               isScam: Bool,
               isInProgress: Bool,
-              fee: Int64,
+              extra: Extra,
               actions: [AccountEventAction]) {
     self.eventId = eventId
     self.date = date
     self.account = account
     self.isScam = isScam
     self.isInProgress = isInProgress
-    self.fee = fee
+    self.extra = extra
     self.actions = actions
   }
 }
