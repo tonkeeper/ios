@@ -3,6 +3,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TKLocalize
+import DisconnectDappToast
 
 protocol BrowserConnectedModuleOutput: AnyObject {
   var didSelectDapp: ((Dapp) -> Void)? { get set }
@@ -13,6 +14,7 @@ protocol BrowserConnectedViewModel: AnyObject {
   var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)? { get set }
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)? { get set }
   var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
+  var presentDisconnectAppToast: ((DisconnectDappToastModel) -> Void)? { get set }
   
   func viewDidLoad()
   func selectApp(index: Int)
@@ -29,6 +31,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   var didUpdateViewState: ((BrowserConnectedViewController.State) -> Void)?
   var didUpdateSnapshot: ((BrowserConnected.Snapshot) -> Void)?
   var didUpdateFeaturedItems: (([Dapp]) -> Void)?
+  var presentDisconnectAppToast: ((DisconnectDappToastModel) -> Void)?
   
   func viewDidLoad() {
     connectedAppsStore.addObserver(self) { observer, event in
@@ -115,23 +118,30 @@ private extension BrowserConnectedViewModelImplementation {
               corners: .cornerRadius(cornerRadius: 16)
             )
           )
-
+          
           return BrowserConnected.Item(
             identifier: UUID().uuidString,
             title: app.manifest.name,
             configuration: configuration,
-            deleteHandler: { [weak self] in
-              self?.connectedAppsStore.deleteApp(app)
-              Task { [weak self] in
-                guard let self else { return }
-                guard let token = await self.pushTokenProvider.getToken(),
-                      let wallet = try? walletsStore.activeWallet else { return }
-                _ = try? await notificationsService.turnOffDappNotifications(
-                  wallet: wallet,
-                  manifest: app.manifest,
-                  sessionId: app.clientId,
-                  token: token)
-              }
+            longPressHandler: { [weak self] in
+              let model = DisconnectDappToastModel(
+                title: "\(TKLocales.Dapp.DisconnectToast.title) \"\(app.manifest.name)\"?",
+                buttonTitle: TKLocales.Dapp.DisconnectToast.button,
+                buttonAction: { [weak self] in
+                  self?.connectedAppsStore.deleteApp(app)
+                  Task { [weak self] in
+                    guard let self else { return }
+                    guard let token = await self.pushTokenProvider.getToken(),
+                          let wallet = try? walletsStore.activeWallet else { return }
+                    _ = try? await notificationsService.turnOffDappNotifications(
+                      wallet: wallet,
+                      manifest: app.manifest,
+                      sessionId: app.clientId,
+                      token: token)
+                  }
+                })
+              
+              self?.presentDisconnectAppToast?(model)
             }
           )
         }

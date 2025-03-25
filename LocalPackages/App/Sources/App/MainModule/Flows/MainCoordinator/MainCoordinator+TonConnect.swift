@@ -71,7 +71,7 @@ extension MainCoordinator {
         }
       }
     )
-    DisconnectDappToastPresenter.presentSignRaw(
+    DisconnectDappToastPresenter.presentToast(
       model: model,
       windowScene: windowScene
     )

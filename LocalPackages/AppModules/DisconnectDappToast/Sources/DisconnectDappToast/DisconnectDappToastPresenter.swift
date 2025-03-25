@@ -7,7 +7,7 @@ public final class DisconnectDappToastPresenter {
   
   private static var window: UIWindow?
   
-  public static func presentSignRaw(
+  public static func presentToast(
     model: DisconnectDappToastModel,
     windowScene: UIWindowScene) {
       let window = TKPassthroughWindow(windowScene: windowScene)

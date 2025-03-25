@@ -8,6 +8,7 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
   
   private var currentToastViewController: UIHostingController<DisconnectDappToastView>?
   private var presentAction: (() -> Void)?
+  private var dismissTask: DispatchWorkItem?
   
   deinit {
     print("\(String(describing: self)) deinit")
@@ -59,9 +60,23 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
         delay: 0,
         usingSpringWithDamping: Constants.springAnimationDamping,
         initialSpringVelocity: Constants.springAnimationInitialVelocity,
-        options: .allowUserInteraction) {
+        options: .allowUserInteraction,
+        animations: {
           self.view.layoutIfNeeded()
-        }
+        }, completion: { [weak self] _ in
+          let dismissTask = DispatchWorkItem { [weak self] in
+            guard self?.dismissTask?.isCancelled == false else { return }
+            self?.dismissTask = nil
+            self?.hide(completion: {
+              self?.didHide?()
+            })
+          }
+          self?.dismissTask = dismissTask
+          DispatchQueue.main.asyncAfter(
+            deadline: .now() + Constants.hideTimeout,
+            execute: dismissTask
+          )
+        })
     }
     
     if currentToastViewController != nil {
@@ -71,9 +86,9 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
     }
   }
   
-  func hide(completion: @escaping () -> Void) {
+  func hide(completion: (() -> Void)?) {
     guard let currentToastViewController else {
-      completion()
+      completion?()
       return
     }
     UIView.animate(
@@ -82,7 +97,7 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
       options: .curveEaseOut) {
         currentToastViewController.view.alpha = 0
       } completion: { _ in
-        completion()
+        completion?()
       }
   }
   
@@ -136,6 +151,7 @@ final class DisconnectDappToastViewController: GenericViewViewController<TKPasst
 }
 
 private enum Constants {
+  static let hideTimeout: TimeInterval = 15
   static let springAnimationDuration: TimeInterval = 0.3
   static let springAnimationDamping: CGFloat = 0.7
   static let springAnimationInitialVelocity: CGFloat = 0.5

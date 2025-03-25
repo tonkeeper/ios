@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import TKLocalize
+import DisconnectDappToast
 
 final class BrowserConnectedViewController: GenericViewViewController<BrowserConnectedView>, ScrollViewController {
   
@@ -84,6 +85,14 @@ private extension BrowserConnectedViewController {
     viewModel.didUpdateViewState = { [weak self] state in
       self?.state = state
     }
+    
+    viewModel.presentDisconnectAppToast = { [weak self] model in
+      guard let windowScene = self?.view.window?.windowScene else { return }
+      DisconnectDappToastPresenter.presentToast(
+        model: model,
+        windowScene: windowScene
+      )
+    }
   }
   
   func createLayout() -> UICollectionViewCompositionalLayout {
@@ -154,35 +163,14 @@ private extension BrowserConnectedViewController {
         item: itemIdentifier.configuration
       )
       
-      cell.didLongPress = { [weak self] in
-        self?.showDeleteAlert(item: itemIdentifier)
+      cell.didLongPress = {
+        itemIdentifier.longPressHandler?()
       }
       
       return cell
     }
 
     return dataSource
-  }
-  
-  private func showDeleteAlert(item: BrowserConnected.Item) {
-    let alertController = UIAlertController(
-      title: "\(TKLocales.Browser.ConnectedApps.Disconnect.title) \"\(item.title)\"?",
-      message: nil,
-      preferredStyle: .alert
-    )
-    
-    alertController.addAction(UIAlertAction(title: TKLocales.Actions.cancel, style: .default))
-    alertController.addAction(
-      UIAlertAction(
-        title: TKLocales.Browser.ConnectedApps.Disconnect.button,
-        style: .destructive,
-        handler: { _ in
-          item.deleteHandler?()
-        }
-      )
-    )
-    
-    present(alertController, animated: true)
   }
   
   private func setupState() {

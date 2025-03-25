@@ -11,7 +11,7 @@ enum BrowserConnected {
     let identifier: String
     let title: String
     let configuration: BrowserAppCollectionViewCell.Configuration
-    let deleteHandler: (() -> Void)?
+    let longPressHandler: (() -> Void)?
 
     static func ==(lhs: Item, rhs: Item) -> Bool {
       lhs.identifier == rhs.identifier
