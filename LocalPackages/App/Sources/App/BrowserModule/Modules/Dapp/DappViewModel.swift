@@ -179,9 +179,6 @@ final class DappViewModelImplementation: DappViewModel {
                                             
                                             if (message.status === 'fulfilled') {
                                                 let messageData = JSON.parse(message.data);
-                                                try {
-                                                  messageData.result =  JSON.parse(messageData  .result);
-                                                } catch {}
                                                 
                                                 promise.resolve(messageData);
                                             } else {

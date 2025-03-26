@@ -51,7 +51,7 @@ public protocol TonConnectService {
   func cancelSignRequest(appRequest: TonConnect.SignDataRequest,
                      app: TonConnectApp) async throws
   
-  func confirmSignRequest(signedJSON: String,
+  func confirmSignRequest(signed: SignedDataResult,
                           appRequest: TonConnect.SignDataRequest,
                           app: TonConnectApp) async throws
   
@@ -207,10 +207,10 @@ final class TonConnectServiceImplementation: TonConnectService {
     )
   }
   
-  func confirmSignRequest(signedJSON: String, appRequest: TonConnect.SignDataRequest, app: TonConnectApp) async throws {
+  func confirmSignRequest(signed: SignedDataResult, appRequest: TonConnect.SignDataRequest, app: TonConnectApp) async throws {
     let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
     let body = try TonConnectResponseBuilder
-      .buildSignDataResponseSuccess(sessionCrypto: sessionCrypto, signedJSON: signedJSON, id: appRequest.id, clientId: app.clientId)
+      .buildSignDataResponseSuccess(sessionCrypto: sessionCrypto, signed: signed, id: appRequest.id, clientId: app.clientId)
     
     _ = try await apiClient.message(
         query: .init(client_id: sessionCrypto.sessionId,

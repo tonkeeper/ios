@@ -145,9 +145,9 @@ struct BridgeSignDataResultHandler: SignDataResultHandler {
     didCancelHandler?()
   }
   
-  func didSign(signedData: String) {
+  func didSign(signedData: SignedDataResult) {
     Task {
-      try await tonConnectService.confirmSignRequest(signedJSON: signedData, appRequest: appRequest, app: app)
+      try await tonConnectService.confirmSignRequest(signed: signedData, appRequest: appRequest, app: app)
     }
   }
   

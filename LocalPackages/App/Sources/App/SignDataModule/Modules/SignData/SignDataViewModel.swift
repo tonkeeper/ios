@@ -8,7 +8,7 @@ import TonSwift
 
 @MainActor
 protocol SignDataModuleOutput: AnyObject {
-  var didRequireSign: ((TonConnect.SignDataRequest, String, Wallet) async throws -> String?)? { get set }
+  var didRequireSign: ((TonConnect.SignDataRequest, String, Wallet) async throws -> SignedDataResult?)? { get set }
   var didFail: ((Swift.Error) -> Void)? { get set }
   var didCancel: (() -> Void)? { get set }
   var didConfirm: (() -> Void)? { get set }
@@ -23,6 +23,9 @@ public protocol SignDataModuleInput: AnyObject {
 protocol SignDataViewModel: AnyObject {
   var didUpdateHeader: ((TKPullCardHeaderItem) -> Void)? { get set }
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
+  
+  var didTapCopy: ((String?) -> Void)? { get set }
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
     
   func viewDidLoad()
 }
@@ -32,7 +35,7 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
   
   // MARK: - SignDataModuleOutput
   
-  var didRequireSign: ((KeeperCore.TonConnect.SignDataRequest, String, KeeperCore.Wallet) async throws -> String?)?
+  var didRequireSign: ((KeeperCore.TonConnect.SignDataRequest, String, KeeperCore.Wallet) async throws -> SignedDataResult?)?
   var didFail: ((Swift.Error) -> Void)?
   var didCancel: (() -> Void)?
   var didConfirm: (() -> Void)?
@@ -47,6 +50,9 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
   
   var didUpdateHeader: ((TKPullCardHeaderItem) -> Void)?
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
+  
+  var didTapCopy: ((String?) -> Void)?
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   enum ConfirmationState {
     case idle
@@ -87,7 +93,7 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
   
   private func createSliderItem() -> TKPopUp.Item {
     let sliderItem = TKPopUp.Component.Slider(
-      title: TKLocales.Actions.confirm,
+      title: TKLocales.SignData.Slider.title,
       isEnable: true,
       didConfirm: { [weak self] in
         self?.confirmSign()
@@ -135,7 +141,16 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
     let content: TKPopUp.Item = {
       switch signRequest.params {
       case .text(let text):
-        return SignDataTextContentView(with: .init(text: text, caption: TKLocales.SignData.caption))
+        return SignDataTextContentView(with:
+            .init(
+              text: text,
+              caption: TKLocales.SignData.caption,
+              copyButtonContent: .init(title: .plainString(TKLocales.Actions.copy)),
+              copyButtonAction: { [weak self] in
+                self?.copyButtonAction(text: text)
+              }
+            )
+        )
       case .binary(_):
         return UnknownContentView()
       case .cell(_, _):
@@ -158,7 +173,32 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
       alignment: .left,
       lineBreakMode: .byWordWrapping
     )
+    let walletString = "\(TKLocales.ConfirmSend.wallet): ".withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    )
+    let dotString = " · ".withTextStyle(
+      .body2,
+      color: .Text.tertiary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    )
+    let walletNameString = wallet.iconWithName(
+      attributes: TKTextStyle.body2.getAttributes(
+        color: .Text.secondary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      ),
+      iconColor: .Icon.primary,
+      iconSide: 16
+    )
     let subtitle = NSMutableAttributedString(attributedString: subtitleString)
+    subtitle.append(dotString)
+    subtitle.append(walletString)
+    subtitle.append(walletNameString)
+  
     
     return TKPullCardHeaderItem(
       title: .title(
@@ -166,6 +206,11 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
         subtitle: subtitle
       )
     )
+  }
+  
+  func copyButtonAction(text: String) {
+    didTapCopy?(text)
+    showToast?(wallet.copyToastConfiguration())
   }
 
   private func confirmSign() {

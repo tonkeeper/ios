@@ -9,10 +9,10 @@ public final class SignDataCoordinator: RouterCoordinator<WindowRouter> {
   private let wallet: Wallet
   private let dappUrl: String
   private let signRequest: TonConnect.SignDataRequest
-  private let didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, UIViewController) async throws -> String?)?
+  private let didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, UIViewController) async throws -> SignedDataResult?)?
   private let resultHandler: SignDataResultHandler
 
-  public init(router: WindowRouter, wallet: Wallet, dappUrl: String, signRequest: TonConnect.SignDataRequest, resultHandler: SignDataResultHandler, didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, UIViewController) async throws -> String?)?) {
+  public init(router: WindowRouter, wallet: Wallet, dappUrl: String, signRequest: TonConnect.SignDataRequest, resultHandler: SignDataResultHandler, didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, UIViewController) async throws -> SignedDataResult?)?) {
     self.wallet = wallet
     self.dappUrl = dappUrl
     self.signRequest = signRequest

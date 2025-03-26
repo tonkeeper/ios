@@ -37,7 +37,7 @@ extension MainCoordinator {
                       dappUrl: String,
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> String? {
+                      router: ViewControllerRouter) async throws -> SignedDataResult? {
     
     let signDataSignCoordinator = SignDataSignCoordinator(router: router, wallet: wallet, dappUrl: dappUrl, request: request, keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
 

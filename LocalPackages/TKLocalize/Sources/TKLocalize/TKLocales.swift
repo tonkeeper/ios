@@ -1342,6 +1342,12 @@ public enum TKLocales {
       /// Binary content
       public static let title = TKLocales.tr("Localizable", "sign_data.binary_content.title", fallback: "Binary content")
     }
+    public enum Slider {
+      /// Swipe right
+      public static let subtitle = TKLocales.tr("Localizable", "sign_data.slider.subtitle", fallback: "Swipe right")
+      /// Sign
+      public static let title = TKLocales.tr("Localizable", "sign_data.slider.title", fallback: "Sign")
+    }
   }
   public enum SignOutFull {
     /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.

@@ -5,6 +5,8 @@ public final class SignDataTextContentView: UIView, TKPopUp.Item {
   public struct Model {
     public let text: String
     public let caption: String
+    public let copyButtonContent: TKButton.Configuration.Content
+    public let copyButtonAction: () -> Void
   }
 
   public var bottomSpace: CGFloat = 0
@@ -12,6 +14,8 @@ public final class SignDataTextContentView: UIView, TKPopUp.Item {
   public func getView() -> UIView {
     return self
   }
+
+  let copyButton = TKButton(configuration: .actionButtonConfiguration(category: .tertiary, size: .small))
 
   private let textLabel: UILabel = {
     let label = UILabel()
@@ -54,6 +58,9 @@ public final class SignDataTextContentView: UIView, TKPopUp.Item {
   }
 
   private func setup(with model: Model) {
+    
+    copyButton.configuration.content = model.copyButtonContent
+    copyButton.configuration.action = model.copyButtonAction
 
     textLabel.attributedText = model.text.withTextStyle(.body1Mono, color: .Text.primary)
     captionLabel.attributedText = model.caption.withTextStyle(.body2, color: .Text.secondary)
@@ -62,6 +69,7 @@ public final class SignDataTextContentView: UIView, TKPopUp.Item {
     stackView.addArrangedSubview(captionLabel)
 
     textContainerView.addSubview(textLabel)
+    textContainerView.addSubview(copyButton)
 
     addSubview(stackView)
 
@@ -85,6 +93,11 @@ public final class SignDataTextContentView: UIView, TKPopUp.Item {
 
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self)
+    }
+    
+    copyButton.snp.makeConstraints { make in
+      make.bottom.equalTo(textContainerView).offset(-16)
+      make.trailing.equalTo(textContainerView).offset(-16)
     }
   }
 

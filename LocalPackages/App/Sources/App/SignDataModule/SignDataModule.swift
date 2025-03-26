@@ -4,7 +4,7 @@ import TKCore
 import KeeperCore
 
 public protocol SignDataResultHandler {
-  func didSign(signedData: String)
+  func didSign(signedData: SignedDataResult)
   func didFail(error: Swift.Error)
   func didCancel()
 }

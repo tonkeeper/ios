@@ -15,7 +15,7 @@ public final class SignDataPresenter {
     dappUrl: String,
     request: TonConnect.SignDataRequest,
     resultHandler: SignDataResultHandler,
-    didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, ViewControllerRouter) async throws -> String?)?
+    didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, ViewControllerRouter) async throws -> SignedDataResult?)?
   ) {
     
     let window = TKWindow(windowScene: windowScene)

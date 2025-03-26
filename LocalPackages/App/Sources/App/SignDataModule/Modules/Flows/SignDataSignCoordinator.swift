@@ -21,13 +21,13 @@ final class SignDataSignCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   enum Result {
-    case signed(String)
+    case signed(SignedDataResult)
     case failed(SignDataSignError)
     case cancel
   }
   
   var didFail: ((SignDataSignError) -> Void)?
-  var didSign: ((String) -> Void)?
+  var didSign: ((SignedDataResult) -> Void)?
   var didCancel: (() -> Void)?
   
   var externalSignHandler: ((Data?) -> Void)?
@@ -108,13 +108,8 @@ private extension SignDataSignCoordinator {
         Task {
           do {
             let signed = try await SignDataSigner(request, wallet: wallet, mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(), dappUrl: dappUrl, passcode: passcode).sign()
-            
-        
-            let jSONEncoder = JSONEncoder()
-            
-            let jsonData = try jSONEncoder.encode(signed)
-            
-            self.didSign?(String(data: jsonData, encoding: .utf8)!)
+
+            self.didSign?(signed)
           } catch {
             self.didFail?(.failedToSign(error))
           }

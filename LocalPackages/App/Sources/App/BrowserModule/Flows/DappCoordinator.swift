@@ -297,7 +297,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                       dappUrl: String,
                       wallet: Wallet,
                       coordinator: Coordinator,
-                      router: ViewControllerRouter) async throws -> String? {
+                      router: ViewControllerRouter) async throws -> SignedDataResult? {
     
     let coordinator = SignDataSignCoordinator(router: router, wallet: wallet, dappUrl: dappUrl, request: request, keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
 
@@ -352,7 +352,7 @@ private struct DappSignDataResultHandler: SignDataResultHandler {
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func didSign(signedData: String) {
+  func didSign(signedData: SignedDataResult) {
     let signDataResponse = TonConnect.SendResponse.success(
       .init(result: signedData,
             id: appRequest.id)

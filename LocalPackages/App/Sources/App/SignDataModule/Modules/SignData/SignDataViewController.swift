@@ -50,6 +50,15 @@ private extension SignDataViewController {
       self?.popUpViewController.configuration = configuration
       self?.didUpdateHeight?()
     }
+    
+    viewModel.didTapCopy = { text in
+      UINotificationFeedbackGenerator().notificationOccurred(.warning)
+      UIPasteboard.general.string = text
+    }
+    
+    viewModel.showToast = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
+    }
   }
   
   func setup() {

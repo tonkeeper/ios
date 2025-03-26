@@ -115,12 +115,12 @@ public struct TonConnectResponseBuilder {
   
   public static func buildSignDataResponseSuccess(
     sessionCrypto: TonConnectSessionCrypto,
-    signedJSON: String,
+    signed: SignedDataResult,
     id: String,
     clientId: String
   ) throws -> String {
     let response = TonConnect.SendResponse.success(
-      .init(result: signedJSON,
+      .init(result: signed,
             id: id)
     )
     let transactionResponseData = try JSONEncoder().encode(response)

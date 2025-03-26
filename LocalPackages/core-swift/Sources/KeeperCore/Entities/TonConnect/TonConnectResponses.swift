@@ -292,11 +292,31 @@ public extension TonConnect {
     case error(SendResponseError)
   }
   struct SendResponseSuccess: Encodable {
-    public let result: String
+    public enum Result: Encodable {
+      case String(String)
+      case SignedData(SignedDataResult)
+      
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        
+        switch self {
+        case .String(let a0):
+          try container.encode(a0)
+        case .SignedData(let a0):
+          try container.encode(a0)
+        }
+      }
+    }
+    public let result: Result
     public let id: String
     
     public init(result: String, id: String) {
-      self.result = result
+      self.result = .String(result)
+      self.id = id
+    }
+    
+    public init(result: SignedDataResult, id: String) {
+      self.result = .SignedData(result)
       self.id = id
     }
   }
