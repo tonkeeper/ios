@@ -38,7 +38,7 @@ public struct TextOrBinSignDataSigner: SignDataSignerByPayloadType {
   }
   
   public func sign() async throws -> SignedDataResult {
-    guard let prefix = "sign-data/".data(using: .utf8) else {
+    guard let prefix = "ton-connect/sign-data/".data(using: .utf8) else {
         throw SignDataError.invalidDataEncoding
     }
     
@@ -98,18 +98,13 @@ public struct TextOrBinSignDataSigner: SignDataSignerByPayloadType {
       Data(a)
     }
     
-    let message = prefix + addressWorkchainData + addressHash + domainLength + domainData + timestamp + payloadPrefix + payloadLengthData + payload
-    
-    let messageHash = message.sha256()
-    
-    guard let prefixData = Data(hex: "ffff") else {
-        throw SignDataError.invalidDataEncoding
-    }
-    guard let tonConnectData = "ton-connect".data(using: .utf8) else {
+    guard let ffff = Data(hex: "ffff") else {
         throw SignDataError.invalidDataEncoding
     }
     
-    let signatureDataHash = (prefixData + tonConnectData + messageHash).sha256()
+    let message = ffff + prefix + addressWorkchainData + addressHash + domainLength + domainData + timestamp + payloadPrefix + payloadLengthData + payload
+        
+    let signatureDataHash = message.sha256()
     
     let mnemonic = try await mnemonicsRepository.getMnemonic(
       wallet: wallet,

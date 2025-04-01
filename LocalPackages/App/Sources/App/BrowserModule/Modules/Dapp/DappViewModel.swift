@@ -176,6 +176,7 @@ final class DappViewModelImplementation: DappViewModel {
                                             if (promise.timeoutId) {
                                                 clearTimeout(promise.timeoutId);
                                             }
+                                            console.log(message)
                                             
                                             if (message.status === 'fulfilled') {
                                                 let messageData = JSON.parse(message.data);

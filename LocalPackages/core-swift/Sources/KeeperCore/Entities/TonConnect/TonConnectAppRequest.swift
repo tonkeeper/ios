@@ -3,6 +3,7 @@ import TonSwift
 
 enum AppRequestError: Swift.Error {
   case unknownMethod
+  case noParams
 }
 
 public extension TonConnect {
@@ -42,8 +43,14 @@ public extension TonConnect {
         self = .sendTransaction(SendTransactionRequest(params: signRawRequests, id: id))
         
       case "signData":
-          let params = try container.decode(TonConnectSignDataPayload.self, forKey: .params)
-          self = .signData(SignDataRequest(params: params, id: id))
+          let paramsArray = try container.decode([String].self, forKey: .params)
+          let jsonDecoder = JSONDecoder()
+        
+        guard let param = paramsArray[0].data(using: .utf8) else {
+          throw AppRequestError.noParams
+        }
+        let params = try jsonDecoder.decode(TonConnectSignDataPayload.self, from: param)
+        self = .signData(SignDataRequest(params: params, id: id))
 
       default:
         throw AppRequestError.unknownMethod
