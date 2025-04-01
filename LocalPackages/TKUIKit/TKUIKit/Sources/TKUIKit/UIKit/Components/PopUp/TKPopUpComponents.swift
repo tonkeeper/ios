@@ -344,23 +344,53 @@ public extension TKPopUp.Component {
       let slider = TKSlider()
       slider.title = title
       slider.isEnable = isEnable
+      slider.appearance = appearance
       slider.didConfirm = didConfirm
       return slider
     }
     
     private let title: String?
     private let isEnable: Bool
+    private let appearance: TKSlider.Appearance
     private let didConfirm: () -> Void
     public var bottomSpace: CGFloat
     
     public init(title: String?,
                 isEnable: Bool,
+                appearance: TKSlider.Appearance = .standart,
                 didConfirm: @escaping () -> Void,
                 bottomSpace: CGFloat = 0) {
       self.title = title
       self.isEnable = isEnable
+      self.appearance = appearance
       self.didConfirm = didConfirm
       self.bottomSpace = bottomSpace
     }
   }
 }
+
+public extension TKPopUp.Component {
+  struct WarningBanner: TKPopUp.Item {
+    
+    public func getView() -> UIView {
+      let banner = TKWarningBannerView()
+      banner.configure(
+        model: TKWarningBannerView.Model(
+          text: title,
+          image: .TKUIKit.Icons.Size28.exclamationmarkTriangle
+        )
+      )
+      return banner
+    }
+    
+    private let title: String
+    public var bottomSpace: CGFloat
+    
+    public init(title: String,
+                bottomSpace: CGFloat = 0) {
+      self.title = title
+      self.bottomSpace = bottomSpace
+    }
+  }
+}
+

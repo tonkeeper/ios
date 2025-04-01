@@ -299,7 +299,8 @@
 "confirm_send.risk.total_nft" = "Total: %@ + %ld NFT";
 "confirm_send.risk.caption_without_nft" = "The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.";
 "confirm_send.risk.nft_caption" = "The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.";
-"confirm_send.risk.action_button_title = OK";
+"confirm_send.risk.action_button_title" = "OK";
+"confirm_send.failed_emulation_warning.title" = "After confirmation, anything can happen, including losing all your funds. All transactions are irreversible. We couldn’t emulate the transaction and don’t know what will happen next.";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

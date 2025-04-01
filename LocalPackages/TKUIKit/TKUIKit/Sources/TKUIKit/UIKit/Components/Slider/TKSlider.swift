@@ -3,6 +3,24 @@ import SnapKit
 
 public final class TKSlider: UIView {
   
+  public enum Appearance {
+    case standart
+    case warning
+    
+    var dragViewBackgroundColor: UIColor {
+      switch self {
+      case .standart:
+          .Button.primaryBackground
+      case .warning:
+          .Accent.orange
+      }
+    }
+  }
+  
+  public var appearance: Appearance = .standart {
+    didSet { updateAppearance() }
+  }
+  
   public var isEnable = true {
     didSet {
       panGestureRecognizer.isEnabled = isEnable
@@ -94,6 +112,8 @@ private extension TKSlider {
     dragView.addGestureRecognizer(panGestureRecognizer)
     
     setupConstraints()
+    
+    updateAppearance()
   }
   
   func setupConstraints() {
@@ -166,6 +186,10 @@ private extension TKSlider {
         self.contentView.layoutIfNeeded()
       }
 
+  }
+  
+  func updateAppearance() {
+    dragView.backgroundColor = appearance.dragViewBackgroundColor
   }
 }
 

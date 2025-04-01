@@ -185,18 +185,23 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
   
   private func createSliderItem() -> TKPopUp.Item {
     let isEnable: Bool
+    let isWarning: Bool
     switch state.emulationState {
     case .emulating:
       isEnable = false
+      isWarning = false
     case .success:
       isEnable = true
+      isWarning = false
     case .fail:
       isEnable = true
+      isWarning = true
     }
     
     let sliderItem = TKPopUp.Component.Slider(
       title: TKLocales.Actions.confirm,
       isEnable: isEnable,
+      appearance: isWarning ? .warning : .standart,
       didConfirm: { [weak self] in
         self?.confirmTransaction()
       }
@@ -206,6 +211,16 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
       padding: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
       items: [
         sliderItem
+      ]
+    )
+  }
+  
+  private func createWarningBanner() -> TKPopUp.Item {
+    let banner = TKPopUp.Component.WarningBanner(title: TKLocales.ConfirmSend.FailedEmulationWarning.title)
+    return TKPopUp.Component.GroupComponent(
+      padding: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
+      items: [
+        banner
       ]
     )
   }
@@ -269,15 +284,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
         )]
       )
     case .fail:
-      return TKPopUp.Component.LabelComponent(
-        text: "Emulation failed".withTextStyle(
-          .label1,
-          color: .Text.primary,
-          alignment: .center,
-          lineBreakMode: .byTruncatingTail
-        ),
-        numberOfLines: 1
-      )
+      return createWarningBanner()
     }
   }
 

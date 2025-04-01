@@ -520,6 +520,10 @@ public enum TKLocales {
     public static let refund = TKLocales.tr("Localizable", "confirm_send.refund", fallback: "Refund")
     /// Wallet
     public static let wallet = TKLocales.tr("Localizable", "confirm_send.wallet", fallback: "Wallet")
+    public enum FailedEmulationWarning {
+      /// After confirmation, anything can happen, including losing all your funds. All transactions are irreversible. We couldn’t emulate the transaction and don’t know what will happen next.
+      public static let title = TKLocales.tr("Localizable", "confirm_send.failed_emulation_warning.title", fallback: "After confirmation, anything can happen, including losing all your funds. All transactions are irreversible. We couldn’t emulate the transaction and don’t know what will happen next.")
+    }
     public enum Recipient {
       /// Recipient address
       public static let address = TKLocales.tr("Localizable", "confirm_send.recipient.address", fallback: "Recipient address")
@@ -527,8 +531,8 @@ public enum TKLocales {
       public static let title = TKLocales.tr("Localizable", "confirm_send.recipient.title", fallback: "Recipient")
     }
     public enum Risk {
-      /// confirm_send.risk.action_button_title = OK
-      public static let actionButtonTitleOK = TKLocales.tr("Localizable", "confirm_send.risk.action_button_title = OK", fallback: "confirm_send.risk.action_button_title = OK")
+      /// OK
+      public static let actionButtonTitle = TKLocales.tr("Localizable", "confirm_send.risk.action_button_title", fallback: "OK")
       /// The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.
       public static let captionWithoutNft = TKLocales.tr("Localizable", "confirm_send.risk.caption_without_nft", fallback: "The total value of tokens that will be sent from your wallet. Refunds are not included in the total value.")
       /// The total value of tokens, excluding the cost of NFTs, that will be sent from your wallet. Refunds are not included in the total value.
