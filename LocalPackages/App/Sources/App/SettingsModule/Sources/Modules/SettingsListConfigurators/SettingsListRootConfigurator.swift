@@ -689,7 +689,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 1)
         )))
     return SettingsListItem(
-      id: .deleteAccountIdentifier,
+      id: .signOutIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.door,
                                                                  tintColor: .Accent.blue)),
