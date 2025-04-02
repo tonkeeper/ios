@@ -37,6 +37,8 @@ private extension TransactionConfirmationViewController {
   }
   
   private func setupNavigationBar() {
+    customView.navigationBar.scrollView = popUpViewController.scrollView
+    
     guard let navigationController,
           !navigationController.viewControllers.isEmpty else {
       return
