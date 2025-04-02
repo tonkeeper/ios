@@ -84,7 +84,7 @@ public struct TonkeeperDeeplinkParser {
     }()
     
     let stateInit: String? = {
-      components?.queryItems?.first(where: { $0.name == "init" })?.value
+      components?.queryItems?.first(where: { $0.name == "init" })?.value?.replacingOccurrences(of: "\\", with: "")
     }()
     
     let jettonAddress: Address? = {
@@ -110,9 +110,21 @@ public struct TonkeeperDeeplinkParser {
     }()
         
     if (bin != nil || stateInit != nil) {
-      if (comment != nil) {
+      if (comment != nil && bin != nil) {
         throw DeeplinkParserError.invalidParameters
       }
+      let bin: String? = {
+        if let bin {
+          return bin
+        }
+        
+        if let comment {
+          let text = Data(comment.utf8)
+          return try? Builder().store(int: 0, bits: 32).writeSnakeData(text).endCell().toBoc().base64EncodedString()
+        }
+        
+        return nil
+      }()
       return .signRawTransfer(.init(recipient: recipient, amount: amount, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
     }
     

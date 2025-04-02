@@ -8,6 +8,7 @@ import URKit
 protocol ScannerViewModuleOutput: AnyObject {
   var didScanDeeplink: ((Deeplink) -> Void)? { get set }
   var didScanUR: ((UR) throws -> Void)? { get set }
+  var didFailScan: ((String?) -> Void)? { get set }
 }
 
 protocol ScannerViewModel: AnyObject {
@@ -52,6 +53,7 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   var didScanDeeplink: ((Deeplink) -> Void)?
   var didScanUR: ((UR) throws -> Void)?
+  var didFailScan: ((String?) -> Void)?
   
   // MARK: - ScannerViewModel
   
@@ -95,6 +97,8 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
   private var didSetup = false
+  
+  private var isFailed: Bool = false
   
   // MARK: - Dependencies
   
@@ -230,7 +234,8 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
   func metadataOutput(_ output: AVCaptureMetadataOutput,
                       didOutput metadataObjects: [AVMetadataObject],
                       from connection: AVCaptureConnection) {
-    guard !metadataObjects.isEmpty,
+    guard !isFailed,
+          !metadataObjects.isEmpty,
           let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
           metadataObject.type == .qr,
           let stringValue = metadataObject.stringValue
@@ -255,6 +260,10 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
       }
       return
     } catch {
+      DispatchQueue.main.async {
+        self.isFailed = true
+        self.didFailScan?(error.localizedDescription)
+      }
       return
     }
   }

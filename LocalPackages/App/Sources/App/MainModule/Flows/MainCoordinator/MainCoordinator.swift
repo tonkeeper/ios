@@ -356,6 +356,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
     }
     
+    scanModule.output.didFailScan = { [weak self] error in
+      ToastPresenter.hideAll()
+      guard let error else { return }
+      ToastPresenter.showToast(configuration: .init(title: error))
+      self?.router.dismiss()
+    }
+    
     router.present(navigationController)
   }
   
