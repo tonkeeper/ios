@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKLocalize
+import TKFeatureFlags
 import KeeperCore
 import WalletExtensions
 
@@ -8,6 +9,7 @@ import WalletExtensions
 public protocol SignRawConfirmationModuleOutput: AnyObject {
   var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   var didConfirm: (() -> Void)? { get set }
+  var didCancel: (() -> Void)? { get set }
   var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)? { get set }
   var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)? { get set }
 }
@@ -32,6 +34,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
   
   public var didRequireSign: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   public var didConfirm: (() -> Void)?
+  public var didCancel: (() -> Void)?
   public var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
   public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)?
 
@@ -159,7 +162,12 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
   
   private func createProcessItem() -> TKPopUp.Item {
     var items = [TKPopUp.Item]()
-    items.append(createSliderItem())
+    if TKFeatureFlags.localProvider.isConfirmButtonInsteadSlider {
+      items.append(createButtonsItem())
+    } else {
+      items.append(createSliderItem())
+    }
+    
     items.append(createRiskItem())
 
     let processItem = TKPopUp.Component.Process(
@@ -181,6 +189,57 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
     )
     
     return processItem
+  }
+  
+  private func createButtonsItem() -> TKPopUp.Item {
+    let isEnable: Bool
+    let isWarning: Bool
+    switch state.emulationState {
+    case .emulating:
+      isEnable = false
+      isWarning = false
+    case .success:
+      isEnable = true
+      isWarning = false
+    case .fail:
+      isEnable = true
+      isWarning = true
+    }
+    
+    var confirmButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    confirmButtonConfiguration.content = .init(title: .plainString(TKLocales.Actions.confirm))
+    confirmButtonConfiguration.isEnabled = isEnable
+    confirmButtonConfiguration.action = { [weak self] in
+      self?.confirmTransaction()
+    }
+    if isWarning {
+      confirmButtonConfiguration.backgroundColors = [
+        .normal: .Accent.orange,
+        .highlighted: .Accent.orange.withAlphaComponent(0.7),
+        .disabled: .Accent.orange.withAlphaComponent(0.48),
+      ]
+    }
+    
+    var cancelButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    cancelButtonConfiguration.content = .init(title: .plainString(TKLocales.Actions.cancel))
+    cancelButtonConfiguration.action = { [weak self] in
+      self?.cancel()
+      self?.didCancel?()
+    }
+    
+    return TKPopUp.Component.HorizontalGroupComponent(
+      padding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+      items: [
+        TKPopUp.Component.ButtonComponent(
+          buttonConfiguration: cancelButtonConfiguration
+        ),
+        TKPopUp.Component.ButtonComponent(
+          buttonConfiguration: confirmButtonConfiguration
+        )
+      ],
+      spacing: 8,
+      distribution: .fillEqually
+    )
   }
   
   private func createSliderItem() -> TKPopUp.Item {

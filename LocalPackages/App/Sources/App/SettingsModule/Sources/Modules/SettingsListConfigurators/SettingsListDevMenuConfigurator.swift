@@ -39,6 +39,8 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       sections.append(seedPhraseRecoverySection)
     }
     
+    sections.append(createConfirmationSection())
+    
     return SettingsListState(
       sections: sections
     )
@@ -145,6 +147,54 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func createConfirmationSection() -> SettingsListSection {
+    return SettingsListSection.listItems(
+      SettingsListItemsSection(
+        items: [createConfirmationSliderItem()],
+        topPadding: 0,
+        bottomPadding: 0,
+        headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Confirmation")
+      )
+    )
+  }
+  
+  private func createConfirmationSliderItem() -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: "Slider"
+          )
+        )
+      )
+    )
+    
+    let isOn = !TKFeatureFlags.localProvider.isConfirmButtonInsteadSlider
+    let action: (Bool) -> Void = { isOn in
+      TKFeatureFlags.localProvider.isConfirmButtonInsteadSlider = !isOn
+    }
+    
+    return SettingsListItem(
+      id: .confirmationSliderItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .switch(
+        TKListItemSwitchAccessoryView.Configuration(
+          isOn: isOn,
+          isEnable: true,
+          action: { isEnabled in
+            action(isEnabled)
+          }
+        )
+      ),
+      onSelection: { [weak self] _ in
+        guard let self else { return }
+        action(!isOn)
+        let state = self.createState()
+        self.didUpdateState?(state)
+      }
+    )
+  }
 }
 
 private extension String {
@@ -153,4 +203,5 @@ private extension String {
   static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
   static let swapURLItemIdentifier = "swapURLItemIdentifier"
   static let clearCookiesItemIdentifier = "clearCookiesItemIdentifier"
+  static let confirmationSliderItemIdentifier = "confirmationSliderItemIdentifier"
 }

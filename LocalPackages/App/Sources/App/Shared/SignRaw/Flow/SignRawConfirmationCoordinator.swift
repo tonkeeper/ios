@@ -68,6 +68,10 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
       guard let self else { return }
       self.didFinish?(self)
     }
+    module.output.didCancel = { [weak self] in
+      guard let self else { return }
+      self.didFinish?(self)
+    }
     module.output.didRequestShowInfoPopup = { [weak self] title, caption in
       self?.openInfoPopup(title: title, caption: caption)
     }

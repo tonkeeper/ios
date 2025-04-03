@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKFeatureFlags
 import TKLocalize
 import KeeperCore
 import BigInt
@@ -521,6 +522,39 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   }
   
   private func createActionBar(model: TransactionConfirmationModel) -> TKPopUp.Item {
+    var items = [TKPopUp.Item]()
+    
+    if TKFeatureFlags.localProvider.isConfirmButtonInsteadSlider {
+      items.append(createConfirmButton(model: model))
+    } else {
+      items.append(createConfirmSlider(model: model))
+    }
+    
+    let itemState: TKProcessContainerView.State = {
+      switch state {
+      case .idle:
+        return .idle
+      case .processing:
+        return .process
+      case .success:
+        return .success
+      case .failed:
+        return .failed
+      }
+    }()
+    
+    let component = TKPopUp.Component.Process(
+      items: items,
+      state: itemState,
+      successTitle: TKLocales.Result.success,
+      errorTitle: TKLocales.Result.failure,
+      bottomSpace: 0
+    )
+    
+    return component
+  }
+  
+  private func createConfirmButton(model: TransactionConfirmationModel) -> TKPopUp.Item {
     let buttonTitle: String = {
       switch model.transaction {
       case .staking(let staking):
@@ -538,69 +572,37 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         return TKLocales.TransactionConfirmation.Buttons.confirmAndSend
       }
     }()
-
     var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     btnConf.content = .init(title: .plainString(buttonTitle))
     btnConf.action = { [weak self] in
       Task { [weak self] in
-        guard let self else { return }
-
-        self.state = .processing
-        
-        do {
-          try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
-
-          let result = await self.confirmationController.sendTransaction()
-          switch result {
-          case .success:
-            self.state = .success
-            try await Task.sleep(nanoseconds: 1_000_000_000)
-            NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
-            didConfirmTransaction?()
-          case .failure(let error):
-            handleError(error)
-            self.state = .failed
-            try? await Task.sleep(nanoseconds: 1_500_000_000)
-            self.state = .idle
-          }
-        } catch {
-          self.state = .failed
-          try? await Task.sleep(nanoseconds: 1_500_000_000)
-          self.state = .idle
-
-          if let error = error as? InsufficientFundsError {
-            didProduceInsufficientFundsError?(error)
-          }
-        }
+        await self?.confirmAction(model: model)
       }
     }
     
-    let itemState: TKProcessContainerView.State = {
-      switch state {
-      case .idle:
-        return .idle
-      case .processing:
-        return .process
-      case .success:
-        return .success
-      case .failed:
-        return .failed
+    return TKPopUp.Component.ButtonGroupComponent(buttons: [
+      TKPopUp.Component.ButtonComponent(buttonConfiguration: btnConf)
+    ])
+  }
+  
+  private func createConfirmSlider(model: TransactionConfirmationModel) -> TKPopUp.Item {
+    let sliderItem = TKPopUp.Component.Slider(
+      title: TKLocales.Actions.confirm,
+      isEnable: true,
+      appearance: .standart,
+      didConfirm: { [weak self] in
+        Task { [weak self] in
+          await self?.confirmAction(model: model)
+        }
       }
-    }()
-    
-    let component = TKPopUp.Component.Process(
-      items: [
-        TKPopUp.Component.ButtonGroupComponent(buttons: [
-          TKPopUp.Component.ButtonComponent(buttonConfiguration: btnConf)
-        ])
-      ],
-      state: itemState,
-      successTitle: TKLocales.Result.success,
-      errorTitle: TKLocales.Result.failure,
-      bottomSpace: 0
     )
     
-    return component
+    return TKPopUp.Component.GroupComponent(
+      padding: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16),
+      items: [
+        sliderItem
+      ]
+    )
   }
   
   private func formatValueItem(amount: BigUInt,
@@ -669,6 +671,36 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       return (valueRate, feeRate)
     } catch {
       return (nil, nil)
+    }
+  }
+  
+  private func confirmAction(model: TransactionConfirmationModel) async {
+    self.state = .processing
+    
+    do {
+      try await fundsValidator.validateFundsIfNeeded(wallet: model.wallet, emulationModel: model)
+      
+      let result = await self.confirmationController.sendTransaction()
+      switch result {
+      case .success:
+        self.state = .success
+        try await Task.sleep(nanoseconds: 1_000_000_000)
+        NotificationCenter.default.postTransactionSendNotification(wallet: model.wallet)
+        didConfirmTransaction?()
+      case .failure(let error):
+        handleError(error)
+        self.state = .failed
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        self.state = .idle
+      }
+    } catch {
+      self.state = .failed
+      try? await Task.sleep(nanoseconds: 1_500_000_000)
+      self.state = .idle
+      
+      if let error = error as? InsufficientFundsError {
+        didProduceInsufficientFundsError?(error)
+      }
     }
   }
 }
