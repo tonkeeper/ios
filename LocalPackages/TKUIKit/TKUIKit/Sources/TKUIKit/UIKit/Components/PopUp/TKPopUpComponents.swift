@@ -63,6 +63,62 @@ public extension TKPopUp.Component {
 }
 
 public extension TKPopUp.Component {
+  struct HorizontalGroupComponent: TKPopUp.Item {
+    public enum Distribution {
+      case fill
+      case fillEqually
+      
+      var stackViewDistribution: UIStackView.Distribution {
+        switch self {
+        case .fill:
+          return .fill
+        case .fillEqually:
+          return .fillEqually
+        }
+      }
+    }
+    
+    public func getView() -> UIView {
+      let containerView = UIView()
+      let stackView = UIStackView()
+      stackView.axis = .horizontal
+      stackView.spacing = spacing
+      stackView.distribution = distribution.stackViewDistribution
+      
+      containerView.addSubview(stackView)
+      stackView.snp.makeConstraints { make in
+        make.edges.equalTo(containerView).inset(padding)
+      }
+      
+      for item in items {
+        let view = item.getView()
+        stackView.addArrangedSubview(view)
+      }
+      
+      return containerView
+    }
+    
+    private let padding: UIEdgeInsets
+    private let items: [TKPopUp.Item]
+    private let spacing: CGFloat
+    private let distribution: Distribution
+    public let bottomSpace: CGFloat
+    
+    public init(padding: UIEdgeInsets,
+                items: [TKPopUp.Item],
+                spacing: CGFloat,
+                distribution: Distribution = .fill,
+                bottomSpace: CGFloat = 0) {
+      self.padding = padding
+      self.items = items
+      self.spacing = spacing
+      self.distribution = distribution
+      self.bottomSpace = bottomSpace
+    }
+  }
+}
+
+public extension TKPopUp.Component {
   struct ImageComponent: TKPopUp.Item {
     public func getView() -> UIView {
       let containerView = UIView()
