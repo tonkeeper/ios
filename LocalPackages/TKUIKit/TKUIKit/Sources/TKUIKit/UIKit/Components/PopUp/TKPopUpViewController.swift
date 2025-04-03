@@ -18,7 +18,8 @@ public extension TKPopUp {
     public var headerItem: TKPullCardHeaderItem?
     public var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
     public func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-      contentStackView.systemLayoutSizeFitting(
+      contentStackView.layoutIfNeeded()
+      return contentStackView.systemLayoutSizeFitting(
         CGSize(width: width, height: 0),
         withHorizontalFittingPriority: .required,
         verticalFittingPriority: .fittingSizeLevel
