@@ -57,6 +57,8 @@ final class TKListContainerFullValueItemView: UIView {
   }
   
   private func setup() {
+    valueLabel.numberOfLines = 0
+    
     stackView.axis = .vertical
     stackView.alignment = .leading
     
@@ -85,7 +87,7 @@ final class TKListContainerFullValueItemView: UIView {
       .label1,
       color: .Text.primary,
       alignment: .left,
-      lineBreakMode: .byTruncatingMiddle
+      lineBreakMode: .byWordWrapping
     )
   }
 }
