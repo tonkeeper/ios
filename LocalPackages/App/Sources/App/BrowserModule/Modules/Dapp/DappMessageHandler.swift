@@ -45,6 +45,7 @@ final class DefaultDappMessageHandler: DappMessageHandler {
   var sendTransaction: ((Dapp, TonConnect.SendTransactionRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
   var fetch: ((String, [String: Any]?, @escaping (TonConnectAppsStore.FetchResult) -> Void) -> Void)?
   var signData: ((Dapp, TonConnect.SignDataRequest, @escaping (TonConnectAppsStore.SendResult) -> Void) -> Void)?
+  var toggleLandscape: ((Bool) -> Void)?
 
   func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
     switch message.type {
@@ -101,6 +102,10 @@ final class DefaultDappMessageHandler: DappMessageHandler {
         signData?(dapp, signDataRequest, sendCompletion)
         break
       }
+    case .lockOrientation:
+      toggleLandscape?(false)
+    case .unlockOrientation:
+      toggleLandscape?(true)
     case .disconnect:
       disconnect?(dapp)
     }

@@ -72,7 +72,7 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
 }
 
 @MainActor
-public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControllerRouter> {
+public final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
 
   public enum Flow {
     case common
@@ -92,7 +92,7 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControlle
 
   private let flow: Flow
 
-  public init(router: ViewControllerRouter,
+  public init(router: WindowRouter,
               flow: Flow,
               connector: TonConnectConnectCoordinatorConnector,
               parameters: TonConnectParameters,
@@ -118,6 +118,10 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<ViewControlle
 private extension TonConnectConnectCoordinator {
 
   func openTonConnectConnect() {
+    let rootViewController = UIViewController()
+    router.window.rootViewController = rootViewController
+    router.window.makeKeyAndVisible()
+    
     let module = TonConnectConnectAssembly.module(
       parameters: parameters,
       manifest: manifest,
@@ -185,7 +189,7 @@ private extension TonConnectConnectCoordinator {
       self?.didCancel?()
     }
     
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
+    bottomSheetViewController.present(fromViewController: rootViewController)
   }
   
   func connect(

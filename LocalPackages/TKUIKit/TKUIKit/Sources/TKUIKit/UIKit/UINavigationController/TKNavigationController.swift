@@ -26,6 +26,10 @@ public final class TKNavigationController: UINavigationController {
   required init?(coder aDecoder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  public override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    .portrait
+  }
 }
 
 private extension TKNavigationController {

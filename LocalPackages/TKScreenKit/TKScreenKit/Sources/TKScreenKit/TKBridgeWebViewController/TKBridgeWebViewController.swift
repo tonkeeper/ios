@@ -145,7 +145,6 @@ open class TKBridgeWebViewController: UIViewController {
     webView.uiDelegate = self
     webView.scrollView.layer.masksToBounds = false
     webView.layer.masksToBounds = false
-    webView.scrollView.contentInsetAdjustmentBehavior = .never
     webView.customUserAgent = userAgentProvider?.getUserAgent()
 #if DEBUG
     if #available(iOS 16.4, *) {

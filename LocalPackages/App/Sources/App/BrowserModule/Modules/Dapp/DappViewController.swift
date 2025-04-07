@@ -24,17 +24,24 @@ final class DappViewController: UIViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    setup()
     setupBinding()
     viewModel.viewDidLoad()
+  }
+  
+  override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
+    if viewModel.isLandscapeEnable {
+      return .allButUpsideDown
+    } else {
+      return .portrait
+    }
+  }
+  
+  override var shouldAutorotate: Bool {
+    viewModel.isLandscapeEnable
   }
 }
 
 private extension DappViewController {
-  func setup() {
-    
-  }
-  
   func setupBinding() {
     viewModel.didOpenApp = { [weak self] url, title in
       guard let self, let url else { return }
@@ -74,6 +81,14 @@ private extension DappViewController {
         } catch {
           print(error)
         }
+      }
+    }
+    
+    viewModel.didUpdateIsLandscapeEnable = { [weak self] in
+      if #available(iOS 16.0, *) {
+        self?.setNeedsUpdateOfSupportedInterfaceOrientations()
+      } else {
+        UIViewController.attemptRotationToDeviceOrientation()
       }
     }
   }
