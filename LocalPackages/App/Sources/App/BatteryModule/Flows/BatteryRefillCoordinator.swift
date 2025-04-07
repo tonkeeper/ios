@@ -249,6 +249,7 @@ private extension BatteryRefillCoordinator {
                                    promocodeStore: BatteryPromocodeStore) {
     guard let jettonMasterAddress else { return }
     ToastPresenter.showToast(configuration: .loading)
+    
     Task {
       guard let item = await rechargeMethodsProvider.getRechargeMethod(jettonMasterAddress: jettonMasterAddress) else {
         ToastPresenter.hideAll()

@@ -35,7 +35,6 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   
   private struct DNSResolveData {
     let linkedAddressResult: Result<FriendlyAddress, Swift.Error>
-    let expirationDateResult: Result<Date?, Swift.Error>
   }
   
   private enum DNSResolveState {
@@ -45,6 +44,18 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   }
   
   private var dnsResolveState: DNSResolveState = .idle {
+    didSet {
+      update()
+    }
+  }
+  
+  private enum DNSExpiringDateState {
+    case idle
+    case loading
+    case resolved(Result<Date?, any Error>)
+  }
+  
+  private var dnsExpiringDateState: DNSExpiringDateState = .idle {
     didSet {
       update()
     }
@@ -117,6 +128,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   
   func viewDidLoad() {
     resolveDNS()
+    getDNSExpiringDate()
     
     walletNftManagementStore.addObserver(self) { observer, event in
       switch event {
@@ -329,9 +341,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       action: .copy(copyValue: nft.owner?.address.toString(bounceable: false))
     ))
     
-    switch dnsResolveState {
+    switch dnsExpiringDateState {
     case .resolved(let data):
-      guard let date = try? data.expirationDateResult.get() else { break }
+      guard let date = try? data.get() else { break }
       let dateFormatted = dateFormatter.string(from: date)
       items.append(TKListContainerItemView.Model(
         title: TKLocales.NftDetails.expirationDate,
@@ -397,6 +409,15 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     
     buttonsConfigurations.append(contentsOf: createLinkButtons())
     
+    switch dnsExpiringDateState {
+      case .resolved(let result):
+        buttonsConfigurations.append(createRenewButton(result: result))
+      case .loading:
+        buttonsConfigurations.append(createLoadingButton())
+      default:
+        break
+    }
+
     buttonsConfigurations.append(contentsOf: composeProgrammaticButtons())
     
     guard !buttonsConfigurations.isEmpty else {
@@ -491,20 +512,14 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     case .idle:
       return []
     case .loading:
-      return [createLinkResolvingButton()]
+      return [createLoadingButton()]
     case .resolved(let data):
       var buttons = [createLinkedButton(result: data.linkedAddressResult)]
-      switch data.linkedAddressResult {
-      case .success:
-        buttons.append(createRenewButton(result: data.expirationDateResult))
-      case .failure:
-        break
-      }
       return buttons
     }
   }
   
-  private func createLinkResolvingButton() -> NFTDetailsButtonView.Model {
+  private func createLoadingButton() -> NFTDetailsButtonView.Model {
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
       size: .large
@@ -590,20 +605,26 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
   }
   
+  private func getDNSExpiringDate() {
+    guard let dns = nft.dns, !dns.contains(".t.me") else { return }
+    dnsExpiringDateState = .loading
+    Task {
+      let expirationDateResult = await getDNSExpirationDate(dns: dns)
+      await MainActor.run {
+        dnsExpiringDateState = .resolved(expirationDateResult)
+      }
+    }
+  }
+  
   private func resolveDNS() {
     guard let dns = nft.dns else { return }
     dnsResolveState = .loading
     Task {
-      async let linkedAddressTask = loadDNSLinkedAddress(dns: dns)
-      async let expirationDateTask = getDNSExpirationDate(dns: dns)
-      
-      let linkedAddressResult = await linkedAddressTask
-      let expirationDateResult = await expirationDateTask
+      let linkedAddressResult = await loadDNSLinkedAddress(dns: dns)
       await MainActor.run {
         dnsResolveState = .resolved(
           DNSResolveData(
-            linkedAddressResult: linkedAddressResult,
-            expirationDateResult: expirationDateResult
+            linkedAddressResult: linkedAddressResult
           )
         )
       }
