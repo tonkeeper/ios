@@ -53,7 +53,7 @@ private extension AppCoordinator {
   
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
     let rootCoordinator = RootCoordinator(
-      router: ViewControllerRouter(rootViewController: UIViewController()),
+      router: ViewControllerRouter(rootViewController: AppCoordinatorRootViewController()),
       dependencies: RootCoordinator.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreRootAssembly: keeperCoreAssembly.rootAssembly()
@@ -77,4 +77,8 @@ extension AppCoordinator: AppStateTrackerObserver {
       break
     }
   }
+}
+
+class AppCoordinatorRootViewController: UIViewController {
+  override var supportedInterfaceOrientations: UIInterfaceOrientationMask { .portrait }
 }

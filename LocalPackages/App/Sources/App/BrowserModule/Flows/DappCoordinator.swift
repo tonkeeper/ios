@@ -121,6 +121,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       )
     }
     
+    messageHandler.toggleLandscape = { landscapeEnabled in
+      module.input.setLandscapeMode(isEnabled: landscapeEnabled)
+    }
+    
     module.view.modalPresentationStyle = .fullScreen
     router.rootViewController.topPresentedViewController().present(module.view, animated: true)
   }
@@ -148,7 +152,6 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
           handleLoadedManifest(
             parameters: parameters,
             manifest: manifest,
-            router: ViewControllerRouter(rootViewController: fromViewController),
             completion: completion
           )
         }
@@ -165,8 +168,14 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     func handleLoadedManifest(parameters: TonConnectParameters,
                               manifest: TonConnectManifest,
-                              router: ViewControllerRouter,
                               completion: @escaping (TonConnectAppsStore.ConnectResult) -> Void) {
+      guard let windowScene = fromViewController.view.window?.windowScene else {
+        return
+      }
+      let window = TKWindow(windowScene: windowScene)
+      window.windowLevel = .tonConnectConnect
+      let router = WindowRouter(window: window)
+      
       let connector = BridgeTonConnectConnectCoordinatorConnector(
         tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore) {
           completion($0)

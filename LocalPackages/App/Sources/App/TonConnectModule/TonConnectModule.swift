@@ -13,7 +13,7 @@ struct TonConnectModule {
     self.dependencies = dependencies
   }
   
-  func createConnectCoordinator(router: ViewControllerRouter,
+  func createConnectCoordinator(router: WindowRouter,
                                 flow: TonConnectConnectCoordinator.Flow,
                                 connector: TonConnectConnectCoordinatorConnector,
                                 parameters: TonConnectParameters,

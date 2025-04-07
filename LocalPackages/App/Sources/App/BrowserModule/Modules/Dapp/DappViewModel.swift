@@ -2,10 +2,16 @@ import Foundation
 import TKCore
 import KeeperCore
 
+public protocol DappModuleInput: AnyObject {
+  func setLandscapeMode(isEnabled: Bool)
+}
+
 protocol DappViewModel: AnyObject {
   var didOpenApp: ((URL?, String?) -> Void)? { get set }
   var injectHandler: ((String) -> Void)? { get set }
   var jsInjection: String? { get }
+  var didUpdateIsLandscapeEnable: (() -> Void)? { get set }
+  var isLandscapeEnable: Bool { get }
   
   func viewDidLoad()
   func didLoadInitialRequest()
@@ -13,13 +19,28 @@ protocol DappViewModel: AnyObject {
   func reconnectIfNeeded()
 }
 
-final class DappViewModelImplementation: DappViewModel {
-
+final class DappViewModelImplementation: DappViewModel, DappModuleInput {
+  
+  // MARK: - DappModuleInput
+  
+  func setLandscapeMode(isEnabled: Bool) {
+    isLandscapeEnable = isEnabled
+  }
+  
+  // MARK: - DappViewModel
+  
   var didOpenApp: ((URL?, String?) -> Void)?
   var injectHandler: ((String) -> Void)?
+  var didUpdateIsLandscapeEnable: (() -> Void)?
+  var isLandscapeEnable: Bool = false {
+    didSet {
+      didUpdateIsLandscapeEnable?()
+    }
+  }
 
   func viewDidLoad() {
     didOpenApp?(dapp.url, dapp.name)
+    didUpdateIsLandscapeEnable?()
   }
   
   func didLoadInitialRequest() {
@@ -207,6 +228,8 @@ final class DappViewModelImplementation: DappViewModel {
                             };
                             
                             window.\(String.windowKey) = {
+                                unlockOrientation: () => new Promise((resolve, reject) => window.invokeRnFunc('unlockOrientation', [], resolve, reject)),
+                                lockOrientation: () => new Promise((resolve, reject) => window.invokeRnFunc('lockOrientation', [], resolve, reject)),
                                 tonconnect: Object.assign(\(infoString),{ send: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('send', args, resolve, reject))},connect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('connect', args, resolve, reject))},restoreConnection: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('restoreConnection', args, resolve, reject))},disconnect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('disconnect', args, resolve, reject))} },{ listen }),
                             }
                         })();
@@ -269,6 +292,8 @@ enum DappBridgeFunctionType: String, Codable {
   case restoreConnection
   case disconnect
   case tonapiFetch = "tonapi.fetch"
+  case unlockOrientation
+  case lockOrientation
 }
 
 private extension String {
