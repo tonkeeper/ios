@@ -244,7 +244,7 @@
 "backup.warning.caption" = "Please read the following carefully before viewing your recovery phrase.";
 "backup.warning.list.item1" = "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.";
 "backup.warning.list.item2" = "Tonkeeper Support never asks for a recovery phrase.";
-"backup.warning.list.item3" = "Everybody with your recovery phrase can access your wallet.";
+"backup.warning.list.item3" = "Anyone with your recovery phrase can use your wallet.";
 
 "backup.show.title" = "Recovery phrase";
 "backup.show.caption" = "Write down these words with their numbers and store them in a safe place.";
