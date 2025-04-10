@@ -6,7 +6,7 @@ struct SettingsPurchasesAssembly {
   private init() {}
   static func module(wallet: Wallet,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly)
-  -> MVVMModule<SettingsPurchasesViewController, Void, Void> {
+  -> MVVMModule<SettingsPurchasesViewController, SettingsPurchasesModuleOutput, Void> {
     let updateQueue = DispatchQueue(label: "SettingsPurchasesUpdateQueue")
     
     let viewModel = SettingsPurchasesViewModelImplementation(
@@ -15,10 +15,12 @@ struct SettingsPurchasesAssembly {
         walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore(wallet: wallet, nftService: keeperCoreMainAssembly.servicesAssembly.accountNftService()),
         accountNFTsManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet),
         updateQueue: updateQueue
-      )
+      ),
+      wallet: wallet,
+      tonviewerURLBuilder: TonviewerURLBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
     )
     
     let viewController = SettingsPurchasesViewController(viewModel: viewModel)
-    return .init(view: viewController, output: Void(), input: Void())
+    return .init(view: viewController, output: viewModel, input: Void())
   }
 }

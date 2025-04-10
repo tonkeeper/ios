@@ -13,13 +13,13 @@ final class BatteryView: UIView {
     var bodyImage: UIImage {
       switch self {
       case .size24:
-        return .App.Battery.batteryBody24
+        return .App.Images.Battery.batteryBody24
       case .size34:
-        return .App.Battery.batteryBody34
+        return .App.Images.Battery.batteryBody34
       case .size44:
-        return .App.Battery.batteryBody44
+        return .App.Images.Battery.batteryBody44
       case .size128:
-        return .App.Battery.batteryBody128
+        return .App.Images.Battery.batteryBody128
       }
     }
     

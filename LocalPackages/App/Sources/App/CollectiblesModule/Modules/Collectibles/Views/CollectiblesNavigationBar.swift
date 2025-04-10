@@ -4,11 +4,15 @@ import TKUIKit
 final class CollectiblesNavigationBar: UIView {
   
   struct ButtonItem {
-    public let model: TKUIHeaderIconButton.Model
-    public let action: () -> Void
+    enum Content {
+      case icon(UIImage)
+      case text(String)
+    }
+    let content: Content
+    let action: () -> Void
     
-    public init(model: TKUIHeaderIconButton.Model, action: @escaping () -> Void) {
-      self.model = model
+    init(content: Content, action: @escaping () -> Void) {
+      self.content = content
       self.action = action
     }
   }
@@ -17,10 +21,21 @@ final class CollectiblesNavigationBar: UIView {
     didSet {
       rightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
       rightButtonItems.forEach {
-        let button = TKUIHeaderIconButton()
-        button.padding = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
-        button.configure(model: $0.model)
-        button.addTapAction($0.action)
+        let button = TKButton()
+        var configuration: TKButton.Configuration
+        switch $0.content {
+        case .text(let text):
+          configuration = TKButton.Configuration.actionButtonConfiguration(
+            category: .secondary,
+            size: .small
+          )
+          configuration.content = TKButton.Configuration.Content(title: .plainString(text))
+        case .icon(let image):
+          configuration = TKButton.Configuration.iconHeaderButtonConfiguration()
+          configuration.content = TKButton.Configuration.Content(icon: image)
+        }
+        configuration.action = $0.action
+        button.configuration = configuration
         rightButtonsStackView.addArrangedSubview(button)
       }
     }

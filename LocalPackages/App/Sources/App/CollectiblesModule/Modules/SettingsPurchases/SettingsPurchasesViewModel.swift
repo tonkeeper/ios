@@ -4,6 +4,10 @@ import TKCore
 import TKLocalize
 import KeeperCore
 
+protocol SettingsPurchasesModuleOutput: AnyObject {
+  var didOpenTonviewer: ((URL) -> Void)? { get set }
+}
+
 protocol SettingsPurchasesViewModel: AnyObject {
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
@@ -18,7 +22,7 @@ protocol SettingsPurchasesViewModel: AnyObject {
   func didTapItem(identifier: String)
 }
 
-final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel {
+final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel, SettingsPurchasesModuleOutput {
   private struct ItemData {
     let title: String
     let subtitle: String
@@ -29,6 +33,8 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
     case collapsed
     case expanded
   }
+  
+  var didOpenTonviewer: ((URL) -> Void)?
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)?
@@ -81,9 +87,15 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
   private let imageLoader = ImageLoader()
   
   private let model: SettingsPurchasesModel
+  private let wallet: Wallet
+  private let tonviewerURLBuilder: TonviewerURLBuilder
   
-  init(model: SettingsPurchasesModel) {
+  init(model: SettingsPurchasesModel,
+       wallet: Wallet,
+       tonviewerURLBuilder: TonviewerURLBuilder) {
     self.model = model
+    self.wallet = wallet
+    self.tonviewerURLBuilder = tonviewerURLBuilder
   }
 }
 
@@ -101,7 +113,7 @@ private extension SettingsPurchasesViewModelImplementation {
       let model = mapRegularItem(
         title: itemData.title,
         subtitle: itemData.subtitle,
-        imageURL: itemData.imageURL,
+        image: .urlImage(itemData.imageURL),
         controlModel: SettingsPurchasesItemControl.Model(
           action: .minus,
           tapClosure: { [model] in
@@ -126,7 +138,7 @@ private extension SettingsPurchasesViewModelImplementation {
       let model = mapRegularItem(
         title: itemData.title,
         subtitle: itemData.subtitle,
-        imageURL: itemData.imageURL,
+        image: .urlImage(itemData.imageURL),
         controlModel: SettingsPurchasesItemControl.Model(
           action: .plus,
           tapClosure: { [model] in
@@ -151,9 +163,9 @@ private extension SettingsPurchasesViewModelImplementation {
       let model = mapRegularItem(
         title: itemData.title,
         subtitle: itemData.subtitle,
-        imageURL: itemData.imageURL,
+        image: .urlImage(itemData.imageURL),
         controlModel: nil,
-        accessoryConfiguration: .chevron,
+        accessory: .chevron,
         tapHandler: {
           [weak self] in
           guard let self else { return }
@@ -165,6 +177,21 @@ private extension SettingsPurchasesViewModelImplementation {
       )
       cellModels[visibleItem.id] = model
     }
+    
+    cellModels[Constants.allSpamItemIdentifier] = mapRegularItem(
+      title: "All spam",
+      subtitle: "\(state.blacklistedCount) \(TKLocales.Settings.Purchases.Token.tokenCount(count: state.blacklistedCount))",
+      image: .image(.App.Images.Size44.exclamationMark),
+      controlModel: nil,
+      accessory: .chevron,
+      tapHandler: { [weak self, tonviewerURLBuilder, wallet] in
+        guard let url = try? tonviewerURLBuilder.buildURL(
+          context: .accountCollectibles(address: wallet.address), isTestnet: wallet.isTestnet
+        ) else { return }
+        self?.didOpenTonviewer?(url)
+      }
+    )
+    
     footerModels[.spam] = createFooterModelIfNeeded(items: state.spam, section: .spam)
     
     let snapshot = createSnapshot(state)
@@ -193,12 +220,20 @@ private extension SettingsPurchasesViewModelImplementation {
         toSection: .hidden)
     }
     
-    if !state.spam.isEmpty {
+    let hasSpam = !state.spam.isEmpty || state.blacklistedCount > 0
+    let hasBlacklisted = state.blacklistedCount > 0
+    if hasSpam {
       snapshot.appendSections([.spam])
       snapshot.appendItems(
         createSnapshotItems(items: state.spam,
                             section: .spam),
         toSection: .spam)
+      if hasBlacklisted {
+        snapshot.appendItems(
+          [Constants.allSpamItemIdentifier],
+          toSection: .spam
+        )
+      }
     }
     
     if #available(iOS 15.0, *) {
@@ -348,64 +383,44 @@ private extension SettingsPurchasesViewModelImplementation {
   
   func mapRegularItem(title: String,
                       subtitle: String,
-                      imageURL: URL?,
+                      image: TKImage,
                       controlModel: SettingsPurchasesItemControl.Model?,
-                      accessoryConfiguration: TKUIListItemAccessoryView.Configuration = .none,
+                      accessory: TKListItemAccessory? = nil,
                       tapHandler: (() -> Void)?) -> SettingsPurchasesItemCell.Model {
     
-    let listModel = TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: .asyncImage(
-              imageURL,
-              TKCore.ImageDownloadTask(
-                closure: {
-                  [imageLoader] imageView,
-                  size,
-                  cornerRadius in
-                  return imageLoader.loadImage(
-                    url: imageURL,
-                    imageView: imageView,
-                    size: size,
-                    cornerRadius: cornerRadius
-                  )
-                }
-              )
-            ),
-            tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 8
+    let listItemConfiguration = TKListItemContentView.Configuration(
+      iconViewConfiguration: TKListItemIconView.Configuration(
+        content: .image(
+          TKImageView.Model(
+            image: image,
+            tintColor: nil,
+            size: .size(CGSize(width: 44, height: 44)),
+            corners: .cornerRadius(cornerRadius: 8)
           )
         ),
-        alignment: .center
+        alignment: .center,
+        cornerRadius: 8,
+        backgroundColor: .clear,
+        size: CGSize(width: 44, height: 44)
       ),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-          title: title.withTextStyle(
-            .label1,
-            color: .Text.primary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          tagViewModel: nil,
-          subtitle: subtitle.withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          description: nil
+      textContentViewConfiguration: TKListItemTextContentView.Configuration(
+        titleViewConfiguration: TKListItemTitleView.Configuration(
+          title: title
         ),
-        rightItemConfiguration: nil
-      ),
-      accessoryConfiguration: accessoryConfiguration
+        captionViewsConfigurations: [TKListItemTextView.Configuration(
+          text: subtitle,
+          color: .Text.secondary,
+          textStyle: .body2,
+          alignment: .left,
+          lineBreakMode: .byTruncatingTail
+        )]
+      )
     )
     
     return SettingsPurchasesItemCell.Model(
       controlModel: controlModel,
-      listModel: listModel,
+      listItemConfiguration: listItemConfiguration,
+      accessory: accessory,
       tapHandler: tapHandler
     )
   }
@@ -431,4 +446,8 @@ private extension SettingsPurchasesViewModelImplementation {
       imageURL: imageURL
     )
   }
+}
+
+private enum Constants {
+  static let allSpamItemIdentifier: String = "allSpamItemIdentifier"
 }

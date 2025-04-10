@@ -7,7 +7,7 @@ import TonSwift
 import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    
+  
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
   var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
@@ -63,11 +63,11 @@ private extension CollectiblesCoordinator {
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
 
-      collectiblesModule.output.didTapCollectiblesSettings = { [weak self] in
+      collectiblesModule.output.didTapCollectiblesSettings = { [weak self] isSpam in
         guard let self else {
           return
         }
-        self.openPurchases(wallet: wallet)
+        self.openPurchases(wallet: wallet, isSpam: isSpam)
       }
 
       module.view.collectiblesViewController = collectiblesModule.view
@@ -118,7 +118,7 @@ private extension CollectiblesCoordinator {
     })
   }
 
-  func openPurchases(wallet: Wallet) {
+  func openPurchases(wallet: Wallet, isSpam: Bool) {
     guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
     let module = SettingsPurchasesAssembly.module(
       wallet: wallet,
@@ -126,9 +126,14 @@ private extension CollectiblesCoordinator {
     )
 
     module.view.setupBackButton()
+    module.view.scrollToSpamInitially = isSpam
     guard let navigationController = parentRouter?.rootViewController.navigationController else {
       router.push(viewController: module.view)
       return
+    }
+    
+    module.output.didOpenTonviewer = { [weak self] url in
+      self?.didOpenDapp?(url, "Tonviewer")
     }
 
     navigationController.pushViewController(module.view, animated: true)

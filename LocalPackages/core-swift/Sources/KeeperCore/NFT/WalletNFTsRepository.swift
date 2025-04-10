@@ -23,7 +23,8 @@ struct WalletNFTsRepositoryImplementation: WalletNFTsRepository {
         all: [],
         visible: [],
         hidden: [],
-        spam: [])
+        spam: [],
+        blacklistedCount: 0)
     }
   }
   

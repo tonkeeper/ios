@@ -7,7 +7,7 @@ import TonSwift
 
 @MainActor
 protocol CollectiblesModuleOutput: AnyObject {
-  var didTapCollectiblesSettings: (() -> Void)? { get set }
+  var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)? { get set }
 }
 
 @MainActor
@@ -26,7 +26,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   // MARK: - CollectiblesModuleOutput
 
-  var didTapCollectiblesSettings: (() -> Void)?
+  var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)?
 
   // MARK: - CollectiblesModuleInput
 
@@ -94,13 +94,28 @@ private extension CollectiblesViewModelImplementation {
   }
   
   func updateNavigationBarButtons() {
+    let nfts = walletNFTsStore.state.value.nfts
+    
     var buttonItems = [CollectiblesNavigationBar.ButtonItem]()
-    let rightButtonModel = CollectiblesNavigationBar.ButtonItem(
-      model: TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.sliders)
-    ) { [weak self] in
-      self?.didTapCollectiblesSettings?()
+    
+    if !nfts.spam.isEmpty {
+      let spamButton = CollectiblesNavigationBar.ButtonItem(
+        content: .text(TKLocales.Collectibles.spamButton),
+        action: { [weak self] in
+          self?.didTapCollectiblesSettings?(true)
+        }
+      )
+      buttonItems.append(spamButton)
     }
-    buttonItems.append(rightButtonModel)
+    
+    let settingsButton = CollectiblesNavigationBar.ButtonItem(
+      content: .icon(.TKUIKit.Icons.Size16.sliders),
+      action: { [weak self] in
+        self?.didTapCollectiblesSettings?(false)
+      }
+    )
+    buttonItems.append(settingsButton)
+    
     didUpdateNavigationBarButtons?(buttonItems)
   }
 }
@@ -109,5 +124,10 @@ extension CollectiblesViewModelImplementation: WalletNFTStoreObserver {
   nonisolated
   func didUpdateLoadingState(_ loadingState: WalletNFTStore.LoadingState) {
     Task { @MainActor in updateLoadingState() }
+  }
+  
+  nonisolated
+  func didUpdateNFTs(_ nfts: WalletNFTs) {
+    Task { @MainActor in updateNavigationBarButtons() }
   }
 }

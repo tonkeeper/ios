@@ -502,6 +502,8 @@ public enum TKLocales {
     public static let nftHidden = TKLocales.tr("Localizable", "collectibles.nft_hidden", fallback: "NFT hidden")
     /// NFT marked as Spam
     public static let nftMarkedAsSpam = TKLocales.tr("Localizable", "collectibles.nft_marked_as_spam", fallback: "NFT marked as Spam")
+    /// Spam
+    public static let spamButton = TKLocales.tr("Localizable", "collectibles.spam_button", fallback: "Spam")
     /// Collectibles
     public static let title = TKLocales.tr("Localizable", "collectibles.title", fallback: "Collectibles")
   }

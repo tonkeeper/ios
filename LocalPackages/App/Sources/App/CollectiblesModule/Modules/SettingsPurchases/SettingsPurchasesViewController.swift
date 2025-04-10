@@ -31,6 +31,9 @@ final class SettingsPurchasesViewController: GenericViewViewController<SettingsP
   typealias HeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
   typealias SectionFooterRegistration = UICollectionView.SupplementaryRegistration<SettingsPurchasesSectionButtonView>
   
+  var scrollToSpamInitially = false
+  private var didInitiallyScroll = false
+  
   private weak var detailsViewController: TKBottomSheetViewController?
   
   // MARK: - List
@@ -55,6 +58,15 @@ final class SettingsPurchasesViewController: GenericViewViewController<SettingsP
     setup()
     setupBindings()
     viewModel.viewDidLoad()
+  }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    if !didInitiallyScroll, scrollToSpamInitially {
+      didInitiallyScroll = true
+      scrollToSpam()
+    }
   }
 }
 
@@ -206,6 +218,17 @@ private extension SettingsPurchasesViewController {
     }, configuration: configuration)
     
     return layout
+  }
+  
+  private func scrollToSpam() {
+    let snapshot = dataSource.snapshot()
+    guard let spamSectionIndex = snapshot.indexOfSection(.spam),
+          !snapshot.itemIdentifiers(inSection: .spam).isEmpty
+    else { return }
+    customView.collectionView.scrollToItem(
+      at: IndexPath(item: 0, section: spamSectionIndex),
+      at: .centeredVertically,
+      animated: false)
   }
 }
 

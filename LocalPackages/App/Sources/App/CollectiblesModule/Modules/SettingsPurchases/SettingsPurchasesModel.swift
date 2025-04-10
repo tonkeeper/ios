@@ -15,6 +15,7 @@ final class SettingsPurchasesModel {
     let approved: [Item]
     let spam: [Item]
     let collectionNfts: [NFTCollection: [NFT]]
+    let blacklistedCount: Int
   }
   
   enum Item {
@@ -103,7 +104,8 @@ final class SettingsPurchasesModel {
       hidden: map(nfts: nfts.hidden),
       approved: [],
       spam: map(nfts: nfts.spam),
-      collectionNfts: collectionNFTs
+      collectionNfts: collectionNFTs,
+      blacklistedCount: nfts.blacklistedCount
     )
   }
 }
