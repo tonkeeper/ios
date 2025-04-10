@@ -4,7 +4,7 @@ import UIKit
 final class SettingsPurchasesItemCell: TKCollectionViewNewCell, ConfigurableView {
   
   let control = SettingsPurchasesItemControl()
-  let listView = TKUIListItemView()
+  let listView = TKListItemContentView()
     
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -17,7 +17,8 @@ final class SettingsPurchasesItemCell: TKCollectionViewNewCell, ConfigurableView
 
   struct Model {
     let controlModel: SettingsPurchasesItemControl.Model?
-    let listModel: TKUIListItemView.Configuration
+    let listItemConfiguration: TKListItemContentView.Configuration
+    let accessory: TKListItemAccessory?
     let tapHandler: (() -> Void)?
   }
   
@@ -28,7 +29,14 @@ final class SettingsPurchasesItemCell: TKCollectionViewNewCell, ConfigurableView
     } else {
       control.isHidden = true
     }
-    listView.configure(configuration: model.listModel)
+    listView.configuration = model.listItemConfiguration
+    
+    if let accessory = model.accessory {
+      accessoryViews = [accessory.view]
+    } else {
+      accessoryViews = []
+    }
+    
     setNeedsLayout()
   }
   

@@ -48,36 +48,43 @@ public extension UIImage {
       }
     }
     public enum Images {
+      public enum Size44 {
+        public static var clock: UIImage {
+          .imageWithName("Images/44/clock", bundle: .module)
+        }
+        public static var gift: UIImage {
+          .imageWithName("Images/44/gift", bundle: .module)
+        }
+        public static var exclamationMark: UIImage {
+          .imageWithName("Images/44/exclamation_mark", bundle: .module)
+        }
+      }
+      
       public enum StakingImplementation {
         public static var tonNominators: UIImage {
-          .imageWithName("Icons/StakingImplementation/ton_nominators", bundle: .module)
+          .imageWithName("Images/StakingImplementation/ton_nominators", bundle: .module)
         }
         public static var tonstakers: UIImage {
-          .imageWithName("Icons/StakingImplementation/tonstakers", bundle: .module)
+          .imageWithName("Images/StakingImplementation/tonstakers", bundle: .module)
         }
         public static var whales: UIImage {
-          .imageWithName("Icons/StakingImplementation/whales", bundle: .module)
+          .imageWithName("Images/StakingImplementation/whales", bundle: .module)
         }
       }
-    }
-    public enum Battery {
-      public static var batteryBody24: UIImage {
-        .imageWithName("Icons/Battery/battery-body-24")
-      }
-      public static var batteryBody34: UIImage {
-        .imageWithName("Icons/Battery/battery-body-34")
-      }
-      public static var batteryBody44: UIImage {
-        .imageWithName("Icons/Battery/battery-body-44")
-      }
-      public static var batteryBody128: UIImage {
-        .imageWithName("Icons/Battery/battery-body-128")
-      }
-      public static var gift: UIImage {
-        .imageWithName("Images/Battery/battery_gift")
-      }
-      public static var history: UIImage {
-        .imageWithName("Images/Battery/battery_history")
+      
+      public enum Battery {
+        public static var batteryBody24: UIImage {
+          .imageWithName("Icons/Battery/battery-body-24")
+        }
+        public static var batteryBody34: UIImage {
+          .imageWithName("Icons/Battery/battery-body-34")
+        }
+        public static var batteryBody44: UIImage {
+          .imageWithName("Icons/Battery/battery-body-44")
+        }
+        public static var batteryBody128: UIImage {
+          .imageWithName("Icons/Battery/battery-body-128")
+        }
       }
     }
   }

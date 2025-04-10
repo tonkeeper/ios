@@ -366,7 +366,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       title = TKLocales.Battery.Refill.Gift.title
       caption = TKLocales.Battery.Refill.Gift.caption
       iconViewConfiguration = TKListItemIconView.Configuration(
-        content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Battery.gift))),
+        content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Images.Size44.gift))),
         alignment: .center,
         cornerRadius: 12,
         backgroundColor: .clear,
@@ -397,7 +397,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     let title = TKLocales.Battery.Refill.ChargesHistory.title
     let caption = TKLocales.Battery.Refill.ChargesHistory.caption
     let iconViewConfiguration = TKListItemIconView.Configuration(
-      content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Battery.history))),
+      content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Images.Size44.clock))),
       alignment: .center,
       cornerRadius: 12,
       backgroundColor: .clear,

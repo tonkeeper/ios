@@ -111,7 +111,7 @@ public actor WalletNFTStore {
           let nfts = handleNFTs(loadedNFTs)
           return nfts
         } catch {
-          return WalletNFTs(all: [], visible: [], hidden: [], spam: [])
+          return WalletNFTs(all: [], visible: [], hidden: [], spam: [], blacklistedCount: 0)
         }
       }
       self.loadingTask = task
@@ -142,6 +142,7 @@ public actor WalletNFTStore {
     var visible: [NFT] = []
     var hidden: [NFT] = []
     var spam: [NFT] = []
+    var blacklistedCount = 0
     
     let managementStoreState = nftManagementStore.state
     nfts.forEach { nft in
@@ -155,11 +156,7 @@ public actor WalletNFTStore {
       
       switch nft.trust {
       case .blacklist:
-        if state == .visible {
-          visible.append(nft)
-        } else {
-          spam.append(nft)
-        }
+        blacklistedCount += 1
       case .graylist, .none, .unknown, .whitelist:
         switch state {
         case .spam:
@@ -176,7 +173,8 @@ public actor WalletNFTStore {
       all: nfts,
       visible: visible,
       hidden: hidden,
-      spam: spam
+      spam: spam,
+      blacklistedCount: blacklistedCount
     )
   }
 }

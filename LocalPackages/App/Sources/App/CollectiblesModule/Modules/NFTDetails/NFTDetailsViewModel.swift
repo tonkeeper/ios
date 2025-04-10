@@ -12,7 +12,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
   var didTapProgrammaticButton: ((_ url: URL) -> Void)? { get set }
-  var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)? { get set }
+  var didTapOpenInTonviewer: ((TonviewerURLBuilder.URLContent) -> Void)? { get set }
   var didHideNFT: (() -> Void)? { get set }
   var didTapUnverifiedNftDetails: (() -> Void)? { get set }
   var didTapReportSpam: (() -> Void)? { get set }
@@ -103,7 +103,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   var didTapUnlinkDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapRenewDomain: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   var didTapProgrammaticButton: ((_ url: URL) -> Void)?
-  var didTapOpenInTonviewer: ((TonviewerLinkBuilder.TonviewerURLContext) -> Void)?
+  var didTapOpenInTonviewer: ((TonviewerURLBuilder.URLContent) -> Void)?
   var didHideNFT: (() -> Void)?
   var didTapUnverifiedNftDetails: (() -> Void)?
   var didTapReportSpam: (() -> Void)?

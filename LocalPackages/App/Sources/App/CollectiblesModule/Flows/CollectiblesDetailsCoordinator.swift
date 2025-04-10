@@ -148,8 +148,8 @@ private extension CollectiblesDetailsCoordinator {
         return
       }
 
-      let linkBuilder = TonviewerLinkBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
-      guard let url = linkBuilder.buildLink(context: context, isTestnet: self.wallet.isTestnet) else {
+      let linkBuilder = TonviewerURLBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
+      guard let url = linkBuilder.buildURL(context: context, isTestnet: self.wallet.isTestnet) else {
         return
       }
       self.didOpenDapp?(url, "Tonviewer")
