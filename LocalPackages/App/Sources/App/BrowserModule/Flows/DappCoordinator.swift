@@ -92,7 +92,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       [weak self] dapp in
       guard let self,
       let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
-      try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
+      try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnectBridge(wallet: wallet, appUrl: dapp.url)
     }
 
     weak var moduleView = module.view

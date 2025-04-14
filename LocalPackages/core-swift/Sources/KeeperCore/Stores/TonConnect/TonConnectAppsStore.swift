@@ -59,7 +59,8 @@ public final class TonConnectAppsStore {
       wallet: wallet,
       sessionCrypto: sessionCrypto,
       parameters: parameters,
-      manifest: manifest
+      manifest: manifest,
+      connectionType: .remote
     )
     await MainActor.run {
       notifyObservers(event:.didUpdateApps)
@@ -85,7 +86,8 @@ public final class TonConnectAppsStore {
         wallet: wallet,
         sessionCrypto: sessionCrypto,
         parameters: parameters,
-        manifest: manifest
+        manifest: manifest,
+        connectionType: .bridge
       )
       notifyObservers(event:.didUpdateApps)
       return .response(response)
@@ -96,7 +98,7 @@ public final class TonConnectAppsStore {
   
   public func reconnectBridgeDapp(wallet: Wallet, appUrl: URL?, keeperVersion: String) -> ConnectResult {
     guard let app = try? connectedApps(forWallet: wallet).apps.first(where: {
-      $0.manifest.url.host == appUrl?.host
+      $0.manifest.url.host == appUrl?.host && ($0.connectionType == .bridge || $0.connectionType == nil)
     }) else {
       return .error(.unknownApp)
     }
@@ -122,6 +124,19 @@ public final class TonConnectAppsStore {
     try? tonConnectService.disconnectApp(app, wallet: wallet)
     notifyObservers(event: .didUpdateApps)
     notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
+  }
+  
+  public func disconnectBridge(wallet: Wallet, appUrl: URL?) throws {
+    let apps = try? connectedApps(forWallet: wallet).apps
+    guard let apps, let idx = apps.firstIndex(where: {
+      $0.manifest.url.host == appUrl?.host && ($0.connectionType == .bridge || $0.connectionType == nil)
+    }) else {
+      return
+    }
+
+    try? tonConnectService.disconnectApp(idx, wallet: wallet)
+    notifyObservers(event: .didUpdateApps)
+    notifyObservers(event: .didDisconnect(app: apps[idx], wallet: wallet))
   }
   
   public func connectedApps(forWallet wallet: Wallet) throws -> TonConnectApps {
