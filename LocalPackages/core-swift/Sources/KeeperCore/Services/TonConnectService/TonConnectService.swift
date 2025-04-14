@@ -25,12 +25,13 @@ public protocol TonConnectService {
     wallet: Wallet,
     manifest: TonConnectManifest,
     keeperVersion: String) throws -> TonConnect.ConnectEventSuccess
-  func storeConnectedApp(wallet: Wallet, sessionCrypto: TonConnectSessionCrypto, parameters: TonConnectParameters, manifest: TonConnectManifest) throws
+  func storeConnectedApp(wallet: Wallet, sessionCrypto: TonConnectSessionCrypto, parameters: TonConnectParameters, manifest: TonConnectManifest, connectionType: TonConnectApp.ConnectionType) throws
   func confirmConnectionRequest(body: String,
                                 sessionCrypto: TonConnectSessionCrypto,
                                 parameters: TonConnectParameters) async throws
   func getConnectedApps(forWallet wallet: Wallet) throws -> TonConnectApps
   func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws
+  func disconnectApp(_ idx: Int, wallet: Wallet) throws
   func createEmulateRequestBoc(wallet: Wallet,
                               seqno: UInt64,
                               timeout: UInt64,
@@ -156,11 +157,13 @@ final class TonConnectServiceImplementation: TonConnectService {
     wallet: Wallet,
     sessionCrypto: TonConnectSessionCrypto,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest) throws {
+    manifest: TonConnectManifest,
+    connectionType: TonConnectApp.ConnectionType) throws {
     let tonConnectApp = TonConnectApp(
       clientId: parameters.clientId,
       manifest: manifest,
-      keyPair: sessionCrypto.keyPair
+      keyPair: sessionCrypto.keyPair,
+      connectionType: connectionType
     )
 
     if let apps = try? tonConnectAppsVault.loadValue(key: wallet) {
@@ -189,6 +192,12 @@ final class TonConnectServiceImplementation: TonConnectService {
   func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws {
     let apps = try getConnectedApps(forWallet: wallet)
     let updatedApps = apps.removeApp(app)
+    try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+  }
+  
+  func disconnectApp(_ idx: Int, wallet: Wallet) throws {
+    let apps = try getConnectedApps(forWallet: wallet)
+    let updatedApps = apps.removeApp(at: idx)
     try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
   }
   

@@ -179,7 +179,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   }
   
   private func createConnectedAppsSection(notificationsState: WalletNotificationStore.NotificationsState?) -> SettingsListSection? {
-    let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? []
+    let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps.unique) ?? []
     guard !apps.isEmpty else { return nil }
     let items = apps.map { app in
       let isOn = notificationsState?.dapps.first(where: { $0.key == app.manifest.host })?.value ?? false

@@ -26,14 +26,14 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
     connectedAppsStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateApps:
-        let apps = observer.connectedAppsStore.getState()
+        let apps = observer.connectedAppsStore.getState().unique
         observer.didUpdateState?(observer.composeState(apps: apps))
       }
     }
   }
 
   func getInitialState() -> SettingsListState {
-    composeState(apps: connectedAppsStore.getState())
+    composeState(apps: connectedAppsStore.getState().unique)
   }
 
   private func composeState(apps: [TonConnectApp]) -> SettingsListState {

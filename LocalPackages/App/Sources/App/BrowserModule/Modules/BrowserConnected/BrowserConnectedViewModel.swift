@@ -99,7 +99,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
 private extension BrowserConnectedViewModelImplementation {
 
   func reloadContent() {
-    connectedApps = connectedAppsStore.getState()
+    connectedApps = connectedAppsStore.getState().unique
   }
   
   func updateSnapshot(sections: [BrowserConnected.Section]) {
