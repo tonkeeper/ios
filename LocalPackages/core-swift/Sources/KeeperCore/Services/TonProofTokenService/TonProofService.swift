@@ -66,7 +66,7 @@ final class TonProofTokenServiceImplementation: TonProofTokenService {
   func getTonProof(wallet: Wallet, privateKey: PrivateKey) async throws -> TonConnect.TonProof {
     let payload = try await api.getTonconnectPayload()
     let timestamp = UInt64(Date().timeIntervalSince1970)
-    let domain = TonConnect.Domain(domain: "tonkeeper.com")
+    let domain = TonConnect.Domain(domain: "tonkeeper")
     return TonConnect.TonProof(
       timestamp: timestamp,
       domain: domain,
