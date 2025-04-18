@@ -280,7 +280,7 @@
 "send.comment.ascii_error" = "Используйте только ASCII символы: цифры, буквы латинского алфавита и знаки пунктуации.";
 
 "send.required_comment.placeholder" = "Комментарий";
-"send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
+"send.required_comment.description" = "При отправке обязательно укажите memo или тег от биржи. Без него средства не поступят и могут быть утеряны.";
 
 "confirm_send.token_transfer.title" = "Подтвердить действие";
 "confirm_send.token_transfer.transfer" = "Отправка %@";
@@ -687,5 +687,7 @@
 "sign_data.caption" = "Внимательно прочитайте сообщение и, если вы согласны, подпишите транзакцию.";
 "sign_data.binary_content.title" = "Бинарный контент";
 "sign_data.binary_content.subtitle" = "Вы подписываетесь вслепую. Подписывайте только из проверенных источников.";
+"sign_data.unknown_cell.title" = "Неизвестная ячейка";
+"sign_data.unknown_cell.subtitle" = "Вы подписываетесь вслепую. Подписывайте только из проверенных источников\nПодпись может использоваться ончейн";
 "sign_data.slider.title" = "Подписать";
 "sign_data.slider.subtitle" = "Свайп вправо";

@@ -47,11 +47,14 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       self.didHandleDeeplink?(deeplink)
     }, messageHandler: messageHandler, wallet: wallet)
     
+    // kinda kludge for case with different manifestUrl and app.url to show domain correctly on SignData bottomsheet
+    var manifestUrl: URL?
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else {
         completion(.error(.unknownError))
         return
       }
+      manifestUrl = payload.manifestUrl
       self?.performConnect(
         protocolVersion: protocolVersion,
         payload: payload,
@@ -113,7 +116,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       guard let self, let moduleView, let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
       self.openSignData(
         wallet: wallet,
-        dappUrl: dapp.url.host ?? "",
+        dappUrl: manifestUrl?.host ?? app.url.host ?? "",
         appRequest: request,
         fromViewController: moduleView,
         router: router,
@@ -237,7 +240,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
           coordinator: self,
           router: router
         )
-      })
+      },
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
   }
   
   private func openSend(wallet: Wallet,

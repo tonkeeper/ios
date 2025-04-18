@@ -15,7 +15,8 @@ public final class SignDataPresenter {
     dappUrl: String,
     request: TonConnect.SignDataRequest,
     resultHandler: SignDataResultHandler,
-    didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, ViewControllerRouter) async throws -> SignedDataResult?)?
+    didRequireSign: ((TonConnect.SignDataRequest, String, Wallet, ViewControllerRouter) async throws -> SignedDataResult?)?,
+    keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) {
     
     let window = TKWindow(windowScene: windowScene)
@@ -30,7 +31,8 @@ public final class SignDataPresenter {
       resultHandler: resultHandler,
       didRequireSign: { signDataRequest, dappUrl, wallet, viewController in
         return try await didRequireSign?(signDataRequest, dappUrl, wallet, ViewControllerRouter(rootViewController: viewController))
-      }
+      },
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
     coordinator.didFinish = { _ in

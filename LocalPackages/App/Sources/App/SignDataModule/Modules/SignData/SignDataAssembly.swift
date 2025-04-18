@@ -10,7 +10,8 @@ struct SignDataAssembly {
     wallet: Wallet,
     dappUrl: String,
     signRequest: TonConnect.SignDataRequest,
-    resultHandler: SignDataResultHandler
+    resultHandler: SignDataResultHandler,
+    keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<SignDataViewController, SignDataModuleOutput, SignDataModuleInput> {
     let viewModel = SignDataViewModelImplementation(
       wallet: wallet,

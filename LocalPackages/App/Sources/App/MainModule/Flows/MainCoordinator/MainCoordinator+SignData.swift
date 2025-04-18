@@ -27,7 +27,8 @@ extension MainCoordinator {
           wallet: wallet,
           coordinator: self,
           router: router)
-      }
+      },
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
   }
 

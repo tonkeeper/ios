@@ -26,7 +26,8 @@ struct SignDataModule {
       wallet: wallet,
       dappUrl: dappUrl,
       signRequest: signRequest,
-      resultHandler: resultHandler
+      resultHandler: resultHandler,
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
     )
   }
 }

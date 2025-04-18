@@ -35,9 +35,13 @@ final class DappViewController: UIViewController {
       return .portrait
     }
   }
-  
+    
   override var shouldAutorotate: Bool {
     viewModel.isLandscapeEnable
+  }
+  
+  override func viewWillTransition(to size: CGSize, with coordinator: any UIViewControllerTransitionCoordinator) {
+    TKPopupMenuController.dismiss()
   }
 }
 
