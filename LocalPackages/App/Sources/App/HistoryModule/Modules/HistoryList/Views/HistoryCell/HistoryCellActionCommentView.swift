@@ -7,14 +7,14 @@ extension HistoryCellActionView {
     
     let textBackground: UIView = {
       let view = UIView()
-      view.backgroundColor = .Bubble.background
+      view.backgroundColor = .Background.contentTint
       view.layer.cornerRadius = .cornerRadius
       return view
     }()
     
     let textLabel: UILabel = {
       let label = UILabel()
-      label.backgroundColor = .Bubble.background
+      label.backgroundColor = .Background.contentTint
       label.numberOfLines = 0
       return label
     }()
@@ -38,7 +38,7 @@ extension HistoryCellActionView {
       }
       
       init(comment: String) {
-        self.comment = comment.withTextStyle(.body2, color: .Bubble.foreground)
+        self.comment = comment.withTextStyle(.body2, color: .Text.primary)
       }
     }
     
@@ -87,6 +87,7 @@ extension HistoryCellActionView {
     }
     
     func configure(configuration: Configuration) {
+            
       textLabel.attributedText = configuration.comment
       setNeedsLayout()
     }
@@ -125,7 +126,7 @@ private extension CGFloat {
 
 private extension UIColor {
   static var moreButtonBackgroundColor: UIColor {
-    .Bubble.background
+    .Background.contentTint
   }
 }
 
