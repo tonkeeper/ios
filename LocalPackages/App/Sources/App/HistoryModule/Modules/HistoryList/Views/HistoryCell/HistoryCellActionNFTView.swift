@@ -117,12 +117,12 @@ extension HistoryCellActionView {
         self.imageModel = imageModel
         self.name = name?.withTextStyle(
           .body2,
-          color: .Bubble.foreground,
+          color: .Text.primary,
           alignment: .left,
           lineBreakMode: .byTruncatingTail
         )
 
-        let color: UIColor = isSuspecious ? .Accent.orange : .Bubble.foreground.withAlphaComponent(0.64)
+        let color: UIColor = isSuspecious ? .Accent.orange : .Text.secondary
         self.collectionName = collectionName?
           .withTextStyle(
             .body2,
@@ -167,7 +167,7 @@ private extension HistoryCellActionView.NFTView {
     
     blurView.isHidden = true
     
-    contentView.backgroundColor = .Bubble.background
+    contentView.backgroundColor = .Background.contentTint
     contentView.isUserInteractionEnabled = false
     
     contentView.layer.cornerRadius = .cornerRadius

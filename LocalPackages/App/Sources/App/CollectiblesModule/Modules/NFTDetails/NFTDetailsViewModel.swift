@@ -480,6 +480,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
           .disabled: category.disabledBackgroundColor
         ]
       }
+      
+      let contentColor: UIColor = isPrimary ? .Button.primaryForeground : category.titleColor
+      
       let size = TKActionButtonSize.large
       let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
       var contentPadding = size.padding
@@ -488,8 +491,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         content: content,
         contentPadding: contentPadding,
         textStyle: TKActionButtonSize.large.textStyle,
-        textColor: category.titleColor,
-        iconTintColor: isPrimary ? category.titleColor : .Icon.secondary,
+        textColor: contentColor,
+        iconTintColor: contentColor,
         backgroundColors: backgroundColors,
         cornerRadius: size.cornerRadius,
         loaderSize: size.loaderViewSize
