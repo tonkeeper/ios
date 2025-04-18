@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import TKLocalize
 
-public final class UnknownContentView: UIView, TKPopUp.Item {
+public final class BinaryContentView: UIView, TKPopUp.Item {
   public var bottomSpace: CGFloat = 12
 
   public func getView() -> UIView {

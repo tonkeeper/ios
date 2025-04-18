@@ -98,7 +98,7 @@ private extension CollectiblesViewModelImplementation {
     
     var buttonItems = [CollectiblesNavigationBar.ButtonItem]()
     
-    if !nfts.spam.isEmpty {
+    if !nfts.spam.isEmpty || nfts.blacklistedCount > 0 {
       let spamButton = CollectiblesNavigationBar.ButtonItem(
         content: .text(TKLocales.Collectibles.spamButton),
         action: { [weak self] in

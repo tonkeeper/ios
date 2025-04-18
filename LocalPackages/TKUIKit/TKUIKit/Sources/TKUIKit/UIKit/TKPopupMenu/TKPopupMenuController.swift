@@ -47,7 +47,7 @@ public final class TKPopupMenuController {
     self.menuViewController = menuViewController
   }
   
-  static func dismiss() {
+  public static func dismiss() {
     menuViewController?.hideMenu(duration: .animationDuration, completion: {
       menuViewController?.view.removeFromSuperview()
       self.menuViewController = nil

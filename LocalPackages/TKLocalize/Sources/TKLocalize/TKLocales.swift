@@ -1354,6 +1354,13 @@ public enum TKLocales {
       /// Sign
       public static let title = TKLocales.tr("Localizable", "sign_data.slider.title", fallback: "Sign")
     }
+    public enum UnknownCell {
+      /// You are signing blindly. Sign only from trusted sources
+      /// The data in this signature may be used in on-chain operations
+      public static let subtitle = TKLocales.tr("Localizable", "sign_data.unknown_cell.subtitle", fallback: "You are signing blindly. Sign only from trusted sources\nThe data in this signature may be used in on-chain operations")
+      /// Unknown cell
+      public static let title = TKLocales.tr("Localizable", "sign_data.unknown_cell.title", fallback: "Unknown cell")
+    }
   }
   public enum SignOutFull {
     /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.

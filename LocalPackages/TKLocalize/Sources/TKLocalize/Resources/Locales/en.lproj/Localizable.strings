@@ -283,7 +283,7 @@
 "send.comment.ascii_error" = "Use only ASCII characters: digits, latin alphabet letters and punctuation marks.";
 
 "send.required_comment.placeholder" = "Required comment";
-"send.required_comment.description" = "You must include the note from the exchange for transfer. Without it your funds will be lost.";
+"send.required_comment.description" = "When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.";
 
 "confirm_send.token_transfer.title" = "Confirm action";
 "confirm_send.token_transfer.transfer" = "Transfer %@";
@@ -700,6 +700,8 @@
 "sign_data.binary_content.subtitle" = "You are signing blindly. Sign only from trusted sources.";
 "sign_data.slider.title" = "Sign";
 "sign_data.slider.subtitle" = "Swipe right";
+"sign_data.unknown_cell.title" = "Unknown cell";
+"sign_data.unknown_cell.subtitle" = "You are signing blindly. Sign only from trusted sources\nThe data in this signature may be used in on-chain operations";
 
 "dapp.disconnect_toast.title" = "Disconnect";
 "dapp.disconnect_toast.button" = "Disconnect";

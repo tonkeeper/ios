@@ -152,9 +152,9 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
             )
         )
       case .binary(_):
-        return UnknownContentView()
+        return BinaryContentView()
       case .cell(_, _):
-        return UnknownContentView()
+        return UnknownCellContentView()
       }
     }()
     
