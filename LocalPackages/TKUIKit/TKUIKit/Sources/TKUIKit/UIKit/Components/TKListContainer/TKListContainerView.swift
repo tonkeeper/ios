@@ -2,7 +2,7 @@ import UIKit
 
 public enum TKListContainerItemAction {
   case copy(copyValue: String?)
-  case custom(() -> Void)
+  case custom((_: UIView) -> Void)
 }
 
 public protocol TKListContainerItem {
@@ -101,7 +101,7 @@ public final class TKListContainerView: UIView {
               UINotificationFeedbackGenerator().notificationOccurred(.warning)
               ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
             case .custom(let action):
-              action()
+              action(itemView)
             }
           }), for: .touchUpInside)
         } else {

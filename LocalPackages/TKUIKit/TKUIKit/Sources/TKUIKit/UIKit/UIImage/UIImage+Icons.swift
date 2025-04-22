@@ -153,6 +153,12 @@ public extension UIImage {
           .withRenderingMode(.alwaysTemplate)
         }
       }
+      public enum Size24 {
+        public static var flash: UIImage {
+          .imageWithName("Icons/24/ic-flash-24")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
           .imageWithName("Icons/28/ic-qr-viewfinder-28")

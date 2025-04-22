@@ -8,6 +8,10 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
     createModel()
   }
   
+  func setLoading() {
+    extraState = .loading
+  }
+  
   func emulate() async -> Result<Void, TransactionConfirmationError> {
     do {
       let boc = try await createEmulateBoc()
@@ -87,7 +91,8 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         )
       ),
       amount: getAmountValue(),
-      extraState: extraState
+      extraState: extraState,
+      availableExtraTypes: [.default]
     )
   }
   

@@ -8,13 +8,42 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     createModel()
   }
   
+  func setLoading() {
+    extraState = .loading
+  }
+  
+  private var preferredExtraType: TransactionConfirmationModel.ExtraType? = nil
+  private var availableTypes: [TransactionConfirmationModel.ExtraType] = []
+  
+  func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
+    self.preferredExtraType = extraType
+  }
+  
   func emulate() async -> Result<Void, TransactionConfirmationError> {
+    var availableTypes: [TransactionConfirmationModel.ExtraType] = [.default]
+
     do {
+      defer {
+        self.availableTypes = availableTypes
+      }
+      
+      let transfer: Transfer = .nft(nft, transferAmount: BigUInt(1000000000), recipient: recipient, comment: comment)
+      
+      let isBatteryAvailable = await transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
+      
+      if isBatteryAvailable {
+        availableTypes.append(.battery)
+      }
+      
+      // By default we should offer battery transfer if available
+      let preferredType: TransactionConfirmationModel.ExtraType = preferredExtraType ??
+        (isBatteryAvailable ? .battery : .default)
       
       let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .nft(nft, transferAmount: BigUInt(1000000000), recipient: recipient, comment: comment),
-        params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))]
+        transfer: transfer,
+        params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))],
+        preferredExtraType: preferredType
       )
       self.emulationResult = result
       await updateFee(emulationResult: emulationResult)
@@ -112,7 +141,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       transaction: .transfer(.nft(nft)),
       amount: nil,
       extraState: extraState,
-      comment: comment
+      comment: comment,
+      availableExtraTypes: [.default, .battery]
     )
   }
   

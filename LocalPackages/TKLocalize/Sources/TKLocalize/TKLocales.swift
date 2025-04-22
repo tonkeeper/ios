@@ -227,8 +227,8 @@ public enum TKLocales {
         public static let item1 = TKLocales.tr("Localizable", "backup.warning.list.item1", fallback: "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.")
         /// Tonkeeper Support never asks for a recovery phrase.
         public static let item2 = TKLocales.tr("Localizable", "backup.warning.list.item2", fallback: "Tonkeeper Support never asks for a recovery phrase.")
-        /// Everybody with your recovery phrase can access your wallet.
-        public static let item3 = TKLocales.tr("Localizable", "backup.warning.list.item3", fallback: "Everybody with your recovery phrase can access your wallet.")
+        /// Anyone with your recovery phrase can use your wallet.
+        public static let item3 = TKLocales.tr("Localizable", "backup.warning.list.item3", fallback: "Anyone with your recovery phrase can use your wallet.")
       }
     }
   }
@@ -794,6 +794,12 @@ public enum TKLocales {
       /// Sender
       public static let title = TKLocales.tr("Localizable", "event_details.sender.title", fallback: "Sender")
     }
+  }
+  public enum ExtraType {
+    /// Tonkeeper Battery
+    public static let battery = TKLocales.tr("Localizable", "extra_type.battery", fallback: "Tonkeeper Battery")
+    /// TON
+    public static let ton = TKLocales.tr("Localizable", "extra_type.ton", fallback: "TON")
   }
   public enum FinishSetup {
     /// Back up the wallet recovery phrase
@@ -1566,6 +1572,8 @@ public enum TKLocales {
     public static let apy = TKLocales.tr("Localizable", "transaction_confirmation.apy", fallback: "APY")
     /// Will be paid with Battery
     public static let battery = TKLocales.tr("Localizable", "transaction_confirmation.battery", fallback: "Will be paid with Battery")
+    /// Change Payment Method
+    public static let changePaymentMethod = TKLocales.tr("Localizable", "transaction_confirmation.change_payment_method", fallback: "Change Payment Method")
     /// Comment
     public static let comment = TKLocales.tr("Localizable", "transaction_confirmation.comment", fallback: "Comment")
     /// Confirm action

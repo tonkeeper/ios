@@ -44,6 +44,7 @@ final class TKPopupMenuViewController: UIViewController {
         value: item.value,
         description: item.description,
         icon: item.icon,
+        leftIcon: item.leftIcon,
         isSelectable: isSelectable,
         selectionHandler: item.selectionHandler
       )

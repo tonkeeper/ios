@@ -6,6 +6,9 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
   
   let titleLabel = UILabel()
   let valueLabel = UILabel()
+  
+  let leftIconImageView = TKImageView()
+  
   let rightIconImageView: UIImageView = {
     let view = UIImageView()
     view.tintColor = .Accent.blue
@@ -58,11 +61,12 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  struct Model {
+  public struct Model {
     let title: NSAttributedString
     let value: NSAttributedString?
     let description: NSAttributedString?
     let icon: UIImage?
+    let leftIcon: TKImageView.Model?
     let isSelectable: Bool
     let selectionHandler: (() -> Void)?
     
@@ -70,12 +74,14 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
          value: String?,
          description: String?,
          icon: UIImage?,
+         leftIcon: TKImageView.Model?,
          isSelectable: Bool,
          selectionHandler: (() -> Void)? = nil) {
       self.title = title.withTextStyle(.label1, color: .Text.primary)
       self.value = value?.withTextStyle(.body1, color: .Text.secondary)
       self.description = description?.withTextStyle(.body2, color: .Text.secondary)
       self.icon = icon
+      self.leftIcon = leftIcon
       self.isSelectable = isSelectable
       self.selectionHandler = selectionHandler
     }
@@ -83,10 +89,23 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
   
   func configure(model: Model) {
     titleLabel.attributedText = model.title
+    
+    titleLabel.textAlignment = .left
+    
     valueLabel.attributedText = model.value
     rightIconImageView.image = model.icon
     rightIconImageView.isHidden = model.icon == nil
     selectionView.isHidden = !model.isSelectable
+    
+    leftIconImageView.image = model.leftIcon?.image
+    leftIconImageView.tintColor = model.leftIcon?.tintColor
+    
+    if let corners = model.leftIcon?.corners {
+      leftIconImageView.corners = corners
+    }
+    
+    leftIconImageView.size = .size(CGSize.leftIconSize)
+    leftIconImageView.isHidden = model.leftIcon == nil
     
     setNeedsLayout()
     invalidateIntrinsicContentSize()
@@ -113,6 +132,7 @@ private extension TKPopupMenuItemView {
     stackView.addArrangedSubview(rightIconImageView)
     stackView.addArrangedSubview(selectionView)
     labelStackView.addArrangedSubview(labelTopStackView)
+    labelTopStackView.addArrangedSubview(leftIconImageView)
     labelTopStackView.addArrangedSubview(titleLabel)
     labelTopStackView.addArrangedSubview(valueLabel)
     
@@ -130,9 +150,17 @@ private extension TKPopupMenuItemView {
       make.left.right.equalTo(self).inset(16)
     }
     
+    leftIconImageView.snp.makeConstraints { make in
+      make.width.height.equalTo(CGSize.leftIconSize)
+    }
+    
     selectionView.snp.makeConstraints { make in
       make.width.equalTo(16)
     }
   }
 }
 
+
+private extension CGSize {
+  static let leftIconSize = CGSize(width: 24, height: 24)
+}
