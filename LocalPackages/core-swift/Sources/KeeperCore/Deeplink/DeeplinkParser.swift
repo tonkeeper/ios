@@ -38,9 +38,12 @@ public struct DeeplinkParser {
     let deeplinkPrefixes = [
       "ton://",
       "tonkeeper://",
+      "tonkeeper-mob://",
       "tonkeeperx://",
       "https://app.tonkeeper.com/",
-      "https://tonhub.com/"
+      "https://tonhub.com/",
+      "tonkeeper-mob://",
+      "tonkeeper-tc-mob://"
     ]
     
     guard let prefix = deeplinkPrefixes.first(where: { string.hasPrefix($0) }) else {
