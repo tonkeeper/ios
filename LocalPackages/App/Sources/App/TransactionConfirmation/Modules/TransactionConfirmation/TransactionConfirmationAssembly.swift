@@ -15,7 +15,8 @@ struct TransactionConfirmationAssembly {
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       fundsValidator: keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator(),
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
-      ratesService: keeperCoreMainAssembly.servicesAssembly.ratesService()
+      ratesService: keeperCoreMainAssembly.servicesAssembly.ratesService(),
+      configuration: keeperCoreMainAssembly.configurationAssembly.configuration
     )
     let viewController = TransactionConfirmationViewController(viewModel: viewModel)
     

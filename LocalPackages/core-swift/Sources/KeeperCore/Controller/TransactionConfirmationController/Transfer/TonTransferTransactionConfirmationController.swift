@@ -8,6 +8,10 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     createModel()
   }
   
+  func setLoading() {
+    extraState = .loading
+  }
+  
   func emulate() async -> Result<Void, TransactionConfirmationError> {
     do {
       let result = try await transferService.emulate(
@@ -92,7 +96,8 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
       transaction: .transfer(.ton(isMaxAmount)),
       amount: getAmountValue(),
       extraState: extraState,
-      comment: comment
+      comment: comment,
+      availableExtraTypes: [.default]
     )
   }
   

@@ -648,6 +648,7 @@
 "transaction_confirmation.buttons.confirm_and_unstake" = "Confirm and Unstake";
 "transaction_confirmation.buttons.confirm_and_collect" = "Confirm and Collect";
 "transaction_confirmation.tap_to_pay" = "Tap to pay in %@";
+"transaction_confirmation.change_payment_method" = "Change Payment Method";
 
 "battery.refill.title" = "Tonkeeper Battery";
 "battery.refill.empty_caption" = "Swap via Tonkeeper, send tokens and unstake TON.";
@@ -705,3 +706,6 @@
 
 "dapp.disconnect_toast.title" = "Disconnect";
 "dapp.disconnect_toast.button" = "Disconnect";
+
+"extra_type.ton" = "TON";
+"extra_type.battery" = "Tonkeeper Battery";

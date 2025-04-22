@@ -40,10 +40,10 @@ public struct TransactionConfirmationModel {
     case Refund(amount: Amount, type: ExtraType)
   }
   
-  public enum ExtraType {
+  public enum ExtraType: Equatable {
     case `default`
     case battery
-    case gasless(toggleOption: Token)
+    case gasless(token: JettonInfo)
   }
   
   public let wallet: Wallet
@@ -53,6 +53,7 @@ public struct TransactionConfirmationModel {
   public let amount: Amount?
   public let extraState: ExtraState
   public let comment: String?
+  public let availableExtraTypes: [ExtraType]
 
   init(wallet: Wallet, 
        recipient: String?,
@@ -60,7 +61,9 @@ public struct TransactionConfirmationModel {
        transaction: Transaction,
        amount: Amount?,
        extraState: ExtraState,
-       comment: String? = nil) {
+       comment: String? = nil,
+       availableExtraTypes: [ExtraType]
+  ) {
     self.wallet = wallet
     self.recipient = recipient
     self.recipientAddress = recipientAddress
@@ -68,6 +71,7 @@ public struct TransactionConfirmationModel {
     self.amount = amount
     self.extraState = extraState
     self.comment = comment
+    self.availableExtraTypes = availableExtraTypes
   }
 }
 
@@ -81,12 +85,13 @@ public protocol TransactionConfirmationController: AnyObject {
   var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)? { get set }
   
   func getModel() -> TransactionConfirmationModel
+  func setLoading() -> Void
   func emulate() async -> Result<Void, TransactionConfirmationError>
   func sendTransaction() async -> Result<Void, TransactionConfirmationError>
   
-  func toggleIsPreferGasless()
+  func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType)
 }
 
 public extension TransactionConfirmationController {
-  func toggleIsPreferGasless() {}
+  func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {}
 }

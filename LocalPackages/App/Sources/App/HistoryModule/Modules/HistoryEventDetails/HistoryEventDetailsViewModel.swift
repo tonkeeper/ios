@@ -415,7 +415,7 @@ private extension HistoryEventDetailsViewModelImplementation {
         case .decrypted(let value):
           return .copy(copyValue: value)
         case .encrypted(let payload):
-          return .custom { [weak self, wallet, event] in
+          return .custom { [weak self, wallet, event] _ in
             self?.didSelectEncryptedComment?(wallet, payload, event.accountEvent.eventId)
           }
         }

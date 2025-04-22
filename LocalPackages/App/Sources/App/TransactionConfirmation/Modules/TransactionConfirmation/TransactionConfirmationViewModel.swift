@@ -75,6 +75,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private let fundsValidator: InsufficientFundsValidator
   private let currencyStore: CurrencyStore
   private let ratesService: RatesService
+  private let configuration: Configuration
 
   // MARK: - Init
   
@@ -83,13 +84,15 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
        decimalFormatter: DecimalAmountFormatter,
        fundsValidator: InsufficientFundsValidator,
        currencyStore: CurrencyStore,
-       ratesService: RatesService) {
+       ratesService: RatesService,
+       configuration: Configuration) {
     self.confirmationController = confirmationController
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
     self.fundsValidator = fundsValidator
     self.currencyStore = currencyStore
     self.ratesService = ratesService
+    self.configuration = configuration
   }
   
   // MARK: - Private
@@ -98,6 +101,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     self.updateTask?.cancel()
     self.updateTask = Task {
       self.state = .idle
+      confirmationController.setLoading()
+      let loadingModel = confirmationController.getModel()
+      update(with: loadingModel)
+      // TODO: сбрасывать текущий стейт, чтобы комиссия была со скелетоном
       let result = await confirmationController.emulate()
       if case let .failure(error) = result {
        handleError(error)
@@ -437,10 +444,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   private func createFeeListItem(transaction: TransactionConfirmationModel,
                                  rate: Rates.Rate?,
                                  currency: Currency) -> TKListContainerItemView.Model {
-    var copyValue: String?
-    var caption: NSAttributedString?
     var captionButton: TKPlainButton.Model?
     var isRefund: Bool = false
+    var extraType: TransactionConfirmationModel.ExtraType = .default
     let value: TKListContainerItemView.Model.Value
     switch transaction.extraState {
     case .loading:
@@ -454,59 +460,53 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           return (amount, type, false)
         }
       }()
-      
+            
       isRefund = refund
+      extraType = type
       
-      let feeValueFormatted = formatValueItem(
-        amount: amount.value,
-        fractionDigits: amount.token.fractionDigits,
-        maximumFractionDigits: amount.token.fractionDigits,
-        symbol: amount.token.symbol
-      )
-      copyValue = feeValueFormatted
+      var feeValueFormatted: String = ""
       var feeConvertedFormatted: String?
-      if let rate {
-        let converted = RateConverter().convert(
+      switch extraType {
+      case .battery:
+        if let chargesCount = convertAmountIntoChargesCount(amount: amount.value) {
+          feeValueFormatted = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
+        }
+      default:
+        feeValueFormatted = formatValueItem(
           amount: amount.value,
-          amountFractionLength: amount.token.fractionDigits,
-          rate: rate
+          fractionDigits: amount.token.fractionDigits,
+          maximumFractionDigits: amount.token.fractionDigits,
+          symbol: amount.token.symbol
         )
-        let formatted = formatValueItem(
-          amount: converted.amount,
-          fractionDigits: converted.fractionLength,
-          maximumFractionDigits: 2,
-          symbol: currency.symbol
-        )
-        feeConvertedFormatted = formatted
+        
+        if let rate {
+          let converted = RateConverter().convert(
+            amount: amount.value,
+            amountFractionLength: amount.token.fractionDigits,
+            rate: rate
+          )
+          let formatted = formatValueItem(
+            amount: converted.amount,
+            fractionDigits: converted.fractionLength,
+            maximumFractionDigits: 2,
+            symbol: currency.symbol
+          )
+          feeConvertedFormatted = formatted
+        }
       }
+      
       value = .value(TKListContainerItemDefaultValueView.Model(
         topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(String.almostEqual) \(feeValueFormatted)"),
         bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: feeConvertedFormatted)
       ))
       
-      
-      switch type {
-      case .default:
-        caption = nil
-        captionButton = nil
-      case .battery:
-        caption = TKLocales.TransactionConfirmation.battery.withTextStyle(.body2, color: .Text.tertiary)
-        captionButton = nil
-      case .gasless(let toggleOption):
-        caption = nil
-        let captionButtonTitle: String = {
-          switch toggleOption {
-          case .ton:
-            return TKLocales.TransactionConfirmation.tapToPay(TonInfo.symbol)
-          case .jetton(let jettonItem):
-            return TKLocales.TransactionConfirmation.tapToPay(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)
-          }
-        }()
-        captionButton = TKPlainButton.Model(title: captionButtonTitle.withTextStyle(.body2, color: .Text.tertiary), action: { [weak self] in
-          self?.confirmationController.toggleIsPreferGasless()
-          self?.update()
-        })
+      if (transaction.availableExtraTypes.count > 1) {
+        captionButton = TKPlainButton.Model(
+          title: TKLocales.TransactionConfirmation.changePaymentMethod.withTextStyle(.body2, color: .Text.tertiary),
+          action: nil
+        )
       }
+      
     case .none:
       value = .value(TKListContainerItemDefaultValueView.Model(
         topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
@@ -514,10 +514,66 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
     return TKListContainerItemView.Model(
       title: isRefund ? TKLocales.EventDetails.refund : TKLocales.EventDetails.fee,
-      caption: caption,
       captionButtonModel: captionButton,
       value: value,
-      action: .copy(copyValue: copyValue)
+      action: .custom({ [weak self] view in
+        guard transaction.availableExtraTypes.count > 1,  let self else { return }
+        
+        let items = transaction.availableExtraTypes.map { item in
+          let title = {
+            switch item {
+              case .default:
+                return TKLocales.ExtraType.ton
+              case .battery:
+                return TKLocales.ExtraType.battery
+              case .gasless(let token):
+                return token.symbol ?? token.name
+            }
+          }()
+          
+          let leftIcon: TKImageView.Model? = {
+            switch item {
+              case .default:
+              return TKImageView.Model(
+                image: .image(.TKCore.Icons.Size44.tonLogo),
+                tintColor: nil,
+                corners: .circle
+              )
+                
+              case .battery:
+              return TKImageView.Model(
+                image: .image(.TKUIKit.Icons.Size24.flash),
+                tintColor: .Accent.green,
+                corners: .none
+              )
+              case .gasless(let token):
+              return TKImageView.Model(
+                image: .urlImage(token.imageURL),
+                tintColor: nil,
+                corners: .circle
+              )
+            }
+          }()
+          
+          return TKPopupMenuItem(title: title,
+                          value: nil,
+                          description: nil,
+                          icon: nil,
+                          leftIcon: leftIcon) {
+            self.confirmationController.setPrefferedExtraType(extraType: item)
+            self.update()
+          }
+        }
+        
+        let selectedIndex = transaction.availableExtraTypes.firstIndex(of: extraType)
+        
+        TKPopupMenuController.show(
+          sourceView: view,
+          position: .topRight,
+          width: 0,
+          items: items,
+          selectedIndex: selectedIndex)
+      })
     )
   }
   
@@ -605,6 +661,18 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
+  private func convertAmountIntoChargesCount(amount: BigUInt) -> Int? {
+    guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: false) else { return nil }
+    let fractionalDigits: Int16 = 9
+    
+    let convertedAmount = NSDecimalNumber(mantissa: UInt64(amount), exponent: -fractionalDigits, isNegative: false)
+    
+    let chargesCountDecimal = convertedAmount.dividing(by: batteryMeanFees)
+    let chargesCountRounded = chargesCountDecimal.rounding(accordingToBehavior: NSDecimalNumberHandler(roundingMode: .up, scale: 0, raiseOnExactness: false, raiseOnOverflow: false, raiseOnUnderflow: false, raiseOnDivideByZero: false))
+    
+    return Int(truncating: chargesCountRounded)
+  }
+  
   private func formatValueItem(amount: BigUInt,
                                fractionDigits: Int,
                                maximumFractionDigits: Int,
@@ -614,6 +682,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       fractionDigits: fractionDigits,
       maximumFractionDigits: maximumFractionDigits,
       symbol: symbol
+    )
+  }
+  
+  private func formatValueItem(amount: BigUInt,
+                               fractionDigits: Int,
+                               maximumFractionDigits: Int) -> String {
+    amountFormatter.formatAmount(
+      amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: maximumFractionDigits
     )
   }
   

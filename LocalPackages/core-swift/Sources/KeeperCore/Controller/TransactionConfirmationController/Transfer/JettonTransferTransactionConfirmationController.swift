@@ -1,18 +1,44 @@
 import Foundation
+import TKUIKit
 import TonSwift
 import BigInt
 import TonAPI
 
 final class JettonTransferTransactionConfirmationController: TransactionConfirmationController {
   
-  private var preferGasless: Bool = true
+  private var preferredExtraType: TransactionConfirmationModel.ExtraType? = nil
+  private var availableTypes: [TransactionConfirmationModel.ExtraType] = []
   
   func getModel() -> TransactionConfirmationModel {
     createModel()
   }
   
+  func setLoading() {
+    extraState = .loading
+  }
+  
   func emulate() async -> Result<Void, TransactionConfirmationError> {
+    var availableTypes: [TransactionConfirmationModel.ExtraType] = [.default]
+
     do {
+      defer {
+        self.availableTypes = availableTypes
+      }
+      
+      let transfer: Transfer = .jetton(jettonItem, transferAmount: BigUInt(1000000000), amount: isMax ? 1 : amount, recipient: recipient, comment: comment)
+      
+      let gaslessAvailable = await transferService.isGaslessAvailable(wallet: wallet, transfer: transfer)
+      
+      let isBatteryAvailable = await transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
+      
+      if isBatteryAvailable {
+        availableTypes.append(.battery)
+      }
+      
+      if gaslessAvailable {
+        availableTypes.append(.gasless(token: jettonItem.jettonInfo))
+      }
+      
       let isMax = await {
         do {
           let balance = try await balanceService.loadWalletBalance(wallet: wallet, currency: .USD)
@@ -23,12 +49,16 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         }
       }()
       self.isMax = isMax
+      
+      // By default we should offer battery transfer if available
+      let preferredType: TransactionConfirmationModel.ExtraType = preferredExtraType ??
+        (isBatteryAvailable ? .battery : .default)
 
       let result = try await transferService.emulate(
         wallet: wallet,
-        transfer: .jetton(jettonItem, transferAmount: BigUInt(1000000000), amount: isMax ? 1 : amount, recipient: recipient, comment: comment),
+        transfer: transfer,
         params: [.init(address: try wallet.address.toRaw(), balance: Int64(2000000000))],
-        isPreferGasless: preferGasless
+        preferredExtraType: preferredType
       )
       self.emulationResult = result
       await updateFee(emulationResult: emulationResult)
@@ -65,6 +95,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         : transferAmount
         return transferAmount
       }()
+      
       try await transferService.sendTransaction(
         wallet: wallet,
         transfer: .jetton(jettonItem, transferAmount: transferAmount, amount: getAmountValue().value, recipient: recipient, comment: comment),
@@ -82,13 +113,14 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     }
   }
   
-  func toggleIsPreferGasless() {
-    preferGasless.toggle()
+  func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
+    self.preferredExtraType = extraType
   }
   
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
   
   @Atomic private var emulationResult: TransferEmulationResult?
+  // TODO: сбрасывать стейт на время эмуляции
   @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   @Atomic private var isMax: Bool = false
 
@@ -139,7 +171,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       transaction: .transfer(.jetton(jettonItem.jettonInfo)),
       amount: getAmountValue(),
       extraState: extraState,
-      comment: comment
+      comment: comment,
+      availableExtraTypes: self.availableTypes
     )
   }
   
@@ -155,24 +188,11 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     case .battery:
       extraType = .battery
     case .gasless(_, _):
-      switch emulationResult.extra.token {
-      case .ton:
-        extraType = .gasless(
-          toggleOption: .jetton(jettonItem)
-        )
-      case .jetton:
-        extraType = .gasless(
-          toggleOption: .ton
-        )
-      }
+      extraType = .gasless(
+        token: jettonItem.jettonInfo
+      )
     case .default:
-      if emulationResult.isGaslessAvailable {
-        extraType = .gasless(
-          toggleOption: .jetton(jettonItem)
-        )
-      } else {
-        extraType = .default
-      }
+      extraType = .default
     }
     
     let (amount, isRefund) = {
@@ -190,7 +210,12 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     )
     
     self.extraState = TransactionConfirmationModel.ExtraState.extra(
-      isRefund ? .Refund(amount: confirmationModelAmount, type: extraType) : .Fee(amount: confirmationModelAmount, type: extraType)
+      isRefund ?
+        .Refund(amount: confirmationModelAmount, type: extraType) :
+        .Fee(
+          amount: confirmationModelAmount,
+          type: extraType
+        )
     )
   }
   
