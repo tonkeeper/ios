@@ -57,12 +57,17 @@ public struct DeeplinkParser {
   }
   
   private func parseTonconnectDeeplink(string: String) -> Deeplink? {
-    let tonconnectDeeplinkPrefix = "tc://"
-    guard string.hasPrefix(tonconnectDeeplinkPrefix) else {
+    let tonconnectDeeplinkPrefixes = [
+      "tc://",
+      "tonkeeper-tc://",
+      "tonkeeper-tc-mob://"
+    ]
+    
+    guard let prefix = tonconnectDeeplinkPrefixes.first(where: { string.hasPrefix($0) }) else {
       return nil
     }
-    
-    let prefixIndex = string.index(string.startIndex, offsetBy: tonconnectDeeplinkPrefix.count)
+
+    let prefixIndex = string.index(string.startIndex, offsetBy: prefix.count)
     let unprefixedString = String(string[prefixIndex...])
     guard let url = URL(string: unprefixedString) else { return nil }
     
