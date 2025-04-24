@@ -1,6 +1,6 @@
 import UIKit
 
-public final class ToastView: UIView, ConfigurableView {
+public final class ToastView: TKPassthroughView, ConfigurableView {
   let titleLabel = UILabel()
   let activityView = TKLoaderView(size: .small, style: .primary)
   
@@ -111,6 +111,7 @@ public final class ToastView: UIView, ConfigurableView {
 
 private extension ToastView {
   func setup() {
+    stackView.isUserInteractionEnabled = false
     addSubview(stackView)
     stackView.addArrangedSubview(activityView)
     stackView.addArrangedSubview(titleLabel)
