@@ -50,9 +50,17 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       }()
       self.isMax = isMax
       
-      // By default we should offer battery transfer if available
-      let preferredType: TransactionConfirmationModel.ExtraType = preferredExtraType ??
-        (isBatteryAvailable ? .battery : .default)
+      let preferredType: TransactionConfirmationModel.ExtraType = {
+        if let preferredExtraType { return preferredExtraType }
+        switch settingsRepository.getTransferSettings(wallet: wallet).jettonTransfer {
+        case .default:
+          return .default
+        case .gasless:
+          return .gasless(token: jettonItem.jettonInfo)
+        case .battery:
+          return isBatteryAvailable ? .battery : .default
+        }
+      }()
 
       let result = try await transferService.emulate(
         wallet: wallet,
@@ -95,7 +103,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         : transferAmount
         return transferAmount
       }()
-      
+    
       try await transferService.sendTransaction(
         wallet: wallet,
         transfer: .jetton(jettonItem, transferAmount: transferAmount, amount: getAmountValue().value, recipient: recipient, comment: comment),
@@ -107,6 +115,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
           return signed
         }
       )
+      
       return .success(())
     } catch {
       return .failure(.failedToSendTransaction)
@@ -114,7 +123,17 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   }
   
   func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
-    self.preferredExtraType = extraType
+    preferredExtraType = extraType
+    var transferSettings = settingsRepository.getTransferSettings(wallet: wallet)
+    switch extraType {
+    case .default:
+      transferSettings.jettonTransfer = .default
+    case .battery:
+      transferSettings.jettonTransfer = .battery
+    case .gasless:
+      transferSettings.jettonTransfer = .gasless
+    }
+    try? settingsRepository.setTransferSettings(wallet: wallet, transferSettings: transferSettings)
   }
   
   public var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
@@ -136,6 +155,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let transferService: TransferService
   private let ratesService: RatesService
   private let balanceService: BalanceService
+  private let settingsRepository: SettingsRepository
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -148,7 +168,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
        currencyStore: CurrencyStore,
        transferService: TransferService,
        ratesService: RatesService,
-       balanceService: BalanceService) {
+       balanceService: BalanceService,
+       settingsRepository: SettingsRepository) {
     self.wallet = wallet
     self.recipient = recipient
     self.jettonItem = jettonItem
@@ -161,6 +182,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     self.transferService = transferService
     self.ratesService = ratesService
     self.balanceService = balanceService
+    self.settingsRepository = settingsRepository
   }
   
   private func createModel() -> TransactionConfirmationModel {

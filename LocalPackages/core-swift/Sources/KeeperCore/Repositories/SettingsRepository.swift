@@ -53,13 +53,40 @@ public struct SettingsRepository {
     }
   }
   
-  public var isSecureMode: Bool {
-    get {
-      settingsVault.value(key: .isSecureMode) ?? false
+  struct TransactionSettings: Codable {
+    enum FeeOption: Codable {
+      case `default`
+      case gasless
+      case battery
     }
-    set {
-      settingsVault.setValue(newValue, key: .isSecureMode)
-    }
+    
+    var jettonTransfer: FeeOption = .battery
+    var nftTransfer: FeeOption = .battery
+    var swap: FeeOption = .battery
+  }
+  
+  func getTransferSettings(wallet: Wallet) -> TransactionSettings {
+    guard let data: Data = settingsVault.value(key: .transferSettings),
+          let settings = try? JSONDecoder().decode([Wallet: TransactionSettings].self, from: data),
+          let walletSettings = settings[wallet] else { return TransactionSettings() }
+    return walletSettings
+  }
+  
+  func setTransferSettings(wallet: Wallet,
+                           transferSettings: TransactionSettings) throws {
+    var settings: [Wallet: TransactionSettings] = try {
+      if let data: Data = settingsVault.value(key: .transferSettings) {
+        let decoder = JSONDecoder()
+        let settings = try decoder.decode([Wallet: TransactionSettings].self, from: data)
+        return settings
+      } else {
+        return [:]
+      }
+    }()
+    
+    settings[wallet] = transferSettings
+    let data = try JSONEncoder().encode(settings)
+    settingsVault.setValue(data, key: .transferSettings)
   }
 }
 
@@ -73,5 +100,5 @@ public enum SettingsKey: String, CustomStringConvertible {
   case didMigrateV2
   case didMigrateV3
   case didMigrateRN
-  case isSecureMode
+  case transferSettings
 }

@@ -84,7 +84,8 @@ public struct TransferService {
        balanceService: BalanceService,
        sendService: SendService,
        accountService: AccountService,
-       configuration: Configuration) {
+       configuration: Configuration,
+       settingsRepository: SettingsRepository) {
     self.tonProofTokenService = tonProofTokenService
     self.batteryService = batteryService
     self.balanceService = balanceService
@@ -308,6 +309,57 @@ public struct TransferService {
         params: params,
         isGaslessAvailable: false
       )
+    }
+  }
+  
+  func isGaslessAvailable(wallet: Wallet, transfer: Transfer) async -> Bool {
+    let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
+    let isGaslessToken = await isGaslessToken(wallet: wallet, transfer: transfer)
+    let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
+    
+    guard wallet.isGaslessAvailable,
+          tonProofToken != nil,
+          let _ = try? batteryConfig?.excessAddress,
+          isGaslessToken else {
+      return false
+    }
+    return true
+  }
+  
+  func isRelayerAvailable(wallet: Wallet,
+                          transfer: Transfer) async -> Bool {
+    let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
+    guard let tonProofToken else { return false }
+    
+    let isBalanceAvailable: () async -> Bool = {
+      return await isBatteryBalanceEnable(wallet: wallet, tonProofToken: tonProofToken)
+    }
+    switch transfer {
+    case .ton:
+      return false
+    case .jetton:
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable && isBalanceAvailable
+    case .nft:
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable && isBalanceAvailable
+    case .stonfiSwap:
+      let isBalanceAvailable = await isBalanceAvailable()
+      return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable && isBalanceAvailable
+    case .signRaw(_, let isForceRelayer):
+      return isForceRelayer
+    case .renewDNS:
+      return false
+    }
+  }
+  
+  func isBatteryBalanceEnable(wallet: Wallet, tonProofToken: String) async -> Bool {
+    do {
+      let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
+      let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
+      return compareResult == .orderedDescending
+    } catch {
+      return false
     }
   }
   
@@ -736,57 +788,6 @@ public struct TransferService {
       return rechargeMethods.contains(where: {
         $0.supportGasless && $0.jettonMasterAddress == jettonItem.jettonInfo.address
       })
-    } catch {
-      return false
-    }
-  }
-  
-  func isGaslessAvailable(wallet: Wallet, transfer: Transfer) async -> Bool {
-    let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
-    let isGaslessToken = await isGaslessToken(wallet: wallet, transfer: transfer)
-    let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
-    
-    guard wallet.isGaslessAvailable,
-          tonProofToken != nil,
-          let _ = try? batteryConfig?.excessAddress,
-          isGaslessToken else {
-      return false
-    }
-    return true
-  }
-  
-  func isRelayerAvailable(wallet: Wallet,
-                          transfer: Transfer) async -> Bool {
-    let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
-    guard let tonProofToken else { return false }
-    
-    let isBalanceAvailable: () async -> Bool = {
-      return await isBatteryBalanceEnable(wallet: wallet, tonProofToken: tonProofToken)
-    }
-    switch transfer {
-    case .ton:
-      return false
-    case .jetton:
-      let isBalanceAvailable = await isBalanceAvailable()
-      return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable && isBalanceAvailable
-    case .nft:
-      let isBalanceAvailable = await isBalanceAvailable()
-      return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable && isBalanceAvailable
-    case .stonfiSwap:
-      let isBalanceAvailable = await isBalanceAvailable()
-      return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable && isBalanceAvailable
-    case .signRaw(_, let isForceRelayer):
-      return isForceRelayer
-    case .renewDNS:
-      return false
-    }
-  }
-  
-  func isBatteryBalanceEnable(wallet: Wallet, tonProofToken: String) async -> Bool {
-    do {
-      let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
-      let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
-      return compareResult == .orderedDescending
     } catch {
       return false
     }
