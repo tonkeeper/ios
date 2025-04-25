@@ -67,6 +67,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private var updateTask: Task<Void, Never>?
   
+  private var didChangePaymentMethod = false
+  
   // MARK: - Dependencies
   
   private let confirmationController: TransactionConfirmationController
@@ -501,8 +503,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       ))
       
       if (transaction.availableExtraTypes.count > 1) {
+        let color: UIColor = didChangePaymentMethod ? .Text.tertiary : .Text.accent
         captionButton = TKPlainButton.Model(
-          title: TKLocales.TransactionConfirmation.changePaymentMethod.withTextStyle(.body2, color: .Text.tertiary),
+          title: TKLocales.TransactionConfirmation.changePaymentMethod.withTextStyle(.body2, color: color),
           action: nil
         )
       }
@@ -559,9 +562,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                           value: nil,
                           description: nil,
                           icon: nil,
-                          leftIcon: leftIcon) {
-            self.confirmationController.setPrefferedExtraType(extraType: item)
-            self.update()
+                          leftIcon: leftIcon) { [weak self] in
+            self?.didChangePaymentMethod = true
+            self?.confirmationController.setPrefferedExtraType(extraType: item)
+            self?.update()
           }
         }
         

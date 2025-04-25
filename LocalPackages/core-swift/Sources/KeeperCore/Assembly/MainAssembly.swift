@@ -68,7 +68,8 @@ public final class MainAssembly {
     self.transferAssembly = TransferAssembly(
       servicesAssembly: servicesAssembly,
       batteryAssembly: batteryAssembly,
-      configurationAssembly: configurationAssembly
+      configurationAssembly: configurationAssembly,
+      repositoriesAssembly: repositoriesAssembly
     )
     self.transactionsManagementAssembly = transactionsManagementAssembly
   }
@@ -162,7 +163,8 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       transferService: transferAssembly.transferService(),
       ratesService: servicesAssembly.ratesService(),
-      balanceService: servicesAssembly.balanceService()
+      balanceService: servicesAssembly.balanceService(),
+      settingsRepository: repositoriesAssembly.settingsRepository()
     )
   }
   
@@ -200,7 +202,8 @@ public final class MainAssembly {
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       transferService: transferAssembly.transferService(),
-      ratesService: servicesAssembly.ratesService()
+      ratesService: servicesAssembly.ratesService(),
+      settingsRepository: repositoriesAssembly.settingsRepository()
     )
   }
   

@@ -16,7 +16,17 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   private var availableTypes: [TransactionConfirmationModel.ExtraType] = []
   
   func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
-    self.preferredExtraType = extraType
+    preferredExtraType = extraType
+    var transferSettings = settingsRepository.getTransferSettings(wallet: wallet)
+    switch extraType {
+    case .default:
+      transferSettings.jettonTransfer = .default
+    case .battery:
+      transferSettings.jettonTransfer = .battery
+    case .gasless:
+      return
+    }
+    try? settingsRepository.setTransferSettings(wallet: wallet, transferSettings: transferSettings)
   }
   
   func emulate() async -> Result<Void, TransactionConfirmationError> {
@@ -35,9 +45,17 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         availableTypes.append(.battery)
       }
       
-      // By default we should offer battery transfer if available
-      let preferredType: TransactionConfirmationModel.ExtraType = preferredExtraType ??
-        (isBatteryAvailable ? .battery : .default)
+      let preferredType: TransactionConfirmationModel.ExtraType = {
+        if let preferredExtraType { return preferredExtraType }
+        switch settingsRepository.getTransferSettings(wallet: wallet).jettonTransfer {
+        case .default:
+          return .default
+        case .gasless:
+          return isBatteryAvailable ? .battery : .default
+        case .battery:
+          return isBatteryAvailable ? .battery : .default
+        }
+      }()
       
       let result = try await transferService.emulate(
         wallet: wallet,
@@ -110,6 +128,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   private let currencyStore: CurrencyStore
   private let transferService: TransferService
   private let ratesService: RatesService
+  private let settingsRepository: SettingsRepository
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -120,7 +139,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        transferService: TransferService,
-       ratesService: RatesService) {
+       ratesService: RatesService,
+       settingsRepository: SettingsRepository) {
     self.wallet = wallet
     self.recipient = recipient
     self.nft = nft
@@ -131,6 +151,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     self.currencyStore = currencyStore
     self.transferService = transferService
     self.ratesService = ratesService
+    self.settingsRepository = settingsRepository
   }
   
   private func createModel() -> TransactionConfirmationModel {
