@@ -24,6 +24,7 @@ final class HistoryEventDetailsTransactionButtonView: UIView {
   struct Configuration {
     let title: NSAttributedString
     let action: () -> Void
+    let longPressAction: () -> Void
   }
   
   private let configuration: Configuration
@@ -52,6 +53,13 @@ final class HistoryEventDetailsTransactionButtonView: UIView {
     let button = TKButton()
     button.configuration = buttonConfiguration
     
+    let longPressRecognizer = UILongPressGestureRecognizer(
+      target: self,
+      action: #selector(longPressAction(recognizer:))
+    )
+    longPressRecognizer.minimumPressDuration = 1
+    button.addGestureRecognizer(longPressRecognizer)
+    
     addSubview(button)
     button.snp.makeConstraints { make in
       make.top.bottom.equalTo(self)
@@ -59,5 +67,10 @@ final class HistoryEventDetailsTransactionButtonView: UIView {
       make.left.greaterThanOrEqualTo(self).priority(.medium)
       make.right.lessThanOrEqualTo(self).priority(.medium)
     }
+  }
+  
+  @objc
+  private func longPressAction(recognizer: UILongPressGestureRecognizer) {
+    configuration.longPressAction()
   }
 }
