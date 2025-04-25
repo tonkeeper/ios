@@ -468,8 +468,9 @@ private extension HistoryEventDetailsViewModelImplementation {
   }
   
   func configureTransactionButton() -> HistoryEventDetailsTransactionButtonComponent {
+    let transactionId = event.accountEvent.eventId
     let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label1, color: .Text.primary)
-    let hash = String(event.accountEvent.eventId.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
+    let hash = String(transactionId.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
     let title = NSMutableAttributedString(attributedString: transaction)
     title.append(hash)
     
@@ -478,6 +479,11 @@ private extension HistoryEventDetailsViewModelImplementation {
         title: title,
         action: { [weak self] in
           self?.didTapOpenTransactionInTonviewer?()
+        },
+        longPressAction: {
+          ToastPresenter.showToast(configuration: .copied)
+          UIPasteboard.general.string = transactionId
+          UINotificationFeedbackGenerator().notificationOccurred(.warning)
         }
       ),
       bottomSpace: 32
