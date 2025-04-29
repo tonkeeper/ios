@@ -1,6 +1,7 @@
 import Foundation
 import TKCore
 import KeeperCore
+import TKUIKit
 
 public protocol DappModuleInput: AnyObject {
   func setLandscapeMode(isEnabled: Bool)
@@ -141,6 +142,9 @@ final class DappViewModelImplementation: DappViewModel, DappModuleInput {
       deviceInfo: deviceInfo,
       protocolVersion: 2
     )
+    
+    let theme = TKThemeManager.shared.theme.stringDescription
+    
     guard let infoData = try? JSONEncoder().encode(info),
           var infoString = String(data: infoData, encoding: .utf8) else { return nil }
     infoString = String(describing: infoString).replacingOccurrences(of: "\\", with: "")
@@ -228,6 +232,7 @@ final class DappViewModelImplementation: DappViewModel, DappModuleInput {
                             };
                             
                             window.\(String.windowKey) = {
+                                theme: "\(theme)",
                                 unlockOrientation: () => new Promise((resolve, reject) => window.invokeRnFunc('unlockOrientation', [], resolve, reject)),
                                 lockOrientation: () => new Promise((resolve, reject) => window.invokeRnFunc('lockOrientation', [], resolve, reject)),
                                 tonconnect: Object.assign(\(infoString),{ send: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('send', args, resolve, reject))},connect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('connect', args, resolve, reject))},restoreConnection: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('restoreConnection', args, resolve, reject))},disconnect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('disconnect', args, resolve, reject))} },{ listen }),
