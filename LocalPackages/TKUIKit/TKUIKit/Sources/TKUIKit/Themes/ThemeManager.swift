@@ -32,6 +32,20 @@ public enum TKTheme: String, CaseIterable {
     }
   }
   
+  public var stringDescription: String {
+    switch self {
+    case .deepBlue:
+      return "dark"
+    case .dark:
+      return "dark"
+    case .light:
+      return "light"
+    case .system:
+      return UIScreen.main.traitCollection.userInterfaceStyle == .dark ? "dark" : "light"
+
+    }
+  }
+  
   var themeAppaearance: TKThemeAppearance {
     switch self {
     case .deepBlue:
