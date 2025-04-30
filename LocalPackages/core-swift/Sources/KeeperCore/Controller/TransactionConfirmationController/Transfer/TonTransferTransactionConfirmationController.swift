@@ -116,19 +116,12 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         return (amount, true)
       }
     }()
-    
-    let confirmationModelAmount = TransactionConfirmationModel.Amount(
-      token: extra.token,
-      value: amount
-    )
-    
+
     self.extraState = .extra(
-      isRefund ?
-        .Refund(amount: confirmationModelAmount, type: .default) :
-          .Fee(
-            amount: confirmationModelAmount,
-            type: .default
-          )
+      TransactionConfirmationModel.Extra(
+        value: .default(amount: amount),
+        kind: isRefund ? .refund : .fee
+      )
     )
   }
   

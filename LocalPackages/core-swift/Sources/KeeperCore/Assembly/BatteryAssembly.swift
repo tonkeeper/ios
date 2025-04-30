@@ -4,11 +4,14 @@ public final class BatteryAssembly {
   
   private let batteryAPIAssembly: BatteryAPIAssembly
   private let coreAssembly: CoreAssembly
+  private let configurationAssembly: ConfigurationAssembly
   
   init(batteryAPIAssembly: BatteryAPIAssembly,
-       coreAssembly: CoreAssembly) {
+       coreAssembly: CoreAssembly,
+       configurationAssembly: ConfigurationAssembly) {
     self.batteryAPIAssembly = batteryAPIAssembly
     self.coreAssembly = coreAssembly
+    self.configurationAssembly = configurationAssembly
   }
 
   public func batteryService() -> BatteryService {
@@ -35,5 +38,9 @@ public final class BatteryAssembly {
   
   public func promocodeRepository() -> BatteryPromocodeRepository {
     BatteryPromocodeRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  var batteryCalculation: BatteryCalculation {
+    BatteryCalculation(configuration: configurationAssembly.configuration)
   }
 }

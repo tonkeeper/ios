@@ -129,6 +129,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   private let transferService: TransferService
   private let ratesService: RatesService
   private let settingsRepository: SettingsRepository
+  private let batteryCalculation: BatteryCalculation
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -140,7 +141,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
        currencyStore: CurrencyStore,
        transferService: TransferService,
        ratesService: RatesService,
-       settingsRepository: SettingsRepository) {
+       settingsRepository: SettingsRepository,
+       batteryCalculation: BatteryCalculation) {
     self.wallet = wallet
     self.recipient = recipient
     self.nft = nft
@@ -152,6 +154,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     self.transferService = transferService
     self.ratesService = ratesService
     self.settingsRepository = settingsRepository
+    self.batteryCalculation = batteryCalculation
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -186,18 +189,21 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
       }
     }()
     
-    let confirmationModelAmount = TransactionConfirmationModel.Amount(
-      token: extra.token,
-      value: amount
-    )
+    let value: TransactionConfirmationModel.ExtraValue = {
+      switch extraType {
+      case .default:
+          return .default(amount: amount)
+      case .battery:
+        return .battery(charges: batteryCalculation.calculateCharges(tonAmount: amount))
+      case .gasless(let token):
+        return .gasless(token: token, amount: amount)
+      }
+    }()
     
     self.extraState = .extra(
-      isRefund ? .Refund(
-        amount: confirmationModelAmount,
-        type: extraType
-      ) : .Refund(
-        amount: confirmationModelAmount,
-        type: extraType
+      TransactionConfirmationModel.Extra(
+        value: value,
+        kind: isRefund ? .refund : .fee
       )
     )
   }

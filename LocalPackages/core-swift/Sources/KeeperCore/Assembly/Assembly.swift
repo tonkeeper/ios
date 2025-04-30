@@ -87,7 +87,8 @@ public final class Assembly {
   private lazy var rnAssembly = RNAssembly()
   private lazy var batteryAssembly = BatteryAssembly(
     batteryAPIAssembly: BatteryAPIAssembly(configurationAssembly: configurationAssembly),
-    coreAssembly: coreAssembly
+    coreAssembly: coreAssembly,
+    configurationAssembly: configurationAssembly
   )
   
   private let dependencies: Dependencies

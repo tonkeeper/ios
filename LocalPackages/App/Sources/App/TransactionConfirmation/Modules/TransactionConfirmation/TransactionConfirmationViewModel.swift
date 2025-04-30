@@ -454,37 +454,24 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     case .loading:
       value = .loading
     case .extra(let extra):
-      let (amount, type, refund) = {
-        switch extra {
-        case .Refund(let amount, let type):
-          return (amount, type, true)
-        case .Fee(let amount, let type):
-          return (amount, type, false)
-        }
-      }()
-            
-      isRefund = refund
-      extraType = type
-      
+      isRefund = extra.kind == .refund
+      extraType = extra.value.extraType
+
       var feeValueFormatted: String = ""
       var feeConvertedFormatted: String?
-      switch extraType {
-      case .battery:
-        if let chargesCount = convertAmountIntoChargesCount(amount: amount.value) {
-          feeValueFormatted = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
-        }
-      default:
-        feeValueFormatted = formatValueItem(
-          amount: amount.value,
-          fractionDigits: amount.token.fractionDigits,
-          maximumFractionDigits: amount.token.fractionDigits,
-          symbol: amount.token.symbol
+      func tokenFeeValueFormatted(amount: BigUInt, fractional: Int, symbol: String) -> (value: String, converted: String?) {
+        let valueString = formatValueItem(
+          amount: amount,
+          fractionDigits: fractional,
+          maximumFractionDigits: fractional,
+          symbol: symbol
         )
         
+        var convertedString: String?
         if let rate {
           let converted = RateConverter().convert(
-            amount: amount.value,
-            amountFractionLength: amount.token.fractionDigits,
+            amount: amount,
+            amountFractionLength: fractional,
             rate: rate
           )
           let formatted = formatValueItem(
@@ -493,8 +480,28 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             maximumFractionDigits: 2,
             symbol: currency.symbol
           )
-          feeConvertedFormatted = formatted
+          convertedString = formatted
         }
+        return (valueString, convertedString)
+      }
+      
+      switch extra.value {
+      case .battery(let charges):
+        if let charges {
+          feeValueFormatted = "\(charges) \(TKLocales.Battery.Refill.chargesCount(count: charges))"
+        }
+      case .default(let amount):
+        (feeValueFormatted, feeConvertedFormatted) = tokenFeeValueFormatted(
+          amount: amount,
+          fractional: TonInfo.fractionDigits,
+          symbol: TonInfo.symbol
+        )
+      case let .gasless(token, amount):
+        (feeValueFormatted, feeConvertedFormatted) = tokenFeeValueFormatted(
+          amount: amount,
+          fractional: token.fractionDigits,
+          symbol: token.symbol ?? token.name
+        )
       }
       
       value = .value(TKListContainerItemDefaultValueView.Model(
@@ -665,18 +672,6 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     )
   }
   
-  private func convertAmountIntoChargesCount(amount: BigUInt) -> Int? {
-    guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: false) else { return nil }
-    let fractionalDigits: Int16 = 9
-    
-    let convertedAmount = NSDecimalNumber(mantissa: UInt64(amount), exponent: -fractionalDigits, isNegative: false)
-    
-    let chargesCountDecimal = convertedAmount.dividing(by: batteryMeanFees)
-    let chargesCountRounded = chargesCountDecimal.rounding(accordingToBehavior: NSDecimalNumberHandler(roundingMode: .up, scale: 0, raiseOnExactness: false, raiseOnOverflow: false, raiseOnUnderflow: false, raiseOnDivideByZero: false))
-    
-    return Int(truncating: chargesCountRounded)
-  }
-  
   private func formatValueItem(amount: BigUInt,
                                fractionDigits: Int,
                                maximumFractionDigits: Int,
@@ -701,15 +696,29 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   
   private func getRates(model: TransactionConfirmationModel,
                         currency: Currency) async -> (valueRate: Rates.Rate?, feeRate: Rates.Rate?) {
-    let valueToken = model.amount?.token
+    enum Token {
+      case ton
+      case jetton(JettonInfo)
+    }
+    let valueToken: Token? = {
+      switch model.amount?.token {
+      case .ton: return .ton
+      case .jetton(let item): return .jetton(item.jettonInfo)
+      case .none: return nil
+      }
+    }()
     let feeToken: Token? = {
       switch model.extraState {
       case .loading:
         return nil
       case let .extra(extra):
-        switch extra {
-        case .Fee(let amount, _), .Refund(let amount, _):
-          return amount.token
+        switch extra.value {
+        case .default:
+          return .ton
+        case .battery:
+          return nil
+        case .gasless(let token,_):
+          return .jetton(token)
         }
       case .none:
         return nil
@@ -720,8 +729,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       switch token {
       case .ton:
         return nil
-      case .jetton(let jettonItem):
-        return jettonItem.jettonInfo
+      case .jetton(let jettonInfo):
+        return jettonInfo
       case nil:
         return nil
       }
@@ -733,8 +742,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         switch valueToken {
         case .ton:
           return rates.ton.first(where: { $0.currency == currency })
-        case .jetton(let jettonItem):
-          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency })
+        case .jetton(let jettonInfo):
+          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates.first(where: { $0.currency == currency })
         case nil:
           return nil
         }
@@ -743,8 +752,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         switch feeToken {
         case .ton:
           return rates.ton.first(where: { $0.currency == currency })
-        case .jetton(let jettonItem):
-          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency })
+        case .jetton(let jettonInfo):
+          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates.first(where: { $0.currency == currency })
         case nil:
           return nil
         }

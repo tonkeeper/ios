@@ -152,14 +152,11 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
     let extra = BigUInt(abs(transactionInfo.event.extra))
     let withExtraFee = isRefund ? stakingPool.implementation.extraFee : extra + stakingPool.implementation.extraFee
     
-    let confirmationmodelAmount = TransactionConfirmationModel.Amount(
-      token: .ton,
-      value: withExtraFee
-    )
-    
     self.extraState = .extra(
-      isRefund ?
-        .Refund(amount: confirmationmodelAmount, type: .default) : .Fee(amount: confirmationmodelAmount, type: .default)
+      TransactionConfirmationModel.Extra(
+        value: .default(amount: withExtraFee),
+        kind: isRefund ? .refund : .fee
+      )
     )
   }
   
