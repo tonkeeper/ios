@@ -156,6 +156,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let ratesService: RatesService
   private let balanceService: BalanceService
   private let settingsRepository: SettingsRepository
+  private let batteryCalculation: BatteryCalculation
   
   init(wallet: Wallet,
        recipient: Recipient,
@@ -169,7 +170,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
        transferService: TransferService,
        ratesService: RatesService,
        balanceService: BalanceService,
-       settingsRepository: SettingsRepository) {
+       settingsRepository: SettingsRepository,
+       batteryCalculation: BatteryCalculation) {
     self.wallet = wallet
     self.recipient = recipient
     self.jettonItem = jettonItem
@@ -183,6 +185,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     self.ratesService = ratesService
     self.balanceService = balanceService
     self.settingsRepository = settingsRepository
+    self.batteryCalculation = batteryCalculation
   }
   
   private func createModel() -> TransactionConfirmationModel {
@@ -209,7 +212,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     switch emulationResult.transferType {
     case .battery:
       extraType = .battery
-    case .gasless(_, _):
+    case .gasless:
       extraType = .gasless(
         token: jettonItem.jettonInfo
       )
@@ -226,18 +229,22 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
       }
     }()
     
-    let confirmationModelAmount = TransactionConfirmationModel.Amount(
-      token: extra.token,
-      value: amount
-    )
+    let value: TransactionConfirmationModel.ExtraValue = {
+      switch extraType {
+      case .default:
+          return .default(amount: amount)
+      case .battery:
+        return .battery(charges: batteryCalculation.calculateCharges(tonAmount: amount))
+      case .gasless(let token):
+        return .gasless(token: token, amount: amount)
+      }
+    }()
     
-    self.extraState = TransactionConfirmationModel.ExtraState.extra(
-      isRefund ?
-        .Refund(amount: confirmationModelAmount, type: extraType) :
-        .Fee(
-          amount: confirmationModelAmount,
-          type: extraType
-        )
+    self.extraState = .extra(
+      TransactionConfirmationModel.Extra(
+        value: value,
+        kind: isRefund ? .refund : .fee
+      )
     )
   }
   
@@ -248,23 +255,12 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         case .none, .loading:
           return self.amount
         case .extra(let extra):
-          let (amount, type) = {
-            switch extra {
-            case .Fee(let amount, let type), .Refund(let amount, let type):
-              return (amount, type)
-            }
-          }()
           
-          switch type {
+          switch extra.value {
           case .battery, .default:
             return self.amount
-          case .gasless(_):
-            switch amount.token {
-            case .ton:
-              return self.amount
-            case .jetton:
-              return self.amount - amount.value
-            }
+          case let .gasless(_, amount):
+            return self.amount - amount
           }
         }
       } else {

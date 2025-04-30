@@ -34,10 +34,43 @@ public struct TransactionConfirmationModel {
     case loading
     case extra(Extra)
   }
+
+  public struct Extra {
+    public let value: ExtraValue
+    public let kind: ExtraKind
+  }
   
-  public enum Extra {
-    case Fee(amount: Amount, type: ExtraType)
-    case Refund(amount: Amount, type: ExtraType)
+  public enum ExtraKind {
+    case fee
+    case refund
+  }
+  
+  public enum ExtraValue {
+    case `default`(amount: BigUInt)
+    case battery(charges: Int?)
+    case gasless(token: JettonInfo, amount: BigUInt)
+    
+    public var amount: BigUInt? {
+      switch self {
+      case .default(let amount):
+        return amount
+      case .battery:
+        return nil
+      case .gasless(_, let amount):
+        return amount
+      }
+    }
+    
+    public var extraType: ExtraType {
+      switch self {
+      case .default(let amount):
+        return .default
+      case .battery(let charges):
+        return .battery
+      case .gasless(let token, let amount):
+        return .gasless(token: token)
+      }
+    }
   }
   
   public enum ExtraType: Equatable {

@@ -164,7 +164,8 @@ public final class MainAssembly {
       transferService: transferAssembly.transferService(),
       ratesService: servicesAssembly.ratesService(),
       balanceService: servicesAssembly.balanceService(),
-      settingsRepository: repositoriesAssembly.settingsRepository()
+      settingsRepository: repositoriesAssembly.settingsRepository(),
+      batteryCalculation: batteryAssembly.batteryCalculation
     )
   }
   
@@ -203,7 +204,8 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       transferService: transferAssembly.transferService(),
       ratesService: servicesAssembly.ratesService(),
-      settingsRepository: repositoriesAssembly.settingsRepository()
+      settingsRepository: repositoriesAssembly.settingsRepository(),
+      batteryCalculation: batteryAssembly.batteryCalculation
     )
   }
   
