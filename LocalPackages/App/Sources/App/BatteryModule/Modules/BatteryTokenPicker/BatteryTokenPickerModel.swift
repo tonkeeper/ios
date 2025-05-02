@@ -7,12 +7,12 @@ final class BatteryTokenPickerModel: TokenPickerModel {
   var didUpdateState: ((TokenPickerModelState?) -> Void)?
 
   private let wallet: Wallet
-  private let selectedToken: Token
+  private let selectedToken: TonToken
   private let balanceStore: ConvertedBalanceStore
   private let batteryService: BatteryService
   
   init(wallet: Wallet,
-       selectedToken: Token,
+       selectedToken: TonToken,
        balanceStore: ConvertedBalanceStore,
        batteryService: BatteryService) {
     self.wallet = wallet
@@ -72,9 +72,11 @@ private extension BatteryTokenPickerModel {
     }()
     
     return TokenPickerModelState(
+      wallet: wallet,
       tonBalance: balance.tonBalance,
       jettonBalances: jettonBalances,
-      selectedToken: selectedToken,
+      tronUSDTBalance: nil,
+      selectedToken: .ton(selectedToken),
       scrollToSelected: scrollToSelected
     )
   }

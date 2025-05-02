@@ -103,24 +103,21 @@ private extension SendV3ViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView else { return }
+    viewModel.didUpdateViewState = { [weak self] viewState in
+      guard let self else { return }
       
-      customView.recipientTextField.placeholder = model.recipient.placeholder
-      customView.recipientTextField.text = model.recipient.text
-      customView.recipientTextField.isValid = model.recipient.isValid
-      
-      if let amountModel = model.amount {
-        customView.amountInputView.isHidden = false
-        customView.amountInputView.amountTextField.placeholder = amountModel.placeholder
-        customView.amountInputView.amountTextField.text = amountModel.text
-        customView.amountInputView.tokenView.configuration = amountModel.token
-        
+      customView.recipientTextField.isValid = viewState.isRecipientValid
+      if let recipientDescription = viewState.recipientDescription {
+        customView.recipientDescriptionLabel.setAttributedText(
+          recipientDescription.description,
+          actionItems: recipientDescription.actionItems)
+        customView.recipientDescriptionContainer.isHidden = false
       } else {
-        customView.amountInputView.isHidden = true
+        customView.recipientDescriptionLabel.attributedText = nil
+        customView.recipientDescriptionContainer.isHidden = true
       }
       
-      switch model.balance.remaining {
+      switch viewState.balanceState.remaining {
       case .insufficient:
         customView.amountInputView.balanceView.remainingView.isHidden = true
         customView.amountInputView.balanceView.insufficientLabel.isHidden = false
@@ -130,18 +127,42 @@ private extension SendV3ViewController {
         
         customView.amountInputView.balanceView.remainingView.remaining = "\(TKLocales.Send.remaining) \(value)"
       }
-      customView.amountInputView.balanceView.convertedValue = model.balance.converted
+      customView.amountInputView.balanceView.convertedValue = viewState.balanceState.converted
+      
+      customView.continueButton.configuration = viewState.continueButtonConfiguration
+      
+      customView.commentInputView.commentTextField.placeholder = viewState.commentState.placeholder
+      customView.commentInputView.commentTextField.isValid = viewState.commentState.isValid
+      customView.commentInputView.descriptionLabel.attributedText = viewState.commentState.description
+      customView.commentInputView.descriptionContainer.isHidden = viewState.commentState.description == nil
+    }
     
-      customView.commentInputView.commentTextField.placeholder = model.comment.placeholder
-      customView.commentInputView.commentTextField.text = model.comment.text
-      customView.commentInputView.commentTextField.isValid = model.comment.isValid
-      customView.commentInputView.descriptionLabel.attributedText = model.comment.description
-      customView.commentInputView.descriptionContainer.isHidden = model.comment.description == nil
-
-      customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
-      customView.continueButton.configuration.isEnabled = model.button.isEnabled
-      customView.continueButton.configuration.showsLoader = model.button.isActivity
-      customView.continueButton.configuration.action = model.button.action
+    viewModel.didUpdateRecipientPlaceholder = { [weak self] placeholder in
+      self?.customView.recipientTextField.placeholder = placeholder
+    }
+    
+    viewModel.didUpdateRecipient = { [weak self] recipient in
+      self?.customView.recipientTextField.text = recipient
+    }
+    
+    viewModel.didUpdateAmount = { [weak self] amount in
+      self?.customView.amountInputView.amountTextField.text = amount
+    }
+    
+    viewModel.didUpdateAmountPlaceholder = { [weak self] placeholder in
+      self?.customView.amountInputView.amountTextField.placeholder = placeholder
+    }
+    
+    viewModel.didUpdateAmountIsHidden = { [weak self] isHidden in
+      self?.customView.amountInputView.isHidden = isHidden
+    }
+    
+    viewModel.didUpdateToken = { [weak self] configuration in
+      self?.customView.amountInputView.tokenView.configuration = configuration
+    }
+    
+    viewModel.didUpdateComment = { [weak self] comment in
+      self?.customView.commentInputView.commentTextField.text = comment
     }
   }
   

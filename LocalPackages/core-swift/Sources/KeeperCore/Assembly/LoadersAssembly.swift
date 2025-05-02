@@ -8,17 +8,20 @@ public final class LoadersAssembly {
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let apiAssembly: APIAssembly
   private let knownAccountsAssembly: KnownAccountsAssembly
+  private let tronAssembly: TronUSDTAssembly
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        apiAssembly: APIAssembly,
-       knownAccountsAssembly: KnownAccountsAssembly) {
+       knownAccountsAssembly: KnownAccountsAssembly,
+       tronAssembly: TronUSDTAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.apiAssembly = apiAssembly
     self.knownAccountsAssembly = knownAccountsAssembly
+    self.tronAssembly = tronAssembly
   }
   
   var chartLoader: ChartV2Loader {
@@ -42,7 +45,9 @@ public final class LoadersAssembly {
     historyPaginationLoader(
       wallet: wallet,
       loader: HistoryListAllEventsLoader(
-        historyService: servicesAssembly.historyService()
+        historyService: servicesAssembly.historyService(),
+        tonProofTokenService: servicesAssembly.tonProofTokenService(),
+        tronAPI: tronAssembly.api
       )
     )
   }
@@ -62,6 +67,17 @@ public final class LoadersAssembly {
       wallet: wallet,
       loader: HistoryListJettonEventsLoader(jettonInfo: jettonInfo,
         historyService: servicesAssembly.historyService()
+      )
+    )
+  }
+  
+  public func historyTronUSDTEventsPaginationLoader(wallet: Wallet) -> HistoryPaginationLoader {
+    historyPaginationLoader(
+      wallet: wallet,
+      loader: HistoryListTronUSDTEventsLoader(
+        historyService: servicesAssembly.historyService(),
+        tonProofTokenService: servicesAssembly.tonProofTokenService(),
+        tronAPI: tronAssembly.api
       )
     )
   }
@@ -102,11 +118,9 @@ public final class LoadersAssembly {
       balanceStore: storesAssembly.balanceStore,
       stakingPoolsStore: storesAssembly.stackingPoolsStore,
       walletNFTSStore: storesAssembly.walletNFTsStore(wallet: wallet, nftService: servicesAssembly.accountNftService()),
-      ratesStore: storesAssembly.tonRatesStore,
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),
-      accountNFTService: servicesAssembly.accountNftService(),
-      ratesService: servicesAssembly.ratesService()
+      accountNFTService: servicesAssembly.accountNftService()
     )
     _walletBalanceLoaders[wallet] = Weak(value: store)
     return store

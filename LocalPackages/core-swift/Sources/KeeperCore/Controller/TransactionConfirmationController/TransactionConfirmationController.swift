@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TronSwift
 import BigInt
 
 public struct TransactionConfirmationModel {
@@ -18,6 +19,7 @@ public struct TransactionConfirmationModel {
       case ton(IsMaxAmount)
       case jetton(JettonInfo)
       case nft(NFT)
+      case tronUSDT
     }
     
     case staking(Staking)
@@ -25,7 +27,29 @@ public struct TransactionConfirmationModel {
   }
 
   public struct Amount {
-    public let token: Token
+    public enum Item {
+      case ton(TonToken)
+      case tronUSDT
+      
+      public var fractionDigits: Int {
+        switch self {
+        case .ton(let token):
+          token.fractionDigits
+        case .tronUSDT:
+          TronSwift.USDT.fractionDigits
+        }
+      }
+      
+      public var symbol: String {
+        switch self {
+        case .ton(let token):
+          token.symbol
+        case .tronUSDT:
+          TronSwift.USDT.symbol
+        }
+      }
+    }
+    public let token: Item
     public let value: BigUInt
   }
   

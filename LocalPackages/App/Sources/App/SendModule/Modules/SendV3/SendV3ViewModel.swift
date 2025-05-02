@@ -4,67 +4,49 @@ import KeeperCore
 import TKCore
 import BigInt
 import TKLocalize
+import TronSwift
 
 protocol SendV3ModuleOutput: AnyObject {
-  var didContinueSend: ((SendModel) -> Void)? { get set }
-  var didTapPicker: ((Wallet, Token) -> Void)? { get set }
+  var didContinueSend: ((SendData) -> Void)? { get set }
+  var didTapPicker: ((Wallet, SendV3Item) -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapClose: (() -> Void)? { get set }
+  var didOpenURL: ((URL) -> Void)? { get set }
 }
 
 protocol SendV3ModuleInput: AnyObject {
-  func updateWithToken(_ token: Token)
+  func updateWithToken(_ token: SendV3Item)
   func setRecipient(string: String)
   func setAmount(amount: BigUInt?)
   func setComment(comment: String?)
 }
 
 protocol SendV3ViewModel: AnyObject {
-  var didUpdateModel: ((Model) -> Void)? { get set }
+  var didUpdateViewState: ((SendV3ViewModelViewState) -> Void)? { get set }
+  var didUpdateRecipientPlaceholder: ((String) -> Void)? { get set }
+  var didUpdateRecipient: ((String) -> Void)? { get set }
+  var didUpdateAmountPlaceholder: ((String) -> Void)? { get set }
+  var didUpdateAmount: ((String) -> Void)? { get set }
+  var didUpdateAmountIsHidden: ((Bool) -> Void)? { get set }
+  var didUpdateToken: ((TokenPickerButton.Configuration) -> Void)? { get set }
+  var didUpdateComment: ((String) -> Void)? { get set }
   
   var sendAmountTextFieldFormatter: SendAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputRecipient(_ string: String)
-  func didInputComment(_ string: String)
   func didInputAmount(_ string: String)
+  func didInputComment(_ string: String)
   func didTapWalletTokenPicker()
-  func didTapMax()
   func didTapRecipientPasteButton()
   func didTapCommentPasteButton()
   func didTapRecipientScanButton()
   func didTapCloseButton()
+  func didTapMax()
 }
 
-struct Model {
-  struct Recipient {
-    let placeholder: String
-    let text: String
-    let isValid: Bool
-  }
-  
-  struct Amount {
-    let placeholder: String
-    let text: String
-    let fractionDigits: Int
-    let token: TokenPickerButton.Configuration
-  }
-  
-  struct Comment {
-    let placeholder: String
-    let text: String
-    let isValid: Bool
-    let description: NSAttributedString?
-  }
-  
-  struct Button {
-    let title: String
-    let isEnabled: Bool
-    let isActivity: Bool
-    let action: (() -> Void)
-  }
-  
-  struct Balance {
+struct SendV3ViewModelViewState {
+  struct BalanceState {
     enum Remaining {
       case insufficient
       case remaining(String)
@@ -72,251 +54,90 @@ struct Model {
     let converted: String
     let remaining: Remaining
   }
-  
-  let recipient: Recipient
-  let amount: Amount?
-  let balance: Balance
-  let comment: Comment
-  let button: Button
+  struct CommentState {
+    let isValid: Bool
+    let placeholder: String
+    let description: NSAttributedString?
+  }
+  struct RecipientDescription {
+    let description: NSAttributedString
+    let actionItems: [TKActionLabel.ActionItem]
+  }
+
+  let isRecipientValid: Bool
+  let recipientDescription: RecipientDescription?
+  let balanceState: BalanceState
+  let continueButtonConfiguration: TKButton.Configuration
+  let commentState: CommentState
 }
+
 
 final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, SendV3ModuleInput {
   
   // MARK: - SendV3ModuleOutput
   
-  var didContinueSend: ((SendModel) -> Void)?
-  var didTapPicker: ((Wallet, Token) -> Void)?
+  var didContinueSend: ((SendData) -> Void)?
+  var didTapPicker: ((Wallet, SendV3Item) -> Void)?
   var didTapScan: (() -> Void)?
   var didTapClose: (() -> Void)?
+  var didOpenURL: ((URL) -> Void)?
   
   // MARK: - SendV3ModuleInput
   
-  var didUpdateModel: ((Model) -> Void)?
+  var didUpdateViewState: ((SendV3ViewModelViewState) -> Void)?
+  var didUpdateRecipientPlaceholder: ((String) -> Void)?
+  var didUpdateRecipient: ((String) -> Void)?
+  var didUpdateAmountPlaceholder: ((String) -> Void)?
+  var didUpdateAmount: ((String) -> Void)?
+  var didUpdateAmountIsHidden: ((Bool) -> Void)?
+  var didUpdateToken: ((TokenPickerButton.Configuration) -> Void)?
+  var didUpdateComment: ((String) -> Void)?
   
-  func updateWithToken(_ token: Token) {
-    sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
-    sendItem = .token(token, amount: 0)
-    amountInput = ""
-    isAmountValid = false
-    updateConverted()
-    updateRemaining()
-    update()
+  func updateWithToken(_ token: SendV3Item) {
+    self.item = token
+    didUpdateAmount?("0")
+    didUpdateItem()
+    updateViewState()
   }
   
   func setRecipient(string: String) {
     didInputRecipient(string)
+    didUpdateRecipient?(string)
   }
   
   func setAmount(amount: BigUInt?) {
-    guard let amount else { return }
-    sendItem = .token(.ton, amount: amount)
-    didInputAmount(sendController.convertAmountToInputString(amount: amount, token: .ton))
+    self.item = self.item.setAmount(amount: amount ?? 0)
   }
   
   func setComment(comment: String?) {
-    guard let comment else {
-      return
+    didInputComment(comment ?? "")
+    didUpdateComment?(comment ?? "")
+  }
+
+  // MARK: - View State
+  
+  private var viewState: SendV3ViewModelViewState? {
+    didSet {
+      guard let viewState else { return }
+      didUpdateViewState?(viewState)
     }
-    didInputComment(comment)
-  }
-  
-  // MARK: - SendV3ViewModel
-  
-  func viewDidLoad() {
-    balanceStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateConvertedBalance(let wallet):
-        guard observer.wallet == wallet else { return }
-        DispatchQueue.main.async {
-          observer.updateRemaining()
-          observer.update()
-        }
-      }
-    }
-    switch sendItem {
-    case .token(let token, let amount):
-      didInputAmount(sendController.convertAmountToInputString(amount: amount, token: token))
-      
-    case .nft:
-      break
-    }
-    isCommentRequired = recipient?.isMemoRequired ?? false
-    updateRemaining()
-    update()
-  }
-  
-  func didInputRecipient(_ string: String) {
-    guard string != recipientInput else { return }
-    recipientInput = string
-    recipient = nil
-    isCommentRequired = false
-    isRecipientValid = true
-    
-    recipientResolveTask?.cancel()
-    
-    guard !string.isEmpty else {
-      self.isResolving = false
-      return
-    }
-    
-    isResolving = true
-    recipientResolveTask = Task {
-      try? await Task.sleep(nanoseconds: 1_000_000_000)
-      do {
-        try Task.checkCancellation()
-        let recipient = try await sendController.resolveRecipient(input: string)
-        try Task.checkCancellation()
-        await MainActor.run {
-          self.recipient = recipient
-          self.isRecipientValid = true
-          self.isResolving = false
-          self.isCommentRequired = recipient.isMemoRequired
-        }
-      } catch {
-        guard !error.isCancelledError else { return }
-        await MainActor.run {
-          self.recipient = recipient
-          self.isRecipientValid = false
-          self.isResolving = false
-          self.isCommentRequired = false
-        }
-      }
-    }
-  }
-  
-  func didInputAmount(_ string: String) {
-    switch sendItem {
-    case .token(let token, _):
-      Task {
-        guard string != amountInput else { return }
-        let unformatted = self.sendAmountTextFieldFormatter.unformatString(string) ?? ""
-        let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: token))
-        let isAmountValid = await sendController.isAmountAvailableToSend(amount: amount.amount, token: token) && !amount.amount.isZero
-        
-        await MainActor.run {
-          self.remaining = remaining
-          self.amountInput = unformatted
-          self.sendItem = .token(token, amount: amount.amount)
-          self.isAmountValid = isAmountValid
-          self.isMaxAmount = false
-          updateConverted()
-          updateRemaining()
-          update()
-        }
-      }
-    case .nft:
-      return
-    }
-  }
-  
-  func didInputComment(_ string: String) {
-    guard string != commentInput else { return }
-    commentInput = string
-    commentState = sendController.validateComment(comment: string)
-    update()
-  }
-  
-  func didTapWalletTokenPicker() {
-    switch sendItem {
-    case .token(let token, _):
-      self.didTapPicker?(wallet, token)
-    case .nft:
-      break
-    }
-  }
-  
-  func didTapMax() {
-    Task {
-      switch sendItem {
-      case .token(let token, _):
-        let amount = await sendController.getMaximumAmount(token: token)
-        let formatted = sendController.convertAmountToInputString(amount: amount, token: token)
-        await MainActor.run {
-          self.amountInput = sendAmountTextFieldFormatter.unformatString(formatted) ?? ""
-          self.sendItem = .token(token, amount: amount)
-          self.isAmountValid = !amount.isZero
-          self.isMaxAmount = true
-          updateRemaining()
-          updateConverted()
-          update()
-        }
-      case .nft:
-        break
-      }
-    }
-  }
-  
-  func didTapRecipientPasteButton() {
-    guard let pasteboardString = UIPasteboard.general.string else { return }
-    didInputRecipient(pasteboardString)
-  }
-  
-  func didTapCommentPasteButton() {
-    guard let pasteboardString = UIPasteboard.general.string else { return }
-    didInputComment(pasteboardString)
-  }
-  
-  func didTapRecipientScanButton() {
-    didTapScan?()
-  }
-  
-  func didTapCloseButton() {
-    didTapClose?()
   }
   
   // MARK: - State
-  
-  private var recipientInput = ""
-  private var commentInput = ""
-  private var amountInput = ""
-  private var sendItem: SendItem
+
+  private var comment: String?
+  private var item: SendV3Item {
+    didSet {
+      didUpdateItem()
+      updateViewState()
+    }
+  }
   private var recipient: Recipient?
-  private var isResolving = false {
-    didSet {
-      guard isResolving != oldValue else { return }
-      update()
-    }
-  }
-  private var convertedValue = ""
+  private var recipientInput = ""
   private var remaining: SendV3Controller.Remaining = .remaining("")
-  
-  private var recipientResolveTask: Task<Void, Never>?
-  
-  private var isRecipientValid: Bool = true {
-    didSet {
-      guard isRecipientValid != oldValue else { return }
-      update()
-    }
-  }
-  
-  private var isAmountValid: Bool = false {
-    didSet {
-      guard isAmountValid != oldValue else { return }
-      update()
-    }
-  }
-  
-  
-  private var commentState: SendV3Controller.CommentState = .ok {
-    didSet {
-      guard commentState != oldValue else { return }
-      update()
-    }
-  }
-  private var isCommentRequired: Bool = false {
-    didSet {
-      guard isCommentRequired != oldValue else { return }
-      update()
-    }
-  }
-  
-  private var isContinueEnabled: Bool = false {
-    didSet {
-      guard isContinueEnabled != oldValue else { return }
-      update()
-    }
-  }
-  private var isMaxAmount: Bool = false
+  private var converted = ""
+  private var isAmountValid: Bool = false
+  private var recipientResolvingTask: Task<Void, Never>?
 
   // MARK: - Formatters
   
@@ -340,211 +161,461 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   private let sendController: SendV3Controller
   private let balanceStore: ConvertedBalanceStore
   private let appSettingsStore: AppSettingsStore
+  private let buySellMethodsService: BuySellMethodsService
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       sendItem: SendItem,
+       item: SendV3Item,
        recipient: Recipient?,
        comment: String?,
        sendController: SendV3Controller,
        balanceStore: ConvertedBalanceStore,
-       appSettingsStore: AppSettingsStore) {
+       appSettingsStore: AppSettingsStore,
+       buySellMethodsService: BuySellMethodsService) {
     self.wallet = wallet
-    self.sendItem = sendItem
+    self.comment = comment
+    self.item = item
     self.recipient = recipient
-    self.commentInput = comment ?? ""
     self.sendController = sendController
     self.balanceStore = balanceStore
     self.appSettingsStore = appSettingsStore
-    
-    switch sendItem {
-    case .token(let token, _):
-      sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
-    case .nft:
-      break
-    }
-  }
-}
-
-private extension SendV3ViewModelImplementation {
-  func createModel() -> Model {
-    
-    let commentModel = createCommentModel()
-    let amountModel: Model.Amount?
-    switch sendItem {
-    case .nft:
-      amountModel = nil
-    case .token(let token, _):
-      amountModel = createAmountModel(token: token)
-    }
-    
-    let remaining: Model.Balance.Remaining
-    switch self.remaining {
-    case .insufficient:
-      remaining = .insufficient
-    case .remaining(let string):
-      remaining = .remaining(string)
-    }
-    
-    return Model(
-      recipient: createRecipientModel(),
-      amount: amountModel,
-      balance: Model.Balance(
-        converted: "\(convertedValue)",
-        remaining: remaining
-      ),
-      comment: commentModel,
-      button: Model.Button(
-        title: TKLocales.Actions.continueAction,
-        isEnabled: !isResolving && isContinueEnable,
-        isActivity: isResolving,
-        action: { [weak self] in
-          guard let self else { return }
-
-          let sendModel = SendModel(
-            wallet: wallet,
-            recipient: recipient,
-            sendItem: sendItem,
-            comment: commentInput,
-            isMaxAmount: isMaxAmount
-          )
-          didContinueSend?(sendModel)
-        }
-      )
-    )
+    self.buySellMethodsService = buySellMethodsService
   }
   
-  func createRecipientModel() -> Model.Recipient {
-    let text: String
-    let isValid: Bool
-    switch recipient {
-    case .none:
-      text = recipientInput
-      isValid = isRecipientValid
-    case .some(let recipient):
-      isValid = isRecipientValid
-      switch recipient.recipientAddress {
-      case .raw(let address):
-        text = address.toRaw()
-      case .friendly(let address):
-        text = address.toString()
-      case .domain(let domain):
-        text = domain.domain
+  func viewDidLoad() {
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(let wallet):
+        guard observer.wallet == wallet else { return }
+        DispatchQueue.main.async {
+          observer.recalculateOnBalanceUpdate()
+        }
       }
     }
-    return Model.Recipient(
-      placeholder: TKLocales.Send.Recepient.placeholder,
-      text: text,
-      isValid: isValid
+    
+    sendAmountTextFieldFormatter.maximumFractionDigits = item.fractionalDigits
+    didUpdateItem()
+    didUpdateRecipientPlaceholder?(TKLocales.Send.Recepient.placeholder)
+    didUpdateAmountPlaceholder?((TKLocales.Send.Amount.placeholder))
+    if let recipient {
+      didUpdateRecipient?(recipient.stringValue)
+    }
+    updateViewState()
+    didUpdateAmount?(sendController.convertAmountToInputString(amount: item.amount, fractionDigits: item.fractionalDigits))
+    
+    if case let .ton(ton) = item, case .nft = ton {
+      didUpdateAmountIsHidden?(true)
+    }
+  }
+  
+  func didInputRecipient(_ string: String) {
+    guard string != recipientInput else { return }
+    recipientInput = string
+    recipient = nil
+    recipientResolvingTask?.cancel()
+    recipientResolvingTask = nil
+    
+    guard !string.isEmpty else {
+      updateViewState()
+      return
+    }
+    
+    recipientResolvingTask = Task {
+      try? await Task.sleep(nanoseconds: 1_000_000_000)
+      do {
+        guard !Task.isCancelled else { return }
+        let recipient = try await sendController.resolveRecipient(input: string)
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+          self.recipient = recipient
+          self.recipientResolvingTask = nil
+          self.updateViewState()
+        }
+      } catch {
+        await MainActor.run {
+          self.recipient = nil
+          self.recipientResolvingTask = nil
+          self.updateViewState()
+        }
+      }
+    }
+    
+    updateViewState()
+  }
+  
+  func didInputComment(_ string: String) {
+    guard string != comment else { return }
+    comment = string
+    updateViewState()
+  }
+  
+  func didInputAmount(_ string: String) {
+    let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
+    let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: item.fractionalDigits)
+    self.item = self.item.setAmount(amount: amount.amount)
+  }
+  
+  func didTapWalletTokenPicker() {
+    self.didTapPicker?(wallet, item)
+  }
+  
+  func didTapRecipientPasteButton() {
+    guard let pasteboardString = UIPasteboard.general.string else { return }
+    didInputRecipient(pasteboardString)
+    didUpdateRecipient?(pasteboardString)
+  }
+  
+  func didTapCommentPasteButton() {
+    guard let pasteboardString = UIPasteboard.general.string else { return }
+    didInputComment(pasteboardString)
+    didUpdateComment?(pasteboardString)
+  }
+  
+  func didTapRecipientScanButton() {
+    didTapScan?()
+  }
+  
+  func didTapCloseButton() {
+    didTapClose?()
+  }
+  
+  func didTapMax() {
+    switch item {
+    case .ton(let ton):
+      switch ton {
+      case .nft: break
+      case let .token(token, _):
+        let maxAmount = sendController.getMaximumAmount(token: token)
+        let formatted = sendController.convertAmountToInputString(amount: maxAmount, fractionDigits: token.fractionDigits)
+        self.item = self.item.setAmount(amount: maxAmount)
+        self.didUpdateAmount?(formatted)
+      }
+    case .tron(let tron):
+      switch tron {
+      case .usdt:
+        let maxAmount = sendController.getTronUSDTMaximumAmount()
+        let formatted = sendController.convertAmountToInputString(amount: maxAmount, fractionDigits: TronSwift.USDT.fractionDigits)
+        self.item = self.item.setAmount(amount: maxAmount)
+        self.didUpdateAmount?(formatted)
+      }
+    }
+  }
+  
+  private func recalculateOnBalanceUpdate() {
+    didUpdateItem()
+    updateViewState()
+  }
+  
+  private func updateTokenButton() {
+    var name: String = ""
+    var network: String?
+    var image: TKImage = .image(nil)
+    
+    switch item {
+    case .ton(let ton):
+      switch ton {
+      case .token(let token, _):
+        switch token {
+        case .ton:
+          name = TonInfo.symbol
+          image = .image(.TKCore.Icons.Size44.tonLogo)
+        case .jetton(let item):
+          name = item.jettonInfo.symbol ?? ""
+          image = .urlImage(item.jettonInfo.imageURL)
+        }
+      case .nft: break
+      }
+    case .tron(let tron):
+      switch tron {
+      case .usdt:
+        name = TronSwift.USDT.symbol
+        image = .image(.App.Currency.Size44.usdt)
+        network = "TRC20"
+      }
+    }
+    
+    didUpdateToken?(
+      TokenPickerButton.Configuration(
+        name: name,
+        network: network,
+        image: image
+      )
     )
   }
   
-  func createCommentModel() -> Model.Comment {
-    let description: NSAttributedString?
-    let placeholder: String
-    switch (isCommentRequired, commentInput.isEmpty, commentState) {
-    case (_, false, .ledgerNonAsciiError):
-      placeholder = TKLocales.Send.Comment.placeholder
-      description = TKLocales.Send.Comment.asciiError.withTextStyle(
-        .body2,
-        color: .Accent.red,
-        alignment: .left,
-        lineBreakMode: .byWordWrapping
+  private func didUpdateItem() {
+    let isAmountValid: Bool
+    let remaining: SendV3Controller.Remaining
+    let converted: String
+    switch item {
+    case .ton(let ton):
+      switch ton {
+      case .nft:
+        isAmountValid = false
+        remaining = .insufficient
+        converted = ""
+      case let .token(token, amount):
+        isAmountValid = sendController.isAmountAvailableToSend(amount: amount, token: token)
+        remaining = sendController.calculateRemaining(
+          token: token,
+          tokenAmount: amount,
+          isSecure: appSettingsStore.getState().isSecureMode
+        )
+        converted = sendController.convertTokenAmountToCurrency(token: token, amount)
+      }
+    case .tron(let tron):
+      switch tron {
+      case .usdt(let amount):
+        isAmountValid = sendController.isTronUSDTAmountAvailableToSend(amount: amount)
+        remaining = sendController.calculateTronUSDTRemaining(
+          amount: amount,
+          isSecure: appSettingsStore.getState().isSecureMode
+        )
+        converted = sendController.convertTronUSDTAmountToCurrency(amount)
+      }
+    }
+    
+    self.isAmountValid = isAmountValid
+    self.remaining = remaining
+    self.converted = converted
+    
+    updateTokenButton()
+  }
+  
+  private func updateViewState() {
+    let isRecipientValid: Bool
+    let isRecipientNotEmpty: Bool
+    var recipientDescription: SendV3ViewModelViewState.RecipientDescription?
+    
+    if let recipient {
+      switch item {
+      case .ton:
+        isRecipientValid = recipient.isTon
+        if !recipient.isTon {
+          recipientDescription = createIncorrectRecipientTRC20RecipientDescription()
+        }
+      case .tron:
+        isRecipientValid = recipient.isTron
+        if !recipient.isTron {
+          recipientDescription = createIncorrectRecipientTonRecipientDescription()
+        }
+      }
+      isRecipientNotEmpty = true
+    } else {
+      isRecipientValid = recipientInput.isEmpty || recipientResolvingTask != nil
+      isRecipientNotEmpty = false
+    }
+    
+    let balanceState: SendV3ViewModelViewState.BalanceState = {
+      let remaining: SendV3ViewModelViewState.BalanceState.Remaining
+      switch self.remaining {
+      case .insufficient:
+        remaining = .insufficient
+      case .remaining(let string):
+        remaining = .remaining(string)
+      }
+      return SendV3ViewModelViewState.BalanceState(converted: converted, remaining: remaining)
+    }()
+    
+    let continueButtonConfiguration: TKButton.Configuration = {
+      let isEnable = {
+        let isItemValid = {
+          switch item {
+          case .ton(let item):
+            switch item {
+            case .nft:
+              return true
+            case .token:
+              return isAmountValid
+            }
+          case .tron:
+            return isAmountValid
+          }
+        }()
+        
+        return isRecipientValid && isRecipientNotEmpty && isItemValid && recipientResolvingTask == nil
+      }()
+      var configuration = TKButton.Configuration.actionButtonConfiguration(
+        category: .primary,
+        size: .large
       )
-    case (false, true, _):
-      placeholder = TKLocales.Send.Comment.placeholder
-      description = nil
-    case (false, false, _):
-      placeholder = TKLocales.Send.Comment.placeholder
-      description = TKLocales.Send.Comment.description.withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byWordWrapping
-      )
-    case (true, _, _):
-      placeholder = TKLocales.Send.RequiredComment.placeholder
-      description = TKLocales.Send.RequiredComment.description
-        .withTextStyle(
+      configuration.isEnabled = isEnable
+      configuration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continueAction))
+      configuration.action = { [weak self] in
+        self?.continueAction()
+      }
+      return configuration
+    }()
+    
+    let commentState: SendV3ViewModelViewState.CommentState = {
+      let isCommentRequired = recipient?.isCommentRequired ?? false
+      let comment = self.comment ?? ""
+      let isCommentOk = self.sendController.validateComment(comment: comment)
+      
+      let isValid: Bool
+      let description: NSAttributedString?
+      let placeholder: String
+      switch (isCommentRequired, comment.isEmpty, isCommentOk) {
+      case (_, false, .ledgerNonAsciiError):
+        isValid = false
+        placeholder = TKLocales.Send.Comment.placeholder
+        description = TKLocales.Send.Comment.asciiError.withTextStyle(
           .body2,
-          color: .Accent.orange,
+          color: .Accent.red,
           alignment: .left,
           lineBreakMode: .byWordWrapping
         )
-    }
+      case (false, true, _):
+        isValid = true
+        placeholder = TKLocales.Send.Comment.placeholder
+        description = nil
+      case (false, false, _):
+        isValid = true
+        placeholder = TKLocales.Send.Comment.placeholder
+        description = TKLocales.Send.Comment.description.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left,
+          lineBreakMode: .byWordWrapping
+        )
+      case (true, true, _):
+        isValid = false
+        placeholder = TKLocales.Send.RequiredComment.placeholder
+        description = TKLocales.Send.RequiredComment.description
+          .withTextStyle(
+            .body2,
+            color: .Accent.orange,
+            alignment: .left,
+            lineBreakMode: .byWordWrapping
+          )
+      case (true, false, _):
+        isValid = true
+        placeholder = TKLocales.Send.RequiredComment.placeholder
+        description = TKLocales.Send.RequiredComment.description
+          .withTextStyle(
+            .body2,
+            color: .Accent.orange,
+            alignment: .left,
+            lineBreakMode: .byWordWrapping
+          )
+      }
+      
+      return SendV3ViewModelViewState.CommentState(
+        isValid: isValid,
+        placeholder: placeholder,
+        description: description
+      )
+    }()
     
-    return Model.Comment(
-      placeholder: placeholder,
-      text: commentInput,
-      isValid: commentState == .ok,
-      description: description
+    let viewState = SendV3ViewModelViewState(
+      isRecipientValid: isRecipientValid,
+      recipientDescription: recipientDescription,
+      balanceState: balanceState,
+      continueButtonConfiguration: continueButtonConfiguration,
+      commentState: commentState
+    )
+    
+    self.viewState = viewState
+  }
+  
+  private func continueAction() {
+    guard let data = SendData.sendData(
+      wallet: wallet,
+      recipient: recipient,
+      item: item,
+      comment: comment) else { return }
+    didContinueSend?(data)
+  }
+  
+  private var letsExchangeOpenTask: Task<Void, Never>?
+  private func createIncorrectRecipientTRC20RecipientDescription() -> SendV3ViewModelViewState.RecipientDescription {
+    let string = TKLocales.Send.IncorrectNetworkRecipient.trc20
+      .replacingOccurrences(of: "NAME", with: "LetsExchange")
+    return createIncorrectRecipientRecipientDescription(string: string)
+  }
+  private func createIncorrectRecipientTonRecipientDescription() -> SendV3ViewModelViewState.RecipientDescription {
+    let string = TKLocales.Send.IncorrectNetworkRecipient.ton
+      .replacingOccurrences(of: "NAME", with: "LetsExchange")
+    return createIncorrectRecipientRecipientDescription(string: string)
+  }
+  private func createIncorrectRecipientRecipientDescription(string: String) -> SendV3ViewModelViewState.RecipientDescription {
+    let result = string.withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    ).mutableCopy() as! NSMutableAttributedString
+    
+    let letsExchangeRange = (string as NSString).range(of: "LetsExchange")
+    result.addAttributes(
+      [
+        .foregroundColor: UIColor.Accent.blue.cgColor
+      ],
+      range: letsExchangeRange
+    )
+    return SendV3ViewModelViewState.RecipientDescription(
+      description: result,
+      actionItems: [TKActionLabel.ActionItem(
+        text: "LetsExchange",
+        action: { [weak self, buySellMethodsService] in
+          self?.letsExchangeOpenTask?.cancel()
+          self?.letsExchangeOpenTask = Task {
+            guard let self else { return }
+            func getLetsExchange(methods: FiatMethods) -> FiatMethodItem? {
+              let allMethods = methods.buy.flatMap { $0.items }
+              guard let method = allMethods.first(where: { $0.id == "letsexchange_buy_swap" }) else { return nil }
+              return method
+            }
+            func getMethods() async -> FiatMethods? {
+              if let methods = try? buySellMethodsService.getFiatMethods() {
+                return methods
+              } else if let methods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil) {
+                return methods
+              } else {
+                return nil
+              }
+            }
+            guard let methods = await getMethods() else { return }
+            guard !Task.isCancelled else { return }
+            guard let method = getLetsExchange(methods: methods),
+                  let url = URL(string: method.actionButton.url)  else { return }
+            await MainActor.run {
+              self.didOpenURL?(url)
+            }
+          }
+        }
+      )]
     )
   }
-  
-  func createAmountModel(token: Token) -> Model.Amount {
-    return Model.Amount(
-      placeholder: TKLocales.Send.Amount.placeholder,
-      text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
-      fractionDigits: tokenFractionalDigits(token: token),
-      token: TokenPickerButton.Configuration.createConfiguration(token: token)
-    )
-  }
-  
-  
-  func update() {
-    let model = createModel()
-    didUpdateModel?(model)
-  }
-  
-  func updateRemaining() {
-    Task {
-      switch sendItem {
-      case .nft: break
-      case .token(let token, let amount):
-        let remaining = await sendController.calculateRemaining(token: token, tokenAmount: amount, isSecure: appSettingsStore.getState().isSecureMode)
-        await MainActor.run {
-          self.remaining = remaining
-          update()
-        }
-      }
+}
+
+extension SendData {
+  static func sendData(wallet: Wallet,
+                       recipient: Recipient?,
+                       item: SendV3Item,
+                       comment: String?) -> SendData? {
+    guard let recipient else { return nil }
+    switch item {
+    case .ton(let item):
+      guard let recipient = recipient.tonRecipient else { return nil }
+      return .ton(
+        TonSendData(
+          wallet: wallet,
+          recipient: recipient,
+          item: item,
+          comment: comment
+        )
+      )
+    case .tron(let item):
+      guard let recipient = recipient.tronRecipient else { return nil }
+      return .tron(
+        TronSendData(
+          wallet: wallet,
+          recipient: recipient,
+          item: item
+        )
+      )
     }
-  }
-  
-  func updateConverted() {
-    Task {
-      switch sendItem {
-      case .nft: break
-      case .token(let token, let amount):
-        let converted = await sendController.convertTokenAmountToCurrency(token: token, amount)
-        await MainActor.run {
-          self.convertedValue = converted
-          update()
-        }
-      }
-    }
-  }
-  
-  var isContinueEnable: Bool {
-    let isItemValid: Bool
-    switch sendItem {
-    case .nft:
-      isItemValid = true
-    case .token:
-      isItemValid = isAmountValid
-    }
-    
-    return recipient != nil && (isCommentRequired && !commentInput.isEmpty || !isCommentRequired) && isItemValid
-  }
-  
-  func tokenFractionalDigits(token: Token) -> Int {
-    let fractionDigits: Int
-    switch token {
-    case .ton:
-      fractionDigits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      fractionDigits = jettonItem.jettonInfo.fractionDigits
-    }
-    return fractionDigits
   }
 }

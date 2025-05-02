@@ -4,6 +4,7 @@ import TKFeatureFlags
 import TKLocalize
 import KeeperCore
 import BigInt
+import TronSwift
 
 @MainActor
 protocol TransactionConfirmationOutput: AnyObject {
@@ -144,7 +145,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         return TKLocales.TransactionConfirmation.confirmAction
       case .transfer(let transfer):
         switch transfer {
-        case .jetton, .ton:
+        case .jetton, .ton, .tronUSDT:
           return TKLocales.TransactionConfirmation.confirmAction
         case .nft(let nft):
           var result = nft.notNilName
@@ -206,6 +207,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
           return "\(TonInfo.symbol) transfer"
         case .nft:
           return "NFT transfer"
+        case .tronUSDT:
+          return "Transfer \(TronSwift.USDT.name)"
         }
       }
     }()
@@ -221,51 +224,45 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
   }
   
   private func createHeaderImageItem(transaction: TransactionConfirmationModel) -> TKPopUp.Item {
+    
+    let image: TKImage
+    let corners: TKImageView.Corners
+    let badgeImage: TKImage?
+    
     switch transaction.transaction {
     case .staking(let staking):
-      return TKPopUp.Component.ImageComponent(
-        image: TKImageView.Model(
-          image: .image(staking.pool.bigIcon),
-          size: .size(CGSize(width: 96, height: 96)),
-          corners: .circle,
-          padding: .zero
-        ),
-        bottomSpace: 20
-      )
+      image = .image(staking.pool.bigIcon)
+      badgeImage = nil
+      corners = .circle
     case .transfer(let transfer):
       switch transfer {
       case .jetton(let jettonInfo):
-        return TKPopUp.Component.ImageComponent(
-          image: TKImageView.Model(
-            image: .urlImage(jettonInfo.imageURL),
-            size: .size(CGSize(width: 96, height: 96)),
-            corners: .circle,
-            padding: .zero
-          ),
-          bottomSpace: 20
-        )
+        image = .urlImage(jettonInfo.imageURL)
+        badgeImage = transaction.wallet.isTronTurnOn && jettonInfo.isTonUSDT ? .image(.App.Currency.Vector.ton) : nil
+        corners = .circle
       case .ton:
-        return TKPopUp.Component.ImageComponent(
-          image: TKImageView.Model(
-            image: .image(.TKUIKit.Icons.Size96.tonIcon),
-            size: .size(CGSize(width: 96, height: 96)),
-            corners: .circle,
-            padding: .zero
-          ),
-          bottomSpace: 20
-        )
+        image = .image(.App.Currency.Vector.ton)
+        badgeImage = nil
+        corners = .circle
       case .nft(let nft):
-        return TKPopUp.Component.ImageComponent(
-          image: TKImageView.Model(
-            image: .urlImage(nft.imageURL),
-            size: .size(CGSize(width: 96, height: 96)),
-            corners: .cornerRadius(cornerRadius: 12),
-            padding: .zero
-          ),
-          bottomSpace: 20
-        )
+        image = .urlImage(nft.imageURL)
+        badgeImage = nil
+        corners = .cornerRadius(cornerRadius: 12)
+      case .tronUSDT:
+        image = .image(.App.Currency.Size96.usdt)
+        badgeImage = .image(.App.Currency.Vector.trc20)
+        corners = .circle
       }
     }
+    
+    return TransactionConfirmationHeaderImageItem(
+      configuration: TransactionConfirmationHeaderImageItemView.Configuration(
+        image: image,
+        corners: corners,
+        badgeImage: badgeImage
+      ),
+      bottomSpace: 20
+    )
   }
   
   private func createListItem(transaction: TransactionConfirmationModel,
@@ -400,7 +397,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       }
     case .transfer(let transfer):
       switch transfer {
-      case .jetton, .ton:
+      case .jetton, .ton, .tronUSDT:
         title = TKLocales.TransactionConfirmation.amount
       case .nft:
         return nil
@@ -700,31 +697,29 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       case ton
       case jetton(JettonInfo)
     }
-    let valueToken: Token? = {
-      switch model.amount?.token {
-      case .ton: return .ton
-      case .jetton(let item): return .jetton(item.jettonInfo)
-      case .none: return nil
+    
+    let valueToken: Token?
+    switch model.amount?.token {
+    case .ton(let tonToken):
+      switch tonToken {
+      case .ton: valueToken = .ton
+      case .jetton(let item): valueToken = .jetton(item.jettonInfo)
       }
-    }()
-    let feeToken: Token? = {
-      switch model.extraState {
-      case .loading:
-        return nil
-      case let .extra(extra):
-        switch extra.value {
-        case .default:
-          return .ton
-        case .battery:
-          return nil
-        case .gasless(let token,_):
-          return .jetton(token)
-        }
-      case .none:
-        return nil
+    case .tronUSDT: valueToken = nil
+    case .none: valueToken = nil
+    }
+    
+    let feeToken: Token?
+    switch model.extraState {
+    case .loading, .none: feeToken = nil
+    case .extra(let extra):
+      switch extra.value {
+      case .default: feeToken = .ton
+      case .gasless(let token, _): feeToken = .jetton(token)
+      case .battery: feeToken = .none
       }
-    }()
-
+    }
+    
     let jettons: [JettonInfo] = [valueToken, feeToken].compactMap { token -> JettonInfo? in
       switch token {
       case .ton:
@@ -737,27 +732,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
     
     do {
-      let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
-      let valueRate = {
-        switch valueToken {
-        case .ton:
-          return rates.ton.first(where: { $0.currency == currency })
-        case .jetton(let jettonInfo):
-          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates.first(where: { $0.currency == currency })
-        case nil:
-          return nil
-        }
-      }()
-      let feeRate = {
-        switch feeToken {
-        case .ton:
-          return rates.ton.first(where: { $0.currency == currency })
-        case .jetton(let jettonInfo):
-          return rates.jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates.first(where: { $0.currency == currency })
-        case nil:
-          return nil
-        }
-      }()
+      let rates = try await ratesService.loadRates(jettons: jettons.map { $0.address.toRaw() }, currencies: [currency])
+      
+      let valueRate: Rates.Rate?
+      switch valueToken {
+      case .ton:
+        valueRate = rates.ton.first(where: { $0.currency == currency })
+      case .jetton(let jettonInfo):
+        valueRate = rates.jettonRates.first(where: { $0.key == jettonInfo.address.toRaw() })?
+          .value
+          .first(where: { $0.currency == currency })
+      case nil:
+        valueRate = nil
+      }
+  
+      let feeRate: Rates.Rate?
+      switch feeToken {
+      case .ton:
+        feeRate = rates.ton.first(where: { $0.currency == currency })
+      case .jetton(let jettonInfo):
+        feeRate = rates.jettonRates.first(where: { $0.key == jettonInfo.address.toRaw() })?
+          .value
+          .first(where: { $0.currency == currency })
+      case .none:
+        feeRate = nil
+      }
       
       return (valueRate, feeRate)
     } catch {

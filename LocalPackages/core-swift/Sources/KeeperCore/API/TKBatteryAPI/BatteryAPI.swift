@@ -147,4 +147,51 @@ extension BatteryAPI {
     }
     try await request.execute()
   }
+  
+  func getTronConfig() async throws -> GetTronConfig200Response {
+    let request = try await createRequest {
+      return DefaultAPI.getTronConfigWithRequestBuilder()
+    }
+    
+    let response = try await request.execute().body
+    return response
+  }
+  
+  func getTronEstimate(address: String, energy: Int, bandwidth: Int) async throws -> EstimatedTronTx {
+    let request = try await createRequest {
+      return DefaultAPI.tronEstimateWithRequestBuilder(wallet: address, energy: energy, bandwidth: bandwidth)
+    }
+    let response = try await request.execute().body
+    return response
+  }
+  
+  func getTronTransactions(tonProofToken: String,
+                           limit: Int,
+                           maxTimestamp: Int64? = nil) async throws -> [TronTransaction] {
+    let request = try await createRequest {
+      return DefaultAPI.getTronTransactionsWithRequestBuilder(
+        xTonConnectAuth: tonProofToken,
+        limit: limit,
+        maxTimestamp: maxTimestamp)
+    }
+    let response = try await request.execute().body
+    let transactions = response.transactions.compactMap { try? TronTransaction(apiTransaction: $0) }
+    return transactions
+  }
+  
+  func tronSend(tonProofToken: String, wallet: String, tx: String, energy: Int, bandwidth: Int) async throws -> String {
+    let request = try await createRequest {
+      return DefaultAPI.tronSendWithRequestBuilder(
+        xTonConnectAuth: tonProofToken,
+        tronSendRequest: TronSendRequest(
+          tx: tx,
+          energy: energy,
+          bandwidth: bandwidth,
+          wallet: wallet
+        )
+      )
+    }
+    let response = try await request.execute().body
+    return response.status
+  }
 }

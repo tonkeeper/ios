@@ -23,6 +23,15 @@ struct HistoryListAssembly {
       transactionsManagementStore: keeperCoreMainAssembly.transactionsManagementAssembly.transactionsManagementStore(wallet: wallet),
       accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
       historyEventMapper: historyEventMapper,
+      tronEventMapper: TronEventMapper(
+        dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+        amountMapper: SignedAccountEventAmountMapper(
+          plainAccountEventAmountMapper: PlainAccountEventAmountMapper(
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+          )
+        )
+      ),
       nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
       cacheProvider: cacheProvider,
       filter: filter

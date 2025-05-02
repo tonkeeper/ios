@@ -183,7 +183,6 @@
 		7D8A50AE2AC8693C00AA396C /* HomeScreenBalanceWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidget.swift; sourceTree = "<group>"; };
 		7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetSmallContentView.swift; sourceTree = "<group>"; };
 		7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetMediumContentView.swift; sourceTree = "<group>"; };
-		7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCryptoSwift; sourceTree = "<group>"; };
 		7D9B767B2CA3E35B002AA2F3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/RateWidget.intentdefinition; sourceTree = "<group>"; };
 		7D9B76812CA3F999002AA2F3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7D9B76832CA3F99A002AA2F3 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/RateWidget.strings"; sourceTree = "<group>"; };
@@ -220,6 +219,8 @@
 		C34C705F2BE1151300143AC8 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "core-swift"; sourceTree = "<group>"; };
 		C34E05A82D4BEA3C00EB2B35 /* TKLottieWebView */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLottieWebView; sourceTree = "<group>"; };
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
+		C38917222D93BC8400D519C3 /* tron-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "tron-swift"; sourceTree = "<group>"; };
+		C38917232D93BC8A00D519C3 /* TonTronKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TonTronKit; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
 		C39757A52D8EF6C000774C74 /* DisconnectDappToast */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = DisconnectDappToast; sourceTree = "<group>"; };
@@ -479,7 +480,6 @@
 				7DAF89E22CDAC08600D58260 /* TKKeychain */,
 				7D6A3DDC2CB00CB8008314E1 /* TKStories */,
 				E66F82AA2C2F2BB00009E7C2 /* Ledger */,
-				7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */,
 				50ADFE3C2BE160D3000E1C0A /* TKLocalize */,
 				C39560142B737F12003303C7 /* App */,
 				C34C705F2BE1151300143AC8 /* core-swift */,
@@ -488,6 +488,8 @@
 				C392CE022BE11B0300E0C473 /* TKUIKit */,
 				C313EC0D2B50138D009DF825 /* TKCore */,
 				C313EC0E2B50138D009DF825 /* TKChart */,
+				C38917222D93BC8400D519C3 /* tron-swift */,
+				C38917232D93BC8A00D519C3 /* TonTronKit */,
 			);
 			path = LocalPackages;
 			sourceTree = "<group>";

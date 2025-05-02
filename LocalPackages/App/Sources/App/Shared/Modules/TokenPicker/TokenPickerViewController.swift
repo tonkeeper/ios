@@ -2,14 +2,7 @@ import UIKit
 import TKUIKit
 
 final class TokenPickerViewController: GenericViewViewController<TokenPickerView>, TKBottomSheetScrollContentViewController {
-  typealias Item = TKUIListItemCell.Configuration
-  typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
-  typealias Snapshot = NSDiffableDataSourceSnapshot<Section,Item>
   
-  enum Section {
-    case tokens
-  }
-    
   private lazy var dataSource = createDataSource()
   
   private let viewModel: TokenPickerViewModel
@@ -102,21 +95,17 @@ private extension TokenPickerViewController {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
   }
   
-  func createDataSource() -> DataSource {
-    let itemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>
-    { [weak self, weak collectionView = self.customView.collectionView] cell, indexPath, identifier in
-      guard let self else { return }
-      cell.isFirstInSection = { ip in ip.item == 0 }
-      cell.isLastInSection = { ip in
-        guard let collectionView = collectionView else { return false }
-        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-      }
-      cell.configure(configuration: identifier)
-      cell.selectionAccessoryViews = self.createSelectionAccessoryViews()
-    }
-    
-    return DataSource(collectionView: customView.collectionView) { collectionView, indexPath, itemIdentifier in
-      return collectionView.dequeueConfiguredReusableCell(using: itemCellConfiguration, for: indexPath, item: itemIdentifier)
+  func createDataSource() -> TokenPicker.DataSource {
+    let tokenCellConfiguration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
+    return TokenPicker.DataSource(collectionView: customView.collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
+      let cell =  collectionView.dequeueConfiguredReusableCell(
+        using: tokenCellConfiguration,
+        for: indexPath,
+        item: itemIdentifier.configuration
+      )
+      cell.selectionAccessoryViews = self?.createSelectionAccessoryViews() ?? []
+      
+      return cell
     }
   }
   
@@ -134,7 +123,9 @@ private extension TokenPickerViewController {
 extension TokenPickerViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     let snapshot = dataSource.snapshot()
-    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
-    item.selectionClosure?()
+    let item = snapshot.itemIdentifiers(
+      inSection: snapshot.sectionIdentifiers[indexPath.section]
+    )[indexPath.item]
+    item.selectionHandler?()
   }
 }

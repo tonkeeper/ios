@@ -8,6 +8,7 @@ final class TokenPickerButton: UIControl {
   
   struct Configuration {
     let name: String
+    let network: String?
     let image: TKImage
   }
   
@@ -48,7 +49,8 @@ final class TokenPickerButton: UIControl {
   }
   
   let imageView = TKImageView()
-  let label = UILabel()
+  let nameLabel = UILabel()
+  let networkLabel = UILabel()
   let switchImageView = UIImageView()
   
   let stackView: UIStackView = {
@@ -83,7 +85,8 @@ final class TokenPickerButton: UIControl {
     setContentCompressionResistancePriority(.required, for: .horizontal)
     stackView.setContentCompressionResistancePriority(.required, for: .horizontal)
     switchImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
-    label.setContentCompressionResistancePriority(.required, for: .horizontal)
+    nameLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    networkLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     imageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     layer.masksToBounds = true
@@ -92,9 +95,13 @@ final class TokenPickerButton: UIControl {
     
     backgroundView.isUserInteractionEnabled = false
     
-    label.textColor = .Button.tertiaryForeground
-    label.font = TKTextStyle.label2.font
-    label.isUserInteractionEnabled = false
+    nameLabel.textColor = .Button.tertiaryForeground
+    nameLabel.font = TKTextStyle.label2.font
+    nameLabel.isUserInteractionEnabled = false
+    
+    networkLabel.textColor = .Text.secondary
+    networkLabel.font = TKTextStyle.label2.font
+    networkLabel.isUserInteractionEnabled = false
     
     switchImageView.image = .TKUIKit.Icons.Size16.switch
     switchImageView.tintColor = .Icon.secondary
@@ -103,7 +110,8 @@ final class TokenPickerButton: UIControl {
     stackView.isUserInteractionEnabled = false
     
     stackView.addArrangedSubview(imageView)
-    stackView.addArrangedSubview(label)
+    stackView.addArrangedSubview(nameLabel)
+    stackView.addArrangedSubview(networkLabel)
     stackView.addArrangedSubview(switchImageView)
     
     addAction(UIAction(handler: { [weak self] _ in
@@ -126,7 +134,9 @@ final class TokenPickerButton: UIControl {
   private func didUpdateConfiguration() {
     guard let configuration else {
       imageView.image = nil
-      label.text = nil
+      nameLabel.text = nil
+      networkLabel.text = nil
+      
       return
     }
     
@@ -135,10 +145,10 @@ final class TokenPickerButton: UIControl {
         image: configuration.image,
         tintColor: .clear,
         size: .size(CGSize(width: 24, height: 24)),
-        corners: .circle,
-        padding: .zero
+        corners: .circle
       )
     )
-    label.text = configuration.name
+    nameLabel.text = configuration.name
+    networkLabel.text = configuration.network
   }
 }

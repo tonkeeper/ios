@@ -4,6 +4,7 @@ import KeeperCore
 import TKLocalize
 import TKCore
 import BigInt
+import TronSwift
 
 struct BalanceItemMapper {  
   private let amountFormatter: AmountFormatter
@@ -42,15 +43,24 @@ struct BalanceItemMapper {
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
                      isSecure: Bool = false,
-                     isPinned: Bool = false) -> TKListItemContentView.Configuration {
+                     isPinned: Bool = false,
+                     isNetworkBadgeVisible: Bool) -> TKListItemContentView.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
       diff: item.diff,
       verification: item.jetton.jettonInfo.verification
     )
+    var tags = [TKTagView.Configuration]()
+    if let tag = item.tag {
+      tags.append(TKTagView.Configuration.tag(text: tag))
+    }
+    
     return TKListItemContentView.Configuration(
-      iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
+      iconViewConfiguration: .configuration(
+        jettonInfo: item.jetton.jettonInfo,
+        isNetworkBadgeVisible: isNetworkBadgeVisible
+      ),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
         isPinned: isPinned,
@@ -59,6 +69,32 @@ struct BalanceItemMapper {
         amountFractionDigits: item.fractionalDigits,
         convertedAmount: item.converted,
         currency: item.currency,
+        tags: tags,
+        isSecure: isSecure
+      )
+    )
+  }
+  
+  func mapTronUSDTItem(item: ProcessedBalanceTronUSDTItem,
+                       isSecure: Bool = false,
+                       isPinned: Bool = false) -> TKListItemContentView.Configuration {
+    let caption = createPriceSubtitle(
+      price: item.price,
+      currency: item.currency,
+      diff: item.diff,
+      verification: .whitelist
+    )
+    return TKListItemContentView.Configuration(
+      iconViewConfiguration: .tronUSDTConfiguration(),
+      textContentViewConfiguration: createTextContentViewConfiguration(
+        title:TronSwift.USDT.symbol,
+        isPinned: isPinned,
+        caption: caption,
+        amount: item.amount,
+        amountFractionDigits: item.fractionalDigits,
+        convertedAmount: item.converted,
+        currency: item.currency,
+        tags: [.tag(text: TronSwift.USDT.tag)],
         isSecure: isSecure
       )
     )
@@ -89,12 +125,13 @@ struct BalanceItemMapper {
                                                   amountFractionDigits: Int,
                                                   convertedAmount: Decimal,
                                                   currency: Currency,
+                                                  tags: [TKTagView.Configuration] = [],
                                                   isSecure: Bool) -> TKListItemTextContentView.Configuration {
     var icon: TKListItemTitleView.Configuration.Icon?
     if isPinned {
       icon = TKListItemTitleView.Configuration.Icon(image: .TKUIKit.Icons.Size12.pin, tintColor: .Icon.tertiary)
     }
-    let titleViewConfiguration = TKListItemTitleView.Configuration(title: title, icon: icon)
+    let titleViewConfiguration = TKListItemTitleView.Configuration(title: title, tags: tags, icon: icon)
     
     var captionViewsConfigurations = [TKListItemTextView.Configuration]()
     if let caption {

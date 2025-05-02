@@ -40,13 +40,16 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
   private let walletsStore: WalletsStore
   private let configuration: Configuration
   private let keeperInfoStore: KeeperInfoStore
+  private let batteryChargesMapper: BatteryChargesMapper
   
   init(walletsStore: WalletsStore,
        configuration: Configuration,
-       keeperInfoStore: KeeperInfoStore) {
+       keeperInfoStore: KeeperInfoStore,
+       batteryChargesMapper: BatteryChargesMapper) {
     self.walletsStore = walletsStore
     self.configuration = configuration
     self.keeperInfoStore = keeperInfoStore
+    self.batteryChargesMapper = batteryChargesMapper
   }
   
   private func createSnapshot(wallet: Wallet,
@@ -67,22 +70,8 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
                          toSection: .title)
     
     snapshot.appendSections([.listItems])
-    let items = BatterySupportedTransaction.allCases.map { transaction in
-      
-      let transactionPrice: NSDecimalNumber? = {
-        switch transaction {
-        case .swap:
-          return configuration.batteryMeanFeesPriceSwapDecimaNumber(isTestnet: wallet.isTestnet)
-        case .jetton:
-          return configuration.batteryMeanFeesPriceJettonDecimaNumber(isTestnet: wallet.isTestnet)
-        case .nft:
-          return configuration.batteryMeanFeesPriceNFTDecimaNumber(isTestnet: wallet.isTestnet)
-        }
-      }()
-      
-      let chargesCount = calculateChargesAmount(transactionPrice: transactionPrice,
-                                                fee: configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet))
-      let caption = transaction.caption(chargesCount: chargesCount)
+    let items = wallet.supportedBatteryTransactions.map { transaction in
+      let caption = batteryChargesMapper.getChargesCountString(transaction: transaction, wallet: wallet)
       let cellConfiguration = TKListItemCell.Configuration(
         listItemContentViewConfiguration: TKListItemContentView.Configuration(
           textContentViewConfiguration: TKListItemTextContentView.Configuration(
@@ -102,8 +91,16 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
           batterySettings.isJettonTransactionEnable
         case .nft:
           batterySettings.isNFTTransactionEnable
+        case .trc20:
+          true
         }
       }()
+      
+      let isEnable: Bool
+      switch transaction {
+      case .swap, .nft, .jetton: isEnable = true
+      case .trc20: isEnable = false
+      }
       
       let snapshotItem = BatteryRefillTransactionsSettings.SnapshotItem.listItem(
         BatteryRefillTransactionsSettings.ListItem(
@@ -111,6 +108,7 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
           accessory: .switch(
             TKListItemSwitchAccessoryView.Configuration(
               isOn: isOn,
+              isEnable: isEnable,
               action: { [weak self] isOn in
                 guard let self else { return }
                 self.setTransaction(transaction: transaction, isOn: isOn)
@@ -137,6 +135,8 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
         wallet.batterySettings.setIsJettonTransactionEnable(isEnable: isOn)
       case .nft:
         wallet.batterySettings.setIsNFTTransactionEnable(isEnable: isOn)
+      case .trc20:
+        wallet.batterySettings
       }
     }()
 
@@ -144,38 +144,6 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
       wallet: wallet,
       batterySettings: batterySettings,
       completion: nil
-    )
-  }
-  
-  private func calculateChargesAmount(transactionPrice: NSDecimalNumber?, fee: NSDecimalNumber?) -> Int {
-    guard let transactionPrice, let fee else { return 0 }
-    return transactionPrice
-      .dividing(by: fee, withBehavior: NSDecimalNumberHandler.dividingRoundBehaviour)
-      .rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour)
-      .intValue
-  }
-}
-
-private extension NSDecimalNumberHandler {
-  static var dividingRoundBehaviour: NSDecimalNumberHandler {
-    return NSDecimalNumberHandler(
-      roundingMode: .plain,
-      scale: 20,
-      raiseOnExactness: false,
-      raiseOnOverflow: false,
-      raiseOnUnderflow: false,
-      raiseOnDivideByZero: false
-    )
-  }
-  
-  static var roundBehaviour: NSDecimalNumberHandler {
-    return NSDecimalNumberHandler(
-      roundingMode: .plain,
-      scale: 0,
-      raiseOnExactness: false,
-      raiseOnOverflow: false,
-      raiseOnUnderflow: false,
-      raiseOnDivideByZero: false
     )
   }
 }

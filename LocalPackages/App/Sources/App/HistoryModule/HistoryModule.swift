@@ -62,6 +62,22 @@ struct HistoryModule {
     )
     return listModule
   }
+  
+  func createTronUSDTHistoryListModule(
+    wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    let listModule = HistoryListAssembly.module(
+      wallet: wallet,
+      paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTronUSDTEventsPaginationLoader(
+        wallet: wallet
+      ),
+      cacheProvider: HistoryListTonEventsCacheProvider(historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
+      filter: .none,
+      emptyViewProvider: nil
+    )
+    return listModule
+  }
 }
 
 extension HistoryModule {

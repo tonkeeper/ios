@@ -13,7 +13,7 @@ struct SendModule {
   
   public func createSendTokenCoordinator(router: NavigationControllerRouter,
                                          wallet: Wallet,
-                                         sendItem: SendItem,
+                                         sendItem: SendV3Item,
                                          recipient: Recipient? = nil,
                                          comment: String? = nil) -> SendTokenCoordinator {
     let coordinator = SendTokenCoordinator(
@@ -21,6 +21,7 @@ struct SendModule {
       wallet: wallet,
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      recipientResolver: dependencies.keeperCoreMainAssembly.loadersAssembly.recipientResolver(),
       sendItem: sendItem,
       recipient: recipient,
       comment: comment

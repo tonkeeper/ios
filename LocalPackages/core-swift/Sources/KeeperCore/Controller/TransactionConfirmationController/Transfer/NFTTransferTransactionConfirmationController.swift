@@ -119,7 +119,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   
   private let wallet: Wallet
-  private let recipient: Recipient
+  private let recipient: TonRecipient
   private let nft: NFT
   private let comment: String?
   private let sendService: SendService
@@ -132,7 +132,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
   private let batteryCalculation: BatteryCalculation
   
   init(wallet: Wallet,
-       recipient: Recipient,
+       recipient: TonRecipient,
        nft: NFT,
        comment: String?,
        sendService: SendService,

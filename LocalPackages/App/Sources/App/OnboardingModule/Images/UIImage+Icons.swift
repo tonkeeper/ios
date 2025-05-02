@@ -85,6 +85,34 @@ public extension UIImage {
         public static var batteryBody128: UIImage {
           .imageWithName("Icons/Battery/battery-body-128")
         }
+        public static var batteryBanner: UIImage {
+          .imageWithName("Icons/Battery/battery-banner")
+        }
+      }
+    }
+    public enum Currency {
+      enum Size44 {
+        public static var usdt: UIImage {
+          .imageWithName("Icons/Currency/44/usdt")
+        }
+      }
+      enum Size60 {
+        public static var usdtTrc20: UIImage {
+          .imageWithName("Icons/Currency/60/usdt_trc20")
+        }
+      }
+      enum Size96 {
+        public static var usdt: UIImage {
+          .imageWithName("Icons/Currency/96/usdt")
+        }
+      }
+      enum Vector {
+        public static var trc20: UIImage {
+          .imageWithName("Icons/Currency/Vector/trc20")
+        }
+        public static var ton: UIImage {
+          .imageWithName("Icons/Currency/Vector/ton")
+        }
       }
     }
   }

@@ -208,7 +208,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     walletCoordinator.didTapSend = { [weak self] wallet, token in
-      self?.openSend(wallet: wallet, token: token, amount: nil, comment: nil)
+      self?.openSend(wallet: wallet, sendItem: .ton(.token(token, amount: 0)), comment: nil)
     }
     
     walletCoordinator.didTapSwap = { [weak self] wallet in
@@ -225,6 +225,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     walletCoordinator.didSelectJettonDetails = { [weak self] wallet, jettonItem, hasPrice in
       self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
+    }
+    
+    walletCoordinator.didSelectTronUSDTDetails = { [weak self] wallet in
+      self?.openTronUSDTDetails(wallet: wallet)
     }
     
     walletCoordinator.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
@@ -244,8 +248,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBuy(wallet: wallet)
     }
     
-    walletCoordinator.didTapReceive = { [weak self] token, wallet in
-      self?.openReceive(token: token, wallet: wallet)
+    walletCoordinator.didTapReceive = { [weak self] tokens, wallet in
+      self?.openReceive(tokens: tokens, wallet: wallet)
     }
     
     walletCoordinator.didTapStake = { [weak self] wallet in
@@ -263,8 +267,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
-    historyCoordinator.didOpenEventDetails = { [weak self] wallet, event, isTestnet in
+    historyCoordinator.didOpenTonEventDetails = { [weak self] wallet, event, isTestnet in
       self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: isTestnet)
+    }
+    historyCoordinator.didOpenTronEventDetails = { [weak self] wallet, event, isTestnet in
+      self?.openTronEventDetails(wallet: wallet, event: event, isTestnet: isTestnet)
     }
     historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
@@ -272,6 +279,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     historyCoordinator.didOpenDapp = { url, title in
       self.openDapp(title: title, url: url)
     }
+    historyCoordinator.passcodeProvider = getPasscode
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
@@ -367,9 +375,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openSend(wallet: Wallet,
-                token: Token,
+                sendItem: SendV3Item,
                 recipient: Recipient? = nil,
-                amount: BigUInt?,
                 comment: String?,
                 successReturn: URL? = nil) {
     let navigationController = TKNavigationController()
@@ -383,7 +390,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .token(token, amount: amount ?? 0),
+      sendItem: sendItem,
       recipient: recipient,
       comment: comment
     )
@@ -425,18 +432,22 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openSwap(wallet: Wallet, token: Token) {
-    let fromToken: String?
-    let toToken: String?
     switch token {
-    case .ton:
-      fromToken = TonInfo.symbol
-      toToken = nil
-    case .jetton(let jetton):
-      fromToken = jetton.jettonInfo.address.toRaw()
-      toToken = TonInfo.symbol
+    case .ton(let tonToken):
+      let fromToken: String?
+      let toToken: String?
+      switch tonToken {
+      case .ton:
+        fromToken = TonInfo.symbol
+        toToken = nil
+      case .jetton(let jetton):
+        fromToken = jetton.jettonInfo.address.toRaw()
+        toToken = TonInfo.symbol
+      }
+      openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
+    case .usdtTron:
+      openTRC20Swap()
     }
-    
-    openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
   
   func openSwap(wallet: Wallet,
@@ -473,6 +484,34 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
         self?.removeChild(coordinator)
       })
+    }
+  }
+  
+  private var trc20SwapOpenTask: Task<Void, Swift.Error>?
+  func openTRC20Swap() {
+    trc20SwapOpenTask?.cancel()
+    trc20SwapOpenTask = Task { [weak self] in
+      guard let self else { return }
+      func getLetsExchange(methods: FiatMethods) -> FiatMethodItem? {
+        let allMethods = methods.buy.flatMap { $0.items }
+        guard let method = allMethods.first(where: { $0.id == "letsexchange_buy_swap" }) else { return nil }
+        return method
+      }
+      func getMethods() async -> FiatMethods? {
+        let service = await keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
+        if let methods = try? service.getFiatMethods() {
+          return methods
+        } else if let methods = try? await service.loadFiatMethods(countryCode: nil) {
+          return methods
+        } else {
+          return nil
+        }
+      }
+      guard let methods = await getMethods() else { return }
+      guard !Task.isCancelled else { return }
+      guard let method = getLetsExchange(methods: methods),
+            let url = URL(string: method.actionButton.url)  else { return }
+      openURL(url, title: nil)
     }
   }
 
@@ -824,7 +863,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createTonHistoryListModule(wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      switch event {
+      case .tonEvent(let event):
+        self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      case .tronEvent(let event):
+        self?.openTronEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      }
     }
     
     let module = TokenDetailsAssembly.module(
@@ -842,18 +886,27 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
-        ChartAssembly.module(token: .ton,
+        ChartAssembly.module(token: .ton(.ton),
                              coreAssembly: coreAssembly,
                              keeperCoreMainAssembly: keeperCoreMainAssembly).view
       }
     )
     
     module.output.didTapReceive = { [weak self] token in
-      self?.openReceive(token: token, wallet: wallet)
+      self?.openReceive(tokens: [token], wallet: wallet)
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(wallet: wallet, token: token, amount: nil, comment: nil)
+      let sendItem: SendV3Item = {
+        switch token {
+        case .ton(let tonToken):
+          return .ton(TonSendData.Item.token(tonToken, amount: 0))
+        case .usdtTron:
+          return .tron(TronSendData.Item.usdt(amount: 0))
+        }
+      }()
+      
+      self?.openSend(wallet: wallet, sendItem: sendItem, comment: nil)
     }
     
     module.output.didTapBuyOrSell = { [weak self] in
@@ -882,7 +935,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createJettonHistoryListModule(jettonInfo: jettonItem.jettonInfo, wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      switch event {
+      case .tonEvent(let event):
+        self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      case .tronEvent(let event):
+        self?.openTronEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      }
     }
     
     let module = TokenDetailsAssembly.module(
@@ -901,18 +959,105 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
         guard hasPrice else { return nil }
-        return ChartAssembly.module(token: .jetton(jettonItem),
+        return ChartAssembly.module(token: .ton(.jetton(jettonItem)),
                                     coreAssembly: coreAssembly,
                                     keeperCoreMainAssembly: keeperCoreMainAssembly).view
       }
     )
     
     module.output.didTapReceive = { [weak self] token in
-      self?.openReceive(token: token, wallet: wallet)
+      self?.openReceive(tokens: [token], wallet: wallet)
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(wallet: wallet, token: token, recipient: nil, amount: nil, comment: nil)
+      let sendItem: SendV3Item = {
+        switch token {
+        case .ton(let tonToken):
+          return .ton(TonSendData.Item.token(tonToken, amount: 0))
+        case .usdtTron:
+          return .tron(TronSendData.Item.usdt(amount: 0))
+        }
+      }()
+      
+      self?.openSend(wallet: wallet, sendItem: sendItem, comment: nil)
+    }
+    
+    module.output.didTapSwap = { [weak self] token in
+      self?.openSwap(wallet: wallet, token: token)
+    }
+    
+    module.output.didOpenURL = { [weak self] url in
+      self?.openURL(url, title: nil)
+    }
+    
+    navigationController.pushViewController(module.view, animated: true)
+  }
+  
+  func openTronUSDTDetails(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createTronUSDTHistoryListModule(wallet: wallet)
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      switch event {
+      case .tonEvent(let event):
+        self?.openHistoryEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      case .tronEvent(let event):
+        self?.openTronEventDetails(wallet: wallet, event: event, isTestnet: wallet.isTestnet)
+      }
+    }
+    
+    var configuration = TronUSDTTokenDetailsConfigurator(
+      wallet: wallet,
+      mapper: TokenDetailsMapper(
+        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+        decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+        rateConverter: RateConverter()
+      ),
+      batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation
+    )
+    
+    configuration.didTapChargeBattery = { [weak self] in
+      self?.openBattery(wallet: wallet)
+    }
+    
+    let module = TokenDetailsAssembly.module(
+      wallet: wallet,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+      configurator: configuration,
+      tokenDetailsListContentViewController: historyListModule.view,
+      chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
+        ChartAssembly.module(token: .usdtTron,
+                             coreAssembly: coreAssembly,
+                             keeperCoreMainAssembly: keeperCoreMainAssembly).view
+      }
+    )
+    
+    module.output.didTapReceive = { [weak self] token in
+      self?.openReceive(tokens: [token], wallet: wallet)
+    }
+    
+    module.output.didTapSend = { [weak self] token in
+      let sendItem: SendV3Item = {
+        switch token {
+        case .ton(let tonToken):
+          return .ton(TonSendData.Item.token(tonToken, amount: 0))
+        case .usdtTron:
+          return .tron(TronSendData.Item.usdt(amount: 0))
+        }
+      }()
+      
+      self?.openSend(wallet: wallet, sendItem: sendItem, comment: nil)
+    }
+    
+    module.output.didTapBuyOrSell = { [weak self] in
+      self?.openBuy(wallet: wallet)
     }
     
     module.output.didTapSwap = { [weak self] token in
@@ -1090,18 +1235,19 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     })
   }
   
-  func openReceive(token: Token, wallet: Wallet) {
-    let module = ReceiveModule(
-      dependencies: ReceiveModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).receiveModule(token: token, wallet: wallet)
+  func openReceive(tokens: [Token], wallet: Wallet) {
+    let module = ReceiveAssembly.module(
+      tokens: tokens,
+      wallet: wallet,
+      keeperCoreAssembly: keeperCoreMainAssembly
+    )
     
-    module.view.setupSwipeDownButton()
+    module.output.didSelectInactiveTRC20 = { [weak self] wallet in
+      self?.openReceiveTRC20Popup(wallet: wallet)
+    }
     
     let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     router.present(navigationController)
   }
@@ -1172,9 +1318,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   func openHistoryEventDetails(wallet: Wallet, event: AccountEventDetailsEvent, isTestnet: Bool) {
     let module = HistoryEventDetailsAssembly.module(
       wallet: wallet,
-      event: event,
+      event: .ton(event),
       keeperCoreAssembly: keeperCoreMainAssembly,
-      urlOpener: coreAssembly.urlOpener(),
       isTestnet: isTestnet
     )
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
@@ -1187,10 +1332,31 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       bottomSheetViewController?.dismiss()
     }
     
-    module.output.didTapOpenTransactionInTonviewer = { [weak self, keeperCoreMainAssembly] in
-      guard let url = TonviewerURLBuilder(configuration: keeperCoreMainAssembly.configurationAssembly.configuration)
-        .buildURL(context: .eventDetails(eventID: event.accountEvent.eventId), isTestnet: wallet.isTestnet) else { return }
-      self?.openDapp(title: "Tonviewer", url: url)
+    module.output.didTapTransactionDetails = { [weak self] url, title in
+      self?.openDapp(title: title, url: url)
+    }
+    
+    router.rootViewController.dismiss(animated: true) { [weak self] in
+      guard let router = self?.router else { return }
+      bottomSheetViewController.present(fromViewController: router.rootViewController)
+    }
+  }
+  
+  func openTronEventDetails(wallet: Wallet, event: TronTransaction, isTestnet: Bool) {
+    let module = HistoryEventDetailsAssembly.module(
+      wallet: wallet,
+      event: .tron(event),
+      keeperCoreAssembly: keeperCoreMainAssembly,
+      isTestnet: isTestnet
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didFinish = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    module.output.didTapTransactionDetails = { [weak self] url, title in
+      self?.openDapp(title: title, url: url)
     }
     
     router.rootViewController.dismiss(animated: true) { [weak self] in
@@ -1257,6 +1423,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                            onDismiss: { [weak self, weak coordinator] in
         self?.removeChild(coordinator)
       })
+    }
+  }
+  
+  func openReceiveTRC20Popup(wallet: Wallet) {
+    let module = ReceiveTRC20PopupAssembly.module(wallet: wallet,
+                                                  keeperCoreAssembly: keeperCoreMainAssembly,
+                                                  passcodeProvider: getPasscode)
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
+    
+    module.output.didFinish = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
     }
   }
   

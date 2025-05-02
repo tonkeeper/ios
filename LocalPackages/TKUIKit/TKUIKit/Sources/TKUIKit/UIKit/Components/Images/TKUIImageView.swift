@@ -8,18 +8,15 @@ public final class TKImageView: UIView, ConfigurableView {
     public let tintColor: UIColor?
     public let size: Size
     public let corners: Corners
-    public let padding: UIEdgeInsets
     
     public init(image: TKImage?,
                 tintColor: UIColor? = nil,
                 size: Size = .auto,
-                corners: Corners = .none,
-                padding: UIEdgeInsets = .zero) {
+                corners: Corners = .none) {
       self.image = image
       self.tintColor = tintColor
       self.size = size
       self.corners = corners
-      self.padding = padding
     }
   }
   
@@ -27,7 +24,6 @@ public final class TKImageView: UIView, ConfigurableView {
     self.image = model.image
     self.size = model.size
     self.corners = model.corners
-    self.padding = model.padding
     self.imageView.tintColor = model.tintColor
     setNeedsLayout()
     invalidateIntrinsicContentSize()
@@ -56,13 +52,7 @@ public final class TKImageView: UIView, ConfigurableView {
       didUpdateSize()
     }
   }
-  
-  public var padding: UIEdgeInsets = .zero {
-    didSet {
-      didUpdatePadding()
-    }
-  }
-  
+
   public var image: TKImage? {
     didSet {
       didUpdateImage()
@@ -95,27 +85,27 @@ public final class TKImageView: UIView, ConfigurableView {
     switch size {
     case .none:
       let imageViewFrame = CGRect(
-        x: padding.left,
-        y: padding.top,
-        width: bounds.width - padding.left - padding.right,
-        height: bounds.height - padding.top - padding.bottom
+        x: 0,
+        y: 0,
+        width: bounds.width,
+        height: bounds.height
       )
       imageView.frame = imageViewFrame
     case .auto:
       let imageViewSizeThatFits = imageView.sizeThatFits(.zero)
       let imageViewFrame = CGRect(
-        x: padding.left,
-        y: padding.top,
+        x: bounds.width/2 - imageViewSizeThatFits.width/2,
+        y: bounds.height/2 - imageViewSizeThatFits.height/2,
         width: imageViewSizeThatFits.width,
         height: imageViewSizeThatFits.height
       )
       imageView.frame = imageViewFrame
     case .size(let size):
       let imageViewFrame = CGRect(
-        x: padding.left,
-        y: padding.top,
-        width: size.width - padding.left - padding.right,
-        height: size.height - padding.top - padding.bottom
+        x: bounds.width/2 - size.width/2,
+        y: bounds.height/2 - size.height/2,
+        width: size.width,
+        height: size.height
       )
       imageView.frame = imageViewFrame
     }
@@ -141,13 +131,13 @@ public final class TKImageView: UIView, ConfigurableView {
       return .zero
     case .auto:
       let imageViewSizeThatFits = imageView.sizeThatFits(.zero)
-      let size = CGSize(width: imageViewSizeThatFits.width + padding.left + padding.right,
-                        height: imageViewSizeThatFits.height + padding.top + padding.bottom)
+      let size = CGSize(width: imageViewSizeThatFits.width,
+                        height: imageViewSizeThatFits.height)
       return size
     case .size(let size):
       let sizeThatFits = CGSize(
-        width: size.width + padding.left + padding.right,
-        height: size.height + padding.top + padding.bottom
+        width: size.width,
+        height: size.height
       )
       return sizeThatFits
     }

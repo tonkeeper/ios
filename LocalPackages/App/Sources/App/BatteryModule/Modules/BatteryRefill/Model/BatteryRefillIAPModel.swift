@@ -93,7 +93,7 @@ final class BatteryRefillIAPModel: NSObject, SKProductsRequestDelegate, SKPaymen
     let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance
     let tonPriceUSD: NSDecimalNumber? = {
       let rates = self.tonRatesStore.getState()
-      guard let usdRates = rates.first(where: { $0.currency == .USD })?.rate else { return nil }
+      guard let usdRates = rates.tonRates.first(where: { $0.currency == .USD })?.rate else { return nil }
       return NSDecimalNumber(decimal: usdRates)
     }()
     

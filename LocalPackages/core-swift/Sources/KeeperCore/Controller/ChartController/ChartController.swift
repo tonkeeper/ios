@@ -26,7 +26,7 @@ public final class ChartController {
   public func start() async {
     tonRatesStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateTonRates:
+      case .didUpdateRates:
         DispatchQueue.main.async {
           observer.didUpdateChartData?()
         }
@@ -42,7 +42,7 @@ public final class ChartController {
         period: period,
         token: "ton",
         currency: currency, isTestnet: false)
-      let rates = tonRatesStore.state
+      let rates = tonRatesStore.state.tonRates
       let coordinates = try await coordinatesTask
       
       try Task.checkCancellation()

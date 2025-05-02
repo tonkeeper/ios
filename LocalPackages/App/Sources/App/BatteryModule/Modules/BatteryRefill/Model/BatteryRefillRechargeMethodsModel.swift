@@ -7,8 +7,8 @@ import TonSwift
 final class BatteryRefillRechargeMethodsModel {
   
   enum RechargeMethodItem {
-    case token(token: Token)
-    case gift(token: Token)
+    case token(token: TonToken)
+    case gift(token: TonToken)
     
     var identifier: String {
       switch self {
@@ -19,7 +19,7 @@ final class BatteryRefillRechargeMethodsModel {
       }
     }
     
-    var token: Token {
+    var token: TonToken {
       switch self {
       case .token(let token):
         return token

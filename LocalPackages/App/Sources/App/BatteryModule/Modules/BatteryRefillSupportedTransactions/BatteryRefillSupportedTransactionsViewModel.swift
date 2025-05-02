@@ -34,39 +34,25 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
       )
     )
     
-    let snapshot = createSnapshot(configuration: configuration)
+    let snapshot = createSnapshot()
     didUpdateSnapshot?(snapshot)
   }
   
   private let wallet: Wallet
-  private let configuration: Configuration
+  private let batteryChargeMapper: BatteryChargesMapper
   
   init(wallet: Wallet,
-       configuration: Configuration) {
+       batteryChargeMapper: BatteryChargesMapper) {
     self.wallet = wallet
-    self.configuration = configuration
+    self.batteryChargeMapper = batteryChargeMapper
   }
   
-  private func createSnapshot(configuration: Configuration) -> BatteryRefillSupportedTransactions.Snapshot {
+  private func createSnapshot() -> BatteryRefillSupportedTransactions.Snapshot {
     var snapshot = BatteryRefillSupportedTransactions.Snapshot()
     
     snapshot.appendSections([.listItems])
-    let items = BatterySupportedTransaction.allCases.map { transaction in
-      
-      let transactionPrice: NSDecimalNumber? = {
-        switch transaction {
-        case .swap:
-          return configuration.batteryMeanFeesPriceSwapDecimaNumber(isTestnet: wallet.isTestnet)
-        case .jetton:
-          return configuration.batteryMeanFeesPriceJettonDecimaNumber(isTestnet: wallet.isTestnet)
-        case .nft:
-          return configuration.batteryMeanFeesPriceNFTDecimaNumber(isTestnet: wallet.isTestnet)
-        }
-      }()
-      
-      let chargesCount = calculateChargesAmount(transactionPrice: transactionPrice, 
-                                                fee: configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet))
-      let caption = transaction.caption(chargesCount: chargesCount)
+    let items = wallet.supportedBatteryTransactions.map { transaction in
+      let caption = batteryChargeMapper.getChargesCountString(transaction: transaction, wallet: wallet)
       let cellConfiguration = TKListItemCell.Configuration(
         listItemContentViewConfiguration: TKListItemContentView.Configuration(
           textContentViewConfiguration: TKListItemTextContentView.Configuration(
@@ -86,37 +72,5 @@ final class BatteryRefillSupportedTransactionsViewModelImplementation: BatteryRe
     snapshot.appendItems(items, toSection: .listItems)
     
     return snapshot
-  }
-  
-  private func calculateChargesAmount(transactionPrice: NSDecimalNumber?, fee: NSDecimalNumber?) -> Int {
-    guard let transactionPrice, let fee else { return 0 }
-    return transactionPrice
-      .dividing(by: fee, withBehavior: NSDecimalNumberHandler.dividingRoundBehaviour)
-      .rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour)
-      .intValue
-  }
-}
-
-private extension NSDecimalNumberHandler {
-  static var dividingRoundBehaviour: NSDecimalNumberHandler {
-    return NSDecimalNumberHandler(
-      roundingMode: .plain,
-      scale: 20,
-      raiseOnExactness: false,
-      raiseOnOverflow: false,
-      raiseOnUnderflow: false,
-      raiseOnDivideByZero: false
-    )
-  }
-  
-  static var roundBehaviour: NSDecimalNumberHandler {
-    return NSDecimalNumberHandler(
-      roundingMode: .plain,
-      scale: 0,
-      raiseOnExactness: false,
-      raiseOnOverflow: false,
-      raiseOnUnderflow: false,
-      raiseOnDivideByZero: false
-    )
   }
 }

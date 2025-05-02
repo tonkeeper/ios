@@ -2,36 +2,30 @@ import UIKit
 import TKUIKit
 
 final class TokenDetailsHeaderViewController: UIViewController {
-  
   let informationView = TokenDetailsInformationView()
   let buttonsView = TokenDetailsHeaderButtonsView()
+  let bannerContainer = UIStackView()
   let chartContainer = UIView()
+  
+  private let stackView = UIStackView()
   
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    view.addSubview(informationView)
-    view.addSubview(buttonsView)
-    view.addSubview(chartContainer)
+    stackView.axis = .vertical
     
-    informationView.translatesAutoresizingMaskIntoConstraints = false
-    buttonsView.translatesAutoresizingMaskIntoConstraints = false
-    chartContainer.translatesAutoresizingMaskIntoConstraints = false
+    bannerContainer.axis = .vertical
     
-    NSLayoutConstraint.activate([
-      informationView.topAnchor.constraint(equalTo: view.topAnchor),
-      informationView.leftAnchor.constraint(equalTo: view.leftAnchor),
-      informationView.rightAnchor.constraint(equalTo: view.rightAnchor),
-      
-      buttonsView.topAnchor.constraint(equalTo: informationView.bottomAnchor),
-      buttonsView.leftAnchor.constraint(equalTo: view.leftAnchor),
-      buttonsView.rightAnchor.constraint(equalTo: view.rightAnchor),
-      
-      chartContainer.topAnchor.constraint(equalTo: buttonsView.bottomAnchor),
-      chartContainer.leftAnchor.constraint(equalTo: view.leftAnchor),
-      chartContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-      chartContainer.rightAnchor.constraint(equalTo: view.rightAnchor)
-    ])
+    view.addSubview(stackView)
+    
+    stackView.addArrangedSubview(informationView)
+    stackView.addArrangedSubview(buttonsView)
+    stackView.addArrangedSubview(bannerContainer)
+    stackView.addArrangedSubview(chartContainer)
+    
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(view)
+    }
   }
   
   func embedChartViewController(_ chartViewController: UIViewController) {

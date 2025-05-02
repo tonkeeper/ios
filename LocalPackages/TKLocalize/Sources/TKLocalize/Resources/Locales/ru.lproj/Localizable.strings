@@ -13,7 +13,7 @@
 "actions.hide_nft" = "Скрыть NFT";
 "actions.hide_collection" = "Скрыть коллекцию";
 "actions.hide_and_report_spam" = "Скрыть и пожаловаться";
-"actions.view_on_tonviewier" = "Открыть в Tonviewer";
+"actions.view_on" = "Открыть в %@";
 "actions.burn_nft" = "Сжечь NFT";
 "actions.confirm" = "Подтвердить";
 
@@ -143,6 +143,8 @@
 "settings.legal.items.montserrat_font" = "Шрифт Montserrat";
 "settings.legal.sections.licenses" = "Лицензии";
 
+"settings.trc20.description" = "Используйте USD₮ TRC20 без TRX. Комиссии оплачиваются с помощью батарейки Tonkeeper.";
+
 "settings.purchases.title" = "Покупки";
 "settings.purchases.sections.visible" = "Видимые";
 "settings.purchases.sections.hidden" = "Скрытые";
@@ -245,7 +247,13 @@
 
 "backup.show.title" = "Секретный ключи";
 "backup.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
-"backup.show.button.title" = "Скопировать";
+"backup.show.button.title" = "Скопировать ключ";
+"backup.show.button.trc20" = "Экспорт TRC20 кошелька";
+
+"backup.trc20.show.title" = "TRC20 кошелёк";
+"backup.trc20.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
+"backup.trc20.show.banner" = "Этот ключ предназначен только для TRC20. Он не может восстановить ваш TON кошелёк. Для восстановления TON кошелька используйте ключ восстановления TON.";
+"backup.trc20.show.button.title" = "Скопировать ключ";
 
 "backup.check.title" = "Секретный ключи";
 "backup.check.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
@@ -282,6 +290,10 @@
 
 "send.required_comment.placeholder" = "Комментарий";
 "send.required_comment.description" = "При отправке обязательно укажите memo или тег от биржи. Без него средства не поступят и могут быть утеряны.";
+
+"send.incorrect_network_recipient.trc20" = "Указан адрес сети TRON. Обменяйте USD₮ TON на USD₮ TRC20 через NAME, чтобы продолжить отправку.";
+"send.incorrect_network_recipient.ton" = "Указан адрес сети TON. Обменяйте USD₮ TRC20 на USD₮ TON через NAME, чтобы продолжить отправку.";
+
 
 "confirm_send.token_transfer.title" = "Подтвердить действие";
 "confirm_send.token_transfer.transfer" = "Отправка %@";
@@ -397,6 +409,12 @@
 
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
+
+"receive.trc20.description" = "Отправляйте только USD₮ TRC20 на этот адрес, иначе вы можете потерять свои средства.";
+"receive.trc20.popup.title" = "USD₮ TRC20";
+"receive.trc20.popup.caption" = "Используйте USD₮ TRC20 без TRX. Комиссии оплачиваются с помощью батарейки Tonkeeper.";
+"receive.trc20.popup.buttons.enable" = "Включить USD₮ TRC20";
+"receive.trc20.popup.buttons.later" = "Позже";
 
 "watch_account.title" = "Аккаунт для просмотра";
 "watch_account.description" = "Отслеживайте активность, получайте уведомления о транзакциях этого кошелька без ввода секретного ключа.";
@@ -671,6 +689,8 @@
 "battery.settings.items.token.caption" = "за отправку";
 "battery.settings.items.nft.title" = "Отправка NFT";
 "battery.settings.items.nft.caption" = "за отправку";
+"battery.settings.items.trc20.title" = "Отправка USD₮ TRC20";
+"battery.settings.items.trc20.caption" = "за отправку";
 
 "battery.recharge.title" = "Зарядка";
 "battery.recharge.gift_title" = "Подарок";
@@ -693,3 +713,7 @@
 "sign_data.unknown_cell.subtitle" = "Вы подписываетесь вслепую. Подписывайте только из проверенных источников\nПодпись может использоваться ончейн";
 "sign_data.slider.title" = "Подписать";
 "sign_data.slider.subtitle" = "Свайп вправо";
+
+"token_details.trc20.usdt.battery_banner.title" = "Для USD₮ TRC20 требуется батарейка Tonkeeper";
+"token_details.trc20.usdt.battery_banner.caption" = "Заряд батарейки покрывает комиссии за транзакции, упрощая и удешевляя переводы.";
+"token_details.trc20.usdt.battery_banner.charge_button" = "Зарядить батарейку";

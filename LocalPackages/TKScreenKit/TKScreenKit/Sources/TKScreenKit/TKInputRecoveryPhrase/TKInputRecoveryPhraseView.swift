@@ -227,7 +227,7 @@ private extension TKInputRecoveryPhraseView {
       seedPhraseModeSegmentedControlContainer.isHidden = false
       seedPhraseModeSegmentedControl.tabs = seedPhraseInputControlModel.tabs
       seedPhraseModeSegmentedControl.selectedIndex = seedPhraseInputControlModel.selectedIndex
-      seedPhraseModeSegmentedControl.didSelectTab = { index in
+      seedPhraseModeSegmentedControl.didSelectTab = { _, index in
         seedPhraseInputControlModel.selectionClosure(index)
       }
     } else {

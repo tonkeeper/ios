@@ -1,6 +1,6 @@
 import KeeperCore
 
-extension Token: AmountInputUnit {
+extension TonToken: AmountInputUnit {
   var inputSymbol: AmountInputSymbol {
     .text(self.symbol)
   }

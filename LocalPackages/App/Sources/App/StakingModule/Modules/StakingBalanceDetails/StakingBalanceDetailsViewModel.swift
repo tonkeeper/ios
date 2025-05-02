@@ -202,33 +202,27 @@ private extension StakingBalanceDetailsViewModelImplementation {
       }
     }()
     
-    let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolInfo.icon)
-    let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
-      image: badgeImage,
-      tintColor: .Icon.primary,
-      backgroundColor: .Background.contentTint,
-      size: .badgeIconSize,
-      cornerRadius: 13,
-      borderWidth: 2,
-      borderColor: .Background.page,
-      contentMode: .scaleAspectFill
+    let imageConfiguration = TKListItemIconView.Configuration(
+      content: .image(
+        TKImageView.Model(
+          image: .image(.App.Currency.Vector.ton),
+          size: .size(CGSize(width: 64, height: 64)),
+          corners: .circle
+        )
+      ),
+      alignment: .center,
+      size: CGSize(width: 64, height: 64),
+      badge: TKListItemIconView.Configuration.Badge(
+        configuration: TKListItemBadgeView.Configuration(
+          item: .image(.image(stakingPoolInfo.icon)),
+          size: .large
+        ),
+        position: .bottomRight
+      )
     )
     
     let model = TokenDetailsInformationView.Model(
-      imageConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .imageWithBadge(TKUIListItemImageIconView.Configuration(
-          image: .image(
-            .TKCore.Icons.Size44.tonLogo
-          ),
-          tintColor: .clear,
-          backgroundColor: .clear,
-          size: CGSize(width: 64, height: 64),
-          cornerRadius: 32,
-          contentMode: .scaleAspectFit,
-          imageSize: CGSize(width: 64, height: 64)
-        ), badgeIconConfiguration),
-        alignment: .center
-      ),
+      imageConfiguration: imageConfiguration,
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount
     )
@@ -245,8 +239,10 @@ private extension StakingBalanceDetailsViewModelImplementation {
     }
     
     let isSecureMode = appSettingsStore.getState().isSecureMode
-    
-    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem, isSecure: isSecureMode)
+
+    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem,
+                                                        isSecure: isSecureMode,
+                                                        isNetworkBadgeVisible: false)
     didUpdateJettonItemView?(
       TKListItemButton.Configuration(
         listItemConfiguration: configuration,
@@ -279,7 +275,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     func convert(amount: Int64) -> Decimal {
       let converter = RateConverter()
       
-      if let rate = tonRatesStore.getState().first(where: { $0.currency == currency }) {
+      if let rate = tonRatesStore.getState().tonRates.first(where: { $0.currency == currency }) {
         return converter.convertToDecimal(
           amount: BigUInt(UInt64(amount)),
           amountFractionLength: TonInfo.fractionDigits,

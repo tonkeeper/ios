@@ -1,4 +1,5 @@
 import Foundation
+import TronSwift
 import TonSwift
 import BigInt
 
@@ -32,17 +33,19 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
   private func calculateState(wallets: [Wallet]) -> State {
     guard !wallets.isEmpty else { return [:] }
     let balanceStates = balanceStore.state
-    let tonRates = tonRatesStore.state
+    let rates = tonRatesStore.state
     let currency = currencyStore.state
     
-    let rates = tonRates.first(where: { $0.currency == currency })
+    let tonRates = rates.tonRates.first(where: { $0.currency == currency })
+    let usdtRates = rates.usdtRates.first(where: { $0.currency == currency })
     
     var state = State()
     for wallet in wallets {
       guard let walletBalanceState = balanceStates[wallet] else { continue }
       state[wallet] = recalculateBalance(
         balanceState: walletBalanceState,
-        tonRate: rates,
+        tonRate: tonRates,
+        usdtRate: usdtRates,
         currency: currency
       )
     }
@@ -74,6 +77,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
   
   private func recalculateBalance(balanceState: WalletBalanceState,
                                   tonRate: Rates.Rate?,
+                                  usdtRate: Rates.Rate?,
                                   currency: Currency) -> ConvertedBalanceState {
     let balance = balanceState.walletBalance
     
@@ -93,12 +97,16 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
       )
     }
     
+    let tronUSDTItem = calculateTronUSDTBalance(balance.tronBalance, usdtRates: usdtRate)
+    
     let convertedBalance = ConvertedBalance(
       date: balance.date,
       currency: currency,
       tonBalance: tonItem,
       jettonsBalance: jettonItems,
-      stackingBalance: stackingItems
+      stackingBalance: stackingItems,
+      tronUSDT: tronUSDTItem,
+      batteryBalance: balance.batteryBalance
     )
     
     switch balanceState {
@@ -202,6 +210,36 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
       pendingWithdrawConverted: pendingWithdrawConverted,
       readyWithdrawConverted: readyWithdrawConverted,
       price: price
+    )
+  }
+  
+  private func calculateTronUSDTBalance(_ tronUSDTBalance: TronBalance?,
+                                        usdtRates: Rates.Rate?) -> ConvertedBalanceTronUSDTItem? {
+    guard let tronUSDTBalance else {
+      return nil
+    }
+    let converted: Decimal
+    let price: Decimal
+    let diff: String?
+    if let rate = usdtRates {
+      converted = RateConverter().convertToDecimal(
+        amount: tronUSDTBalance.amount,
+        amountFractionLength: USDT.fractionDigits,
+        rate: rate
+      )
+      diff = rate.diff24h
+      price = rate.rate
+    } else {
+      converted = 0
+      diff = nil
+      price = 0
+    }
+
+    return ConvertedBalanceTronUSDTItem(
+      amount: tronUSDTBalance.amount,
+      converted: converted,
+      price: price,
+      diff: diff
     )
   }
 }

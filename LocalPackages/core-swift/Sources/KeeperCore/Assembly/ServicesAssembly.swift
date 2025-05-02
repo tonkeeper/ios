@@ -10,6 +10,7 @@ public final class ServicesAssembly {
   private let coreAssembly: CoreAssembly
   private let secureAssembly: SecureAssembly
   private let batteryAssembly: BatteryAssembly
+  private let tronUSDTAssembly: TronUSDTAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        apiAssembly: APIAssembly,
@@ -18,7 +19,8 @@ public final class ServicesAssembly {
        scamAPIAssembly: ScamAPIAssembly,
        coreAssembly: CoreAssembly,
        secureAssembly: SecureAssembly,
-       batteryAssembly: BatteryAssembly) {
+       batteryAssembly: BatteryAssembly,
+       tronUSDTAssembly: TronUSDTAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
@@ -27,6 +29,7 @@ public final class ServicesAssembly {
     self.coreAssembly = coreAssembly
     self.secureAssembly = secureAssembly
     self.batteryAssembly = batteryAssembly
+    self.tronUSDTAssembly = tronUSDTAssembly
   }
   
   public func walletsService() -> WalletsService {
@@ -37,6 +40,7 @@ public final class ServicesAssembly {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),
+      tronBalanceService: tronUSDTAssembly.balanceService(),
       batteryService: batteryAssembly.batteryService(),
       stackingService: stackingService(),
       tonProofTokenService: tonProofTokenService(),

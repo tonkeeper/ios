@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TronSwift
 import BigInt
 
 public enum ProcessedBalanceState: Equatable {
@@ -71,7 +72,7 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
   
   private func didGetTonRateStoreEvent(_ event: TonRatesStore.Event) {
     switch event {
-    case .didUpdateTonRates:
+    case .didUpdateRates:
       let wallets = walletsStore.wallets
       updateState(wallets: wallets)
     }
@@ -99,10 +100,11 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
   private func calculateState(wallets: [Wallet]) -> State {
     guard !wallets.isEmpty else { return [:] }
     let balanceStates = balanceStore.state
-    let tonRates = tonRatesStore.state
+    let rates = tonRatesStore.state
     let currency = currencyStore.state
     
-    let rates = tonRates.first(where: { $0.currency == currency })
+    let tonRate = rates.tonRates.first(where: { $0.currency == currency })
+    let usdtRate = rates.usdtRates.first(where: { $0.currency == currency })
     
     var state = State()
     for wallet in wallets {
@@ -111,7 +113,8 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
       state[wallet] = calculateState(
         wallet: wallet,
         balanceState: walletBalanceState,
-        tonRates: rates,
+        tonRates: tonRate,
+        usdtRates: usdtRate,
         stakingPools: stakingPools,
         currency: currency
       )
@@ -122,6 +125,7 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
   private func calculateState(wallet: Wallet,
                               balanceState: WalletBalanceState?,
                               tonRates: Rates.Rate?,
+                              usdtRates: Rates.Rate?,
                               stakingPools: [StackingPoolInfo],
                               currency: Currency) -> ProcessedBalanceState? {
     guard let balanceState = balanceState else {
@@ -196,11 +200,25 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
                             currency: currency)
     })
     
-    let items: [ProcessedBalanceItem] = [.ton(tonItem)] + stakingItems.map { .staking($0) } + jettonItems.map { .jetton($0) }
+    var items: [ProcessedBalanceItem] = [.ton(tonItem)]
+    
+    var tronUSDTItem: ProcessedBalanceTronUSDTItem?
+    if wallet.isTronTurnOn {
+      let item = processTronUSDT(tronBalance: walletBalance.tronBalance,
+                                 usdtRates: usdtRates,
+                                 currency: currency)
+      
+      items.append(.tronUSDT(item))
+      tronUSDTItem = item
+    }
+    
+    items.append(contentsOf: stakingItems.map { .staking($0) })
+    items.append(contentsOf: jettonItems.map { .jetton($0) })
     
     let processedBalance = ProcessedBalance(
       items: items,
       tonItem: tonItem,
+      tronUSDTItem: tronUSDTItem,
       jettonItems: jettonItems,
       stakingItems: stakingItems,
       batteryBalance: walletBalance.batteryBalance,
@@ -268,13 +286,18 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
       diff = nil
       price = 0
     }
+    
+    var tag: String?
+    if jettonBalance.item.jettonInfo.address == JettonMasterAddress.tonUSDT {
+      tag = "TON"
+    }
 
     return ProcessedBalanceJettonItem(
       id: jettonBalance.item.jettonInfo.address.toRaw(),
       jetton: jettonBalance.item,
       amount: jettonBalance.quantity,
       fractionalDigits: jettonBalance.item.jettonInfo.fractionDigits,
-      tag: nil,
+      tag: tag,
       currency: currency,
       converted: converted,
       price: price,
@@ -330,10 +353,46 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
       price: price
     )
   }
+  
+  private func processTronUSDT(tronBalance: TronBalance?,
+                               usdtRates: Rates.Rate?,
+                               currency: Currency) -> ProcessedBalanceTronUSDTItem {
+    
+    let amount = tronBalance?.amount ?? 0
+    let converted: Decimal
+    let price: Decimal
+    let diff: String?
+    if let rate = usdtRates {
+      converted = RateConverter().convertToDecimal(
+        amount: amount,
+        amountFractionLength: USDT.fractionDigits,
+        rate: rate
+      )
+      diff = rate.diff24h
+      price = rate.rate
+    } else {
+      converted = 0
+      diff = nil
+      price = 0
+    }
+    
+    let item = ProcessedBalanceTronUSDTItem(
+      id: TronSwift.USDT.address.base58,
+      amount: amount,
+      fractionalDigits: TronSwift.USDT.fractionDigits,
+      tag: TronSwift.USDT.tag,
+      currency: currency,
+      converted: converted,
+      price: price,
+      diff: diff
+    )
+    
+    return item
+  }
 }
 
 private enum StakingJettonMasterAddress {
-  static var addresses: [Address] {
+  static var addresses: [TonSwift.Address] {
     [
       // Tonstakers
       try! Address.parse("0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000")

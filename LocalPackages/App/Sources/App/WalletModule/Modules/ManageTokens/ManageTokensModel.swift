@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import TKCore
 import TonSwift
+import TronSwift
 
 final class ManageTokensModel {
   
@@ -17,7 +18,7 @@ final class ManageTokensModel {
   
   var didUpdateState: ((State) -> Void)?
 
-  private let wallet: Wallet
+  let wallet: Wallet
   private let convertedBalanceStore: ConvertedBalanceStore
   private let tokenManagementStore: TokenManagementStore
   private let stackingPoolsStore: StakingPoolsStore
@@ -165,6 +166,10 @@ final class ManageTokensModel {
         return true
       case (_, .staking):
         return false
+      case (.tronUSDT, _):
+        return true
+      case (_, .tronUSDT):
+        return false
       case (.jetton(let lModel), .jetton(let rModel)):
         if lModel.jetton.jettonInfo.address == JettonMasterAddress.tonUSDT {
           return true
@@ -202,6 +207,8 @@ extension BalanceItem {
       return jetton.jetton.jettonInfo.address.toRaw()
     case .staking(let staking):
       return staking.info.pool.toRaw()
+    case .tronUSDT:
+      return USDT.address.base58
     }
   }
   
@@ -213,6 +220,8 @@ extension BalanceItem {
       return jetton.amount.isZero
     case .staking(let staking):
       return staking.info.amount == 0
+    case .tronUSDT(let item):
+      return item.amount.isZero
     }
   }
 }

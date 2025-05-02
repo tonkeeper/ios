@@ -9,7 +9,7 @@ struct BatteryRefillSupportedTransactionsAssembly {
                      coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BatteryRefillSupportedTransactionsViewController, BatteryRefillSupportedTransactionsModuleOutput, BatteryRefillSupportedTransactionsModuleInput> {
     let viewModel = BatteryRefillSupportedTransactionsViewModelImplementation(
       wallet: wallet,
-      configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+      batteryChargeMapper: BatteryChargesMapper(batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation)
     )
     
     let viewController = BatteryRefillSupportedTransactionsViewController(viewModel: viewModel)

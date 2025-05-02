@@ -10,7 +10,7 @@ public struct DeeplinkGenerator {
   public func generateTransferDeeplink(with addressString: String,
                                        amount: BigUInt? = nil,
                                        comment: String? = nil,
-                                       jettonAddress: Address?) throws -> String {
+                                       jettonAddress: Address? = nil) throws -> String {
     var urlComponents = URLComponents()
     urlComponents.scheme = "ton"
     urlComponents.host = "transfer"

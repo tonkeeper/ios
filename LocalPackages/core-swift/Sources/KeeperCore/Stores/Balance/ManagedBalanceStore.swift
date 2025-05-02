@@ -117,6 +117,7 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
     let balance = balanceState.balance
     
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
+    let stateUnpinnedItems = tokenManagementState?.unpinnedItems ?? []
     let stateHiddenItems = tokenManagementState?.hiddenState ?? [:]
 
     var tonItems = [ProcessedBalanceTonItem]()
@@ -132,9 +133,7 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
           pinnedItems.append(balanceItem)
         } else {
           let isHidden = stateHiddenItems[balanceItem.identifier] == true
-
           guard !isHidden else { continue }
-
           unpinnedItems.append(balanceItem)
         }
       }
@@ -157,6 +156,14 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
         return true
       case (_, .ton):
         return false
+      case (.tronUSDT, _):
+        return true
+      case (_, .tronUSDT):
+        return false
+      case (.jetton(let lModel), .staking):
+        return lModel.jetton.jettonInfo.isTonUSDT
+      case (.staking, .jetton(let rModel)):
+        return !rModel.jetton.jettonInfo.isTonUSDT
       case (.staking(let lModel), .staking(let rModel)):
         return lModel.amountConverted > rModel.amountConverted
       case (.staking, _):

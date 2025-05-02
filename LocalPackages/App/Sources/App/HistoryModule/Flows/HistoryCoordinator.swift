@@ -12,7 +12,9 @@ import CryptoSwift
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  var didOpenEventDetails: ((_ wallet: Wallet, _ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  var passcodeProvider: (() async -> String?)?
+  var didOpenTonEventDetails: ((_ wallet: Wallet, _ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  var didOpenTronEventDetails: ((_ wallet: Wallet, _ event: TronTransaction, _ isTestnet: Bool) -> Void)?
   var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
   
@@ -119,17 +121,26 @@ private extension HistoryCoordinator {
   
   func openReceive(wallet: Wallet) {
     guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
-    let module = ReceiveModule(
-      dependencies: ReceiveModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).receiveModule(token: .ton, wallet: wallet)
+
+    var tokens: [Token] = [.ton(.ton)]
+    if wallet.isTronAvailable {
+      tokens.append(.usdtTron)
+    }
+    
+    let module = ReceiveAssembly.module(
+      tokens: tokens,
+      wallet: wallet,
+      keeperCoreAssembly: keeperCoreMainAssembly
+    )
+    
+    module.output.didSelectInactiveTRC20 = { [weak self] in
+      self?.openReceiveTRC20Popup(wallet: $0)
+    }
     
     module.view.setupSwipeDownButton()
     
     let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureTransparentAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     router.present(navigationController)
   }
@@ -151,8 +162,26 @@ private extension HistoryCoordinator {
     coordinator.start()
   }
   
-  func openEventDetails(event: AccountEventDetailsEvent, wallet: Wallet) {
-    didOpenEventDetails?(wallet, event, wallet.isTestnet)
+  func openEventDetails(event: HistoryListSelectedEvent, wallet: Wallet) {
+    switch event {
+    case .tonEvent(let accountEventDetailsEvent):
+      didOpenTonEventDetails?(wallet, accountEventDetailsEvent, wallet.isTestnet)
+    case .tronEvent(let tronTransaction):
+      didOpenTronEventDetails?(wallet, tronTransaction, wallet.isTestnet)
+    }
+  }
+  
+  func openReceiveTRC20Popup(wallet: Wallet) {
+    guard let passcodeProvider else { return }
+    let module = ReceiveTRC20PopupAssembly.module(wallet: wallet,
+                                                  keeperCoreAssembly: keeperCoreMainAssembly,
+                                                  passcodeProvider: passcodeProvider)
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
+    
+    module.output.didFinish = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
   }
   
   @MainActor

@@ -12,15 +12,9 @@ extension TKListItemIconView.Configuration {
       backgroundColor: .Background.contentTint,
       size: CGSize(width: 44, height: 44),
       badge: Badge(
-        configuration: TKListItemBadgeView.Configuration.imageView(
-          TKImageView.Model(
-            image: .image(poolInfo?.icon),
-            tintColor: .clear,
-            size: .size(CGSize(width: 18, height: 18)),
-            corners: .circle,
-            padding: .zero
-          )
-        ),
+        configuration: TKListItemBadgeView.Configuration(
+          item: .image(.image(poolInfo?.icon)),
+          size: .small),
         position: .bottomRight
       )
     )

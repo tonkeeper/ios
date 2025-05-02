@@ -1,12 +1,50 @@
 import UIKit
 
 public final class TKListItemBadgeView: UIView {
+  
+  public struct Configuration: Hashable {
+    public enum Item: Hashable {
+      case image(TKImage)
+    }
+    public enum Size: Hashable {
+      case small
+      case medium
+      case large
+      case xlarge
+      
+      var side: CGFloat {
+        switch self {
+        case .small: 18
+        case .medium: 20
+        case .large: 24
+        case .xlarge: 32
+        }
+      }
+      
+      var padding: CGFloat {
+        switch self {
+        case .small: 2
+        case .medium: 2
+        case .large: 3
+        case .xlarge: 4
+        }
+      }
+    }
     
-  public enum Configuration: Hashable {
-    case imageView(TKImageView.Model)
+    public let item: Item
+    public let size: Size
+    public let backgroundColor: UIColor
+    
+    public init(item: Item,
+                size: Size,
+                backgroundColor: UIColor = .Background.content) {
+      self.item = item
+      self.size = size
+      self.backgroundColor = backgroundColor
+    }
     
     public static var `default`: Configuration {
-      Configuration.imageView(TKImageView.Model(image: nil))
+      Configuration(item: .image(.image(nil)), size: .small)
     }
   }
   
@@ -35,8 +73,8 @@ public final class TKListItemBadgeView: UIView {
   public override func layoutSubviews() {
     super.layoutSubviews()
     
-    let contentViewFrame = CGRect(origin: CGPoint(x: .padding, y: .padding),
-                                  size: CGSize(width: .side, height: .side))
+    let contentViewFrame = CGRect(origin: CGPoint(x: configuration.size.padding, y: configuration.size.padding),
+                                  size: CGSize(width: configuration.size.side, height: configuration.size.side))
     iconView.frame = contentViewFrame
     customViewContainer.frame = contentViewFrame
     customView?.frame = customViewContainer.bounds
@@ -45,7 +83,8 @@ public final class TKListItemBadgeView: UIView {
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
-    CGSize(width: .side + .padding * 2, height: .side + .padding * 2)
+    CGSize(width: configuration.size.side + configuration.size.padding * 2,
+           height: configuration.size.side + configuration.size.padding * 2)
   }
   
   private func setup() {
@@ -60,17 +99,19 @@ public final class TKListItemBadgeView: UIView {
   }
   
   private func didUpdateConfiguration() {
-    switch configuration {
-    case .imageView(let configuration):
+    backgroundColor = configuration.backgroundColor
+    switch configuration.item {
+    case .image(let image):
       iconView.isHidden = false
-      iconView.configure(model: configuration)
+      iconView.configure(
+        model: TKImageView.Model(
+          image: image,
+          size: .size(CGSize(width: configuration.size.side, height: configuration.size.side)),
+          corners: .circle
+        )
+      )
       customViewContainer.isHidden = true
       customView?.removeFromSuperview()
     }
   }
-}
-
-private extension CGFloat {
-  static let side: CGFloat = 18
-  static let padding: CGFloat = 2
 }

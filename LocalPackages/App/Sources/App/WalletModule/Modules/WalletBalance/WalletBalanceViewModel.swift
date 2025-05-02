@@ -10,6 +10,7 @@ import TonSwift
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
+  var didSelectTronUSDT: ((Wallet) -> Void)? { get set }
   var didSelectStakingItem: (( _ wallet: Wallet,
                                _ stakingPoolInfo: StackingPoolInfo,
                                _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
@@ -63,6 +64,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
+  var didSelectTronUSDT: ((Wallet) -> Void)?
   var didSelectStakingItem: (( _ wallet: Wallet,
                                _ stakingPoolInfo: StackingPoolInfo,
                                _ accountStakingInfo: AccountStackingInfo) -> Void)?
@@ -328,10 +330,12 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.id] = cellConfiguration
         sectionItems.append(sectionItem)
       case .jetton(let item):
+        let isNetworkBadgeVisible = item.jetton.jettonInfo.isTonUSDT && balanceListItems.wallet.isTronTurnOn
         let cellConfiguration = listMapper.mapJettonItem(
           item,
           isSecure: balanceListItems.isSecure,
-          isPinned: balanceListItem.isPinned)
+          isPinned: balanceListItem.isPinned,
+          isNetworkBadgeVisible: isNetworkBadgeVisible)
         let sectionItem = WalletBalance.ListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectJetton?(balanceListItems.wallet, item.jetton, !item.price.isZero)
@@ -354,6 +358,17 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
             guard let self,
                   let poolInfo = item.poolInfo else { return }
             self.didSelectStakingItem?(balanceListItems.wallet, poolInfo, item.info)
+          }
+        cellConfigurations[item.id] = cellConfiguration
+        sectionItems.append(sectionItem)
+      case .tronUSDT(let item):
+        let cellConfiguration = listMapper.mapTronUSDTItem(
+          item,
+          isSecure: balanceListItems.isSecure,
+          isPinned: balanceListItem.isPinned)
+        let sectionItem = WalletBalance.ListItem(
+          identifier: item.id) { [weak self] in
+            self?.didSelectTronUSDT?(balanceListItems.wallet)
           }
         cellConfigurations[item.id] = cellConfiguration
         sectionItems.append(sectionItem)

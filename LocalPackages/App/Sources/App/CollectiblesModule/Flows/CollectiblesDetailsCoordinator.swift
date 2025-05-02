@@ -83,7 +83,7 @@ private extension CollectiblesDetailsCoordinator {
       
       openTransfer(
         nft: nft,
-        recipient: Recipient(recipientAddress: .friendly(burnAddress), isMemoRequired: false)
+        recipient: .ton(TonRecipient(recipientAddress: .friendly(burnAddress), isMemoRequired: false))
       )
     }
     
@@ -200,7 +200,7 @@ private extension CollectiblesDetailsCoordinator {
     router.push(viewController: module.view)
   }
 
-  func openTransfer(nft: NFT, recipient: Optional<Recipient> = nil) {
+  func openTransfer(nft: NFT, recipient: Recipient? = nil) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
@@ -212,7 +212,7 @@ private extension CollectiblesDetailsCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .nft(nft),
+      sendItem: .ton(.nft(nft)),
       recipient: recipient
     )
     

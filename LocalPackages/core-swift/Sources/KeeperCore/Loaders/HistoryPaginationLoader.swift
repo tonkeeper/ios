@@ -5,10 +5,10 @@ public final class HistoryPaginationLoader {
   public enum Event {
     case initialLoading
     case initialLoadingFailed
-    case initialLoaded([AccountEvent], hasMore: Bool)
+    case initialLoaded([HistoryEvent], hasMore: Bool)
     case pageLoading
     case pageLoadingFailed
-    case pageLoaded([AccountEvent], hasMore: Bool)
+    case pageLoaded([HistoryEvent], hasMore: Bool)
   }
   
   public var eventHandler: ((Event) -> Void)?
@@ -22,6 +22,7 @@ public final class HistoryPaginationLoader {
   private var state: State = .idle
   private var nextFrom: Int64?
   private var lastReloadDate: Date?
+  private var pagination = HistoryListLoaderPagination(tonEventsBeforeLt: nil, tronEventsMaxTimestamp: nil, tronHasMore: true)
   
   private let wallet: Wallet
   private let loader: HistoryListLoader
@@ -53,16 +54,22 @@ public final class HistoryPaginationLoader {
       if case let .loading(task) = self.state {
         task.cancel()
       }
-      self.nextFrom = nil
+      let pagination = HistoryListLoaderPagination(tonEventsBeforeLt: nil, tronEventsMaxTimestamp: nil, tronHasMore: true)
       self.lastReloadDate = Date()
             
       let task = Task {
         do {
-          let events = try await self.loadNextPage(nextFrom: nil)
+          let events = try await self.loadNextPage(pagination: pagination)
           try Task.checkCancellation()
           self.queue.async { [events] in
-            self.nextFrom = events.nextFrom
-            self.eventHandler?(.initialLoaded(events.events, hasMore: events.nextFrom != 0))
+            let hasMore = (events.accountsEvents?.nextFrom != 0 && events.accountsEvents?.nextFrom != nil) || events.tronTransactions.count >= .limit
+            self.pagination = HistoryListLoaderPagination(
+              tonEventsBeforeLt: events.accountsEvents?.nextFrom,
+              tronEventsMaxTimestamp: events.tronTransactions.last?.timestamp,
+              tronHasMore: events.tronTransactions.count >= .limit
+            )
+            let historyEvents = self.handleLoadedBatch(batch: events)
+            self.eventHandler?(.initialLoaded(historyEvents, hasMore: hasMore))
             self.state = .idle
           }
         } catch {
@@ -84,17 +91,24 @@ public final class HistoryPaginationLoader {
       guard case .idle = self.state else {
         return
       }
-      guard self.nextFrom != 0 else { return }
+      guard self.pagination.hasMore else { return }
       
-      let nextFrom = self.nextFrom
+      let pagination = self.pagination
       
       let task = Task {
         do {
-          let events = try await self.loadNextPage(nextFrom: nextFrom)
+          let events = try await self.loadNextPage(pagination: pagination)
           try Task.checkCancellation()
           self.queue.async {
-            self.nextFrom = events.nextFrom
-            self.eventHandler?(.pageLoaded(events.events, hasMore: events.nextFrom != 0))
+            let hasMore = (events.accountsEvents?.nextFrom != 0 && events.accountsEvents?.nextFrom != nil) || events.tronTransactions.count >= .limit
+            self.pagination = HistoryListLoaderPagination(
+              tonEventsBeforeLt: events.accountsEvents?.nextFrom,
+              tronEventsMaxTimestamp: events.tronTransactions.last?.timestamp,
+              tronHasMore: events.tronTransactions.count >= .limit
+            )
+            
+            let historyEvents = self.handleLoadedBatch(batch: events)
+            self.eventHandler?(.pageLoaded(historyEvents, hasMore: hasMore))
             self.state = .idle
           }
         } catch {
@@ -111,17 +125,14 @@ public final class HistoryPaginationLoader {
     }
   }
   
-  func loadNextPage(nextFrom: Int64?) async throws -> AccountEvents {
+  func loadNextPage(pagination: HistoryListLoaderPagination) async throws -> HistoryEventsBatch {
     let events = try await loader.loadEvents(
       wallet: wallet,
-      beforeLt: nextFrom,
+      pagination: pagination,
       limit: .limit
     )
     try Task.checkCancellation()
-    await handleEventsWithNFTs(events: events.events)
-    if events.events.isEmpty && events.nextFrom != 0 {
-      return try await loadNextPage(nextFrom: events.nextFrom)
-    }
+    await handleEventsWithNFTs(events: events.accountsEvents?.events ?? [])
     return events
   }
   
@@ -140,10 +151,18 @@ public final class HistoryPaginationLoader {
       guard !nftAddressesToLoad.isEmpty else { return }
       _ = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet)
     }
+  
+  func handleLoadedBatch(batch: HistoryEventsBatch) -> [HistoryEvent] {
+    let tonHistoryEvents = (batch.accountsEvents?.events ?? []).map { HistoryEvent.tonAccountEvent($0) }
+    let tronHistoryEvents = batch.tronTransactions.map { HistoryEvent.tronEvent($0) }
+    let events = tonHistoryEvents + tronHistoryEvents
+    let sortedEvents = events.sorted(by: { $0.timestamp > $1.timestamp })
+    return sortedEvents
+  }
 }
 
 private extension Int {
-  static let limit: Int = 100
+  static let limit: Int = 20
 }
 
 private extension TimeInterval {

@@ -14,6 +14,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
     case didDeleteWallet(wallet: Wallet)
     case didDeleteAll
     case didUpdateWalletBatterySettings(wallet: Wallet)
+    case didUpdateWalletTron(wallet: Wallet)
   }
   
   public enum State {
@@ -151,6 +152,16 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
                                        batterySettings: BatterySettings) async -> State {
     return await withCheckedContinuation { continuation in
       setWalletBatterySettings(wallet: wallet, batterySettings: batterySettings) { state in
+        continuation.resume(returning: state)
+      }
+    }
+  }
+  
+  @discardableResult
+  public func setWalletTron(wallet: Wallet,
+                            tron: WalletTron?) async -> State {
+    return await withCheckedContinuation { continuation in
+      setWalletTron(wallet: wallet, tron: tron) { state in
         continuation.resume(returning: state)
       }
     }
@@ -346,7 +357,27 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
       }
     }
    }
-
+  
+  public func setWalletTron(wallet: Wallet,
+                                tron: WalletTron?,
+                                completion: ((State) -> Void)?) {
+    keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.updateWallet(wallet, tron: tron).keeperInfo
+      return updatedKeeperInfo
+    } completion: { [weak self] keeperInfo in
+      guard let self else { return }
+      let state = self.getState(keeperInfo: keeperInfo)
+      updateState { _ in
+        return StateUpdate(newState: state)
+      } completion: { [weak self] _ in
+        guard let wallet = state.wallets.first(where: { $0 == wallet }) else { return }
+        self?.sendEvent(.didUpdateWalletTron(wallet: wallet))
+        completion?(state)
+      }
+    }
+  }
+  
   public func reload(completion: @escaping () -> Void) {
     updateState({ [weak self] _ in
       guard let self else { return nil }

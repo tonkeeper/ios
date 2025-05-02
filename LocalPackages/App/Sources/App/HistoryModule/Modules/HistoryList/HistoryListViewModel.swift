@@ -3,10 +3,16 @@ import TKUIKit
 import TKLocalize
 import KeeperCore
 import TonSwift
+import TronSwift
+
+enum HistoryListSelectedEvent {
+  case tonEvent(AccountEventDetailsEvent)
+  case tronEvent(TronTransaction)
+}
 
 protocol HistoryListModuleOutput: AnyObject {
-  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
-  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+  var didSelectEvent: ((HistoryListSelectedEvent) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ address: TonSwift.Address) -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)? { get set }
   var didUpdateState: ((HistoryList.State) -> Void)? { get set }
 }
@@ -67,8 +73,10 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   }
   
   private var relativeDate = Date()
-  private var events = [AccountEvent]() {
-    didSet { try? cacheProvider.setCache(events: events, wallet: wallet) }
+  private var events = [HistoryEvent]() {
+    didSet {
+      try? cacheProvider.setCache(events: events, wallet: wallet)
+    }
   }
   private var firstReload = true
   private let queue = DispatchQueue(label: "HistoryListViewModelImplementationQueue")
@@ -88,6 +96,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   private let transactionsManagementStore: TransactionsManagement.Store
   private let accountEventMapper: AccountEventMapper
   private let historyEventMapper: HistoryEventMapper
+  private let tronEventMapper: TronEventMapper
   private let nftService: NFTService
   private let cacheProvider: HistoryListCacheProvider
   
@@ -103,6 +112,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
        transactionsManagementStore: TransactionsManagement.Store,
        accountEventMapper: AccountEventMapper,
        historyEventMapper: HistoryEventMapper,
+       tronEventMapper: TronEventMapper,
        nftService: NFTService,
        cacheProvider: HistoryListCacheProvider,
        filter: HistoryList.Filter = .all) {
@@ -116,6 +126,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     self.transactionsManagementStore = transactionsManagementStore
     self.accountEventMapper = accountEventMapper
     self.historyEventMapper = historyEventMapper
+    self.tronEventMapper = tronEventMapper
     self.nftService = nftService
     self.cacheProvider = cacheProvider
     self._filter = filter
@@ -123,8 +134,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   // MARK: - HistoryListModuleOutput
   
-  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
-  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
+  var didSelectEvent: ((HistoryListSelectedEvent) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ address: TonSwift.Address) -> Void)?
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
   var didUpdateState: ((HistoryList.State) -> Void)?
   
@@ -243,7 +254,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
       guard let self else { return }
       switch event {
       case .initialLoading:
-        let events: [AccountEvent] = {
+        let events: [HistoryEvent] = {
           if let cachedEvents = try? self.cacheProvider.getCache(wallet: self.wallet) {
             return cachedEvents
           } else {
@@ -276,9 +287,18 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         update(withEvents: filteredEvents)
         listState = .content(State.Content(sections: sections), pagination: hasMore ? .loading : .none)
       case let .pageLoaded(events, hasMore):
-        self.events += events
+        
+        var fillt = [HistoryEvent]()
+        for event in events {
+          if self.events.contains(where: { $0.eventId == event.eventId }) {
+            
+          } else {
+            fillt.append(event)
+          }
+        }
+        self.events += fillt
         let transactionsManagementState = transactionsManagementStore.state
-        let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
+        let filteredEvents = filterEvents(fillt, filter: _filter, transactionsManagementState: transactionsManagementState)
         let sections = calculateSections(sections: listState.sections, events: filteredEvents)
         update(withEvents: filteredEvents)
         listState = .content(State.Content(sections: sections), pagination: hasMore ? .loading : .none)
@@ -290,16 +310,16 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     }
   }
   
-  private func update(withEvents events: [AccountEvent]) {
-    let configurations = mapEventCellConfigurations(events, relativeDate: relativeDate)
+  private func update(withEvents events: [HistoryEvent]) {
+    let configurations = mapHistoryEventsCellConfigurations(events, relativeDate: relativeDate)
     DispatchQueue.main.async {
       self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
     }
   }
   
-  private func filterEvents(_ events: [AccountEvent],
+  private func filterEvents(_ events: [HistoryEvent],
                             filter: HistoryList.Filter,
-                            transactionsManagementState: TransactionsManagement.TransactionsStates) -> [AccountEvent] {
+                            transactionsManagementState: TransactionsManagement.TransactionsStates) -> [HistoryEvent] {
     events.filter { event in
       switch filter {
       case .none:
@@ -314,14 +334,14 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
 
   
   private func calculateSections(sections: [HistoryList.Section],
-                                 events: [AccountEvent]) -> [HistoryList.Section] {
+                                 events: [HistoryEvent]) -> [HistoryList.Section] {
     let updatedSections = calculateSections(events: events,
                                             sections: sections,
                                             relativeDate: relativeDate)
     return updatedSections
   }
   
-  private var eventsMap = [AccountEvent.EventID: AccountEvent]()
+  private var eventsMap = [AccountEvent.EventID: HistoryEvent]()
   private var sectionsMap = [HistoryList.Section.ID: Int]()
   private func resetSectionsCalculationState() {
     relativeDate = Date()
@@ -330,7 +350,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     eventCellConfigurations = [:]
     paginationCellConfiguration = .init(state: .none)
   }
-  private func calculateSections(events: [AccountEvent],
+  private func calculateSections(events: [HistoryEvent],
                                  sections: [HistoryList.Section],
                                  relativeDate: Date) -> [HistoryList.Section] {
     var sections = sections
@@ -343,7 +363,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         let section = sections[sectionIndex]
         var sectionEvents = section.events
         
-        let isEventExist = eventsMap[event.eventId] != nil
+        let isEventExist = eventsMap[event.identifier] != nil
         if isEventExist, let index = sectionEvents.firstIndex(where: { $0.eventId == event.eventId }) {
           sectionEvents.remove(at: index)
           sectionEvents.insert(event, at: index)
@@ -379,21 +399,33 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     return sections
   }
   
-  private func mapEventCellConfigurations(_ events: [AccountEvent],
-                                          relativeDate: Date) -> [AccountEvent.EventID: HistoryCell.Model] {
+  private func mapHistoryEventsCellConfigurations(_ events: [HistoryEvent],
+                                                  relativeDate: Date) -> [AccountEvent.EventID: HistoryCell.Model] {
     let isSecureMode = appSettingsStore.getState().isSecureMode
     var configurations = [AccountEvent.EventID: HistoryCell.Model]()
+
     for event in events {
-      let eventPeriod = EventPeriod.eventPeriod(event: event, relativeDate: relativeDate)
-      configurations[event.eventId] = mapEventCellConfiguration(
-        event: event,
-        eventPeriod: eventPeriod,
-        isSecure: isSecureMode
-      )
+      let eventPeriod = EventPeriod.eventPeriod(date: event.date, relativeDate: relativeDate)
+      switch event {
+      case .tonAccountEvent(let accountEvent):
+        configurations[event.identifier] = mapEventCellConfiguration(
+          event: accountEvent,
+          eventPeriod: eventPeriod,
+          isSecure: isSecureMode
+        )
+      case .tronEvent(let tronTransaction):
+        guard let tronAddress = wallet.tron?.address else { continue }
+        configurations[event.identifier] = mapTronEventCellConfiguration(
+          event: tronTransaction,
+          owner: tronAddress,
+          eventPeriod: eventPeriod,
+          isSecure: isSecureMode
+        )
+      }
     }
+    
     return configurations
   }
-
   
   private func mapEventCellConfiguration(event: AccountEvent,
                                          eventPeriod: EventPeriod,
@@ -429,9 +461,25 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         self?.didSelectEncryptedComment?(wallet, payload, eventModel.eventId)
       },
       tapAction: { [weak self] accountEventDetailsEvent in
-        self?.didSelectEvent?(accountEventDetailsEvent)
+        self?.didSelectEvent?(.tonEvent(accountEventDetailsEvent))
       }
     )
+  }
+  
+  private func mapTronEventCellConfiguration(event: TronTransaction,
+                                             owner: TronSwift.Address,
+                                             eventPeriod: EventPeriod,
+                                             isSecure: Bool) -> HistoryCell.Model {
+    let model = tronEventMapper.mapEvent(
+      event,
+      owner: owner,
+      dateFormat: eventPeriod.dateFormat,
+      tapAction: { [weak self] in
+        self?.didSelectEvent?(.tronEvent(event))
+      }
+    )
+    
+    return model
   }
   
   private func mapPaginationCellConfiguration(_ state: State) -> HistoryListPaginationCell.Model {
@@ -469,7 +517,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         for section in content.sections {
           let sectionId = HistoryList.SnapshotSection.events(section.date)
           snapshot.appendSections([sectionId])
-          let eventIds = section.events.map { HistoryList.SnapshotItem.event($0.eventId) }
+          let eventIds = section.events.map { HistoryList.SnapshotItem.event($0.identifier) }
           snapshot.appendItems(eventIds, toSection: sectionId)
           if #available(iOS 15.0, *) {
             snapshot.reconfigureItems(eventIds)
@@ -488,9 +536,9 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     return snapshot
   }
   
-  private func getEventSectionData(event: AccountEvent, relativeDate: Date) -> Date? {
+  private func getEventSectionData(event: HistoryEvent, relativeDate: Date) -> Date? {
     let calendar = Calendar.current
-    let eventPeriod = EventPeriod.eventPeriod(event: event, relativeDate: relativeDate)
+    let eventPeriod = EventPeriod.eventPeriod(date: event.date, relativeDate: relativeDate)
     let dateComponents = calendar.dateComponents(eventPeriod.calendarComponents, from: event.date)
     return calendar.date(from: dateComponents)
   }
@@ -536,16 +584,17 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
       guard wallet == self.wallet else { return }
       queue.async { [weak self] in
         guard let self else { return }
-        guard let event = eventsMap[eventId] else { return }
-        let eventPeriod = EventPeriod.eventPeriod(event: event, relativeDate: relativeDate)
+        guard let event = eventsMap[eventId],
+              case let .tonAccountEvent(tonAccountEvent) = event else { return }
+        let eventPeriod = EventPeriod.eventPeriod(date: tonAccountEvent.date, relativeDate: relativeDate)
         let isSecureMode = appSettingsStore.getState().isSecureMode
         let configuration = mapEventCellConfiguration(
-          event: event,
+          event: tonAccountEvent,
           eventPeriod: eventPeriod,
           isSecure: isSecureMode
         )
         DispatchQueue.main.async {
-          self.eventCellConfigurations[eventId] = configuration
+          self.eventCellConfigurations[event.identifier] = configuration
         }
         updateList()
       }
@@ -596,13 +645,13 @@ private enum EventPeriod {
     }
   }
   
-  static func eventPeriod(event: AccountEvent, relativeDate: Date) -> EventPeriod {
+  static func eventPeriod(date: Date, relativeDate: Date) -> EventPeriod {
     let calendar = Calendar.current
-    if calendar.isDateInToday(event.date)
-        || calendar.isDateInYesterday(event.date)
-        || calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .month) {
+    if calendar.isDateInToday(date)
+        || calendar.isDateInYesterday(date)
+        || calendar.isDate(date, equalTo: relativeDate, toGranularity: .month) {
       return .recent
-    } else if calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .year) {
+    } else if calendar.isDate(date, equalTo: relativeDate, toGranularity: .year) {
       return .thisYear
     } else {
       return .previousYear

@@ -18,6 +18,7 @@ protocol TokenDetailsViewModel: AnyObject {
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
   var didUpdateChartViewController: ((UIViewController) -> Void)? { get set }
+  var didUpdateBannerItems: (([TokenDetailsBannerItem]) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapOpenDetails()
@@ -28,12 +29,32 @@ struct TokenDetailsModel {
     let iconButton: IconButton
     let isEnable: Bool
   }
+  struct Caption {
+    let text: NSAttributedString
+    let icon: UIImage?
+    let action: (() -> Void)?
+    
+    init(text: NSAttributedString,
+         icon: UIImage? = nil,
+         action: (() -> Void)? = nil) {
+      self.text = text
+      self.icon = icon
+      self.action = action
+    }
+  }
+  enum Network {
+    case ton
+    case trc20
+    case none
+  }
   let title: String
-  let isVerified: Bool
-  let image: TokenImage
+  let caption: Caption?
+  let image: TKImage
+  let network: Network
   let tokenAmount: String
   let convertedAmount: String?
   let buttons: [Button]
+  let bannerItems: [TokenDetailsBannerItem]
 }
 
 final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDetailsModuleOutput {
@@ -51,6 +72,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
   var didUpdateChartViewController: ((UIViewController) -> Void)?
+  var didUpdateBannerItems: (([any TokenDetailsBannerItem]) -> Void)?
   
   func viewDidLoad() {
     setupObservations()
@@ -125,29 +147,17 @@ private extension TokenDetailsViewModelImplementation {
     setupTitleView(model: model)
     setupInformationView(model: model)
     setupButtonsView(model: model)
+    setupBanners(model: model)
   }
   
   func setupTitleView(model: TokenDetailsModel) {
-    let title = model.title.withTextStyle(.h3, color: .Text.primary)
-    var caption: TKPlainButton.Model?
-    if !model.isVerified {
-      caption = TKPlainButton.Model(
-        title: TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange),
-        icon: TKPlainButton.Model.Icon(
-          image: .TKUIKit.Icons.Size12.informationCircle, 
-          tintColor: .Accent.orange,
-          padding: UIEdgeInsets(top: 5, left: 4, bottom: 3, right: 0)
-        ),
-        action: {
-          
-        }
-      )
-    }
-    
     didUpdateTitleView?(
       TKUINavigationBarTitleView.Model(
-        title: title,
-        caption: caption
+        title: model.title,
+        caption: {
+          guard let caption = model.caption else { return nil }
+          return TKPlainButton.Model(title: caption.text, action: caption.action)
+        }()
       )
     )
   }
@@ -179,38 +189,56 @@ private extension TokenDetailsViewModelImplementation {
   }
   
   func setupInformationView(model: TokenDetailsModel) {
-    let image: TKUIListItemImageIconView.Configuration.Image
-    switch model.image {
-    case .ton:
-      image = .image(.TKCore.Icons.Size44.tonLogo)
-    case .url(let url):
-      image = .asyncImage(url, TKCore.ImageDownloadTask(
-        closure: {
-          [imageLoader] imageView,
-          size,
-          cornerRadius in
-          return imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
-        }
-      ))
-    }
+    let badge: TKListItemIconView.Configuration.Badge? = {
+      switch model.network {
+      case .none:
+        return nil
+      case .ton:
+        return TKListItemIconView.Configuration.Badge(
+          configuration: TKListItemBadgeView.Configuration(
+            item: .image(.image(.App.Currency.Vector.ton)),
+            size: .large,
+            backgroundColor: .Background.page
+          ),
+          position: .bottomRight
+        )
+      case .trc20:
+        return TKListItemIconView.Configuration.Badge(
+          configuration: TKListItemBadgeView.Configuration(
+            item: .image(.image(.App.Currency.Vector.trc20)),
+            size: .large,
+            backgroundColor: .Background.page
+          ),
+          position: .bottomRight
+        )
+      }
+    }()
+    
+    let imageConfiguration = TKListItemIconView.Configuration(
+      content: .image(
+        TKImageView.Model(
+          image: model.image,
+          tintColor: .clear,
+          size: .size(CGSize(width: 64, height: 64)),
+          corners: .circle
+        )
+      ),
+      alignment: .center,
+      size: CGSize(width: 64, height: 64),
+      badge: badge
+    )
     
     didUpdateInformationView?(
       TokenDetailsInformationView.Model(
-        imageConfiguration: TKUIListItemIconView.Configuration(
-          iconConfiguration: .image(TKUIListItemImageIconView.Configuration(
-            image: image,
-            tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 64, height: 64),
-            cornerRadius: 32,
-            contentMode: .scaleAspectFit
-          )),
-          alignment: .center
-        ),
+        imageConfiguration: imageConfiguration,
         tokenAmount: model.tokenAmount,
         convertedAmount: model.convertedAmount
       )
     )
+  }
+  
+  func setupBanners(model: TokenDetailsModel) {
+    didUpdateBannerItems?(model.bannerItems)
   }
   
   func setupChart() {

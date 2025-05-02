@@ -25,6 +25,8 @@ final class HistoryContainerViewModelImplementation: HistoryContainerViewModel, 
         switch event {
         case let .didChangeActiveWallet(_, previousWallet):
           observer.didChangeWallet?(previousWallet)
+        case let .didUpdateWalletTron(wallet):
+          observer.didChangeWallet?(wallet)
         default: break
         }
       }

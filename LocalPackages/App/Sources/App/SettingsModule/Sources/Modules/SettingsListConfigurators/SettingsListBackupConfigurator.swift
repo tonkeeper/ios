@@ -134,8 +134,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
               image: .image(.App.Icons.Size28.donemark),
               tintColor: .white,
               size: .auto,
-              corners: .none,
-              padding: .zero
+              corners: .none
             )
           ),
           alignment: .center,

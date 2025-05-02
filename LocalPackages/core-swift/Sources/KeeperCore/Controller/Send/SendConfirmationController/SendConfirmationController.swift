@@ -20,7 +20,7 @@ public final class SendConfirmationController {
   private var transactionEmulationExtra: Int64 = 0
   
   public  let wallet: Wallet
-  private let recipient: Recipient
+  private let recipient: TonRecipient
   private let sendItem: SendItem
   private let comment: String?
   private let sendService: SendService
@@ -32,7 +32,7 @@ public final class SendConfirmationController {
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
-       recipient: Recipient,
+       recipient: TonRecipient,
        sendItem: SendItem,
        comment: String?,
        sendService: SendService,
@@ -95,7 +95,7 @@ private extension SendConfirmationController {
       feeItem = .value(feeFormatted)
       let rates = ratesStore.state
       let currency = currencyStore.state
-      if let rates = rates.first(where: { $0.currency == currency }) {
+      if let rates = rates.tonRates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
           amount: fee,
@@ -143,7 +143,7 @@ private extension SendConfirmationController {
         )
         let rates = ratesStore.state
         let currency = currencyStore.state
-        if let rates = rates.first(where: { $0.currency == currency }) {
+        if let rates = rates.tonRates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
             amount: amount,

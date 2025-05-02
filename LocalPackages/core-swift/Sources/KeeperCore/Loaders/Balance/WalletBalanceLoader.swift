@@ -11,30 +11,24 @@ public final class WalletBalanceLoader {
   private let balanceStore: BalanceStore
   private let stakingPoolsStore: StakingPoolsStore
   private let walletNFTSStore: WalletNFTStore
-  private let ratesStore: TonRatesStore
   private let balanceService: BalanceService
   private let stackingService: StakingService
   private let accountNFTService: AccountNFTService
-  private let ratesService: RatesService
   
   init(wallet: Wallet,
        balanceStore: BalanceStore,
        stakingPoolsStore: StakingPoolsStore,
        walletNFTSStore: WalletNFTStore,
-       ratesStore: TonRatesStore,
        balanceService: BalanceService,
        stackingService: StakingService,
-       accountNFTService: AccountNFTService,
-       ratesService: RatesService) {
+       accountNFTService: AccountNFTService) {
     self.wallet = wallet
     self.balanceStore = balanceStore
     self.stakingPoolsStore = stakingPoolsStore
     self.walletNFTSStore = walletNFTSStore
-    self.ratesStore = ratesStore
     self.balanceService = balanceService
     self.stackingService = stackingService
     self.accountNFTService = accountNFTService
-    self.ratesService = ratesService
   }
   
   public func reloadBalance(currency: Currency) async {

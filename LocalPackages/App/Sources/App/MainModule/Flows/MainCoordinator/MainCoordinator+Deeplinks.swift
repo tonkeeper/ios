@@ -35,42 +35,54 @@ extension MainCoordinator {
       do {
         let wallet = try walletsStore.activeWallet
         let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
-
-        let token: Token
-
-        if let jettonAddress {
-          let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
-          let jettonBalance = try await fundsValidator.resolveJettonBalance(
-            jettonAddress: jettonAddress, requiredAmount: amount ?? 0, wallet: wallet
-          )
-
-          let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
-            wallet: wallet,
-            recipient: recipient,
-            jettonItem: jettonBalance.item,
-            amount: amount ?? 0,
-            comment: nil
-          )
-
-          try await fundsValidator.validateFundsIfNeeded(
-            wallet: wallet,
-            confirmationController: jettonTransferController
-          )
-
-          token = .jetton(jettonBalance.item)
-        } else {
-          token = .ton
-        }
         
+        var token: SendV3Item = .ton(.token(.ton, amount: 0))
+        
+        switch recipient {
+        case .ton(let tonRecipient):
+          if let jettonAddress {
+            let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
+            let jettonBalance = try await fundsValidator.resolveJettonBalance(
+              jettonAddress: jettonAddress, requiredAmount: amount ?? 0, wallet: wallet
+            )
+
+            let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
+              wallet: wallet,
+              recipient: tonRecipient,
+              jettonItem: jettonBalance.item,
+              amount: amount ?? 0,
+              comment: nil
+            )
+
+            try await fundsValidator.validateFundsIfNeeded(
+              wallet: wallet,
+              confirmationController: jettonTransferController
+            )
+
+            token = .ton(.token(.jetton(jettonBalance.item), amount: amount ?? 0))
+          } else {
+            token = .ton(.token(.ton, amount: amount ?? 0))
+          }
+
+        case .tron:
+          if wallet.isTronTurnOn {
+            token = .tron(TronSendData.Item.usdt(amount: amount ?? 0))
+          } else if wallet.isTronAvailable {
+            openReceiveTRC20Popup(wallet: wallet)
+            self.deeplinkHandleTask = nil
+            ToastPresenter.hideAll()
+            return 
+          }
+        }
+
         guard !Task.isCancelled else { return }
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self.openSend(
             wallet: wallet,
-            token: token,
+            sendItem: token,
             recipient: recipient,
-            amount: amount,
             comment: comment,
             successReturn: successReturn
           )
@@ -111,7 +123,7 @@ extension MainCoordinator {
             return
           }
 
-          let tonToken = Token.ton
+          let tonToken = TonToken.ton
           let amountFormatter = self.keeperCoreMainAssembly.formattersAssembly.amountFormatter
           let feeFormatted = amountFormatter.formatAmount(amount, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
           let balanceFormatted = amountFormatter.formatAmount(balance, fractionDigits: tonToken.fractionDigits, maximumFractionDigits: 2)
@@ -165,7 +177,7 @@ extension MainCoordinator {
     let configuration = builder.insufficientTokenConfiguration(
       walletLabel: wallet.metaData.label,
       caption: caption,
-      tokenSymbol: tokenSymbol ?? Token.ton.symbol,
+      tokenSymbol: tokenSymbol ?? TonToken.ton.symbol,
       tokenFractionalDigits: fractionDigits,
       required: amount ?? 0,
       available: balance,
@@ -201,7 +213,7 @@ extension MainCoordinator {
       do {
         let wallet = try walletsStore.activeWallet
         
-        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
+        let recipient = try await self.recipientResolver.resolverTonRecipient(string: recipient, isTestnet: wallet.isTestnet)
         
         guard let amount = amount else { return }
 

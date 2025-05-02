@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import BigInt
+import TronSwift
 
 struct BalanceItems {
   let items: [BalanceItem]
@@ -10,6 +11,7 @@ enum BalanceItem {
   case ton(BalanceTonItemModel)
   case jetton(BalanceJettonItemModel)
   case staking(BalanceStakingItemModel)
+  case tronUSDT(BalanceTronUSDTItemModel)
 }
 
 struct BalanceTonItemModel {
@@ -42,6 +44,18 @@ struct BalanceStakingItemModel {
   let currency: Currency
   let converted: Decimal
   let price: Decimal
+}
+
+struct BalanceTronUSDTItemModel {
+  let id: String
+  let title: String
+  let amount: BigUInt
+  let fractionalDigits: Int
+  let tag: String?
+  let currency: Currency
+  let converted: Decimal
+  let price: Decimal
+  let diff: String?
 }
 
 extension BalanceItems {
@@ -136,12 +150,14 @@ extension BalanceItems {
         }
       })
       .map {
+        let tag: String? = $0.jettonBalance.item.jettonInfo.address == JettonMasterAddress.tonUSDT ? "TON" : nil
+        
         return .jetton(BalanceJettonItemModel(
           id: $0.jettonBalance.item.jettonInfo.address.toRaw(),
           jetton: $0.jettonBalance.item,
           amount: $0.jettonBalance.quantity,
           fractionalDigits: $0.jettonBalance.item.jettonInfo.fractionDigits,
-          tag: nil,
+          tag: tag,
           currency: balance.currency,
           converted: $0.converted,
           price: $0.price,
@@ -149,6 +165,23 @@ extension BalanceItems {
         ))
       }
     
-    self.items = stakingItems + jettonItems + [tonItem]
+    var items = stakingItems + jettonItems + [tonItem]
+    
+    if let tronUSDT = balance.tronUSDT {
+      let tronUSDTItem = BalanceTronUSDTItemModel(
+        id: USDT.address.base58,
+        title: USDT.symbol,
+        amount: tronUSDT.amount,
+        fractionalDigits: USDT.fractionDigits,
+        tag: USDT.tag,
+        currency: balance.currency,
+        converted: tronUSDT.converted,
+        price: tronUSDT.price,
+        diff: tronUSDT.diff
+      )
+      items.append(.tronUSDT(tronUSDTItem))
+    }
+    
+    self.items = items
   }
 }

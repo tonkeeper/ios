@@ -7,11 +7,11 @@ import BigInt
 
 protocol BatteryRechargeModuleOutput: AnyObject {
   var didTapContinue: ((_ payload: BatteryRechargePayload) -> Void)? { get set }
-  var didSelectTokenPicker: ((Token) -> Void)? { get set }
+  var didSelectTokenPicker: ((TonToken) -> Void)? { get set }
 }
 
 protocol BatteryRechargeModuleInput: AnyObject {
-  func setToken(token: Token)
+  func setToken(token: TonToken)
 }
 
 protocol BatteryRechargeViewModel: AnyObject {
@@ -29,11 +29,11 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
   // MARK: - BatteryRechargeModuleOutput
   
   var didTapContinue: ((BatteryRechargePayload) -> Void)?
-  var didSelectTokenPicker: ((Token) -> Void)?
+  var didSelectTokenPicker: ((TonToken) -> Void)?
   
   // MARK: - BatteryRechargeModuleInput
   
-  func setToken(token: Token) {
+  func setToken(token: TonToken) {
     model.token = token
   }
   

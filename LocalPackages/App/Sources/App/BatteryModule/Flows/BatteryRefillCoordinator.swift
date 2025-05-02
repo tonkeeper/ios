@@ -126,7 +126,7 @@ private extension BatteryRefillCoordinator {
   
   func openRecharge(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem,
                     promocodeStore: BatteryPromocodeStore) {
-    let rechargeToken: Token
+    let rechargeToken: TonToken
     let isGift: Bool
     switch item {
     case .token(let token):
@@ -190,7 +190,7 @@ private extension BatteryRefillCoordinator {
     )
   }
   
-  func openTokenPicker(token: Token, completion: @escaping (Token) -> Void) {
+  func openTokenPicker(token: TonToken, completion: @escaping (TonToken) -> Void) {
     let model = BatteryTokenPickerModel(
       wallet: wallet,
       selectedToken: token,
@@ -208,7 +208,11 @@ private extension BatteryRefillCoordinator {
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didSelectToken = { token in
-      completion(token)
+      switch token {
+      case .tronUSDT: break
+      case .ton(let token):
+        completion(token)
+      }
     }
     
     module.output.didFinish = {  [weak bottomSheetViewController] in

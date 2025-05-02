@@ -47,6 +47,12 @@ public final class Assembly {
     storesAssembly: storesAssembly,
     coreAssembly: coreAssembly
   )
+  public lazy var tronUSDTAssembly = TronUSDTAssembly(
+    secureAssembly: secureAssembly,
+    storesAssembly: storesAssembly,
+    batteryAPIAssembly: batteryAPIAssembly
+  )
+  
   lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
   lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
@@ -59,7 +65,8 @@ public final class Assembly {
     scamAPIAssembly: scamAPIAssembly,
     coreAssembly: coreAssembly,
     secureAssembly: secureAssembly,
-    batteryAssembly: batteryAssembly
+    batteryAssembly: batteryAssembly,
+    tronUSDTAssembly: tronUSDTAssembly
   )
   private lazy var storesAssembly = StoresAssembly(
     apiAssembly: apiAssembly,
@@ -71,7 +78,8 @@ public final class Assembly {
     storesAssembly: storesAssembly,
     tonkeeperAPIAssembly: tonkeeperApiAssembly,
     apiAssembly: apiAssembly,
-    knownAccountsAssembly: knownAccountsAssembly
+    knownAccountsAssembly: knownAccountsAssembly,
+    tronAssembly: tronUSDTAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
   private lazy var mappersAssembly = MappersAssembly(formattersAssembly: formattersAssembly)
@@ -85,8 +93,9 @@ public final class Assembly {
     )
   }
   private lazy var rnAssembly = RNAssembly()
+  private lazy var batteryAPIAssembly = BatteryAPIAssembly(configurationAssembly: configurationAssembly)
   private lazy var batteryAssembly = BatteryAssembly(
-    batteryAPIAssembly: BatteryAPIAssembly(configurationAssembly: configurationAssembly),
+    batteryAPIAssembly: batteryAPIAssembly,
     coreAssembly: coreAssembly,
     configurationAssembly: configurationAssembly
   )
@@ -125,7 +134,8 @@ public extension Assembly {
       backgroundUpdateAssembly: backgroundUpdateAssembly,
       rnAssembly: rnAssembly,
       secureAssembly: secureAssembly,
-      transactionsManagementAssembly: transactionsManagementAssembly
+      transactionsManagementAssembly: transactionsManagementAssembly,
+      tronUSDTAssembly: tronUSDTAssembly
     )
   }
   

@@ -101,8 +101,10 @@ public enum TKLocales {
     public static let save = TKLocales.tr("Localizable", "actions.save", fallback: "Save")
     /// Sign Out
     public static let signOut = TKLocales.tr("Localizable", "actions.sign_out", fallback: "Sign Out")
-    /// View on Tonviewer
-    public static let viewOnTonviewier = TKLocales.tr("Localizable", "actions.view_on_tonviewier", fallback: "View on Tonviewer")
+    /// View on %@
+    public static func viewOn(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "actions.view_on", String(describing: p1), fallback: "View on %@")
+    }
   }
   public enum AddWallet {
     /// Create a new wallet or add an existing one.
@@ -209,13 +211,29 @@ public enum TKLocales {
       /// Recovery phrase
       public static let title = TKLocales.tr("Localizable", "backup.show.title", fallback: "Recovery phrase")
       public enum Button {
-        /// Copy
-        public static let title = TKLocales.tr("Localizable", "backup.show.button.title", fallback: "Copy")
+        /// Copy Phrase
+        public static let title = TKLocales.tr("Localizable", "backup.show.button.title", fallback: "Copy Phrase")
+        /// Export TRC20 Wallet
+        public static let trc20 = TKLocales.tr("Localizable", "backup.show.button.trc20", fallback: "Export TRC20 Wallet")
       }
     }
     public enum ShowPhrase {
       /// Show Recovery Phrase
       public static let title = TKLocales.tr("Localizable", "backup.show_phrase.title", fallback: "Show Recovery Phrase")
+    }
+    public enum Trc20 {
+      public enum Show {
+        /// This phrase is for TRC20 only. It cannot restore your TON wallet. Use your TON recovery phrase for TON wallet recovery.
+        public static let banner = TKLocales.tr("Localizable", "backup.trc20.show.banner", fallback: "This phrase is for TRC20 only. It cannot restore your TON wallet. Use your TON recovery phrase for TON wallet recovery.")
+        /// Write down these words with their numbers and store them in a safe place.
+        public static let caption = TKLocales.tr("Localizable", "backup.trc20.show.caption", fallback: "Write down these words with their numbers and store them in a safe place.")
+        /// TRC20 Wallet
+        public static let title = TKLocales.tr("Localizable", "backup.trc20.show.title", fallback: "TRC20 Wallet")
+        public enum Button {
+          /// Copy Phrase
+          public static let title = TKLocales.tr("Localizable", "backup.trc20.show.button.title", fallback: "Copy Phrase")
+        }
+      }
     }
     public enum Warning {
       /// Please read the following carefully before viewing your recovery phrase.
@@ -379,6 +397,12 @@ public enum TKLocales {
           public static let caption = TKLocales.tr("Localizable", "battery.settings.items.token.caption", fallback: "per transfer")
           /// Token transfers
           public static let title = TKLocales.tr("Localizable", "battery.settings.items.token.title", fallback: "Token transfers")
+        }
+        public enum Trc20 {
+          /// per transfer
+          public static let caption = TKLocales.tr("Localizable", "battery.settings.items.trc20.caption", fallback: "per transfer")
+          /// USD₮ TRC20 transfers
+          public static let title = TKLocales.tr("Localizable", "battery.settings.items.trc20.title", fallback: "USD₮ TRC20 transfers")
         }
       }
     }
@@ -1095,6 +1119,22 @@ public enum TKLocales {
     public static func title(_ p1: Any) -> String {
       return TKLocales.tr("Localizable", "receive.title", String(describing: p1), fallback: "Receive %@")
     }
+    public enum Trc20 {
+      /// Send only USD₮ TRC20 to this address, or you might lose your funds.
+      public static let description = TKLocales.tr("Localizable", "receive.trc20.description", fallback: "Send only USD₮ TRC20 to this address, or you might lose your funds.")
+      public enum Popup {
+        /// Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.
+        public static let caption = TKLocales.tr("Localizable", "receive.trc20.popup.caption", fallback: "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.")
+        /// USD₮ TRC20
+        public static let title = TKLocales.tr("Localizable", "receive.trc20.popup.title", fallback: "USD₮ TRC20")
+        public enum Buttons {
+          /// Enable USD₮ TRC20
+          public static let enable = TKLocales.tr("Localizable", "receive.trc20.popup.buttons.enable", fallback: "Enable USD₮ TRC20")
+          /// Later
+          public static let later = TKLocales.tr("Localizable", "receive.trc20.popup.buttons.later", fallback: "Later")
+        }
+      }
+    }
   }
   public enum Result {
     /// Error
@@ -1140,6 +1180,12 @@ public enum TKLocales {
       public static let description = TKLocales.tr("Localizable", "send.comment.description", fallback: "Will be visible to everyone.")
       /// Comment
       public static let placeholder = TKLocales.tr("Localizable", "send.comment.placeholder", fallback: "Comment")
+    }
+    public enum IncorrectNetworkRecipient {
+      /// The address belongs to the TON network. Swap USD₮ TRC20 to USD₮ TON via NAME to proceed with the transfer.
+      public static let ton = TKLocales.tr("Localizable", "send.incorrect_network_recipient.ton", fallback: "The address belongs to the TON network. Swap USD₮ TRC20 to USD₮ TON via NAME to proceed with the transfer.")
+      /// The address belongs to the TRON network. Swap USD₮ TON to USD₮ TRC20 via NAME to proceed with the transfer.
+      public static let trc20 = TKLocales.tr("Localizable", "send.incorrect_network_recipient.trc20", fallback: "The address belongs to the TRON network. Swap USD₮ TON to USD₮ TRC20 via NAME to proceed with the transfer.")
     }
     public enum Recepient {
       /// Address or name
@@ -1330,6 +1376,10 @@ public enum TKLocales {
           public static let zero = TKLocales.tr("Localizable", "settings.purchases.token.token_count.zero", fallback: "tokens")
         }
       }
+    }
+    public enum Trc20 {
+      /// Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.
+      public static let description = TKLocales.tr("Localizable", "settings.trc20.description", fallback: "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.")
     }
   }
   public enum SettingsListNotificationsConfigurator {
@@ -1544,6 +1594,20 @@ public enum TKLocales {
     public static let unverified = TKLocales.tr("Localizable", "token.unverified", fallback: "Unverified token")
     /// View details
     public static let viewDetails = TKLocales.tr("Localizable", "token.view_details", fallback: "View details")
+  }
+  public enum TokenDetails {
+    public enum Trc20 {
+      public enum Usdt {
+        public enum BatteryBanner {
+          /// Battery charges are used to cover transaction fees, making transfers simpler and more cost-effective.
+          public static let caption = TKLocales.tr("Localizable", "token_details.trc20.usdt.battery_banner.caption", fallback: "Battery charges are used to cover transaction fees, making transfers simpler and more cost-effective.")
+          /// Charge Battery
+          public static let chargeButton = TKLocales.tr("Localizable", "token_details.trc20.usdt.battery_banner.charge_button", fallback: "Charge Battery")
+          /// Tonkeeper Battery required for USD₮ TRC20
+          public static let title = TKLocales.tr("Localizable", "token_details.trc20.usdt.battery_banner.title", fallback: "Tonkeeper Battery required for USD₮ TRC20")
+        }
+      }
+    }
   }
   public enum TonConnect {
     /// Allow notifications

@@ -161,7 +161,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
   private func getAmountValue() -> TransactionConfirmationModel.Amount {
     return (
       TransactionConfirmationModel.Amount(
-        token: .ton,
+        token: .ton(.ton),
         value: amount
       )
     )

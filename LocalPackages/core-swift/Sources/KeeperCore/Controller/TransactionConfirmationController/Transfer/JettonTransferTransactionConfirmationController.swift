@@ -144,7 +144,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   @Atomic private var isMax: Bool = false
 
   private let wallet: Wallet
-  private let recipient: Recipient
+  private let recipient: TonRecipient
   private let jettonItem: JettonItem
   private let amount: BigUInt
   private let comment: String?
@@ -159,7 +159,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
   private let batteryCalculation: BatteryCalculation
   
   init(wallet: Wallet,
-       recipient: Recipient,
+       recipient: TonRecipient,
        jettonItem: JettonItem,
        amount: BigUInt,
        comment: String?,
@@ -270,7 +270,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     
     return (
       TransactionConfirmationModel.Amount(
-        token: .jetton(jettonItem),
+        token: .ton(.jetton(jettonItem)),
         value: amount()
       )
     )

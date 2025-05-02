@@ -126,7 +126,11 @@ private extension ManageTokensViewModelImplementation {
         itemCellConfigurations[item] = cellConfiguration
         snapshot.appendItems([item], toSection: .pinned)
       case .jetton(let jetton):
-        let cellConfiguration = mapper.mapJettonItem(jetton)
+        let isNetworkBadgeVisible = model.wallet.isTronTurnOn && jetton.jetton.jettonInfo.isTonUSDT
+        let cellConfiguration = mapper.mapJettonItem(
+          jetton,
+          isNetworkBadgeVisible: isNetworkBadgeVisible
+        )
         let item = ManageTokensListItem(
           identifier: jetton.id,
           canReorder: true,
@@ -140,6 +144,15 @@ private extension ManageTokensViewModelImplementation {
           identifier: staking.id,
           canReorder: true,
           accessories: createPinnedItemAccessories(identifier: staking.id)
+        )
+        itemCellConfigurations[item] = cellConfiguration
+        snapshot.appendItems([item], toSection: .pinned)
+      case .tronUSDT(let model):
+        let cellConfiguration = mapper.mapTronUSDTItem(model)
+        let item = ManageTokensListItem(
+          identifier: model.id,
+          canReorder: true,
+          accessories: createPinnedItemAccessories(identifier: model.id)
         )
         itemCellConfigurations[item] = cellConfiguration
         snapshot.appendItems([item], toSection: .pinned)
@@ -157,7 +170,7 @@ private extension ManageTokensViewModelImplementation {
         itemCellConfigurations[item] = cellConfiguration
         snapshot.appendItems([item], toSection: .allAssets)
       case .jetton(let jetton):
-        let cellConfiguration = mapper.mapJettonItem(jetton)
+        let cellConfiguration = mapper.mapJettonItem(jetton, isNetworkBadgeVisible: model.wallet.isTronTurnOn)
         let item = ManageTokensListItem(
           identifier: jetton.id,
           canReorder: false,
@@ -171,6 +184,15 @@ private extension ManageTokensViewModelImplementation {
           identifier: staking.id,
           canReorder: false,
           accessories: createUnpinnedItemAccessories(identifier: staking.id, isHidden: unpinnedItem.isHidden)
+        )
+        itemCellConfigurations[item] = cellConfiguration
+        snapshot.appendItems([item], toSection: .allAssets)
+      case .tronUSDT(let model):
+        let cellConfiguration = mapper.mapTronUSDTItem(model)
+        let item = ManageTokensListItem(
+          identifier: model.id,
+          canReorder: false,
+          accessories: createUnpinnedItemAccessories(identifier: model.id, isHidden: unpinnedItem.isHidden)
         )
         itemCellConfigurations[item] = cellConfiguration
         snapshot.appendItems([item], toSection: .allAssets)

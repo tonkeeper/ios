@@ -53,6 +53,15 @@ private extension TokenDetailsViewController {
     viewModel.didUpdateChartViewController = { [weak self] viewController in
       self?.headerViewController.embedChartViewController(viewController)
     }
+    
+    viewModel.didUpdateBannerItems = { [weak self] bannerItems in
+      guard let self else { return }
+      self.headerViewController.bannerContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      bannerItems.forEach { item in
+        let view = item.getView()
+        self.headerViewController.bannerContainer.addArrangedSubview(view)
+      }
+    }
   }
   
   func setup() {

@@ -69,7 +69,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       bottomPadding: 0
     ))
   }
-  
+
   private func createRNSeedPhrasesItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
@@ -201,7 +201,6 @@ private extension String {
   static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
   static let version5SeedPhrasesIdentifier = "version5SeedPhrasesIdentifier"
   static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
-  static let swapURLItemIdentifier = "swapURLItemIdentifier"
   static let clearCookiesItemIdentifier = "clearCookiesItemIdentifier"
   static let confirmationSliderItemIdentifier = "confirmationSliderItemIdentifier"
 }

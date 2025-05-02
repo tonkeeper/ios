@@ -114,7 +114,7 @@ public final class SignRawController {
     let risk = handleRisk(risk: transactionInfo.risk)
     let currency = currencyStore.state
     var feeConverted: SignRawEmulation.FeeConverted?
-    if let rates = tonRatesStore.state.first(where: { $0.currency == currency }) {
+    if let rates = tonRatesStore.state.tonRates.first(where: { $0.currency == currency }) {
       feeConverted = SignRawEmulation.FeeConverted(
         converted: RateConverter().convertToDecimal(
           amount: BigUInt(fee),

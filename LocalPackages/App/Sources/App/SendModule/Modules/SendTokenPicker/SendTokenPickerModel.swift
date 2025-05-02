@@ -5,13 +5,18 @@ import TonSwift
 final class SendTokenPickerModel: TokenPickerModel {
 
   var didUpdateState: ((TokenPickerModelState?) -> Void)?
+  
+  enum PickerToken {
+    case ton(TonToken)
+    case tronUSDT
+  }
 
   private let wallet: Wallet
-  private let selectedToken: Token
+  private let selectedToken: PickerToken
   private let balanceStore: ConvertedBalanceStore
   
   init(wallet: Wallet,
-       selectedToken: Token,
+       selectedToken: PickerToken,
        balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
     self.selectedToken = selectedToken
@@ -43,10 +48,22 @@ private extension SendTokenPickerModel {
   }
   
   func getState(balanceState: ConvertedBalanceState?, scrollToSelected: Bool) -> TokenPickerModelState? {
-    guard let balance = balanceState?.balance else { return nil}
+    guard let balance = balanceState?.balance else { return nil }
+    
+    let selectedToken: TokenPickerModelState.PickerToken = {
+      switch self.selectedToken {
+      case .ton(let token):
+        return .ton(token)
+      case .tronUSDT:
+        return .tronUSDT
+      }
+    }()
+    
     return TokenPickerModelState(
+      wallet: wallet,
       tonBalance: balance.tonBalance,
       jettonBalances: balance.jettonsBalance.filter { !$0.jettonBalance.quantity.isZero },
+      tronUSDTBalance: balance.tronUSDT,
       selectedToken: selectedToken,
       scrollToSelected: scrollToSelected
     )

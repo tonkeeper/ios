@@ -83,6 +83,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
   
   func openRecoveryPhrase(_ phrase: [String]) {
     let provider = SettingsRecoveryPhraseProvider(
+      wallet: wallet,
       phrase: phrase
     )
 
@@ -93,6 +94,11 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     let navigationController = TKNavigationController(rootViewController: module.viewController)
     navigationController.configureTransparentAppearance()
     
+    provider.didTapTRC20Button = { [weak self, weak navigationController] in
+      guard let navigationController else { return }
+      self?.openTRC20RecoveryPhrase(tonPhrase: phrase, navigationController: navigationController)
+    }
+    
     module.viewController.setupLeftCloseButton { [weak self, weak navigationController] in
       navigationController?.dismiss(animated: true, completion: {
         self?.didFinish?(self)
@@ -100,5 +106,20 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     }
     
     router.present(navigationController)
+  }
+  
+  func openTRC20RecoveryPhrase(tonPhrase: [String], navigationController: UINavigationController) {
+    let provider = SettingsTRC20RecoveryPhraseProvider(
+      wallet: wallet,
+      tonMnemonic: tonPhrase
+    )
+    
+    let module = TKRecoveryPhraseAssembly.module(
+      provider: provider
+    )
+    
+    module.viewController.setupBackButton()
+    
+    navigationController.pushViewController(module.viewController, animated: true)
   }
 }

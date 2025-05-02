@@ -14,14 +14,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/tonkeeper/hw-transport-ios-ble", from: "2.0.0"),
         .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.6"),
-        .package(path: "../TKCryptoSwift"),
+        .package(url: "https://github.com/tonkeeper/CryptoSwift", revision: "1d31a1ffb6043655f3faba9d160db67b2e547e49")
     ],
     targets: [
         .target(
             name: "TonTransport",
             dependencies: [
               .product(name: "TonSwift", package: "ton-swift"),
-                .product(name: "TKCryptoSwift", package: "TKCryptoSwift"),
+                .product(name: "CryptoSwift", package: "CryptoSwift"),
                 .product(name: "BleTransport", package: "hw-transport-ios-ble")
             ],
             path: "Sources/TonTransport"

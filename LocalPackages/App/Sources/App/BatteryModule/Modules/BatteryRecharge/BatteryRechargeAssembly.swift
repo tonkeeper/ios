@@ -5,7 +5,7 @@ import KeeperCore
 struct BatteryRechargeAssembly {
   private init() {}
   static func module(wallet: Wallet,
-                     token: Token,
+                     token: TonToken,
                      isGift: Bool,
                      promocodeStore: BatteryPromocodeStore,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,

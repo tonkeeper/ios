@@ -120,6 +120,10 @@ public final class BalanceLoader {
         case .didChangeActiveWallet:
           observer.loadActiveWalletBalance()
           observer.startActiveWalletBalanceReload()
+        case .didUpdateWalletTron(let wallet):
+          observer.walletBalanceLoaders[wallet] = nil
+          observer.walletBalanceLoaders[wallet] = observer.createWalletBalanceLoader(wallet: wallet)
+          observer.loadActiveWalletBalance()
         default: break
         }
       }
@@ -146,12 +150,12 @@ public final class BalanceLoader {
   
   private func loadRates(currency: Currency) async {
     do {
-      let rates = try await ratesService.loadRates(jettons: [], currencies: [currency, .TON, .USD]).ton
+      let rates = try await ratesService.loadRates(jettons: [], currencies: [currency, .TON, .USD])
       try Task.checkCancellation()
-      await ratesStore.setRates(rates)
+      await ratesStore.setRates(ton: rates.ton, usdt: rates.usdt)
     } catch {
       guard !error.isCancelledError else { return }
-      await ratesStore.setRates([])
+      await ratesStore.setRates(ton: [], usdt: [])
     }
   }
 }
