@@ -56,6 +56,8 @@ final class SendV3View: UIView {
   }
   
   private func setup() {
+    scrollView.delaysContentTouches = false
+    
     recipientTextField.rightItems = [
       TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
       TKTextField.RightItem(view: recipientScanButton, mode: .empty)

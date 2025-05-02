@@ -11,6 +11,10 @@ public protocol ReceiveModuleOutput: AnyObject {
   var didSelectInactiveTRC20: ((Wallet) -> Void)? { get set }
 }
 
+public protocol ReceiveModuleInput: AnyObject {
+  func selectToken(token: Token)
+}
+
 protocol ReceiveViewModel: AnyObject {
   var didUpdateTokenViewController: ((ReceiveTabViewController, _ animated: Bool) -> Void)? { get set }
   var didUpdateSegmentedControl: (([String]?) -> Void)? { get set }
@@ -20,7 +24,7 @@ protocol ReceiveViewModel: AnyObject {
   func setActiveIndex(_ from: Int,_ to: Int)
 }
 
-final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutput {
+final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutput, ReceiveModuleInput {
   var didSelectInactiveTRC20: ((Wallet) -> Void)?
   
   var didUpdateTokenViewController: ((ReceiveTabViewController, _ animated: Bool) -> Void)?
@@ -63,6 +67,13 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
     setupTokenPage(animated: true)
   }
   
+  func selectToken(token: Token) {
+    guard let index = tokens.index(of: token) else { return }
+    activeTokenIndex = index
+    setupTokenPage(animated: true)
+    didChangeIndex?(index)
+  }
+  
   private func setup() {
     walletsStore.addObserver(self) { observer, event in
       switch event {
@@ -91,7 +102,7 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
       let segmentedControlItems = tokens.map {
         switch $0 {
         case .ton: "TON"
-        case .usdtTron: "TRC-20"
+        case .usdtTron: "TRC20"
         }
       }
       didUpdateSegmentedControl?(segmentedControlItems)

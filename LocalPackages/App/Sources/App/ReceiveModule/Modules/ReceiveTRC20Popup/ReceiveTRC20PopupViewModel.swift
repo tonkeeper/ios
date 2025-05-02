@@ -10,6 +10,7 @@ import TronSwift
 @MainActor
 public protocol ReceiveTRC20PopupModuleOutput: AnyObject {
   var didFinish: (() -> Void)? { get set }
+  var didEnable: (() -> Void)? { get set }
 }
 
 @MainActor
@@ -21,7 +22,7 @@ protocol ReceiveTRC20PopupViewModel: AnyObject {
 
 @MainActor
 final class ReceiveTRC20PopupViewModelImplementation: ReceiveTRC20PopupViewModel, ReceiveTRC20PopupModuleOutput {
-  
+
   // MARK: - State
   
   private var enableTRC20Task: Task<Void, Swift.Error>?
@@ -43,6 +44,7 @@ final class ReceiveTRC20PopupViewModelImplementation: ReceiveTRC20PopupViewModel
   // MARK: - ReceiveTRC20PopupViewModel
   
   var didFinish: (() -> Void)?
+  var didEnable: (() -> Void)?
   
   var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
   
@@ -58,6 +60,7 @@ final class ReceiveTRC20PopupViewModelImplementation: ReceiveTRC20PopupViewModel
       self?.enableTRC20Task = Task { [weak self] in
         guard let self else { return }
         try await tronWalletConfigurator.turnOn(wallet: wallet, passcodeProvider: passcodeProvider)
+        self.didEnable?()
         self.didFinish?()
       }
     }
