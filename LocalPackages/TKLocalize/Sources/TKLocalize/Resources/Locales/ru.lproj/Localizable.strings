@@ -226,6 +226,7 @@
 "currency.items.VES" = "Венесуэльский боливар";
 "currency.items.BTC" = "Bitcoin";
 "currency.items.TON" = "Toncoin";
+"currency.items.AUD" = "Австралийский доллар";
 
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";

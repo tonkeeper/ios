@@ -585,6 +585,8 @@ public enum TKLocales {
       public static let aed = TKLocales.tr("Localizable", "currency.items.aed", fallback: "United Arab Emirates Dirham")
       /// Argentine peso
       public static let ars = TKLocales.tr("Localizable", "currency.items.ARS", fallback: "Argentine peso")
+      /// Australian dollar
+      public static let aud = TKLocales.tr("Localizable", "currency.items.AUD", fallback: "Australian dollar")
       /// Bangladeshi taka
       public static let bdt = TKLocales.tr("Localizable", "currency.items.bdt", fallback: "Bangladeshi taka")
       /// Brazilian Real
@@ -1144,8 +1146,8 @@ public enum TKLocales {
       public static let placeholder = TKLocales.tr("Localizable", "send.recepient.placeholder", fallback: "Address or name")
     }
     public enum RequiredComment {
-      /// You must include the note from the exchange for transfer. Without it your funds will be lost.
-      public static let description = TKLocales.tr("Localizable", "send.required_comment.description", fallback: "You must include the note from the exchange for transfer. Without it your funds will be lost.")
+      /// When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.
+      public static let description = TKLocales.tr("Localizable", "send.required_comment.description", fallback: "When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.")
       /// Required comment
       public static let placeholder = TKLocales.tr("Localizable", "send.required_comment.placeholder", fallback: "Required comment")
     }
