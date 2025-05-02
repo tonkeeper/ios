@@ -26,6 +26,7 @@ public enum Currency: String, Codable, CaseIterable {
   case ILS = "ILS"
   case GEL = "GEL"
   case VND = "VND"
+  case AUD
   case ZAR
   case ARS
   case COP
@@ -79,6 +80,7 @@ public enum Currency: String, Codable, CaseIterable {
     case .VES: return "Bs"
     case .TON: return "TON"
     case .BTC: return "₿"
+    case .AUD: return "AU$"
     }
   }
   
@@ -117,12 +119,13 @@ public enum Currency: String, Codable, CaseIterable {
     case .UGX: return TKLocales.Currency.Items.ugx
     case .VES: return TKLocales.Currency.Items.ves
     case .BTC: return TKLocales.Currency.Items.btc
+    case .AUD: return TKLocales.Currency.Items.aud
     }
   }
   
   public var symbolOnLeft: Bool {
     switch self {
-    case .EUR, .USD, .GBP, .BDT, .CAD, .ILS: return true
+    case .EUR, .USD, .GBP, .BDT, .CAD, .ILS, .AUD: return true
     default: return false
     }
   }
