@@ -130,10 +130,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         observer.didUpdateState?(state)
       }
     }
-    TKFeatureFlags.localProvider.addObserver(self, flags: [.isUSDTTronOn]) { observer, _ in
-      let state = observer.createState()
-      observer.didUpdateState?(state)
-    }
   }
   
   private func createState() -> SettingsListState {
