@@ -3,6 +3,8 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 import TKCore
+import TKFeatureFlags
+import TronSwift
 
 final class SettingsListRootConfigurator: SettingsListConfigurator {
 
@@ -11,7 +13,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapCurrencySettings: (() -> Void)?
   var didTapSecuritySettings: (() -> Void)?
   var didTapLegal: (() -> Void)?
-  var didTapBackup: (() -> Void)?
+  var didTapBackup: ((Wallet) -> Void)?
   var didOpenURL: ((URL) -> Void)?
   var didShowAlert: ((_ title: String,
                       _ description: String?,
@@ -48,6 +50,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let configuration: Configuration
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
+  private let tronWalletConfigurator: TronWalletConfigurator
   
   // MARK: - Init
   
@@ -59,7 +62,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        appStoreReviewer: AppStoreReviewer,
        configuration: Configuration,
        walletDeleteController: WalletDeleteController,
-       anaylticsProvider: AnalyticsProvider) {
+       anaylticsProvider: AnalyticsProvider,
+       tronWalletConfigurator: TronWalletConfigurator) {
     self.wallet = wallet
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
@@ -69,6 +73,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.configuration = configuration
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
+    self.tronWalletConfigurator = tronWalletConfigurator
     walletsStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateWalletMetaData(let wallet):
@@ -80,6 +85,13 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       case .didUpdateWalletSetupSettings(let wallet):
         DispatchQueue.main.async {
           observer.wallet = wallet
+        }
+      case .didUpdateWalletTron(let wallet):
+        DispatchQueue.main.async {
+          guard wallet == observer.wallet else { return }
+          observer.wallet = wallet
+          let state = observer.createState()
+          observer.didUpdateState?(state)
         }
       case .didDeleteWallet(let wallet):
         DispatchQueue.main.async {
@@ -118,6 +130,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         observer.didUpdateState?(state)
       }
     }
+    TKFeatureFlags.localProvider.addObserver(self, flags: [.isUSDTTronOn]) { observer, _ in
+      let state = observer.createState()
+      observer.didUpdateState?(state)
+    }
   }
   
   private func createState() -> SettingsListState {
@@ -126,6 +142,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     sections.append(createWalletEditSection())
     if let walletSettingsSection = createWalletSettingsSection(configuration: configuration) {
       sections.append(walletSettingsSection)
+    }
+    if let usdtTronSection = createUSDTTronSection() {
+      sections.append(usdtTronSection)
     }
     if let appSettingsSection = createAppSettingsSection() {
       sections.append(appSettingsSection)
@@ -297,7 +316,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
       onSelection: { [weak self] _ in
-        self?.didTapBackup?()
+        guard let self else { return }
+        self.didTapBackup?(wallet)
       }
     )
   }
@@ -827,6 +847,65 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       }
     )
   }
+  
+  private func createUSDTTronSection() -> SettingsListSection? {
+    guard !TKFeatureFlags.provider.isTronDisabled, wallet.isTronAvailable else { return nil }
+    return SettingsListSection.listItems(
+      SettingsListItemsSection(
+        items: [createUSDTTronItem()],
+        topPadding: 0,
+        bottomPadding: 0
+      )
+    )
+  }
+  
+  private func createUSDTTronItem() -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: TronSwift.USDT.symbol,
+            tags: [.tag(text: TronSwift.USDT.tag)]
+          ),
+          captionViewsConfigurations: [TKListItemTextView.Configuration(
+            text: TKLocales.Settings.Trc20.description,
+            color: .Text.secondary,
+            textStyle: .body2,
+            numberOfLines: 0
+          )]
+        )
+      )
+    )
+    
+    let isTronOn = wallet.isTronTurnOn
+    let action: (Bool) -> Void = { [weak self] isOn in
+      Task { [weak self] in
+        guard let self else { return }
+        if isOn, let passcodeProvider = didRequirePasscode {
+          try? await tronWalletConfigurator.turnOn(wallet: wallet, passcodeProvider: passcodeProvider)
+          return
+        }
+        await tronWalletConfigurator.turnOff(wallet: wallet)
+      }
+    }
+    
+    return SettingsListItem(
+      id: .usdtTronItemIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .switch(
+        TKListItemSwitchAccessoryView.Configuration(
+          isOn: isTronOn,
+          isEnable: true,
+          action: { isEnabled in
+            action(isEnabled)
+          }
+        )
+      ),
+      onSelection: { _ in
+        action(!isTronOn)
+      }
+    )
+  }
 }
 
 private extension String {
@@ -850,4 +929,5 @@ private extension String {
   static let notificationsIdentifier = "Notifications item"
   static let batteryIdentifier = "Battery item"
   static let connectedAppsIdentifier = "ConnectedAppsItem"
+  static let usdtTronItemIdentifier = "usdtTronItemIdentifier"
 }

@@ -54,6 +54,25 @@ struct TokenDetailsMapper {
     return (amount, converted)
   }
   
+  func mapBalance(amount: BigUInt,
+                  converted: Decimal,
+                  fractionDigits: Int,
+                  symbol: String,
+                  currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
+    let amount = amountFormatter.formatAmount(
+      amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+      symbol: symbol
+    )
+    let converted = decimalAmountFormatter.format(
+      amount: converted,
+      maximumFractionDigits: 2,
+      currency: currency
+    )
+    return (amount, converted)
+  }
+  
   func mapTonBalance(amount: Int64,
                      tonRates: [Rates.Rate],
                      currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {

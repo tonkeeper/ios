@@ -204,7 +204,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     menuItems.append(hideNftITem)
     
     let tonViewerItem = TKPopupMenuItem(
-      title: TKLocales.Actions.viewOnTonviewier,
+      title: TKLocales.Actions.viewOn("Tonviewer"),
       icon: .TKUIKit.Icons.Size16.globe,
       selectionHandler: { [weak self] in
         guard let self else {

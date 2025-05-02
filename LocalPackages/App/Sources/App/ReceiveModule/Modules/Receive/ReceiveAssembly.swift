@@ -2,16 +2,24 @@ import Foundation
 import TKCore
 import KeeperCore
 
-struct ReceiveAssembly {
+public struct ReceiveAssembly {
   private init() {}
-  static func module(token: Token,
-                     wallet: Wallet,
-                     qrCodeGenerator: QRCodeGenerator) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
+  public static func module(tokens: [Token],
+                            wallet: Wallet,
+                            keeperCoreAssembly: KeeperCore.MainAssembly) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
     let viewModel = ReceiveViewModelImplementation(
-      token: token,
+      tokens: tokens,
       wallet: wallet,
-      deeplinkGenerator: DeeplinkGenerator(),
-      qrCodeGenerator: qrCodeGenerator
+      walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
+      tokenModuleViewControllerProvider: { receiveItem in
+        ReceiveTabAssembly.module(
+          token: receiveItem,
+          wallet: wallet,
+          qrCodeGenerator: QRCodeGeneratorImplementation(),
+          keeperCoreAssembly: keeperCoreAssembly
+        )
+        .view
+      }
     )
     let viewController = ReceiveViewController(viewModel: viewModel)
     return MVVMModule(view: viewController, output: viewModel, input: Void())

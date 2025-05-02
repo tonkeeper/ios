@@ -9,7 +9,7 @@ enum HistoryList {
     typealias ID = Date
     var date: Date { id }
     let id: ID
-    let events: [AccountEvent]
+    let events: [HistoryEvent]
   }
 
   enum SnapshotSection: Hashable {

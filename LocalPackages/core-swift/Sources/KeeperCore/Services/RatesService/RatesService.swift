@@ -1,8 +1,8 @@
 import Foundation
 
 public protocol RatesService {
-  func getRates(jettons: [JettonInfo]) -> Rates
-  func loadRates(jettons: [JettonInfo],
+  func getRates(jettons: [String]) -> Rates
+  func loadRates(jettons: [String],
                  currencies: [Currency]) async throws -> Rates
 }
 
@@ -16,19 +16,19 @@ final class RatesServiceImplementation: RatesService {
     self.ratesRepository = ratesRepository
   }
   
-  func getRates(jettons: [JettonInfo]) -> Rates {
+  func getRates(jettons: [String]) -> Rates {
     do {
-      return try ratesRepository.getRates(jettons: jettons)
+      return try ratesRepository.getRates()
     } catch {
-      return Rates(ton: [], jettonsRates: [])
+      return Rates(ton: [], usdt: [], jettonRates: [:])
     }
   }
   
-  func loadRates(jettons: [JettonInfo],
+  func loadRates(jettons: [String],
                  currencies: [Currency]) async throws -> Rates {
     let rates = try await api.getRates(
-      jettons: jettons,
-      currencies: currencies
+      currencies: currencies,
+      jettons: jettons
     )
     try? ratesRepository.saveRates(rates)
     return rates

@@ -130,7 +130,7 @@ struct BatteryRechargeSignRawBuilder {
     }
   }
   
-  private func getRechargeMethod(wallet: Wallet, token: Token) async -> BatteryRechargeMethod? {
+  private func getRechargeMethod(wallet: Wallet, token: TonToken) async -> BatteryRechargeMethod? {
     let methods = await {
       do {
         return try await batteryService.loadRechargeMethods(wallet: wallet, includeRechargeOnly: true)

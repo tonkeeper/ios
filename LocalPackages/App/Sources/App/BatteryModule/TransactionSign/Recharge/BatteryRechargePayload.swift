@@ -3,15 +3,15 @@ import KeeperCore
 import BigInt
 
 struct BatteryRechargePayload {
-  let token: Token
+  let token: TonToken
   let amount: BigUInt
   let promocode: String?
-  let recipient: Recipient?
+  let recipient: TonRecipient?
   
-  init(token: Token,
+  init(token: TonToken,
        amount: BigUInt,
        promocode: String?,
-       recipient: Recipient?) {
+       recipient: TonRecipient?) {
     self.token = token
     self.amount = amount
     self.promocode = promocode

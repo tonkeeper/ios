@@ -57,14 +57,6 @@ private extension TonConnectConnectViewController {
   }
 
   func setupBindings() {
-//    viewModel.headerView = { address, iconUrl in
-//      let headerView = TonConnectModalHeaderView()
-//      headerView.configure(
-//        model: TonConnectModalHeaderView.Model(walletAddress: address ?? "", appImage: iconUrl)
-//      )
-//      return headerView
-//    }
-//    
     viewModel.walletPickerView = { model in
       let view = TonConnectConnectWalletButton()
       view.contentView.configure(

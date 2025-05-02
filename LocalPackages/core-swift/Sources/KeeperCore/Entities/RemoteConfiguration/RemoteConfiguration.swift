@@ -27,6 +27,14 @@ public struct RemoteConfiguration: Equatable {
     NSDecimalNumber.number(stringValue: batteryMeanPriceNFT)
   }
   
+  public var batteryMeanPriceTRCMinDecimalNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanPriceTRCMin) ?? 0.312
+  }
+  
+  public var batteryMeanPriceTRCMaxDecimalNumber: NSDecimalNumber? {
+    NSDecimalNumber.number(stringValue: batteryMeanPriceTRCMax) ?? 0.78
+  }
+  
   public var batteryMaxInputAmountDecimaNumber: NSDecimalNumber {
     NSDecimalNumber.number(stringValue: batteryMaxInputAmount) ?? 3
   }
@@ -56,6 +64,8 @@ public struct RemoteConfiguration: Equatable {
   public let batteryMeanPriceSwap: String?
   public let batteryMeanPriceJetton: String?
   public let batteryMeanPriceNFT: String?
+  public let batteryMeanPriceTRCMin: String?
+  public let batteryMeanPriceTRCMax: String?
   public let batteryMaxInputAmount: String?
   public let batteryRefundEndpoint: URL?
   public let disableBattery: Bool
@@ -90,6 +100,8 @@ public struct RemoteConfiguration: Equatable {
     case batteryMeanPriceSwap = "batteryMeanPrice_swap"
     case batteryMeanPriceJetton = "batteryMeanPrice_jetton"
     case batteryMeanPriceNFT = "batteryMeanPrice_nft"
+    case batteryMeanPriceTRCMin = "batteryMeanPrice_trc20_min"
+    case batteryMeanPriceTRCMax = "batteryMeanPrice_trc20_max"
     case batteryMaxInputAmount
     case batteryRefundEndpoint
     case disableBattery = "disable_battery"
@@ -149,6 +161,8 @@ extension RemoteConfiguration {
       batteryMeanPriceSwap: nil,
       batteryMeanPriceJetton: nil,
       batteryMeanPriceNFT: nil,
+      batteryMeanPriceTRCMin: nil,
+      batteryMeanPriceTRCMax: nil,
       batteryMaxInputAmount: nil,
       batteryRefundEndpoint: nil,
       disableBattery: false,

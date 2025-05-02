@@ -33,8 +33,7 @@ final class StoriesPageViewController: UIViewController {
         image: model.backgroundImage,
         tintColor: .clear,
         size: .none,
-        corners: .none,
-        padding: .zero
+        corners: .none
       )
     )
     titleLabel.attributedText = model.title.withTextStyle(.h1, color: .Constant.white)

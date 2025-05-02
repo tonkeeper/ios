@@ -1,0 +1,59 @@
+{
+  "pins" : [
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt",
+      "state" : {
+        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/CryptoSwift",
+      "state" : {
+        "revision" : "9bde7e0593b1d1e1f2075b6869fb05b1b21e55d5",
+        "version" : "1.8.4"
+      }
+    },
+    {
+      "identity" : "swift-secp256k1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/swift-secp256k1",
+      "state" : {
+        "revision" : "6c50e65ec9959d9ab0039df9ffc31707ad19c01b",
+        "version" : "0.18.1"
+      }
+    },
+    {
+      "identity" : "swift-sodium",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jedisct1/swift-sodium",
+      "state" : {
+        "revision" : "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
+        "version" : "0.9.1"
+      }
+    },
+    {
+      "identity" : "ton-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/ton-swift",
+      "state" : {
+        "revision" : "fab15b574e274b040abe4e06e4e657a48d1103a7",
+        "version" : "1.0.29"
+      }
+    },
+    {
+      "identity" : "tweetnacl-swiftwrap",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
+      "state" : {
+        "revision" : "f8fd111642bf2336b11ef9ea828510693106e954",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 2
+}

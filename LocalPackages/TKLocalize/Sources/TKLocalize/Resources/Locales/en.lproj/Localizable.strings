@@ -13,7 +13,7 @@
 "actions.hide_nft" = "Hide NFT";
 "actions.hide_collection" = "Hide Collection";
 "actions.hide_and_report_spam" = "Hide and Report Spam";
-"actions.view_on_tonviewier" = "View on Tonviewer";
+"actions.view_on" = "View on %@";
 "actions.burn_nft" = "Burn NFT";
 "actions.confirm" = "Confirm";
 
@@ -147,6 +147,8 @@
 "settings.legal.items.montserrat_font" = "Montserrat font";
 "settings.legal.sections.licenses" = "Licences";
 
+"settings.trc20.description" = "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.";
+
 "settings.purchases.title" = "Purchases";
 "settings.purchases.sections.visible" = "Visible";
 "settings.purchases.sections.hidden" = "Hidden";
@@ -249,7 +251,13 @@
 
 "backup.show.title" = "Recovery phrase";
 "backup.show.caption" = "Write down these words with their numbers and store them in a safe place.";
-"backup.show.button.title" = "Copy";
+"backup.show.button.title" = "Copy Phrase";
+"backup.show.button.trc20" = "Export TRC20 Wallet";
+
+"backup.trc20.show.title" = "TRC20 Wallet";
+"backup.trc20.show.caption" = "Write down these words with their numbers and store them in a safe place.";
+"backup.trc20.show.banner" = "This phrase is for TRC20 only. It cannot restore your TON wallet. Use your TON recovery phrase for TON wallet recovery.";
+"backup.trc20.show.button.title" = "Copy Phrase";
 
 "backup.check.title" = "Recovery phrase";
 "backup.check.caption" = "Write down these words with their numbers and store them in a safe place.";
@@ -285,6 +293,9 @@
 
 "send.required_comment.placeholder" = "Required comment";
 "send.required_comment.description" = "When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.";
+
+"send.incorrect_network_recipient.trc20" = "The address belongs to the TRON network. Swap USD₮ TON to USD₮ TRC20 via NAME to proceed with the transfer.";
+"send.incorrect_network_recipient.ton" = "The address belongs to the TON network. Swap USD₮ TRC20 to USD₮ TON via NAME to proceed with the transfer.";
 
 "confirm_send.token_transfer.title" = "Confirm action";
 "confirm_send.token_transfer.transfer" = "Transfer %@";
@@ -400,6 +411,12 @@
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
+
+"receive.trc20.description" = "Send only USD₮ TRC20 to this address, or you might lose your funds.";
+"receive.trc20.popup.title" = "USD₮ TRC20";
+"receive.trc20.popup.caption" = "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.";
+"receive.trc20.popup.buttons.enable" = "Enable USD₮ TRC20";
+"receive.trc20.popup.buttons.later" = "Later";
 
 "watch_account.title" = "Watch Account";
 "watch_account.description" = "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet.";
@@ -685,6 +702,8 @@
 "battery.settings.items.token.caption" = "per transfer";
 "battery.settings.items.nft.title" = "NFT transfers";
 "battery.settings.items.nft.caption" = "per transfer";
+"battery.settings.items.trc20.title" = "USD₮ TRC20 transfers";
+"battery.settings.items.trc20.caption" = "per transfer";
 
 "battery.recharge.title" = "Charge";
 "battery.recharge.gift_title" = "Gift";
@@ -710,3 +729,7 @@
 
 "extra_type.ton" = "TON";
 "extra_type.battery" = "Tonkeeper Battery";
+
+"token_details.trc20.usdt.battery_banner.title" = "Tonkeeper Battery required for USD₮ TRC20";
+"token_details.trc20.usdt.battery_banner.caption" = "Battery charges are used to cover transaction fees, making transfers simpler and more cost-effective.";
+"token_details.trc20.usdt.battery_banner.charge_button" = "Charge Battery";

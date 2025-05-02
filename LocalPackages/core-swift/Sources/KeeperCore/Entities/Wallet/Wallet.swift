@@ -25,6 +25,8 @@ public struct Wallet: Codable, Hashable {
   
   public let batterySettings: BatterySettings
   
+  public let tron: WalletTron?
+  
   /// Store your app-specific configuration here. Such as theme settings and other preferences.
   /// TODO: make this codeable so it can be backed up and sycned.
   //    let userInfo: [String:AnyObject]
@@ -42,7 +44,8 @@ public struct Wallet: Codable, Hashable {
        notificationSettings: NotificationSettings = NotificationSettings(isOn: false, dapps: [:]),
        backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
        addressBook: [AddressBookEntry] = [],
-       batterySettings: BatterySettings) {
+       batterySettings: BatterySettings,
+       tron: WalletTron? = nil) {
     self.id = id
     self.identity = identity
     self.metaData = metaData
@@ -51,6 +54,7 @@ public struct Wallet: Codable, Hashable {
     self.backupSettings = backupSettings
     self.addressBook = addressBook
     self.batterySettings = batterySettings
+    self.tron = tron
   }
   
   public static func == (lhs: Wallet, rhs: Wallet) -> Bool {
@@ -75,5 +79,6 @@ public struct Wallet: Codable, Hashable {
     self.backupSettings = try container.decode(WalletBackupSettings.self, forKey: .backupSettings)
     self.addressBook = try container.decode([AddressBookEntry].self, forKey: .addressBook)
     self.batterySettings = try container.decodeIfPresent(BatterySettings.self, forKey: .batterySettings) ?? BatterySettings()
+    self.tron = try container.decodeIfPresent(WalletTron.self, forKey: .tron)
   }
 }

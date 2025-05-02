@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKLocalize
 import TKUIKit
+import TKScreenKit
 import KeeperCore
 import TKCore
 import TonSwift
@@ -17,7 +18,8 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  private let sendItem: SendItem
+  private let recipientResolver: RecipientResolver
+  private let sendItem: SendV3Item
   private let recipient: Recipient?
   private let comment: String?
   
@@ -25,12 +27,14 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
        wallet: Wallet,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
-       sendItem: SendItem,
+       recipientResolver: RecipientResolver,
+       sendItem: SendV3Item,
        recipient: Recipient? = nil,
        comment: String? = nil) {
     self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    self.recipientResolver = recipientResolver
     self.sendItem = sendItem
     self.recipient = recipient
     self.comment = comment
@@ -39,15 +43,12 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   public override func start() {
     // If amount and recipient are set, we should force confirmation screen
-    if isReadyForConfirmation() {
-      let sendModel = SendModel(
-        wallet: wallet,
-        recipient: recipient,
-        sendItem: sendItem,
-        comment: comment,
-        isMaxAmount: false
-      )
-      openSendConfirmation(sendModel: sendModel)
+    if isReadyForConfirmation(), let sendData = SendData.sendData(
+      wallet: wallet,
+      recipient: recipient,
+      item: sendItem,
+      comment: comment) {
+      openSendConfirmation(sendData: sendData)
     } else {
       openSend()
     }
@@ -72,22 +73,38 @@ private extension SendTokenCoordinator {
   func openSend() {
     let module = SendV3Assembly.module(
       wallet: wallet,
-      sendItem: sendItem,
+      item: sendItem,
       recipient: recipient,
       comment: comment,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    module.output.didContinueSend = { [weak self] sendModel in
-      self?.openSendConfirmation(sendModel: sendModel)
+    module.output.didContinueSend = { [weak self] sendData in
+      self?.openSendConfirmation(sendData: sendData)
     }
     
     module.output.didTapPicker = { [weak self] wallet, token in
+      var pickerToken: SendTokenPickerModel.PickerToken = .ton(.ton)
+      switch token {
+      case .ton(let ton):
+        switch ton {
+        case .nft: return
+        case .token(let token, _):
+          pickerToken = .ton(token)
+        }
+      case .tron(let tron):
+        switch tron {
+        case .usdt:
+          pickerToken = .tronUSDT
+        }
+      }
+      
+      
       guard let self else { return }
       self.openTokenPicker(
         wallet: wallet,
-        token: token,
+        token: pickerToken,
         sourceViewController: self.router.rootViewController,
         completion: { token in
           module.input.updateWithToken(token)
@@ -96,16 +113,30 @@ private extension SendTokenCoordinator {
     
     module.output.didTapScan = { [weak self] in
       self?.openScan(completion: { deeplink in
-        switch deeplink {
-        case .transfer(let data):
-          switch data {
+        Task { [weak self] in
+          guard let self else { return }
+          switch deeplink {
+          case .transfer(let data):
+            switch data {
             case .sendTransfer(let sendTransferData):
-              module.input.setRecipient(string: sendTransferData.recipient)
-              module.input.setAmount(amount: sendTransferData.amount)
-              module.input.setComment(comment: sendTransferData.comment)
+              let recipient = try await self.recipientResolver.resolverRecipient(
+                string: sendTransferData.recipient,
+                isTestnet: wallet.isTestnet
+              )
+              switch recipient {
+              case .ton:
+                module.input.setRecipient(string: sendTransferData.recipient)
+                module.input.setAmount(amount: sendTransferData.amount)
+                module.input.setComment(comment: sendTransferData.comment)
+              case .tron:
+                module.input.setRecipient(string: sendTransferData.recipient)
+                module.input.updateWithToken(.tron(.usdt(amount: sendTransferData.amount ?? 0)))
+                module.input.setComment(comment: sendTransferData.comment)
+              }
             default: break
-          }
+            }
           default: break
+          }
         }
       })
     }
@@ -114,10 +145,17 @@ private extension SendTokenCoordinator {
       self?.didFinish?(self)
     }
     
+    module.output.didOpenURL = { [weak self] url in
+      self?.openURL(url, title: nil)
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
   
-  func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
+  func openTokenPicker(wallet: Wallet,
+                       token: SendTokenPickerModel.PickerToken,
+                       sourceViewController: UIViewController,
+                       completion: @escaping (SendV3Item) -> Void) {
     let model = SendTokenPickerModel(
       wallet: wallet,
       selectedToken: token,
@@ -134,7 +172,20 @@ private extension SendTokenCoordinator {
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didSelectToken = { token in
-      completion(token)
+      let sendToken: SendV3Item = {
+        switch token {
+        case .ton(let ton):
+          switch ton {
+          case .ton:
+            return .ton(.token(.ton, amount: 0))
+          case .jetton(let jettonInfo):
+            return .ton(.token(.jetton(jettonInfo), amount: 0))
+          }
+        case .tronUSDT:
+          return .tron(.usdt(amount: 0))
+        }
+      }()
+      completion(sendToken)
     }
     
     module.output.didFinish = {  [weak bottomSheetViewController] in
@@ -166,6 +217,16 @@ private extension SendTokenCoordinator {
     
     router.present(navigationController)
   }
+  
+  func openURL(_ url: URL, title: String?) {
+    let viewController = TKBridgeWebViewController(
+      initialURL: url,
+      initialTitle: nil,
+      jsInjection: nil,
+      configuration: .default,
+      userAgentProvider: TonkeeperBridgeWebViewControllerUserAgentProvider())
+    router.present(viewController)
+  }
 }
 
 // MARK: - SendConfirmation
@@ -174,10 +235,18 @@ private extension SendTokenCoordinator {
 
   func isReadyForConfirmation() -> Bool {
     switch sendItem {
-    case .token(_, let amount):
-      return !amount.isZero && recipient != nil
-    case .nft:
-      return recipient != nil
+    case .ton(let item):
+      switch item {
+      case .token(_, let amount):
+        return !amount.isZero && recipient != nil && recipient?.isTon == true
+      case .nft:
+        return recipient != nil && recipient?.isTon == true
+      }
+    case .tron(let item):
+      switch item {
+      case .usdt(let amount):
+        return !amount.isZero && recipient != nil && recipient?.isTron == true
+      }
     }
   }
 
@@ -206,7 +275,7 @@ private extension SendTokenCoordinator {
     let configuration = builder.insufficientTokenConfiguration(
       walletLabel: wallet.metaData.label,
       caption: caption,
-      tokenSymbol: tokenSymbol ?? Token.ton.symbol,
+      tokenSymbol: tokenSymbol ?? TonToken.ton.symbol,
       tokenFractionalDigits: fractionDigits,
       required: amount ?? 0,
       available: balance,
@@ -223,35 +292,64 @@ private extension SendTokenCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
 
-  func openSendConfirmation(sendModel: SendModel) {
-    guard let recipient = sendModel.recipient else { return }
+  func openSendConfirmation(sendData: SendData) {
     let transactionConfirmationController: TransactionConfirmationController
-    switch sendModel.sendItem {
-    case let .token(token, amount):
-      switch token {
-      case .ton:
-        transactionConfirmationController = keeperCoreMainAssembly.tonTransferTransactionConfirmationController(
-          wallet: wallet,
-          recipient: recipient,
-          amount: amount,
-          comment: sendModel.comment,
-          isMaxAmount: sendModel.isMaxAmount
+    switch sendData {
+    case .ton(let ton):
+      switch ton.item {
+      case let .token(token, amount):
+        switch token {
+        case .ton:
+          transactionConfirmationController = keeperCoreMainAssembly.tonTransferTransactionConfirmationController(
+            wallet: ton.wallet,
+            recipient: ton.recipient,
+            amount: amount,
+            comment: ton.comment,
+            isMaxAmount: false
+          )
+        case .jetton(let jettonItem):
+          transactionConfirmationController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
+            wallet: ton.wallet,
+            recipient: ton.recipient,
+            jettonItem: jettonItem,
+            amount: amount,
+            comment: ton.comment)
+        }
+      case .nft(let nft):
+        transactionConfirmationController = keeperCoreMainAssembly.nftTransferTransactionConfirmationController(
+          wallet: ton.wallet,
+          recipient: ton.recipient,
+          nft: nft,
+          comment: ton.comment
         )
-      case .jetton(let jettonItem):
-        transactionConfirmationController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
-          wallet: wallet,
-          recipient: recipient,
-          jettonItem: jettonItem,
-          amount: amount,
-          comment: sendModel.comment)
       }
-    case .nft(let nft):
-      transactionConfirmationController = keeperCoreMainAssembly.nftTransferTransactionConfirmationController(
-        wallet: wallet,
-        recipient: recipient,
-        nft: nft,
-        comment: sendModel.comment
-      )
+    case .tron(let tron):
+      switch tron.item {
+      case .usdt(let amount):
+        let confirmationController = keeperCoreMainAssembly.tronUSDTTransferTransactionConfirmationController(
+          wallet: tron.wallet,
+          recipient: tron.recipient,
+          amount: amount
+        )
+        confirmationController.tronSignHandler = { [weak self, keeperCoreMainAssembly, coreAssembly] txId, wallet in
+          guard let self = self else { return nil }
+          let coordinator = TronUSDTTransferSignCoordinator(router: ViewControllerRouter(rootViewController: router.rootViewController),
+                                                            wallet: wallet,
+                                                            txID: txId,
+                                                            keeperCoreMainAssembly: keeperCoreMainAssembly,
+                                                            coreAssembly: coreAssembly)
+          let result = await coordinator.handleSign(parentCoordinator: self)
+          switch result {
+          case .signed(let signature):
+            return signature
+          case .cancel:
+            return nil
+          case .failed(let error):
+            throw error
+          }
+        }
+        transactionConfirmationController = confirmationController
+      }
     }
 
     let module = TransactionConfirmationAssembly.module(
@@ -308,8 +406,8 @@ private extension SendTokenCoordinator {
         ToastPresenter.showToast(configuration: .failed)
         return
       case let .blockchainFee(_, balance, requiredAmount):
-        let tonToken = Token.ton
-        let token = Token.ton
+        let tonToken = TonToken.ton
+        let token = TonToken.ton
         symbol = token.symbol
         fractionDigits = token.fractionDigits
         amount = requiredAmount
@@ -332,8 +430,8 @@ private extension SendTokenCoordinator {
           symbol = jettonInfo.symbol ?? jettonInfo.name
           buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
         } else {
-          fractionDigits = Token.ton.fractionDigits
-          symbol = Token.ton.symbol
+          fractionDigits = TonToken.ton.fractionDigits
+          symbol = TonToken.ton.symbol
           buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
         }
 

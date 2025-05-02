@@ -43,6 +43,22 @@ final class HistoryCellActionView: UIControl, ConfigurableView, ReusableView {
     let descriptionConfiguration: CommentView.Configuration?
     let nftConfiguration: NFTView.Configuration?
     let isInProgress: Bool
+    
+    init(iconConfiguration: HistoryCellIconView.Configuration,
+         contentConfiguration: TKUIListItemContentView.Configuration,
+         commentConfiguration: CommentView.Configuration? = nil,
+         encryptedCommentConfiguration: EncyptedCommentView.Model? = nil,
+         descriptionConfiguration: CommentView.Configuration? = nil,
+         nftConfiguration: NFTView.Configuration? = nil,
+         isInProgress: Bool = false) {
+      self.iconConfiguration = iconConfiguration
+      self.contentConfiguration = contentConfiguration
+      self.commentConfiguration = commentConfiguration
+      self.encryptedCommentConfiguration = encryptedCommentConfiguration
+      self.descriptionConfiguration = descriptionConfiguration
+      self.nftConfiguration = nftConfiguration
+      self.isInProgress = isInProgress
+    }
   }
   
   func configure(model: Model) {

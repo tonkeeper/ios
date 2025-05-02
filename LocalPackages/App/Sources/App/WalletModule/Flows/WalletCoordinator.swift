@@ -10,14 +10,15 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapScan: (() -> Void)?
   var didLogout: (() -> Void)?
   var didTapWalletButton: (() -> Void)?
-  var didTapSend: ((Wallet, Token) -> Void)?
+  var didTapSend: ((Wallet, TonToken) -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapReceive: ((Token, _ wallet: Wallet) -> Void)?
+  var didTapReceive: (([Token], _ wallet: Wallet) -> Void)?
   var didTapSwap: ((Wallet) -> Void)?
   var didTapStake: ((Wallet) -> Void)?
   var didTapSettingsButton: ((Wallet) -> Void)?
   var didSelectTonDetails: ((Wallet) -> Void)?
   var didSelectJettonDetails: ((Wallet, JettonItem, Bool) -> Void)?
+  var didSelectTronUSDTDetails: ((Wallet) -> Void)?
   var didSelectStakingItem: (( _ wallet: Wallet,
                                _ stakingPoolInfo: StackingPoolInfo,
                                _ accountStakingInfo: AccountStackingInfo) -> Void)?
@@ -96,13 +97,16 @@ private extension WalletCoordinator {
       self?.didSelectJettonDetails?(wallet, jettonItem, hasPrice)
     }
     
+    module.output.didSelectTronUSDT = { [weak self] wallet in
+      self?.didSelectTronUSDTDetails?(wallet)
+    }
+    
     module.output.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
       self?.didSelectStakingItem?(wallet, stakingPoolInfo, accountStackingInfo)
     }
     
     module.output.didSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
       self?.didSelectCollectStakingItem?(wallet, stakingPoolInfo, accountStackingInfo)
-      
     }
     
     module.output.didTapSend = { [weak self] wallet in
@@ -110,7 +114,11 @@ private extension WalletCoordinator {
     }
     
     module.output.didTapReceive = { [weak self] wallet in
-      self?.didTapReceive?(.ton, wallet)
+      var tokens: [Token] = [.ton(.ton)]
+      if wallet.isTronAvailable {
+        tokens.append(.usdtTron)
+      }
+      self?.didTapReceive?(tokens, wallet)
     }
     
     module.output.didTapScan = { [weak self] in

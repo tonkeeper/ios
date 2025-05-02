@@ -2,8 +2,13 @@ import UIKit
 
 public final class TKSegmentedControl: UIControl {
   
-  public var didSelectTab: ((Int) -> Void)?
+  public var selectionColor: UIColor = .Button.tertiaryBackground {
+    didSet {
+      selectionView.backgroundColor = selectionColor
+    }
+  }
   
+  public var didSelectTab: ((_ from: Int, _ to: Int) -> Void)?
   
   public var tabs = [String]() {
     didSet {
@@ -42,7 +47,7 @@ public final class TKSegmentedControl: UIControl {
   private func setup() {
     selectionView.layer.cornerRadius = 16
     selectionView.layer.cornerCurve = .continuous
-    selectionView.backgroundColor = .Button.tertiaryBackground
+    selectionView.backgroundColor = selectionColor
     
     backgroundView.layer.cornerRadius = 20
     backgroundView.layer.cornerCurve = .continuous
@@ -72,8 +77,11 @@ public final class TKSegmentedControl: UIControl {
         let tabView = TKSegmentedControlTabView()
         tabView.title = tab
         tabView.addAction(UIAction(handler: { [weak self] _ in
-          self?.setSelectedIndex(index, animated: true)
-          self?.didSelectTab?(index)
+          guard let self else { return }
+          guard selectedIndex != index else { return }
+          let previousIndex = selectedIndex
+          setSelectedIndex(index, animated: true)
+          didSelectTab?(previousIndex, index)
         }), for: .touchUpInside)
         stackView.addArrangedSubview(tabView)
       }

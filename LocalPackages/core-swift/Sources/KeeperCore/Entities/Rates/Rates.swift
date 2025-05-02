@@ -12,13 +12,8 @@ public struct Rates: Codable, Equatable {
       self.diff24h = diff24h
     }
   }
-  
-  public struct JettonRate: Codable, Equatable {
-    public let jettonInfo: JettonInfo
-    public var rates: [Rate]
-  }
-  
   public var ton: [Rate]
-  public var jettonsRates: [JettonRate]
+  public var usdt: [Rate]
+  public var jettonRates: [String: [Rate]]
 }
 

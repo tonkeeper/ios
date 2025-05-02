@@ -35,7 +35,7 @@ struct BatteryRefillAssembly {
       headerModel: BatteryRefillHeaderModel(
         wallet: wallet,
         balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
-        configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+        batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation
       ),
       tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,

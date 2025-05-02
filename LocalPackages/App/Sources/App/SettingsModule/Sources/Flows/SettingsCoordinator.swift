@@ -49,8 +49,13 @@ private extension SettingsCoordinator {
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
-      anaylticsProvider: coreAssembly.analyticsProvider
+      anaylticsProvider: coreAssembly.analyticsProvider,
+      tronWalletConfigurator: keeperCoreMainAssembly.tronUSDTAssembly.walletConfigurator()
     )
+    
+    configurator.didRequirePasscode = { [weak self] in
+      await self?.getPasscode()
+    }
     
     configurator.didOpenURL = { [coreAssembly] in
       coreAssembly.urlOpener().open(url: $0)
@@ -76,7 +81,7 @@ private extension SettingsCoordinator {
       self?.openLegal()
     }
     
-    configurator.didTapBackup = { [weak self, wallet] in
+    configurator.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }
     

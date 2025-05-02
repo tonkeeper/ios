@@ -3,15 +3,16 @@ import KeeperCore
 import TKUIKit
 import TKCore
 import BigInt
+import TronSwift
 
 protocol TokenPickerModuleOutput: AnyObject {
   var didFinish: (() -> Void)? { get set }
-  var didSelectToken: ((Token) -> Void)? { get set }
+  var didSelectToken: ((TokenPickerModelState.PickerToken) -> Void)? { get set }
 }
 
 protocol TokenPickerViewModel: AnyObject {
   var didUpdateSelectedToken: ((Int?, _ scroll: Bool) -> Void)? { get set }
-  var didUpdateSnapshot: ((_ snapshot: TokenPickerViewController.Snapshot) -> Void)? { get set }
+  var didUpdateSnapshot: ((_ snapshot: TokenPicker.Snapshot) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -21,12 +22,12 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   // MARK: - TokenPickerModuleOutput
   
   var didFinish: (() -> Void)?
-  var didSelectToken: ((Token) -> Void)?
+  var didSelectToken: ((TokenPickerModelState.PickerToken) -> Void)?
   
   // MARK: - TokenPickerViewModel
   
   var didUpdateSelectedToken: ((Int?, _ scroll: Bool) -> Void)?
-  var didUpdateSnapshot: ((_ snapshot: TokenPickerViewController.Snapshot) -> Void)?
+  var didUpdateSnapshot: ((_ snapshot: TokenPicker.Snapshot) -> Void)?
   
   func viewDidLoad() {
     tokenPickerModel.didUpdateState = { [weak self] state in
@@ -65,54 +66,93 @@ private extension TokenPickerViewModelImplementation {
     syncQueue.async {
       guard let state else {
         DispatchQueue.main.async {
-          self.didUpdateSnapshot?(TokenPickerViewController.Snapshot())
+          self.didUpdateSnapshot?(TokenPicker.Snapshot())
         }
         return
       }
       let isSecureMode = self.appSettingsStore.getState().isSecureMode
       
-      var models = [TKUIListItemCell.Configuration]()
-      
-      let tonModel: TKUIListItemCell.Configuration = {
-        let title = TonInfo.name
-        let caption: String = {
-          if isSecureMode {
-            return .secureModeValueShort
-          } else {
-            return self.amountFormatter.formatAmount(
-              BigUInt(state.tonBalance.tonBalance.amount),
-              fractionDigits: TonInfo.fractionDigits,
-              maximumFractionDigits: 2,
-              symbol: TonInfo.symbol
-            )
-          }
-        }()
-        
-        return self.createCellModel(
-          id: TonInfo.name,
-          image: .ton,
-          title: title,
+      var items = [TokenPicker.Token]()
+      let tonConfiguration: TKListItemCell.Configuration = {
+        TokenPicker.mapListItemConfiguration(
+          title: TonInfo.name,
+          image: .image(.TKCore.Icons.Size44.tonLogo),
           tag: nil,
-          caption: caption,
-          selectionClosure: { [weak self] in
+          caption: {
+            if isSecureMode {
+              return .secureModeValueShort
+            } else {
+              return self.amountFormatter.formatAmount(
+                BigUInt(state.tonBalance.tonBalance.amount),
+                fractionDigits: TonInfo.fractionDigits,
+                maximumFractionDigits: 2,
+                symbol: TonInfo.symbol
+              )
+            }
+          }()
+        )
+      }()
+      
+      items.append(
+        TokenPicker.Token(
+          identifier: TonInfo.name,
+          configuration: tonConfiguration,
+          selectionHandler: { [weak self] in
             guard let self else { return }
-            if state.selectedToken == .ton {
+            if case let .ton(ton) = state.selectedToken, case .ton = ton {
               self.didFinish?()
             } else {
-              self.didSelectToken?(.ton)
+              self.didSelectToken?(.ton(.ton))
               self.didFinish?()
             }
           }
         )
-      }()
-      models.append(tonModel)
+      )
       
+      if let tronUSDTBalance = state.tronUSDTBalance {
+        let configuration: TKListItemCell.Configuration = {
+          TokenPicker.mapListItemConfiguration(
+            title: TronSwift.USDT.name,
+            image: .image(.App.Currency.Size44.usdt),
+            tag: nil,
+            caption: {
+              if isSecureMode {
+                return .secureModeValueShort
+              } else {
+                return self.amountFormatter.formatAmount(
+                  tronUSDTBalance.amount,
+                  fractionDigits: TonInfo.fractionDigits,
+                  maximumFractionDigits: 2,
+                  symbol: TronSwift.USDT.symbol
+                )
+              }
+            }(),
+            network: .trc20
+          )
+        }()
+        
+        let item = TokenPicker.Token(
+          identifier: TronSwift.USDT.address.base58,
+          configuration: configuration,
+          selectionHandler: { [weak self] in
+            guard let self else { return }
+            if case .tronUSDT = state.selectedToken {
+              self.didFinish?()
+            } else {
+              self.didSelectToken?(.tronUSDT)
+              self.didFinish?()
+            }
+          }
+        )
+        items.append(item)
+      }
+
       let sortedJettonBalances = state.jettonBalances
         .sorted(by: {
           $0.converted > $1.converted
         })
       
-      let jettonModels = sortedJettonBalances
+      let jettonItems = sortedJettonBalances
         .map { jettonBalance in
           let title = jettonBalance.jettonBalance.item.jettonInfo.symbol ?? jettonBalance.jettonBalance.item.jettonInfo.name
           let caption: String = {
@@ -127,117 +167,54 @@ private extension TokenPickerViewModelImplementation {
               )
             }
           }()
-          return self.createCellModel(
-            id: jettonBalance.jettonBalance.item.jettonInfo.address.toRaw(),
-            image: .url(jettonBalance.jettonBalance.item.jettonInfo.imageURL),
+          let configuration = TokenPicker.mapListItemConfiguration(
             title: title,
+            image: .urlImage(jettonBalance.jettonBalance.item.jettonInfo.imageURL),
             tag: nil,
             caption: caption,
-            selectionClosure: { [weak self] in
+            network: state.wallet.isTronTurnOn && jettonBalance.jettonBalance.item.jettonInfo.isTonUSDT ? .ton : nil
+          )
+          let item = TokenPicker.Token(
+            identifier: jettonBalance.jettonBalance.item.jettonInfo.address.toRaw(),
+            configuration: configuration,
+            selectionHandler: { [weak self] in
               guard let self else { return }
-              if state.selectedToken == .jetton(jettonBalance.jettonBalance.item) {
+              if case let .ton(ton) = state.selectedToken, case .jetton(let jettonItem) = ton, jettonItem == jettonBalance.jettonBalance.item {
                 self.didFinish?()
               } else {
-                self.didSelectToken?(.jetton(jettonBalance.jettonBalance.item))
+                self.didSelectToken?(.ton(.jetton(jettonBalance.jettonBalance.item)))
                 self.didFinish?()
               }
             }
           )
+          return item
         }
-      models.append(contentsOf: jettonModels)
+        
+      items.append(contentsOf: jettonItems)
       
       var selectedIndex: Int?
       switch state.selectedToken {
-      case .ton:
-        selectedIndex = 0
-      case .jetton(let jettonItem):
-        if let index = sortedJettonBalances.firstIndex(where: { $0.jettonBalance.item == jettonItem }) {
-          selectedIndex = index + 1
+      case .ton(let token):
+        switch token {
+        case .ton:
+          selectedIndex = 0
+        case .jetton(let jettonItem):
+          selectedIndex = 0
+          if let index = sortedJettonBalances.firstIndex(where: { $0.jettonBalance.item == jettonItem }) {
+            selectedIndex = index + 1
+          }
         }
+      case .tronUSDT:
+        selectedIndex = 1
       }
       
-      var snapshot = TokenPickerViewController.Snapshot()
+      var snapshot = TokenPicker.Snapshot()
       snapshot.appendSections([.tokens])
-      snapshot.appendItems(models, toSection: .tokens)
+      snapshot.appendItems(items, toSection: .tokens)
       DispatchQueue.main.async {
         self.didUpdateSnapshot?(snapshot)
         self.didUpdateSelectedToken?(selectedIndex, state.scrollToSelected)
       }
     }
-  }
-  
-  func createCellModel(id: String,
-                       image: KeeperCore.TokenImage,
-                       title: String,
-                       tag: String?,
-                       caption: String,
-                       selectionClosure: (() -> Void)?) -> TKUIListItemCell.Configuration {
-    var tagViewModel: TKUITagView.Configuration?
-    if let tag {
-      tagViewModel = TKUITagView.Configuration(
-        text: tag,
-        textColor: .Text.secondary,
-        backgroundColor: .Background.contentTint
-      )
-    }
-    
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-        title: title.withTextStyle(.label1, color: .Text.primary, alignment: .left),
-        tagViewModel: tagViewModel,
-        subtitle: caption.withTextStyle(.body2, color: .Text.secondary, alignment: .left),
-        description: nil
-      ),
-      rightItemConfiguration: nil
-    )
-    
-    let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image
-    switch image {
-    case .ton:
-      iconConfigurationImage = .image(.TKCore.Icons.Size44.tonLogo)
-    case .url(let url):
-      iconConfigurationImage = .asyncImage(
-        url,
-        TKCore.ImageDownloadTask(
-          closure: {
-            [imageLoader] imageView,
-            size,
-            cornerRadius in
-            return imageLoader.loadImage(
-              url: url,
-              imageView: imageView,
-              size: size,
-              cornerRadius: cornerRadius
-            )
-          }
-        )
-      )
-    }
-    
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .image(
-        TKUIListItemImageIconView.Configuration(
-          image: iconConfigurationImage,
-          tintColor: .Icon.primary,
-          backgroundColor: .Background.contentTint,
-          size: CGSize(width: 44, height: 44),
-          cornerRadius: 22
-        )
-      ),
-      alignment: .center
-    )
-    
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: iconConfiguration,
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: .none
-    )
-    
-    return TKUIListItemCell.Configuration(
-      id: id,
-      listItemConfiguration: listItemConfiguration,
-      isHighlightable: true,
-      selectionClosure: selectionClosure
-    )
   }
 }

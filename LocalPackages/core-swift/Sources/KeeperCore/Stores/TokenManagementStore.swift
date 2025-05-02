@@ -105,8 +105,12 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
       }
       var updatedPinnedItems = walletState.pinnedItems
       updatedPinnedItems.append(identifier)
+      
+      let updatedUnpinnedItems = walletState.unpinnedItems.filter { $0 != identifier }
+      
       let walletUpdatedState = TokenManagementState(
         pinnedItems: updatedPinnedItems,
+        unpinnedItems: updatedUnpinnedItems,
         hiddenState: walletState.hiddenState
       )
       var updatedState = state
@@ -126,9 +130,14 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
       guard let walletState = state[wallet] else {
         return nil
       }
+      
+      var updatedUnpinnedItems = walletState.unpinnedItems
+      updatedUnpinnedItems.append(identifier)
+      
       let updatedPinnedItems = walletState.pinnedItems.filter { $0 != identifier }
       let walletUpdatedState = TokenManagementState(
         pinnedItems: updatedPinnedItems,
+        unpinnedItems: updatedUnpinnedItems,
         hiddenState: walletState.hiddenState
       )
       var updatedState = state
@@ -152,6 +161,7 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
       updatedHiddenItems[identifier] = true
       let walletUpdatedState = TokenManagementState(
         pinnedItems: walletState.pinnedItems,
+        unpinnedItems: walletState.unpinnedItems,
         hiddenState: updatedHiddenItems
       )
       var updatedState = state
@@ -175,6 +185,7 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
       updatedHiddenItems[identifier] = false
       let walletUpdatedState = TokenManagementState(
         pinnedItems: walletState.pinnedItems,
+        unpinnedItems: walletState.unpinnedItems,
         hiddenState: updatedHiddenItems
       )
       var updatedState = state
@@ -200,6 +211,7 @@ public final class TokenManagementStore: Store<TokenManagementStore.Event, Token
       pinnedItems.insert(item, at: to)
       let walletUpdatedState = TokenManagementState(
         pinnedItems: pinnedItems,
+        unpinnedItems: walletState.unpinnedItems,
         hiddenState: walletState.hiddenState
       )
       var updatedState = state

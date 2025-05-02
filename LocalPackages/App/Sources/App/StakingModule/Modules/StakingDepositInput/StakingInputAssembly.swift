@@ -11,7 +11,7 @@ struct StakingInputAssembly {
                      coreAssembly: TKCore.CoreAssembly)
   -> MVVMModule<StakingInputViewController, StakingInputModuleOutput, StakingInputModuleInput> {
     let amountInput = AmountInputAssembly.module(
-      sourceUnit: Token.ton,
+      sourceUnit: TonToken.ton,
       destinationUnit: Currency.USD,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )

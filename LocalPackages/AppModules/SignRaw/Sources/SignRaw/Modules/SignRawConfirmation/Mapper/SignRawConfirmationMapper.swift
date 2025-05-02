@@ -58,7 +58,7 @@ struct SignRawConfirmationMapper {
   
   func mapSuccessEmulationResult(signRawEmulation: SignRawEmulation, wallet: Wallet) -> AccountEventCellContentView.Model {
     let currency = currencyStore.getState()
-    let tonRate = tonRatesStore.getState().first(where: { $0.currency == currency })
+    let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })
     
     let descriptionProvider = SignRawConfirmationAccountEventRightTopDescriptionProvider(
       rates: tonRate,
@@ -112,7 +112,7 @@ struct SignRawConfirmationMapper {
     let currency = currencyStore.getState()
     guard let totalBalanceState = totalBalanceStore.state[wallet],
           let totalBalance = totalBalanceState.totalBalance,
-          let tonRate = tonRatesStore.getState().first(where: { $0.currency == currency })
+          let tonRate = tonRatesStore.getState().tonRates.first(where: { $0.currency == currency })
     else {
       return nil
     }

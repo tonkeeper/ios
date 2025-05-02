@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TronSwift
 import BigInt
 
 public final class SendV3Controller {
@@ -49,23 +50,16 @@ public final class SendV3Controller {
     return (bigIntValue, targetFractionalDigits)
   }
   
-  public func convertAmountToInputString(amount: BigUInt, token: Token) -> String {
-    let tokenFractionDigits: Int
-    switch token {
-    case .ton:
-      tokenFractionDigits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      tokenFractionDigits = jettonItem.jettonInfo.fractionDigits
-    }
+  public func convertAmountToInputString(amount: BigUInt, fractionDigits: Int) -> String {
     let formatted = amountFormatter.formatAmount(
       amount,
-      fractionDigits: tokenFractionDigits,
-      maximumFractionDigits: tokenFractionDigits
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits
     )
     return formatted
   }
   
-  public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
+  public func isAmountAvailableToSend(amount: BigUInt, token: TonToken) -> Bool {
     guard let balance = balanceStore.state[wallet]?.balance else { return false }
     switch token {
     case .ton:
@@ -76,12 +70,17 @@ public final class SendV3Controller {
     }
   }
   
-  public func convertTokenAmountToCurrency(token: Token, _ amount: BigUInt) async -> String {
-    guard !amount.isZero else { return "" }
+  public func isTronUSDTAmountAvailableToSend(amount: BigUInt) -> Bool {
+    guard let balance = balanceStore.state[wallet]?.balance else { return false }
+    guard let tronUSDTBalance = balance.tronUSDT else { return false }
+    return tronUSDTBalance.amount >= amount
+  }
+  
+  public func convertTokenAmountToCurrency(token: TonToken, _ amount: BigUInt) -> String {
     let currency = currencyStore.state
     switch token {
     case .ton:
-      guard let rate = tonRatesStore.state.first(where: { $0.currency == currency }) else { return ""}
+      guard let rate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency }) else { return ""}
       let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
       let formatted = amountFormatter.formatAmount(
         converted.amount,
@@ -112,41 +111,74 @@ public final class SendV3Controller {
     }
   }
   
+  public func convertTronUSDTAmountToCurrency(_ amount: BigUInt) -> String {
+    let currency = currencyStore.state
+    guard let rate = tonRatesStore.state.usdtRates.first(where: { $0.currency == currency }) else { return "" }
+    let converted = RateConverter().convert(amount: amount, amountFractionLength: TronSwift.USDT.fractionDigits, rate: rate)
+    let formatted = amountFormatter.formatAmount(
+      converted.amount,
+      fractionDigits: converted.fractionLength,
+      maximumFractionDigits: 2,
+      currency: currency
+    )
+    return "≈ \(formatted)"
+  }
+  
   public enum Remaining {
     case insufficient
     case remaining(String)
   }
-  public func calculateRemaining(token: Token, tokenAmount: BigUInt, isSecure: Bool) async -> Remaining {
+  public func calculateRemaining(token: TonToken, tokenAmount: BigUInt, isSecure: Bool) -> Remaining {
     guard let balance = balanceStore.state[wallet]?.balance else {
       return .insufficient
     }
-    let amount: BigUInt
-    let tokenSymbol: String?
-    let fractionalDigits: Int
+    let tokenBalance: BigUInt
     switch token {
     case .ton:
-      amount = BigUInt(balance.tonBalance.tonBalance.amount)
-      fractionalDigits = TonInfo.fractionDigits
-      tokenSymbol = TonInfo.symbol
+      tokenBalance = BigUInt(balance.tonBalance.tonBalance.amount)
     case .jetton(let jettonItem):
-      amount = balance.jettonsBalance.first(where: {
+      tokenBalance = balance.jettonsBalance.first(where: {
         $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo
       })?.jettonBalance.quantity ?? 0
-      fractionalDigits = jettonItem.jettonInfo.fractionDigits
-      tokenSymbol = jettonItem.jettonInfo.symbol
     }
-    
-    if amount >= tokenAmount {
+    return calculateRemaining(
+      amount: tokenAmount,
+      balance: tokenBalance,
+      fractionalDigits: token.fractionDigits,
+      symbol: token.symbol,
+      isSecure: isSecure
+    )
+  }
+  
+  public func calculateTronUSDTRemaining(amount: BigUInt, isSecure: Bool) -> Remaining {
+    guard let balance = balanceStore.state[wallet]?.balance.tronUSDT else {
+      return .insufficient
+    }
+    return calculateRemaining(
+      amount: amount,
+      balance: balance.amount,
+      fractionalDigits: TronSwift.USDT.fractionDigits,
+      symbol: TronSwift.USDT.symbol,
+      isSecure: isSecure
+    )
+  }
+  
+  private func calculateRemaining(amount: BigUInt,
+                                  balance: BigUInt,
+                                  fractionalDigits: Int,
+                                  symbol: String?,
+                                  isSecure: Bool) -> Remaining {
+    if balance >= amount {
       let value: String = {
         if isSecure {
           return .secureModeValue
         } else {
-          let remainingAmount = amount - tokenAmount
+          let remainingAmount = balance - amount
           return amountFormatter.formatAmount(
             remainingAmount,
             fractionDigits: fractionalDigits,
             maximumFractionDigits: fractionalDigits,
-            symbol: tokenSymbol
+            symbol: symbol
           )
         }
       }()
@@ -157,7 +189,7 @@ public final class SendV3Controller {
     }
   }
   
-  public func getMaximumAmount(token: Token) async -> BigUInt {
+  public func getMaximumAmount(token: TonToken) -> BigUInt {
     guard let balance = balanceStore.state[wallet]?.balance else {
       return .zero
     }
@@ -169,6 +201,13 @@ public final class SendV3Controller {
         $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo
       })?.jettonBalance.quantity ?? 0
     }
+  }
+  
+  public func getTronUSDTMaximumAmount() -> BigUInt {
+    guard let balance = balanceStore.state[wallet]?.balance.tronUSDT else {
+      return .zero
+    }
+    return balance.amount
   }
   
   public enum CommentState {

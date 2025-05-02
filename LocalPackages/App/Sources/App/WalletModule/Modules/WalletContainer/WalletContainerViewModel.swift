@@ -32,7 +32,8 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
         switch event {
         case .didChangeActiveWallet, 
             .didUpdateWalletMetaData, 
-            .didUpdateWalletSetupSettings:
+            .didUpdateWalletSetupSettings,
+            .didUpdateWalletTron:
           self.wallet = try? observer.walletsStore.activeWallet
         default: break
         }

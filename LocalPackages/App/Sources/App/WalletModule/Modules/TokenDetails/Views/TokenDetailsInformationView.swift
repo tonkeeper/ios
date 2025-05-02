@@ -5,7 +5,7 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   
   private let tokenAmountLabel = UILabel()
   private let convertedAmountLabel = UILabel()
-  private let imageView = TKUIListItemIconView()
+  private let imageView = TKListItemIconView()
   
   private let contentView = UIView()
   private let amountStackView: UIStackView = {
@@ -24,11 +24,11 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let imageConfiguration: TKUIListItemIconView.Configuration
+    let imageConfiguration: TKListItemIconView.Configuration
     let tokenAmount: NSAttributedString
     let convertedAmount: NSAttributedString?
     
-    init(imageConfiguration: TKUIListItemIconView.Configuration,
+    init(imageConfiguration: TKListItemIconView.Configuration,
          tokenAmount: String,
          convertedAmount: String?) {
       self.imageConfiguration = imageConfiguration
@@ -48,7 +48,7 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    imageView.configure(configuration: model.imageConfiguration)
+    imageView.configuration = model.imageConfiguration
     tokenAmountLabel.attributedText = model.tokenAmount
     convertedAmountLabel.attributedText = model.convertedAmount
   }

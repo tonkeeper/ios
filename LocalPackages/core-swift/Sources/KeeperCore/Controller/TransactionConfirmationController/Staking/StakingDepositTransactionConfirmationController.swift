@@ -163,7 +163,7 @@ final class StakingDepositTransactionConfirmationController: TransactionConfirma
   private func getAmountValue() -> TransactionConfirmationModel.Amount {
     return (
       TransactionConfirmationModel.Amount(
-        token: .ton,
+        token: .ton(.ton),
         value: amount
       )
     )

@@ -22,7 +22,8 @@ public final class TKUINavigationBar: UIView, UIGestureRecognizerDelegate {
       centerContainer.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
       centerContainer.addSubview(centerView)
       centerView.snp.makeConstraints { make in
-        make.edges.equalTo(centerContainer)
+        make.left.right.equalTo(centerContainer)
+        make.centerY.equalTo(centerContainer)
       }
     }
   }

@@ -5,9 +5,14 @@ import TKCore
 import KeeperCore
 import TKLocalize
 
+enum HistoryEventDetailsEvent {
+  case ton(AccountEventDetailsEvent)
+  case tron(TronTransaction)
+}
+
 @MainActor
 protocol HistoryEventDetailsModuleOutput: AnyObject {
-  var didTapOpenTransactionInTonviewer: (() -> Void)? { get set }
+  var didTapTransactionDetails: ((URL, String) -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)? { get set }
   var didFinish: (() -> Void)? { get set }
 }
@@ -25,7 +30,7 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   
   // MARK: - HistoryEventDetailsModuleOutput
   
-  var didTapOpenTransactionInTonviewer: (() -> Void)?
+  var didTapTransactionDetails: ((URL, String) -> Void)?
   var didSelectEncryptedComment: ((Wallet, EncryptedCommentPayload, String) -> Void)?
   var didFinish: (() -> Void)?
   
@@ -40,10 +45,12 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
     decryptedCommentStore.addObserver(self) { observer, event in
       switch event {
       case let .didDecryptComment(eventId, wallet):
+        guard case .ton(let accountEvent) = observer.event,
+              accountEvent.accountEvent.eventId == eventId,
+              wallet == observer.wallet else {
+          return
+        }
         DispatchQueue.main.async {
-          guard observer.event.accountEvent.eventId == eventId, wallet == observer.wallet else {
-            return
-          }
           observer.setupContent()
         }
       }
@@ -53,21 +60,24 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let event: AccountEventDetailsEvent
+  private let event: HistoryEventDetailsEvent
   private let historyEventDetailsMapper: HistoryEventDetailsMapper
+  private let historyEventDetailsTronMapper: HistoryEventDetailsTronMapper
   private let decryptedCommentStore: DecryptedCommentStore
   private let transactionsManagementStore: TransactionsManagement.Store
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       event: AccountEventDetailsEvent,
+       event: HistoryEventDetailsEvent,
        historyEventDetailsMapper: HistoryEventDetailsMapper,
+       historyEventDetailsTronMapper: HistoryEventDetailsTronMapper,
        decryptedCommentStore: DecryptedCommentStore,
        transactionsManagementStore: TransactionsManagement.Store) {
     self.wallet = wallet
     self.event = event
     self.historyEventDetailsMapper = historyEventDetailsMapper
+    self.historyEventDetailsTronMapper = historyEventDetailsTronMapper
     self.decryptedCommentStore = decryptedCommentStore
     self.transactionsManagementStore = transactionsManagementStore
   }
@@ -76,14 +86,20 @@ final class HistoryEventDetailsViewModelImplementation: HistoryEventDetailsViewM
 private extension HistoryEventDetailsViewModelImplementation {
   
   func setupContent() {
-    let model = self.historyEventDetailsMapper.mapEvent(
-      event: event) { eventId, payload in
-        decryptedCommentStore.getDecryptedComment(wallet: wallet, payload: payload, eventId: eventId)
+    let model: HistoryEventDetailsModel = {
+      switch event {
+      case .ton(let event):
+        historyEventDetailsMapper.mapEvent(event: event) { eventId, payload in
+          decryptedCommentStore.getDecryptedComment(wallet: wallet, payload: payload, eventId: eventId)
+        }
+      case .tron(let event):
+        historyEventDetailsTronMapper.mapEvent(event: event)
       }
+    }()
     self.configure(model: model)
   }
   
-  func configure(model: HistoryEventDetailsMapper.Model) {
+  func configure(model: HistoryEventDetailsModel) {
     var items = [TKPopUp.Item]()
     
     if let spamItem = configureSpamItem(model: model) {
@@ -158,10 +174,10 @@ private extension HistoryEventDetailsViewModelImplementation {
         padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
         items: [configureTransactionManagementBlock()]
       ))
-    } else {
+    } else if let transactionButtonItem = configureTransactionButton(model: model) {
       items.append(TKPopUp.Component.GroupComponent(
         padding: UIEdgeInsets(top: 16, left: 0, bottom: 0, right: 0),
-        items: [configureTransactionButton()]
+        items: [transactionButtonItem]
       ))
     }
 
@@ -172,7 +188,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     configureHeader(model: model)
   }
   
-  func configureHeader(model: HistoryEventDetailsMapper.Model) {
+  func configureHeader(model: HistoryEventDetailsModel) {
     let buttonModel = TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.ellipses)
     let headerButton = TKPullCardHeaderItem.LeftButton(model: buttonModel, action: { [weak self] targetView in
       guard let self else {
@@ -197,7 +213,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     didUpdateHeaderItem?(headerItem)
   }
   
-  func setupMenuItems(model: HistoryEventDetailsMapper.Model) -> [TKPopupMenuItem] {
+  func setupMenuItems(model: HistoryEventDetailsModel) -> [TKPopupMenuItem] {
     var menuItems = [TKPopupMenuItem]()
     if let management = model.management,
        management.isManagementAvailable,
@@ -233,16 +249,20 @@ private extension HistoryEventDetailsViewModelImplementation {
       )
     }
     
-    let tonViewerItem = TKPopupMenuItem(
-      title: TKLocales.Actions.viewOnTonviewier,
-      icon: .TKUIKit.Icons.Size16.globe,
-      selectionHandler: { [weak self] in self?.didTapOpenTransactionInTonviewer?() }
-    )
-    menuItems.append(tonViewerItem)
+    if let detailsButton = model.detailsButton {
+      let openInExplorerItem = TKPopupMenuItem(
+        title: TKLocales.Actions.viewOn(detailsButton.browserTitle),
+        icon: .TKUIKit.Icons.Size16.globe,
+        selectionHandler: { [weak self] in
+          self?.didTapTransactionDetails?(detailsButton.url, detailsButton.browserTitle)
+        }
+      )
+      menuItems.append(openInExplorerItem)
+    }
     return menuItems
   }
   
-  func configureSpamItem(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Item? {
+  func configureSpamItem(model: HistoryEventDetailsModel) -> TKPopUp.Item? {
     guard model.isScam else { return nil }
     return HistoryEventDetailsSpamComponent(
       configuration: HistoryEventDetailsSpamView.Configuration(
@@ -256,20 +276,13 @@ private extension HistoryEventDetailsViewModelImplementation {
     )
   }
   
-  func configureHeaderImage(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Item? {
+  func configureHeaderImage(model: HistoryEventDetailsModel) -> TKPopUp.Item? {
     guard !model.isScam else { return nil }
     guard let headerImage = model.headerImage else { return nil }
     
     switch headerImage {
-    case .image(let tokenImage):
-      return TKPopUp.Component.ImageComponent(
-        image: TKImageView.Model(image: tokenImage.tkImage,
-                                 tintColor: .Icon.primary,
-                                 size: .size(CGSize(width: 76, height: 76)),
-                                 corners: .circle,
-                                 padding: .zero),
-        bottomSpace: 20
-      )
+    case .transfer(let item):
+      return item
     case .swap(let fromImage, let toImage):
       return HistoryEventDetailsSwapHeaderComponent(
         configuration: HistoryEventDetailsSwapHeaderView.Configuration(
@@ -288,18 +301,10 @@ private extension HistoryEventDetailsViewModelImplementation {
         ),
         bottomSpace: 20
       )
-    case .nft(let url):
-      return TKPopUp.Component.ImageComponent(
-        image: TKImageView.Model(image: TKImage.urlImage(url),
-                                 size: .size(CGSize(width: 96, height: 96)),
-                                 corners: .cornerRadius(cornerRadius: 20),
-                                 padding: .zero),
-        bottomSpace: 20
-      )
     }
   }
   
-  func configureNFTItems(model: HistoryEventDetailsMapper.Model) -> [TKPopUp.Item] {
+  func configureNFTItems(model: HistoryEventDetailsModel) -> [TKPopUp.Item] {
     guard !model.isScam else { return [] }
     guard let nftModel = model.nftModel else { return [] }
     guard let nftName = nftModel.name else { return [] }
@@ -319,7 +324,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     return items
   }
   
-  private func configureListItems(model: HistoryEventDetailsMapper.Model) -> TKPopUp.Component.List? {
+  private func configureListItems(model: HistoryEventDetailsModel) -> TKPopUp.Component.List? {
     guard !model.listItems.isEmpty else {
       return nil
     }
@@ -333,7 +338,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     )
   }
   
-  private func configureListItem(_ modelListItem: HistoryEventDetailsMapper.Model.ListItem) -> TKListContainerItem {
+  private func configureListItem(_ modelListItem: HistoryEventDetailsModel.ListItem) -> TKListContainerItem {
     let item: TKListContainerItem
     switch modelListItem {
     case .recipient(let value, let copyValue):
@@ -416,6 +421,7 @@ private extension HistoryEventDetailsViewModelImplementation {
           return .copy(copyValue: value)
         case .encrypted(let payload):
           return .custom { [weak self, wallet, event] _ in
+            guard case let .ton(event) = event else { return }
             self?.didSelectEncryptedComment?(wallet, payload, event.accountEvent.eventId)
           }
         }
@@ -467,22 +473,17 @@ private extension HistoryEventDetailsViewModelImplementation {
     return item
   }
   
-  func configureTransactionButton() -> HistoryEventDetailsTransactionButtonComponent {
-    let transactionId = event.accountEvent.eventId
-    let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label1, color: .Text.primary)
-    let hash = String(transactionId.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
-    let title = NSMutableAttributedString(attributedString: transaction)
-    title.append(hash)
-    
+  func configureTransactionButton(model: HistoryEventDetailsModel) -> HistoryEventDetailsTransactionButtonComponent? {
+    guard let detailsButton = model.detailsButton else { return nil }
     return HistoryEventDetailsTransactionButtonComponent(
       configuration: HistoryEventDetailsTransactionButtonView.Configuration(
-        title: title,
+        title: detailsButton.buttonTitle,
         action: { [weak self] in
-          self?.didTapOpenTransactionInTonviewer?()
+          self?.didTapTransactionDetails?(detailsButton.url, detailsButton.browserTitle)
         },
         longPressAction: {
           ToastPresenter.showToast(configuration: .copied)
-          UIPasteboard.general.string = transactionId
+          UIPasteboard.general.string = detailsButton.hash
           UINotificationFeedbackGenerator().notificationOccurred(.warning)
         }
       ),
@@ -507,6 +508,7 @@ private extension HistoryEventDetailsViewModelImplementation {
   }
     
     func reportSpam() {
+      guard case let .ton(event) = event else { return }
       Task { [weak self] in
         guard let self else { return }
         ToastPresenter.showToast(configuration: .loading)
@@ -520,6 +522,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     }
     
     func notSpam() {
+      guard case let .ton(event) = event else { return }
       Task { [weak self] in
         guard let self else { return }
         await transactionsManagementStore.markAsNormal(event.accountEvent.eventId)
@@ -533,6 +536,8 @@ private extension TokenImage {
     switch self {
     case .ton:
       return .image(.TKUIKit.Icons.Size44.tonCurrency)
+    case .usdt:
+      return .image(.App.Currency.Size44.usdt)
     case .url(let url):
       return .urlImage(url)
     }

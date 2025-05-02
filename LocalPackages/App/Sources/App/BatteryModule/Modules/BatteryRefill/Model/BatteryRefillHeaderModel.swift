@@ -18,14 +18,14 @@ final class BatteryRefillHeaderModel {
   
   private let wallet: Wallet
   private let balanceStore: BalanceStore
-  private let configuration: Configuration
+  private let batteryCalculation: BatteryCalculation
 
   init(wallet: Wallet,
        balanceStore: BalanceStore,
-       configuration: Configuration) {
+       batteryCalculation: BatteryCalculation) {
     self.wallet = wallet
     self.balanceStore = balanceStore
-    self.configuration = configuration
+    self.batteryCalculation = batteryCalculation
     
     balanceStore.addObserver(self) { observer, event in
       switch event {
@@ -39,20 +39,16 @@ final class BatteryRefillHeaderModel {
   }
   
   func getState() -> State {
-    let isBeta = configuration.isBatteryBeta(isTestnet: wallet.isTestnet)
     let charge: State.Charge
     if let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance, !batteryBalance.isBalanceZero {
-      let chargesCount: Int = {
-        guard let meanFees = configuration.batteryMeanFeesDecimaNumber(isTestnet: wallet.isTestnet) else { return 0 }
-        return batteryBalance.balanceDecimalNumber.dividing(by: meanFees, withBehavior: NSDecimalNumberHandler.roundBehaviour).intValue
-      }()
+      let chargesCount = batteryCalculation.calculateCharges(tonAmount: batteryBalance.balanceDecimalNumber) ?? 0
       charge = .charged(chargesCount: chargesCount, batteryPercent: batteryBalance.batteryState.percents)
     } else {
       charge = .notCharged
     }
     
     return State(
-      isBeta: isBeta,
+      isBeta: false,
       charge: charge
     )
   }

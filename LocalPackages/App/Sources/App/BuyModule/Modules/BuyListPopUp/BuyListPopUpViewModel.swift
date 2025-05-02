@@ -63,8 +63,7 @@ private extension BuyListPopUpViewModelImplementation {
     let imageItem = TKPopUp.Component.ImageComponent(
       image: TKImageView.Model(image: .urlImage(buySellItem.fiatItem.iconURL),
                                size: .size(CGSize(width: 64, height: 64)),
-                               corners: .cornerRadius(cornerRadius: 12),
-                               padding: .zero),
+                               corners: .cornerRadius(cornerRadius: 12)),
       bottomSpace: 20
     )
     

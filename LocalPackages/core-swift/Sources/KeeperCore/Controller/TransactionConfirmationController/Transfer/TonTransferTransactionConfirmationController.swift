@@ -53,7 +53,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
   
   private let wallet: Wallet
-  private let recipient: Recipient
+  private let recipient: TonRecipient
   private let amount: BigUInt
   private let comment: String?
   private let isMaxAmount: Bool
@@ -65,7 +65,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   private let ratesService: RatesService
   
   init(wallet: Wallet,
-       recipient: Recipient,
+       recipient: TonRecipient,
        amount: BigUInt,
        comment: String?,
        isMaxAmount: Bool,
@@ -127,7 +127,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
   
   private func getAmountValue() -> TransactionConfirmationModel.Amount {
     return TransactionConfirmationModel.Amount(
-      token: .ton,
+      token: .ton(.ton),
       value: amount
     )
   }

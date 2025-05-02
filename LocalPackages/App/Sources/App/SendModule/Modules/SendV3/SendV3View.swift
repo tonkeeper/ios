@@ -29,6 +29,8 @@ final class SendV3View: UIView {
     )
   }()
   
+  let recipientDescriptionLabel = TKActionLabel()
+  let recipientDescriptionContainer = UIView()
   let amountInputView = SendV3AmountInputView()
   
   let commentInputView = SendV3CommentInputView()
@@ -68,13 +70,18 @@ final class SendV3View: UIView {
 
     navigationBar.centerView = titleView
     navigationBar.scrollView = scrollView
-
     
+    recipientDescriptionLabel.numberOfLines = 0
+    recipientDescriptionContainer.isHidden = true
+
     addSubview(scrollView)
     addSubview(navigationBar)
     scrollView.addSubview(stackView)
     
+    recipientDescriptionContainer.addSubview(recipientDescriptionLabel)
+    
     stackView.addArrangedSubview(recipientTextField)
+    stackView.addArrangedSubview(recipientDescriptionContainer)
     stackView.addArrangedSubview(amountInputView)
     stackView.addArrangedSubview(commentInputView)
     stackView.addArrangedSubview(continueButton)
@@ -92,6 +99,10 @@ final class SendV3View: UIView {
     
     navigationBar.snp.makeConstraints { make in
       make.top.left.right.equalTo(self)
+    }
+    
+    recipientDescriptionLabel.snp.makeConstraints { make in
+      make.edges.equalTo(recipientDescriptionContainer)
     }
   }
 }

@@ -1,36 +1,28 @@
 import Foundation
+import TronSwift
 
 public enum Token: Equatable, Hashable {
-  case ton
-  case jetton(JettonItem)
+  case ton(TonToken)
+  case usdtTron
   
- public var fractionDigits: Int {
-    let digits: Int
+  public var fractionDigits: Int {
     switch self {
-    case .ton:
-      digits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      digits = jettonItem.jettonInfo.fractionDigits
+    case .ton(let tonToken): tonToken.fractionDigits
+    case .usdtTron: TronSwift.USDT.fractionDigits
     }
-    
-    return digits
   }
   
   public var symbol: String {
     switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.symbol ?? ""
+    case .ton(let tonToken): tonToken.symbol
+    case .usdtTron: TronSwift.USDT.symbol
     }
   }
-  
-  public var identifier: String {
+
+  public var chartIdentifier: String {
     switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.address.toRaw()
+    case .ton(let tonToken): tonToken.identifier
+    case .usdtTron: JettonMasterAddress.tonUSDT.toRaw()
     }
   }
 }

@@ -109,6 +109,22 @@ extension KeeperInfo {
     return (updateWallet(updatedWallet), updatedWallet)
   }
   
+  func updateWallet(_ wallet: Wallet,
+                    tron: WalletTron?) -> (keeperInfo: KeeperInfo, wallet: Wallet) {
+    let updatedWallet = Wallet(
+      id: wallet.id,
+      identity: wallet.identity,
+      metaData: wallet.metaData,
+      setupSettings: wallet.setupSettings,
+      notificationSettings: wallet.notificationSettings,
+      backupSettings: wallet.backupSettings,
+      addressBook: wallet.addressBook,
+      batterySettings: wallet.batterySettings,
+      tron: tron
+    )
+    return (updateWallet(updatedWallet), updatedWallet)
+  }
+  
   func deleteWallet(_ wallet: Wallet) -> KeeperInfo? {
     guard let walletIndex = wallets.firstIndex(of: wallet) else {
       return self

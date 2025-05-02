@@ -113,8 +113,8 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
     }
     
     let currency = currencyStore.state
-    let tonRate = tonRatesStore.state.first(where: { $0.currency == currency })?.rate ?? 1
-    amountInputModuleInput.sourceUnit = Token.ton
+    let tonRate = tonRatesStore.state.tonRates.first(where: { $0.currency == currency })?.rate ?? 1
+    amountInputModuleInput.sourceUnit = TonToken.ton
     amountInputModuleInput.destinationUnit = currency
     amountInputModuleInput.rate = NSDecimalNumber(decimal: tonRate)
     amountInputModuleInput.sourceBalance = viewModelConfiguration.balance

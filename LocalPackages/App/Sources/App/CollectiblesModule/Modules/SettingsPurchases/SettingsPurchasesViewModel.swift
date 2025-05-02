@@ -308,8 +308,7 @@ private extension SettingsPurchasesViewModelImplementation {
             image: .image(.TKUIKit.Icons.Size16.copy),
             tintColor: .Icon.secondary,
             size: .auto,
-            corners: .none,
-            padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
+            corners: .none
           ),
           isHighlightable: true,
           copyValue: nft.address.toString(bounceable: true)
@@ -350,8 +349,7 @@ private extension SettingsPurchasesViewModelImplementation {
             image: .image(.TKUIKit.Icons.Size16.copy),
             tintColor: .Icon.secondary,
             size: .auto,
-            corners: .none,
-            padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
+            corners: .none
           ),
           isHighlightable: true,
           copyValue: collection.address.toString(bounceable: true)

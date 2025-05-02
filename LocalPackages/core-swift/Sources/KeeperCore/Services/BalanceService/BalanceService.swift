@@ -10,19 +10,22 @@ public protocol BalanceService {
 final class BalanceServiceImplementation: BalanceService {
   private let tonBalanceService: TonBalanceService
   private let jettonsBalanceService: JettonBalanceService
+  private let tronBalanceService: TronBalanceService
   private let batteryService: BatteryService
   private let stackingService: StakingService
   private let tonProofTokenService: TonProofTokenService
   private let walletBalanceRepository: WalletBalanceRepository
   
-  init(tonBalanceService: TonBalanceService, 
+  init(tonBalanceService: TonBalanceService,
        jettonsBalanceService: JettonBalanceService,
+       tronBalanceService: TronBalanceService,
        batteryService: BatteryService,
        stackingService: StakingService,
        tonProofTokenService: TonProofTokenService,
        walletBalanceRepository: WalletBalanceRepository) {
     self.tonBalanceService = tonBalanceService
     self.jettonsBalanceService = jettonsBalanceService
+    self.tronBalanceService = tronBalanceService
     self.batteryService = batteryService
     self.stackingService = stackingService
     self.tonProofTokenService = tonProofTokenService
@@ -37,6 +40,16 @@ final class BalanceServiceImplementation: BalanceService {
       wallet: wallet, 
       tonProofToken: tonProofTokenService.getWalletToken(wallet)
     )
+    
+    async let tronBalanceTask: () async -> TronBalance? = { [tronBalanceService] in
+      guard wallet.isTronTurnOn,
+            let address = wallet.tron?.address else { return nil }
+      do {
+        return try await tronBalanceService.loadBalance(address: address)
+      } catch {
+        return TronBalance(amount: 0)
+      }
+    }
     
     let tonBalance = try await tonBalanceTask
     let jettonsBalance = try await jettonsBalanceTask
@@ -54,6 +67,8 @@ final class BalanceServiceImplementation: BalanceService {
       stackingBalance = []
     }
     
+    let tronBalance: TronBalance? = await tronBalanceTask()
+
     let balance = Balance(
       tonBalance: tonBalance,
       jettonsBalance: jettonsBalance
@@ -63,7 +78,8 @@ final class BalanceServiceImplementation: BalanceService {
       date: Date(),
       balance: balance,
       stacking: stackingBalance,
-      batteryBalance: batteryBalance
+      batteryBalance: batteryBalance,
+      tronBalance: tronBalance
     )
     
     try? walletBalanceRepository.saveWalletBalance(

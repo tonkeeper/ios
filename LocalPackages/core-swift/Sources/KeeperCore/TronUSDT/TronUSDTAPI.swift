@@ -1,0 +1,163 @@
+import Foundation
+import TronSwift
+import TronSwiftAPI
+
+public struct TronAPI {
+  private let tronApi: TronSwiftAPI.API
+  private let batteryAPI: BatteryAPI
+  
+  init(tronApi: TronSwiftAPI.API,
+       batteryAPI: BatteryAPI) {
+    self.tronApi = tronApi
+    self.batteryAPI = batteryAPI
+  }
+  
+  public func loadBalance(address: Address) async throws -> TronBalance {
+    let value = try await tronApi.tronUSDTBalance(owner: address, network: .mainnet)
+    let balance = TronBalance(amount: value)
+    return balance
+  }
+  
+  public func loadAllTronEvents(events: [TronTransaction],
+                                address: Address,
+                                limit: Int,
+                                tonProofToken: String,
+                                startTimestamp: Int64?,
+                                finishTimestamp: Int64?) async throws -> [TronTransaction] {
+    let batteryEvents = try await loadBatteryTronEvents(
+      events: [],
+      address: address,
+      limit: limit,
+      tonProofToken: tonProofToken,
+      startTimestamp: startTimestamp,
+      finishTimestamp: finishTimestamp
+    )
+    
+    let events = try await loadTronEvents(
+      events: [],
+      address: address,
+      limit: limit,
+      tonProofToken: tonProofToken,
+      startTimestamp: startTimestamp.map { $0 * 1000 },
+      finishTimestamp: finishTimestamp.map { $0 * 1000 }
+    )
+    
+    let result = Array(Set(batteryEvents).union(Set(events)))
+
+    return result
+  }
+    
+  public func loadBatteryTronEvents(events: [TronTransaction],
+                                    address: Address,
+                                    limit: Int,
+                                    tonProofToken: String,
+                                    startTimestamp: Int64?,
+                                    finishTimestamp: Int64?) async throws -> [TronTransaction] {
+    let batteryResponse = try await batteryAPI.getTronTransactions(
+      tonProofToken: tonProofToken,
+      limit: limit,
+      maxTimestamp: startTimestamp
+    )
+    
+    guard let lastEvent = batteryResponse.last else { return [] }
+    
+    if let finishTimestamp {
+      if lastEvent.timestamp < finishTimestamp || batteryResponse.count < limit {
+        let filtered = batteryResponse.filter { $0.timestamp >= finishTimestamp }
+        return events + filtered
+      } else {
+        return try await loadBatteryTronEvents(
+          events: events + batteryResponse,
+          address: address,
+          limit: limit,
+          tonProofToken: tonProofToken,
+          startTimestamp: lastEvent.timestamp + 1,
+          finishTimestamp: finishTimestamp
+        )
+      }
+    } else {
+      return batteryResponse
+    }
+  }
+  
+  public func loadTronEvents(events: [TronTransaction],
+                             address: Address,
+                             limit: Int,
+                             tonProofToken: String,
+                             startTimestamp: Int64?,
+                             finishTimestamp: Int64?) async throws -> [TronTransaction] {
+    let tronResponse = try await tronApi.getTronHistory(
+      address: address,
+      limit: limit,
+      minTimestamp: nil,
+      maxTimestamp: startTimestamp,
+      fingerprint: nil,
+      network: .mainnet
+    )
+    let transactions = tronResponse.data.map { TronTransaction(tronTransaction: $0) }
+    guard let lastEvent = tronResponse.data.last else { return [] }
+    
+    if let finishTimestamp {
+      if lastEvent.timestamp >= finishTimestamp {
+        return try await loadBatteryTronEvents(
+          events: events + transactions,
+          address: address,
+          limit: limit,
+          tonProofToken: tonProofToken,
+          startTimestamp: lastEvent.timestamp + 1,
+          finishTimestamp: finishTimestamp
+        )
+      } else {
+        let filtered = transactions.filter { $0.timestamp >= finishTimestamp }
+        return events + filtered
+      }
+    } else {
+      return transactions
+    }
+  }
+  
+  public func sendTransaction(tonProofToken: String,
+                              address: Address,
+                              signedTransaction: Transaction,
+                              energy: Int,
+                              bandwidth: Int) async throws -> String {
+    let transactionData = try JSONSerialization.data(withJSONObject: signedTransaction.toJson())
+    let tx = transactionData.base64EncodedString()
+    return try await batteryAPI.tronSend(
+      tonProofToken: tonProofToken,
+      wallet: address.base58,
+      tx: tx,
+      energy: energy,
+      bandwidth: bandwidth
+    )
+  }
+  
+  public func getSendTransaction(address: Address, method: ContractMethod) async throws -> Transaction {
+    try await tronApi.getTransferTransaction(owner: address, method: method, feeLimit: 150000000, network: .mainnet)
+  }
+  
+  public func extendTransactionExpiration(transaction: Transaction,
+                                          expirationExtension: Int64) async throws -> Transaction {
+    var transaction = transaction
+    transaction.rawData.expiration += expirationExtension
+    let updatedTransaction = try await tronApi.getSignWeightTransaction(network: .mainnet, transaction: transaction)
+    return updatedTransaction
+  }
+  
+  public func estimateBatteryCharges(address: Address, method: ContractMethod) async throws -> (energy: Int, bandwidth: Int, estimateCharges: Int) {
+    let (energy, bandwidth) = try await tronApi.estimateUSDTResources(owner: address, method: method, network: .mainnet)
+    let (marginEnergy, marginBandwidth) = try await applySafetyMargin(energy: energy, bandwidth: bandwidth)
+    let estimate = try await batteryAPI.getTronEstimate(address: address.base58, energy: marginEnergy, bandwidth: marginBandwidth)
+    return (marginEnergy, marginBandwidth, estimate.totalCharges)
+  }
+  
+  private func applySafetyMargin(energy: Int, bandwidth: Int) async throws -> (energy: Int, bandwidth: Int) {
+    let batteryConfig = try await batteryAPI.getTronConfig()
+    let safetyMargin = Double(Int(batteryConfig.safetyMarginPercent) ?? 3) / 100
+    
+    let marginEnergy = Int(ceil(Double(energy) * (1 + safetyMargin)))
+    let marginBandwidth = Int(ceil(Double(bandwidth) * (1 + safetyMargin)))
+    
+    return (marginEnergy, marginBandwidth)
+  }
+}

@@ -9,7 +9,8 @@ struct BatteryRefillTransactionsSettingsAssembly {
     let viewModel = BatteryRefillTransactionsSettingsViewModelImplementation(
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
-      keeperInfoStore: keeperCoreMainAssembly.storesAssembly.keeperInfoStore
+      keeperInfoStore: keeperCoreMainAssembly.storesAssembly.keeperInfoStore,
+      batteryChargesMapper: BatteryChargesMapper(batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation)
     )
     
     let viewController = BatteryRefillTransactionsSettingsViewController(viewModel: viewModel)

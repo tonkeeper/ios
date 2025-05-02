@@ -1,7 +1,10 @@
 import UIKit
 import TKUIKit
 
-final class ReceiveViewController: GenericViewViewController<ReceiveView> {
+public final class ReceiveViewController: GenericViewViewController<ReceiveView> {
+  
+  private var tabViewController: UIViewController?
+  
   private let viewModel: ReceiveViewModel
   
   init(viewModel: ReceiveViewModel) {
@@ -13,50 +16,70 @@ final class ReceiveViewController: GenericViewViewController<ReceiveView> {
     fatalError("init(coder:) has not been implemented")
   }
   
-  override func viewDidLoad() {
+  public override func viewDidLoad() {
     super.viewDidLoad()
     
+    setup()
+    setupViewEvents()
     setupBindings()
     viewModel.viewDidLoad()
-  }
-  
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-    
-    customView.qrCodeView.setNeedsLayout()
-    customView.qrCodeView.layoutIfNeeded()
-    viewModel.generateQRCode(size: customView.qrCodeView.qrCodeImageView.frame.size)
   }
 }
 
 private extension ReceiveViewController {
+  func setup() {
+    setupNavigationBar()
+  }
+  
   func setupBindings() {
-    viewModel.didUpdateModel = { [weak customView] model in
-      customView?.configure(model: model)
+    viewModel.didUpdateTokenViewController = { [weak self] viewController, animated in
+      self?.setTabViewController(viewController, animated: animated)
+    }
+    viewModel.didUpdateSegmentedControl = { [weak self] model in
+      guard let self else { return }
+      if let model {
+        customView.navigationBar.centerView = customView.segmentedControl
+        customView.segmentedControl.tabs = model
+      } else {
+        customView.navigationBar.centerView = nil
+      }
+    }
+    viewModel.didChangeIndex = { [weak self] index in
+      self?.customView.segmentedControl.setSelectedIndex(index, animated: true)
+    }
+  }
+  
+  func setupViewEvents() {
+    customView.segmentedControl.didSelectTab = { [weak self] from, to in
+      self?.viewModel.setActiveIndex(from, to)
+    }
+  }
+  
+  private func setupNavigationBar() {
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createSwipeDownButton { [weak self] in
+        self?.dismiss(animated: true)
+      }
+    ]
+    customView.navigationBar.centerView = customView.segmentedControl
+  }
+  
+  private func setTabViewController(_ tabViewController: ReceiveTabViewController,
+                                    animated: Bool) {
+    
+    addChild(tabViewController)
+    customView.pageContainer.addSubview(tabViewController.view)
+    tabViewController.didMove(toParent: self)
+    
+    customView.navigationBar.scrollView = tabViewController.customView.scrollView
+    
+    tabViewController.view.snp.makeConstraints { make in
+      make.edges.equalTo(customView.pageContainer)
     }
     
-    viewModel.didGenerateQRCode = { [weak customView] image in
-      customView?.qrCodeView.qrCodeImageView.image = image
-    }
-    
-    viewModel.didTapCopy = { address in
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      UIPasteboard.general.string = address
-    }
-    
-    viewModel.showToast = { configuration in
-      ToastPresenter.showToast(configuration: configuration)
-    }
-    
-    viewModel.didTapShare = { [weak self] address in
-      let activityViewController = UIActivityViewController(
-        activityItems: [address as Any],
-        applicationActivities: nil
-      )
-      self?.present(
-        activityViewController,
-        animated: true
-      )
-    }
+    self.tabViewController?.willMove(toParent: nil)
+    self.tabViewController?.view.removeFromSuperview()
+    self.tabViewController?.didMove(toParent: nil)
+    self.tabViewController = tabViewController
   }
 }

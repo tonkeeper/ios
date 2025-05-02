@@ -87,6 +87,8 @@ final class WalletTotalBalanceModel {
         self?.updateModel()
       case .didUpdateWalletBatterySettings:
         self?.updateModel()
+      case .didUpdateWalletTron:
+        self?.updateModel()
       default: break
       }
     }

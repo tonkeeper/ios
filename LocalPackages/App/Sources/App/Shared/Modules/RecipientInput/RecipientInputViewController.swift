@@ -4,7 +4,7 @@ import TKLocalize
 import KeeperCore
 
 protocol RecipientInputModuleOutput: AnyObject {
-  var didResolveRecipient: ((Recipient?) -> Void)? { get set }
+  var didResolveRecipient: ((TonRecipient?) -> Void)? { get set }
 }
 
 final class RecipientInputViewController: UIViewController, RecipientInputModuleOutput {
@@ -13,12 +13,12 @@ final class RecipientInputViewController: UIViewController, RecipientInputModule
     case none
     case resolving
     case failed
-    case success(Recipient)
+    case success(TonRecipient)
   }
   
   private(set) var isInputEditing: Bool = false
   
-  var didResolveRecipient: ((Recipient?) -> Void)?
+  var didResolveRecipient: ((TonRecipient?) -> Void)?
   
   var didUpdateText: (() -> Void)?
   
@@ -124,7 +124,7 @@ final class RecipientInputViewController: UIViewController, RecipientInputModule
       guard !Task.isCancelled else { return }
       self.resolvingState = .resolving
       do {
-        let recipient = try await self.recipientResolver.resolverRecipient(string: text, isTestnet: wallet.isTestnet)
+        let recipient = try await self.recipientResolver.resolverTonRecipient(string: text, isTestnet: wallet.isTestnet)
         self.resolvingState = .success(recipient)
       } catch {
         self.resolvingState = .failed

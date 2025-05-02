@@ -137,6 +137,18 @@ public final class Configuration {
     : configuration.mainnet.batteryMeanFeesPriceNFTDecimaNumber
   }
   
+  public func batteryMeanFeesPriceTRCMin(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanPriceTRCMinDecimalNumber
+    : configuration.mainnet.batteryMeanPriceTRCMinDecimalNumber
+  }
+  
+  public func batteryMeanFeesPriceTRCMax(isTestnet: Bool) -> NSDecimalNumber? {
+    isTestnet
+    ? configuration.testnet.batteryMeanPriceTRCMaxDecimalNumber
+    : configuration.mainnet.batteryMeanPriceTRCMaxDecimalNumber
+  }
+  
   public func batteryRefundEndpoint(isTestnet: Bool) -> URL? {
     isTestnet ? configuration.testnet.batteryRefundEndpoint : configuration.mainnet.batteryRefundEndpoint
   }

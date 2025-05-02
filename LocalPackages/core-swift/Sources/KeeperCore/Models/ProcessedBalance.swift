@@ -1,9 +1,11 @@
 import Foundation
+import TronSwift
 import BigInt
 
 public struct ProcessedBalance: Equatable, Codable {
   public let items: [ProcessedBalanceItem]
   public let tonItem: ProcessedBalanceTonItem
+  public let tronUSDTItem: ProcessedBalanceTronUSDTItem?
   public let jettonItems: [ProcessedBalanceJettonItem]
   public let stakingItems: [ProcessedBalanceStakingItem]
   public let batteryBalance: BatteryBalance?
@@ -16,6 +18,7 @@ public enum ProcessedBalanceItem: Equatable, Codable {
   case ton(ProcessedBalanceTonItem)
   case jetton(ProcessedBalanceJettonItem)
   case staking(ProcessedBalanceStakingItem)
+  case tronUSDT(ProcessedBalanceTronUSDTItem)
   
   var converted: Decimal {
     switch self {
@@ -25,6 +28,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
       return item.converted
     case .staking(let item):
       return item.amountConverted
+    case .tronUSDT(let item):
+      return item.converted
     }
   }
   
@@ -36,6 +41,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
       return jetton.jetton.jettonInfo.address.toRaw()
     case .staking(let staking):
       return staking.info.pool.toRaw()
+    case .tronUSDT:
+      return USDT.address.base58
     }
   }
   
@@ -47,6 +54,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
       return jetton.amount.isZero
     case .staking(let staking):
       return staking.info.amount == 0
+    case .tronUSDT(let item):
+      return item.amount == 0
     }
   }
 }
@@ -65,6 +74,17 @@ public struct ProcessedBalanceTonItem: Equatable, Codable {
 public struct ProcessedBalanceJettonItem: Equatable, Codable {
   public let id: String
   public let jetton: JettonItem
+  public let amount: BigUInt
+  public let fractionalDigits: Int
+  public let tag: String?
+  public let currency: Currency
+  public let converted: Decimal
+  public let price: Decimal
+  public let diff: String?
+}
+
+public struct ProcessedBalanceTronUSDTItem: Equatable, Codable {
+  public let id: String
   public let amount: BigUInt
   public let fractionalDigits: Int
   public let tag: String?

@@ -33,7 +33,7 @@ extension MainCoordinator {
   }
   
   func openTransferSignRaw(wallet: Wallet,
-                           recipient: Recipient,
+                           recipient: TonRecipient,
                            amount: BigUInt,
                            payload: String?,
                            stateInit: String?) {
@@ -55,7 +55,7 @@ extension MainCoordinator {
   }
   
   private func createTransferSignRaw(wallet: Wallet,
-                                     recipient: Recipient,
+                                     recipient: TonRecipient,
                                      amount: BigUInt,
                                      payload: String?,
                                      stateInit: String?) async throws -> SignRawRequest {

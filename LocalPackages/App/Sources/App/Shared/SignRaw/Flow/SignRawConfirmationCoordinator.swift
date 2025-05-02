@@ -87,7 +87,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
 
       switch error {
       case let .blockchainFee(_, balance, requiredAmount):
-        let token = Token.ton
+        let token = TonToken.ton
         symbol = token.symbol
         fractionDigits = token.fractionDigits
         amount = requiredAmount
@@ -109,8 +109,8 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
           symbol = jettonInfo.symbol ?? jettonInfo.name
           buttonTitle = TKLocales.InsufficientFunds.rechargeWallet
         } else {
-          fractionDigits = Token.ton.fractionDigits
-          symbol = Token.ton.symbol
+          fractionDigits = TonToken.ton.fractionDigits
+          symbol = TonToken.ton.symbol
           buttonTitle = TKLocales.InsufficientFunds.buyTokenTitle(symbol)
         }
         internalPurchasingFlow = isInternalPurchasing

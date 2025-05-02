@@ -16,7 +16,7 @@ public struct TransferEmulationResult {
       case Refund(BigUInt)
     }
     
-    public let token: Token
+    public let token: TonToken
     public let amount: Amount
     
     public var jettonInfo: JettonInfo? {

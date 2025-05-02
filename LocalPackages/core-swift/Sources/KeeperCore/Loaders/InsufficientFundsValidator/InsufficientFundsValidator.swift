@@ -175,6 +175,8 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
             break
           }
         }
+      case .tronUSDT:
+        break
       }
     }
   }
@@ -187,7 +189,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
     let tonBalance = UInt64(walletBalance.balance.tonBalance.amount)
 
     var requiredAmount: BigUInt?
-    var token: Token?
+    var token: TonToken?
     var availableBalance: BigUInt?
     
     guard !emulation.transferType.isBattery, !emulation.transferType.isGasless else {

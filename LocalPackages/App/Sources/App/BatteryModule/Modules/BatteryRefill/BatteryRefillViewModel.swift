@@ -359,7 +359,7 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       case .ton:
         iconViewConfiguration = .tonConfiguration()
       case .jetton(let jettonItem):
-        iconViewConfiguration = .configuration(jettonInfo: jettonItem.jettonInfo)
+        iconViewConfiguration = .configuration(jettonInfo: jettonItem.jettonInfo, isNetworkBadgeVisible: false)
       }
       caption = nil
     case .gift:

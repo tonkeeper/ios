@@ -107,11 +107,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   }
   
   private func getSwapURL() -> URL? {
-    if TKFeatureFlags.localProvider.isTonkeeperSwapOn {
-      return InfoProvider.tonkeeperSwapURL()
-    } else {
-      return configuration.stonfiUrl
-    }
+    return configuration.stonfiUrl
   }
   
   private func sendResponse(_ response: StonfiSwapBridgeResponse) {

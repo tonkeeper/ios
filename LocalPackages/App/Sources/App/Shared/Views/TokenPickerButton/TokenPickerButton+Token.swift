@@ -3,7 +3,7 @@ import TKUIKit
 import KeeperCore
 
 extension TokenPickerButton.Configuration {
-  static func createConfiguration(token: Token) -> Self {
+  static func createConfiguration(token: TonToken) -> Self {
     let title: String
     let image: TKImage
     switch token {
@@ -17,6 +17,7 @@ extension TokenPickerButton.Configuration {
     
     return TokenPickerButton.Configuration(
       name: title,
+      network: nil,
       image: image
     )
   }

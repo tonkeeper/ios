@@ -42,10 +42,15 @@ struct WalletBalanceListMapper {
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
                      isSecure: Bool,
-                     isPinned: Bool) -> WalletBalanceListCell.Configuration {
+                     isPinned: Bool,
+                     isNetworkBadgeVisible: Bool) -> WalletBalanceListCell.Configuration {
     return WalletBalanceListCell.Configuration(
       walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure, isPinned: isPinned),
+        listItemContentViewConfiguration: balanceItemMapper.mapJettonItem(
+          item,
+          isSecure: isSecure,
+          isPinned: isPinned,
+          isNetworkBadgeVisible: isNetworkBadgeVisible),
         commentViewConfiguration: nil
       )
     )
@@ -62,6 +67,17 @@ struct WalletBalanceListMapper {
       isPinned: isPinned,
       isStakingEnable: isStakingEnable,
       stakingCollectHandler: stakingCollectHandler
+    )
+  }
+  
+  func mapTronUSDTItem(_ item: ProcessedBalanceTronUSDTItem,
+                       isSecure: Bool,
+                       isPinned: Bool) -> WalletBalanceListCell.Configuration {
+    return WalletBalanceListCell.Configuration(
+      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+        listItemContentViewConfiguration: balanceItemMapper.mapTronUSDTItem(item: item, isSecure: isSecure, isPinned: isPinned),
+        commentViewConfiguration: nil
+      )
     )
   }
   

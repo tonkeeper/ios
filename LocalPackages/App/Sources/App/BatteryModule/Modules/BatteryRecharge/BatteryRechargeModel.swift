@@ -99,7 +99,7 @@ final class BatteryRechargeModel {
     }
   }
   
-  var token: Token {
+  var token: TonToken {
     didSet {
       start()
       
@@ -107,7 +107,7 @@ final class BatteryRechargeModel {
   }
   
   var promocode: String?
-  var recipient: Recipient? {
+  var recipient: TonRecipient? {
     didSet {
       updateIsContinueEnable()
     }
@@ -128,7 +128,7 @@ final class BatteryRechargeModel {
   private let configuration: Configuration
   let isGift: Bool
   
-  init(token: Token,
+  init(token: TonToken,
        wallet: Wallet,
        balanceStore: BalanceStore,
        currencyStore: CurrencyStore,
@@ -162,7 +162,7 @@ final class BatteryRechargeModel {
     }
     tonRatesStore.addObserver(self) { observer, event in
       switch event {
-      case .didUpdateTonRates:
+      case .didUpdateRates:
         guard wallet == observer.wallet else { return }
         DispatchQueue.main.async {
           observer.updateOptionsItems()
@@ -246,7 +246,7 @@ final class BatteryRechargeModel {
     let rates: Rates.Rate? = {
       switch self.token {
       case .ton:
-        let tonRates = tonRatesStore.getState().first(where: { $0.currency == currency })
+        let tonRates = tonRatesStore.getState().tonRates.first(where: { $0.currency == currency })
         return tonRates
       case .jetton(let jettonItem):
         let rate = balance?

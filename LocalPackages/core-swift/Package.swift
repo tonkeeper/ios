@@ -12,20 +12,21 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
-    .package(path: "../TKCryptoSwift"),
     .package(path: "../TKKeychain"),
     .package(path: "../Ledger"),
+    .package(path: "../TonTronKit"),
+    .package(url: "https://github.com/tonkeeper/CryptoSwift", revision: "1d31a1ffb6043655f3faba9d160db67b2e547e49"),
     .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.28")),
     .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.0")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.4.0")),
-    .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.2")),
+    .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.3")),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
     .target(name: "CoreComponents",
             dependencies: [
               .product(name: "TonSwift", package: "ton-swift"),
-              .product(name: "TKCryptoSwift", package: "TKCryptoSwift"),
+              .product(name: "CryptoSwift", package: "CryptoSwift"),
               .product(name: "TKKeychain", package: "TKKeychain")
             ]),
     .testTarget(name: "CoreComponentsTests",
@@ -42,8 +43,9 @@ let package = Package(
               .product(name: "TonAPI", package: "ton-api-swift"),
               .product(name: "TKBatteryAPI", package: "battery-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
+              .product(name: "TonTronKit", package: "TonTronKit"),
               .target(name: "TonConnectAPI"),
-              .target(name: "CoreComponents")
+              .target(name: "CoreComponents"),
             ],
             path: "Sources/KeeperCore",
             resources: [

@@ -68,7 +68,7 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
         dateFormatter: keeperCoreAssembly.rootAssembly().formattersAssembly.dateFormatter,
         decimalAmountFormatter: keeperCoreAssembly.rootAssembly().formattersAssembly.decimalAmountFormatter
       )
-      let chartController = keeperCoreAssembly.widgetAssembly().chartV2Controller(token: .ton)
+      let chartController = keeperCoreAssembly.widgetAssembly().chartV2Controller(token: .ton(.ton))
       
       let period = KeeperCore.Period(period: configuration.period)
       let mode: TKLineChartView.ChartMode

@@ -385,9 +385,8 @@ extension API {
 // MARK: - Rates
 
 extension API {
-  func getRates(jettons: [JettonInfo],
-                currencies: [Currency]) async throws -> Rates {
-    let tokens = CollectionOfOne(TonInfo.symbol.lowercased()) + jettons.map { $0.address.toRaw() }
+  func getRates(currencies: [Currency], jettons: [String]) async throws -> Rates {
+    let tokens = ["TON", "USDT"] + jettons
     let request = try await createRequest {
       return RatesAPI.getRatesWithRequestBuilder(
         tokens: tokens,
@@ -400,15 +399,16 @@ extension API {
     return parseResponse(rates: response.rates, jettons: jettons)
   }
   
-  private func parseResponse(rates: [String: TonAPI.TokenRates],
-                             jettons: [JettonInfo]) -> Rates {
+  private func parseResponse(rates: [String: TonAPI.TokenRates], jettons: [String]) -> Rates {
     var tonRates = [Rates.Rate]()
-    var jettonsRates = [Rates.JettonRate]()
+    var usdtRates = [Rates.Rate]()
+    var jettonsRates = [String: [Rates.Rate]]()
+    
     for key in rates.keys {
-      guard let jettonRates = rates[key] else { continue }
+      guard let rates = rates[key] else { continue }
       if key.lowercased() == TonInfo.symbol.lowercased() {
-        guard let prices = jettonRates.prices else { continue }
-        let diff24h = jettonRates.diff24h
+        guard let prices = rates.prices else { continue }
+        let diff24h = rates.diff24h
         tonRates = prices.compactMap { price -> Rates.Rate? in
           guard let currency = Currency(code: price.key) else { return nil }
           let diff24h = diff24h?[price.key]
@@ -416,18 +416,28 @@ extension API {
         }
         continue
       }
-      guard let jettonInfo = jettons.first(where: { $0.address.toRaw() == key.lowercased()}) else { continue }
-      guard let prices = jettonRates.prices else { continue }
-      let diff24h = jettonRates.diff24h
-      let rates: [Rates.Rate] = prices.compactMap { price -> Rates.Rate? in
+      if key.lowercased() == "usdt" {
+        guard let prices = rates.prices else { continue }
+        let diff24h = rates.diff24h
+        usdtRates = prices.compactMap { price -> Rates.Rate? in
+          guard let currency = Currency(code: price.key) else { return nil }
+          let diff24h = diff24h?[price.key]
+          return Rates.Rate(currency: currency, rate: Decimal(price.value), diff24h: diff24h)
+        }
+        continue
+      }
+      guard let jettonInfo = jettons.first(where: { $0.lowercased() == key.lowercased()}) else { continue }
+      guard let prices = rates.prices else { continue }
+      let diff24h = rates.diff24h
+      let jettonRates: [Rates.Rate] = prices.compactMap { price -> Rates.Rate? in
         guard let currency = Currency(code: price.key) else { return nil }
         let diff24h = diff24h?[price.key]
         return Rates.Rate(currency: currency, rate: Decimal(price.value), diff24h: diff24h)
       }
-      jettonsRates.append(.init(jettonInfo: jettonInfo, rates: rates))
-      
+      jettonsRates[key] = jettonRates
     }
-    return Rates(ton: tonRates, jettonsRates: jettonsRates)
+    
+    return Rates(ton: tonRates, usdt: usdtRates, jettonRates: jettonsRates)
   }
 }
 

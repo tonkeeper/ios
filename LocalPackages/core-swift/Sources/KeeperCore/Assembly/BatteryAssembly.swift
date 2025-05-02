@@ -40,7 +40,7 @@ public final class BatteryAssembly {
     BatteryPromocodeRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  var batteryCalculation: BatteryCalculation {
+  public var batteryCalculation: BatteryCalculation {
     BatteryCalculation(configuration: configurationAssembly.configuration)
   }
 }

@@ -8,15 +8,6 @@ struct ReceiveModule {
   init(dependencies: Dependencies) {
     self.dependencies = dependencies
   }
-  
-  func receiveModule(token: Token,
-                     wallet: Wallet) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
-    return ReceiveAssembly.module(
-      token: token,
-      wallet: wallet,
-      qrCodeGenerator: QRCodeGeneratorImplementation()
-    )
-  }
 }
 
 extension ReceiveModule {

@@ -25,6 +25,7 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
   
   override func start() {
     var provider = BackupRecoveryPhraseDataProvider(
+      wallet: wallet,
       phrase: phrase
     )
     

@@ -6,8 +6,13 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = .contentStackViewPadding
+    return stackView
+  }()
+  
+  let buttonsStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    stackView.alignment = .center
     return stackView
   }()
   
@@ -17,14 +22,13 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
     view.padding = .titleDescriptionPadding
     return view
   }()
+  let titleDescriptionViewContainer = UIView()
+  
+  let bannerView = TKRecoverPhraseBannerView()
+  let bannerViewContainer = UIView()
   
   let listView = TKRecoveryPhraseListView()
-  
-  let buttonsContainer: TKPaddingContainerView = {
-    let container = TKPaddingContainerView()
-    container.padding = .copyButtonContainerPadding
-    return container
-  }()
+  let listViewContainer = UIView()
   
   // MARK: - Init
   
@@ -40,27 +44,17 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   public struct Model {
-    public struct Button {
-      public let model: TKUIActionButton.Model
-      public let category: TKUIActionButtonCategory
-      public let action: () -> Void
-      public init(model: TKUIActionButton.Model,
-                  category: TKUIActionButtonCategory,
-                  action: @escaping () -> Void) {
-        self.model = model
-        self.category = category
-        self.action = action
-      }
-    }
-    
     public let titleDescriptionModel: TKTitleDescriptionView.Model
+    public let bannerViewModel: TKRecoverPhraseBannerView.Model?
     public let phraseListViewModel: TKRecoveryPhraseListView.Model
-    public let buttons: [Button]
+    public let buttons: [TKButton.Configuration]
     
     public init(titleDescriptionModel: TKTitleDescriptionView.Model,
+                bannerViewModel: TKRecoverPhraseBannerView.Model? = nil,
                 phraseListViewModel: TKRecoveryPhraseListView.Model,
-                buttons: [Button]) {
+                buttons: [TKButton.Configuration]) {
       self.titleDescriptionModel = titleDescriptionModel
+      self.bannerViewModel = bannerViewModel
       self.phraseListViewModel = phraseListViewModel
       self.buttons = buttons
     }
@@ -69,16 +63,20 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
   public func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
     listView.configure(model: model.phraseListViewModel)
+    buttonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
     let buttons = model.buttons.map { buttonModel in
-      let button = TKUIActionButton(
-        category: buttonModel.category,
-        size: .large
-      )
-      button.configure(model: buttonModel.model)
-      button.addTapAction(buttonModel.action)
+      let button = TKButton()
+      button.configuration = buttonModel
       return button
     }
-    buttonsContainer.setViews(buttons)
+    buttons.forEach { buttonsStackView.addArrangedSubview($0) }
+
+    if let bannerViewModel = model.bannerViewModel {
+      bannerViewContainer.isHidden = false
+      bannerView.configure(model: bannerViewModel)
+    } else {
+      bannerViewContainer.isHidden = true
+    }
   }
 }
 
@@ -87,24 +85,47 @@ private extension TKRecoveryPhraseView {
     backgroundColor = .Background.page
     directionalLayoutMargins.top = .topSpacing
     
-    addSubview(contentStackView)
-    addSubview(buttonsContainer)
+    buttonsStackView.spacing = 12
     
-    contentStackView.addArrangedSubview(titleDescriptionView)
-    contentStackView.addArrangedSubview(listView)
+    addSubview(contentStackView)
+    addSubview(buttonsStackView)
+    
+    titleDescriptionViewContainer.addSubview(titleDescriptionView)
+    bannerViewContainer.addSubview(bannerView)
+    listViewContainer.addSubview(listView)
+    
+    contentStackView.addArrangedSubview(titleDescriptionViewContainer)
+    contentStackView.addArrangedSubview(bannerViewContainer)
+    contentStackView.addArrangedSubview(listViewContainer)
         
     setupConstraints()
   }
   
   func setupConstraints() {
     contentStackView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
-      make.bottom.equalTo(buttonsContainer.snp.top).offset(-16)
+      make.top.equalTo(safeAreaLayoutGuide.snp.top)
+      make.left.right.equalTo(self)
+      make.bottom.equalTo(buttonsStackView.snp.top).offset(-16)
     }
     
-    buttonsContainer.snp.makeConstraints { make in
+    buttonsStackView.snp.makeConstraints { make in
       make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
       make.left.right.equalTo(self)
+    }
+    
+    titleDescriptionView.snp.makeConstraints { make in
+      make.left.right.equalTo(titleDescriptionViewContainer).inset(32)
+      make.bottom.equalTo(titleDescriptionViewContainer).offset(-16)
+      make.top.equalTo(titleDescriptionViewContainer)
+    }
+    
+    bannerView.snp.makeConstraints { make in
+      make.edges.equalTo(bannerViewContainer)
+    }
+    
+    listView.snp.makeConstraints { make in
+      make.top.bottom.equalTo(listViewContainer).inset(16)
+      make.left.right.equalTo(listViewContainer).inset(40)
     }
   }
 }
@@ -128,14 +149,5 @@ private extension NSDirectionalEdgeInsets {
     leading: 32,
     bottom: 0,
     trailing: 32
-  )
-}
-
-private extension UIEdgeInsets {
-  static let copyButtonContainerPadding = UIEdgeInsets(
-    top: 16,
-    left: 32,
-    bottom: 32,
-    right: 32
   )
 }

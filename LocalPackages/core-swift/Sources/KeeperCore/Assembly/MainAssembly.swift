@@ -25,6 +25,7 @@ public final class MainAssembly {
   public let secureAssembly: SecureAssembly
   public let transferAssembly: TransferAssembly
   public let transactionsManagementAssembly: TransactionsManagementAssembly
+  public let tronUSDTAssembly: TronUSDTAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
@@ -45,7 +46,8 @@ public final class MainAssembly {
        backgroundUpdateAssembly: BackgroundUpdateAssembly,
        secureAssembly: SecureAssembly,
        rnAssembly: RNAssembly,
-       transactionsManagementAssembly: TransactionsManagementAssembly) {
+       transactionsManagementAssembly: TransactionsManagementAssembly,
+       tronUSDTAssembly: TronUSDTAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -72,6 +74,7 @@ public final class MainAssembly {
       repositoriesAssembly: repositoriesAssembly
     )
     self.transactionsManagementAssembly = transactionsManagementAssembly
+    self.tronUSDTAssembly = tronUSDTAssembly
   }
   
   public func scannerAssembly() -> ScannerAssembly {
@@ -128,7 +131,7 @@ public final class MainAssembly {
   }
   
   public func sendConfirmationController(wallet: Wallet,
-                                         recipient: Recipient,
+                                         recipient: TonRecipient,
                                          sendItem: SendItem,
                                          comment: String?) -> SendConfirmationController {
     SendConfirmationController(
@@ -147,7 +150,7 @@ public final class MainAssembly {
   }
   
   public func jettonTransferTransactionConfirmationController(wallet: Wallet,
-                                                              recipient: Recipient,
+                                                              recipient: TonRecipient,
                                                               jettonItem: JettonItem,
                                                               amount: BigUInt,
                                                               comment: String?) -> TransactionConfirmationController {
@@ -170,7 +173,7 @@ public final class MainAssembly {
   }
   
   public func tonTransferTransactionConfirmationController(wallet: Wallet,
-                                                           recipient: Recipient,
+                                                           recipient: TonRecipient,
                                                            amount: BigUInt,
                                                            comment: String?,
                                                            isMaxAmount: Bool) -> TransactionConfirmationController {
@@ -190,7 +193,7 @@ public final class MainAssembly {
   }
   
   public func nftTransferTransactionConfirmationController(wallet: Wallet,
-                                                           recipient: Recipient,
+                                                           recipient: TonRecipient,
                                                            nft: NFT,
                                                            comment: String?) -> TransactionConfirmationController {
     NFTTransferTransactionConfirmationController(
@@ -206,6 +209,18 @@ public final class MainAssembly {
       ratesService: servicesAssembly.ratesService(),
       settingsRepository: repositoriesAssembly.settingsRepository(),
       batteryCalculation: batteryAssembly.batteryCalculation
+    )
+  }
+  
+  public func tronUSDTTransferTransactionConfirmationController(wallet: Wallet,
+                                                                recipient: TronRecipient,
+                                                                amount: BigUInt) -> TronUSDTTransactionConfirmationController {
+    TronUSDTTransactionConfirmationController(
+      wallet: wallet,
+      recipient: recipient,
+      amount: amount,
+      tronAPI: tronUSDTAssembly.api,
+      tonProofService: servicesAssembly.tonProofTokenService()
     )
   }
   

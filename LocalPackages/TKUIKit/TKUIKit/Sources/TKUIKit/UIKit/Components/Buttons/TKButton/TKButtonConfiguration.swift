@@ -84,6 +84,7 @@ public extension TKButton.Configuration {
     TKButton.Configuration(
       content: Content(),
       contentPadding: size.padding,
+      spacing: 8,
       textStyle: size.textStyle,
       textColor: category.titleColor,
       iconTintColor: category.titleColor,

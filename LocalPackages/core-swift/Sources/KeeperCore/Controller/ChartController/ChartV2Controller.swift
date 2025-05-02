@@ -26,7 +26,7 @@ public final class ChartV2Controller {
   public func getCachedChartData(period: Period, currency: Currency) -> [Coordinate] {
     let coordinates = chartService.getChartData(
       period: period,
-      token: token.tokenSymbol,
+      token: token.chartIdentifier,
       currency: currency,
       isTestnet: (try? walletsService.getActiveWallet().isTestnet) ?? false
     )
@@ -36,7 +36,7 @@ public final class ChartV2Controller {
   public func loadChartData(period: Period, currency: Currency) async throws -> [Coordinate] {
     let coordinates = try await chartService.loadChartData(
       period: period,
-      token: token.tokenSymbol,
+      token: token.chartIdentifier,
       currency: currency,
       isTestnet: (try? walletsService.getActiveWallet().isTestnet) ?? false
     )
@@ -49,16 +49,5 @@ public final class ChartV2Controller {
     let diff = (coordinate.y / startCoordinate.y - 1) * 100
     let currencyDiff = (coordinate.y - startCoordinate.y)
     return (diff, currencyDiff)
-  }
-}
-
-private extension Token {
-  var tokenSymbol: String {
-    switch self {
-    case .ton:
-      return "ton"
-    case .jetton(let item):
-      return item.jettonInfo.address.toRaw()
-    }
   }
 }

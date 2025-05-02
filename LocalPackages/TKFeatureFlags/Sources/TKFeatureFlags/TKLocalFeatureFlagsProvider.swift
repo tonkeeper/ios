@@ -2,7 +2,6 @@ import Foundation
 import FirebaseRemoteConfig
 
 public enum LocalFeatureFlag: String, CaseIterable {
-  case isTonkeeperSwapOn
   case isConfirmButtonInsteadSlider
   
   var key: String {
@@ -11,7 +10,6 @@ public enum LocalFeatureFlag: String, CaseIterable {
 }
 
 public protocol TKLocalFeatureFlagsProvider: AnyObject {
-  var isTonkeeperSwapOn: Bool { get set }
   var isConfirmButtonInsteadSlider: Bool { get set }
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<LocalFeatureFlag>, closure: @escaping (T, LocalFeatureFlag) -> Void)
 }
@@ -23,15 +21,6 @@ final class UserDefaultsLocalFeatureFlagsProvider: TKLocalFeatureFlagsProvider {
   
   init() {
     self.userDefault = UserDefaults(suiteName: "featureFlags.tkFeatureFlags.tonkeeper") ?? .standard
-  }
-  
-  var isTonkeeperSwapOn: Bool {
-    get {
-      userDefault.bool(forKey: LocalFeatureFlag.isTonkeeperSwapOn.key)
-    }
-    set {
-      userDefault.setValue(newValue, forKey: LocalFeatureFlag.isTonkeeperSwapOn.key)
-    }
   }
   
   var isConfirmButtonInsteadSlider: Bool {
