@@ -1242,8 +1242,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       keeperCoreAssembly: keeperCoreMainAssembly
     )
     
-    module.output.didSelectInactiveTRC20 = { [weak self] wallet in
-      self?.openReceiveTRC20Popup(wallet: wallet)
+    module.output.didSelectInactiveTRC20 = { [weak self] in
+      self?.openReceiveTRC20Popup(wallet: $0,
+                                  enableCompletion: {
+        module.input.selectToken(token: .usdtTron)
+      })
     }
     
     let navigationController = TKNavigationController(rootViewController: module.view)
@@ -1426,7 +1429,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
-  func openReceiveTRC20Popup(wallet: Wallet) {
+  func openReceiveTRC20Popup(wallet: Wallet,
+                             enableCompletion: (() -> Void)? = nil) {
     let module = ReceiveTRC20PopupAssembly.module(wallet: wallet,
                                                   keeperCoreAssembly: keeperCoreMainAssembly,
                                                   passcodeProvider: getPasscode)
@@ -1435,6 +1439,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     module.output.didFinish = { [weak bottomSheetViewController] in
       bottomSheetViewController?.dismiss()
+    }
+    
+    module.output.didEnable = {
+      enableCompletion?()
     }
   }
   

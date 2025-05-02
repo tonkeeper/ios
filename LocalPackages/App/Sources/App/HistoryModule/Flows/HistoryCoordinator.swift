@@ -134,7 +134,10 @@ private extension HistoryCoordinator {
     )
     
     module.output.didSelectInactiveTRC20 = { [weak self] in
-      self?.openReceiveTRC20Popup(wallet: $0)
+      self?.openReceiveTRC20Popup(wallet: $0,
+                                  enableCompletion: {
+        module.input.selectToken(token: .usdtTron)
+      })
     }
     
     module.view.setupSwipeDownButton()
@@ -171,7 +174,8 @@ private extension HistoryCoordinator {
     }
   }
   
-  func openReceiveTRC20Popup(wallet: Wallet) {
+  func openReceiveTRC20Popup(wallet: Wallet,
+                             enableCompletion: @escaping () -> Void) {
     guard let passcodeProvider else { return }
     let module = ReceiveTRC20PopupAssembly.module(wallet: wallet,
                                                   keeperCoreAssembly: keeperCoreMainAssembly,
@@ -181,6 +185,10 @@ private extension HistoryCoordinator {
     
     module.output.didFinish = { [weak bottomSheetViewController] in
       bottomSheetViewController?.dismiss()
+    }
+    
+    module.output.didEnable = {
+      enableCompletion()
     }
   }
   

@@ -68,7 +68,7 @@ extension MainCoordinator {
           if wallet.isTronTurnOn {
             token = .tron(TronSendData.Item.usdt(amount: amount ?? 0))
           } else if wallet.isTronAvailable {
-            openReceiveTRC20Popup(wallet: wallet)
+            openReceiveTRC20Popup(wallet: wallet,)
             self.deeplinkHandleTask = nil
             ToastPresenter.hideAll()
             return 

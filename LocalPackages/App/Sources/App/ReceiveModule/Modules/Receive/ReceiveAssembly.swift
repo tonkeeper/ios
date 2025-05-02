@@ -6,7 +6,7 @@ public struct ReceiveAssembly {
   private init() {}
   public static func module(tokens: [Token],
                             wallet: Wallet,
-                            keeperCoreAssembly: KeeperCore.MainAssembly) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
+                            keeperCoreAssembly: KeeperCore.MainAssembly) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, ReceiveModuleInput> {
     let viewModel = ReceiveViewModelImplementation(
       tokens: tokens,
       wallet: wallet,
@@ -22,6 +22,6 @@ public struct ReceiveAssembly {
       }
     )
     let viewController = ReceiveViewController(viewModel: viewModel)
-    return MVVMModule(view: viewController, output: viewModel, input: Void())
+    return MVVMModule(view: viewController, output: viewModel, input: viewModel)
   }
 }

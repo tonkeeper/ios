@@ -70,7 +70,7 @@ public final class TKActionLabel: UILabel {
   
   private func getActionItem(touch: UITouch) -> ActionItem? {
     let location = touch.location(in: self)
-    let offset: CGFloat = 10
+    let offset: CGFloat = 20
     let deltas = [
       CGPoint(x: -offset, y: 0),
       CGPoint(x: 0, y: -offset),
