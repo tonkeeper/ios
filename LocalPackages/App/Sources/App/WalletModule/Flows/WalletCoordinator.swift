@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TKFeatureFlags
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -115,7 +116,7 @@ private extension WalletCoordinator {
     
     module.output.didTapReceive = { [weak self] wallet in
       var tokens: [Token] = [.ton(.ton)]
-      if wallet.isTronAvailable {
+      if wallet.isTronAvailable && !TKFeatureFlags.provider.isTronDisabled {
         tokens.append(.usdtTron)
       }
       self?.didTapReceive?(tokens, wallet)
