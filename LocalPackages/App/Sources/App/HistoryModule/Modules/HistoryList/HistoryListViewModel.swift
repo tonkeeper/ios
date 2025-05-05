@@ -517,7 +517,12 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         for section in content.sections {
           let sectionId = HistoryList.SnapshotSection.events(section.date)
           snapshot.appendSections([sectionId])
-          let eventIds = section.events.map { HistoryList.SnapshotItem.event($0.identifier) }
+          var eventIdsSet = Set<String>()
+          let eventIds: [HistoryList.SnapshotItem] = section.events.compactMap {
+            guard !eventIdsSet.contains($0.identifier) else { return nil }
+            eventIdsSet.insert($0.identifier)
+            return HistoryList.SnapshotItem.event($0.identifier)
+          }
           snapshot.appendItems(eventIds, toSection: sectionId)
           if #available(iOS 15.0, *) {
             snapshot.reconfigureItems(eventIds)
