@@ -32,7 +32,7 @@ private extension SettingsRecoveryPhraseProvider {
         }
     )
     
-    var buttons = [TKButton.Configuration]()
+    var buttons = [TKRecoveryPhraseView.Model.Button]()
     
     var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
@@ -47,7 +47,12 @@ private extension SettingsRecoveryPhraseProvider {
       UIPasteboard.general.string = phrase.joined(separator: " ")
       ToastPresenter.showToast(configuration: .copied)
     }
-    buttons.append(copyButtonConfiguration)
+    buttons.append(
+      TKRecoveryPhraseView.Model.Button(
+        configuration: copyButtonConfiguration,
+        isFullWidth: false
+      )
+    )
     
     if wallet.isTronTurnOn {
       var trc20ButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
@@ -62,7 +67,12 @@ private extension SettingsRecoveryPhraseProvider {
         self.didTapTRC20Button?()
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
       }
-      buttons.append(trc20ButtonConfiguration)
+      buttons.append(
+        TKRecoveryPhraseView.Model.Button(
+          configuration: trc20ButtonConfiguration,
+          isFullWidth: false
+        )
+      )
     }
     
     return TKRecoveryPhraseView.Model(

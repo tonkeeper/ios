@@ -34,7 +34,7 @@ private extension SettingsTRC20RecoveryPhraseProvider {
         }
     )
     
-    var buttons = [TKButton.Configuration]()
+    var buttons = [TKRecoveryPhraseView.Model.Button]()
     
     var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
@@ -49,7 +49,12 @@ private extension SettingsTRC20RecoveryPhraseProvider {
       UIPasteboard.general.string = tronMnemonic.joined(separator: " ")
       ToastPresenter.showToast(configuration: .copied)
     }
-    buttons.append(copyButtonConfiguration)
+    buttons.append(
+      TKRecoveryPhraseView.Model.Button(
+        configuration: copyButtonConfiguration,
+        isFullWidth: false
+      )
+    )
     
     return TKRecoveryPhraseView.Model(
       titleDescriptionModel: TKTitleDescriptionView.Model(

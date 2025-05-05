@@ -12,12 +12,9 @@ struct BackupRecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
     createModel()
   }
   
-  private let wallet: Wallet
   private let phrase: [String]
   
-  init(wallet: Wallet,
-       phrase: [String]) {
-    self.wallet = wallet
+  init(phrase: [String]) {
     self.phrase = phrase
   }
 }
@@ -32,30 +29,26 @@ private extension BackupRecoveryPhraseDataProvider {
         }
     )
     
-    var buttons = [TKButton.Configuration]()
-    
-    var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-      category: .secondary,
-      size: .medium
+    var checkBackupConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
     )
-    copyButtonConfiguration.content = TKButton.Configuration.Content(
-      title: .plainString(TKLocales.Actions.copy),
-      icon: .TKUIKit.Icons.Size16.copy
+    checkBackupConfiguration.content = TKButton.Configuration.Content(
+      title: .plainString(TKLocales.Backup.Check.Button.title)
     )
-    copyButtonConfiguration.action = { [phrase] in
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      UIPasteboard.general.string = phrase.joined(separator: " ")
-      ToastPresenter.showToast(configuration: .copied)
+    checkBackupConfiguration.action = {
+      self.didTapNext?()
     }
-    buttons.append(copyButtonConfiguration)
     
     return TKRecoveryPhraseView.Model(
       titleDescriptionModel: TKTitleDescriptionView.Model(
-        title: TKLocales.Backup.Show.title,
-        bottomDescription: TKLocales.Backup.Show.caption
+        title: TKLocales.Backup.Check.title,
+        bottomDescription: TKLocales.Backup.Check.caption
       ),
       phraseListViewModel: phraseListViewModel,
-      buttons: buttons
+      buttons: [
+        TKRecoveryPhraseView.Model.Button(configuration: checkBackupConfiguration, isFullWidth: true)
+      ]
     )
   }
 }

@@ -44,15 +44,24 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   public struct Model {
+    public struct Button {
+      public let configuration: TKButton.Configuration
+      public let isFullWidth: Bool
+      public init(configuration: TKButton.Configuration, isFullWidth: Bool) {
+        self.configuration = configuration
+        self.isFullWidth = isFullWidth
+      }
+    }
+    
     public let titleDescriptionModel: TKTitleDescriptionView.Model
     public let bannerViewModel: TKRecoverPhraseBannerView.Model?
     public let phraseListViewModel: TKRecoveryPhraseListView.Model
-    public let buttons: [TKButton.Configuration]
+    public let buttons: [Button]
     
     public init(titleDescriptionModel: TKTitleDescriptionView.Model,
                 bannerViewModel: TKRecoverPhraseBannerView.Model? = nil,
                 phraseListViewModel: TKRecoveryPhraseListView.Model,
-                buttons: [TKButton.Configuration]) {
+                buttons: [Button]) {
       self.titleDescriptionModel = titleDescriptionModel
       self.bannerViewModel = bannerViewModel
       self.phraseListViewModel = phraseListViewModel
@@ -64,12 +73,16 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
     listView.configure(model: model.phraseListViewModel)
     buttonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    let buttons = model.buttons.map { buttonModel in
+    model.buttons.forEach { buttonModel in
       let button = TKButton()
-      button.configuration = buttonModel
-      return button
+      button.configuration = buttonModel.configuration
+      buttonsStackView.addArrangedSubview(button)
+      if buttonModel.isFullWidth {
+        button.snp.makeConstraints { make in
+          make.left.right.equalTo(buttonsStackView).inset(16)
+        }
+      }
     }
-    buttons.forEach { buttonsStackView.addArrangedSubview($0) }
 
     if let bannerViewModel = model.bannerViewModel {
       bannerViewContainer.isHidden = false
