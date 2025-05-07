@@ -727,6 +727,13 @@
 "dapp.disconnect_toast.title" = "Disconnect";
 "dapp.disconnect_toast.button" = "Disconnect";
 
+"dapp.sharing_popup.title" = "Share %@";
+"dapp.sharing_popup.caption" = "This link opens %@ directly in Tonkeeper. You can use it again later or share it if needed.";
+"dapp.sharing_popup.buttons.copy" = "Copy Link";
+"dapp.sharing_popup.buttons.share" = "Share";
+
+"dapp.open_warning_popup.warning" = "You are opening an external app not operated by Tonkeeper. Proceed only if you trust the source.";
+
 "extra_type.ton" = "TON";
 "extra_type.battery" = "Tonkeeper Battery";
 

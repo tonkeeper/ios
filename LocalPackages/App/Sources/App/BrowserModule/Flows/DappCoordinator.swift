@@ -128,6 +128,10 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
       module.input.setLandscapeMode(isEnabled: landscapeEnabled)
     }
     
+    module.output.didShareDappURL = { [weak self] in
+      self?.openSharingSheet(app: $0, url: $1)
+    }
+    
     module.view.modalPresentationStyle = .fullScreen
     router.rootViewController.topPresentedViewController().present(module.view, animated: true)
   }
@@ -325,6 +329,17 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     case .failed(let error):
       throw error
     }
+  }
+  
+  func openSharingSheet(app: Dapp, url: URL) {
+    let module = DappSharingPopupAssembly.module(
+      dapp: dapp,
+      url: url,
+      keeperCoreAssembly: keeperCoreMainAssembly
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
   }
 }
 

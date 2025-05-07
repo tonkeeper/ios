@@ -705,6 +705,13 @@
 "dapp.disconnect_toast.title" = "Отключить";
 "dapp.disconnect_toast.button" = "Отключить";
 
+"dapp.sharing_popup.title" = "Поделиться %@";
+"dapp.sharing_popup.caption" = "Эта ссылка откроет %@ напрямую в Tonkeeper. Вы можете сохранить её для себя или поделиться ею.";
+"dapp.sharing_popup.buttons.copy" = "Скопировать ссылку";
+"dapp.sharing_popup.buttons.share" = "Поделиться";
+
+"dapp.open_warning_popup.warning" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper. Переходите только если доверяете источнику.";
+
 "sign_data.title" = "Подписать данные";
 "sign_data.caption" = "Внимательно прочитайте сообщение и, если вы согласны, подпишите транзакцию.";
 "sign_data.binary_content.title" = "Бинарный контент";

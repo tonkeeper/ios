@@ -255,11 +255,18 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
       }
     }
     
+    var badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge?
+    if let badgeImage {
+      badge = TransactionConfirmationHeaderImageItemView.Configuration.Badge(
+        image: badgeImage
+      )
+    }
+    
     return TransactionConfirmationHeaderImageItem(
       configuration: TransactionConfirmationHeaderImageItemView.Configuration(
         image: image,
         corners: corners,
-        badgeImage: badgeImage
+        badge: badge
       ),
       bottomSpace: 20
     )

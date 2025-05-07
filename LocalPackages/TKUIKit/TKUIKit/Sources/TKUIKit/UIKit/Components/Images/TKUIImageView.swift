@@ -153,6 +153,7 @@ public final class TKImageView: UIView, ConfigurableView {
 
   private func setup() {
     addSubview(imageView)
+    layer.cornerCurve = .continuous
   }
   
   private func didUpdateImage() {

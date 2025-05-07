@@ -1,7 +1,11 @@
-import Foundation
+import UIKit
 import TKCore
 import KeeperCore
 import TKUIKit
+
+public protocol DappModuleOutput: AnyObject {
+  var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)? { get set }
+}
 
 public protocol DappModuleInput: AnyObject {
   func setLandscapeMode(isEnabled: Bool)
@@ -13,14 +17,21 @@ protocol DappViewModel: AnyObject {
   var jsInjection: String? { get }
   var didUpdateIsLandscapeEnable: (() -> Void)? { get set }
   var isLandscapeEnable: Bool { get }
+  var didShareURLSystemShareSheet: ((URL) -> Void)? { get set }
   
   func viewDidLoad()
   func didLoadInitialRequest()
   func didReceiveMessage(body: Any)
   func reconnectIfNeeded()
+  func copyDappURL(url: URL)
+  func shareDappURL(url: URL)
 }
 
-final class DappViewModelImplementation: DappViewModel, DappModuleInput {
+final class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleInput {
+  
+  // MARK: - DappModuleOutput
+  
+  var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)?
   
   // MARK: - DappModuleInput
   
@@ -33,6 +44,7 @@ final class DappViewModelImplementation: DappViewModel, DappModuleInput {
   var didOpenApp: ((URL?, String?) -> Void)?
   var injectHandler: ((String) -> Void)?
   var didUpdateIsLandscapeEnable: (() -> Void)?
+  var didShareURLSystemShareSheet: ((URL) -> Void)?
   var isLandscapeEnable: Bool = false {
     didSet {
       didUpdateIsLandscapeEnable?()
@@ -108,6 +120,25 @@ final class DappViewModelImplementation: DappViewModel, DappModuleInput {
         )
         self?.sendResponse(response)
       }
+    }
+  }
+  
+  func copyDappURL(url: URL) {
+    let resultUrl = if checkIfUrlBlockchainExplorer(url: url) {
+      url
+    } else {
+      updateURLForCopyAndShare(url: url)
+    }
+    ToastPresenter.showToast(configuration: .copied)
+    UIPasteboard.general.string = url.absoluteString
+  }
+  
+  func shareDappURL(url: URL) {
+    if checkIfUrlBlockchainExplorer(url: url) {
+      didShareURLSystemShareSheet?(url)
+    } else {
+      let url = updateURLForCopyAndShare(url: url)
+      didShareDappURL?(dapp, url)
     }
   }
   
@@ -239,6 +270,30 @@ final class DappViewModelImplementation: DappViewModel, DappModuleInput {
                             }
                         })();
     """
+  }
+  
+  private func updateURLForCopyAndShare(url: URL) -> URL {
+    
+    
+    let urlEncoded: (URL) -> String? = {
+      guard let percenEncodingRemoved = $0
+        .absoluteString
+        .replacingOccurrences(of: "%25", with: "%")
+        .removingPercentEncoding else {
+        return nil
+      }
+      let set = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+      return (percenEncodingRemoved as NSString).addingPercentEncoding(withAllowedCharacters: set)
+    }
+    
+    guard let encoded = urlEncoded(url) else { return url }
+    guard let updatedUrl = URL(string: "https://app.tonkeeper.com/dapp/\(encoded)") else { return url }
+    return updatedUrl
+  }
+  
+  func checkIfUrlBlockchainExplorer(url: URL) -> Bool {
+    let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
+    return [BlockchainExplorer.tonviewer.host, BlockchainExplorer.tronscan.host].contains(urlComponents?.host)
   }
 }
 

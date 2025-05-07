@@ -77,7 +77,9 @@ final class ReceiveTRC20PopupViewModelImplementation: ReceiveTRC20PopupViewModel
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .image(.App.Currency.Size96.usdt),
             corners: .circle,
-            badgeImage: .image(.App.Currency.Vector.trc20)
+            badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge(
+              image: .image(.App.Currency.Vector.trc20)
+            )
           ),
           bottomSpace: 20
         ),

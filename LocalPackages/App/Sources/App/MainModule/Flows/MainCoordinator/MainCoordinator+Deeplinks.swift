@@ -302,46 +302,51 @@ extension MainCoordinator {
   }
 
   func handleDappDeeplink(url: URL) -> Bool {
-    @Sendable func produceFailingFlow() {
-      ToastPresenter.hideAll()
-      ToastPresenter.showToast(configuration: .failed)
-    }
-
     deeplinkHandleTask?.cancel()
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
 
-    let task = Task {
+    let task = Task { [weak self] in
+      defer {
+        ToastPresenter.hideAll()
+      }
+      guard let self else { return }
       let browserController = keeperCoreMainAssembly.browserExploreController()
       let lang = Locale.current.languageCode ?? "en"
-
-      guard let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang) else {
-        await MainActor.run {
-          self.deeplinkHandleTask = nil
-          produceFailingFlow()
+      
+      let getApp: (URL, PopularAppsResponseData) -> PopularApp? = { url, data in
+        if let app = data.apps.first(with: url.host, at: \.url?.host) {
+          return app
+        } else if let app = data.categories
+          .first(where: { $0.apps.contains(with: url.host, at: \.url?.host) })?
+          .apps.first(with: url.host, at: \.url?.host) {
+          return app
+        } else {
+          return nil
         }
-
-        return
       }
-
-      var isDappHandlingApproved = false
-      if let _ = popularAppsResponse.apps.first(with: url.host, at: \.url?.host) {
-        isDappHandlingApproved = true
-      } else if let _ = popularAppsResponse.categories.first(where: { $0.apps.contains(with: url.host, at: \.url?.host) }) {
-        isDappHandlingApproved = true
-      }
-
-      guard isDappHandlingApproved, !Task.isCancelled else {
-        await MainActor.run {
-          self.deeplinkHandleTask = nil
-          produceFailingFlow()
-        }
-        return
-      }
-
-      await MainActor.run {
+      
+      if let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang),
+         let app = getApp(url, popularAppsResponse) {
+        openDapp(title: app.name, url: url)
+      } else if let host = url.host, coreAssembly.appSettings.isDappOpenWarningDoNotShow(host) {
+        openDapp(title: nil, url: url)
+      } else {
         ToastPresenter.hideAll()
-        self.openDapp(title: "", url: url)
+        let warningModule = OpenDappWarningPopupAssembly.module(
+          url: url,
+          keeperCoreAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly
+        )
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: warningModule.view)
+        
+        warningModule.output.didTapOpen = { [weak bottomSheetViewController] url, title in
+          bottomSheetViewController?.dismiss { [weak self] in
+            self?.openDapp(title: title, url: url)
+          }
+        }
+        
+        bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
       }
     }
 

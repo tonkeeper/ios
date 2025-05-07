@@ -18,9 +18,41 @@ struct TransactionConfirmationHeaderImageItem: TKPopUp.Item {
 
 final class TransactionConfirmationHeaderImageItemView: UIView {
   struct Configuration {
-    let image: TKImage
-    let corners: TKImageView.Corners
-    let badgeImage: TKImage?
+    struct Badge {
+      let image: TKImage
+      let backgroundColor: UIColor
+      let size: TKListItemBadgeView.Configuration.Size
+      init(image: TKImage,
+           backgroundColor: UIColor = .Background.page,
+           size: TKListItemBadgeView.Configuration.Size = .xlarge) {
+        self.image = image
+        self.backgroundColor = backgroundColor
+        self.size = size
+      }
+    }
+    let imageViewModel: TKImageView.Model
+    let backgroundColor: UIColor
+    let badge: Badge?
+    
+    init(imageViewModel: TKImageView.Model,
+         backgroundColor: UIColor = .clear,
+         badge: Badge?) {
+      self.imageViewModel = imageViewModel
+      self.backgroundColor = backgroundColor
+      self.badge = badge
+    }
+    
+    init(image: TKImage,
+         corners: TKImageView.Corners,
+         badge: Badge?) {
+      self.imageViewModel = TKImageView.Model(
+        image: image,
+        size: .size(CGSize(width: 96, height: 96)),
+        corners: corners
+      )
+      self.backgroundColor = .clear
+      self.badge = badge
+    }
   }
   
   let configuration: Configuration
@@ -41,12 +73,13 @@ final class TransactionConfirmationHeaderImageItemView: UIView {
     addSubview(iconView)
     
     var badge: TKListItemIconView.Configuration.Badge?
-    if let badgeImage = configuration.badgeImage {
+    if let configurationBadge = configuration.badge {
       badge = TKListItemIconView.Configuration.Badge(
         configuration: TKListItemBadgeView.Configuration(
-          item: .image(badgeImage),
-          size: .xlarge,
-          backgroundColor: .Background.page
+          item: .image(configurationBadge.image),
+          size: configurationBadge.size,
+          tintColor: .Constant.white,
+          backgroundColor: configurationBadge.backgroundColor
         ),
         position: .bottomRight
       )
@@ -54,13 +87,11 @@ final class TransactionConfirmationHeaderImageItemView: UIView {
     
     iconView.configuration = TKListItemIconView.Configuration(
       content: .image(
-        TKImageView.Model(
-          image: configuration.image,
-          size: .size(CGSize(width: 96, height: 96)),
-          corners: configuration.corners
-        )
+        configuration.imageViewModel
       ),
       alignment: .center,
+      cornerRadius: 12,
+      backgroundColor: configuration.backgroundColor,
       size: CGSize(width: 96, height: 96),
       badge: badge
     )

@@ -24,6 +24,9 @@ open class TKBridgeWebViewController: UIViewController {
     }
   }
   
+  public var didTapCopy: ((URL) -> Void)?
+  public var didTapShare: ((URL) -> Void)?
+  
   public var didLoadInitialURLHandler: (() -> Void)?
   private let userContentController = WKUserContentController()
   
@@ -239,7 +242,11 @@ open class TKBridgeWebViewController: UIViewController {
         icon: .TKUIKit.Icons.Size16.share,
         selectionHandler: { [weak self] in
           guard let url = self?.webView.url else { return }
-          self?.shareURL(url: url)
+          if let didTapShare = self?.didTapShare {
+            didTapShare(url)
+          } else {
+            self?.shareURL(url: url)
+          }
         }
       ),
       TKPopupMenuItem(
@@ -247,8 +254,12 @@ open class TKBridgeWebViewController: UIViewController {
         icon: .TKUIKit.Icons.Size16.copy,
         selectionHandler: { [weak self, configuration] in
           guard let url = self?.webView.url else { return }
-          ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
-          UIPasteboard.general.string = url.absoluteString
+          if let didTapCopy = self?.didTapCopy {
+            didTapCopy(url)
+          } else {
+            ToastPresenter.showToast(configuration: configuration.copyToastConfiguration)
+            UIPasteboard.general.string = url.absoluteString
+          }
         }
       )
     ]

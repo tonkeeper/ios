@@ -8,13 +8,26 @@ public enum TKGradientDirection {
 }
 
 public class TKGradientView: UIView {
-  private let gradientLayer: CAGradientLayer
+  public var color: UIColor {
+    didSet {
+      self.backgroundColor = color
+      self.gradientLayer.setTKGradient(color: color, direction: direction)
+    }
+  }
+  public var direction: TKGradientDirection {
+    didSet {
+      self.gradientLayer.setTKGradient(color: color, direction: direction)
+    }
+  }
+  private let gradientLayer = CAGradientLayer()
   
   public init(color: UIColor, direction: TKGradientDirection) {
-    self.gradientLayer = .tkLayer(color: .black, direction: direction)
+    self.color = color
+    self.direction = direction
     super.init(frame: .zero)
     self.backgroundColor = color
     self.layer.mask = gradientLayer
+    gradientLayer.setTKGradient(color: color, direction: direction)
   }
   
   required init?(coder: NSCoder) {
@@ -28,6 +41,33 @@ public class TKGradientView: UIView {
 }
 
 public extension CAGradientLayer {
+  func setTKGradient(color: UIColor, direction: TKGradientDirection) {
+    let colors = CAGradientLayer.gradientValues.map { color.withAlphaComponent($0).cgColor }
+    let locations = CAGradientLayer.gradientValues
+    
+    let start: CGPoint
+    let end: CGPoint
+    switch direction {
+    case .topToBottom:
+      start = CGPoint(x: 0.5, y: 1)
+      end = CGPoint(x: 0.5, y: 0)
+    case .bottomToTop:
+      start = CGPoint(x: 0.5, y: 0)
+      end = CGPoint(x: 0.5, y: 1)
+    case .leftToRight:
+      start = CGPoint(x: 1, y: 0.5)
+      end = CGPoint(x: 0, y: 0.5)
+    case .rightToLeft:
+      start = CGPoint(x: 0, y: 0.5)
+      end = CGPoint(x: 1, y: 0.5)
+    }
+    
+    self.colors = colors
+    self.locations = locations as [NSNumber]
+    self.startPoint = start
+    self.endPoint = end
+  }
+  
   static func tkLayer(color: UIColor, direction: TKGradientDirection) -> CAGradientLayer {
     let layer = CAGradientLayer()
     let colors = CAGradientLayer.gradientValues.map { color.withAlphaComponent($0).cgColor }

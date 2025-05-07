@@ -74,6 +74,13 @@ private extension DappViewController {
       bridgeWebViewController.addBridgeMessageObserver(message: "dapp", observer: { [weak self] body in
         self?.viewModel.didReceiveMessage(body: body)
       })
+      bridgeWebViewController.didTapCopy = { [weak self] url in
+        self?.viewModel.copyDappURL(url: url)
+      }
+      
+      bridgeWebViewController.didTapShare = { [weak self] url in
+        self?.viewModel.shareDappURL(url: url)
+      }
       
       self.bridgeWebViewController = bridgeWebViewController
     }
@@ -94,6 +101,17 @@ private extension DappViewController {
       } else {
         UIViewController.attemptRotationToDeviceOrientation()
       }
+    }
+    
+    viewModel.didShareURLSystemShareSheet = { [weak self] url in
+      let activityViewController = UIActivityViewController(
+        activityItems: [url as Any],
+        applicationActivities: nil
+      )
+      self?.present(
+        activityViewController,
+        animated: true
+      )
     }
   }
 }

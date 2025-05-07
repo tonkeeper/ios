@@ -372,7 +372,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .image(.App.Currency.Vector.ton),
             corners: .circle,
-            badgeImage: nil
+            badge: nil
           ),
           bottomSpace: 20
         )
@@ -461,6 +461,13 @@ final class HistoryEventDetailsMapper {
     
     let fiatPrice = jettonFiatString(amount: action.amount, jettonInfo: action.jettonInfo)
     
+    var badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge?
+    if isNetworkBadgeVisible {
+      badge = TransactionConfirmationHeaderImageItemView.Configuration.Badge(
+        image: .image(.App.Currency.Vector.ton)
+      )
+    }
+    
     var headerImage: HistoryEventDetailsModel.HeaderImage?
     if let imageUrl = action.jettonInfo.imageURL {
       headerImage = .transfer(
@@ -468,7 +475,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .urlImage(imageUrl),
             corners: .circle,
-            badgeImage: isNetworkBadgeVisible ? .image(.App.Currency.Vector.ton) : nil
+            badge: badge
           ),
           bottomSpace: 20
         )
@@ -602,7 +609,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .urlImage(nftImageUrl),
             corners: .cornerRadius(cornerRadius: 12),
-            badgeImage: nil
+            badge: nil
           ),
           bottomSpace: 20
         )
@@ -653,7 +660,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .urlImage(nftImageUrl),
             corners: .cornerRadius(cornerRadius: 12),
-            badgeImage: nil
+            badge: nil
           ),
           bottomSpace: 20
         )
@@ -752,7 +759,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .urlImage(imageUrl),
             corners: .circle,
-            badgeImage: nil
+            badge: nil
           ),
           bottomSpace: 20
         )
@@ -806,7 +813,7 @@ final class HistoryEventDetailsMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .urlImage(imageUrl),
             corners: .circle,
-            badgeImage: nil
+            badge: nil
           ),
           bottomSpace: 20
         )

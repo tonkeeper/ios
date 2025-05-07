@@ -172,6 +172,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-link-outline-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var linkChainOutline: UIImage {
+          .imageWithName("Icons/28/ic-link-chain-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var wallet: UIImage {
           .imageWithName("Icons/28/ic-wallet-28")
           .withRenderingMode(.alwaysTemplate)
@@ -411,6 +415,10 @@ public extension UIImage {
       public enum Size56 {
         public static var flashlightOff: UIImage {
           .imageWithName("Icons/56/ic-flashlight-off-56")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var globe: UIImage {
+          .imageWithName("Icons/56/ic-globe-56")
           .withRenderingMode(.alwaysTemplate)
         }
       }

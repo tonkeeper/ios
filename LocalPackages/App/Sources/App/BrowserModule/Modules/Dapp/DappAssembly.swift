@@ -8,13 +8,13 @@ struct DappAssembly {
                      analyticsProvider: AnalyticsProvider,
                      deeplinkHandler: @escaping ((_ deeplink: Deeplink) -> Void), messageHandler: DappMessageHandler,
                      wallet: Wallet?)
-  -> MVVMModule<DappViewController, Void, DappModuleInput> {
+  -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput> {
 
     let viewModel = DappViewModelImplementation(dapp: dapp, messageHandler: messageHandler, wallet: wallet)
     let viewController = DappViewController(
       viewModel: viewModel,
       deeplinkHandler: deeplinkHandler
     )
-    return .init(view: viewController, output: Void(), input: viewModel)
+    return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }

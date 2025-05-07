@@ -18,7 +18,17 @@ public final class AppSettings {
     let key = String.buySellItemDoNotShowKey + "_\(buySellItemId)"
     userDefaults.set(doNotShow, forKey: key)
   }
-
+  
+  public func isDappOpenWarningDoNotShow(_ host: String) -> Bool {
+    let key = String.dappOpenWarningDoNotShowKey + "_\(host)"
+    return userDefaults.bool(forKey: key)
+  }
+  
+  public func setIsDappOpenWarningDoNotShow(_ host: String, doNotShow: Bool) {
+    let key = String.dappOpenWarningDoNotShowKey + "_\(host)"
+    userDefaults.set(doNotShow, forKey: key)
+  }
+  
   public var isDecryptCommentWarningDoNotShow: Bool {
     get {
       userDefaults.bool(forKey: .decryptCommentDoNotShowKey)
@@ -70,6 +80,7 @@ public final class AppSettings {
 
 private extension String {
   static let buySellItemDoNotShowKey = "buy_sell_item_do_not_show_warning"
+  static let dappOpenWarningDoNotShowKey = "dapp_open_warning_do_not_show_key"
   static let decryptCommentDoNotShowKey = "decrypt_comment_do_not_show_warning"
   static let isSecureModeKey = "is_secure_mode"
   static let selectedCountryCode = "selected_country_code"

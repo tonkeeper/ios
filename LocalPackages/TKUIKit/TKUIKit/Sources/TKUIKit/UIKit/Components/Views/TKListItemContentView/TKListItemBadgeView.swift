@@ -33,13 +33,16 @@ public final class TKListItemBadgeView: UIView {
     
     public let item: Item
     public let size: Size
+    public let tintColor: UIColor?
     public let backgroundColor: UIColor
     
     public init(item: Item,
                 size: Size,
+                tintColor: UIColor? = nil,
                 backgroundColor: UIColor = .Background.content) {
       self.item = item
       self.size = size
+      self.tintColor = tintColor
       self.backgroundColor = backgroundColor
     }
     
@@ -106,6 +109,7 @@ public final class TKListItemBadgeView: UIView {
       iconView.configure(
         model: TKImageView.Model(
           image: image,
+          tintColor: configuration.tintColor,
           size: .size(CGSize(width: configuration.size.side, height: configuration.size.side)),
           corners: .circle
         )

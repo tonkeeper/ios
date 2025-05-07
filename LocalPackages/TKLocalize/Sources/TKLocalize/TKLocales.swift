@@ -692,6 +692,26 @@ public enum TKLocales {
       /// Disconnect
       public static let title = TKLocales.tr("Localizable", "dapp.disconnect_toast.title", fallback: "Disconnect")
     }
+    public enum OpenWarningPopup {
+      /// You are opening an external app not operated by Tonkeeper. Proceed only if you trust the source.
+      public static let warning = TKLocales.tr("Localizable", "dapp.open_warning_popup.warning", fallback: "You are opening an external app not operated by Tonkeeper. Proceed only if you trust the source.")
+    }
+    public enum SharingPopup {
+      /// This link opens %@ directly in Tonkeeper. You can use it again later or share it if needed.
+      public static func caption(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "dapp.sharing_popup.caption", String(describing: p1), fallback: "This link opens %@ directly in Tonkeeper. You can use it again later or share it if needed.")
+      }
+      /// Share %@
+      public static func title(_ p1: Any) -> String {
+        return TKLocales.tr("Localizable", "dapp.sharing_popup.title", String(describing: p1), fallback: "Share %@")
+      }
+      public enum Buttons {
+        /// Copy Link
+        public static let copy = TKLocales.tr("Localizable", "dapp.sharing_popup.buttons.copy", fallback: "Copy Link")
+        /// Share
+        public static let share = TKLocales.tr("Localizable", "dapp.sharing_popup.buttons.share", fallback: "Share")
+      }
+    }
   }
   public enum Dates {
     /// Today

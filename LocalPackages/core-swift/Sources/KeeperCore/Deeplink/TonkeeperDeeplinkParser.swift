@@ -225,7 +225,9 @@ public struct TonkeeperDeeplinkParser {
 
   private func parseDapp(url: URL) throws -> URL {
     let dappPrefix = "dapp/"
-    var stringURL = url.absoluteString
+    var stringURL = url
+      .absoluteString
+      .removingPercentEncoding ?? url.absoluteString
 
     if stringURL.hasPrefix(dappPrefix) {
       stringURL = String(stringURL.dropFirst(dappPrefix.count))

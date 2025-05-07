@@ -1,4 +1,5 @@
-import Foundation
+import UIKit
+import TKUIKit
 import TKLocalize
 import KeeperCore
 import BigInt
@@ -107,7 +108,9 @@ final class HistoryEventDetailsTronMapper {
           configuration: TransactionConfirmationHeaderImageItemView.Configuration(
             image: .image(.App.Currency.Size96.usdt),
             corners: .circle,
-            badgeImage: .image(.App.Currency.Vector.trc20)
+            badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge(
+              image: .image(.App.Currency.Vector.trc20)
+            )
           ),
           bottomSpace: 20
         )

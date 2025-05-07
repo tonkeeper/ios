@@ -88,7 +88,7 @@ public final class TKDetailsDescriptionView: UIView, ConfigurableView {
       height: buttonsContainerHeight
     )
     
-    let contentHeight: CGFloat = textLabel.frame.height + 8 + buttonsContainerHeight
+    let contentHeight: CGFloat = textLabel.frame.height + (buttonsContainerHeight == 0 ? 0 : 8 + buttonsContainerHeight)
     contentContainer.frame = CGRect(x: .contentPadding, y: .contentPadding, width: contentWidth, height: contentHeight)
     heigth = contentHeight + .contentPadding * 2
     invalidateIntrinsicContentSize()
