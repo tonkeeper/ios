@@ -10,7 +10,11 @@ struct DappAssembly {
                      wallet: Wallet?)
   -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput> {
 
-    let viewModel = DappViewModelImplementation(dapp: dapp, messageHandler: messageHandler, wallet: wallet)
+    let viewModel = DappViewModelImplementation(
+      dapp: dapp,
+      messageHandler: messageHandler,
+      wallet: wallet,
+    analyticsProvider: analyticsProvider)
     let viewController = DappViewController(
       viewModel: viewModel,
       deeplinkHandler: deeplinkHandler

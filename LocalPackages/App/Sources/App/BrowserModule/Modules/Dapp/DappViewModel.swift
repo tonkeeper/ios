@@ -129,8 +129,8 @@ final class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappMo
     } else {
       updateURLForCopyAndShare(url: url)
     }
-    ToastPresenter.showToast(configuration: .copied)
-    UIPasteboard.general.string = url.absoluteString
+    Pasteboard.copy(value: resultUrl.absoluteString)
+    sendAnalyticsEvent(action: .copy)
   }
   
   func shareDappURL(url: URL) {
@@ -140,18 +140,22 @@ final class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappMo
       let url = updateURLForCopyAndShare(url: url)
       didShareDappURL?(dapp, url)
     }
+    sendAnalyticsEvent(action: .share)
   }
   
   private let dapp: Dapp
   private let messageHandler: DappMessageHandler
   private let wallet: Wallet?
+  private let analyticsProvider: AnalyticsProvider
   
   init(dapp: Dapp,
        messageHandler: DappMessageHandler,
-       wallet: Wallet?) {
+       wallet: Wallet?,
+       analyticsProvider: AnalyticsProvider) {
     self.dapp = dapp
     self.messageHandler = messageHandler
     self.wallet = wallet
+    self.analyticsProvider = analyticsProvider
   }
   
   private func sendResponse(_ response: DappBridgeResponse) {
@@ -273,8 +277,6 @@ final class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappMo
   }
   
   private func updateURLForCopyAndShare(url: URL) -> URL {
-    
-    
     let urlEncoded: (URL) -> String? = {
       guard let percenEncodingRemoved = $0
         .absoluteString
@@ -294,6 +296,27 @@ final class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappMo
   func checkIfUrlBlockchainExplorer(url: URL) -> Bool {
     let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
     return [BlockchainExplorer.tonviewer.host, BlockchainExplorer.tronscan.host].contains(urlComponents?.host)
+  }
+  
+  private enum Action {
+    case copy
+    case share
+    var value: String {
+      switch self {
+      case .copy: "Copy link"
+      case .share: "Share"
+      }
+    }
+  }
+  private func sendAnalyticsEvent(action: Action) {
+    analyticsProvider.logEvent(
+      eventKey: .dappSharingCopy,
+      args: [
+        "name": dapp.name,
+        "url": dapp.url.absoluteString,
+        "from": action.value
+      ]
+    )
   }
 }
 

@@ -11,6 +11,7 @@ public enum EventKey: String {
   case deleteWallet = "delete_wallet"
   case resetWallet = "reset_wallet"
   case openBrowser = "browser_open"
+  case dappSharingCopy = "dapp_sharing_copy"
   
   case storyOpen = "story_open"
   case storyPageView = "story_page_view"
