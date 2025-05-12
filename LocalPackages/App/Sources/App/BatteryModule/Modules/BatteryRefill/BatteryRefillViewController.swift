@@ -65,7 +65,17 @@ final class BatteryRefillViewController: GenericViewViewController<BatteryRefill
     super.viewDidLayoutSubviews()
     
     customView.navigationBar.layoutIfNeeded()
+    updateCollectionViewInsets()
+  }
+  
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    updateCollectionViewInsets()
+  }
+  
+  private func updateCollectionViewInsets() {
     customView.collectionView.contentInset.top = customView.navigationBar.bounds.height
+    customView.collectionView.contentInset.bottom = customView.safeAreaInsets.bottom
   }
 }
 
