@@ -417,7 +417,7 @@ private extension WalletTransferSignCoordinator {
     
     var string = "tonsign://v1/?pk=\(hexPublicKey)&body=\(hexBody)&v=\(v)&tn=\(network.rawValue)"
     if isOnDevice {
-      string.append("&return=\("tonkeeperx://publish".percentEncoded ?? "")")
+      string.append("&return=\("tonkeeper-mob://publish".percentEncoded ?? "")")
     }
     return URL(string: string)
   }

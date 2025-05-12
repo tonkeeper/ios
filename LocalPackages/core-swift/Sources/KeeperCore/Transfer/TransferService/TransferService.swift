@@ -38,7 +38,7 @@ public struct TransferEmulationResult {
 public enum TransferType {
   case `default`
   case battery(excessAddress: Address)
-  case gasless(excessAddress: Address)
+  case gasless(excessAddress: Address, fee: BigUInt)
   
   public var isBattery: Bool {
     switch self {
@@ -64,7 +64,7 @@ public enum TransferType {
       return nil
     case .battery(let excessAddress):
       return excessAddress
-    case .gasless(let excessAddress):
+    case .gasless(let excessAddress, let fee):
       return excessAddress
     }
   }
@@ -217,7 +217,7 @@ public struct TransferService {
           transfer: transfer,
           excessAddress: excessesAddress,
           tonProofToken: tonProofToken,
-          transferType: .gasless(excessAddress: excessesAddress)
+          transferType: .gasless(excessAddress: excessesAddress, fee: 1)
         )
       } catch {
         return try await emulate(
@@ -262,7 +262,7 @@ public struct TransferService {
         transfer: transfer,
         excessAddress: excessesAddress,
         tonProofToken: tonProofToken,
-        transferType: .gasless(excessAddress: excessesAddress)
+        transferType: .gasless(excessAddress: excessesAddress, fee: 1)
       )
     }
   }
@@ -299,7 +299,7 @@ public struct TransferService {
           transfer: transfer,
           excessAddress: excessesAddress,
           tonProofToken: tonProofToken,
-          transferType: .gasless(excessAddress: excessesAddress)
+          transferType: .gasless(excessAddress: excessesAddress, fee: 1)
         )
       }
     } catch {
@@ -452,7 +452,7 @@ public struct TransferService {
       boc: signed.toBoc().base64EncodedString())
     let fee = BigUInt(stringLiteral: comission)
     return TransferEmulationResult(
-      transferType: .gasless(excessAddress: excessAddress),
+      transferType: .gasless(excessAddress: excessAddress, fee: fee),
       extra: TransferEmulationResult.Extra(token: .jetton(jettonItem), amount: .Fee(fee)),
       transactionInfo: nil,
       isGaslessAvailable: true
@@ -553,14 +553,14 @@ public struct TransferService {
       }
       
       var additionalInternalMessages = [MessageRelaxed]()
-      if case .gasless(let excessAddress) = transferType {
+      if case .gasless(let excessAddress, let fee) = transferType {
         let customPayload = Builder()
         try customPayload.store(uint: OpCodes.GASLESS, bits: 32)
         
         additionalInternalMessages = [
           try JettonTransferMessage.internalMessage(
             jettonAddress: jettonItem.walletAddress,
-            amount: BigInt(1),
+            amount: BigInt(fee),
             bounce: true,
             to: excessAddress,
             from: excessAddress,
