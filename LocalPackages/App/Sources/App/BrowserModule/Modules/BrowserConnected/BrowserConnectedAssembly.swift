@@ -4,7 +4,8 @@ import KeeperCore
 
 struct BrowserConnectedAssembly {
   private init() {}
-  static func module(keeperCoreAssembly: KeeperCore.MainAssembly)
+  static func module(keeperCoreAssembly: KeeperCore.MainAssembly,
+                     coreAssembly: TKCore.CoreAssembly)
   -> MVVMModule<BrowserConnectedViewController, BrowserConnectedModuleOutput, Void> {
 
     let tonConnectStore = keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
@@ -18,7 +19,8 @@ struct BrowserConnectedAssembly {
         walletNotificationsStore: keeperCoreAssembly.storesAssembly.walletNotificationStore,
         tonConnectAppsStore: keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
       ),
-      pushTokenProvider: PushNotificationTokenProvider()
+      pushTokenProvider: PushNotificationTokenProvider(),
+      analyticsProvider: coreAssembly.analyticsProvider
     )
     let viewController = BrowserConnectedViewController(
       viewModel: viewModel

@@ -13,7 +13,10 @@ struct BrowserAssembly {
     let exploreModule = BrowserExploreAssembly.module(
       keeperCoreAssembly: keeperCoreAssembly,
       coreAssembly: coreAssembly)
-    let connectedModule = BrowserConnectedAssembly.module(keeperCoreAssembly: keeperCoreAssembly)
+    let connectedModule = BrowserConnectedAssembly.module(
+      keeperCoreAssembly: keeperCoreAssembly,
+      coreAssembly: coreAssembly
+    )
 
     let viewModel = BrowserViewModelImplementation(
       exploreModuleOutput: exploreModule.output,

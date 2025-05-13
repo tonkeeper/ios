@@ -51,10 +51,10 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   func selectFeaturedApp(dapp: Dapp) {
     didSelectDapp?(dapp)
-    analyticsProvider.logEvent(eventKey: .clickDapp,
-                               args: ["name": dapp.name,
-                                      "url": dapp.url.absoluteString,
-                                      "from": "banner"])
+    analyticsProvider.logClickDappEvent(
+      name: dapp.name,
+      url: dapp.url.absoluteString,
+      from: .banner)
   }
   
   // MARK: - State
@@ -369,6 +369,10 @@ private extension BrowserExploreViewModelImplementation {
             configuration: configuration,
             selectionHandler: { [weak self] in
               guard let dapp = Dapp(popularApp: app) else { return }
+              self?.analyticsProvider.logClickDappEvent(
+                name: dapp.name,
+                url: dapp.url.absoluteString,
+                from: .browser)
               self?.didSelectDapp?(dapp)
             },
             longPressHandler: {

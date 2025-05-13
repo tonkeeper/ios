@@ -60,6 +60,11 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
       includeCountries: nil
     )
     didSelectDapp?(dapp)
+    analyticsProvider.logClickDappEvent(
+      name: dapp.name,
+      url: dapp.url.absoluteString,
+      from: .browserConnected
+    )
   }
   
   // MARK: - State
@@ -82,17 +87,20 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
   private let connectedAppsStore: ConnectedAppsStore
   private let notificationsService: NotificationsService
   private let pushTokenProvider: PushNotificationTokenProvider
+  private let analyticsProvider: AnalyticsProvider
 
   // MARK: - Init
   
   init(walletsStore: WalletsStore,
        connectedAppsStore: ConnectedAppsStore,
        notificationsService: NotificationsService,
-       pushTokenProvider: PushNotificationTokenProvider) {
+       pushTokenProvider: PushNotificationTokenProvider,
+       analyticsProvider: AnalyticsProvider) {
     self.walletsStore = walletsStore
     self.connectedAppsStore = connectedAppsStore
     self.notificationsService = notificationsService
     self.pushTokenProvider = pushTokenProvider
+    self.analyticsProvider = analyticsProvider
   }
 }
 

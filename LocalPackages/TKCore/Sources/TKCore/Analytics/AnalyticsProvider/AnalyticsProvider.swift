@@ -53,4 +53,22 @@ public struct AnalyticsProvider {
       service.logEvent(eventKey: eventKey, args: args)
     }
   }
+  
+  public enum ClickDappEventFrom: String {
+    case banner = "banner"
+    case browser = "browser"
+    case browserConnected = "browser_connected"
+  }
+  public func logClickDappEvent(name: String,
+                                url: String,
+                                from: ClickDappEventFrom) {
+    logEvent(
+      eventKey: .clickDapp,
+      args: [
+        "name": name,
+        "url": url,
+        "from": from.rawValue
+      ]
+    )
+  }
 }
