@@ -103,10 +103,9 @@ final class OpenDappWarningPopupViewModelImplementation: OpenDappWarningPopupVie
         TKPopUp.Component.GroupComponent(
           padding: UIEdgeInsets(top: 16, left: 16, bottom: 0, right: 16),
           items: [
-            TKPopUpDetailsDescriptionItem(
-              model: TKDetailsDescriptionView.Model(
-                title: TKLocales.Dapp.OpenWarningPopup.warning,
-                buttons: []
+            OpenDappWarningBannerItem(
+              configuration: OpenDappWarningBannerView.Model(
+                text: TKLocales.Dapp.OpenWarningPopup.warning
               ),
               bottomSpace: 0
             )
