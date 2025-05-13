@@ -187,6 +187,9 @@ public final class ProcessedBalanceStore: Store<ProcessedBalanceStore.Event, Pro
         
         stakingItems.append(stakingItem)
       } else {
+        if jettonItems.contains(where: { $0.jetton.jettonInfo.address == jetton.item.jettonInfo.address }) {
+          continue
+        }
         jettonItems.append(processJettonBalance(jetton, currency: currency))
       }
     }
