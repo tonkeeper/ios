@@ -127,7 +127,6 @@ final class ReceiveTabViewModelImplementation: ReceiveTabViewModel, ReceiveTabMo
 
 private extension ReceiveTabViewModelImplementation {
   func createModel(icon: TKListItemIconView.Configuration,
-                   tokenSymbol: String,
                    tokenName: String,
                    description: String,
                    walletAddress: String?) -> ReceiveTabView.Model {
@@ -194,7 +193,6 @@ private extension ReceiveTabViewModelImplementation {
   
   func update() {
     let icon: TKListItemIconView.Configuration
-    let tokenSymbol: String
     let tokenName: String
     let description: String
     let walletAddress: String?
@@ -206,8 +204,7 @@ private extension ReceiveTabViewModelImplementation {
       switch token {
       case .ton:
         tokenName = TonInfo.name
-        tokenSymbol = TonInfo.symbol
-        descriptionTokenName = "\(TonInfo.name) \(TonInfo.symbol)"
+        descriptionTokenName = "\(TonInfo.name)"
         icon = TKListItemIconView.Configuration(
             content: .image(
               .init(
@@ -222,7 +219,6 @@ private extension ReceiveTabViewModelImplementation {
         )
       case .jetton(let jettonItem):
         tokenName = jettonItem.jettonInfo.name
-        tokenSymbol = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
         descriptionTokenName = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
         
         var badge: TKListItemIconView.Configuration.Badge?
@@ -272,7 +268,6 @@ private extension ReceiveTabViewModelImplementation {
           position: .bottomRight
         )
       )
-      tokenSymbol = USDT.symbol
       tokenName = USDT.name
       description = TKLocales.Receive.Trc20.description
       walletAddress = wallet.tron?.address.base58
@@ -280,7 +275,6 @@ private extension ReceiveTabViewModelImplementation {
     
     let model = createModel(
       icon: icon,
-      tokenSymbol: tokenSymbol,
       tokenName: tokenName,
       description: description,
       walletAddress: walletAddress

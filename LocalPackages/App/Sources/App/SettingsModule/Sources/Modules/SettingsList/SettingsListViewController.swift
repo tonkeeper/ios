@@ -216,8 +216,8 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
         switch snapshotSection {
         case .listItems(let section):
           let sectionLayout: NSCollectionLayoutSection = .listItemsSection
-          sectionLayout.contentInsets.top = section.topPadding
-          sectionLayout.contentInsets.bottom = section.bottomPadding
+//          sectionLayout.contentInsets.top = section.topPadding
+          sectionLayout.contentInsets.bottom = 16
           
           if section.headerConfiguration != nil {
             let headerSize = NSCollectionLayoutSize(

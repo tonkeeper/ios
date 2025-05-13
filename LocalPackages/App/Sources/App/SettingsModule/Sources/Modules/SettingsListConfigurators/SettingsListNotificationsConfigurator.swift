@@ -91,18 +91,14 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   private func createPushNotificationsSection() -> SettingsListSection {
     let items = [createPushNotificationsItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16
+      items: items
     ))
   }
   
   private func createNotificationsNotAvailableSection() -> SettingsListSection {
     let items = [createNotificationsNotAvailableItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16
+      items: items
     ))
   }
   
@@ -187,8 +183,6 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     }
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 0,
-      bottomPadding: 16,
       headerConfiguration: SettingsListSectionHeaderView.Configuration(
         title: .connectedAppsSectionTitle,
         caption: .connectedAppsSectionCaption

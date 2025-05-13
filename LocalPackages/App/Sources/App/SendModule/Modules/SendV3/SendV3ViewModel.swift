@@ -68,7 +68,7 @@ struct SendV3ViewModelViewState {
   let recipientDescription: RecipientDescription?
   let balanceState: BalanceState
   let continueButtonConfiguration: TKButton.Configuration
-  let commentState: CommentState
+  let commentState: CommentState?
 }
 
 
@@ -448,7 +448,9 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       return configuration
     }()
     
-    let commentState: SendV3ViewModelViewState.CommentState = {
+    let commentState: SendV3ViewModelViewState.CommentState? = {
+      guard item.isSupportComment else { return nil }
+      
       let isCommentRequired = recipient?.isCommentRequired ?? false
       let comment = self.comment ?? ""
       let isCommentOk = self.sendController.validateComment(comment: comment)

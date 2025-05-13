@@ -36,9 +36,7 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
   private func createSeedPhraseRecoverySection() -> SettingsListSection {
     let items = createSeedPhrasesItems()
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 0
+      items: items
     ))
   }
   

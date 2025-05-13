@@ -79,8 +79,8 @@ final class HistoryEventDetailsMapper {
     let status: AccountEventStatus = event.accountEvent.isInProgress ? .ok : eventAction.status
     
     let detailsButton: HistoryEventDetailsModel.TransasctionDetailsButton? = {
-      let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label1, color: .Text.primary)
-      let hash = String(event.accountEvent.eventId.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
+      let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label2, color: .Text.primary)
+      let hash = String(event.accountEvent.eventId.prefix(8)).withTextStyle(.label2, color: .Text.secondary)
       let title = NSMutableAttributedString(attributedString: transaction)
       title.append(hash)
       guard let url = tonviewerURLBuilder.buildURL(context: .eventDetails(eventID: event.accountEvent.eventId), isTestnet: wallet.isTestnet) else {

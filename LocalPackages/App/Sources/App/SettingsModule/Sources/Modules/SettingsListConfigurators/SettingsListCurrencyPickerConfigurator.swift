@@ -65,9 +65,7 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
     
     let section = SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 0,
-        bottomPadding: 16
+        items: items
       )
     )
     

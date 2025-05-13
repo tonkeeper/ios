@@ -67,7 +67,7 @@ struct TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
     }
   
     return TokenDetailsModel(
-      title: TronSwift.USDT.symbol,
+      title: "Tether USD",
       caption: TokenDetailsModel.Caption(
         text: TronSwift.USDT.tag.withTextStyle(.body2, color: .Text.secondary, alignment: .center),
         action: nil

@@ -245,7 +245,7 @@
 "backup.warning.list.item2" = "Поддержка Tonkeeper никогда не запрашивает секретный ключ.";
 "backup.warning.list.item3" = "Любой, кто знает ваш секретный ключ, сможет использовать ваш кошелёк.";
 
-"backup.show.title" = "Секретный ключи";
+"backup.show.title" = "Секретный ключ";
 "backup.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
 "backup.show.button.title" = "Скопировать ключ";
 "backup.show.button.trc20" = "Экспорт TRC20 кошелька";
@@ -255,7 +255,7 @@
 "backup.trc20.show.banner" = "Этот ключ предназначен только для TRC20. Он не может восстановить ваш TON кошелёк. Для восстановления TON кошелька используйте ключ восстановления TON.";
 "backup.trc20.show.button.title" = "Скопировать ключ";
 
-"backup.check.title" = "Секретный ключи";
+"backup.check.title" = "Секретный ключ";
 "backup.check.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
 "backup.check.button.title" = "Проверить резервную копию";
 
@@ -408,7 +408,7 @@
 "balance_list.staking_item.comment.after_end_of_cycle" = "после окончания цикла";
 
 "receive.title" = "Получить %@";
-"receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
+"receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
 
 "receive.trc20.description" = "Отправляйте только USD₮ TRC20 на этот адрес, иначе вы можете потерять свои средства.";
 "receive.trc20.popup.title" = "USD₮ TRC20";

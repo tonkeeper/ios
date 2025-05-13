@@ -10,19 +10,19 @@ enum SettingsListSection: Hashable {
 
 struct SettingsListItemsSection: Hashable {
   let items: [AnyHashable]
-  let topPadding: CGFloat
-  let bottomPadding: CGFloat
+//  let topPadding: CGFloat
+//  let bottomPadding: CGFloat
   let headerConfiguration: SettingsListSectionHeaderView.Configuration?
   let footerConfiguration: SettingsListSectionFooterView.Configuration?
   
   init(items: [AnyHashable], 
-       topPadding: CGFloat,
-       bottomPadding: CGFloat,
+//       topPadding: CGFloat,
+//       bottomPadding: CGFloat,
        headerConfiguration: SettingsListSectionHeaderView.Configuration? = nil,
        footerConfiguration: SettingsListSectionFooterView.Configuration? = nil) {
     self.items = items
-    self.topPadding = topPadding
-    self.bottomPadding = bottomPadding
+//    self.topPadding = topPadding
+//    self.bottomPadding = bottomPadding
     self.headerConfiguration = headerConfiguration
     self.footerConfiguration = footerConfiguration
   }

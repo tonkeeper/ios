@@ -53,9 +53,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       createSeedPhraseRecoveryItem()
     ]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 16,
-      bottomPadding: 0
+      items: items
     ))
   }
   
@@ -64,9 +62,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
       createResetWatchedStories()
     ]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 16,
-      bottomPadding: 0
+      items: items
     ))
   }
 
@@ -152,8 +148,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     return SettingsListSection.listItems(
       SettingsListItemsSection(
         items: [createConfirmationSliderItem()],
-        topPadding: 0,
-        bottomPadding: 0,
         headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Confirmation")
       )
     )

@@ -89,8 +89,6 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     }
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 0,
-      bottomPadding: 16,
       headerConfiguration: SettingsListSectionHeaderView.Configuration(
         title: TKLocales.Backup.Information.title,
         caption: TKLocales.Backup.Information.subtitle
@@ -102,9 +100,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     guard wallet.setupSettings.backupDate != nil else { return nil }
     let items = [createShowRecoveryPhraseItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16
+      items: items
     ))
   }
   
@@ -115,9 +111,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
       processedBalanceTonItem: processedBalanceTonItem
     ) else { return nil }
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: [item],
-      topPadding: 0,
-      bottomPadding: 16
+      items: [item]
     ))
   }
   

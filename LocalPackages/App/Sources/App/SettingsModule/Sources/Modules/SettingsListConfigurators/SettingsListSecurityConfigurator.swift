@@ -62,8 +62,6 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     let items = [createBiometryItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 0,
-      bottomPadding: 0,
       footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.useBiometryDescription)
     ))
   }
@@ -72,8 +70,6 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     let items = [createLockScreenItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
       items: items,
-      topPadding: 16,
-      bottomPadding: 0,
       footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.lockScreenDescription)
     ))
   }
@@ -81,9 +77,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
   private func createChangePasscodeSection() -> SettingsListSection {
     let items = [createChangePasscodeItem()]
     return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 16,
-      bottomPadding: 16
+      items: items
     ))
   }
   

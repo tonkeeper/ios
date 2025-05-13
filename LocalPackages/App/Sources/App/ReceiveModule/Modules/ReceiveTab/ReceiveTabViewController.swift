@@ -2,6 +2,9 @@ import UIKit
 import TKUIKit
 
 final class ReceiveTabViewController: GenericViewViewController<ReceiveTabView> {
+  
+  private var scrollViewObservationToken: NSObjectProtocol?
+  
   private let viewModel: ReceiveTabViewModel
   
   init(viewModel: ReceiveTabViewModel) {
@@ -31,7 +34,18 @@ final class ReceiveTabViewController: GenericViewViewController<ReceiveTabView> 
 }
 
 private extension ReceiveTabViewController {
-  func setup() {}
+  func setup() {
+    scrollViewObservationToken = customView.scrollView.observe(
+      \.contentSize,
+       options: .new,
+       changeHandler: { scrollView, _ in
+         if scrollView.contentSize.height < scrollView.bounds.height {
+           scrollView.bounces = false
+         } else {
+           scrollView.bounces = true
+         }
+       })
+  }
   
   func setupBindings() {
     viewModel.didUpdateModel = { [weak self] model in

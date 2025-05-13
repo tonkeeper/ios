@@ -131,10 +131,15 @@ private extension SendV3ViewController {
       
       customView.continueButton.configuration = viewState.continueButtonConfiguration
       
-      customView.commentInputView.commentTextField.placeholder = viewState.commentState.placeholder
-      customView.commentInputView.commentTextField.isValid = viewState.commentState.isValid
-      customView.commentInputView.descriptionLabel.attributedText = viewState.commentState.description
-      customView.commentInputView.descriptionContainer.isHidden = viewState.commentState.description == nil
+      if let commentState = viewState.commentState {
+        customView.commentInputView.isHidden = false
+        customView.commentInputView.commentTextField.placeholder = commentState.placeholder
+        customView.commentInputView.commentTextField.isValid = commentState.isValid
+        customView.commentInputView.descriptionLabel.attributedText = commentState.description
+        customView.commentInputView.descriptionContainer.isHidden = commentState.description == nil
+      } else {
+        customView.commentInputView.isHidden = true
+      }
     }
     
     viewModel.didUpdateRecipientPlaceholder = { [weak self] placeholder in

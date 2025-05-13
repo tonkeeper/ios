@@ -37,9 +37,7 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
         items: [
           createTermsOfServiceItem(),
           createPrivacyPolicyItem()
-        ],
-        topPadding: 0,
-        bottomPadding: 16
+        ]
       )
     )
   }
@@ -50,8 +48,6 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
         items: [
           createFontLicenseItem()
         ],
-        topPadding: 0,
-        bottomPadding: 16,
         headerConfiguration: SettingsListSectionHeaderView.Configuration(
           title: TKLocales.Settings.Legal.Sections.licenses
         )

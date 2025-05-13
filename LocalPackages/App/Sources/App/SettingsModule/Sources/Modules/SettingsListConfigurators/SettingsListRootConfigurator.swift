@@ -158,9 +158,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private func createWalletEditSection() -> SettingsListSection {
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: [createWalletItem()],
-        topPadding: 0,
-        bottomPadding: 16
+        items: [createWalletItem()]
       )
     )
   }
@@ -187,9 +185,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 16,
-        bottomPadding: 16
+        items: items
       )
     )
   }
@@ -206,9 +202,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 16,
-        bottomPadding: 16
+        items: items
       )
     )
   }
@@ -227,9 +221,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     items.append(createLegalItem())
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 16,
-        bottomPadding: 16
+        items: items
       )
     )
   }
@@ -240,9 +232,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     ]
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 16,
-        bottomPadding: 0
+        items: items
       )
     )
   }
@@ -848,9 +838,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     guard !TKFeatureFlags.provider.isTronDisabled, wallet.isTronAvailable else { return nil }
     return SettingsListSection.listItems(
       SettingsListItemsSection(
-        items: [createUSDTTronItem()],
-        topPadding: 0,
-        bottomPadding: 0
+        items: [createUSDTTronItem()]
       )
     )
   }

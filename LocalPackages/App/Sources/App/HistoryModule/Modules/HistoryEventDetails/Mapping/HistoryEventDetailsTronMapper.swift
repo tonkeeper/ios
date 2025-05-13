@@ -69,8 +69,8 @@ final class HistoryEventDetailsTronMapper {
     }
     
     let detailsButton: HistoryEventDetailsModel.TransasctionDetailsButton = {
-      let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label1, color: .Text.primary)
-      let hash = String(event.txID.prefix(8)).withTextStyle(.label1, color: .Text.secondary)
+      let transaction = TKLocales.EventDetails.transaction.withTextStyle(.label2, color: .Text.primary)
+      let hash = String(event.txID.prefix(8)).withTextStyle(.label2, color: .Text.secondary)
       let title = NSMutableAttributedString(attributedString: transaction)
       title.append(hash)
       

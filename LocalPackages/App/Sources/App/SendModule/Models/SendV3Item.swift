@@ -57,4 +57,13 @@ enum SendV3Item {
       }
     }
   }
+  
+  var isSupportComment: Bool {
+    switch self {
+    case .ton:
+      return true
+    case .tron:
+      return false
+    }
+  }
 }

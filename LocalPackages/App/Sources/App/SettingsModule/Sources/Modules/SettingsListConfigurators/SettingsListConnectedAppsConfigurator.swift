@@ -137,9 +137,7 @@ final class SettingsListConnectedAppsConfigurator: SettingsListConfigurator {
     
     return .listItems(
       SettingsListItemsSection(
-        items: items,
-        topPadding: 16,
-        bottomPadding: 0
+        items: items
       )
     )
   }
