@@ -498,7 +498,7 @@ public struct TransferService {
                                   transfer: Transfer,
                                   seqno: UInt64,
                                   transferType: TransferType) async throws -> TransferData {
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    let safelyTimeout = await sendService.getTimeoutSafely(wallet: wallet)
     let messageType: MessageType = {
       switch transferType {
       case .default:
@@ -536,7 +536,7 @@ public struct TransferService {
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: safelyTimeout
       )
     case let .jetton(jettonItem, transferAmount, amount, recipient, comment):
       var customPayload: Cell?
@@ -586,7 +586,7 @@ public struct TransferService {
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: safelyTimeout
       )
     case let .nft(nft, transferAmount, recipient, comment):
       var commentCell: Cell?
@@ -608,7 +608,7 @@ public struct TransferService {
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: safelyTimeout
       )
     case .stonfiSwap(let signRawRequest):
       return TransferData(
@@ -616,13 +616,12 @@ public struct TransferService {
           wallet: wallet,
           signRawRequest: signRawRequest,
           seqno: seqno,
-          timout: timeout,
           transferType: transferType
         ),
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: safelyTimeout
       )
     case .signRaw(let signRawRequest, _):
       return TransferData(
@@ -630,13 +629,18 @@ public struct TransferService {
           wallet: wallet,
           signRawRequest: signRawRequest,
           seqno: seqno,
-          timout: timeout,
           transferType: transferType
         ),
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: {
+          guard let validUntil = signRawRequest.validUntil else {
+            return safelyTimeout
+          }
+          
+          return min(UInt64(validUntil), safelyTimeout)
+        }()
       )
     case .renewDNS(let nft):
       return TransferData(
@@ -651,7 +655,7 @@ public struct TransferService {
         wallet: wallet,
         messageType: messageType,
         seqno: seqno,
-        timeout: timeout
+        timeout: safelyTimeout
       )
     }
   }
@@ -659,7 +663,6 @@ public struct TransferService {
   private func createTransferDataTransfer(wallet: Wallet,
                                           signRawRequest: SignRawRequest,
                                           seqno: UInt64,
-                                          timout: UInt64,
                                           transferType: TransferType) async throws -> TransferData.Transfer {
     
     let payloads = try await getTonconnectPayloads(wallet: wallet, signRawRequest: signRawRequest, transferType: transferType)
