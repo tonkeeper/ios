@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 import TonSwift
 
-protocol BlockchainService {
+public protocol BlockchainService {
   func getWalletAddress(jettonMaster: String, owner: String, isTestnet: Bool) async throws -> Address
 }
 

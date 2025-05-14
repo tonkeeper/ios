@@ -100,7 +100,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func blockchainService() -> BlockchainService {
+  public func blockchainService() -> BlockchainService {
     BlockchainServiceImplementation(
       apiProvider: apiAssembly.apiProvider
     )

@@ -125,7 +125,7 @@ public struct TonkeeperDeeplinkParser {
         
         return nil
       }()
-      return .signRawTransfer(.init(recipient: recipient, amount: amount, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
+      return .signRawTransfer(.init(recipient: recipient, amount: amount, jettonAddress: jettonAddress, bin: bin, stateInit: stateInit, expirationTimestamp: expirationTimestamp))
     }
     
     return .sendTransfer(

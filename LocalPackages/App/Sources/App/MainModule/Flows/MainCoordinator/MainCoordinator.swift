@@ -531,7 +531,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         return true
       case .signRawTransfer(let signRawTransferData):
         openSignRawSendDeeplink(recipient: signRawTransferData.recipient,
-                                amount: signRawTransferData.amount, bin: signRawTransferData.bin, stateInit: signRawTransferData.stateInit,
+                                jettonMaster: signRawTransferData.jettonAddress, amount: signRawTransferData.amount,
+                                bin: signRawTransferData.bin, stateInit: signRawTransferData.stateInit,
                                 expirationTimestamp: signRawTransferData.expirationTimestamp
         )
         return true

@@ -15,6 +15,7 @@ public enum Deeplink: Equatable {
   public struct RawTransferData: Equatable {
     public let recipient: String
     public let amount: BigUInt?
+    public let jettonAddress: Address?
     public let bin: String?
     public let stateInit: String?
     public let expirationTimestamp: Int64?

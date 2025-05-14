@@ -187,18 +187,23 @@ extension MainCoordinator {
     openInsufficientFundsPopup(configuration: configuration)
   }
 
-  func openSignRawSendDeeplink(recipient: String,
-                               amount: BigUInt?,
-                               bin: String?,
-                               stateInit: String?,
-                               expirationTimestamp: Int64?) {
+  func openSignRawSendDeeplink(
+    recipient: String,
+    jettonMaster: Address?,
+    amount: BigUInt?,
+    bin: String?,
+    stateInit: String?,
+    expirationTimestamp: Int64?
+  ) {
     deeplinkHandleTask?.cancel()
     
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     
     if let expirationTimestamp {
-      let expirationDate = Date(timeIntervalSince1970: TimeInterval(expirationTimestamp))
+      let expirationDate = Date(
+        timeIntervalSince1970: TimeInterval(expirationTimestamp)
+      )
       guard Date() <= expirationDate else {
         let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.linkExpired)
         ToastPresenter.hideAll()
@@ -217,15 +222,48 @@ extension MainCoordinator {
         
         guard let amount = amount else { return }
 
+        var jettonTransferBin: String?
+        var jettonRecipient: TonRecipient?
+
+        if let jettonMaster {
+          let jettonWallet = try await keeperCoreMainAssembly.servicesAssembly
+            .blockchainService().getWalletAddress(
+              jettonMaster: jettonMaster.toRaw(),
+              owner: try wallet.address.toRaw(),
+              isTestnet: wallet.isTestnet
+            )
+          jettonRecipient = try await self.recipientResolver
+            .resolverTonRecipient(
+              string: jettonWallet.toRaw(),
+              isTestnet: wallet.isTestnet
+            )
+
+          let builder = Builder()
+          try JettonTransferData(
+            queryId: UInt64(UnsignedTransferBuilder.newWalletQueryId()),
+            amount: amount,
+            toAddress: recipient.recipientAddress.address,
+            responseAddress: try wallet.address,
+            forwardAmount: BigUInt(stringLiteral: "1"),
+            forwardPayload: bin.map {
+              try Cell.fromBase64(src: $0.base64UrlToBase64())
+            },
+            customPayload: nil
+          ).storeTo(builder: builder)
+
+          jettonTransferBin = try builder.endCell().toBoc()
+            .base64EncodedString()
+        }
+
         guard !Task.isCancelled else { return }
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self.openTransferSignRaw(
             wallet: wallet,
-            recipient: recipient,
-            amount: amount,
-            payload: bin,
+            recipient: jettonRecipient ?? recipient,
+            amount: jettonRecipient != nil ? BigUInt(stringLiteral: "50000000") : amount,
+            payload: jettonTransferBin ?? bin,
             stateInit: stateInit
           )
         }
@@ -502,5 +540,18 @@ extension MainCoordinator {
         ToastPresenter.showToast(configuration: .failed)
       }
     }
+  }
+}
+
+private extension String {
+  func base64UrlToBase64() -> String {
+    guard (contains("-") || contains("_")) && !contains("=") else { return self }
+    var result = self
+      .replacingOccurrences(of: "-", with: "+")
+      .replacingOccurrences(of: "_", with: "/")
+    if result.count % 4 != 0 {
+      result.append(String(repeating: "=", count: 4 - result.count % 4))
+    }
+    return result
   }
 }
