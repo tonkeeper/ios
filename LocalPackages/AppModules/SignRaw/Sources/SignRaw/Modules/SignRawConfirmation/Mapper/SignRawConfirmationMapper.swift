@@ -80,7 +80,7 @@ struct SignRawConfirmationMapper {
     
     let feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
     + amountFormatter.formatAmount(
-      BigUInt(signRawEmulation.fee),
+      BigUInt(signRawEmulation.totalFees),
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: 2,
       currency: .TON)
@@ -118,7 +118,7 @@ struct SignRawConfirmationMapper {
     }
     
     let tonRisk = emulation.risk.ton
-    let totalRisk = tonRisk + emulation.fee
+    let totalRisk = tonRisk + emulation.totalFees
     
     let convertedTonRisk = RateConverter().convertToDecimal(
       amount: BigUInt(totalRisk),

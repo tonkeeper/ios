@@ -36,6 +36,8 @@ public struct SignRawEmulation {
   }
   
   public let event: AccountEvent
+  public let totalFees: UInt64
+  public let totalFeesConverted: FeeConverted?
   public let fee: UInt64
   public let feeConverted: FeeConverted?
   public let risk: Risk
@@ -109,12 +111,23 @@ public final class SignRawController {
       throw Error.noEmulationResult
     }
     let event = try AccountEvent(accountEvent: transactionInfo.event)
+    // TODO: Update to extra
     let fee = UInt64(abs(transactionInfo.event.extra))
+    let totalFees = UInt64(transactionInfo.trace.transaction.totalFees)
     let nfts = try await loadEventNFTs(event: event)
     let risk = handleRisk(risk: transactionInfo.risk)
     let currency = currencyStore.state
+    var totalFeesConverted: SignRawEmulation.FeeConverted?
     var feeConverted: SignRawEmulation.FeeConverted?
     if let rates = tonRatesStore.state.tonRates.first(where: { $0.currency == currency }) {
+      totalFeesConverted = SignRawEmulation.FeeConverted(
+        converted: RateConverter().convertToDecimal(
+          amount: BigUInt(totalFees),
+          amountFractionLength: TonInfo.fractionDigits,
+          rate: rates
+        ),
+        currency: currency
+      )
       feeConverted = SignRawEmulation.FeeConverted(
         converted: RateConverter().convertToDecimal(
           amount: BigUInt(fee),
@@ -127,6 +140,8 @@ public final class SignRawController {
     
     return SignRawEmulation(
       event: event,
+      totalFees: totalFees,
+      totalFeesConverted: totalFeesConverted,
       fee: fee,
       feeConverted: feeConverted,
       risk: risk,
