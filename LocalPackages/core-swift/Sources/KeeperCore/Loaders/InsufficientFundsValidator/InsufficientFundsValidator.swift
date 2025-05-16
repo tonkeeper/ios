@@ -196,16 +196,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
       return
     }
 
-    let fee = emulation.fee
-    let transferAmount: BigUInt = {
-      let feeConverted = BigUInt(fee)
-      let minimumTransferAmount = BigUInt(stringLiteral: "20000000")
-      var transferAmount = feeConverted + minimumTransferAmount
-      transferAmount = transferAmount < minimumTransferAmount
-      ? minimumTransferAmount
-      : transferAmount
-      return transferAmount
-    }()
+    let fee = emulation.totalFees
     if !emulation.risk.jettons.isEmpty {
       emulation.risk.jettons.forEach { jetton in
         guard let balance = walletBalance.balance.jettonsBalance.first(where: { jetton.walletAddress == $0.item.walletAddress }) else {
@@ -217,7 +208,7 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
         token = .jetton(balance.item)
       }
     } else {
-      requiredAmount = BigUInt(emulation.risk.ton) + transferAmount
+      requiredAmount = BigUInt(emulation.risk.ton) + BigUInt(fee)
       availableBalance = BigUInt(tonBalance)
       token = .ton
     }
