@@ -12,12 +12,9 @@ public final class CoreAssembly {
   
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
-  public let isTonkeeperX: Bool
   public lazy var ledgerAssembly = LedgerAssembly()
   
-  public init(isTonkeeperX: Bool = false) {
-    self.isTonkeeperX = isTonkeeperX
-    
+  public init() {
     print(sharedCacheURL)
     print(cacheURL)
   }

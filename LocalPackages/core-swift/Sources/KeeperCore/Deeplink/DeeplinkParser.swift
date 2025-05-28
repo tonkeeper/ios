@@ -39,7 +39,6 @@ public struct DeeplinkParser {
       "ton://",
       "tonkeeper://",
       "tonkeeper-mob://",
-      "tonkeeperx://",
       "https://app.tonkeeper.com/",
       "https://tonhub.com/",
       "tonkeeper-mob://",

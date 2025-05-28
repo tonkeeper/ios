@@ -19,19 +19,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene,
              willConnectTo session: UISceneSession,
              options connectionOptions: UIScene.ConnectionOptions) {
-    let isTonkeeperX: Bool
-#if TonkeeperX
-    isTonkeeperX = true
-#else
-    isTonkeeperX = false
-#endif
-    
     guard let windowScene = (scene as? UIWindowScene) else { return }
     let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
-                                         coreAssembly: CoreAssembly(
-                                          isTonkeeperX: isTonkeeperX
-                                         )
+                                         coreAssembly: CoreAssembly()
     )
     
     if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {
