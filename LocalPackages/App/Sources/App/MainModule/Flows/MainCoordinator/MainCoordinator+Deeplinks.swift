@@ -221,10 +221,10 @@ extension MainCoordinator {
         let recipient = try await self.recipientResolver.resolverTonRecipient(string: recipient, isTestnet: wallet.isTestnet)
         
         guard let amount = amount else { return }
-
+        
         var jettonTransferBin: String?
         var jettonRecipient: TonRecipient?
-
+        
         if let jettonMaster {
           let jettonWallet = try await keeperCoreMainAssembly.servicesAssembly
             .blockchainService().getWalletAddress(
@@ -237,7 +237,7 @@ extension MainCoordinator {
               string: jettonWallet.toRaw(),
               isTestnet: wallet.isTestnet
             )
-
+          
           let builder = Builder()
           try JettonTransferData(
             queryId: UInt64(UnsignedTransferBuilder.newWalletQueryId()),
@@ -246,11 +246,11 @@ extension MainCoordinator {
             responseAddress: try wallet.address,
             forwardAmount: BigUInt(stringLiteral: "1"),
             forwardPayload: bin.map {
-              try Cell.fromBase64(src: $0.base64UrlToBase64())
+              try Cell.fromBase64(src: $0.fixBase64())
             },
             customPayload: nil
           ).storeTo(builder: builder)
-
+          
           jettonTransferBin = try builder.endCell().toBoc()
             .base64EncodedString()
         }
@@ -540,18 +540,5 @@ extension MainCoordinator {
         ToastPresenter.showToast(configuration: .failed)
       }
     }
-  }
-}
-
-private extension String {
-  func base64UrlToBase64() -> String {
-    guard (contains("-") || contains("_")) && !contains("=") else { return self }
-    var result = self
-      .replacingOccurrences(of: "-", with: "+")
-      .replacingOccurrences(of: "_", with: "/")
-    if result.count % 4 != 0 {
-      result.append(String(repeating: "=", count: 4 - result.count % 4))
-    }
-    return result
   }
 }
