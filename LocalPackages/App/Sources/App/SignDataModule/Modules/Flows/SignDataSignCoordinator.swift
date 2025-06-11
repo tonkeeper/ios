@@ -105,10 +105,17 @@ private extension SignDataSignCoordinator {
       },
       onInput: { [weak self, wallet, keeperCoreMainAssembly, dappUrl, request] passcode in
         guard let self else { return }
+        let signer = SignDataSignerProvider.getSigner(signDataPayload: request)
+        let mnemonicsRepository = keeperCoreMainAssembly.secureAssembly.mnemonicsRepository()
         Task {
           do {
-            let signed = try await SignDataSigner(request, wallet: wallet, mnemonicsRepository: keeperCoreMainAssembly.secureAssembly.mnemonicsRepository(), dappUrl: dappUrl, passcode: passcode).sign()
-
+            let signed = try await signer.sign(
+              wallet: wallet,
+              mnemonicsRepository: mnemonicsRepository,
+              dappUrl: dappUrl,
+              passcode: passcode
+            )
+            
             self.didSign?(signed)
           } catch {
             self.didFail?(.failedToSign(error))

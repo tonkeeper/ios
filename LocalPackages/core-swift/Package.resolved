@@ -14,8 +14,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/battery-api-swift",
       "state" : {
-        "revision" : "f0c6e89e88446000de0a81290d45cb57fb11a492",
-        "version" : "2.0.2"
+        "revision" : "b354981f863a075166dde3eccba5305da5d5dc69",
+        "version" : "2.0.3"
       }
     },
     {
@@ -52,6 +52,14 @@
       "state" : {
         "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
         "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/CryptoSwift",
+      "state" : {
+        "revision" : "1d31a1ffb6043655f3faba9d160db67b2e547e49"
       }
     },
     {
@@ -97,6 +105,23 @@
       "state" : {
         "revision" : "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
         "version" : "0.3.6"
+      }
+    },
+    {
+      "identity" : "swift-secp256k1",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/swift-secp256k1",
+      "state" : {
+        "revision" : "6c50e65ec9959d9ab0039df9ffc31707ad19c01b"
+      }
+    },
+    {
+      "identity" : "swift-sodium",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/jedisct1/swift-sodium",
+      "state" : {
+        "revision" : "4f9164a0a2c9a6a7ff53a2833d54a5c79c957342",
+        "version" : "0.9.1"
       }
     },
     {
