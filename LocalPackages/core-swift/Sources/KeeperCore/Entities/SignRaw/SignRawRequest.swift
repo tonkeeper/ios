@@ -3,7 +3,7 @@ import TonSwift
 
 public struct SignRawRequest: Decodable {
   public let messages: [SignRawRequestMessage]
-  public let validUntil: TimeInterval?
+  public let validUntil: UInt64?
   public let from: Address?
   public let messagesVariants: MessagesVariants?
   
@@ -20,7 +20,7 @@ public struct SignRawRequest: Decodable {
   }
   
   public init(messages: [SignRawRequestMessage],
-              validUntil: TimeInterval?,
+              validUntil: UInt64?,
               from: Address?,
               messagesVariants: MessagesVariants?) {
     self.messages = messages
@@ -32,7 +32,7 @@ public struct SignRawRequest: Decodable {
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     messages = try container.decode([SignRawRequestMessage].self, forKey: .messages)
-    validUntil = try container.decodeIfPresent(TimeInterval.self, forKey: .validUntil)
+    validUntil = try? container.decodeIfPresent(UInt64.self, forKey: .validUntil)
     
     messagesVariants = try? container.decode(MessagesVariants.self, forKey: .messagesVariants)
     

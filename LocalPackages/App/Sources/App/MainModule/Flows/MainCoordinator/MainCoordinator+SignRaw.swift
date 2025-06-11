@@ -74,7 +74,7 @@ extension MainCoordinator {
     
     return SignRawRequest(
       messages: messages,
-      validUntil: TimeInterval(validUntil),
+      validUntil: validUntil,
       from: try wallet.address,
       messagesVariants: nil
     )

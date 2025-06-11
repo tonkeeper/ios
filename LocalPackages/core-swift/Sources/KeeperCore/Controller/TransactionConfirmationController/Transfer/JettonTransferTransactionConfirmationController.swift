@@ -1,5 +1,4 @@
 import Foundation
-import TKUIKit
 import TonSwift
 import BigInt
 import TonAPI
