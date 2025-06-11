@@ -30,6 +30,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   public override func start(deeplink: CoordinatorDeeplink? = nil) {
+    makeTKUIKitInitialSetup()
+    
     var settingsRepository = keeperCoreAssembly.repositoriesAssembly.settingsRepository()
     if settingsRepository.isFirstRun {
       settingsRepository.isFirstRun = false
@@ -46,6 +48,10 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
     guard let rootCoordinator else { return false }
     return rootCoordinator.handleDeeplink(deeplink: deeplink)
+  }
+  
+  private func makeTKUIKitInitialSetup() {
+    ToastPresenter.windowLevel = .toast
   }
 }
 

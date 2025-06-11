@@ -740,3 +740,7 @@
 "token_details.trc20.usdt.battery_banner.title" = "Tonkeeper Battery required for USD₮ TRC20";
 "token_details.trc20.usdt.battery_banner.caption" = "Battery charges are used to cover transaction fees, making transfers simpler and more cost-effective.";
 "token_details.trc20.usdt.battery_banner.charge_button" = "Charge Battery";
+
+"tonconnect_manifest_error.incorrect_url" = "Invalid manifest URL";
+"tonconnect_manifest_error.load_failed" = "Manifest load failed";
+"tonconnect_manifest_error.invalid_manifest" = "Invalid manifest";

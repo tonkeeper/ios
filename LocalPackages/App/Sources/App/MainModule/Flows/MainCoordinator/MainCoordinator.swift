@@ -621,6 +621,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     case .empty:
       return false
     case .withParameters(let parameters):
+      let tonConnectService = keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
+      
       ToastPresenter.hideAll()
       ToastPresenter.showToast(configuration: .loading)
       guard let windowScene = router.rootViewController.view.window?.windowScene else {
@@ -630,8 +632,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       window.windowLevel = .tonConnectConnect
       let router = WindowRouter(window: window)
       Task {
-        do {
-          let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
+        switch await tonConnectService.loadAppManifest(parameters: parameters) {
+        case .success(let manifest):
           await MainActor.run {
             ToastPresenter.hideToast()
             let coordinator = TonConnectModule(
@@ -667,10 +669,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             addChild(coordinator)
             coordinator.start()
           }
-        } catch {
-          await MainActor.run {
-            ToastPresenter.hideAll()
-          }
+        case .failure(let error):
+          ToastPresenter.hideToast()
+          ToastPresenter.showToast(
+            configuration: ToastPresenter.Configuration(
+              title: error.description
+            )
+          )
         }
       }
       return true

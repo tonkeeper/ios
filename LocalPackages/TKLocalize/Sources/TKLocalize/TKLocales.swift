@@ -1651,6 +1651,14 @@ public enum TKLocales {
       return TKLocales.tr("Localizable", "ton_connect_mapper.requesting_capture", String(describing: p1), String(describing: p2), fallback: "%@ is requesting access to your wallet address%@")
     }
   }
+  public enum TonconnectManifestError {
+    /// Invalid manifest URL
+    public static let incorrectUrl = TKLocales.tr("Localizable", "tonconnect_manifest_error.incorrect_url", fallback: "Invalid manifest URL")
+    /// Invalid manifest
+    public static let invalidManifest = TKLocales.tr("Localizable", "tonconnect_manifest_error.invalid_manifest", fallback: "Invalid manifest")
+    /// Manifest load failed
+    public static let loadFailed = TKLocales.tr("Localizable", "tonconnect_manifest_error.load_failed", fallback: "Manifest load failed")
+  }
   public enum TransactionConfirmation {
     /// Amount
     public static let amount = TKLocales.tr("Localizable", "transaction_confirmation.amount", fallback: "Amount")

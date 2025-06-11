@@ -1,6 +1,9 @@
 import UIKit
 
 public final class ToastPresenter {
+  
+  public static var windowLevel: UIWindow.Level = .normal
+  
   public struct Configuration {
     public enum DismissRule {
       case none
@@ -152,6 +155,7 @@ public final class ToastPresenter {
     let scene = UIApplication.keyWindowScene
     guard let scene = scene else { return }
     let toastWindow = TKPassthroughWindow(windowScene: scene)
+    toastWindow.windowLevel = ToastPresenter.windowLevel
     let viewController = BasicViewController()
     viewController.view.alpha = 0
     toastWindow.rootViewController = viewController

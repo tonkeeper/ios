@@ -724,3 +724,7 @@
 "token_details.trc20.usdt.battery_banner.title" = "Для USD₮ TRC20 требуется батарейка Tonkeeper";
 "token_details.trc20.usdt.battery_banner.caption" = "Заряд батарейки покрывает комиссии за транзакции, упрощая и удешевляя переводы.";
 "token_details.trc20.usdt.battery_banner.charge_button" = "Зарядить батарейку";
+
+"tonconnect_manifest_error.incorrect_url" = "Неверный URL манифеста";
+"tonconnect_manifest_error.load_failed" = "Не удалось загрузить манифест";
+"tonconnect_manifest_error.invalid_manifest" = "Неверный манифест";

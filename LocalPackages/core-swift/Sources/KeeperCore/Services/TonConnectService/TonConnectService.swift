@@ -3,6 +3,12 @@ import TonConnectAPI
 import TonSwift
 import BigInt
 
+public enum TonConnectManifestError: Swift.Error {
+  case incorrectURL
+  case loadFailed(error: Swift.Error)
+  case invalidManifest
+}
+
 enum TonConnectServiceError: Swift.Error {
   case incorrectUrl
   case manifestLoadFailed
@@ -11,7 +17,7 @@ enum TonConnectServiceError: Swift.Error {
 }
 
 public protocol TonConnectService {
-  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest)
+  func loadAppManifest(parameters: TonConnectParameters) async -> Result<TonConnectManifest, TonConnectManifestError>
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
     parameters: TonConnectParameters,
@@ -87,12 +93,25 @@ final class TonConnectServiceImplementation: TonConnectService {
     self.sendService = sendService
   }
   
-  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
+  func loadAppManifest(parameters: TonConnectParameters) async -> Result<TonConnectManifest, TonConnectManifestError> {
     do {
-      let manifest = try await loadManifest(url: parameters.requestPayload.manifestUrl)
-      return (parameters, manifest)
+      let (data, _) = try await urlSession.data(from: parameters.requestPayload.manifestUrl)
+      let jsonDecoder = JSONDecoder()
+      let manifest = try jsonDecoder.decode(TonConnectManifest.self, from: data)
+      guard manifest.url.host?.contains(".") == true else {
+        return .failure(.invalidManifest)
+      }
+      return .success(manifest)
+    } catch let decodingError as DecodingError {
+      return .failure(.invalidManifest)
+    } catch let urlError as URLError {
+      if urlError.code == URLError.Code.badURL {
+        return .failure(TonConnectManifestError.incorrectURL)
+      } else {
+        return .failure(TonConnectManifestError.loadFailed(error: urlError))
+      }
     } catch {
-      throw TonConnectServiceError.manifestLoadFailed
+      return .failure(TonConnectManifestError.loadFailed(error: error))
     }
   }
   

@@ -71,10 +71,7 @@ public final class MainController {
       }
     }
   }
-  
-  public func handleTonConnectDeeplink(_ parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
-    try await tonConnectService.loadTonConnectConfiguration(with: parameters)
-  }
+ 
   public func parseDeeplink(deeplink: String?) throws -> Deeplink {
     try deeplinkParser.parse(string: deeplink)
   }
