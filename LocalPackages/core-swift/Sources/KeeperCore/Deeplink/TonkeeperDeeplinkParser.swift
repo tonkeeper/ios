@@ -4,12 +4,12 @@ import BigInt
 
 public struct TonkeeperDeeplinkParser {
   public func parse(string: String?) throws -> Deeplink {
-    guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
-    guard let url = URL(string: string.convertingUnicodeEscapes()),
+    guard let string,
+          let url = URL(string: string),
           let firstPathComponent = url.pathComponents.first else {
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
-
+    
     switch firstPathComponent {
     case "transfer":
       return .transfer(try parseTransfer(url: url))
