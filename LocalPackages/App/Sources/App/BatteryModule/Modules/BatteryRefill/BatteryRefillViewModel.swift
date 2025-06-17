@@ -288,7 +288,28 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
       description: TKLocales.Battery.Refill.Footer.description,
       restoreButtonTitle: TKLocales.Battery.Refill.Footer.restorePurchase,
       restoreButtonAction: { [weak self] in
-        self?.inAppPurchaseModel.restorePurchases()
+        ToastPresenter.showToast(configuration: .loading)
+        Task { @MainActor in
+          guard let self else {
+            ToastPresenter.hideAll()
+            return
+          }
+          let result = await self.inAppPurchaseModel.restorePurchases()
+          
+          ToastPresenter.hideAll()
+          
+          switch result {
+          case .success:
+            ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.restored))
+          case .failure(let error):
+            switch error {
+            case .nothingToRestore:
+              ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.nothingToRestore))
+            default:
+              ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.failed(error.rawValue)))
+            }
+          }
+        }
       }
     )
   }

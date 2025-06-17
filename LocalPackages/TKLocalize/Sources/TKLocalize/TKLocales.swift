@@ -1156,6 +1156,16 @@ public enum TKLocales {
       }
     }
   }
+  public enum RestorePurchases {
+    /// Purchases restore failed: %@
+    public static func failed(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "restore_purchases.failed", String(describing: p1), fallback: "Purchases restore failed: %@")
+    }
+    /// Nothing to restore
+    public static let nothingToRestore = TKLocales.tr("Localizable", "restore_purchases.nothing_to_restore", fallback: "Nothing to restore")
+    /// Purchases restored
+    public static let restored = TKLocales.tr("Localizable", "restore_purchases.restored", fallback: "Purchases restored")
+  }
   public enum Result {
     /// Error
     public static let failure = TKLocales.tr("Localizable", "result.failure", fallback: "Error")

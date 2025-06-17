@@ -728,3 +728,7 @@
 "tonconnect_manifest_error.incorrect_url" = "Неверный URL манифеста";
 "tonconnect_manifest_error.load_failed" = "Не удалось загрузить манифест";
 "tonconnect_manifest_error.invalid_manifest" = "Неверный манифест";
+
+"restore_purchases.restored" = "Покупки восстановлены";
+"restore_purchases.nothing_to_restore" = "Нет покупок для восстановления";
+"restore_purchases.failed" = "Не удалось восстановить покупки: ошибка %@";

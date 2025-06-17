@@ -744,3 +744,7 @@
 "tonconnect_manifest_error.incorrect_url" = "Invalid manifest URL";
 "tonconnect_manifest_error.load_failed" = "Manifest load failed";
 "tonconnect_manifest_error.invalid_manifest" = "Invalid manifest";
+
+"restore_purchases.restored" = "Purchases restored";
+"restore_purchases.nothing_to_restore" = "Nothing to restore";
+"restore_purchases.failed" = "Purchases restore failed: %@";
