@@ -402,6 +402,7 @@ extension MainCoordinator {
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
+    let tonkeeperAPI = keeperCoreMainAssembly.tonkeeperAPIAssembly.api
     
     let deeplinkHandleTask = Task {
       do {
@@ -411,9 +412,12 @@ extension MainCoordinator {
         
         let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
         guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
-        let methodURL = fiatMethod.actionURL(walletAddress: try wallet.friendlyAddress,
-                                             currency: currency,
-                                             mercuryoSecret: mercuryoSecret) else {
+              let methodURL = await fiatMethod.actionURL(walletAddress: try wallet.friendlyAddress,
+                                                         currency: currency,
+                                                         mercuryoSecret: mercuryoSecret,
+                                                         ipProvider: {
+                try? await tonkeeperAPI.getIP()
+              }) else {
           await MainActor.run {
             self.deeplinkHandleTask = nil
             ToastPresenter.hideAll()

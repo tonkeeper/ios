@@ -15,7 +15,8 @@ struct BuySellListAssembly {
       regionStore: keeperCoreMainAssembly.storesAssembly.regionStore,
       configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
       appSettings: coreAssembly.appSettings,
-      analyticsProvider: coreAssembly.analyticsProvider
+      analyticsProvider: coreAssembly.analyticsProvider,
+      tonkeeperAPI: keeperCoreMainAssembly.tonkeeperAPIAssembly.api
     )
     
     let viewController = BuySellListViewController(viewModel: viewModel)

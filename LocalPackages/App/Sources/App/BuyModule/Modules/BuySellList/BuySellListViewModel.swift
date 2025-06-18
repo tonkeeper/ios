@@ -145,6 +145,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   private let regionStore: RegionStore
   private let appSettings: AppSettings
   private let analyticsProvider: AnalyticsProvider
+  private let tonkeeperAPI: TonkeeperAPI
   
   // MARK: - Init
   
@@ -155,7 +156,8 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
        regionStore: RegionStore,
        configuration: Configuration,
        appSettings: AppSettings,
-       analyticsProvider: AnalyticsProvider) {
+       analyticsProvider: AnalyticsProvider,
+       tonkeeperAPI: TonkeeperAPI) {
     self.wallet = wallet
     self.buySellProvider = buySellProvider
     self.walletsStore = walletsStore
@@ -164,6 +166,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     self.configuration = configuration
     self.appSettings = appSettings
     self.analyticsProvider = analyticsProvider
+    self.tonkeeperAPI = tonkeeperAPI
   }
 }
 
@@ -456,15 +459,17 @@ private extension BuySellListViewModelImplementation {
       selectionClosure: {
         [weak self] in
         guard let self else { return }
+
         Task {
           do {
             let currency = self.currencyStore.state
             let walletAddress = try self.wallet.friendlyAddress
             let mercuryoSecret = await self.configuration.mercuryoSecret
-            guard let url = item.actionURL(
+            guard let url = await item.actionURL(
               walletAddress: walletAddress,
               currency: currency,
-              mercuryoSecret: mercuryoSecret
+              mercuryoSecret: mercuryoSecret,
+              ipProvider: { [weak self] in try? await self?.tonkeeperAPI.getIP() }
             ) else { return }
             await MainActor.run {
               if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {

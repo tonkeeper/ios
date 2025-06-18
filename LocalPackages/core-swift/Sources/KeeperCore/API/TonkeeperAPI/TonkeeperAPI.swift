@@ -14,6 +14,7 @@ public protocol TonkeeperAPI {
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
   func loadNotifications() async throws -> [InternalNotification]
   func loadStory(storyId: String) async throws -> Story
+  func getIP() async throws -> String
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
@@ -177,5 +178,23 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     } catch {
       throw error
     }
+  }
+  
+  func getIP() async throws -> String {
+    struct Response: Decodable {
+      let ip: String
+      let country: String
+    }
+    
+    let url = host.appendingPathComponent("/my/ip")
+    guard var components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: false
+    ) else { throw TonkeeperAPIError.incorrectUrl }
+
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    let entity = try JSONDecoder().decode(Response.self, from: data)
+    return entity.ip
   }
 }

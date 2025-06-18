@@ -93,18 +93,22 @@ public struct FiatMethodsResponse: Codable {
 }
 
 public extension FiatMethodItem {
-  func actionURL(walletAddress: FriendlyAddress, currency: Currency, mercuryoSecret: String?) -> URL? {
+  func actionURL(walletAddress: FriendlyAddress,
+                 currency: Currency,
+                 mercuryoSecret: String?,
+                 ipProvider: () async -> String?) async -> URL? {
     let isSell = id.contains("sell")
     
     var urlString = actionButton.url
     
     switch id {
     case _ where id.contains("mercuryo"):
-      urlForMercuryo(
+      await urlForMercuryo(
         urlString: &urlString,
         isSell: isSell,
         walletAddress: walletAddress,
-        mercuryoSecret: mercuryoSecret
+        mercuryoSecret: mercuryoSecret,
+        ipProvider: ipProvider
       )
     default:
       break
@@ -125,19 +129,25 @@ public extension FiatMethodItem {
   private func urlForMercuryo(urlString: inout String,
                               isSell: Bool,
                               walletAddress: FriendlyAddress,
-                              mercuryoSecret: String?) {
+                              mercuryoSecret: String?,
+                              ipProvider: () async -> String?) async {
     if isSell {
       urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TONCOIN")
     } else {
       urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: "TONCOIN")
     }
+    
+    let txId = "mercuryo_\(UUID().uuidString)"
  
-    urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: "mercuryo_\(UUID().uuidString)")
+    urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: txId)
     
     let mercuryoSecret = mercuryoSecret ?? ""
+    let ip = await ipProvider() ?? ""
+    
+    let signatureInput = walletAddress.toString() + mercuryoSecret + ip + txId
 
-    guard let signature = (walletAddress.toString() + mercuryoSecret).data(using: .utf8)?.sha512().hexString() else { return }
-    urlString += "&signature=\(signature)"
+    guard let signature = signatureInput.data(using: .utf8)?.sha512().hexString() else { return }
+    urlString += "&signature=v2:\(signature)"
   }
 }
 
