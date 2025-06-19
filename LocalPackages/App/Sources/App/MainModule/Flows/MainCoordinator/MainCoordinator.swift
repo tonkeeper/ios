@@ -276,8 +276,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
       self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
     }
-    historyCoordinator.didOpenDapp = { url, title in
-      self.openDapp(title: title, url: url)
+    historyCoordinator.didOpenDapp = { [weak self] url, title in
+      self?.openDapp(title: title, url: url)
+    }
+    historyCoordinator.didOpenBuySellItem = { [weak self] url, fromViewController in
+      self?.openBuySellItemURL(url, fromViewController: fromViewController)
     }
     historyCoordinator.passcodeProvider = getPasscode
     

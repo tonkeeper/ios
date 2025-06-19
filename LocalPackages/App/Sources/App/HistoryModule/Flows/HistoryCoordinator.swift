@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TKFeatureFlags
 import TonSwift
 import CryptoKit
 import TweetNacl
@@ -17,6 +18,7 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
   var didOpenTronEventDetails: ((_ wallet: Wallet, _ event: TronTransaction, _ isTestnet: Bool) -> Void)?
   var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
   var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
+  var didOpenBuySellItem: ((_ url: URL, _ fromViewController: UIViewController) -> Void)? 
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -44,8 +46,7 @@ private extension HistoryCoordinator {
   func openHistory() {
     let module = HistoryContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
-    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
-      
+    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in    
       let listModule = HistoryListAssembly.module(
         wallet: wallet,
         paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
@@ -58,26 +59,30 @@ private extension HistoryCoordinator {
         emptyViewProvider: { filter in
           switch filter {
           case .all:
+            var buttons = [TKEmptyViewController.Model.Button]()
+            if !TKFeatureFlags.provider.isExchangeMethodsDisable {
+              buttons.append(TKEmptyViewController.Model.Button(
+                title: TKLocales.History.Placeholder.Buttons.buy,
+                action: { [weak self] in
+                  guard let self else { return }
+                  self.openBuy(wallet: wallet)
+                }
+              ))
+            }
+            buttons.append(TKEmptyViewController.Model.Button(
+              title: TKLocales.History.Placeholder.Buttons.receive,
+              action: { [weak self] in
+                guard let self else { return }
+                self.openReceive(wallet: wallet)
+              }
+            ))
+            
             let emptyViewController = TKEmptyViewController()
             emptyViewController.configure(
               model: TKEmptyViewController.Model(
                 title: TKLocales.History.Placeholder.title,
                 caption: TKLocales.History.Placeholder.subtitle,
-                buttons: [
-                  TKEmptyViewController.Model.Button(
-                    title: TKLocales.History.Placeholder.Buttons.buy,
-                    action: { [weak self] in
-                      guard let self else { return }
-                      self.openBuy(wallet: wallet)
-                    }
-                  ),
-                  TKEmptyViewController.Model.Button(
-                    title: TKLocales.History.Placeholder.Buttons.receive,
-                    action: { [weak self] in
-                      guard let self else { return }
-                      self.openReceive(wallet: wallet)
-                    }
-                  )]
+                buttons: buttons
               )
             )
             return .viewController(emptyViewController)
@@ -156,6 +161,10 @@ private extension HistoryCoordinator {
       coreAssembly: coreAssembly,
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
+    
+    coordinator.didOpenItem = { [weak self] url, fromViewController in
+      self?.didOpenBuySellItem?(url, fromViewController)
+    }
 
     coordinator.didClose = { [weak coordinator, weak self] in
       self?.removeChild(coordinator)
