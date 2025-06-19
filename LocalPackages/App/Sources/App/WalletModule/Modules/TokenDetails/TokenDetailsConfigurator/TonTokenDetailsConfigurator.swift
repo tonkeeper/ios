@@ -1,6 +1,7 @@
 import Foundation
 import BigInt
 import TKLocalize
+import TKFeatureFlags
 import KeeperCore
 
 struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
@@ -30,7 +31,7 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
       )
     ]
     
-    if !configuration.flags(isTestnet: wallet.isTestnet).isSwapDisable {
+    if !TKFeatureFlags.provider.isSwapDisable {
       buttons.append(TokenDetailsModel.Button(
         iconButton: .swap(.ton(.ton)),
         isEnable: wallet.isSwapEnable

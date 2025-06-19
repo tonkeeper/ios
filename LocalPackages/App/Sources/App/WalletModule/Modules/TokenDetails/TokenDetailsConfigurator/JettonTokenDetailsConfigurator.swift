@@ -1,6 +1,7 @@
 import Foundation
 import BigInt
 import TKLocalize
+import TKFeatureFlags
 import KeeperCore
 
 struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
@@ -36,14 +37,14 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
       )
     ]
     
-    if !configuration.flags(isTestnet: wallet.isTestnet).isSwapDisable {
+    if !TKFeatureFlags.provider.isSwapDisable {
       buttons.append(
         TokenDetailsModel.Button(
           iconButton: .swap(.ton(.jetton(jettonItem))),
           isEnable: wallet.isSwapEnable
       ))
     }
-
+    
     let tokenAmount: String
     var convertedAmount: String?
     if isSecureMode {

@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TronSwift
+import TKFeatureFlags
 
 struct TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
   
@@ -23,7 +24,7 @@ struct TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
     let usdtBalance = balance?.tronUSDT
     let amount = usdtBalance?.amount ?? 0
     
-    let buttons = [
+    var buttons = [
       TokenDetailsModel.Button(
         iconButton: .send(.usdtTron),
         isEnable: wallet.isSendAvailable && amount > 0
@@ -31,12 +32,14 @@ struct TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
       TokenDetailsModel.Button(
         iconButton: .receive(.usdtTron),
         isEnable: true
-      ),
-      TokenDetailsModel.Button(
+      )] 
+    
+    if !TKFeatureFlags.provider.isSwapDisable {
+      buttons.append(TokenDetailsModel.Button(
         iconButton: .swap(.usdtTron),
         isEnable: true
-      )
-    ]
+      ))
+    }
     
     let tokenAmount: String
     let convertedAmount: String?
