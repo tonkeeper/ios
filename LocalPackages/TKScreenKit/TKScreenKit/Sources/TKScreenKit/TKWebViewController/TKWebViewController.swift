@@ -90,4 +90,14 @@ extension TKWebViewController: WKUIDelegate {
     }))
     present(alert, animated: true)
   }
+  
+  public func webView(_ webView: WKWebView,
+                      createWebViewWith configuration: WKWebViewConfiguration, 
+                      for navigationAction: WKNavigationAction, 
+                      windowFeatures: WKWindowFeatures) -> WKWebView? {
+    if navigationAction.targetFrame == nil {
+      webView.load(navigationAction.request)
+    }
+    return nil
+  }
 }
