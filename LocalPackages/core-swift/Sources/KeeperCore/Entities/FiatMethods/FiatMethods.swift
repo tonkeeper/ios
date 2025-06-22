@@ -93,10 +93,20 @@ public struct FiatMethodsResponse: Codable {
 }
 
 public extension FiatMethodItem {
+  struct MercuryoParameters {
+    let isV2: Bool
+    let secret: String?
+    let ipProvider: () async -> String?
+    public init(isV2: Bool, secret: String?, ipProvider: @escaping () async -> String?) {
+      self.isV2 = isV2
+      self.secret = secret
+      self.ipProvider = ipProvider
+    }
+  }
+
   func actionURL(walletAddress: FriendlyAddress,
                  currency: Currency,
-                 mercuryoSecret: String?,
-                 ipProvider: () async -> String?) async -> URL? {
+                 mercuryoParameters: MercuryoParameters) async -> URL? {
     let isSell = id.contains("sell")
     
     var urlString = actionButton.url
@@ -107,8 +117,7 @@ public extension FiatMethodItem {
         urlString: &urlString,
         isSell: isSell,
         walletAddress: walletAddress,
-        mercuryoSecret: mercuryoSecret,
-        ipProvider: ipProvider
+        mercuryoParameters: mercuryoParameters
       )
     default:
       break
@@ -129,8 +138,7 @@ public extension FiatMethodItem {
   private func urlForMercuryo(urlString: inout String,
                               isSell: Bool,
                               walletAddress: FriendlyAddress,
-                              mercuryoSecret: String?,
-                              ipProvider: () async -> String?) async {
+                              mercuryoParameters: MercuryoParameters) async {
     if isSell {
       urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TONCOIN")
     } else {
@@ -141,13 +149,17 @@ public extension FiatMethodItem {
  
     urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: txId)
     
-    let mercuryoSecret = mercuryoSecret ?? ""
-    let ip = await ipProvider() ?? ""
-    
-    let signatureInput = walletAddress.toString() + mercuryoSecret + ip + txId
+    let mercuryoSecret = mercuryoParameters.secret ?? ""
 
-    guard let signature = signatureInput.data(using: .utf8)?.sha512().hexString() else { return }
-    urlString += "&signature=v2:\(signature)"
+    if mercuryoParameters.isV2 {
+      let ip = await mercuryoParameters.ipProvider() ?? ""
+      let signatureInput = walletAddress.toString() + mercuryoSecret + ip + txId
+      guard let signature = signatureInput.data(using: .utf8)?.sha512().hexString() else { return }
+      urlString += "&signature=v2:\(signature)"
+    } else {
+      guard let signature = (walletAddress.toString() + mercuryoSecret).data(using: .utf8)?.sha512().hexString() else { return }
+      urlString += "&signature=\(signature)"
+    }
   }
 }
 

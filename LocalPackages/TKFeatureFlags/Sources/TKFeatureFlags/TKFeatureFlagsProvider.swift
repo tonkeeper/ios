@@ -12,7 +12,8 @@ public enum FeatureFlag: String, CaseIterable {
   case isCountryPickerDisable
   case isPurchasesHiddenIfEmpty
   case isTronDisabled
-  
+  case isMercuryoV2Signature
+
   var key: String {
     self.rawValue
   }
@@ -29,7 +30,8 @@ public protocol TKFeatureFlagsProvider {
   var isCountryPickerDisable: Bool { get }
   var isPurchasesHiddenIfEmpty: Bool { get }
   var isTronDisabled: Bool { get }
-  
+  var isMercuryoV2Signature: Bool { get }
+
   func addObserver<T: AnyObject>(_ observer: T, flags: Set<FeatureFlag>, closure: @escaping (T, FeatureFlag) -> Void)
 }
 
@@ -64,7 +66,10 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
   var isTronDisabled: Bool {
     RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isTronDisabled.key).boolValue
   }
-  
+  var isMercuryoV2Signature: Bool {
+    RemoteConfig.remoteConfig().configValue(forKey: FeatureFlag.isMercuryoV2Signature.key).boolValue
+  }
+
   private var observers = [FeatureFlag: [UUID: (FeatureFlag) -> Void]]()
   
   init() {
@@ -80,7 +85,8 @@ final class FirebaseFeatureFlagsProvider: TKFeatureFlagsProvider {
                               FeatureFlag.isStoriesDisable.key: "true" as NSString,
                               FeatureFlag.disableBatteryCryptoRechargeModule.key: "true" as NSString,
                               FeatureFlag.isPurchasesHiddenIfEmpty.key: "true" as NSString,
-                              FeatureFlag.isTronDisabled.key: "true" as NSString]
+                              FeatureFlag.isTronDisabled.key: "true" as NSString,
+                              FeatureFlag.isMercuryoV2Signature.key: "true" as NSString,]
     )
     
     remoteConfig.fetch { [weak self] status, error in

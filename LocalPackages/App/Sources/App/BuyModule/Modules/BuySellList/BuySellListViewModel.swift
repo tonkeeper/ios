@@ -468,8 +468,11 @@ private extension BuySellListViewModelImplementation {
             guard let url = await item.actionURL(
               walletAddress: walletAddress,
               currency: currency,
-              mercuryoSecret: mercuryoSecret,
-              ipProvider: { [weak self] in try? await self?.tonkeeperAPI.getIP() }
+              mercuryoParameters: FiatMethodItem.MercuryoParameters(
+                isV2: TKFeatureFlags.provider.isMercuryoV2Signature,
+                secret: mercuryoSecret,
+                ipProvider: { [weak self] in try? await self?.tonkeeperAPI.getIP()}
+              )
             ) else { return }
             await MainActor.run {
               if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {

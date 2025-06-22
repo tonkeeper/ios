@@ -4,6 +4,7 @@ import KeeperCore
 import TonSwift
 import BigInt
 import TKLocalize
+import TKFeatureFlags
 
 extension MainCoordinator {
   
@@ -414,10 +415,10 @@ extension MainCoordinator {
         guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
               let methodURL = await fiatMethod.actionURL(walletAddress: try wallet.friendlyAddress,
                                                          currency: currency,
-                                                         mercuryoSecret: mercuryoSecret,
-                                                         ipProvider: {
-                try? await tonkeeperAPI.getIP()
-              }) else {
+                                                         mercuryoParameters: FiatMethodItem.MercuryoParameters(
+                                                          isV2: TKFeatureFlags.provider.isMercuryoV2Signature,
+                                                          secret: mercuryoSecret,
+                                                          ipProvider: { try? await tonkeeperAPI.getIP() })) else {
           await MainActor.run {
             self.deeplinkHandleTask = nil
             ToastPresenter.hideAll()
