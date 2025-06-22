@@ -5,7 +5,8 @@ import BigInt
 public struct TonkeeperDeeplinkParser {
   public func parse(string: String?) throws -> Deeplink {
     guard let string,
-          let url = URL(string: string),
+          let cleaned = string.removingPercentEncoding?.removingPercentEncoding,
+          let url = URL(string: cleaned),
           let firstPathComponent = url.pathComponents.first else {
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
