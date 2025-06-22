@@ -198,6 +198,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     didUpdateItem()
     didUpdateRecipientPlaceholder?(TKLocales.Send.Recepient.placeholder)
     didUpdateAmountPlaceholder?((TKLocales.Send.Amount.placeholder))
+    didUpdateComment?(comment ?? "")
     if let recipient {
       didUpdateRecipient?(recipient.stringValue)
     }
