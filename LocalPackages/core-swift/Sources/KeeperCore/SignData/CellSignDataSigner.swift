@@ -39,7 +39,7 @@ public struct CellSignDataSigner: SignDataSigner {
     
     let timestamp = UInt64(Date().timeIntervalSince1970)
     let builder = Builder()
-    try builder.store(uint: OpCodes.SIGN_DATA, bits: 32)
+    try builder.store(uint: 0x75569022, bits: 32)
     try builder.store(data: payload.schema)
     try builder.store(uint: timestamp, bits: 64)
     try builder.store(address)

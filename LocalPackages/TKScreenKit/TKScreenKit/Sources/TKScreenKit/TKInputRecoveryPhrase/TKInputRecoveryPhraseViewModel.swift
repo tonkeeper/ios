@@ -263,7 +263,18 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     let phrase = text
       .components(separatedBy: CharacterSet([" ", ",", "\n", "\u{00a0}"]))
       .filter { !$0.isEmpty }
-      .prefix(wordsCount)
+    
+    guard phrase.count <= wordsCount else {
+      let text = "Incorrect phrase: \(phrase.count) words phrase was inserted with \(wordsCount) words mode selected."
+      ToastPresenter.showToast(
+        configuration: ToastPresenter.Configuration(
+          title: text
+        )
+      )
+      
+      return false
+    }
+
     phrase.enumerated().forEach { index, word in
       self.phrase[index] = word
     }

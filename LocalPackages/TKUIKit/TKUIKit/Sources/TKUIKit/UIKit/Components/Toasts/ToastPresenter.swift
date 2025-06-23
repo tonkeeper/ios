@@ -172,6 +172,14 @@ public final class ToastPresenter {
     toastView.centerXAnchor.constraint(
       equalTo: toastWindow.centerXAnchor
     ).isActive = true
+    toastView.leftAnchor.constraint(
+      greaterThanOrEqualTo: toastWindow.leftAnchor, 
+      constant: 20
+    ).withPriority(.defaultHigh).isActive = true
+    toastView.rightAnchor.constraint(
+      lessThanOrEqualTo: toastWindow.rightAnchor, 
+      constant: -20
+    ).withPriority(.defaultHigh).isActive = true
     let topConstraint = toastView.topAnchor.constraint(
       equalTo: toastWindow.safeAreaLayoutGuide.topAnchor,
       constant: -toastView.intrinsicContentSize.height - .hideInset

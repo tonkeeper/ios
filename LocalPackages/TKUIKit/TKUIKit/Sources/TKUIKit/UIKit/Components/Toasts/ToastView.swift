@@ -111,6 +111,8 @@ public final class ToastView: TKPassthroughView, ConfigurableView {
 
 private extension ToastView {
   func setup() {
+    titleLabel.numberOfLines = 0
+    
     stackView.isUserInteractionEnabled = false
     addSubview(stackView)
     stackView.addArrangedSubview(activityView)

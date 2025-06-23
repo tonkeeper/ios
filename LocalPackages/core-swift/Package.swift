@@ -17,7 +17,7 @@ let package = Package(
     .package(path: "../TonTronKit"),
     .package(url: "https://github.com/tonkeeper/CryptoSwift", revision: "1d31a1ffb6043655f3faba9d160db67b2e547e49"),
     .package(url: "https://github.com/tonkeeper/PunycodeSwift", revision: "30a462bdb4398ea835a3585472229e0d74b36ba5"),
-    .package(url: "https://github.com/tonkeeper/ton-swift", .upToNextMinor(from: "1.0.28")),
+    .package(url: "https://github.com/tonkeeper/ton-swift", .exactItem(Version(stringLiteral: "1.0.29"))),
     .package(url: "https://github.com/tonkeeper/URKit", .upToNextMinor(from: "16.0.0")),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.4.0")),
     .package(url: "https://github.com/tonkeeper/battery-api-swift", .upToNextMinor(from: "2.0.3")),
