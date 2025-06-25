@@ -49,40 +49,64 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
   }
   
   private func createOptionsSections() -> [AddWalletOptionPickerSection] {
-    return options.map { option in
-      
-      let cellConfiguration = TKListItemCell.Configuration(
-        listItemContentViewConfiguration: TKListItemContentView.Configuration(
-          iconViewConfiguration: TKListItemIconView.Configuration(
-            content: .image(
-              TKImageView.Model(
-                image: .image(option.icon),
-                tintColor: .Accent.blue
-              )
-            ),
-            alignment: .center,
-            size: CGSize(width: 28, height: 28)
-          ),
-          textContentViewConfiguration: TKListItemTextContentView.Configuration(
-            titleViewConfiguration: TKListItemTitleView.Configuration(
-              title: option.title
-            ),
-            captionViewsConfigurations: [TKListItemTextView.Configuration(
-              text: option.subtitle,
-              color: .Text.secondary,
-              textStyle: .body2,
-              numberOfLines: 0
-            )]
+    let mainOptions: [AddWalletOption] = [
+      .createRegular, .importRegular, .signer, .keystone, .ledger
+    ]
+    let mainSections = mainOptions.map { option in
+      AddWalletOptionPickerSection(
+        header: nil,
+        items: [
+          AddWalletOptionPickerItem(
+            option: option,
+            cellConfiguration: config(for: option)
           )
-        )
+        ]
       )
-      
-      let item = AddWalletOptionPickerItem(
-        option: option,
-        cellConfiguration: cellConfiguration
-      )
-      
-      return AddWalletOptionPickerSection(item: item)
     }
+    let otherOptions: [AddWalletOption] = [
+      .importWatchOnly
+    ]
+    let developerOptions: [AddWalletOption] = [
+      .importTestnet
+    ]
+
+    return mainSections + [
+      AddWalletOptionPickerSection(
+          header: TKLocales.AddWallet.Sections.otherOptions,
+          items: otherOptions.map { AddWalletOptionPickerItem(option: $0, cellConfiguration: config(for: $0)) }
+      ),
+      AddWalletOptionPickerSection(
+          header: TKLocales.AddWallet.Sections.forDevelopers,
+          items: developerOptions.map { AddWalletOptionPickerItem(option: $0, cellConfiguration: config(for: $0)) }
+      ),
+    ]
   }
+
+    private func config(for option: AddWalletOption) -> TKListItemCell.Configuration {
+        TKListItemCell.Configuration(
+            listItemContentViewConfiguration: TKListItemContentView.Configuration(
+                iconViewConfiguration: TKListItemIconView.Configuration(
+                    content: .image(
+                        TKImageView.Model(
+                            image: .image(option.icon),
+                            tintColor: .Accent.blue
+                        )
+                    ),
+                    alignment: .center,
+                    size: CGSize(width: 28, height: 28)
+                ),
+                textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                    titleViewConfiguration: TKListItemTitleView.Configuration(
+                        title: option.title
+                    ),
+                    captionViewsConfigurations: [TKListItemTextView.Configuration(
+                        text: option.subtitle,
+                        color: .Text.secondary,
+                        textStyle: .body2,
+                        numberOfLines: 0
+                    )]
+                )
+            )
+        )
+    }
 }

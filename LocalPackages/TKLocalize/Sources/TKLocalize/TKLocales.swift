@@ -153,6 +153,12 @@ public enum TKLocales {
         public static let title = TKLocales.tr("Localizable", "add_wallet.items.watch_only.title", fallback: "Watch Account")
       }
     }
+    public enum Sections {
+      /// For developers
+      public static let forDevelopers = TKLocales.tr("Localizable", "add_wallet.sections.for_developers", fallback: "For developers")
+      /// Other options
+      public static let otherOptions = TKLocales.tr("Localizable", "add_wallet.sections.other_options", fallback: "Other options")
+    }
   }
   public enum Backup {
     /// Backup
@@ -227,8 +233,8 @@ public enum TKLocales {
         public static let item1 = TKLocales.tr("Localizable", "backup.warning.list.item1", fallback: "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.")
         /// Tonkeeper Support never asks for a recovery phrase.
         public static let item2 = TKLocales.tr("Localizable", "backup.warning.list.item2", fallback: "Tonkeeper Support never asks for a recovery phrase.")
-        /// Everybody with your recovery phrase can access your wallet.
-        public static let item3 = TKLocales.tr("Localizable", "backup.warning.list.item3", fallback: "Everybody with your recovery phrase can access your wallet.")
+        /// Anyone with your recovery phrase can use your wallet.
+        public static let item3 = TKLocales.tr("Localizable", "backup.warning.list.item3", fallback: "Anyone with your recovery phrase can use your wallet.")
       }
     }
   }
@@ -1138,8 +1144,8 @@ public enum TKLocales {
       public static let placeholder = TKLocales.tr("Localizable", "send.recepient.placeholder", fallback: "Address or name")
     }
     public enum RequiredComment {
-      /// You must include the note from the exchange for transfer. Without it your funds will be lost.
-      public static let description = TKLocales.tr("Localizable", "send.required_comment.description", fallback: "You must include the note from the exchange for transfer. Without it your funds will be lost.")
+      /// When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.
+      public static let description = TKLocales.tr("Localizable", "send.required_comment.description", fallback: "When sending, make sure to include the memo or tag from the exchange. Without it, the funds won’t be deposited and may be lost.")
       /// Required comment
       public static let placeholder = TKLocales.tr("Localizable", "send.required_comment.placeholder", fallback: "Required comment")
     }

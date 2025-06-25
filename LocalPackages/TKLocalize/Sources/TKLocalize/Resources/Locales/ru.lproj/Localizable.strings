@@ -365,6 +365,9 @@
 "add_wallet.items.pair_ledger.title" = "Подключить Ledger";
 "add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
 
+"add_wallet.sections.other_options" = "Другие варианты";
+"add_wallet.sections.for_developers" = "Для разработчиков";
+
 "scanner.title" = "Отсканируйте QR-код";
 
 "signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";

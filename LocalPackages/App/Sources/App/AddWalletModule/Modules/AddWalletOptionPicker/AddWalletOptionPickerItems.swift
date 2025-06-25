@@ -3,7 +3,8 @@ import TKUIKit
 import TKLocalize
 
 struct AddWalletOptionPickerSection: Hashable {
-  let item: AddWalletOptionPickerItem
+    let header: String?
+    let items: [AddWalletOptionPickerItem]
 }
 
 struct AddWalletOptionPickerItem: Hashable {
