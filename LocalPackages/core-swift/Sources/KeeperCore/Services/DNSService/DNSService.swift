@@ -25,11 +25,12 @@ final class DNSServiceImplementation: DNSService {
   }
   
   func resolveDomainName(_ domainName: String, addTonPostfix: Bool, isTestnet: Bool) async throws -> Domain {
+    let normalizedDomainName = domainName.lowercased()
     let resolveName: String = {
       if addTonPostfix {
-        return parseDomainName(domainName)
+        return parseDomainName(normalizedDomainName)
       } else {
-        return domainName
+        return normalizedDomainName
       }
     }()
     
