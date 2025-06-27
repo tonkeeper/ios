@@ -19,7 +19,7 @@ enum DeeplinkParserError: Swift.Error, LocalizedError {
   var errorDescription: String? {
     switch self {
     case let .unsupportedDeeplink(code, string):
-      "Unsupported deeplink(code: \(code.rawValue): \(string ?? "")"
+      "Unsupported deeplink(code: \(code.rawValue): \(string ?? ""))"
     case .invalidParameters:
       "Invalid parameters"
     case .unknownQueryItem(let name):
