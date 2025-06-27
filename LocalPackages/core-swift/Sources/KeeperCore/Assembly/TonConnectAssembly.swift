@@ -33,7 +33,7 @@ public final class TonConnectAssembly {
   public func tonConnectService() -> TonConnectService {
     TonConnectServiceImplementation(
       urlSession: .shared,
-      apiClient: apiAssembly.tonConnectAPIClient(),
+      tonConnectBridgeAPIClientProvider: apiAssembly.tonConnectBridgeAPIClientProvider,
       mnemonicsRepository: secureAssembly.mnemonicsRepository(),
       tonConnectAppsVault: coreAssembly.tonConnectAppsVault(),
       tonConnectRepository: tonConnectRepository(),
@@ -61,7 +61,7 @@ public final class TonConnectAssembly {
       return tonConnectEventsStore
     } else {
       let tonConnectEventsStore = TonConnectEventsStore(
-        apiClient: apiAssembly.tonConnectAPIClient(),
+        tonConnectBridgeAPIClientProvider: apiAssembly.tonConnectBridgeAPIClientProvider,
         walletsStore: storesAssembly.walletsStore,
         tonConnectAppsStore: tonConnectAppsStore
       )

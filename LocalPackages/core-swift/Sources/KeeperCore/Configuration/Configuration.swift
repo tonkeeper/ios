@@ -7,6 +7,11 @@ public final class Configuration {
       await loadConfiguration().mainnet.tonapiV2Endpoint
     }
   }
+  public var tonConnectBridge: String {
+    get async {
+      await loadConfiguration().mainnet.tonConnectBridge
+    }
+  }
   public var tonapiTestnetHost: String {
     get async {
       await loadConfiguration().testnet.tonapiV2Endpoint

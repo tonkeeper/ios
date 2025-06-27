@@ -48,6 +48,7 @@ public struct RemoteConfiguration: Equatable {
   public let tonAPISSEEndpoint: String
   public let batteryHost: String
   public let tonApiV2Key: String
+  public let tonConnectBridge: String
   public let mercuryoSecret: String?
   public let supportLink: URL?
   public let directSupportUrl: URL?
@@ -83,6 +84,7 @@ public struct RemoteConfiguration: Equatable {
     case tonAPISSEEndpoint = "tonapi_sse_endpoint"
     case batteryHost
     case tonApiV2Key
+    case tonConnectBridge = "ton_connect_bridge"
     case mercuryoSecret
     case supportLink
     case directSupportUrl
@@ -145,6 +147,7 @@ extension RemoteConfiguration {
       tonAPISSEEndpoint: "",
       batteryHost: "",
       tonApiV2Key: "",
+      tonConnectBridge: "",
       mercuryoSecret: nil,
       supportLink: nil,
       directSupportUrl: nil,

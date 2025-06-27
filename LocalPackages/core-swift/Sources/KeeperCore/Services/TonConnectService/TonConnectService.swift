@@ -69,7 +69,7 @@ public protocol TonConnectService {
 
 final class TonConnectServiceImplementation: TonConnectService {
   private let urlSession: URLSession
-  private let apiClient: TonConnectAPI.Client
+  private let tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider
   private let mnemonicsRepository: MnemonicsRepository
   private let tonConnectAppsVault: TonConnectAppsVault
   private let tonConnectRepository: TonConnectRepository
@@ -77,7 +77,7 @@ final class TonConnectServiceImplementation: TonConnectService {
   private let sendService: SendService
   
   init(urlSession: URLSession,
-       apiClient: TonConnectAPI.Client,
+       tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider,
        mnemonicsRepository: MnemonicsRepository,
        tonConnectAppsVault: TonConnectAppsVault,
        tonConnectRepository: TonConnectRepository,
@@ -85,7 +85,7 @@ final class TonConnectServiceImplementation: TonConnectService {
        sendService: SendService
   ) {
     self.urlSession = urlSession
-    self.apiClient = apiClient
+    self.tonConnectBridgeAPIClientProvider = tonConnectBridgeAPIClientProvider
     self.mnemonicsRepository = mnemonicsRepository
     self.tonConnectAppsVault = tonConnectAppsVault
     self.tonConnectRepository = tonConnectRepository
@@ -196,7 +196,7 @@ final class TonConnectServiceImplementation: TonConnectService {
   func confirmConnectionRequest(body: String, 
                                 sessionCrypto: TonConnectSessionCrypto,
                                 parameters: TonConnectParameters) async throws {
-    let resp = try await apiClient.message(
+    let resp = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
       query: .init(client_id: sessionCrypto.sessionId,
                    to: parameters.clientId, ttl: 300),
       body: .plainText(.init(stringLiteral: body))
@@ -227,7 +227,7 @@ final class TonConnectServiceImplementation: TonConnectService {
         errorCode: .userDeclinedAction,
         id: appRequest.id,
         clientId: app.clientId)
-    _ = try await apiClient.message(
+    _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
         query: .init(client_id: sessionCrypto.sessionId,
                      to: app.clientId,
                      ttl: 300),
@@ -240,7 +240,7 @@ final class TonConnectServiceImplementation: TonConnectService {
     let body = try TonConnectResponseBuilder
       .buildSignDataResponseSuccess(sessionCrypto: sessionCrypto, signed: signed, id: appRequest.id, clientId: app.clientId)
     
-    _ = try await apiClient.message(
+    _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
         query: .init(client_id: sessionCrypto.sessionId,
                      to: app.clientId,
                      ttl: 300),
@@ -255,7 +255,7 @@ final class TonConnectServiceImplementation: TonConnectService {
         errorCode: .userDeclinedAction,
         id: appRequest.id,
         clientId: app.clientId)
-    _ = try await apiClient.message(
+    _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
         query: .init(client_id: sessionCrypto.sessionId,
                      to: app.clientId,
                      ttl: 300),
@@ -271,7 +271,7 @@ final class TonConnectServiceImplementation: TonConnectService {
                                              id: appRequest.id,
                                              clientId: app.clientId)
     
-    _ = try await apiClient.message(
+    _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
         query: .init(client_id: sessionCrypto.sessionId,
                      to: app.clientId,
                      ttl: 300),

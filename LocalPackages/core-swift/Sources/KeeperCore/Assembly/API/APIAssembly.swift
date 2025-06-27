@@ -89,19 +89,35 @@ public final class APIAssembly {
         await configuration.tonApiV2Key
       })
   }()
-  
-  private var _tonConnectAPIClient: TonConnectAPI.Client?
-  func tonConnectAPIClient() -> TonConnectAPI.Client {
-    if let tonConnectAPIClient = _tonConnectAPIClient {
+
+  var tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider {
+    TonConnectBridgeAPIClientProvider(
+      tonConnectBridgerAPIClient: { await self.tonConnectAPIClient }
+    )
+  }
+
+  private actor TonConnectAPIClientWrapper {
+    var _tonConnectAPIClient: TonConnectAPI.Client?
+    func setApiClient(tonConnectAPIClient: TonConnectAPI.Client) {
+      self._tonConnectAPIClient = tonConnectAPIClient
+    }
+  }
+  private let tonConnectAPIClientWrapper = TonConnectAPIClientWrapper()
+  var tonConnectAPIClient: TonConnectAPI.Client {
+    get async {
+      if let tonConnectAPIClient = await tonConnectAPIClientWrapper._tonConnectAPIClient {
+        return tonConnectAPIClient
+      }
+      let tonConnectBridge = await configurationAssembly.configuration.tonConnectBridge
+      let tonConnectAPIClient = TonConnectAPI.Client(
+        serverURL: (URL(string: tonConnectBridge) ?? tonConnectURL).appendingPathComponent("bridge"),
+        transport: streamingTransport,
+        middlewares: [])
+      await tonConnectAPIClientWrapper.setApiClient(tonConnectAPIClient: tonConnectAPIClient)
       return tonConnectAPIClient
     }
-    let tonConnectAPIClient = TonConnectAPI.Client(
-      serverURL: (try? TonConnectAPI.Servers.server1()) ?? tonConnectURL,
-      transport: streamingTransport,
-      middlewares: [])
-    _tonConnectAPIClient = tonConnectAPIClient
-    return tonConnectAPIClient
   }
+
   
   // MARK: - Private
 
@@ -140,7 +156,7 @@ public final class APIAssembly {
   }
   
   var tonConnectURL: URL {
-    URL(string: "https://bridge.tonapi.io/bridge")!
+    URL(string: "https://bridge.tonapi.io")!
   }
 }
 

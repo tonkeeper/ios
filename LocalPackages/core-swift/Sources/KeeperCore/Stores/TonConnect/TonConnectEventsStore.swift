@@ -16,14 +16,14 @@ public actor TonConnectEventsStore {
   private let jsonDecoder = JSONDecoder()
   private var observers = [TonConnectEventsStoreObserverWrapper]()
   
-  private let apiClient: TonConnectAPI.Client
+  private let tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider
   private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
   
-  init(apiClient: TonConnectAPI.Client,
+  init(tonConnectBridgeAPIClientProvider: TonConnectBridgeAPIClientProvider,
        walletsStore: WalletsStore,
        tonConnectAppsStore: TonConnectAppsStore) {
-    self.apiClient = apiClient
+    self.tonConnectBridgeAPIClientProvider = tonConnectBridgeAPIClientProvider
     self.walletsStore = walletsStore
     self.tonConnectAppsStore = tonConnectAppsStore
     
@@ -46,7 +46,7 @@ public actor TonConnectEventsStore {
 
       let errorParser = EventSourceDecodableErrorParser<TonConnectError>()
       let stream = try await EventSource.eventSource({
-        let response = try await self.apiClient.events(
+        let response = try await self.tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().events(
           query: .init(client_id: [ids], last_event_id: tonConnectAppsStore.getLastEventId())
         )
         return try response.ok.body.text_event_hyphen_stream
