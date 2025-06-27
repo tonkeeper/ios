@@ -3,14 +3,23 @@ import TonSwift
 import BigInt
 
 enum DeeplinkParserError: Swift.Error, LocalizedError {
-  case unsupportedDeeplink(string: String?)
+  enum UnsupportedDeeplinkCode: Int {
+    case nilValue
+    case notUrl
+    case invalidPrefix
+    case firstClean
+    case firstPathComponent
+    case notSupportedPath
+  }
+
+  case unsupportedDeeplink(code: UnsupportedDeeplinkCode, string: String?)
   case invalidParameters
   case unknownQueryItem(name: String)
   
   var errorDescription: String? {
     switch self {
-    case .unsupportedDeeplink:
-      "Unsupported deeplink"
+    case let .unsupportedDeeplink(code, string):
+      "Unsupported deeplink(code: \(code.rawValue): \(string ?? "")"
     case .invalidParameters:
       "Invalid parameters"
     case .unknownQueryItem(let name):
@@ -28,7 +37,7 @@ public struct DeeplinkParser {
   public func parse(string: String?) throws -> Deeplink {
     guard let string,
           !string.isEmpty else {
-      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      throw DeeplinkParserError.unsupportedDeeplink(code: .nilValue, string: string)
     }
     
     if let tonconnectDeeplink = parseTonconnectDeeplink(string: string) {
@@ -46,7 +55,7 @@ public struct DeeplinkParser {
     ]
     
     guard let prefix = deeplinkPrefixes.first(where: { string.hasPrefix($0) }) else {
-      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      throw DeeplinkParserError.unsupportedDeeplink(code: .invalidPrefix, string: string)
     }
     
     let prefixIndex = string.index(string.startIndex, offsetBy: prefix.count)

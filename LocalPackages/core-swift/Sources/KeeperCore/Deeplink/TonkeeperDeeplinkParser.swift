@@ -4,11 +4,27 @@ import BigInt
 
 public struct TonkeeperDeeplinkParser {
   public func parse(string: String?) throws -> Deeplink {
-    guard let string,
-          let cleaned = string.removingPercentEncoding?.removingPercentEncoding,
-          let url = URL(string: cleaned),
-          let firstPathComponent = url.pathComponents.first else {
-      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    guard let string else {
+      throw DeeplinkParserError.unsupportedDeeplink(code: .nilValue, string: string)
+    }
+
+    guard var url = URL(string: string) else {
+      throw DeeplinkParserError.unsupportedDeeplink(code: .notUrl, string: string)
+    }
+
+    if let cleaned = string.removingPercentEncoding,
+       let cleanedURL = URL(string: cleaned) {
+      url = cleanedURL
+    }
+
+    if let secondCleaned = string.removingPercentEncoding?.removingPercentEncoding,
+       let secondCleanedURL = URL(string: secondCleaned) {
+      url = secondCleanedURL
+    }
+
+    guard let firstPathComponent = url.pathComponents.first else {
+      throw DeeplinkParserError.unsupportedDeeplink(code: .firstPathComponent,
+                                                    string: string)
     }
     
     switch firstPathComponent {
@@ -41,7 +57,8 @@ public struct TonkeeperDeeplinkParser {
     case "story":
       return .story(storyId: try parseStory(url: url))
     default:
-      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      throw DeeplinkParserError.unsupportedDeeplink(code: .notSupportedPath,
+                                                    string: string)
     }
   }
   
@@ -220,7 +237,8 @@ public struct TonkeeperDeeplinkParser {
       let publicKey = TonSwift.PublicKey(data: pkData)
       return ExternalSignDeeplink.link(publicKey: publicKey, name: name)
     default:
-      throw DeeplinkParserError.unsupportedDeeplink(string: url.absoluteString)
+      throw DeeplinkParserError.unsupportedDeeplink(code: .notSupportedPath,
+                                                    string: url.absoluteString)
     }
   }
 
@@ -242,7 +260,8 @@ public struct TonkeeperDeeplinkParser {
     let components = URLComponents(string: "\(stringURL)")
 
     guard let resultURL = components?.url else {
-      throw DeeplinkParserError.unsupportedDeeplink(string: url.absoluteString)
+      throw DeeplinkParserError.unsupportedDeeplink(code: .notUrl,
+                                                    string: url.absoluteString)
     }
 
     return resultURL
