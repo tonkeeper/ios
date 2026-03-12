@@ -1,0 +1,61 @@
+name: Bump App version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Bump App version
+        id: bump
+        run: |
+          ./scripts/bump_version.sh
+          
+          # Save the new version for commit message
+          NEW_VERSION=$(grep '^APP_VERSION_COMMON' Configurations/common.xcconfig | cut -d' ' -f3)
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create branch and PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="bump-version-${{ github.run_number }}"
+
+          # make new branch based on develop
+          git checkout -b "$BRANCH"
+
+          # commit changes
+          git config user.name "ios-bot"
+          git config user.email "ios-bot@github.com"
+          git add Configurations/common.xcconfig
+          if git diff --cached --quiet; then
+            echo "No changes to commit; skipping branch push and PR creation."
+            exit 0
+          fi
+          git commit -m "bump app version to ${{ steps.bump.outputs.new_version }}"
+
+          # push branch
+          git push origin "$BRANCH"
+
+          # make PR through gh cli
+          gh pr create \
+            --title "bump app version" \
+            --body "
+            Automatically update version in \`common.xcconfig\`.
+
+            - The new version: \`${{ steps.bump.outputs.new_version }}\`
+            - Trigger: \`${{ github.event_name }}\`
+            - Commit: \`${{ github.sha }}\`
+            " \
+            --base develop \
+            --head "$BRANCH"

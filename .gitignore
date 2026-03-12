@@ -9,6 +9,9 @@ xcuserdata/
 *.xcscmblueprint
 *.xccheckout
 
+.env
+.context
+.build
 build/
 DerivedData/
 *.moved-aside
@@ -30,7 +33,11 @@ DerivedData/
 *.dSYM
 
 ## Firebase config
-Tonkeeper/Resources/Firebase/*/*.plist
+Tonkeeper/Resources/Firebase/TonkeeperXRelease/*.plist
+Tonkeeper/Resources/Firebase/TonkeeperXDebug/*.plist
+
+## Generated dev plist (from Info.plist)
+Tonkeeper/Resources/Info-Dev.plist
 
 ## Modules
 Modules/Package.resolved

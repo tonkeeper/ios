@@ -1,60 +1,60 @@
+import CoreComponents
 import Foundation
 import TonSwift
 
 public struct TonConnectNFTProofProvider {
+    let nft: NFT
+    let wallet: Wallet
+    let mnemonicRepository: MnemonicsRepository
 
-  let nft: NFT
-  let wallet: Wallet
-  let mnemonicRepository: MnemonicsRepository
-
-  public init(
-    wallet: Wallet,
-    nft: NFT,
-    mnemonicRepository: MnemonicsRepository
-  ) {
-    self.nft = nft
-    self.wallet = wallet
-    self.mnemonicRepository = mnemonicRepository
-  }
-
-  public func composeTonNFTProofURL(baseURL: URL, passcode: String) async throws -> URL? {
-    guard let host = baseURL.host else {
-      return nil
+    public init(
+        wallet: Wallet,
+        nft: NFT,
+        mnemonicRepository: MnemonicsRepository
+    ) {
+        self.nft = nft
+        self.wallet = wallet
+        self.mnemonicRepository = mnemonicRepository
     }
 
-    let mnemonic = try await mnemonicRepository.getMnemonic(wallet: wallet, password: passcode)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+    public func composeTonNFTProofURL(baseURL: URL, passcode: String) async throws -> URL? {
+        guard let host = baseURL.host else {
+            return nil
+        }
 
-    let privateKey = keyPair.privateKey
-    let walletAddress = try wallet.address
-    let walletRawAddress = walletAddress.toRaw()
-    let nftRawAddress = self.nft.address.toRaw()
-    let item = TonConnect.TonProofItemReplySuccess(
-      address: walletAddress,
-      domain: host,
-      payload: nftRawAddress,
-      privateKey: privateKey
-    )
+        let mnemonic = try await mnemonicRepository.getMnemonic(wallet: wallet, password: passcode)
+        let keyPair = try MnemonicLegacy.anyMnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
 
-    let proof = item.proof
-    let signature = proof.signature
-    let timestamp = signature.timestamp
+        let privateKey = keyPair.privateKey
+        let walletAddress = try wallet.address
+        let walletRawAddress = walletAddress.toRaw()
+        let nftRawAddress = self.nft.address.toRaw()
+        let item = TonConnect.TonProofItemReplySuccess(
+            address: walletAddress,
+            domain: host,
+            payload: nftRawAddress,
+            privateKey: privateKey
+        )
 
-    let builder = Builder()
-    try wallet.stateInit.storeTo(builder: builder)
-    let stateInit = try builder.endCell().toBoc().base64EncodedString()
+        let proof = item.proof
+        let signature = proof.signature
+        let timestamp = signature.signatureData.timestamp
 
-    var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
-    var queryItems = [URLQueryItem]()
-    queryItems.append(URLQueryItem(name: "v", value: nftRawAddress))
-    queryItems.append(URLQueryItem(name: "wallet", value: walletRawAddress))
-    queryItems.append(URLQueryItem(name: "publicKey", value: keyPair.publicKey.hexString))
-    queryItems.append(URLQueryItem(name: "nftAddress", value: nftRawAddress))
-    queryItems.append(URLQueryItem(name: "timestamp", value: "\(timestamp)"))
-    queryItems.append(URLQueryItem(name: "domain", value: "\(item.proof.domain.value)"))
-    queryItems.append(URLQueryItem(name: "stateInit", value: stateInit))
-    queryItems.append(URLQueryItem(name: "signature", value: "\(signature.data().hexString())"))
-    urlComponents?.queryItems = queryItems
-    return urlComponents?.url
-  }
+        let builder = Builder()
+        try wallet.stateInit.storeTo(builder: builder)
+        let stateInit = try builder.endCell().toBoc().base64EncodedString()
+
+        var urlComponents = URLComponents(url: baseURL, resolvingAgainstBaseURL: false)
+        var queryItems = [URLQueryItem]()
+        queryItems.append(URLQueryItem(name: "v", value: nftRawAddress))
+        queryItems.append(URLQueryItem(name: "wallet", value: walletRawAddress))
+        queryItems.append(URLQueryItem(name: "publicKey", value: keyPair.publicKey.hexString))
+        queryItems.append(URLQueryItem(name: "nftAddress", value: nftRawAddress))
+        queryItems.append(URLQueryItem(name: "timestamp", value: "\(timestamp)"))
+        queryItems.append(URLQueryItem(name: "domain", value: "\(item.proof.domain.value)"))
+        queryItems.append(URLQueryItem(name: "stateInit", value: stateInit))
+        queryItems.append(URLQueryItem(name: "signature", value: "\(signature.signatureData.data().hexString())"))
+        urlComponents?.queryItems = queryItems
+        return urlComponents?.url
+    }
 }

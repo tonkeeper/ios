@@ -1,6 +1,6 @@
 //
 //  MockDefaultConfigurationProvider.swift
-//  
+//
 //
 //  Created by Grigory on 21.6.23..
 //

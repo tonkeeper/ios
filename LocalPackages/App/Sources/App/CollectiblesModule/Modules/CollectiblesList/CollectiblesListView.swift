@@ -1,40 +1,44 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 final class CollectiblesListView: UIView {
-  
-  let collectionView = TKUICollectionView(
-    frame: .zero,
-    collectionViewLayout: UICollectionViewLayout()
-  )
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
+    let refreshControl = UIRefreshControl()
+
+    let collectionView = TKUICollectionView(
+        frame: .zero,
+        collectionViewLayout: UICollectionViewLayout()
+    )
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }
 
 private extension CollectiblesListView {
-  func setup() {
-    backgroundColor = .Background.page
-    collectionView.backgroundColor = .Background.page
-    
-    addSubview(collectionView)
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
-    collectionView.translatesAutoresizingMaskIntoConstraints = false
-    
-    NSLayoutConstraint.activate([
-      collectionView.topAnchor.constraint(equalTo: topAnchor),
-      collectionView.leftAnchor.constraint(equalTo: leftAnchor),
-      collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      collectionView.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
-  }
+    func setup() {
+        backgroundColor = .Background.page
+        collectionView.backgroundColor = .Background.page
+        collectionView.refreshControl = refreshControl
+        collectionView.showsVerticalScrollIndicator = false
+
+        addSubview(collectionView)
+        setupConstraints()
+    }
+
+    func setupConstraints() {
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            collectionView.topAnchor.constraint(equalTo: topAnchor),
+            collectionView.leftAnchor.constraint(equalTo: leftAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            collectionView.rightAnchor.constraint(equalTo: rightAnchor),
+        ])
+    }
 }

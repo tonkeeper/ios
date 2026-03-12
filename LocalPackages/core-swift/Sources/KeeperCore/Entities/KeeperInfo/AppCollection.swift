@@ -11,7 +11,7 @@ struct AppConnection: Codable, Equatable {
     let id: AppID
     // TBD: a bunch of ton connect stuff
     let sessionID: Data
-    
+
     // TODO: notif preferences
     let notifications: Bool
 }

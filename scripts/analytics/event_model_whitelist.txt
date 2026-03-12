@@ -1,0 +1,9 @@
+# One event model per line; extension optional.
+# This list is sorted automatically by scripts/analytics/sync_models.sh.
+AnalyticsEventMobileNative
+InstallApp
+SendClick
+SendConfirm
+SendFailed
+SendOpen
+SendSuccess

@@ -1,155 +1,132 @@
-import UIKit
-import TKCore
-import TKUIKit
-import TKLocalize
 import KeeperCore
+import TKCore
+import TKLocalize
+import TKUIKit
 import TonSwift
+import UIKit
 
+@MainActor
 protocol CollectiblesModuleOutput: AnyObject {
-  var didTapCollectiblesDetails: (() -> Void)? { get set }
+    var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)? { get set }
 }
 
-protocol CollectiblesModuleInput: AnyObject {
+@MainActor
+protocol CollectiblesModuleInput: AnyObject {}
 
-}
-
+@MainActor
 protocol CollectiblesViewModel: AnyObject {
-  var didUpdateIsLoading: ((Bool) -> Void)? { get set }
-  var didUpdateIsEmpty: ((_ isEmpty: Bool) -> Void)? { get set }
-  var didUpdateNavigationBarButtons: ((_ buttons: [TKNavigationBar.HeaderButtonItem]) -> Void)? { get set }
-  var didTapDetailsButton: (() -> Void)? { get set }
+    var didUpdateIsLoading: ((Bool) -> Void)? { get set }
+    var didUpdateNavigationBarButtons: ((_ buttons: [CollectiblesNavigationBar.ButtonItem]) -> Void)? { get set }
 
-  func viewDidLoad()
+    func viewDidLoad()
 }
 
+@MainActor
 final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput, CollectiblesModuleInput {
-  
-  // MARK: - CollectiblesModuleOutput
+    // MARK: - CollectiblesModuleOutput
 
-  var didTapCollectiblesDetails: (() -> Void)?
+    var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)?
 
-  // MARK: - CollectiblesModuleInput
+    // MARK: - CollectiblesModuleInput
 
-  // MARK: - CollectiblesViewModel
-  
-  var didUpdateIsLoading: ((Bool) -> Void)?
-  var didUpdateIsEmpty: ((Bool) -> Void)?
-  var didUpdateNavigationBarButtons: ((_ buttons: [TKNavigationBar.HeaderButtonItem]) -> Void)?
-  var didTapDetailsButton: (() -> Void)?
+    // MARK: - CollectiblesViewModel
 
-  func viewDidLoad() {
-    configureBindings()
-    update()
-  }
+    var didUpdateIsLoading: ((Bool) -> Void)?
+    var didUpdateNavigationBarButtons: ((_ buttons: [CollectiblesNavigationBar.ButtonItem]) -> Void)?
 
-  private func configureBindings() {
-//    backgroundUpdateStore.addObserver(self) { observer, event in
-//      observer.didGetBackgroundUpdateStoreEvent(event)
-//    }
-
-//    walletStateLoader.addObserver(self) { observer, event in
-//      observer.didGetWalletStateLoaderEvent(event)
-//    }
-
-    walletNFTManagedStore.addObserver(self) { observer, event in
-      observer.didGetWalletNFTStoreEvent(event)
+    func viewDidLoad() {
+        configureBindings()
+        updateLoadingState()
+        updateNavigationBarButtons()
     }
-    didTapDetailsButton = { [weak self] in
-      self?.didTapCollectiblesDetails?()
-    }
-  }
 
-  // MARK: Dependencies
-  
-  private let wallet: Wallet
-  private let walletNFTManagedStore: WalletNFTsManagedStore
-  private let backgroundUpdate: BackgroundUpdate
-  private let walletBalanceLoader: WalletBalanceLoader
-  
-  init(wallet: Wallet,
-       walletNFTManagedStore: WalletNFTsManagedStore,
-       backgroundUpdate: BackgroundUpdate,
-       walletBalanceLoader: WalletBalanceLoader) {
-    self.wallet = wallet
-    self.walletNFTManagedStore = walletNFTManagedStore
-    self.backgroundUpdate = backgroundUpdate
-    self.walletBalanceLoader = walletBalanceLoader
-  }
+    private func configureBindings() {
+        Task {
+            await walletNFTsStore.addObserver(self)
+        }
+
+        backgroundUpdate.addStateObserver(self) { observer, wallet, _ in
+            guard wallet == observer.wallet else { return }
+            observer.updateLoadingState()
+        }
+    }
+
+    // MARK: State
+
+    private var isLoading: Bool = false {
+        didSet {
+            didUpdateIsLoading?(isLoading)
+        }
+    }
+
+    // MARK: Dependencies
+
+    private let wallet: Wallet
+    private let walletNFTsStore: WalletNFTStore
+    private let backgroundUpdate: BackgroundUpdate
+
+    init(
+        wallet: Wallet,
+        walletNFTsStore: WalletNFTStore,
+        backgroundUpdate: BackgroundUpdate
+    ) {
+        self.wallet = wallet
+        self.walletNFTsStore = walletNFTsStore
+        self.backgroundUpdate = backgroundUpdate
+    }
 }
 
 private extension CollectiblesViewModelImplementation {
-//  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
-//    switch event {
-//    case .didUpdateConnectionState(_, let wallet):
-//      guard wallet == self.wallet else { return }
-//      DispatchQueue.main.async {
-//        self.update()
-//      }
-//    }
-//  }
-  
-//  func didGetWalletStateLoaderEvent(_ event: WalletBalanceLoader.Event) {
-//    switch event {
-//    case .didStartLoadNFT(let wallet):
-//      guard wallet == self.wallet else { return }
-//      DispatchQueue.main.async {
-//        self.update()
-//      }
-//    case .didEndLoadNFT(let wallet):
-//      guard wallet == self.wallet else { return }
-//      DispatchQueue.main.async {
-//        self.update()
-//      }
-//    default: break
-//    }
-//  }
-  
-  func didGetWalletNFTStoreEvent(_ event: WalletNFTsManagedStore.Event) {
-    switch event {
-    case .didUpdateNFTs(let wallet):
-      guard wallet == self.wallet else { return }
-      DispatchQueue.main.async {
-        self.update()
-      }
+    @MainActor
+    func updateLoadingState() {
+        let isBackgroudConnecting: Bool = {
+            switch backgroundUpdate.getState(wallet: wallet) {
+            case .connected: false
+            default: true
+            }
+        }()
+        let isLoading: Bool = {
+            switch walletNFTsStore.state.value.loadingState {
+            case .idle: false
+            case .loading: true
+            }
+        }()
+        self.isLoading = isBackgroudConnecting || isLoading
     }
-  }
-  
-  func update() {
-    let isLoading = {
-      return false
-//      let updateState = backgroundUpdateStore.getState()[wallet] ?? .connecting
-//      let isBackgroundUpdate: Bool
-//      switch updateState {
-//      case .connected:
-//        isBackgroundUpdate = false
-//      default:
-//        isBackgroundUpdate = true
-//      }
-//      
-////      let isLoadingNft = walletStateLoader.getState().nftLoadTasks[wallet] != nil
-//      let isLoadingNft = false
-//      
-//      return isLoadingNft || isBackgroundUpdate
-    }()
-    
-    let isEmpty = walletNFTManagedStore.getState().isEmpty
-    let listHidden = isEmpty && !isLoading
 
-    updateNavigationBarButtons(isHidden: listHidden)
-    didUpdateIsLoading?(isLoading)
-    didUpdateIsEmpty?(listHidden)
-  }
+    func updateNavigationBarButtons() {
+        let nfts = walletNFTsStore.state.value.nfts
 
-  func updateNavigationBarButtons(isHidden: Bool) {
-    var buttonItems = [TKNavigationBar.HeaderButtonItem]()
-    if !isHidden {
-      let rightButtonModel = TKNavigationBar.HeaderButtonItem(
-        model: TKUIHeaderIconButton.Model(image: .TKUIKit.Icons.Size16.sliders)
-      ) { [weak self] in
-        self?.didTapDetailsButton?()
-      }
-      buttonItems.append(rightButtonModel)
+        var buttonItems = [CollectiblesNavigationBar.ButtonItem]()
+
+        if !nfts.spam.isEmpty || nfts.blacklistedCount > 0 {
+            let spamButton = CollectiblesNavigationBar.ButtonItem(
+                content: .text(TKLocales.Collectibles.spamButton),
+                action: { [weak self] in
+                    self?.didTapCollectiblesSettings?(true)
+                }
+            )
+            buttonItems.append(spamButton)
+        }
+
+        let settingsButton = CollectiblesNavigationBar.ButtonItem(
+            content: .icon(.TKUIKit.Icons.Size16.sliders),
+            action: { [weak self] in
+                self?.didTapCollectiblesSettings?(false)
+            }
+        )
+        buttonItems.append(settingsButton)
+
+        didUpdateNavigationBarButtons?(buttonItems)
     }
-    didUpdateNavigationBarButtons?(buttonItems)
-  }
+}
+
+extension CollectiblesViewModelImplementation: WalletNFTStoreObserver {
+    nonisolated func didUpdateLoadingState(_ loadingState: WalletNFTStore.LoadingState) {
+        Task { @MainActor in updateLoadingState() }
+    }
+
+    nonisolated func didUpdateNFTs(_ nfts: WalletNFTs) {
+        Task { @MainActor in updateNavigationBarButtons() }
+    }
 }

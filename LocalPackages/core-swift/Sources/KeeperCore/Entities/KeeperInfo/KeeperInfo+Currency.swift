@@ -1,5 +1,5 @@
 extension KeeperInfo {
-  func setCurrency(_ currency: Currency) -> KeeperInfo {
-    self
-  }
+    func setCurrency(_ currency: Currency) -> KeeperInfo {
+        self
+    }
 }

@@ -1,12 +1,13 @@
 import UIKit
 
 protocol TokenDetailsListContentViewController: UIViewController {
-  var scrollView: UIScrollView { get }
-  func setHeaderViewController(_ headerViewController: UIViewController?)
+    var scrollView: UIScrollView { get }
+    var didPullToRefresh: (() -> Void)? { get set }
+    func setHeaderViewController(_ headerViewController: UIViewController?)
 }
 
 extension HistoryListViewController: TokenDetailsListContentViewController {
-  var scrollView: UIScrollView {
-    customView.collectionView
-  }
+    var scrollView: UIScrollView {
+        customView.collectionView
+    }
 }

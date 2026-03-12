@@ -1,16 +1,25 @@
-import UIKit
 import KeeperCore
+import UIKit
 
 enum Image: Equatable, Hashable {
-  case url(URL?)
-  case image(UIImage?, tinColor: UIColor?, backgroundColor: UIColor?)
+    case url(URL?)
+    case image(UIImage?, tinColor: UIColor?, backgroundColor: UIColor?)
 }
 
 extension Image {
-  static func with(image: KeeperCore.TokenImage) -> Image {
-    switch image {
-    case .ton: return .image(.TKUIKit.Icons.Size44.tonCurrency, tinColor: .Icon.primary, backgroundColor: .Constant.tonBlue)
-    case let .url(url): return .url(url)
+    static func with(image: KeeperCore.TokenImage) -> Image {
+        switch image {
+        case .ton: return .image(
+                .TKUIKit.Icons.Size44.tonCurrency,
+                tinColor: .Icon.primary,
+                backgroundColor: .Constant.tonBlue
+            )
+        case .usdt: return .image(
+                .App.Currency.Size44.usdt,
+                tinColor: .Icon.primary,
+                backgroundColor: .Constant.tonBlue
+            )
+        case let .url(url): return .url(url)
+        }
     }
-  }
 }

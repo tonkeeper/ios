@@ -1,14 +1,15 @@
-import Foundation
+import FirebaseAnalytics
 import FirebaseCore
 import FirebaseMessaging
+import FirebasePerformance
+import Foundation
 
 public final class FirebaseConfigurator: NSObject {
-  
-  public static let configurator = FirebaseConfigurator()
-  
-  private override init() {}
-  
-  public func configure() {
-    FirebaseApp.configure()
-  }
+    public static let configurator = FirebaseConfigurator()
+
+    override private init() {}
+
+    public func configure() {
+        FirebaseApp.configure()
+    }
 }

@@ -1,5 +1,5 @@
 extension KeeperInfo {
-  func setIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
-    self
-  }
+    func setIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
+        self
+    }
 }

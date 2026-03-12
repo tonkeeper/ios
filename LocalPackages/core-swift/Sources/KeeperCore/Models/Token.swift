@@ -1,36 +1,43 @@
 import Foundation
+import TronSwift
 
 public enum Token: Equatable, Hashable {
-  case ton
-  case jetton(JettonItem)
-  
- public var fractionDigits: Int {
-    let digits: Int
-    switch self {
-    case .ton:
-      digits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      digits = jettonItem.jettonInfo.fractionDigits
+    case ton(TonToken)
+    case usdtTron
+
+    public var fractionDigits: Int {
+        switch self {
+        case let .ton(tonToken): tonToken.fractionDigits
+        case .usdtTron: TronSwift.USDT.fractionDigits
+        }
     }
-    
-    return digits
-  }
-  
-  public var symbol: String {
-    switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.symbol ?? ""
+
+    public var symbol: String {
+        switch self {
+        case let .ton(tonToken): tonToken.symbol
+        case .usdtTron: TronSwift.USDT.symbol
+        }
     }
-  }
-  
-  public var identifier: String {
-    switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.address.toRaw()
+
+    public var chartIdentifier: String {
+        switch self {
+        case let .ton(tonToken): tonToken.identifier
+        case .usdtTron: JettonMasterAddress.tonUSDT.toRaw()
+        }
     }
-  }
+
+    public var analyticsSymbol: String {
+        switch self {
+        case let .ton(tonToken):
+            switch tonToken {
+            case .ton: "ton_ton"
+            case let .jetton(jettonItem):
+                "\(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)_ton".replacingOccurrences(
+                    of: "₮",
+                    with: "t"
+                ).lowercased()
+            }
+        case .usdtTron: "usdt_trc20"
+        }
+    }
 }

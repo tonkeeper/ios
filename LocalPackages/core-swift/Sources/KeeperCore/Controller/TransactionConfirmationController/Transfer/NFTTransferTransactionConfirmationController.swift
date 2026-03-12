@@ -1,148 +1,228 @@
-import Foundation
-import TonSwift
 import BigInt
+import Foundation
 import TonAPI
+import TonSwift
 
 final class NFTTransferTransactionConfirmationController: TransactionConfirmationController {
-  func getModel() -> TransactionConfirmationModel {
-    createModel()
-  }
-  
-  func emulate() async -> Result<Void, TransactionConfirmationError> {
-    do {
-      let payload = try await transferTransaction.calculateFee(
-        wallet: wallet,
-        transfer: .nft(nft, transferAmount: BigUInt(1000000000)),
-        recipient: recipient,
-        comment: comment
-      )
-      self.transferPayload = payload
-      updateFee(payload: transferPayload)
-      return .success(())
-    } catch {
-      self.transferPayload = nil
-      updateFee(payload: nil)
-      return .failure(.failedToCalculateFee)
+    func getModel() -> TransactionConfirmationModel {
+        createModel()
     }
-  }
-  
-  func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
-    do {
-      let transferAmount: BigUInt = {
-        guard let transferPayload else {
-          return BigUInt(1000000000)
+
+    func setLoading() {
+        extraState = .loading
+    }
+
+    private var preferredExtraType: TransactionConfirmationModel.ExtraType?
+    private var availableTypes: [TransactionConfirmationModel.ExtraType] = []
+
+    func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
+        preferredExtraType = extraType
+        var transferSettings = settingsRepository.getTransferSettings(wallet: wallet)
+        switch extraType {
+        case .default:
+            transferSettings.jettonTransfer = .default
+        case .battery:
+            transferSettings.jettonTransfer = .battery
+        case .gasless:
+            return
         }
-        let emulationExtra = BigUInt(integerLiteral: transferPayload.fee)
-        let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
-        var transferAmount = emulationExtra + minimumTransferAmount
-        transferAmount = transferAmount < minimumTransferAmount
-        ? minimumTransferAmount
-        : transferAmount
-        return transferAmount
-      }()
-      try await transferTransaction.sendTransaction(
-        wallet: wallet,
-        transfer: .nft(nft, transferAmount: transferAmount),
-        recipient: recipient,
-        comment: comment,
-        transferType: transferPayload?.type ?? .default,
-        signClosure: { [weak self, wallet] transferData in
-          guard let signed = try? await self?.signHandler?(transferData, wallet) else {
-            throw TransactionConfirmationError.failedToSign
-          }
-          return signed
+        try? settingsRepository.setTransferSettings(wallet: wallet, transferSettings: transferSettings)
+    }
+
+    func emulate() async -> Result<Void, TransactionConfirmationError> {
+        var availableTypes: [TransactionConfirmationModel.ExtraType] = [.default]
+
+        do {
+            defer {
+                self.availableTypes = availableTypes
+            }
+
+            let transfer: Transfer = .nft(nft, transferAmount: BigUInt(65_000_000), recipient: recipient, comment: comment)
+
+            let isBatteryAvailable = await transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
+
+            if isBatteryAvailable {
+                availableTypes.append(.battery)
+            }
+
+            let preferredType: TransactionConfirmationModel.ExtraType = {
+                if let preferredExtraType { return preferredExtraType }
+                switch settingsRepository.getTransferSettings(wallet: wallet).jettonTransfer {
+                case .default:
+                    return .default
+                case .gasless:
+                    return isBatteryAvailable ? .battery : .default
+                case .battery:
+                    return isBatteryAvailable ? .battery : .default
+                }
+            }()
+
+            let result = try await transferService.emulate(
+                wallet: wallet,
+                transfer: transfer,
+                params: [.init(address: wallet.address.toRaw(), balance: Int64(2_000_000_000))],
+                preferredExtraType: preferredType
+            )
+            self.emulationResult = result
+            await updateFee(emulationResult: emulationResult)
+            return .success(())
+        } catch {
+            self.emulationResult = nil
+            await updateFee(emulationResult: nil)
+            return .failure(.failedToCalculateFee)
         }
-      )
-      return .success(())
-    } catch {
-      return .failure(.failedToSendTransaction)
     }
-  }
-  
-  public var signHandler: ((TransferData, Wallet) async throws -> String?)?
-  
-  @Atomic private var transferPayload: TransferTransaction.TransferPayload?
-  @Atomic private var fee: TransactionConfirmationModel.Fee = .loading
-  
-  private let wallet: Wallet
-  private let recipient: Recipient
-  private let nft: NFT
-  private let comment: String?
-  private let sendService: SendService
-  private let blockchainService: BlockchainService
-  private let ratesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
-  private let transferTransaction: TransferTransaction
-  
-  init(wallet: Wallet,
-       recipient: Recipient,
-       nft: NFT,
-       comment: String?,
-       sendService: SendService,
-       blockchainService: BlockchainService,
-       ratesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
-       transferTransaction: TransferTransaction) {
-    self.wallet = wallet
-    self.recipient = recipient
-    self.nft = nft
-    self.comment = comment
-    self.sendService = sendService
-    self.blockchainService = blockchainService
-    self.ratesStore = ratesStore
-    self.currencyStore = currencyStore
-    self.transferTransaction = transferTransaction
-  }
-  
-  private func createModel() -> TransactionConfirmationModel {
-    return TransactionConfirmationModel(
-      wallet: wallet,
-      recipient: recipient.recipientAddress.name,
-      recipientAddress: recipient.recipientAddress.addressString,
-      transaction: .transfer(.nft(nft)),
-      amount: nil,
-      fee: fee,
-      comment: comment
-    )
-  }
-  
-  private func updateFee(payload: TransferTransaction.TransferPayload?) {
-    guard let payload else {
-      fee = .value(nil, converted: nil, isBattery: false)
-      return
+
+    func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+        do {
+            let transferAmount: BigUInt = {
+                guard let emulationResult else {
+                    return BigUInt(100_000_000)
+                }
+                let emulationExtra = emulationResult.extra.amount
+                let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
+
+                var transferAmount = {
+                    switch emulationExtra {
+                    case let .fee(fee):
+                        return fee + minimumTransferAmount
+                    case .refund:
+                        return minimumTransferAmount
+                    }
+                }()
+
+                transferAmount = transferAmount < minimumTransferAmount
+                    ? minimumTransferAmount
+                    : transferAmount
+                return transferAmount
+            }()
+            try await transferService.sendTransaction(
+                wallet: wallet,
+                transfer: .nft(nft, transferAmount: transferAmount, recipient: recipient, comment: comment),
+                transferType: emulationResult?.transferType ?? .default,
+                signClosure: { [weak self, wallet] transferData in
+                    guard let signed = try? await self?.signHandler?(transferData, wallet) else {
+                        throw TransactionConfirmationError.failedToSign
+                    }
+                    return signed
+                }
+            )
+            return .success(())
+        } catch {
+            return .failure(.failedToSendTransaction)
+        }
     }
-    let fee = BigUInt(payload.fee)
-    
-    var convertedFee: TransactionConfirmationModel.Amount?
-    let currency = currencyStore.getState()
-    if let rates = ratesStore.getState().first(where: { $0.currency == currency }) {
-      let rateConverter = RateConverter()
-      let converted = rateConverter.convert(
-        amount: fee,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rates
-      )
-      convertedFee = TransactionConfirmationModel.Amount(
-        value: converted.amount,
-        decimals: converted.fractionLength,
-        item: .currency(currency)
-      )
+
+    var signHandler: ((TransferData, Wallet) async throws -> SignedTransactions?)?
+
+    @Atomic private var emulationResult: TransferEmulationResult?
+    @Atomic private var extraState: TransactionConfirmationModel.ExtraState = .loading
+    @Atomic private var totalFee: BigInt = 0
+
+    private let wallet: Wallet
+    private let recipient: TonRecipient
+    private let nft: NFT
+    private let comment: String?
+    private let sendService: SendService
+    private let blockchainService: BlockchainService
+    private let ratesStore: TonRatesStore
+    private let currencyStore: CurrencyStore
+    private let transferService: TransferService
+    private let ratesService: RatesService
+    private let settingsRepository: SettingsRepository
+    private let batteryCalculation: BatteryCalculation
+
+    init(
+        wallet: Wallet,
+        recipient: TonRecipient,
+        nft: NFT,
+        comment: String?,
+        sendService: SendService,
+        blockchainService: BlockchainService,
+        ratesStore: TonRatesStore,
+        currencyStore: CurrencyStore,
+        transferService: TransferService,
+        ratesService: RatesService,
+        settingsRepository: SettingsRepository,
+        batteryCalculation: BatteryCalculation
+    ) {
+        self.wallet = wallet
+        self.recipient = recipient
+        self.nft = nft
+        self.comment = comment
+        self.sendService = sendService
+        self.blockchainService = blockchainService
+        self.ratesStore = ratesStore
+        self.currencyStore = currencyStore
+        self.transferService = transferService
+        self.ratesService = ratesService
+        self.settingsRepository = settingsRepository
+        self.batteryCalculation = batteryCalculation
     }
-    
-    self.fee = .value(
-      TransactionConfirmationModel.Amount(
-        value: fee,
-        decimals: TonInfo.fractionDigits,
-        item: .currency(.TON)
-      ),
-      converted: convertedFee,
-      isBattery: payload.isBattery
-    )
-  }
-  
-  func signTransfer(_ transferData: TransferData) async throws -> String {
-    guard let signHandler,
-          let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
-    return signedData
-  }
+
+    private func createModel() -> TransactionConfirmationModel {
+        return TransactionConfirmationModel(
+            wallet: wallet,
+            recipient: recipient.recipientAddress.name,
+            recipientAddress: recipient.recipientAddress.addressString,
+            transaction: .transfer(.nft(nft)),
+            amount: nil,
+            extraState: extraState,
+            comment: comment,
+            availableExtraTypes: [.default, .battery],
+            totalFee: totalFee
+        )
+    }
+
+    private func updateFee(emulationResult: TransferEmulationResult?) async {
+        guard let emulationResult else {
+            extraState = .none
+            return
+        }
+        let extra = emulationResult.extra
+
+        let extraType: TransactionConfirmationModel.ExtraType
+        extraType = emulationResult.transferType.isBattery ? .battery : .default
+
+        let (amount, isRefund) = {
+            switch extra.amount {
+            case let .fee(fee):
+                return (fee, false)
+            case let .refund(refund):
+                return (refund, true)
+            }
+        }()
+
+        if let totalFee = emulationResult.transactionInfo?.trace.transaction.totalFees {
+            self.totalFee = BigInt(totalFee)
+        }
+
+        let value: TransactionConfirmationModel.ExtraValue = {
+            switch extraType {
+            case .default:
+                return .default(amount: amount)
+            case .battery:
+                let excess: Int? = emulationResult.extra.excess.flatMap { batteryCalculation.calculateCharges(tonAmount: BigUInt($0)) }
+                return .battery(
+                    charges: batteryCalculation.calculateCharges(tonAmount: amount),
+                    excess: excess
+                )
+            case let .gasless(token):
+                return .gasless(token: token, amount: amount)
+            }
+        }()
+
+        self.extraState = .extra(
+            TransactionConfirmationModel.Extra(
+                value: value,
+                kind: isRefund ? .refund : .fee
+            )
+        )
+    }
+
+    func signTransfer(_ transferData: TransferData) async throws -> SignedTransactions {
+        guard let signHandler,
+              let signedData = try await signHandler(transferData, wallet) else { throw TransactionConfirmationError.failedToSign }
+        return signedData
+    }
 }

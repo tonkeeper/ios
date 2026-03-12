@@ -1,84 +1,55 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 final class BrowserExploreView: UIView {
-  
-  enum State {
-    case data
-    case empty(BrowserExploreEmptyView.Model)
-  }
-  
-  var state: State = .data {
-    didSet {
-      setupState()
+    var topInset: CGFloat = 0 {
+        didSet {
+            topLayoutGuide.snp.remakeConstraints { make in
+                make.left.right.equalTo(self)
+                make.top.equalTo(self)
+                make.height.equalTo(topInset)
+            }
+        }
     }
-  }
-  
-  var topInset: CGFloat = 0 {
-    didSet {
-      topLayoutGuide.snp.remakeConstraints { make in
-        make.left.right.equalTo(self)
-        make.top.equalTo(self)
-        make.height.equalTo(topInset)
-      }
+
+    let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
+    let topLayoutGuide = UILayoutGuide()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
     }
-  }
-  
-  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
-  let emptyView = BrowserExploreEmptyView()
-  
-  let topLayoutGuide = UILayoutGuide()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 }
 
 private extension BrowserExploreView {
-  func setup() {
-    backgroundColor = .Background.page
-    collectionView.backgroundColor = .Background.page
-    collectionView.contentInsetAdjustmentBehavior = .never
-    
-    addSubview(collectionView)
-    addSubview(emptyView)
-    
-    addLayoutGuide(topLayoutGuide)
-    
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
-    collectionView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+    func setup() {
+        backgroundColor = .Background.page
+        collectionView.backgroundColor = .Background.page
+
+        if !UIApplication.useSystemBarsAppearance {
+            collectionView.contentInsetAdjustmentBehavior = .never
+        }
+
+        addSubview(collectionView)
+
+        addLayoutGuide(topLayoutGuide)
+
+        setupConstraints()
     }
-    
-    emptyView.snp.makeConstraints { make in
-      make.top.equalTo(topLayoutGuide.snp.bottom)
-      make.left.right.equalTo(self).inset(16)
+
+    func setupConstraints() {
+        collectionView.snp.makeConstraints { make in
+            make.edges.equalTo(self)
+        }
+        topLayoutGuide.snp.makeConstraints { make in
+            make.left.right.equalTo(self)
+            make.top.equalTo(self)
+            make.height.equalTo(topInset)
+        }
     }
-    
-    topLayoutGuide.snp.makeConstraints { make in
-      make.left.right.equalTo(self)
-      make.top.equalTo(self)
-      make.height.equalTo(topInset)
-    }
-  }
-  
-  func setupState() {
-    switch state {
-    case .data:
-      emptyView.isHidden = true
-      collectionView.isHidden = false
-    case .empty(let model):
-      emptyView.configure(model: model)
-      emptyView.isHidden = false
-      collectionView.isHidden = true
-    }
-  }
 }

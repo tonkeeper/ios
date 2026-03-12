@@ -1,169 +1,137 @@
-import UIKit
-import TKUIKit
 import KeeperCore
 import TKCore
+import TKFeatureFlags
 import TKLocalize
+import TKUIKit
+import UIKit
 
+@MainActor
 protocol BrowserModuleInput: AnyObject {
-  func updateSelectedCountry(_ selectedCountry: SelectedCountry)
+    func openExplore()
 }
 
+@MainActor
 protocol BrowserModuleOutput: AnyObject {
-  var didTapSearch: (() -> Void)? { get set }
-  var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
-  var didSelectDapp: ((Dapp) -> Void)? { get set }
-  var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
+    var didTapSearch: (() -> Void)? { get set }
+    var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
+    var didSelectDapp: ((Dapp) -> Void)? { get set }
+    var didOpenDeeplink: ((Deeplink) -> Void)? { get set }
 }
 
+@MainActor
 protocol BrowserViewModel: AnyObject {
-  var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)? { get set }
-  var didSelectExplore: (() -> Void)? { get set }
-  var didSelectConnected: (() -> Void)? { get set }
-  var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)? { get set }
+    var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)? { get set }
+    var didSelectExplore: (() -> Void)? { get set }
+    var didSelectConnected: (() -> Void)? { get set }
+    var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)? { get set }
 
-  func viewDidLoad()
-  func viewWillAppear()
-  func didTapSearchBar()
+    func viewDidLoad()
+    func viewWillAppear()
+    func didTapSearchBar()
 }
 
+@MainActor
 final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutput {
+    // MARK: - BrowserModuleOutput
 
-  // MARK: - BrowserModuleOutput
+    var didTapSearch: (() -> Void)?
+    var didSelectCategory: ((PopularAppsCategory) -> Void)?
+    var didSelectDapp: ((Dapp) -> Void)?
+    var didOpenDeeplink: ((Deeplink) -> Void)?
 
-  var didTapSearch: (() -> Void)?
-  var didSelectCategory: ((PopularAppsCategory) -> Void)?
-  var didSelectDapp: ((Dapp) -> Void)?
-  var didSelectCountryPicker: ((SelectedCountry) -> Void)?
+    // MARK: - BrowserViewModel
 
-  // MARK: - BrowserViewModel
+    var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)?
+    var didSelectExplore: (() -> Void)?
+    var didSelectConnected: (() -> Void)?
+    var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)?
 
-  var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)?
-  var didSelectExplore: (() -> Void)?
-  var didSelectConnected: (() -> Void)?
-  var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)?
+    func viewDidLoad() {
+        configure()
+        updateSegmentedControl(exploreTabVisible: exploreModuleInput.isExploreTabVisible)
+    }
 
-  private var selectedCountry: SelectedCountry = .auto
+    func viewWillAppear() {}
 
-  func viewDidLoad() {
-    configure()
-    didSelectExplore?()
+    func didTapSearchBar() {
+        didTapSearch?()
+    }
 
-    bindRegion()
-    selectedCountry = regionStore.getState()
-    updateCountryPickerButton()
-  }
-  
-  func viewWillAppear() {
-    analyticsProvider.logEvent(eventKey: .openBrowser)
-  }
+    // MARK: - Dependencies
 
-  func didTapSearchBar() {
-    didTapSearch?()
-  }
-  
-  // MARK: - Dependencies
-  
-  private let exploreModuleOutput: BrowserExploreModuleOutput
-  private let connectedModuleOutput: BrowserConnectedModuleOutput
-  private let regionStore: RegionStore
-  private let analyticsProvider: AnalyticsProvider
+    private let exploreModuleInput: BrowserExploreModuleInput
+    private let exploreModuleOutput: BrowserExploreModuleOutput
+    private let connectedModuleOutput: BrowserConnectedModuleOutput
+    private let analyticsProvider: AnalyticsProvider
 
-  // MARK: - Init
-  
-  init(exploreModuleOutput: BrowserExploreModuleOutput,
-       connectedModuleOutput: BrowserConnectedModuleOutput,
-       regionStore: RegionStore,
-       analyticsProvider: AnalyticsProvider) {
-    self.exploreModuleOutput = exploreModuleOutput
-    self.connectedModuleOutput = connectedModuleOutput
-    self.regionStore = regionStore
-    self.analyticsProvider = analyticsProvider
-  }
+    // MARK: - Init
+
+    init(
+        exploreModuleInput: BrowserExploreModuleInput,
+        exploreModuleOutput: BrowserExploreModuleOutput,
+        connectedModuleOutput: BrowserConnectedModuleOutput,
+        analyticsProvider: AnalyticsProvider
+    ) {
+        self.exploreModuleInput = exploreModuleInput
+        self.exploreModuleOutput = exploreModuleOutput
+        self.connectedModuleOutput = connectedModuleOutput
+        self.analyticsProvider = analyticsProvider
+    }
 }
 
 private extension BrowserViewModelImplementation {
-
-  func configure() {
-    
-    exploreModuleOutput.didSelectCategory = { [weak self] category in
-      self?.didSelectCategory?(category)
-    }
-    
-    exploreModuleOutput.didSelectDapp = { [weak self] dapp in
-      self?.didSelectDapp?(dapp)
-    }
-    
-    connectedModuleOutput.didSelectDapp = { [weak self] dapp in
-      self?.didSelectDapp?(dapp)
-    }
-    
-    let segmentedControlModel = BrowserSegmentedControl.Model(
-      exploreButton: BrowserSegmentedControl.Model.Button(
-        title: TKLocales.Browser.Tab.explore,
-        tapAction: { [weak self] in
-          self?.didSelectExplore?()
+    func configure() {
+        exploreModuleOutput.didSelectCategory = { [weak self] category in
+            self?.didSelectCategory?(category)
         }
-      ),
-      connectedButton: BrowserSegmentedControl.Model.Button(
-        title: TKLocales.Browser.Tab.connected,
-        tapAction: { [weak self] in
-          self?.didSelectConnected?()
+
+        exploreModuleOutput.didSelectDapp = { [weak self] dapp in
+            self?.didSelectDapp?(dapp)
         }
-      )
-    )
-    didUpdateSegmentedControl?(segmentedControlModel)
-  }
 
-  private func bindRegion() {
-    regionStore.addObserver(self) { observer, event in
-      DispatchQueue.main.async {
-        switch event {
-        case .didUpdateRegion(let country):
-          observer.updateSelectedCountry(country)
+        exploreModuleOutput.didOpenDeeplink = { [weak self] deeplink in
+            self?.didOpenDeeplink?(deeplink)
         }
-      }
-    }
-  }
 
-  func updateCountryPickerButton() {
-    let title: String
-    switch selectedCountry {
-    case .all:
-      title = "🌍"
-    case .auto:
-      title = Locale.current.regionCode ?? ""
-    case .country(let countryCode):
-      title = countryCode
+        connectedModuleOutput.didSelectDapp = { [weak self] dapp in
+            self?.didSelectDapp?(dapp)
+        }
+
+        exploreModuleOutput.didUpdateExploreTabVisible = { [weak self] isVisible in
+            self?.updateSegmentedControl(exploreTabVisible: isVisible)
+        }
     }
 
-    let model = BrowserHeaderRightButtonModel(title: title) { [weak self] in
-      guard let self = self else {
-        return
-      }
+    private func updateSegmentedControl(exploreTabVisible: Bool) {
+        let segmentedControlModel = BrowserSegmentedControl.Model(
+            exploreButton: BrowserSegmentedControl.Model.Button(
+                title: TKLocales.Browser.Tab.explore,
+                tapAction: { [weak self] in
+                    self?.didSelectExplore?()
+                }
+            ),
+            connectedButton: BrowserSegmentedControl.Model.Button(
+                title: TKLocales.Browser.Tab.connected,
+                tapAction: { [weak self] in
+                    self?.didSelectConnected?()
+                }
+            ),
+            isExploreTabVisible: exploreTabVisible
+        )
 
-      self.didSelectCountryPicker?(self.selectedCountry)
+        didUpdateSegmentedControl?(segmentedControlModel)
+        if exploreTabVisible {
+            didSelectExplore?()
+        } else {
+            didSelectConnected?()
+        }
     }
-
-    didUpdateRightHeaderButton?(model)
-  }
 }
 
 // MARK: -  BrowserModuleInput
 
 extension BrowserViewModelImplementation: BrowserModuleInput {
-
-  func updateSelectedCountry(_ selectedCountry: SelectedCountry) {
-    guard self.selectedCountry != selectedCountry else {
-      return
+    func openExplore() {
+        didSelectExplore?()
     }
-
-    Task {
-      await regionStore.setRegion(selectedCountry)
-
-      await MainActor.run {
-        self.selectedCountry = selectedCountry
-        updateCountryPickerButton()
-      }
-    }
-  }
 }

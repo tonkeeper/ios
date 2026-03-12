@@ -1,140 +1,170 @@
-import UIKit
-import TKUIKit
 import SnapKit
+import TKUIKit
+import UIKit
 
 public final class TKRecoveryPhraseView: UIView, ConfigurableView {
-  let contentStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = .contentStackViewPadding
-    return stackView
-  }()
-  
-  let titleDescriptionView: TKTitleDescriptionView = {
-    let view = TKTitleDescriptionView(size: .big)
-    view.padding = .titleDescriptionPadding
-    return view
-  }()
-  
-  let listView = TKRecoveryPhraseListView()
-  
-  let buttonsContainer: TKPaddingContainerView = {
-    let container = TKPaddingContainerView()
-    container.padding = .copyButtonContainerPadding
-    return container
-  }()
-  
-  // MARK: - Init
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  // MARK: - ConfigurableView
-  
-  public struct Model {
-    public struct Button {
-      public let model: TKUIActionButton.Model
-      public let category: TKUIActionButtonCategory
-      public let action: () -> Void
-      public init(model: TKUIActionButton.Model,
-                  category: TKUIActionButtonCategory,
-                  action: @escaping () -> Void) {
-        self.model = model
-        self.category = category
-        self.action = action
-      }
+    let contentStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        return stackView
+    }()
+
+    let buttonsStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        return stackView
+    }()
+
+    let titleDescriptionView: TKTitleDescriptionView = {
+        var bounds = UIScreen.main.bounds
+        let view = TKTitleDescriptionView(size: bounds.height > 568 ? .big : .small)
+        view.padding = .titleDescriptionPadding
+        return view
+    }()
+
+    let titleDescriptionViewContainer = UIView()
+
+    let bannerView = TKRecoverPhraseBannerView()
+    let bannerViewContainer = UIView()
+
+    let listView = TKRecoveryPhraseListView()
+    let listViewContainer = UIView()
+
+    // MARK: - Init
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
     }
-    
-    public let titleDescriptionModel: TKTitleDescriptionView.Model
-    public let phraseListViewModel: TKRecoveryPhraseListView.Model
-    public let buttons: [Button]
-    
-    public init(titleDescriptionModel: TKTitleDescriptionView.Model,
-                phraseListViewModel: TKRecoveryPhraseListView.Model,
-                buttons: [Button]) {
-      self.titleDescriptionModel = titleDescriptionModel
-      self.phraseListViewModel = phraseListViewModel
-      self.buttons = buttons
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
-  }
-  
-  public func configure(model: Model) {
-    titleDescriptionView.configure(model: model.titleDescriptionModel)
-    listView.configure(model: model.phraseListViewModel)
-    let buttons = model.buttons.map { buttonModel in
-      let button = TKUIActionButton(
-        category: buttonModel.category,
-        size: .large
-      )
-      button.configure(model: buttonModel.model)
-      button.addTapAction(buttonModel.action)
-      return button
+
+    // MARK: - ConfigurableView
+
+    public struct Model {
+        public struct Button {
+            public let configuration: TKButton.Configuration
+            public let isFullWidth: Bool
+            public init(configuration: TKButton.Configuration, isFullWidth: Bool) {
+                self.configuration = configuration
+                self.isFullWidth = isFullWidth
+            }
+        }
+
+        public let titleDescriptionModel: TKTitleDescriptionView.Model
+        public let bannerViewModel: TKRecoverPhraseBannerView.Model?
+        public let phraseListViewModel: TKRecoveryPhraseListView.Model
+        public let buttons: [Button]
+
+        public init(
+            titleDescriptionModel: TKTitleDescriptionView.Model,
+            bannerViewModel: TKRecoverPhraseBannerView.Model? = nil,
+            phraseListViewModel: TKRecoveryPhraseListView.Model,
+            buttons: [Button]
+        ) {
+            self.titleDescriptionModel = titleDescriptionModel
+            self.bannerViewModel = bannerViewModel
+            self.phraseListViewModel = phraseListViewModel
+            self.buttons = buttons
+        }
     }
-    buttonsContainer.setViews(buttons)
-  }
+
+    public func configure(model: Model) {
+        titleDescriptionView.configure(model: model.titleDescriptionModel)
+        listView.configure(model: model.phraseListViewModel)
+        buttonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        for buttonModel in model.buttons {
+            let button = TKButton()
+            button.configuration = buttonModel.configuration
+            buttonsStackView.addArrangedSubview(button)
+            if buttonModel.isFullWidth {
+                button.snp.makeConstraints { make in
+                    make.left.right.equalTo(buttonsStackView).inset(16)
+                }
+            }
+        }
+
+        if let bannerViewModel = model.bannerViewModel {
+            bannerViewContainer.isHidden = false
+            bannerView.configure(model: bannerViewModel)
+        } else {
+            bannerViewContainer.isHidden = true
+        }
+    }
 }
 
 private extension TKRecoveryPhraseView {
-  func setup() {
-    backgroundColor = .Background.page
-    directionalLayoutMargins.top = .topSpacing
-    
-    addSubview(contentStackView)
-    addSubview(buttonsContainer)
-    
-    contentStackView.addArrangedSubview(titleDescriptionView)
-    contentStackView.addArrangedSubview(listView)
-        
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
-    contentStackView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
-      make.bottom.equalTo(buttonsContainer.snp.top).offset(-16)
+    func setup() {
+        backgroundColor = .Background.page
+        directionalLayoutMargins.top = .topSpacing
+
+        buttonsStackView.spacing = 12
+
+        addSubview(contentStackView)
+        addSubview(buttonsStackView)
+
+        titleDescriptionViewContainer.addSubview(titleDescriptionView)
+        bannerViewContainer.addSubview(bannerView)
+        listViewContainer.addSubview(listView)
+
+        contentStackView.addArrangedSubview(titleDescriptionViewContainer)
+        contentStackView.addArrangedSubview(bannerViewContainer)
+        contentStackView.addArrangedSubview(listViewContainer)
+
+        setupConstraints()
     }
-    
-    buttonsContainer.snp.makeConstraints { make in
-      make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
-      make.left.right.equalTo(self)
+
+    func setupConstraints() {
+        contentStackView.snp.makeConstraints { make in
+            make.top.equalTo(safeAreaLayoutGuide.snp.top)
+            make.left.right.equalTo(self)
+            make.bottom.equalTo(buttonsStackView.snp.top).offset(-16)
+        }
+
+        buttonsStackView.snp.makeConstraints { make in
+            make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+            make.left.right.equalTo(self)
+        }
+
+        titleDescriptionView.snp.makeConstraints { make in
+            make.left.right.equalTo(titleDescriptionViewContainer).inset(32)
+            make.bottom.equalTo(titleDescriptionViewContainer).offset(-16)
+            make.top.equalTo(titleDescriptionViewContainer)
+        }
+
+        bannerView.snp.makeConstraints { make in
+            make.edges.equalTo(bannerViewContainer)
+        }
+
+        listView.snp.makeConstraints { make in
+            make.top.bottom.equalTo(listViewContainer).inset(16)
+            make.left.right.equalTo(listViewContainer).inset(40)
+        }
     }
-  }
 }
 
 private extension CGFloat {
-  static let buttonsContainerSpacing: CGFloat = 16
-  static let topSpacing: CGFloat = 44
-  static let afterWordInputSpacing: CGFloat = 16
+    static let buttonsContainerSpacing: CGFloat = 16
+    static let topSpacing: CGFloat = 44
+    static let afterWordInputSpacing: CGFloat = 16
 }
 
 private extension NSDirectionalEdgeInsets {
-  static let titleDescriptionPadding = NSDirectionalEdgeInsets(
-    top: 0,
-    leading: 0,
-    bottom: 16,
-    trailing: 0
-  )
-  
-  static let contentStackViewPadding = NSDirectionalEdgeInsets(
-    top: 0,
-    leading: 32,
-    bottom: 0,
-    trailing: 32
-  )
-}
+    static let titleDescriptionPadding = NSDirectionalEdgeInsets(
+        top: 0,
+        leading: 0,
+        bottom: 16,
+        trailing: 0
+    )
 
-private extension UIEdgeInsets {
-  static let copyButtonContainerPadding = UIEdgeInsets(
-    top: 16,
-    left: 32,
-    bottom: 32,
-    right: 32
-  )
+    static let contentStackViewPadding = NSDirectionalEdgeInsets(
+        top: 0,
+        leading: 32,
+        bottom: 0,
+        trailing: 32
+    )
 }

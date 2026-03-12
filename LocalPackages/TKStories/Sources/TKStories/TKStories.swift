@@ -1,7 +1,7 @@
 import UIKit
 
-public enum TKStories {
-  public static func storiesViewController(models: [StoriesPageModel]) -> StoriesViewController {
-    StoriesViewController(models: models)
-  }
+public enum TKStoriesFactory {
+    public static func storiesViewController(models: [StoriesPageModel]) -> StoriesViewController {
+        StoriesViewController(models: models)
+    }
 }

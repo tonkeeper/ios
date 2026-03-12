@@ -3,7 +3,6 @@ import Foundation
 // MARK: -  First
 
 public extension Sequence {
-
     /// Returns first element in the sequence that has value at certain key path equal to value at key path of passed element.
     /// - Parameters:
     ///   - keyPath: Key path to compare, must be Equatable.
@@ -50,7 +49,6 @@ public extension Sequence {
 // MARK: -  Filter
 
 public extension Sequence {
-
     /// Returns collection of elements that are having value at certain key path equal to value at key path of passed element.
     ///
     /// - Parameters:
@@ -92,7 +90,6 @@ public extension Sequence {
 // MARK: -  Contains
 
 public extension Sequence {
-
     /// Returns a `Boolean` value indicating whether the sequence contains an element that has value
     /// at certain key path equal to value at similar key path of passed element.
     /// - Parameters:

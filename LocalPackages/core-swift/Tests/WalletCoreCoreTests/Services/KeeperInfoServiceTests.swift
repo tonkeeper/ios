@@ -1,27 +1,26 @@
 //
 //  KeeperInfoServiceTests.swift
-//  
+//
 //
 //  Created by Grigory Serebryanyy on 18.11.2023.
 //
 
-import XCTest
 import TonSwift
 @testable import WalletCoreCore
+import XCTest
 
 final class KeeperInfoServiceTests: XCTestCase {
-    
     let mockKeeperInfoRepository = KeeperInfoMockRepository()
     lazy var keeperInfoService = KeeperInfoService(keeperInfoRepository: mockKeeperInfoRepository)
-    
+
     override func setUp() {
         mockKeeperInfoRepository.reset()
     }
-    
+
     func test_throws_error_if_no_keeper_info() throws {
         XCTAssertThrowsError(try keeperInfoService.getKeeperInfo())
     }
-    
+
     func test_save_keeper_info() throws {
         let keeperInfo = KeeperInfo.keeperInfo(with: .wallet(with: String(repeating: "1", count: 32)))
         try keeperInfoService.saveKeeperInfo(keeperInfo)
@@ -29,7 +28,7 @@ final class KeeperInfoServiceTests: XCTestCase {
         XCTAssertEqual(keeperInfo.wallets, getKeeperInfo.wallets)
         XCTAssertEqual(keeperInfo.currentWallet, getKeeperInfo.currentWallet)
     }
-    
+
     func test_delete_keeper_info() throws {
         let keeperInfo = KeeperInfo.keeperInfo(with: .wallet(with: String(repeating: "1", count: 32)))
         try keeperInfoService.saveKeeperInfo(keeperInfo)
@@ -37,7 +36,7 @@ final class KeeperInfoServiceTests: XCTestCase {
         try keeperInfoService.deleteKeeperInfo()
         XCTAssertThrowsError(try keeperInfoService.getKeeperInfo())
     }
-    
+
     func test_update_keeper_info_with_wallet_if_keeper_info_empty() throws {
         let wallet = Wallet.wallet(with: String(repeating: "1", count: 32))
         XCTAssertNoThrow(try keeperInfoService.updateKeeperInfo(with: wallet))
@@ -45,7 +44,7 @@ final class KeeperInfoServiceTests: XCTestCase {
         XCTAssertEqual(keeperInfo.wallets, [wallet])
         XCTAssertEqual(keeperInfo.currentWallet, wallet.identity)
     }
-    
+
     func test_update_keeper_info_with_existed_wallet_that_is_active() throws {
         let wallet1 = Wallet.wallet(with: String(repeating: "1", count: 32))
         let wallet2 = Wallet.wallet(with: String(repeating: "2", count: 32))
@@ -58,7 +57,7 @@ final class KeeperInfoServiceTests: XCTestCase {
         XCTAssertEqual(keeperInfo.wallets, [wallet3, wallet2])
         XCTAssertEqual(keeperInfo.currentWallet, wallet3.identity)
     }
-    
+
     func test_update_keeper_info_with_existed_wallet_that_is_not_active() throws {
         let wallet1 = Wallet.wallet(with: String(repeating: "1", count: 32))
         let wallet2 = Wallet.wallet(with: String(repeating: "2", count: 32))
@@ -83,10 +82,12 @@ extension Wallet {
 
 extension KeeperInfo {
     static func keeperInfo(with wallet: Wallet) -> KeeperInfo {
-        KeeperInfo(wallets: [wallet],
-                   currentWallet: wallet.identity,
-                   securitySettings: .init(isBiometryEnabled: false),
-                   assetsPolicy: .init(policies: [:], ordered: []),
-                   appCollection: .init(connected: [:], recent: [], pinned: []))
+        KeeperInfo(
+            wallets: [wallet],
+            currentWallet: wallet.identity,
+            securitySettings: .init(isBiometryEnabled: false),
+            assetsPolicy: .init(policies: [:], ordered: []),
+            appCollection: .init(connected: [:], recent: [], pinned: [])
+        )
     }
 }
