@@ -31,7 +31,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-               BuildableName = "Tonkeeper X.app"
+               BuildableName = "Tonkeeper.app"
                BlueprintName = "Tonkeeper"
                ReferencedContainer = "container:Tonkeeper.xcodeproj">
             </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-            BuildableName = "Tonkeeper X.app"
+            BuildableName = "Tonkeeper.app"
             BlueprintName = "Tonkeeper"
             ReferencedContainer = "container:Tonkeeper.xcodeproj">
          </BuildableReference>
@@ -81,7 +81,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-            BuildableName = "Tonkeeper X.app"
+            BuildableName = "Tonkeeper.app"
             BlueprintName = "Tonkeeper"
             ReferencedContainer = "container:Tonkeeper.xcodeproj">
          </BuildableReference>

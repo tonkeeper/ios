@@ -11,13 +11,11 @@
 	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.com.tonapps.tonkeeperx</string>
-		<string>group.com.jbig.tonkeeper</string>
+		<string>$(APP_GROUP_IDENTIFIER)</string>
 	</array>
 	<key>keychain-access-groups</key>
 	<array>
 		<string>$(AppIdentifierPrefix)$(KEYCHAIN_ACCESS_GROUP)</string>
-		<string>$(AppIdentifierPrefix)$(OLD_KEYCHAIN_ACCESS_GROUP)</string>
 	</array>
 </dict>
 </plist>

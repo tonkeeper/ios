@@ -1,10 +1,10 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 extension UIImage {
-  enum Onboarding {
-    static var cover: UIImage {
-      .imageWithName("Cover", bundle: .module)
+    enum Onboarding {
+        static var cover: UIImage {
+            .imageWithName("Cover", bundle: .module)
+        }
     }
-  }
 }

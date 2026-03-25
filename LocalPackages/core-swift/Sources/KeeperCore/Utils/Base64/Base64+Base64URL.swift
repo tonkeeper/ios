@@ -1,33 +1,21 @@
 import Foundation
 
-extension String {
-  func base64UrlToBase64() -> String {
-    guard (contains("-") || contains("_")) && !contains("=") else { return self }
-    var result = self
-      .replacingOccurrences(of: "-", with: "+")
-      .replacingOccurrences(of: "_", with: "/")
-    if result.count % 4 != 0 {
-      result.append(String(repeating: "=", count: 4 - result.count % 4))
-    }
-    return result
-  }
-  
-  func base64ToBase64Url() -> String {
-    self
-      .replacingOccurrences(of: "+", with: "-")
-      .replacingOccurrences(of: "/", with: "_")
-      .replacingOccurrences(of: "=", with: "")
-  }
-}
+public extension String {
+    func fixBase64() -> String {
+        var base64 = self
+            .replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
 
-extension String {
-  func fixBase64() -> String {
-    var result = self
-      .replacingOccurrences(of: "-", with: "+")
-      .replacingOccurrences(of: "_", with: "/")
-    if result.count % 4 != 0 {
-      result.append(String(repeating: "=", count: 4 - result.count % 4))
+        let paddingLength = (4 - base64.count % 4) % 4
+        base64 += String(repeating: "=", count: paddingLength)
+
+        return base64
     }
-    return result
-  }
+
+    func base64URLEncoded() -> String {
+        self
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "=", with: "")
+    }
 }

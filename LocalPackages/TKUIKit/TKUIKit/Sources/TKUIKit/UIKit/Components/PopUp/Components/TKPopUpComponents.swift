@@ -1,0 +1,493 @@
+import UIKit
+
+public extension TKPopUp {
+    enum Component {}
+}
+
+public extension TKPopUp.Component {
+    struct LabelComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let label = UILabel()
+            label.numberOfLines = numberOfLines
+            label.attributedText = text
+            return label
+        }
+
+        private let text: NSAttributedString
+        private let numberOfLines: Int
+        public let bottomSpace: CGFloat
+
+        public init(
+            text: NSAttributedString,
+            numberOfLines: Int = 1,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.text = text
+            self.numberOfLines = numberOfLines
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct GroupComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let containerView = UIView()
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+
+            containerView.addSubview(stackView)
+            stackView.snp.makeConstraints { make in
+                make.edges.equalTo(containerView).inset(padding)
+            }
+
+            for item in items {
+                let view = item.getView()
+                stackView.addArrangedSubview(view)
+                stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
+            }
+
+            return containerView
+        }
+
+        private let padding: UIEdgeInsets
+        private let items: [TKPopUp.Item]
+        public let bottomSpace: CGFloat
+
+        public init(
+            padding: UIEdgeInsets,
+            items: [TKPopUp.Item],
+            bottomSpace: CGFloat = 0
+        ) {
+            self.padding = padding
+            self.items = items
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct HorizontalGroupComponent: TKPopUp.Item {
+        public enum Distribution {
+            case fill
+            case fillEqually
+
+            var stackViewDistribution: UIStackView.Distribution {
+                switch self {
+                case .fill:
+                    return .fill
+                case .fillEqually:
+                    return .fillEqually
+                }
+            }
+        }
+
+        public func getView() -> UIView {
+            let containerView = UIView()
+            let stackView = UIStackView()
+            stackView.axis = .horizontal
+            stackView.spacing = spacing
+            stackView.distribution = distribution.stackViewDistribution
+
+            containerView.addSubview(stackView)
+            stackView.snp.makeConstraints { make in
+                make.edges.equalTo(containerView).inset(padding)
+            }
+
+            for item in items {
+                let view = item.getView()
+                stackView.addArrangedSubview(view)
+            }
+
+            return containerView
+        }
+
+        private let padding: UIEdgeInsets
+        private let items: [TKPopUp.Item]
+        private let spacing: CGFloat
+        private let distribution: Distribution
+        public let bottomSpace: CGFloat
+
+        public init(
+            padding: UIEdgeInsets,
+            items: [TKPopUp.Item],
+            spacing: CGFloat,
+            distribution: Distribution = .fill,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.padding = padding
+            self.items = items
+            self.spacing = spacing
+            self.distribution = distribution
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct ImageComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let containerView = UIView()
+            let imageView = TKImageView()
+
+            containerView.addSubview(imageView)
+            imageView.snp.makeConstraints { make in
+                make.top.bottom.equalTo(containerView)
+                make.centerX.equalTo(containerView)
+            }
+
+            imageView.configure(model: image)
+
+            return containerView
+        }
+
+        private let image: TKImageView.Model
+        public let bottomSpace: CGFloat
+
+        public init(
+            image: TKImageView.Model,
+            bottomSpace: CGFloat
+        ) {
+            self.image = image
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct ButtonComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let button = TKButton()
+            button.configuration = buttonConfiguration
+            return button
+        }
+
+        private let buttonConfiguration: TKButton.Configuration
+        public let bottomSpace: CGFloat
+
+        public init(
+            buttonConfiguration: TKButton.Configuration,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.buttonConfiguration = buttonConfiguration
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct PlainButtonComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let button = TKPlainButton()
+            button.configure(model: buttonConfiguration)
+            button.padding = UIEdgeInsets(
+                top: 0,
+                left: horizontalPadding,
+                bottom: bottomSpace,
+                right: horizontalPadding
+            )
+            return button
+        }
+
+        private let buttonConfiguration: TKPlainButton.Model
+        public let horizontalPadding: CGFloat
+        public let bottomSpace: CGFloat
+
+        public init(
+            buttonConfiguration: TKPlainButton.Model,
+            horizontalPadding: CGFloat = 0,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.buttonConfiguration = buttonConfiguration
+            self.horizontalPadding = horizontalPadding
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct ButtonGroupComponent: TKPopUp.Item {
+        public func getView() -> UIView {
+            let containerView = UIView()
+
+            let stackView = UIStackView()
+            stackView.spacing = 16
+            stackView.axis = .vertical
+
+            containerView.addSubview(stackView)
+            stackView.snp.makeConstraints { make in
+                make.edges.equalTo(containerView).inset(16)
+            }
+
+            for button in buttons {
+                let view = button.getView()
+                stackView.addArrangedSubview(view)
+            }
+
+            return containerView
+        }
+
+        private let buttons: [ButtonComponent]
+        public let bottomSpace: CGFloat
+
+        public init(
+            buttons: [ButtonComponent],
+            bottomSpace: CGFloat = 0
+        ) {
+            self.buttons = buttons
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct TickItem: TKPopUp.Item {
+        public func getView() -> UIView {
+            let view = TKDetailsTickView()
+            view.configure(model: model)
+            return view
+        }
+
+        private let model: TKDetailsTickView.Model
+        public let bottomSpace: CGFloat
+
+        public init(
+            model: TKDetailsTickView.Model,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.model = model
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct DetailsDescription: TKPopUp.Item {
+        public func getView() -> UIView {
+            let view = TKDetailsDescriptionView()
+            view.configure(model: model)
+            return view
+        }
+
+        private let model: TKDetailsDescriptionView.Model
+        public let bottomSpace: CGFloat
+
+        public init(
+            model: TKDetailsDescriptionView.Model,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.model = model
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct TitleCaption: TKPopUp.Item {
+        public func getView() -> UIView {
+            item.getView()
+        }
+
+        private let item: TKPopUp.Item
+        public let bottomSpace: CGFloat
+
+        public init(
+            title: NSAttributedString,
+            caption: NSAttributedString?,
+            bottomSpace: CGFloat
+        ) {
+            var items = [TKPopUp.Item]()
+            items.append(TKPopUp.Component.LabelComponent(
+                text: title,
+                numberOfLines: 0,
+                bottomSpace: 4
+            ))
+            if let caption {
+                items.append(TKPopUp.Component.LabelComponent(
+                    text: caption,
+                    numberOfLines: 0
+                ))
+            }
+            item = GroupComponent(
+                padding: UIEdgeInsets(top: 0, left: 32, bottom: 16, right: 32),
+                items: items
+            )
+            self.bottomSpace = bottomSpace
+        }
+
+        public init(
+            title: String,
+            caption: String?,
+            bottomSpace: CGFloat,
+            addBottomPadding: Bool = true
+        ) {
+            var items = [TKPopUp.Item]()
+            items.append(TKPopUp.Component.LabelComponent(
+                text: title
+                    .withTextStyle(.h2, color: .Text.primary, alignment: .center),
+                numberOfLines: 0,
+                bottomSpace: 4
+            ))
+            if let caption {
+                items.append(TKPopUp.Component.LabelComponent(
+                    text: caption
+                        .withTextStyle(.body1, color: .Text.secondary, alignment: .center),
+                    numberOfLines: 0
+                ))
+            }
+            item = GroupComponent(
+                padding: UIEdgeInsets(top: 0, left: 32, bottom: addBottomPadding ? 16 : 0, right: 32),
+                items: items
+            )
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct List: TKPopUp.Item {
+        public func getView() -> UIView {
+            let view = TKListContainerView()
+            view.configuration = configuration
+            return view
+        }
+
+        private let configuration: TKListContainerView.Configuration
+        public let bottomSpace: CGFloat
+
+        public init(
+            configuration: TKListContainerView.Configuration,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.configuration = configuration
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct Process: TKPopUp.Item {
+        public func getView() -> UIView {
+            let stackView = UIStackView()
+            stackView.axis = .vertical
+
+            for item in items {
+                let view = item.getView()
+                stackView.addArrangedSubview(view)
+                stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(item.bottomSpace)))
+            }
+
+            processView.setContent(stackView)
+            processView.state = state
+            return processView
+        }
+
+        private let processView = TKProcessContainerView()
+
+        private let items: [TKPopUp.Item]
+        private let state: TKProcessContainerView.State
+        private let successTitle: String
+        private let errorTitle: String
+        public let bottomSpace: CGFloat
+
+        public init(
+            items: [TKPopUp.Item],
+            state: TKProcessContainerView.State,
+            successTitle: String,
+            errorTitle: String,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.items = items
+            self.bottomSpace = bottomSpace
+            self.state = state
+            self.successTitle = successTitle
+            self.errorTitle = errorTitle
+            processView.successTitle = successTitle
+            processView.errorTitle = errorTitle
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct Loader: TKPopUp.Item {
+        public func getView() -> UIView {
+            return TKLoaderView(
+                size: size,
+                style: style
+            )
+        }
+
+        private let size: TKLoaderView.Size
+        private let style: TKLoaderView.Style
+        public var bottomSpace: CGFloat
+
+        public init(
+            size: TKLoaderView.Size,
+            style: TKLoaderView.Style,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.size = size
+            self.style = style
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct Slider: TKPopUp.Item {
+        public func getView() -> UIView {
+            let slider = TKSlider()
+            slider.title = title
+            slider.isEnable = isEnable
+            slider.appearance = appearance
+            slider.didConfirm = didConfirm
+            return slider
+        }
+
+        private let title: NSAttributedString?
+        private let isEnable: Bool
+        private let appearance: TKSlider.Appearance
+        private let didConfirm: () -> Void
+        public var bottomSpace: CGFloat
+
+        public init(
+            title: NSAttributedString?,
+            isEnable: Bool,
+            appearance: TKSlider.Appearance = .standart,
+            didConfirm: @escaping () -> Void,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.title = title
+            self.isEnable = isEnable
+            self.appearance = appearance
+            self.didConfirm = didConfirm
+            self.bottomSpace = bottomSpace
+        }
+    }
+}
+
+public extension TKPopUp.Component {
+    struct WarningBanner: TKPopUp.Item {
+        public func getView() -> UIView {
+            let banner = TKWarningBannerView()
+            banner.configure(
+                model: TKWarningBannerView.Model(
+                    text: title,
+                    image: .TKUIKit.Icons.Size28.exclamationmarkTriangle
+                )
+            )
+            return banner
+        }
+
+        private let title: String
+        public var bottomSpace: CGFloat
+
+        public init(
+            title: String,
+            bottomSpace: CGFloat = 0
+        ) {
+            self.title = title
+            self.bottomSpace = bottomSpace
+        }
+    }
+}

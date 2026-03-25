@@ -1,20 +1,20 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 struct ChooseWalletToAddSection: Hashable {
-  let items: [ChooseWalletToAddItem]
+    let items: [ChooseWalletToAddItem]
 }
 
 struct ChooseWalletToAddItem: Hashable {
-  let identifier: String
-  let isSelectionEnable: Bool
-  let cellConfiguration: TKListItemCell.Configuration
-  
-  func hash(into hasher: inout Hasher) {
-    hasher.combine(identifier)
-  }
-  
-  static func == (lhs: ChooseWalletToAddItem, rhs: ChooseWalletToAddItem) -> Bool {
-    lhs.identifier == rhs.identifier
-  }
+    let identifier: String
+    let isSelectionEnable: Bool
+    let cellConfiguration: TKListItemCell.Configuration
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(identifier)
+    }
+
+    static func == (lhs: ChooseWalletToAddItem, rhs: ChooseWalletToAddItem) -> Bool {
+        lhs.identifier == rhs.identifier
+    }
 }

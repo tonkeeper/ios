@@ -1,33 +1,26 @@
-import TKUIKit
+import KeeperCore
 import TKCoordinator
 import TKCore
-import KeeperCore
+import TKUIKit
 
 struct ReceiveModule {
-  private let dependencies: Dependencies
-  init(dependencies: Dependencies) {
-    self.dependencies = dependencies
-  }
-  
-  func receiveModule(token: Token,
-                     wallet: Wallet) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
-    return ReceiveAssembly.module(
-      token: token,
-      wallet: wallet,
-      qrCodeGenerator: QRCodeGeneratorImplementation()
-    )
-  }
+    private let dependencies: Dependencies
+    init(dependencies: Dependencies) {
+        self.dependencies = dependencies
+    }
 }
 
 extension ReceiveModule {
-  struct Dependencies {
-    let coreAssembly: TKCore.CoreAssembly
-    let keeperCoreMainAssembly: KeeperCore.MainAssembly
-    
-    public init(coreAssembly: TKCore.CoreAssembly,
-                keeperCoreMainAssembly: KeeperCore.MainAssembly) {
-      self.coreAssembly = coreAssembly
-      self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    struct Dependencies {
+        let coreAssembly: TKCore.CoreAssembly
+        let keeperCoreMainAssembly: KeeperCore.MainAssembly
+
+        init(
+            coreAssembly: TKCore.CoreAssembly,
+            keeperCoreMainAssembly: KeeperCore.MainAssembly
+        ) {
+            self.coreAssembly = coreAssembly
+            self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        }
     }
-  }
 }

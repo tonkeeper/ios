@@ -1,8 +1,8 @@
-import XCTest
 @testable import TKCore
+import XCTest
 
 final class TKCoreTests: XCTestCase {
-    func testExample() throws {
+    func testExample() {
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest
 

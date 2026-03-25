@@ -1,5 +1,5 @@
 //
-//  AppStateManager.swift
+//  AppStateTracker.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 20.9.23..
@@ -8,73 +8,71 @@
 import UIKit
 
 public protocol AppStateTrackerObserver: AnyObject {
-  func didUpdateState(_ state: AppStateTracker.State)
+    func didUpdateState(_ state: AppStateTracker.State)
 }
 
 public final class AppStateTracker {
-  
-  public enum State {
-    case active
-    case resign
-    case background
-  }
-    
-  public private(set) var state: State = .active {
-    didSet {
-      notifyObservers(state)
+    public enum State {
+        case active
+        case resign
+        case background
     }
-  }
-  
-  struct AppStateTrackerObserverWrapper {
-    weak var observer: AppStateTrackerObserver?
-  }
-  
-  private var resignActiveNotificationToken: Any?
-  private var becomeActiveNotificationToken: Any?
-  private var enterBackgroundNotificationToken: Any?
-  private var observers = [AppStateTrackerObserverWrapper]()
-  
-  public init() {
-    becomeActiveNotificationToken = NotificationCenter
-      .default
-      .addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .active
-      }
-    
-    resignActiveNotificationToken = NotificationCenter
-      .default
-      .addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .resign
-      }
-    
-    enterBackgroundNotificationToken = NotificationCenter
-      .default
-      .addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .background
+
+    public private(set) var state: State = .active {
+        didSet {
+            notifyObservers(state)
+        }
     }
-  }
-  
-  deinit {
-    if let resignActiveNotificationToken = resignActiveNotificationToken {
-      NotificationCenter.default.removeObserver(resignActiveNotificationToken)
+
+    struct AppStateTrackerObserverWrapper {
+        weak var observer: AppStateTrackerObserver?
     }
-    if let becomeActiveNotificationToken = becomeActiveNotificationToken {
-      NotificationCenter.default.removeObserver(becomeActiveNotificationToken)
+
+    private var resignActiveNotificationToken: Any?
+    private var becomeActiveNotificationToken: Any?
+    private var enterBackgroundNotificationToken: Any?
+    private var observers = [AppStateTrackerObserverWrapper]()
+
+    public init() {
+        becomeActiveNotificationToken = NotificationCenter
+            .default
+            .addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil) { [weak self] _ in
+                self?.state = .active
+            }
+
+        resignActiveNotificationToken = NotificationCenter
+            .default
+            .addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: nil) { [weak self] _ in
+                self?.state = .resign
+            }
+
+        enterBackgroundNotificationToken = NotificationCenter
+            .default
+            .addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self] _ in
+                self?.state = .background
+            }
     }
-  }
-  
-  public func addObserver(_ observer: AppStateTrackerObserver) {
-    observers.append(.init(observer: observer))
-  }
-  
-  public func removeObserver(_ observer: AppStateTrackerObserver) {
-    observers = observers.filter { $0.observer !== observer }
-  }
+
+    deinit {
+        if let resignActiveNotificationToken = resignActiveNotificationToken {
+            NotificationCenter.default.removeObserver(resignActiveNotificationToken)
+        }
+        if let becomeActiveNotificationToken = becomeActiveNotificationToken {
+            NotificationCenter.default.removeObserver(becomeActiveNotificationToken)
+        }
+        if let enterBackgroundNotificationToken = enterBackgroundNotificationToken {
+            NotificationCenter.default.removeObserver(enterBackgroundNotificationToken)
+        }
+    }
+
+    public func addObserver(_ observer: AppStateTrackerObserver) {
+        observers.append(.init(observer: observer))
+    }
 }
 
 private extension AppStateTracker {
-  func notifyObservers(_ state: State) {
-    observers = observers.filter { $0.observer != nil }
-    observers.forEach { $0.observer?.didUpdateState(state) }
-  }
+    func notifyObservers(_ state: State) {
+        observers = observers.filter { $0.observer != nil }
+        observers.forEach { $0.observer?.didUpdateState(state) }
+    }
 }

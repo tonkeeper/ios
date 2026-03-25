@@ -1,145 +1,104 @@
-import UIKit
-import TKUIKit
 import SnapKit
+import TKLocalize
+import TKUIKit
+import UIKit
 
 final class SendV3AmountBalanceView: UIView {
-  
-  var didTapMax: (() -> Void)?
-  
-  var convertedValue: String = "" {
-    didSet {
-      convertedLabel.attributedText = convertedValue.withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      )
-    }
-  }
-  
-  let remainingView = SendV3AmountBalanceRemainingView()
-  let convertedLabel = UILabel()
-  let insufficientLabel = UILabel()
-  
-  let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.spacing = 8
-    return stackView
-  }()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override var intrinsicContentSize: CGSize {
-    CGSize(width: UIView.noIntrinsicMetric, height: 48)
-  }
+    var didTapSwap: (() -> Void)?
+    var didTapMax: (() -> Void)?
 
-  private func setup() {
-    addSubview(stackView)
-    
-    stackView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-    }
-    
-    stackView.addArrangedSubview(convertedLabel)
-    stackView.addArrangedSubview(remainingView)
-    stackView.addArrangedSubview(insufficientLabel)
-    
-    remainingView.didTapMax = { [weak self] in
-      self?.didTapMax?()
-    }
-    
-    insufficientLabel.isHidden = true
-    insufficientLabel.attributedText = "Insufficient balance".withTextStyle(
-      .body2,
-      color: .Accent.red,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
-    
-    convertedLabel.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
-    remainingView.setContentCompressionResistancePriority(.required, for: .horizontal)
-    remainingView.setContentHuggingPriority(.required, for: .horizontal)
-    insufficientLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-  }
-}
-
-final class SendV3AmountBalanceRemainingView: UIView {
-  
-  var didTapMax: (() -> Void)?
-  
-  var remaining: String = "" {
-    didSet {
-      remainingLabel.attributedText = remaining.withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .right,
-        lineBreakMode: .byTruncatingTail
-      )
-    }
-  }
-  
-  let remainingLabel = UILabel()
-  let maxButton = TKPlainButton()
-  
-  let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.alignment = .center
-    return stackView
-  }()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override var intrinsicContentSize: CGSize {
-    CGSize(width: UIView.noIntrinsicMetric, height: 48)
-  }
-
-  private func setup() {
-    maxButton.padding.left = 8
-    
-    maxButton.configure(
-      model: TKPlainButton.Model(
-        title: "MAX".withTextStyle(
-          .body2,
-          color: .Accent.blue,
-          alignment: .right,
-          lineBreakMode: .byTruncatingTail
-        ),
-        icon: nil,
-        action: { [weak self] in
-          self?.didTapMax?()
+    var isSwapVisible: Bool = true {
+        didSet {
+            convertedView.isSwapHidden = !isSwapVisible
         }
-      )
-    )
-    setContentHuggingPriority(.required, for: .horizontal)
-    maxButton.setContentHuggingPriority(.required, for: .horizontal)
-    remainingLabel.setContentHuggingPriority(.required, for: .horizontal)
-    
-    remainingLabel.isUserInteractionEnabled = false
-    
-    addSubview(stackView)
-    
-    stackView.addArrangedSubview(remainingLabel)
-    stackView.addArrangedSubview(maxButton)
-    
-    stackView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
     }
-    maxButton.snp.makeConstraints { make in
-      make.top.bottom.equalTo(self)
+
+    var convertedValue: String = "" {
+        didSet {
+            convertedView.convertedValue = convertedValue
+        }
     }
-  }
+
+    var limitError: String? {
+        didSet {
+            didUpdateLimitError()
+        }
+    }
+
+    let mainStackView = UIStackView()
+    let rowStackView = UIStackView()
+    let convertedView = SendV3AmountBalanceConvertedView()
+    let remainingView = SendV3AmountBalanceRemainingView()
+    let insufficientLabel = UILabel()
+    let limitErrorLabel = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    private func setup() {
+        mainStackView.axis = .vertical
+        mainStackView.spacing = 4
+        addSubview(mainStackView)
+
+        mainStackView.snp.makeConstraints { make in
+            make.edges.equalTo(self).inset(UIEdgeInsets(top: 12, left: 0, bottom: 16, right: 0))
+        }
+
+        rowStackView.axis = .horizontal
+        rowStackView.spacing = 8
+        rowStackView.addArrangedSubview(convertedView)
+        rowStackView.addArrangedSubview(remainingView)
+        rowStackView.addArrangedSubview(insufficientLabel)
+
+        mainStackView.addArrangedSubview(rowStackView)
+        mainStackView.addArrangedSubview(limitErrorLabel)
+
+        convertedView.didTapSwap = { [weak self] in
+            self?.didTapSwap?()
+        }
+
+        remainingView.didTapMax = { [weak self] in
+            self?.didTapMax?()
+        }
+
+        insufficientLabel.isHidden = true
+        insufficientLabel.attributedText = TKLocales.InsufficientFunds.insufficientBalance
+            .withTextStyle(
+                .body2,
+                color: .Accent.red,
+                alignment: .right,
+                lineBreakMode: .byTruncatingTail
+            )
+
+        limitErrorLabel.isHidden = true
+        limitErrorLabel.numberOfLines = 0
+
+        convertedView.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+        remainingView.setContentCompressionResistancePriority(.required, for: .horizontal)
+        remainingView.setContentHuggingPriority(.required, for: .horizontal)
+        insufficientLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+        limitErrorLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    }
+
+    private func didUpdateLimitError() {
+        if let text = limitError, !text.isEmpty {
+            limitErrorLabel.attributedText = text.withTextStyle(
+                .body2,
+                color: .Accent.red,
+                alignment: .left,
+                lineBreakMode: .byWordWrapping
+            )
+            limitErrorLabel.isHidden = false
+        } else {
+            limitErrorLabel.attributedText = nil
+            limitErrorLabel.isHidden = true
+        }
+    }
 }

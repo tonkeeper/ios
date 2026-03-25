@@ -43,7 +43,23 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>tonkeeperx</string>
+				<string>tonkeeper-mob</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tonkeeper-tc</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tonkeeper-tc-mob</string>
 			</array>
 		</dict>
 	</array>
@@ -78,16 +94,16 @@
 		<string>ChartWidgetIntent</string>
 		<string>RateWidgetIntent</string>
 	</array>
-	<key>OLD_APP_GROUP_IDENTIFIER</key>
-	<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
-	<key>OLD_KEYCHAIN_ACCESS_GROUP</key>
-	<string>$(OLD_KEYCHAIN_ACCESS_GROUP)</string>
-	<key>PLATFORM</key>
-	<string>$(PLATFORM)</string>
+		<key>OLD_APP_GROUP_IDENTIFIER</key>
+		<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
+		<key>PLATFORM</key>
+		<string>$(PLATFORM)</string>
 	<key>PrivacyPolicyURL</key>
 	<string>$(PRIVACY_POLICY_URL)</string>
 	<key>TermsOfServiceURL</key>
 	<string>$(TERMS_OF_SERVICE_URL)</string>
+	<key>TonkeeperSwapURL</key>
+	<string>$(TONKEEPER_SWAP_URL)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -109,6 +125,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>UIDesignRequiresCompatibility</key>
+	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

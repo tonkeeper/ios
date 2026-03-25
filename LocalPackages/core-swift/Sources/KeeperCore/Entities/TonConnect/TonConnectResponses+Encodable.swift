@@ -3,159 +3,170 @@ import TonSwift
 import TweetNacl
 
 public extension TonConnect.ConnectEvent {
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .success(let success):
-      try container.encode(success)
-    case .error(let error):
-      try container.encode(error)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .success(success):
+            try container.encode(success)
+        case let .error(error):
+            try container.encode(error)
+        }
     }
-  }
 }
 
 public extension TonConnect.ConnectItemReply {
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .tonAddress(let address):
-      try container.encode(address)
-    case .tonProof(let proof):
-      try container.encode(proof)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .tonAddress(address):
+            try container.encode(address)
+        case let .tonProof(proof):
+            try container.encode(proof)
+        case let .tonProofSigned(proofSigned):
+            try container.encode(proofSigned)
+        }
     }
-  }
 }
 
 public extension TonConnect.TonProofItemReply {
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .success(let success):
-      try container.encode(success)
-    case .error(let error):
-      try container.encode(error)
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .success(success):
+            try container.encode(success)
+        case let .error(error):
+            try container.encode(error)
+        }
     }
-  }
+}
+
+public extension TonConnect.TonProofItemReplySigned {
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .success(success):
+            try container.encode(success)
+        case let .error(error):
+            try container.encode(error)
+        }
+    }
 }
 
 public extension TonConnect.TonAddressItemReply {
-  enum CodingKeys: String, CodingKey {
-    case name
-    case address
-    case network
-    case publicKey
-    case walletStateInit
-  }
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(name, forKey: .name)
-    try container.encode(address.toRaw(), forKey: .address)
-    try container.encode("\(network.rawValue)", forKey: .network)
-    try container.encode(publicKey.hexString, forKey: .publicKey)
-    
-    let builder = Builder()
-    try walletStateInit.storeTo(builder: builder)
-    try container.encode(
-      builder.endCell().toBoc().base64EncodedString(),
-      forKey: .walletStateInit)
-  }
+    enum CodingKeys: String, CodingKey {
+        case name
+        case address
+        case network
+        case publicKey
+        case walletStateInit
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(address.toRaw(), forKey: .address)
+        try container.encode("\(network.rawValue)", forKey: .network)
+        try container.encode(publicKey.hexString, forKey: .publicKey)
+
+        let builder = Builder()
+        try walletStateInit.storeTo(builder: builder)
+        try container.encode(
+            builder.endCell().toBoc().base64EncodedString(),
+            forKey: .walletStateInit
+        )
+    }
 }
 
-public extension TonConnect.TonProofItemReplySuccess.Signature {
-  func data() -> Data {
-    let string = "ton-proof-item-v2/".data(using: .utf8)!
-    let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
-    
-    let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
-      Data(a)
+public extension TonConnect.TonProofItemReplySignedSuccess.Proof {
+    enum CodingKeys: String, CodingKey {
+        case timestamp
+        case domain
+        case signature
+        case payload
     }
-    let addressHash = address.hash
-    let domainLength = withUnsafeBytes(of: UInt32(littleEndian: domain.lengthBytes)) { a in
-      Data(a)
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(domain, forKey: .domain)
+
+        try container.encode(signature, forKey: .signature)
+        try container.encode(payload, forKey: .payload)
     }
-    let domainValue = domain.value.data(using: .utf8)!
-    let timestamp = withUnsafeBytes(of: UInt64(littleEndian: timestamp)) { a in
-      Data(a)
-    }
-    let payload = payload.data(using: .utf8)!
-    
-    return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
-  }
 }
 
 public extension TonConnect.TonProofItemReplySuccess.Proof {
-  enum CodingKeys: String, CodingKey {
-    case timestamp
-    case domain
-    case signature
-    case payload
-  }
-  
-  func encode(to encoder: Encoder) throws {
-    var container = encoder.container(keyedBy: CodingKeys.self)
-    try container.encode(timestamp, forKey: .timestamp)
-    try container.encode(domain, forKey: .domain)
-    
-    let signatureMessageData = signature.data()
-    let signatureMessage = signatureMessageData.sha256()
-    guard let prefixData = Data(hex: "ffff"),
-          let tonConnectData = "ton-connect".data(using: .utf8) else {
-      return
+    enum CodingKeys: String, CodingKey {
+        case timestamp
+        case domain
+        case signature
+        case payload
     }
-    let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
-    let signature = try TweetNacl.NaclSign.signDetached(
-      message: signatureData,
-      secretKey: privateKey.data
-    )
-    try container.encode(signature, forKey: .signature)
-    try container.encode(payload, forKey: .payload)
-  }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(timestamp, forKey: .timestamp)
+        try container.encode(domain, forKey: .domain)
+
+        let signatureMessageData = signature.signatureData.data()
+        let signatureMessage = signatureMessageData.sha256()
+        guard let prefixData = Data(hex: "ffff"),
+              let tonConnectData = "ton-connect".data(using: .utf8)
+        else {
+            return
+        }
+        let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
+        let signature = try TweetNacl.NaclSign.signDetached(
+            message: signatureData,
+            secretKey: privateKey.data
+        )
+        try container.encode(signature, forKey: .signature)
+        try container.encode(payload, forKey: .payload)
+    }
+}
+
+public extension TonConnect.SignatureData {
+    func data() -> Data {
+        let string = "ton-proof-item-v2/".data(using: .utf8)!
+        let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
+        let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
+            Data(a)
+        }
+        let addressHash = address.hash
+        let domainLength = withUnsafeBytes(of: UInt32(littleEndian: domain.lengthBytes)) { a in
+            Data(a)
+        }
+        let domainValue = domain.value.data(using: .utf8)!
+        let timestamp = withUnsafeBytes(of: UInt64(littleEndian: timestamp)) { a in
+            Data(a)
+        }
+        let payload = payload.data(using: .utf8)!
+        return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
+    }
 }
 
 public extension TonConnect.Signature {
-  func data() -> Data {
-    let string = "ton-proof-item-v2/".data(using: .utf8)!
-    let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
-    
-    let addressWorkchainData = withUnsafeBytes(of: addressWorkchain) { a in
-      Data(a)
+    func signature() throws -> Data {
+        let signatureMessageData = signatureData.data()
+        let signatureMessage = signatureMessageData.sha256()
+        let prefixData: Data = Data(hex: "ffff")
+        let tonConnectData = "ton-connect".data(using: .utf8) ?? Data()
+        let signatureDataHash = (prefixData + tonConnectData + signatureMessage).sha256()
+        return try TweetNacl.NaclSign.signDetached(
+            message: signatureDataHash,
+            secretKey: privateKey.data
+        )
     }
-    let addressHash = address.hash
-    let domainLength = withUnsafeBytes(of: UInt32(littleEndian: domain.lengthBytes)) { a in
-      Data(a)
-    }
-    let domainValue = domain.value.data(using: .utf8)!
-    let timestamp = withUnsafeBytes(of: UInt64(littleEndian: timestamp)) { a in
-      Data(a)
-    }
-    let payload = payload.data(using: .utf8)!
-    
-    return string + addressWorkchainData + addressHash + domainLength + domainValue + timestamp + payload
-  }
-  
-  func signature() throws -> Data {
-    let signatureMessageData = data()
-    let signatureMessage = signatureMessageData.sha256()
-    let prefixData: Data = Data(hex: "ffff")
-    let tonConnectData = "ton-connect".data(using: .utf8) ?? Data()
-    let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
-    let signature = try TweetNacl.NaclSign.signDetached(
-      message: signatureData,
-      secretKey: privateKey.data
-    )
-    return signature
-  }
 }
 
-extension TonConnect.SendTransactionResponse: Encodable {
-  public func encode(to encoder: Encoder) throws {
-    var container = encoder.singleValueContainer()
-    switch self {
-    case .success(let success):
-      try container.encode(success)
-    case .error(let error):
-      try container.encode(error)
+extension TonConnect.SendResponse: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case let .success(success):
+            try container.encode(success)
+        case let .error(error):
+            try container.encode(error)
+        }
     }
-  }
 }
-

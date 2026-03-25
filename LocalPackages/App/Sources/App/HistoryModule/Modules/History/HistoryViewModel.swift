@@ -1,97 +1,130 @@
-import UIKit
-import TKUIKit
-import TKLocalize
 import KeeperCore
+import TKLocalize
+import TKUIKit
 import TonSwift
+import UIKit
 
 protocol HistoryModuleOutput: AnyObject {
-  var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapReceive: ((Wallet) -> Void)? { get set }
+    var didSelectSpamHistory: (() -> Void)? { get set }
 }
 
 protocol HistoryModuleInput: AnyObject {
-  func setHasEvents(_ hasEvents: Bool)
+    func setHistoryListState(_ state: HistoryList.State)
 }
 
 protocol HistoryViewModel: AnyObject {
-  var didUpdateState: ((HistoryViewController.State) -> Void)? { get set }
-  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)? { get set }
-  var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
-  
-  func viewDidLoad()
+    var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
+
+    var didUpdateTabs: (([TKTabsView.Item]) -> Void)? { get set }
+    var didUpdateTabViewIsHidden: ((Bool) -> Void)? { get set }
+    var didUpdateSelectedTab: ((TKTabsView.Item) -> Void)? { get set }
+
+    func viewDidLoad()
 }
 
 final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOutput, HistoryModuleInput {
-  var didTapBuy: ((Wallet) -> Void)?
-  var didTapReceive: ((Wallet) -> Void)?
-  var didChangeWallet: ((Wallet) -> Void)?
-  
-  func setHasEvents(_ hasEvents: Bool) {
-    self.state = hasEvents ? .list : .empty
-  }
-  
-  var didUpdateState: ((HistoryViewController.State) -> Void)?
-  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)?
-  var didUpdateIsConnecting: ((Bool) -> Void)?
-  
-  private var state: ContentListEmptyViewController.State = .list {
-    didSet {
-      didUpdateState?(state)
-    }
-  }
-  
-  private let wallet: Wallet
-  private let backgroundUpdate: BackgroundUpdate
-  
-  init(wallet: Wallet,
-       backgroundUpdate: BackgroundUpdate) {
-    self.wallet = wallet
-    self.backgroundUpdate = backgroundUpdate
-  }
-  
-  func viewDidLoad() {
-    setupEmpty(wallet: wallet)
-    didUpdateState?(state)
-    
-    backgroundUpdate.addStateObserver(self) { observer, wallet, state in
-      DispatchQueue.main.async {
-        guard wallet == observer.wallet else { return }
-        observer.didUpdateIsConnecting?(observer.isConnecting(state))
-      }
-    }
-    didUpdateIsConnecting?(isConnecting(backgroundUpdate.getState(wallet: wallet)))
-  }
-  
-  private func isConnecting(_ backgroundUpdateState: BackgroundUpdateConnectionState) -> Bool {
-    switch backgroundUpdateState {
-    case .connected: return false
-    default: return true
-    }
-  }
-}
+    // MARK: - HistoryModuleOutput
 
-private extension HistoryV2ViewModelImplementation {
-  func setupEmpty(wallet: Wallet) {
-    let model = TKEmptyViewController.Model(
-      title: TKLocales.History.Placeholder.title,
-      caption: TKLocales.History.Placeholder.subtitle,
-      buttons: [
-        TKEmptyViewController.Model.Button(
-          title: TKLocales.History.Placeholder.Buttons.buy,
-          action: { [weak self] in
-            guard let self else { return }
-            self.didTapBuy?(wallet)
-          }
-        ),
-        TKEmptyViewController.Model.Button(
-          title: TKLocales.History.Placeholder.Buttons.receive,
-          action: { [weak self] in
-            guard let self else { return }
-            self.didTapReceive?(wallet)
-          }
-        )
-      ]
-    )
-    didUpdateEmptyModel?(model)
-  }
+    var didSelectSpamHistory: (() -> Void)?
+
+    // MARK: - HistoryViewModel
+
+    var didChangeWallet: ((Wallet) -> Void)?
+    var didUpdateIsConnecting: ((Bool) -> Void)?
+    var didUpdateTabs: (([TKTabsView.Item]) -> Void)?
+    var didUpdateTabViewIsHidden: ((Bool) -> Void)?
+    var didUpdateSelectedTab: ((TKTabsView.Item) -> Void)?
+
+    private let wallet: Wallet
+    private let backgroundUpdate: BackgroundUpdate
+    private let historyListModuleInput: HistoryListModuleInput
+    private var tabs: [TKTabsView.Item] = []
+
+    init(
+        wallet: Wallet,
+        backgroundUpdate: BackgroundUpdate,
+        historyListModuleInput: HistoryListModuleInput
+    ) {
+        self.wallet = wallet
+        self.backgroundUpdate = backgroundUpdate
+        self.historyListModuleInput = historyListModuleInput
+    }
+
+    func setHistoryListState(_ state: HistoryList.State) {
+        switch state {
+        case .loading:
+            didUpdateTabViewIsHidden?(true)
+        case .content, .empty:
+            didUpdateTabViewIsHidden?(false)
+        }
+    }
+
+    var didSelectFilter: ((HistoryList.Filter) -> Void)?
+
+    func viewDidLoad() {
+        setupTabs()
+
+        backgroundUpdate.addStateObserver(self) { observer, wallet, state in
+            DispatchQueue.main.async {
+                guard wallet == observer.wallet else { return }
+                observer.didUpdateIsConnecting?(observer.isConnecting(state))
+            }
+        }
+        didUpdateIsConnecting?(isConnecting(backgroundUpdate.getState(wallet: wallet)))
+    }
+
+    private func isConnecting(_ backgroundUpdateState: BackgroundUpdateConnectionState) -> Bool {
+        switch backgroundUpdateState {
+        case .connected: return false
+        default: return true
+        }
+    }
+
+    private func setupTabs() {
+        tabs = [
+            TKTabsView.Item(
+                title: TKLocales.History.Tab.all,
+                isSelectable: true,
+                selectionColor: .Button.tertiaryBackground,
+                selectionBorderColor: .Separator.alternate,
+                borderWidth: 0.5,
+                action: { [weak self] in
+                    self?.historyListModuleInput.filter = .all
+                }
+            ),
+            TKTabsView.Item(
+                title: TKLocales.History.Tab.sent,
+                isSelectable: true,
+                selectionColor: .Button.tertiaryBackground,
+                selectionBorderColor: .Separator.alternate,
+                borderWidth: 0.5,
+                action: { [weak self] in
+                    self?.historyListModuleInput.filter = .sent
+                }
+            ),
+            TKTabsView.Item(
+                title: TKLocales.History.Tab.received,
+                isSelectable: true,
+                selectionColor: .Button.tertiaryBackground,
+                selectionBorderColor: .Separator.alternate,
+                borderWidth: 0.5,
+                action: { [weak self] in
+                    self?.historyListModuleInput.filter = .received
+                }
+            ),
+            TKTabsView.Item(
+                title: TKLocales.History.Tab.spam,
+                isSelectable: false,
+                action: { [weak self] in
+                    self?.didSelectSpamHistory?()
+                }
+            ),
+        ]
+        didUpdateTabs?(tabs)
+        didUpdateTabViewIsHidden?(true)
+
+        if let allTab = tabs.first {
+            didUpdateSelectedTab?(allTab)
+        }
+    }
 }

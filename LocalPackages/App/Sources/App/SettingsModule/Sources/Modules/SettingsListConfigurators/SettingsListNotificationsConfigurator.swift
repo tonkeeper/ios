@@ -1,265 +1,308 @@
-import UIKit
-import TKUIKit
+import KeeperCore
 import TKCore
 import TKLocalize
-import KeeperCore
+import TKUIKit
+import UIKit
 import UserNotifications
 
 final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
-  // MARK: - SettingsListV2Configurator
-  
-  var didUpdateState: ((SettingsListState) -> Void)?
-  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
-  
-  var title: String { TKLocales.Settings.Notifications.title }
-  var isSelectable: Bool { false }
-  
-  func getInitialState() -> SettingsListState {
-    updateIsPushAvailable()
-    return createState()
-  }
-  
-  // MARK: - State
-  
-  private var isPushAvailable = true {
-    didSet {
-      didUpdateIsPushAvailable()
+    // MARK: - SettingsListV2Configurator
+
+    var didUpdateState: ((SettingsListState) -> Void)?
+    var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
+
+    var title: String {
+        TKLocales.Settings.Notifications.title
     }
-  }
-  
-  private var notificationToken: NSObjectProtocol?
-  
-  // MARK: - Dependencies
-  
-  private let wallet: Wallet
-  private let walletNotificationStore: WalletNotificationStore
-  private let tonConnectAppsStore: TonConnectAppsStore
-  private let urlOpener: URLOpener
-  
-  // MARK: - Init
-  init(wallet: Wallet,
-       walletNotificationStore: WalletNotificationStore,
-       tonConnectAppsStore: TonConnectAppsStore,
-       urlOpener: URLOpener) {
-    self.wallet = wallet
-    self.walletNotificationStore = walletNotificationStore
-    self.tonConnectAppsStore = tonConnectAppsStore
-    self.urlOpener = urlOpener
-    
-    notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
-      self?.updateIsPushAvailable()
-    })
-    
-    tonConnectAppsStore.addObserver(self)
-  }
-  
-  deinit {
-    notificationToken = nil
-  }
-  
-  private func createState() -> SettingsListState {
-    let notificationsState = walletNotificationStore.getState()[wallet]
-    var sections = [SettingsListSection]()
-    if !isPushAvailable {
-      sections.append(createNotificationsNotAvailableSection())
+
+    var isSelectable: Bool {
+        false
     }
-    sections.append(createPushNotificationsSection())
-    if let connectedAppsSection = createConnectedAppsSection(notificationsState: notificationsState) {
-      sections.append(connectedAppsSection)
+
+    func getInitialState() -> SettingsListState {
+        updateIsPushAvailable()
+        return createState()
     }
-    return SettingsListState(sections: sections)
-  }
-  
-  private func didUpdateIsPushAvailable() {
-    let state = createState()
-    didUpdateState?(state)
-  }
-  
-  private func createPushNotificationsSection() -> SettingsListSection {
-    let items = [createPushNotificationsItem()]
-    return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16
-    ))
-  }
-  
-  private func createNotificationsNotAvailableSection() -> SettingsListSection {
-    let items = [createNotificationsNotAvailableItem()]
-    return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16
-    ))
-  }
-  
-  private func createPushNotificationsItem() -> SettingsListItem {
-    let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentView.Configuration(
-        textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: TKLocales.Settings.Notifications.NotificationsItem.title
-          ),
-          captionViewsConfigurations: [
-            TKListItemTextView.Configuration(
-              text: TKLocales.Settings.Notifications.NotificationsItem.caption,
-              color: .Text.secondary,
-              textStyle: .body2,
-              numberOfLines: 0
-            )
-          ]
-        )
-      )
-    )
-    
-    let isOn: Bool = {
-      guard let isOn = walletNotificationStore.getState()[wallet]?.isOn else { return false }
-      return isOn
-    }()
-    
-    let action: (Bool) -> Void = { [weak self] isOn in
-      guard let self else { return }
-      
-      Task {
-        await self.walletNotificationStore.setNotificationIsOn(isOn, wallet: self.wallet)
-      }
+
+    // MARK: - State
+
+    private var isPushAvailable = true {
+        didSet {
+            didUpdateIsPushAvailable()
+        }
     }
-    
-    return SettingsListItem(
-      id: .walletNotificationsIdentifier,
-      cellConfiguration: cellConfiguration,
-      accessory: .switch(
-        TKListItemSwitchAccessoryView.Configuration(
-          isOn: isOn,
-          isEnable: isPushAvailable,
-          action: action
-        )
-      ),
-      onSelection: { _ in
-        action(!isOn)
-      }
-    )
-  }
-  
-  private func createNotificationsNotAvailableItem() -> SettingsNotificationBannerListItem {
-    SettingsNotificationBannerListItem(
-      id: .notificationsNotAvailableBannerIdentifier,
-      cellConfiguration: NotificationBannerCell.Configuration(
-        bannerViewConfiguration: NotificationBannerView.Model(
-          title: "Notifications are disabled",
-          caption: "You turned off notifications in your phone’s settings. To activate notifications, go to Settings on this device.",
-          appearance: .accentYellow,
-          actionButton: NotificationBannerView.Model.ActionButton(
-            title: "Settings",
-            action: { [urlOpener] in
-              guard let url = URL(string: UIApplication.openSettingsURLString),
-                    urlOpener.canOpen(url: url) else {
-                return
-              }
-              urlOpener.open(url: url)
+
+    private var notificationToken: NSObjectProtocol?
+
+    // MARK: - Dependencies
+
+    private let wallet: Wallet
+    private let walletNotificationStore: WalletNotificationStore
+    private let notificationsService: NotificationsService
+    private let tonConnectAppsStore: TonConnectAppsStore
+    private let urlOpener: URLOpener
+    private let pushTokenProvider: PushNotificationTokenProvider
+
+    // MARK: - Init
+
+    init(
+        wallet: Wallet,
+        walletNotificationStore: WalletNotificationStore,
+        notificationsService: NotificationsService,
+        tonConnectAppsStore: TonConnectAppsStore,
+        urlOpener: URLOpener,
+        pushTokenProvider: PushNotificationTokenProvider
+    ) {
+        self.wallet = wallet
+        self.walletNotificationStore = walletNotificationStore
+        self.notificationsService = notificationsService
+        self.tonConnectAppsStore = tonConnectAppsStore
+        self.urlOpener = urlOpener
+        self.pushTokenProvider = pushTokenProvider
+
+        notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
+            self?.updateIsPushAvailable()
+        })
+
+        tonConnectAppsStore.addObserver(self)
+
+        walletNotificationStore.addObserver(self) { observer, _ in
+            DispatchQueue.main.async {
+                let state = observer.createState()
+                observer.didUpdateState?(state)
             }
-          ),
-          closeButton: nil
-        )
-      )
-    )
-  }
-  
-  private func createConnectedAppsSection(notificationsState: WalletNotificationStore.NotificationsState?) -> SettingsListSection? {
-    let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? []
-    guard !apps.isEmpty else { return nil }
-    let items = apps.map { app in
-      let isOn = notificationsState?.dapps.first(where: { $0.key == app.manifest.host })?.value ?? false
-      return createConnectedAppItem(app, isOn: isOn)
+        }
     }
-    return SettingsListSection.listItems(SettingsListItemsSection(
-      items: items,
-      topPadding: 0,
-      bottomPadding: 16,
-      headerConfiguration: SettingsListSectionHeaderView.Configuration(
-        title: .connectedAppsSectionTitle,
-        caption: .connectedAppsSectionCaption
-      )
-    ))
-  }
-  
-  private func createConnectedAppsItems() -> [SettingsListItem] {
-    []
-  }
-  
-  private func createConnectedAppItem(_ app: TonConnectApp, isOn: Bool) -> SettingsListItem {
-    let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentView.Configuration(
-        iconViewConfiguration: TKListItemIconView.Configuration(
-          content: .image(TKImageView.Model(image: .urlImage(app.manifest.iconUrl), size: .size(CGSize(width: 44, height: 44)))),
-          alignment: .center,
-          cornerRadius: 12,
-          backgroundColor: .clear,
-          size: CGSize(width: 44, height: 44)
-        ),
-        textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: app.manifest.name
-          )
-        )
-      )
-    )
-    
-    let action: (Bool) -> Void = { [weak self, wallet] isOn in
-      guard let self else { return }
-      Task {
-        await self.walletNotificationStore.setNotificationsIsOn(isOn, wallet: wallet, dappHost: app.manifest.host)
-      }
+
+    deinit {
+        notificationToken = nil
     }
-    
-    return SettingsListItem(
-      id: app.manifest.host,
-      cellConfiguration: cellConfiguration,
-      accessory: .switch(
-        TKListItemSwitchAccessoryView.Configuration(
-          isOn: isOn,
-          isEnable: true,
-          action: { action($0) }
-        )
-      ),
-      onSelection: { _ in
-        action(!isOn)
-      }
-    )
-  }
-  
-  private func updateIsPushAvailable() {
-    Task {
-      let center = UNUserNotificationCenter.current()
-      let isPushAvailable: Bool
-      switch await center.notificationSettings().authorizationStatus {
-      case .authorized: isPushAvailable = true
-      case .denied: isPushAvailable = false
-      case .ephemeral: isPushAvailable = false
-      case .notDetermined: isPushAvailable = true
-      case .provisional: isPushAvailable = false
-      @unknown default:
-        isPushAvailable = false
-      }
-      await MainActor.run {
-        self.isPushAvailable = isPushAvailable
-      }
+
+    private func createState() -> SettingsListState {
+        let notificationsState = walletNotificationStore.getState()[wallet]
+        var sections = [SettingsListSection]()
+        if !isPushAvailable {
+            sections.append(createNotificationsNotAvailableSection())
+        }
+        sections.append(createPushNotificationsSection())
+        if let connectedAppsSection = createConnectedAppsSection(notificationsState: notificationsState) {
+            sections.append(connectedAppsSection)
+        }
+        return SettingsListState(sections: sections)
     }
-  }
+
+    private func didUpdateIsPushAvailable() {
+        let state = createState()
+        didUpdateState?(state)
+    }
+
+    private func createPushNotificationsSection() -> SettingsListSection {
+        let items = [createPushNotificationsItem()]
+        return SettingsListSection.listItems(SettingsListItemsSection(
+            items: items.map(SettingsListItemsSectionItem.listItem)
+        ))
+    }
+
+    private func createNotificationsNotAvailableSection() -> SettingsListSection {
+        let items = [createNotificationsNotAvailableItem()]
+        return SettingsListSection.listItems(SettingsListItemsSection(
+            items: items.map(SettingsListItemsSectionItem.notificationBanner)
+        ))
+    }
+
+    private func createPushNotificationsItem() -> SettingsListItem {
+        let cellConfiguration = TKListItemCell.Configuration(
+            listItemContentViewConfiguration: TKListItemContentView.Configuration(
+                textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                    titleViewConfiguration: TKListItemTitleView.Configuration(
+                        title: TKLocales.Settings.Notifications.NotificationsItem.title
+                    ),
+                    captionViewsConfigurations: [
+                        TKListItemTextView.Configuration(
+                            text: TKLocales.Settings.Notifications.NotificationsItem.caption,
+                            color: .Text.secondary,
+                            textStyle: .body2,
+                            numberOfLines: 0
+                        ),
+                    ]
+                )
+            )
+        )
+
+        let isOn: Bool = {
+            guard let isOn = walletNotificationStore.getState()[wallet]?.isOn else { return false }
+            return isOn
+        }()
+
+        let action: (Bool) -> Void = { [weak self] isOn in
+            guard let self else { return }
+
+            Task {
+                await self.walletNotificationStore.setNotificationIsOn(isOn, wallet: self.wallet)
+            }
+        }
+
+        return SettingsListItem(
+            id: .walletNotificationsIdentifier,
+            cellConfiguration: cellConfiguration,
+            accessory: .switch(
+                TKListItemSwitchAccessoryView.Configuration(
+                    isOn: isOn,
+                    isEnable: isPushAvailable,
+                    action: action
+                )
+            ),
+            onSelection: { _ in
+                action(!isOn)
+            }
+        )
+    }
+
+    private func createNotificationsNotAvailableItem() -> SettingsNotificationBannerListItem {
+        SettingsNotificationBannerListItem(
+            id: .notificationsNotAvailableBannerIdentifier,
+            cellConfiguration: NotificationBannerCell.Configuration(
+                bannerViewConfiguration: NotificationBannerView.Model(
+                    title: TKLocales.Settings.Notifications.NotificationsDisabled.title,
+                    caption: TKLocales.Settings.Notifications.NotificationsDisabled.caption,
+                    appearance: .accentYellow,
+                    actionButton: NotificationBannerView.Model.ActionButton(
+                        title: TKLocales.Settings.Notifications.NotificationsDisabled.actionTitle,
+                        action: { [urlOpener] in
+                            guard let url = URL(string: UIApplication.openSettingsURLString),
+                                  urlOpener.canOpen(url: url)
+                            else {
+                                return
+                            }
+                            urlOpener.open(url: url)
+                        }
+                    ),
+                    closeButton: nil
+                )
+            )
+        )
+    }
+
+    private func createConnectedAppsSection(notificationsState: WalletNotificationStore.NotificationsState?) -> SettingsListSection? {
+        let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps.unique) ?? []
+        guard !apps.isEmpty else { return nil }
+        let items = apps.map { app in
+            let isOn = notificationsState?.dapps.first(where: { $0.key == app.manifest.host })?.value ?? false
+            return createConnectedAppItem(app, isOn: isOn)
+        }
+        return SettingsListSection.listItems(SettingsListItemsSection(
+            items: items.map(SettingsListItemsSectionItem.listItem),
+            headerConfiguration: SettingsListSectionHeaderView.Configuration(
+                title: .connectedAppsSectionTitle,
+                caption: .connectedAppsSectionCaption
+            )
+        ))
+    }
+
+    private func createConnectedAppItem(_ app: TonConnectApp, isOn: Bool) -> SettingsListItem {
+        let cellConfiguration = TKListItemCell.Configuration(
+            listItemContentViewConfiguration: TKListItemContentView.Configuration(
+                iconViewConfiguration: TKListItemIconView.Configuration(
+                    content: .image(TKImageView.Model(image: .urlImage(app.manifest.iconUrl), size: .size(CGSize(width: 44, height: 44)))),
+                    alignment: .center,
+                    cornerRadius: 12,
+                    backgroundColor: .clear,
+                    size: CGSize(width: 44, height: 44)
+                ),
+                textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                    titleViewConfiguration: TKListItemTitleView.Configuration(
+                        title: app.manifest.name
+                    )
+                )
+            )
+        )
+
+        let action: (Bool) -> Void = { [weak self, wallet] isOn in
+            guard let self else { return }
+            Task { [weak self] in
+                guard let self else { return }
+                guard let token = await pushTokenProvider.getToken() else {
+                    await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+                    return
+                }
+                if isOn {
+                    let result = (try? await notificationsService.turnOnDappNotifications(
+                        wallet: wallet,
+                        manifest: app.manifest,
+                        sessionId: app.clientId,
+                        token: token
+                    )) ?? false
+                    if !result {
+                        await MainActor.run {
+                            ToastPresenter.showToast(configuration: .failed)
+                        }
+                        await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+                    }
+                } else {
+                    let result = (try? await notificationsService.turnOffDappNotifications(
+                        wallet: wallet,
+                        manifest: app.manifest,
+                        sessionId: app.clientId,
+                        token: token
+                    )) ?? false
+                    if !result {
+                        await MainActor.run {
+                            ToastPresenter.showToast(configuration: .failed)
+                        }
+                        await self.walletNotificationStore.setNotificationsIsOn(!isOn, wallet: wallet, dappHost: app.manifest.host)
+                    }
+                }
+            }
+        }
+
+        return SettingsListItem(
+            id: app.manifest.host,
+            cellConfiguration: cellConfiguration,
+            accessory: .switch(
+                TKListItemSwitchAccessoryView.Configuration(
+                    isOn: isOn,
+                    isEnable: true,
+                    action: { action($0) }
+                )
+            ),
+            onSelection: { _ in
+                action(!isOn)
+            }
+        )
+    }
+
+    private func updateIsPushAvailable() {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let isPushAvailable: Bool
+            switch await center.notificationSettings().authorizationStatus {
+            case .authorized: isPushAvailable = true
+            case .denied: isPushAvailable = false
+            case .ephemeral: isPushAvailable = false
+            case .notDetermined: isPushAvailable = true
+            case .provisional: isPushAvailable = false
+            @unknown default:
+                isPushAvailable = false
+            }
+            await MainActor.run {
+                self.isPushAvailable = isPushAvailable
+            }
+        }
+    }
 }
 
 extension SettingsListNotificationsConfigurator: TonConnectAppsStoreObserver {
-  func didGetTonConnectAppsStoreEvent(_ event: KeeperCore.TonConnectAppsStoreEvent) {
-    DispatchQueue.main.async {
-      let state = self.createState()
-      self.didUpdateState?(state)
+    func didGetTonConnectAppsStoreEvent(_ event: KeeperCore.TonConnectAppsStoreEvent) {
+        DispatchQueue.main.async {
+            let state = self.createState()
+            self.didUpdateState?(state)
+        }
     }
-  }
 }
 
 private extension String {
-  static let walletNotificationsIdentifier = "WalletNotificationsIdentifier"
-  static let notificationsNotAvailableBannerIdentifier = "NotificationsNotAvailableBannerIdentifier"
-  static let connectedAppsSectionTitle = TKLocales.SettingsListNotificationsConfigurator.connectedAppsTitle
-  static let connectedAppsSectionCaption = TKLocales.SettingsListNotificationsConfigurator.connectedAppsSectionCaption
+    static let walletNotificationsIdentifier = "WalletNotificationsIdentifier"
+    static let notificationsNotAvailableBannerIdentifier = "NotificationsNotAvailableBannerIdentifier"
+    static let connectedAppsSectionTitle = TKLocales.SettingsListNotificationsConfigurator.connectedAppsTitle
+    static let connectedAppsSectionCaption = TKLocales.SettingsListNotificationsConfigurator.connectedAppsSectionCaption
 }

@@ -1,30 +1,28 @@
 import Foundation
-import TonSwift
 import TKBatteryAPI
+import TonSwift
 
 extension BatteryRechargeMethod {
-  init?(method: RechargeMethodsMethodsInner) {
-    switch method.type {
-    case .ton:
-      token = .ton
-    case .jetton:
-      guard let jettonMaster = method.jettonMaster,
-            let jettonMasterAddress = try? Address.parse(jettonMaster) else { return nil }
-      token = .jetton(Jetton(jettonMasterAddress: jettonMasterAddress))
-    case .unknownDefaultOpenApi:
-      return nil
+    init?(method: Components.Schemas.RechargeMethods.methodsPayloadPayload) {
+        switch method._type {
+        case .ton:
+            token = .ton
+        case .jetton:
+            guard let jettonMaster = method.jetton_master,
+                  let jettonMasterAddress = try? Address.parse(jettonMaster) else { return nil }
+            token = .jetton(Jetton(jettonMasterAddress: jettonMasterAddress))
+        }
+
+        imageURL = {
+            guard let image = method.image else { return nil }
+            return URL(string: image)
+        }()
+
+        rate = NSDecimalNumber(string: method.rate)
+        symbol = method.symbol
+        decimals = method.decimals
+        supportGasless = method.support_gasless
+        supportRecharge = method.support_recharge
+        minBootstrapValue = NSDecimalNumber(string: method.min_bootstrap_value)
     }
-    
-    imageURL = {
-      guard let image = method.image else { return nil }
-      return URL(string: image)
-    }()
-    
-    rate = NSDecimalNumber(string: method.rate)
-    symbol = method.symbol
-    decimals = method.decimals
-    supportGasless = method.supportGasless
-    supportRecharge = method.supportRecharge
-    minBootstrapValue = NSDecimalNumber(string: method.minBootstrapValue)
-  }
 }

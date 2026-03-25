@@ -1,0 +1,11 @@
+
+#include "TonkeeperRelease.xcconfig"
+
+APP_NAME = Tonkeeper UK
+
+BUNDLE_DISPLAY_NAME = $(APP_NAME)
+ICON_NAME = AppIcon
+
+BASE_BUNDLE_IDENTIFIER = com.jbig.tonkeeperUK
+
+BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER)

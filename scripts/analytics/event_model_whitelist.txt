@@ -1,0 +1,29 @@
+# One event model per line; extension optional.
+# This list is sorted automatically by scripts/analytics/sync_models.sh.
+AnalyticsEventMobileNative
+DepositClickBuy
+DepositClickOnrampContinue
+DepositClickReceiveTokens
+DepositOpen
+DepositViewC2c
+DepositViewOnrampFlow
+DepositViewOnrampInsertAmount
+DepositViewP2p
+DepositViewReceiveTokens
+InstallApp
+OpAttempt
+OpTerminal
+SendClick
+SendConfirm
+SendFailed
+SendOpen
+SendSuccess
+WithdrawClickOnrampContinue
+WithdrawClickSell
+WithdrawClickSendTokens
+WithdrawOpen
+WithdrawSendConfirm
+WithdrawSendSuccess
+WithdrawViewOnrampFlow
+WithdrawViewOnrampInsertAmount
+WithdrawViewP2p

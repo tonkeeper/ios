@@ -34,7 +34,9 @@ public struct Client: APIProtocol {
             middlewares: middlewares
         )
     }
-    private var converter: Converter { client.converter }
+    private var converter: Converter {
+        client.converter
+    }
     /// - Remark: HTTP `GET /events`.
     /// - Remark: Generated from `#/paths//events/get(events)`.
     public func events(_ input: Operations.events.Input) async throws -> Operations.events.Output {
@@ -42,13 +44,19 @@ public struct Client: APIProtocol {
             input: input,
             forOperation: Operations.events.id,
             serializer: { input in
-                let path = try converter.renderedPath(template: "/events", parameters: [])
-                var request: HTTPTypes.HTTPRequest = .init(soar_path: path, method: .get)
+                let path = try converter.renderedPath(
+                    template: "/events",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .get
+                )
                 suppressMutabilityWarning(&request)
                 try converter.setQueryItemAsURI(
                     in: &request,
                     style: .form,
-                    explode: true,
+                    explode: false,
                     name: "client_id",
                     value: input.query.client_id
                 )
@@ -59,7 +67,10 @@ public struct Client: APIProtocol {
                     name: "last_event_id",
                     value: input.query.last_event_id
                 )
-                converter.setAcceptHeader(in: &request.headerFields, contentTypes: input.headers.accept)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
                 return (request, nil)
             },
             deserializer: { response, responseBody in
@@ -67,19 +78,30 @@ public struct Client: APIProtocol {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Operations.events.Output.Ok.Body
-                    if try contentType == nil
-                        || converter.isMatchingContentType(received: contentType, expectedRaw: "text/event-stream")
-                    {
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "text/event-stream"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "text/event-stream":
                         body = try converter.getResponseBodyAsBinary(
                             OpenAPIRuntime.HTTPBody.self,
                             from: responseBody,
-                            transforming: { value in .text_event_hyphen_stream(value) }
+                            transforming: { value in
+                                .text_event_hyphen_stream(value)
+                            }
                         )
-                    } else {
-                        throw converter.makeUnexpectedContentTypeError(contentType: contentType)
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .ok(.init(body: body))
-                default: return .undocumented(statusCode: response.status.code, .init())
+                default:
+                    return .undocumented(
+                        statusCode: response.status.code,
+                        .init()
+                    )
                 }
             }
         )
@@ -91,8 +113,14 @@ public struct Client: APIProtocol {
             input: input,
             forOperation: Operations.message.id,
             serializer: { input in
-                let path = try converter.renderedPath(template: "/message", parameters: [])
-                var request: HTTPTypes.HTTPRequest = .init(soar_path: path, method: .post)
+                let path = try converter.renderedPath(
+                    template: "/message",
+                    parameters: []
+                )
+                var request: HTTPTypes.HTTPRequest = .init(
+                    soar_path: path,
+                    method: .post
+                )
                 suppressMutabilityWarning(&request)
                 try converter.setQueryItemAsURI(
                     in: &request,
@@ -115,7 +143,10 @@ public struct Client: APIProtocol {
                     name: "ttl",
                     value: input.query.ttl
                 )
-                converter.setAcceptHeader(in: &request.headerFields, contentTypes: input.headers.accept)
+                converter.setAcceptHeader(
+                    in: &request.headerFields,
+                    contentTypes: input.headers.accept
+                )
                 let body: OpenAPIRuntime.HTTPBody?
                 switch input.body {
                 case let .plainText(value):
@@ -132,33 +163,50 @@ public struct Client: APIProtocol {
                 case 200:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.Response.Body
-                    if try contentType == nil
-                        || converter.isMatchingContentType(received: contentType, expectedRaw: "application/json")
-                    {
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
                             Components.Responses.Response.Body.jsonPayload.self,
                             from: responseBody,
-                            transforming: { value in .json(value) }
+                            transforming: { value in
+                                .json(value)
+                            }
                         )
-                    } else {
-                        throw converter.makeUnexpectedContentTypeError(contentType: contentType)
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
                     }
                     return .ok(.init(body: body))
                 default:
                     let contentType = converter.extractContentTypeIfPresent(in: response.headerFields)
                     let body: Components.Responses.Response.Body
-                    if try contentType == nil
-                        || converter.isMatchingContentType(received: contentType, expectedRaw: "application/json")
-                    {
+                    let chosenContentType = try converter.bestContentType(
+                        received: contentType,
+                        options: [
+                            "application/json"
+                        ]
+                    )
+                    switch chosenContentType {
+                    case "application/json":
                         body = try await converter.getResponseBodyAsJSON(
                             Components.Responses.Response.Body.jsonPayload.self,
                             from: responseBody,
-                            transforming: { value in .json(value) }
+                            transforming: { value in
+                                .json(value)
+                            }
                         )
-                    } else {
-                        throw converter.makeUnexpectedContentTypeError(contentType: contentType)
+                    default:
+                        preconditionFailure("bestContentType chose an invalid content type.")
                     }
-                    return .`default`(statusCode: response.status.code, .init(body: body))
+                    return .`default`(
+                        statusCode: response.status.code,
+                        .init(body: body)
+                    )
                 }
             }
         )

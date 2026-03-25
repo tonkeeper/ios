@@ -1,5 +1,5 @@
 import Foundation
 
 public enum Constants {
-  public static let separatorWidth: CGFloat = 0.5
+    public static let separatorWidth: CGFloat = 0.5
 }

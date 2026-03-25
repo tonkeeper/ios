@@ -7,8 +7,8 @@ public typealias SharedKey = String
 
 // TODO: revise
 public struct WalletVoucher: Codable {
-  let publicKey: PublicKey
-  let secretKey: SecretKey
-  let sharedKey: SharedKey
-  let voucher: String
+    let publicKey: PublicKey
+    let secretKey: SecretKey
+    let sharedKey: SharedKey
+    let voucher: String
 }

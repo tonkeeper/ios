@@ -1,159 +1,142 @@
 import Foundation
 
 public struct RemoteConfigurations: Codable {
-  let mainnet: RemoteConfiguration
-  let testnet: RemoteConfiguration
+    @usableFromInline
+    let mainnet: RemoteConfiguration
+    @usableFromInline
+    let testnet: RemoteConfiguration
+    @usableFromInline
+    let tetra: RemoteConfiguration
 }
 
-public struct RemoteConfiguration: Equatable {
-  
-  public var batteryMeanFeesDecimaNumber: NSDecimalNumber? {
-    NSDecimalNumber.number(stringValue: batteryMeanFees)
-  }
-  
-  public var batteryReservedAmountDecimalNumber: NSDecimalNumber? {
-    NSDecimalNumber.number(stringValue: batteryReservedAmount)
-  }
-  
-  public var batteryMeanFeesPriceSwapDecimaNumber: NSDecimalNumber? {
-    NSDecimalNumber.number(stringValue: batteryMeanPriceSwap)
-  }
-  
-  public var batteryMeanFeesPriceJettonDecimaNumber: NSDecimalNumber? {
-    NSDecimalNumber.number(stringValue: batteryMeanPriceJetton)
-  }
-  
-  public var batteryMeanFeesPriceNFTDecimaNumber: NSDecimalNumber? {
-    NSDecimalNumber.number(stringValue: batteryMeanPriceNFT)
-  }
-  
-  public var batteryMaxInputAmountDecimaNumber: NSDecimalNumber {
-    NSDecimalNumber.number(stringValue: batteryMaxInputAmount) ?? 3
-  }
+public struct RemoteConfiguration: Codable, Equatable {
+    public let tonapiV2Endpoint: String
+    public let tonapiTestnetHost: String
+    public let tonAPISSEEndpoint: String
+    public let batteryHost: String
+    public let tonApiV2Key: String
+    public let tonConnectBridge: String
+    public let mercuryoSecret: String?
+    public let supportLink: URL?
+    public let directSupportUrl: URL?
+    public let tonkeeperNewsUrl: URL?
+    public let stonfiUrl: URL?
+    public let webSwapsUrl: URL?
+    public let faqUrl: URL?
+    public let stakingInfoUrl: URL?
+    public let isBatteryBeta: Bool
+    public let accountExplorer: String?
+    public let transactionExplorer: String?
+    public let nftOnExplorerUrl: String?
+    public let batteryMeanFees: String?
+    public let batteryReservedAmount: String?
+    public let batteryMeanPriceSwap: String?
+    public let batteryMeanPriceJetton: String?
+    public let batteryMeanPriceNFT: String?
+    public let batteryMeanPriceTRCMin: String?
+    public let batteryMeanPriceTRCMax: String?
+    public let batteryMaxInputAmount: String?
+    public let batteryRefundEndpoint: URL?
+    public let disableBattery: Bool
+    public let disableBatterySend: Bool
+    public let disableBatteryCryptoRechargeModule: Bool
+    public let scamApiURL: URL?
+    public let flags: Flags
+    public let stories: [String]?
+    public let reportAmount: String?
+    public let stakingEnabledProviders: Set<String>
+    public let qrScannerExtensions: [QRScannerExtension]?
+    public let region: String?
+    public let tronApiUrl: String?
+    public let tronSwapUrl: String
+    public let tronSwapTitle: String
+    public let tonkeeperApiUrl: String?
+    public let multichainHelpUrl: URL?
 
-  public let tonapiV2Endpoint: String
-  public let tonapiTestnetHost: String
-  public let tonAPISSEEndpoint: String
-  public let batteryHost: String
-  public let tonApiV2Key: String
-  public let mercuryoSecret: String?
-  public let supportLink: URL?
-  public let directSupportUrl: URL?
-  public let tonkeeperNewsUrl: URL?
-  public let stonfiUrl: URL?
-  public let faqUrl: URL?
-  public let stakingInfoUrl: URL?
-  public let isBatteryBeta: Bool
-  public let accountExplorer: String?
-  public let transactionExplorer: String?
-  public let nftOnExplorerUrl: String?
-  public let batteryMeanFees: String?
-  public let batteryReservedAmount: String?
-  public let batteryMeanPriceSwap: String?
-  public let batteryMeanPriceJetton: String?
-  public let batteryMeanPriceNFT: String?
-  public let batteryMaxInputAmount: String?
-  public let batteryRefundEndpoint: URL?
-  public let disableBattery: Bool
-  public let disableBatterySend: Bool
-  public let disableBatteryCryptoRechargeModule: Bool
-  public let flags: Flags
-  
-  enum CodingKeys: String, CodingKey {
-    case tonapiV2Endpoint
-    case tonapiTestnetHost
-    case tonAPISSEEndpoint = "tonapi_sse_endpoint"
-    case batteryHost
-    case tonApiV2Key
-    case mercuryoSecret
-    case supportLink
-    case directSupportUrl
-    case tonkeeperNewsUrl
-    case stonfiUrl
-    case faqUrl = "faq_url"
-    case stakingInfoUrl
-    case isBatteryBeta = "battery_beta"
-    case flags
-    case accountExplorer
-    case transactionExplorer
-    case nftOnExplorerUrl = "NFTOnExplorerUrl"
-    case batteryMeanFees
-    case batteryReservedAmount
-    case batteryMeanPriceSwap = "batteryMeanPrice_swap"
-    case batteryMeanPriceJetton = "batteryMeanPrice_jetton"
-    case batteryMeanPriceNFT = "batteryMeanPrice_nft"
-    case batteryMaxInputAmount
-    case batteryRefundEndpoint
-    case disableBattery = "disable_battery"
-    case disableBatterySend = "disable_battery_send"
-    case disableBatteryCryptoRechargeModule = "disable_battery_crypto_recharge_module"
-  }
-}
-
-public extension RemoteConfiguration {
-  struct Flags: Codable, Equatable {
-    public let isSwapDisable: Bool
-    public let isExchangeMethodsDisable: Bool
-    public let isDappsDisable: Bool
-    
-    static var `default`: Flags {
-      Flags(
-        isSwapDisable: true,
-        isExchangeMethodsDisable: true,
-        isDappsDisable: true
-      )
+    public struct Flags: Codable, Equatable {
+        public let isSwapDisable: Bool
+        public let stakingDisabled: Bool
+        public let tronDisabled: Bool
+        public let trxOnlyRegion: Bool
+        public let batteryDisabled: Bool
+        public let gaslessDisabled: Bool
+        public let usdeDisabled: Bool
+        public let exchangeMethodsDisabled: Bool
+        public let dappsDisabled: Bool
+        public let storiesDisabled: Bool
+        public let onboardingStoryDisabled: Bool
+        public let nftsDisabled: Bool
+        public let nativeSwapDisabled: Bool
+        public let walletKitDisabled: Bool
     }
-    
-    enum CodingKeys: String, CodingKey {
-      case isSwapDisable = "disable_swap"
-      case isExchangeMethodsDisable = "disable_exchange_methods"
-      case isDappsDisable = "disable_dapps"
-    }
-  }
 }
-
-extension RemoteConfiguration: Codable {}
 
 extension RemoteConfiguration {
-  static var empty: RemoteConfiguration {
-    RemoteConfiguration(
-      tonapiV2Endpoint: "",
-      tonapiTestnetHost: "",
-      tonAPISSEEndpoint: "",
-      batteryHost: "",
-      tonApiV2Key: "",
-      mercuryoSecret: nil,
-      supportLink: nil,
-      directSupportUrl: nil,
-      tonkeeperNewsUrl: nil,
-      stonfiUrl: nil,
-      faqUrl: nil,
-      stakingInfoUrl: nil,
-      isBatteryBeta: true,
-      accountExplorer: nil,
-      transactionExplorer: nil,
-      nftOnExplorerUrl: nil,
-      batteryMeanFees: nil,
-      batteryReservedAmount: nil,
-      batteryMeanPriceSwap: nil,
-      batteryMeanPriceJetton: nil,
-      batteryMeanPriceNFT: nil,
-      batteryMaxInputAmount: nil,
-      batteryRefundEndpoint: nil,
-      disableBattery: false,
-      disableBatterySend: false,
-      disableBatteryCryptoRechargeModule: true,
-      flags: .default
-    )
-  }
+    static var empty: RemoteConfiguration {
+        RemoteConfiguration(
+            tonapiV2Endpoint: "",
+            tonapiTestnetHost: "",
+            tonAPISSEEndpoint: "",
+            batteryHost: "",
+            tonApiV2Key: "",
+            tonConnectBridge: "",
+            mercuryoSecret: nil,
+            supportLink: nil,
+            directSupportUrl: nil,
+            tonkeeperNewsUrl: nil,
+            stonfiUrl: nil,
+            webSwapsUrl: nil,
+            faqUrl: nil,
+            stakingInfoUrl: nil,
+            isBatteryBeta: true,
+            accountExplorer: nil,
+            transactionExplorer: nil,
+            nftOnExplorerUrl: nil,
+            batteryMeanFees: nil,
+            batteryReservedAmount: nil,
+            batteryMeanPriceSwap: nil,
+            batteryMeanPriceJetton: nil,
+            batteryMeanPriceNFT: nil,
+            batteryMeanPriceTRCMin: nil,
+            batteryMeanPriceTRCMax: nil,
+            batteryMaxInputAmount: nil,
+            batteryRefundEndpoint: nil,
+            disableBattery: false,
+            disableBatterySend: false,
+            disableBatteryCryptoRechargeModule: true,
+            scamApiURL: nil,
+            flags: .default,
+            stories: [],
+            reportAmount: nil,
+            stakingEnabledProviders: [],
+            qrScannerExtensions: nil,
+            region: nil,
+            tronApiUrl: nil,
+            tronSwapUrl: "https://widget.letsexchange.io/en?affiliate_id=ffzymmunvvyxyypo&coin_from=ton&coin_to=USDT-TRC20&is_iframe=true",
+            tronSwapTitle: "LetsExchange",
+            tonkeeperApiUrl: nil,
+            multichainHelpUrl: URL(string: "https://tonkeeper.helpscoutdocs.com/article/137-multichain#Transfer-fees-for-USDT-TRC20-tHzDd")
+        )
+    }
 }
 
-public extension NSDecimalNumber {
-  static func number(stringValue: String?) -> NSDecimalNumber? {
-    let number = NSDecimalNumber(string: stringValue)
-    guard number != NSDecimalNumber.notANumber else {
-      return nil
+extension RemoteConfiguration.Flags {
+    static var `default`: RemoteConfiguration.Flags {
+        RemoteConfiguration.Flags(
+            isSwapDisable: true,
+            stakingDisabled: true,
+            tronDisabled: true,
+            trxOnlyRegion: true,
+            batteryDisabled: true,
+            gaslessDisabled: true,
+            usdeDisabled: true,
+            exchangeMethodsDisabled: true,
+            dappsDisabled: true,
+            storiesDisabled: true,
+            onboardingStoryDisabled: true,
+            nftsDisabled: true,
+            nativeSwapDisabled: true,
+            walletKitDisabled: false
+        )
     }
-    return number
-  }
 }

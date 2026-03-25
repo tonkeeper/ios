@@ -1,0 +1,102 @@
+#!/bin/sh
+set -e
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [ -z "${repo_root}" ] || [ ! -d "${repo_root}" ]; then
+  echo "error: failed to resolve git repository root" >&2
+  exit 1
+fi
+
+add_task_prefix_to_commit_message() {
+  msg_file="$1"
+  if [ -z "$msg_file" ] || [ ! -f "$msg_file" ]; then
+    echo "error: commit message file missing" >&2
+    exit 1
+  fi
+
+  branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || true)"
+  if [ -z "$branch" ] || [ "$branch" = "HEAD" ]; then
+    echo "error: detached HEAD; use a branch like author/IOS-562/description" >&2
+    exit 1
+  fi
+
+  case "$branch" in
+    */*/*) ;;
+    *)
+      echo "error: branch must be author/TASK/description (e.g. rzm/IOS-562/fix-header)" >&2
+      exit 1
+      ;;
+  esac
+
+  author="${branch%%/*}"
+  rest="${branch#*/}"
+  task="${rest%%/*}"
+  desc="${rest#*/}"
+
+  if [ -z "$author" ] || [ -z "$desc" ]; then
+    echo "error: branch must be author/TASK/description (e.g. rzm/IOS-562/fix-header)" >&2
+    exit 1
+  fi
+
+  if ! printf "%s" "$task" | grep -Eq '^[A-Z]+-[0-9]+$'; then
+    echo "error: task id must be uppercase letters + '-' + digits (e.g. IOS-562)" >&2
+    exit 1
+  fi
+
+  first_line="$(head -n 1 "$msg_file")"
+  case "$first_line" in
+    "[$task]"*) return 0 ;;
+    *) ;;
+  esac
+
+  tmp_file="${msg_file}.tmp"
+  {
+    if [ -n "$first_line" ]; then
+      printf "[%s] %s\n" "$task" "$first_line"
+    else
+      printf "[%s]\n" "$task"
+    fi
+    tail -n +2 "$msg_file"
+  } > "$tmp_file"
+
+  mv "$tmp_file" "$msg_file"
+}
+
+run_swiftformat() {
+  "${repo_root}/scripts/require_tool.sh" swiftformat "brew install swiftformat"
+
+  staged_swift_files="$(git -C "${repo_root}" diff --cached --name-only --diff-filter=ACMR | grep -E '\.swift$' || true)"
+  if [ -z "$staged_swift_files" ]; then
+    return 0
+  fi
+
+  set --
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    set -- "$@" "${repo_root}/${file}"
+  done <<EOF
+$staged_swift_files
+EOF
+
+  swiftformat --quiet --config "${repo_root}/.swiftformat" "$@"
+
+  formatted_changed=""
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    if ! git -C "${repo_root}" diff --quiet -- "${file}"; then
+      formatted_changed="${formatted_changed}\n- ${file}"
+    fi
+  done <<EOF
+$staged_swift_files
+EOF
+
+  if [ -n "$formatted_changed" ]; then
+    printf "error: swiftformat changed staged files:\n%b\n\n" "$formatted_changed" >&2
+    echo "Review the formatting updates, stage them, and commit again." >&2
+    echo "Suggested command: git add <files>" >&2
+    exit 1
+  fi
+}
+
+add_task_prefix_to_commit_message "$1"
+run_swiftformat

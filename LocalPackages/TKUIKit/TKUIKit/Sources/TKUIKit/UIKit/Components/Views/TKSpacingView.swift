@@ -1,54 +1,57 @@
 import UIKit
 
 public final class TKSpacingView: UIView {
-  
-  public enum Spacing {
-    case none
-    case constant(CGFloat)
-  }
-  
-  var horizontalSpacing: Spacing {
-    didSet { invalidateIntrinsicContentSize() }
-  }
-  var verticalSpacing: Spacing {
-    didSet { invalidateIntrinsicContentSize() }
-  }
-  
-  public init(horizontalSpacing: Spacing = .none,
-              verticalSpacing: Spacing = .none) {
-    self.horizontalSpacing = horizontalSpacing
-    self.verticalSpacing = verticalSpacing
-    super.init(frame: .zero)
-    setup()
-  }
-  
-  public required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  public override var intrinsicContentSize: CGSize {
-    let width: CGFloat
-    switch horizontalSpacing {
-    case .none:
-      width = UIView.noIntrinsicMetric
-    case let .constant(value):
-      width = value
+    public enum Spacing {
+        case none
+        case constant(CGFloat)
     }
-    
-    let height: CGFloat
-    switch verticalSpacing {
-    case .none:
-      height = UIView.noIntrinsicMetric
-    case let .constant(value):
-      height = value
+
+    var horizontalSpacing: Spacing {
+        didSet { invalidateIntrinsicContentSize() }
     }
-    
-    return CGSize(width: width, height: height)
-  }
+
+    var verticalSpacing: Spacing {
+        didSet { invalidateIntrinsicContentSize() }
+    }
+
+    public init(
+        horizontalSpacing: Spacing = .none,
+        verticalSpacing: Spacing = .none
+    ) {
+        self.horizontalSpacing = horizontalSpacing
+        self.verticalSpacing = verticalSpacing
+        super.init(frame: .zero)
+        setup()
+    }
+
+    @available(*, unavailable)
+    public required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override public var intrinsicContentSize: CGSize {
+        let width: CGFloat
+        switch horizontalSpacing {
+        case .none:
+            width = UIView.noIntrinsicMetric
+        case let .constant(value):
+            width = value
+        }
+
+        let height: CGFloat
+        switch verticalSpacing {
+        case .none:
+            height = UIView.noIntrinsicMetric
+        case let .constant(value):
+            height = value
+        }
+
+        return CGSize(width: width, height: height)
+    }
 }
 
 private extension TKSpacingView {
-  func setup() {
-    backgroundColor = .clear
-  }
+    func setup() {
+        backgroundColor = .clear
+    }
 }

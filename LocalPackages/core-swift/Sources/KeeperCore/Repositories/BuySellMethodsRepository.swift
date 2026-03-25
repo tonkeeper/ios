@@ -1,27 +1,16 @@
-import Foundation
 import CoreComponents
+import Foundation
 
-protocol BuySellMethodsRepository {
-  func saveFiatMethods(_ fiatMethods: FiatMethods) throws
-  func getFiatMethods() throws -> FiatMethods
-}
+protocol BuySellMethodsRepository {}
 
 final class BuySellMethodsRepositoryImplementation: BuySellMethodsRepository {
-  let fileSystemVault: FileSystemVault<FiatMethods, String>
-  
-  init(fileSystemVault: FileSystemVault<FiatMethods, String>) {
-    self.fileSystemVault = fileSystemVault
-  }
-  
-  func saveFiatMethods(_ fiatMethods: FiatMethods) throws {
-    try fileSystemVault.saveItem(fiatMethods, key: .key)
-  }
-  
-  func getFiatMethods() throws -> FiatMethods {
-    return try fileSystemVault.loadItem(key: .key)
-  }
+    let fileSystemVault: FileSystemVault<FiatMethods, String>
+
+    init(fileSystemVault: FileSystemVault<FiatMethods, String>) {
+        self.fileSystemVault = fileSystemVault
+    }
 }
 
 private extension String {
-  static let key = "FiatMethods"
+    static let key = "FiatMethods"
 }

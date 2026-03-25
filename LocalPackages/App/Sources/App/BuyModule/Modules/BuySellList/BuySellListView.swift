@@ -1,33 +1,31 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 final class BuySellListView: TKView {
-  
-  let loadingView = BuySellListLoadingView()
-  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
+    let loadingView = BuySellListLoadingView()
+    let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
 
-  override func setup() {
-    super.setup()
-    
-    backgroundColor = .Background.page
-    collectionView.backgroundColor = .Background.page
-    
-    collectionView.isHidden = true
-    
-    addSubview(collectionView)
-    addSubview(loadingView)
-    
-    setupConstraints()
-  }
-  
-  override func setupConstraints() {
-    collectionView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+    override func setup() {
+        super.setup()
+
+        backgroundColor = .Background.page
+        collectionView.backgroundColor = .Background.page
+
+        collectionView.isHidden = true
+
+        addSubview(collectionView)
+        addSubview(loadingView)
+
+        setupConstraints()
     }
-    
-    loadingView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+
+    private func setupConstraints() {
+        collectionView.snp.makeConstraints { make in
+            make.edges.equalTo(self)
+        }
+
+        loadingView.snp.makeConstraints { make in
+            make.edges.equalTo(self)
+        }
     }
-  }
 }
-

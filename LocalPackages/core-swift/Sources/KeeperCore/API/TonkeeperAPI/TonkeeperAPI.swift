@@ -1,129 +1,129 @@
 import Foundation
+import TKLogging
 
 enum TonkeeperAPIError: Swift.Error {
-  case incorrectUrl
+    case incorrectUrl
 }
 
-protocol TonkeeperAPI {
-  func loadConfiguration(lang: String,
-                         build: String,
-                         chainName: String,
-                         platform: String) async throws -> RemoteConfigurations
-  func loadChart(period: Period) async throws -> [Coordinate]
-  func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
-  func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
-  func loadNotifications() async throws -> [InternalNotification]
+public protocol TonkeeperAPI {
+    func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
+    func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
+    func loadNotifications() async throws -> [InternalNotification]
+    func loadStory(storyId: String) async throws -> Story
+    func loadStories(storyIds: [String]) async throws -> [Story]
+    func getIP() async throws -> String
+    func getEthenaStakingDetails(address: String) async throws -> EthenaStakingResponse
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
-  private let urlSession: URLSession
-  private let host: URL
-  private let appInfoProvider: AppInfoProvider
-  
-  init(urlSession: URLSession, host: URL, appInfoProvider: AppInfoProvider) {
-    self.urlSession = urlSession
-    self.host = host
-    self.appInfoProvider = appInfoProvider
-  }
-  
-  func loadConfiguration(lang: String,
-                         build: String,
-                         chainName: String,
-                         platform: String) async throws -> RemoteConfigurations {
-    let url = host.appendingPathComponent("/keys/all")
-    guard var components = URLComponents(
-      url: url,
-      resolvingAgainstBaseURL: false
-    ) else { throw TonkeeperAPIError.incorrectUrl }
-    
-    components.queryItems = [
-      .init(name: "lang", value: appInfoProvider.language),
-      .init(name: "build", value: appInfoProvider.version),
-      .init(name: "chainName", value: chainName),
-      .init(name: "platform", value: appInfoProvider.platform)
-    ]
-    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
-    let (data, _) = try await urlSession.data(from: url)
-    let entity = try JSONDecoder().decode(RemoteConfigurations.self, from: data)
-    return entity
-  }
-  
-  func loadChart(period: Period) async throws -> [Coordinate] {
-    let url = host.appendingPathComponent("/stock/chart-new")
-    guard var components = URLComponents(
-      url: url,
-      resolvingAgainstBaseURL: false
-    ) else { return [] }
-    
-    components.queryItems = [
-      .init(name: "period", value: period.stringValue)
-    ]
-    guard let url = components.url else { return [] }
-    let (data, _) = try await urlSession.data(from: url)
-    let entity = try JSONDecoder().decode(ChartEntity.self, from: data)
-    return entity.coordinates
-  }
-  
-  func loadFiatMethods(countryCode: String?) async throws -> FiatMethods {
-    let url = host.appendingPathComponent("/fiat/methods")
-    guard var components = URLComponents(
-      url: url,
-      resolvingAgainstBaseURL: false
-    ) else { throw TonkeeperAPIError.incorrectUrl }
-    
-    components.queryItems = [
-      .init(name: "lang", value: appInfoProvider.language),
-      .init(name: "build", value: "5.0.0"),
-      .init(name: "chainName", value: "mainnet"),
-      .init(name: "platform", value: appInfoProvider.platform)
-    ]
-    if let countryCode = countryCode {
-      components.queryItems?.append(URLQueryItem(name: "countryCode", value: countryCode))
+    private let urlSession: URLSession
+    private let defaultHost: URL
+    private let configHost: () -> URL?
+    private let urlComponentsBuilder: AppInfoURLComponentsBuilder
+
+    var host: URL {
+        configHost() ?? defaultHost
     }
-    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
-    let (data, _) = try await urlSession.data(from: url)
-    let entity = try JSONDecoder().decode(FiatMethodsResponse.self, from: data)
-    return entity.data
-  }
-  
-  func loadPopularApps(lang: String) async throws -> PopularAppsResponseData {
-    let url = host.appendingPathComponent("/apps/popular")
-    guard var components = URLComponents(
-      url: url,
-      resolvingAgainstBaseURL: false
-    ) else { throw TonkeeperAPIError.incorrectUrl }
-    
-    components.queryItems = [
-      .init(name: "lang", value: appInfoProvider.language),
-      .init(name: "build", value: appInfoProvider.version),
-      .init(name: "platform", value: appInfoProvider.platform)
-    ]
-    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
-    let (data, _) = try await urlSession.data(from: url)
-    let entity = try JSONDecoder().decode(PopularAppsResponse.self, from: data)
-    return entity.data
-  }
-  
-  func loadNotifications() async throws -> [InternalNotification] {
-    let url = host.appendingPathComponent("/notifications")
-    guard var components = URLComponents(
-      url: url,
-      resolvingAgainstBaseURL: false
-    ) else { throw TonkeeperAPIError.incorrectUrl }
-    
-    components.queryItems = [
-      .init(name: "lang", value: appInfoProvider.language),
-      .init(name: "version", value: appInfoProvider.version),
-      .init(name: "platform", value: appInfoProvider.platform)
-    ]
-    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
-    let (data, _) = try await urlSession.data(from: url)
-    do {
-      let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
-      return response.notifications
-    } catch {
-      throw error
+
+    init(
+        urlSession: URLSession,
+        defaultHost: URL,
+        configHost: @escaping () -> URL?,
+        appInfoProvider: AppInfoProvider
+    ) {
+        self.urlSession = urlSession
+        self.defaultHost = defaultHost
+        self.configHost = configHost
+        self.urlComponentsBuilder = AppInfoURLComponentsBuilder(appInfoProvider: appInfoProvider)
     }
-    
-  }
+
+    func loadFiatMethods(countryCode: String?) async throws -> FiatMethods {
+        let url = host.appendingPathComponent("/fiat/methods")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url, additionalQueryItems: [
+            .init(name: "chainName", value: "mainnet"),
+        ])
+
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        let entity = try JSONDecoder().decode(FiatMethodsResponse.self, from: data)
+        return entity.data
+    }
+
+    func loadPopularApps(lang: String) async throws -> PopularAppsResponseData {
+        let url = host.appendingPathComponent("/apps/popular")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url)
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        let entity = try JSONDecoder().decode(PopularAppsResponse.self, from: data)
+        return entity.data
+    }
+
+    func loadNotifications() async throws -> [InternalNotification] {
+        let url = host.appendingPathComponent("/notifications")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url)
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        do {
+            let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
+            return response.notifications
+        } catch {
+            throw error
+        }
+    }
+
+    func loadStory(storyId: String) async throws -> Story {
+        let url = host.appendingPathComponent("/stories").appendingPathComponent("/" + storyId)
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url)
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        do {
+            return try JSONDecoder().decode(Story.self, from: data)
+        } catch {
+            throw error
+        }
+    }
+
+    func loadStories(storyIds: [String]) async throws -> [Story] {
+        let url = host.appendingPathComponent("/stories")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url, additionalQueryItems: [
+            .init(name: "ids", value: storyIds.joined(separator: ",")),
+        ])
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        do {
+            let response = try JSONDecoder().decode(StoriesResponse.self, from: data)
+            return response.stories
+        } catch {
+            Log.w("error loading stories: \(error)")
+            throw error
+        }
+    }
+
+    func getIP() async throws -> String {
+        struct Response: Decodable {
+            let ip: String
+            let country: String
+        }
+
+        let url = host.appendingPathComponent("/my/ip")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url)
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        let entity = try JSONDecoder().decode(Response.self, from: data)
+        return entity.ip
+    }
+
+    func getEthenaStakingDetails(address: String) async throws -> EthenaStakingResponse {
+        let url = host.appendingPathComponent("/staking/ethena")
+        let components = try await urlComponentsBuilder.buildURLComponents(for: url, additionalQueryItems: [
+            .init(name: "address", value: address),
+        ])
+        guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+        let (data, _) = try await urlSession.data(from: url)
+        do {
+            return try JSONDecoder().decode(EthenaStakingResponse.self, from: data)
+        } catch {
+            throw error
+        }
+    }
 }

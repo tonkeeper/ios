@@ -1,37 +1,49 @@
 import Foundation
+import TKFeatureFlags
 
 public final class ConfigurationAssembly {
-  
-  private let tonkeeperApiAssembly: TonkeeperAPIAssembly
-  private let coreAssembly: CoreAssembly
-  
-  init(tonkeeperApiAssembly: TonkeeperAPIAssembly,
-       coreAssembly: CoreAssembly) {
-    self.tonkeeperApiAssembly = tonkeeperApiAssembly
-    self.coreAssembly = coreAssembly
-  }
+    private let remoteConfigurationAPIAssembly: RemoteConfigurationAPIAssembly
+    private let coreAssembly: CoreAssembly
+    private let featureFlags: TKFeatureFlags
+    private let tkAppSettings: TKAppSettings
 
-  private weak var _configuration: Configuration?
-  public var configuration: Configuration {
-    if let configuration = _configuration {
-      return configuration
-    } else {
-      let configuration = Configuration(remoteConfigurationService: remoteConfigurationService())
-      _configuration = configuration
-      return configuration
+    init(
+        remoteConfigurationAPIAssembly: RemoteConfigurationAPIAssembly,
+        featureFlags: TKFeatureFlags,
+        tkAppSettings: TKAppSettings,
+        coreAssembly: CoreAssembly
+    ) {
+        self.coreAssembly = coreAssembly
+        self.featureFlags = featureFlags
+        self.tkAppSettings = tkAppSettings
+        self.remoteConfigurationAPIAssembly = remoteConfigurationAPIAssembly
     }
-  }
-  
-  func remoteConfigurationService() -> RemoteConfigurationService {
-    RemoteConfigurationServiceImplementation(
-      api: tonkeeperApiAssembly.api,
-      repository: remoteConfigurationRepository()
-    )
-  }
-  
-  func remoteConfigurationRepository() -> RemoteConfigurationRepository {
-    RemoteConfigurationRepositoryImplementation(
-      fileSystemVault: coreAssembly.fileSystemVault()
-    )
-  }
+
+    private weak var _configuration: Configuration?
+    public var configuration: Configuration {
+        if let configuration = _configuration {
+            return configuration
+        } else {
+            let configuration = Configuration(
+                remoteConfigurationService: remoteConfigurationService(),
+                featureFlags: featureFlags,
+                tkAppSettings: tkAppSettings
+            )
+            _configuration = configuration
+            return configuration
+        }
+    }
+
+    func remoteConfigurationService() -> RemoteConfigurationService {
+        RemoteConfigurationServiceImplementation(
+            api: remoteConfigurationAPIAssembly.api,
+            repository: remoteConfigurationRepository()
+        )
+    }
+
+    func remoteConfigurationRepository() -> RemoteConfigurationRepository {
+        RemoteConfigurationRepositoryImplementation(
+            fileSystemVault: coreAssembly.fileSystemVault()
+        )
+    }
 }
