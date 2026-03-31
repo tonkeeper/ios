@@ -1,36 +1,79 @@
 import Foundation
+import TronSwift
 
 public enum Token: Equatable, Hashable {
-  case ton
-  case jetton(JettonItem)
-  
- public var fractionDigits: Int {
-    let digits: Int
-    switch self {
-    case .ton:
-      digits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      digits = jettonItem.jettonInfo.fractionDigits
+    case ton(TonToken)
+    case tron(TronToken)
+
+    public var fractionDigits: Int {
+        switch self {
+        case let .ton(tonToken):
+            tonToken.fractionDigits
+        case let .tron(tronToken):
+            switch tronToken {
+            case .usdt:
+                TronSwift.USDT.fractionDigits
+            case .trx:
+                TronSwift.TRX.fractionDigits
+            }
+        }
     }
-    
-    return digits
-  }
-  
-  public var symbol: String {
-    switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.symbol ?? ""
+
+    public var symbol: String {
+        switch self {
+        case let .ton(tonToken):
+            tonToken.symbol
+        case let .tron(tronToken):
+            switch tronToken {
+            case .usdt:
+                TronSwift.USDT.symbol
+            case .trx:
+                TronSwift.TRX.symbol
+            }
+        }
     }
-  }
-  
-  public var identifier: String {
-    switch self {
-    case .ton:
-      return TonInfo.symbol
-    case .jetton(let jettonItem):
-      return jettonItem.jettonInfo.address.toRaw()
+
+    public var name: String {
+        switch self {
+        case let .ton(tonToken):
+            tonToken.symbol
+        case let .tron(tronToken):
+            switch tronToken {
+            case .usdt:
+                TronSwift.USDT.name
+            case .trx:
+                TronSwift.TRX.name
+            }
+        }
     }
-  }
+
+    public var chartIdentifier: String {
+        switch self {
+        case let .ton(tonToken):
+            tonToken.identifier
+        case .tron:
+            JettonMasterAddress.tonUSDT.toRaw()
+        }
+    }
+
+    public var analyticsSymbol: String {
+        switch self {
+        case let .ton(tonToken):
+            switch tonToken {
+            case .ton: "ton_ton"
+            case let .jetton(jettonItem):
+                "\(jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name)_ton".replacingOccurrences(
+                    of: "₮",
+                    with: "t"
+                ).lowercased()
+            }
+        case let .tron(tronToken):
+            switch tronToken {
+            case .usdt:
+                "usdt_trc20"
+            case .trx:
+                "trx"
+            }
+        }
+    }
 }

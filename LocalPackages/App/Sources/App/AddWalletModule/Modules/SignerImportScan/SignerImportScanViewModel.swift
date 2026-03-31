@@ -1,63 +1,63 @@
-import UIKit
-import TKUIKit
+import KeeperCore
 import TKCore
 import TKLocalize
-import KeeperCore
+import TKUIKit
 import TonSwift
+import UIKit
 
 public protocol SignerImportScanModuleOutput: AnyObject {
-  var didScanLinkQRCode: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
+    var didScanLinkQRCode: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
 }
 
 protocol SignerImportScanViewModel: AnyObject {
-  var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)? { get set }
-  
-  func viewDidLoad()
-  func didTapOpenSigner()
+    var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)? { get set }
+
+    func viewDidLoad()
+    func didTapOpenSigner()
 }
 
 final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, SignerImportScanModuleOutput {
-  
-  // MARK: - SignerImportScanModuleOutput
-  
-  var didScanLinkQRCode: ((TonSwift.PublicKey, String) -> Void)?
-  
-  // MARK: - SignerImportScanViewModel
-  
-  var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)?
-  
-  func viewDidLoad() {
-    scannerViewModuleOutput.didScanDeeplink = { [weak self] deeplink in
-      guard case let .externalSign(externalSign) = deeplink,
-            case let .link(publicKey, name) = externalSign else {
-        return
-      }
-      self?.didScanLinkQRCode?(publicKey, name)
-    }
-    
-    didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString(TKLocales.Signer.Scan.openSignerButton)))
-  }
-  
-  func didTapOpenSigner() {
-    guard let url = signerScanController.createOpenSignerUrl() else { return }
-    urlOpener.open(url: url)
-  }
-  
-  // MARK: - Dependencies
-  
-  private let urlOpener: URLOpener
-  private let signerScanController: SignerScanController
-  private let scannerViewModuleOutput: ScannerViewModuleOutput
-  
-  // MARK: - Init
-  
-  init(urlOpener: URLOpener, 
-       signerScanController: SignerScanController,
-       scannerViewModuleOutput: ScannerViewModuleOutput) {
-    self.urlOpener = urlOpener
-    self.signerScanController = signerScanController
-    self.scannerViewModuleOutput = scannerViewModuleOutput
-  }
-}
+    // MARK: - SignerImportScanModuleOutput
 
-private extension SignerImportScanViewModelImplementation {}
+    var didScanLinkQRCode: ((TonSwift.PublicKey, String) -> Void)?
+
+    // MARK: - SignerImportScanViewModel
+
+    var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)?
+
+    func viewDidLoad() {
+        scannerViewModuleOutput.didScanDeeplink = { [weak self] deeplink in
+            guard case let .externalSign(externalSign) = deeplink,
+                  case let .link(publicKey, name) = externalSign
+            else {
+                return
+            }
+            self?.didScanLinkQRCode?(publicKey, name)
+        }
+
+        didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString(TKLocales.Signer.Scan.openSignerButton)))
+    }
+
+    func didTapOpenSigner() {
+        guard let url = signerScanController.createOpenSignerUrl() else { return }
+        urlOpener.open(url: url)
+    }
+
+    // MARK: - Dependencies
+
+    private let urlOpener: URLOpener
+    private let signerScanController: SignerScanController
+    private let scannerViewModuleOutput: ScannerViewModuleOutput
+
+    // MARK: - Init
+
+    init(
+        urlOpener: URLOpener,
+        signerScanController: SignerScanController,
+        scannerViewModuleOutput: ScannerViewModuleOutput
+    ) {
+        self.urlOpener = urlOpener
+        self.signerScanController = signerScanController
+        self.scannerViewModuleOutput = scannerViewModuleOutput
+    }
+}

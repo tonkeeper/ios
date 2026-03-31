@@ -1,13 +1,13 @@
 //
 //  RemoteConfigurationTests.swift
-//  
+//
 //
 //  Created by Grigory on 20.6.23..
 //
 
-import XCTest
 import TonAPI
 @testable import WalletCoreKeeper
+import XCTest
 
 final class RemoteConfigurationTests: XCTestCase {
     func testRemoteConfigurationModelDecoding() throws {
@@ -18,8 +18,8 @@ final class RemoteConfigurationTests: XCTestCase {
           "tonApiV2Key": "AF77F5JNEUSNXPQAAAAMDXXG7RBQ3IRP6PC2HTHL4KYRWMZYOUQGDEKYFDKBETZ6FDVZJBI",
         }
         """
-        
+
         let decoder = JSONDecoder()
-        XCTAssertNoThrow(try decoder.decode(RemoteConfiguration.self, from: configurationResponseString.data(using: .utf8)!))
+        XCTAssertNoThrow(try decoder.decode(RemoteConfiguration.self, from: XCTUnwrap(configurationResponseString.data(using: .utf8))))
     }
 }

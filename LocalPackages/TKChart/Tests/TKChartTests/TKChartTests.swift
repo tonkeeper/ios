@@ -1,8 +1,8 @@
-import XCTest
 @testable import TKChart
+import XCTest
 
 final class TKChartTests: XCTestCase {
-    func testExample() throws {
+    func testExample() {
         // XCTest Documentation
         // https://developer.apple.com/documentation/xctest
 

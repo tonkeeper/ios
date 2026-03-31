@@ -1,70 +1,71 @@
-import UIKit
-import TKUIKit
 import TKChart
+import TKUIKit
+import UIKit
 
 final class ChartViewController: UIViewController {
-  private let viewModel: ChartViewModel
-  
-  override func loadView() {
-    view = ChartView()
-  }
-  
-  var customView: ChartView {
-    view as! ChartView
-  }
-  
-  init(viewModel: ChartViewModel) {
-    self.viewModel = viewModel
-    super.init(nibName: nil, bundle: nil)
-  }
-  
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    
-    setupBindings()
-    setupViewEvents()
-    
-    viewModel.viewDidLoad()
-  }
-  
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  private func setupBindings() {
-    viewModel.didUpdateButtons = { [weak customView] model in
-      customView?.buttonsView.configure(model: model)
+    private let viewModel: ChartViewModel
+
+    override func loadView() {
+        view = ChartView()
     }
-    
-    viewModel.didUpdateChartData = { [weak customView] model in
-      customView?.chartView.configure(model: model)
-      customView?.errorView.isHidden = true
-      customView?.chartView.isHidden = false
+
+    var customView: ChartView {
+        view as! ChartView
     }
-    
-    viewModel.didUpdateHeader = { [weak customView] model in
-      customView?.headerView.configure(configuration: model)
+
+    init(viewModel: ChartViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
     }
-    
-    viewModel.didFailedUpdateChartData = { [weak customView] model in
-      customView?.errorView.configure(model: model)
-      customView?.errorView.isHidden = false
-      customView?.chartView.isHidden = true
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        setupBindings()
+        setupViewEvents()
+
+        viewModel.viewDidLoad()
     }
-  }
-  
-  private func setupViewEvents() {
-    customView.chartView.didSelectValue = { [weak viewModel] index in
-      UIImpactFeedbackGenerator(style: .soft).impactOccurred()
-      viewModel?.didSelectChartPoint(at: index)
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
     }
-    
-    customView.chartView.didDeselectValue = { [weak viewModel] in
-      viewModel?.didDeselectChartPoint()
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
-  }
+
+    private func setupBindings() {
+        viewModel.didUpdateButtons = { [weak customView] model in
+            customView?.buttonsView.configure(model: model)
+        }
+
+        viewModel.didUpdateChartData = { [weak customView] model in
+            customView?.chartView.configure(model: model)
+            customView?.errorView.isHidden = true
+            customView?.chartView.isHidden = false
+        }
+
+        viewModel.didUpdateHeader = { [weak customView] model in
+            customView?.headerView.configure(configuration: model)
+        }
+
+        viewModel.didFailedUpdateChartData = { [weak customView] model in
+            customView?.errorView.configure(model: model)
+            customView?.errorView.isHidden = false
+            customView?.chartView.isHidden = true
+        }
+    }
+
+    private func setupViewEvents() {
+        customView.chartView.didSelectValue = { [weak viewModel] index in
+            UIImpactFeedbackGenerator(style: .soft).impactOccurred()
+            viewModel?.didSelectChartPoint(at: index)
+        }
+
+        customView.chartView.didDeselectValue = { [weak viewModel] in
+            viewModel?.didDeselectChartPoint()
+        }
+    }
 }

@@ -1,5 +1,5 @@
 import Foundation
 
 struct BatteryAPIProvider {
-  var api: (_ isTestnet: Bool) -> BatteryAPI
+    var api: (_ network: Network) -> BatteryAPI?
 }

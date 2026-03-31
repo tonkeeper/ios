@@ -116,6 +116,25 @@ function o(t,e,r){var i,s=t;return"object"==typeof t?(s=t.slot,i=t):i={flatten:e
             lottiePlayer.loop = true;
             lottiePlayer.autoplay = true;
 
+            // Report loaded/error events to iOS
+            const post = (data) => {
+                try {
+                    if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.lottieEvents) {
+                        window.webkit.messageHandlers.lottieEvents.postMessage(data);
+                    }
+                } catch (e) {
+                    // noop
+                }
+            };
+
+            // lottie-player fires 'ready' when JSON is loaded and parsed
+            lottiePlayer.addEventListener('ready', () => post({ type: 'loaded' }));
+            lottiePlayer.addEventListener('load', () => post({ type: 'loaded' }));
+            lottiePlayer.addEventListener('error', (evt) => {
+                const message = (evt && (evt.detail || evt.message)) || 'Unknown error';
+                post({ type: 'error', message });
+            });
+
             document.body.appendChild(lottiePlayer);
         } else {
             const errorMessage = document.createElement('div');

@@ -1,64 +1,67 @@
 import UIKit
 
 public enum TKPopupMenuPosition {
-  case topRight
-  case bottomRight(inset: CGFloat)
-  case bottomLeft(inset: CGFloat)
+    case topRight
+    case bottomRight(inset: CGFloat)
+    case bottomLeft(inset: CGFloat)
 }
 
-public final class TKPopupMenuController {
-  
-  private static var window: UIWindow?
-  private static var menuViewController: TKPopupMenuViewController?
-  private static weak var sourceView: UIView?
-  
-  public static func show(sourceView: UIView,
-                          position: TKPopupMenuPosition,
-                          width: CGFloat,
-                          items: [TKPopupMenuItem],
-                          isSelectable: Bool = true,
-                          selectedIndex: Int?) {
-    self.sourceView = sourceView
-    guard let sourceWindow = sourceView.window else { return }
-    
-    let menuViewController = TKPopupMenuViewController()
-    menuViewController.didSelectItem = {
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      self.dismiss()
+public enum TKPopupMenuController {
+    private static var window: UIWindow?
+    private static var menuViewController: TKPopupMenuViewController?
+    private weak static var sourceView: UIView?
+
+    public static func show(
+        sourceView: UIView,
+        position: TKPopupMenuPosition,
+        width: CGFloat,
+        items: [TKPopupMenuItem],
+        isSelectable: Bool = true,
+        selectedIndex: Int?
+    ) {
+        self.sourceView = sourceView
+        guard let sourceWindow = sourceView.window else { return }
+
+        let menuViewController = TKPopupMenuViewController()
+        menuViewController.didSelectItem = {
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            self.dismiss()
+        }
+
+        menuViewController.didTapToDismiss = {
+            self.dismiss()
+        }
+
+        sourceWindow.addSubview(menuViewController.view)
+        menuViewController.view.frame = sourceWindow.bounds
+
+        menuViewController.showMenu(
+            items: items,
+            selectedIndex: selectedIndex,
+            sourceView: sourceView,
+            position: position,
+            maximumWidth: .menuWidth,
+            isSelectable: isSelectable,
+            duration: .animationDuration
+        )
+
+        self.menuViewController = menuViewController
     }
 
-    menuViewController.didTapToDismiss = {
-      self.dismiss()
+    public static func dismiss() {
+        menuViewController?.hideMenu(duration: .animationDuration, completion: {
+            menuViewController?.view.removeFromSuperview()
+            self.menuViewController = nil
+        })
     }
-    
-    sourceWindow.addSubview(menuViewController.view)
-    menuViewController.view.frame = sourceWindow.bounds
-    
-    menuViewController.showMenu(
-      items: items,
-      selectedIndex: selectedIndex,
-      sourceView: sourceView,
-      position: position,
-      maximumWidth: .menuWidth,
-      isSelectable: isSelectable,
-      duration: .animationDuration
-    )
-    
-    self.menuViewController = menuViewController
-  }
-  
-  public static func dismiss() {
-    menuViewController?.hideMenu(duration: .animationDuration, completion: {
-      menuViewController?.view.removeFromSuperview()
-      self.menuViewController = nil
-    })
-  }
 }
 
 private extension CGFloat {
-  static let menuWidth: CGFloat = 220
+    static var menuWidth: CGFloat {
+        Swift.min(300, UIScreen.main.bounds.width - 16 * 2)
+    }
 }
 
 private extension TimeInterval {
-  static let animationDuration: TimeInterval = 0.3
+    static let animationDuration: TimeInterval = 0.3
 }

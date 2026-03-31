@@ -1,33 +1,36 @@
-import UIKit
-import TKUIKit
-import TKLocalize
-import TKCore
-import KeeperCore
 import BigInt
+import KeeperCore
+import TKCore
+import TKLocalize
+import TKUIKit
+import UIKit
 
 struct WalletBalanceHeaderMapper {
-  
-  private let decimalAmountFormatter: DecimalAmountFormatter
-  private let dateFormatter: DateFormatter
-  
-  init(decimalAmountFormatter: DecimalAmountFormatter,
-       dateFormatter: DateFormatter) {
-    self.decimalAmountFormatter = decimalAmountFormatter
-    self.dateFormatter = dateFormatter
-  }
-  
-  func makeUpdatedDate(_ date: Date) -> String {
-    dateFormatter.dateFormat = "d MMM HH:mm"
-    return dateFormatter.string(from: date)
-  }
-  
-  func mapTotalBalance(totalBalance: TotalBalance?) -> String {
-    if let totalBalance = totalBalance {
-      return decimalAmountFormatter.format(amount: totalBalance.amount,
-                                           maximumFractionDigits: totalBalance.amount > 1000 ? 0 : 2,
-                                           currency: totalBalance.currency)
-    } else {
-      return "-"
+    private let amountFormatter: AmountFormatter
+    private let dateFormatter: DateFormatter
+
+    init(
+        amountFormatter: AmountFormatter,
+        dateFormatter: DateFormatter
+    ) {
+        self.amountFormatter = amountFormatter
+        self.dateFormatter = dateFormatter
     }
-  }
+
+    func makeUpdatedDate(_ date: Date) -> String {
+        dateFormatter.dateFormat = "d MMM HH:mm"
+        return dateFormatter.string(from: date)
+    }
+
+    func mapTotalBalance(totalBalance: TotalBalance?) -> String {
+        if let totalBalance = totalBalance {
+            return amountFormatter.format(
+                decimal: totalBalance.amount,
+                accessory: .currency(totalBalance.currency),
+                style: .compact
+            )
+        } else {
+            return "-"
+        }
+    }
 }

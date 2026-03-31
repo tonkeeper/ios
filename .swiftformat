@@ -1,0 +1,17 @@
+--swiftversion 5.0
+--indent 4
+--linebreaks lf
+--commas always
+--semicolons inline
+--stripunusedargs closure-only
+--trimwhitespace always
+--disable redundantType
+--disable redundantSelf
+--wrapparameters before-first
+--wraparguments before-first
+
+--exclude .build
+--exclude build
+--exclude .swiftpm
+--exclude LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Generated
+--exclude LocalPackages/core-swift/Packages/TonConnectAPI/Sources/TonConnectAPI

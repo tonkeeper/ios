@@ -1,7 +1,7 @@
-import Foundation
 import BigInt
+import Foundation
 
 public enum SendItem {
-  case token(Token, amount: BigUInt)
-  case nft(NFT)
+    case token(TonToken, amount: BigUInt)
+    case nft(NFT)
 }

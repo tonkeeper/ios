@@ -1,0 +1,8 @@
+#include "common.xcconfig"
+
+BUNDLE_DISPLAY_NAME = $(APP_NAME)
+ICON_NAME = AppIcon
+BASE_BUNDLE_IDENTIFIER = com.jbig.tonkeeper
+
+APP_VERSION = $(APP_VERSION_COMMON)
+BUILD_NUMBER = 1

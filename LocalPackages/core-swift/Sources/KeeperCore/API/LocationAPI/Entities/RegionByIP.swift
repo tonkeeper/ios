@@ -1,5 +1,5 @@
 import Foundation
 
 struct RegionByIP: Codable {
-  let countryCode: String
+    let countryCode: String
 }

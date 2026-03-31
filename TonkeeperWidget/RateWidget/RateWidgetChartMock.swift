@@ -6,26 +6,24 @@
 //
 
 import Foundation
-
-import Foundation
 import TKChart
 
-struct RateWidgetChartMock {
-  static var data: TKLineChartView.ChartData {
-    let jsonDecoder = JSONDecoder()
-    let stringData = mockDataString.data(using: .utf8)!
-    let model = try! jsonDecoder.decode(Data.self, from: stringData)
-    return TKLineChartView.ChartData(mode: .linear, coordinates: model.data)
-  }
-  
-  private struct Data: Decodable {
-    let data: [Coordinate]
-  }
-  
-  private struct Coordinate: TKChart.Coordinate, Decodable {
-    let x: Double
-    let y: Double
-  }
+enum RateWidgetChartMock {
+    static var data: TKLineChartView.ChartData {
+        let jsonDecoder = JSONDecoder()
+        let stringData = mockDataString.data(using: .utf8)!
+        let model = try! jsonDecoder.decode(Data.self, from: stringData)
+        return TKLineChartView.ChartData(mode: .linear, coordinates: model.data)
+    }
+
+    private struct Data: Decodable {
+        let data: [Coordinate]
+    }
+
+    private struct Coordinate: TKChart.Coordinate, Decodable {
+        let x: Double
+        let y: Double
+    }
 }
 
 private let mockDataString = """

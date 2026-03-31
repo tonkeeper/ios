@@ -1,62 +1,86 @@
-import UIKit
 import TKUIKit
+import UIKit
 
-final class ReceiveViewController: GenericViewViewController<ReceiveView> {
-  private let viewModel: ReceiveViewModel
-  
-  init(viewModel: ReceiveViewModel) {
-    self.viewModel = viewModel
-    super.init(nibName: nil, bundle: nil)
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    
-    setupBindings()
-    viewModel.viewDidLoad()
-  }
-  
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-    
-    customView.qrCodeView.setNeedsLayout()
-    customView.qrCodeView.layoutIfNeeded()
-    viewModel.generateQRCode(size: customView.qrCodeView.qrCodeImageView.frame.size)
-  }
+public final class ReceiveViewController: GenericViewViewController<ReceiveView> {
+    private var tabViewController: UIViewController?
+
+    private let viewModel: ReceiveViewModel
+
+    init(viewModel: ReceiveViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override public func viewDidLoad() {
+        super.viewDidLoad()
+
+        setup()
+        setupViewEvents()
+        setupBindings()
+        viewModel.viewDidLoad()
+    }
 }
 
 private extension ReceiveViewController {
-  func setupBindings() {
-    viewModel.didUpdateModel = { [weak customView] model in
-      customView?.configure(model: model)
+    func setup() {
+        setupNavigationBar()
     }
-    
-    viewModel.didGenerateQRCode = { [weak customView] image in
-      customView?.qrCodeView.qrCodeImageView.image = image
+
+    func setupBindings() {
+        viewModel.didUpdateTokenViewController = { [weak self] viewController, animated in
+            self?.setTabViewController(viewController, animated: animated)
+        }
+        viewModel.didUpdateSegmentedControl = { [weak self] model in
+            guard let self else { return }
+            if let model {
+                customView.navigationBar.centerView = customView.segmentedControl
+                customView.segmentedControl.tabs = model
+            } else {
+                customView.navigationBar.centerView = nil
+            }
+        }
+        viewModel.didChangeIndex = { [weak self] index in
+            self?.customView.segmentedControl.setSelectedIndex(index, animated: true)
+        }
     }
-    
-    viewModel.didTapCopy = { address in
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      UIPasteboard.general.string = address
+
+    func setupViewEvents() {
+        customView.segmentedControl.didSelectTab = { [weak self] from, to in
+            self?.viewModel.setActiveIndex(from, to)
+        }
     }
-    
-    viewModel.showToast = { configuration in
-      ToastPresenter.showToast(configuration: configuration)
+
+    private func setupNavigationBar() {
+        customView.navigationBar.leftViews = [
+            TKUINavigationBar.createSwipeDownButton { [weak self] in
+                self?.dismiss(animated: true)
+            },
+        ]
+        customView.navigationBar.centerView = customView.segmentedControl
     }
-    
-    viewModel.didTapShare = { [weak self] address in
-      let activityViewController = UIActivityViewController(
-        activityItems: [address as Any],
-        applicationActivities: nil
-      )
-      self?.present(
-        activityViewController,
-        animated: true
-      )
+
+    private func setTabViewController(
+        _ tabViewController: ReceiveTabViewController,
+        animated: Bool
+    ) {
+        addChild(tabViewController)
+        customView.pageContainer.addSubview(tabViewController.view)
+        tabViewController.didMove(toParent: self)
+
+        customView.navigationBar.scrollView = tabViewController.customView.scrollView
+
+        tabViewController.view.snp.makeConstraints { make in
+            make.edges.equalTo(customView.pageContainer)
+        }
+
+        self.tabViewController?.willMove(toParent: nil)
+        self.tabViewController?.view.removeFromSuperview()
+        self.tabViewController?.didMove(toParent: nil)
+        self.tabViewController = tabViewController
     }
-  }
 }

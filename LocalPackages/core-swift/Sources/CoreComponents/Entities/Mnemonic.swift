@@ -5,21 +5,21 @@ public struct Mnemonic: Equatable, Codable {
     public enum Error: Swift.Error {
         case incorrectMnemonicWords
     }
-    
+
     public var mnemonicWords: [String]
-    
+
     public init(mnemonicWords: [String]) throws {
-      if (!TonSwift.Mnemonic.mnemonicValidate(mnemonicArray: mnemonicWords) && !TonSwift.Mnemonic.isValidBip39Mnemonic(mnemonicArray: mnemonicWords)) {
+        if !TonSwift.Mnemonic.mnemonicValidate(mnemonicArray: mnemonicWords), !MnemonicLegacy.isValidBip39Mnemonic(mnemonicArray: mnemonicWords) {
             throw Error.incorrectMnemonicWords
         }
         self.mnemonicWords = mnemonicWords
     }
-    
+
     public init(from decoder: Decoder) throws {
         if var container = try? decoder.unkeyedContainer() {
             var array = [String]()
             while !container.isAtEnd {
-                array.append(try container.decode(String.self))
+                try array.append(container.decode(String.self))
             }
             self.mnemonicWords = array
             return

@@ -1,13 +1,7 @@
-import WidgetKit
 import KeeperCore
+import WidgetKit
 
 struct BalanceWidgetEntry: TimelineEntry {
-  let date: Date
-  let loadResult: Result<BalanceWidgetController.Model, BalanceWidgetController.Error>
-  
-  init(date: Date,
-       loadResult: Result<BalanceWidgetController.Model, BalanceWidgetController.Error>) {
-    self.date = date
-    self.loadResult = loadResult
-  }
+    let date: Date
+    let loadResult: Result<BalanceWidgetController.Model, BalanceWidgetController.Error>
 }

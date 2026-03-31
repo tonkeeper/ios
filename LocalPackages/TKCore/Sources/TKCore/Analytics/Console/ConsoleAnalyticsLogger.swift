@@ -1,14 +1,12 @@
 import Foundation
+import TKLogging
 
 public class ConsoleAnalyticsLogger: AnalyticsService {
-  
-  public init() {}
-  
-  public func logEvent(eventKey: EventKey, args: [String : Any]) {
-    print("🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵")
-    print("🪵ConsoleAnalyticsLogger🪵")
-    print("🪵Log event - \(eventKey.rawValue)🪵")
-    print("🪵Parameters - \(args)🪵")
-    print("🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵🪵")
-  }
+    private let logger = LogDomain.consoleAnalytics
+
+    public init() {}
+
+    public func logEvent(name: String, args: [String: Any]) {
+        logger.i("🌠 Event logged: \(name), args: \(args)")
+    }
 }

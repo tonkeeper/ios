@@ -18,13 +18,20 @@ public protocol APIProtocol: Sendable {
     /// - Remark: Generated from `#/paths//message/post(message)`.
     func message(_ input: Operations.message.Input) async throws -> Operations.message.Output
 }
+
 /// Convenience overloads for operation inputs.
 extension APIProtocol {
     /// - Remark: HTTP `GET /events`.
     /// - Remark: Generated from `#/paths//events/get(events)`.
-    public func events(query: Operations.events.Input.Query, headers: Operations.events.Input.Headers = .init())
-        async throws -> Operations.events.Output
-    { try await events(Operations.events.Input(query: query, headers: headers)) }
+    public func events(
+        query: Operations.events.Input.Query,
+        headers: Operations.events.Input.Headers = .init()
+    ) async throws -> Operations.events.Output {
+        try await events(Operations.events.Input(
+            query: query,
+            headers: headers
+        ))
+    }
     /// - Remark: HTTP `POST /message`.
     /// - Remark: Generated from `#/paths//message/post(message)`.
     public func message(
@@ -32,15 +39,24 @@ extension APIProtocol {
         headers: Operations.message.Input.Headers = .init(),
         body: Operations.message.Input.Body
     ) async throws -> Operations.message.Output {
-        try await message(Operations.message.Input(query: query, headers: headers, body: body))
+        try await message(Operations.message.Input(
+            query: query,
+            headers: headers,
+            body: body
+        ))
     }
 }
+
 /// Server URLs defined in the OpenAPI document.
 public enum Servers {
     public static func server1() throws -> Foundation.URL {
-        try Foundation.URL(validatingOpenAPIServerURL: "https://bridge.tonapi.io/bridge")
+        try Foundation.URL(
+            validatingOpenAPIServerURL: "https://bridge.tonapi.io/bridge",
+            variables: []
+        )
     }
 }
+
 /// Types generated from the components section of the OpenAPI document.
 public enum Components {
     /// Types generated from the `#/components/schemas` section of the OpenAPI document.
@@ -70,7 +86,10 @@ public enum Components {
                     /// - Parameters:
                     ///   - message:
                     ///   - statusCode:
-                    public init(message: Swift.String, statusCode: Swift.Int64) {
+                    public init(
+                        message: Swift.String,
+                        statusCode: Swift.Int64
+                    ) {
                         self.message = message
                         self.statusCode = statusCode
                     }
@@ -88,7 +107,8 @@ public enum Components {
                 public var json: Components.Responses.Response.Body.jsonPayload {
                     get throws {
                         switch self {
-                        case let .json(body): return body
+                        case let .json(body):
+                            return body
                         }
                     }
                 }
@@ -99,12 +119,15 @@ public enum Components {
             ///
             /// - Parameters:
             ///   - body: Received HTTP response body
-            public init(body: Components.Responses.Response.Body) { self.body = body }
+            public init(body: Components.Responses.Response.Body) {
+                self.body = body
+            }
         }
     }
     /// Types generated from the `#/components/headers` section of the OpenAPI document.
     public enum Headers {}
 }
+
 /// API operations, with input and output types, generated from `#/paths` in the OpenAPI document.
 public enum Operations {
     /// - Remark: HTTP `GET /events`.
@@ -123,7 +146,10 @@ public enum Operations {
                 /// - Parameters:
                 ///   - client_id:
                 ///   - last_event_id:
-                public init(client_id: Components.Parameters.clientIdParameter, last_event_id: Swift.String? = nil) {
+                public init(
+                    client_id: Components.Parameters.clientIdParameter,
+                    last_event_id: Swift.String? = nil
+                ) {
                     self.client_id = client_id
                     self.last_event_id = last_event_id
                 }
@@ -136,10 +162,9 @@ public enum Operations {
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(
-                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.events.AcceptableContentType>] =
-                        .defaultValues()
-                ) { self.accept = accept }
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.events.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
             }
             public var headers: Operations.events.Input.Headers
             /// Creates a new `Input`.
@@ -147,7 +172,10 @@ public enum Operations {
             /// - Parameters:
             ///   - query:
             ///   - headers:
-            public init(query: Operations.events.Input.Query, headers: Operations.events.Input.Headers = .init()) {
+            public init(
+                query: Operations.events.Input.Query,
+                headers: Operations.events.Input.Headers = .init()
+            ) {
                 self.query = query
                 self.headers = headers
             }
@@ -165,7 +193,8 @@ public enum Operations {
                     public var text_event_hyphen_stream: OpenAPIRuntime.HTTPBody {
                         get throws {
                             switch self {
-                            case let .text_event_hyphen_stream(body): return body
+                            case let .text_event_hyphen_stream(body):
+                                return body
                             }
                         }
                     }
@@ -176,7 +205,9 @@ public enum Operations {
                 ///
                 /// - Parameters:
                 ///   - body: Received HTTP response body
-                public init(body: Operations.events.Output.Ok.Body) { self.body = body }
+                public init(body: Operations.events.Output.Ok.Body) {
+                    self.body = body
+                }
             }
             /// OK
             ///
@@ -191,8 +222,13 @@ public enum Operations {
             public var ok: Operations.events.Output.Ok {
                 get throws {
                     switch self {
-                    case let .ok(response): return response
-                    default: try throwUnexpectedResponseStatus(expectedStatus: "ok", response: self)
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
                     }
                 }
             }
@@ -206,17 +242,25 @@ public enum Operations {
             case other(Swift.String)
             public init?(rawValue: Swift.String) {
                 switch rawValue.lowercased() {
-                case "text/event-stream": self = .text_event_hyphen_stream
-                default: self = .other(rawValue)
+                case "text/event-stream":
+                    self = .text_event_hyphen_stream
+                default:
+                    self = .other(rawValue)
                 }
             }
             public var rawValue: Swift.String {
                 switch self {
-                case let .other(string): return string
-                case .text_event_hyphen_stream: return "text/event-stream"
+                case let .other(string):
+                    return string
+                case .text_event_hyphen_stream:
+                    return "text/event-stream"
                 }
             }
-            public static var allCases: [Self] { [.text_event_hyphen_stream] }
+            public static var allCases: [Self] {
+                [
+                    .text_event_hyphen_stream
+                ]
+            }
         }
     }
     /// - Remark: HTTP `POST /message`.
@@ -238,7 +282,11 @@ public enum Operations {
                 ///   - client_id:
                 ///   - to:
                 ///   - ttl:
-                public init(client_id: Swift.String, to: Swift.String, ttl: Swift.Int64) {
+                public init(
+                    client_id: Swift.String,
+                    to: Swift.String,
+                    ttl: Swift.Int64
+                ) {
                     self.client_id = client_id
                     self.to = to
                     self.ttl = ttl
@@ -252,10 +300,9 @@ public enum Operations {
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(
-                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.message.AcceptableContentType>] =
-                        .defaultValues()
-                ) { self.accept = accept }
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.message.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
             }
             public var headers: Operations.message.Input.Headers
             /// - Remark: Generated from `#/paths/message/POST/requestBody`.
@@ -294,8 +341,13 @@ public enum Operations {
             public var ok: Components.Responses.Response {
                 get throws {
                     switch self {
-                    case let .ok(response): return response
-                    default: try throwUnexpectedResponseStatus(expectedStatus: "ok", response: self)
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
                     }
                 }
             }
@@ -312,8 +364,13 @@ public enum Operations {
             public var `default`: Components.Responses.Response {
                 get throws {
                     switch self {
-                    case let .`default`(_, response): return response
-                    default: try throwUnexpectedResponseStatus(expectedStatus: "default", response: self)
+                    case let .`default`(_, response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "default",
+                            response: self
+                        )
                     }
                 }
             }
@@ -323,17 +380,25 @@ public enum Operations {
             case other(Swift.String)
             public init?(rawValue: Swift.String) {
                 switch rawValue.lowercased() {
-                case "application/json": self = .json
-                default: self = .other(rawValue)
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
                 }
             }
             public var rawValue: Swift.String {
                 switch self {
-                case let .other(string): return string
-                case .json: return "application/json"
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
                 }
             }
-            public static var allCases: [Self] { [.json] }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
         }
     }
 }

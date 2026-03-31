@@ -1,63 +1,61 @@
-import UIKit
 import TKUIKit
+import UIKit
 
 final class NotificationBannerCell: UICollectionViewCell {
-  struct Configuration {
-    let bannerViewConfiguration: NotificationBannerView.Model
-    
-    init(bannerViewConfiguration: NotificationBannerView.Model) {
-      self.bannerViewConfiguration = bannerViewConfiguration
+    struct Configuration {
+        let bannerViewConfiguration: NotificationBannerView.Model
+
+        init(bannerViewConfiguration: NotificationBannerView.Model) {
+            self.bannerViewConfiguration = bannerViewConfiguration
+        }
+
+        static var `default`: Configuration {
+            Configuration(
+                bannerViewConfiguration: NotificationBannerView.Model(
+                    title: nil,
+                    caption: nil,
+                    appearance: .regular
+                )
+            )
+        }
     }
-    
-    static var `default`: Configuration {
-      Configuration(
+
+    var configuration = Configuration(
         bannerViewConfiguration: NotificationBannerView.Model(
-          title: nil,
-          caption: nil,
-          appearance: .regular
+            title: nil,
+            caption: nil,
+            appearance: .regular,
+            closeButton: nil
         )
-      )
+    ) {
+        didSet {
+            didUpdateConfiguration()
+            setNeedsLayout()
+            invalidateIntrinsicContentSize()
+        }
     }
-  }
-  
-  public var configuration = Configuration(
-    bannerViewConfiguration: NotificationBannerView.Model(
-      title: nil,
-      caption: nil,
-      appearance: .regular,
-      closeButton: nil
-    )) {
-    didSet {
-      didUpdateConfiguration()
-      setNeedsLayout()
-      invalidateIntrinsicContentSize()
+
+    let bannerView = NotificationBannerView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
     }
-  }
-  
-  let bannerView = NotificationBannerView()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  func configure(model: NotificationBannerView.Model) {
-    bannerView.configure(model: model)
-  }
-  
-  private func setup() {
-    contentView.addSubview(bannerView)
-    bannerView.snp.makeConstraints { make in
-      make.edges.equalTo(contentView)
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
-    didUpdateConfiguration()
-  }
-  
-  private func didUpdateConfiguration() {
-    bannerView.configure(model: configuration.bannerViewConfiguration)
-  }
+
+    private func setup() {
+        contentView.addSubview(bannerView)
+        bannerView.snp.makeConstraints { make in
+            make.edges.equalTo(contentView)
+        }
+        didUpdateConfiguration()
+    }
+
+    private func didUpdateConfiguration() {
+        bannerView.configure(model: configuration.bannerViewConfiguration)
+    }
 }

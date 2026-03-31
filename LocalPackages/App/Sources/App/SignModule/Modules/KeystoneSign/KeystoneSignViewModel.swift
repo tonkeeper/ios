@@ -1,178 +1,164 @@
-import UIKit
-import TKUIKit
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKLogging
+import TKUIKit
 import TonSwift
+import UIKit
 import URKit
 
 protocol KeystoneSignModuleOutput: AnyObject {
-  var didScanSignedTransaction: ((UR) -> Void)? { get set }
+    var didScanSignedTransaction: ((UR) -> Void)? { get set }
 }
 
 protocol KeystoneSignModuleInput: AnyObject {}
 
 protocol KeystoneSignViewModel: AnyObject {
-  var didUpdateModel: ((KeystoneSignView.Model) -> Void)? { get set }
-  
-  func viewDidLoad()
-  
-  func generateQRCodes(width: CGFloat)
+    var didUpdateModel: ((KeystoneSignView.Model) -> Void)? { get set }
+
+    func viewDidLoad()
+
+    func generateQRCodes(width: CGFloat)
 }
 
 final class KeystoneSignViewModelImplementation: KeystoneSignViewModel, KeystoneSignModuleOutput, KeystoneSignModuleInput {
-  
-  // MARK: - KeystoneSignModuleOutput
+    // MARK: - KeystoneSignModuleOutput
 
-  var didScanSignedTransaction: ((UR) -> Void)?
-  
-  // MARK: - KeystoneSignModuleInput
-  
-  // MARK: - KeystoneSignViewModel
-  
-  var didUpdateModel: ((KeystoneSignView.Model) -> Void)?
-  
-  func viewDidLoad() {
-    setup()
-    update()
-  }
+    var didScanSignedTransaction: ((UR) -> Void)?
 
-  func generateQRCodes(width: CGFloat) {
-    createQrCodeTask?.cancel()
-    let task = Task {
-      let encoder = UREncoder(keystoneSignController.transaction, maxFragmentLen: 1000)
-      
-      var chunks = Array<String>()
-      while (!encoder.isComplete) {
-        chunks.append(encoder.nextPart())
-      }
-            
-      var images = [UIImage]()
-      for chunk in chunks {
-        print(chunk)
-        guard let image = await self.qrCodeGenerator.generate(
-          string: chunk,
-          size: CGSize(width: width, height: width)
-        ) else { continue }
-        images.append(image)
-      }
-      let result = images
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        self.qrCodeImages = result
-        self.update()
-      }
+    // MARK: - KeystoneSignModuleInput
+
+    // MARK: - KeystoneSignViewModel
+
+    var didUpdateModel: ((KeystoneSignView.Model) -> Void)?
+
+    func viewDidLoad() {
+        setup()
+        update()
     }
-    self.createQrCodeTask = task
-  }
-  
-  // MARK: - State
-  
-  private var createQrCodeTask: Task<(), Never>?
-  private var qrCodeImages = [UIImage]()
-  
-  // MARK: - Dependencies
-  
-  private let keystoneSignController: KeystoneSignController
-  private let qrCodeGenerator: QRCodeGenerator
-  private let scannerOutput: ScannerViewModuleOutput
-  
-  // MARK: - Init
-  
-  init(keystoneSignController: KeystoneSignController,
-       qrCodeGenerator: QRCodeGenerator,
-       scannerOutput: ScannerViewModuleOutput) {
-    self.keystoneSignController = keystoneSignController
-    self.qrCodeGenerator = qrCodeGenerator
-    self.scannerOutput = scannerOutput
-  }
+
+    func generateQRCodes(width: CGFloat) {
+        createQrCodeTask?.cancel()
+        let task = Task {
+            let encoder = UREncoder(keystoneSignController.transaction, maxFragmentLen: 1000)
+
+            var chunks = [String]()
+            while !encoder.isComplete {
+                chunks.append(encoder.nextPart())
+            }
+
+            var images = [UIImage]()
+            for chunk in chunks {
+                Log.d("\(chunk)")
+                guard let image = await self.qrCodeGenerator.generate(
+                    string: chunk,
+                    size: CGSize(width: width, height: width)
+                ) else { continue }
+                images.append(image)
+            }
+            let result = images
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                self.qrCodeImages = result
+                self.update()
+            }
+        }
+        self.createQrCodeTask = task
+    }
+
+    // MARK: - State
+
+    private var createQrCodeTask: Task<Void, Never>?
+    private var qrCodeImages = [UIImage]()
+
+    // MARK: - Dependencies
+
+    private let keystoneSignController: KeystoneSignController
+    private let qrCodeGenerator: QRCodeGenerator
+    private let scannerOutput: ScannerViewModuleOutput
+
+    // MARK: - Init
+
+    init(
+        keystoneSignController: KeystoneSignController,
+        qrCodeGenerator: QRCodeGenerator,
+        scannerOutput: ScannerViewModuleOutput
+    ) {
+        self.keystoneSignController = keystoneSignController
+        self.qrCodeGenerator = qrCodeGenerator
+        self.scannerOutput = scannerOutput
+    }
 }
 
 private extension KeystoneSignViewModelImplementation {
-  func update() {
-    didUpdateModel?(createModel())
-  }
-  
-  func setup() {
-    scannerOutput.didScanUR = { [weak self] ur in
-      self?.didScanSignedTransaction?(ur)
+    func update() {
+        didUpdateModel?(createModel())
     }
-  }
-  
-  func createModel() -> KeystoneSignView.Model {
-    
-    KeystoneSignView.Model(
-      firstStepModel: KeystoneSignStepView.Model(contentModel: TKUIListItemView.Configuration(
-        contentConfiguration: TKUIListItemContentView.Configuration(
-          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: TKLocales.KeystoneSign.stepOne.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            tagViewModel: nil,
-            subtitle: nil,
-            description: TKLocales.KeystoneSign.stepOneDescription.withTextStyle(
-              .label1,
-              color: .Text.primary,
-              alignment: .left,
-              lineBreakMode: .byWordWrapping
-            )
-          ),
-          rightItemConfiguration: nil
-        ),
-        accessoryConfiguration: .none
-      ), isFirst: true, isLast: true),
-      secondStepModel: KeystoneSignStepView.Model(contentModel: TKUIListItemView.Configuration(
-        contentConfiguration: TKUIListItemContentView.Configuration(
-          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: TKLocales.KeystoneSign.stepTwo.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            tagViewModel: nil,
-            subtitle: nil,
-            description: TKLocales.KeystoneSign.stepTwoDescription.withTextStyle(
-              .label1,
-              color: .Text.primary,
-              alignment: .left,
-              lineBreakMode: .byWordWrapping
-            )
-          ),
-          rightItemConfiguration: nil
-        ),
-        accessoryConfiguration: .none
-      ), isFirst: true, isLast: true),
-      thirdStepModel: KeystoneSignStepView.Model(contentModel: TKUIListItemView.Configuration(
-        contentConfiguration: TKUIListItemContentView.Configuration(
-          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: TKLocales.KeystoneSign.stepThree.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            tagViewModel: nil,
-            subtitle: nil,
-            description: TKLocales.KeystoneSign.stepThreeDescription.withTextStyle(
-              .label1,
-              color: .Text.primary,
-              alignment: .left,
-              lineBreakMode: .byWordWrapping
-            )
-          ),
-          rightItemConfiguration: nil
-        ),
-        accessoryConfiguration: .none
-      ), isFirst: true, isLast: false),
-      qrCodeModel: TKFancyQRCodeView.Model(
-        images: qrCodeImages,
-        topString: TKLocales.KeystoneSign.transaction.uppercased(),
-        bottomLeftString: keystoneSignController.wallet.metaData.label
-      )
-    )
-  }
-}
 
-private extension String {
-  func split(by length: Int) -> [String] {
-    var startIndex = self.startIndex
-    var results = [Substring]()
-    
-    while startIndex < self.endIndex {
-      let endIndex = self.index(startIndex, offsetBy: length, limitedBy: self.endIndex) ?? self.endIndex
-      results.append(self[startIndex..<endIndex])
-      startIndex = endIndex
+    func setup() {
+        scannerOutput.didScanUR = { [weak self] ur in
+            self?.didScanSignedTransaction?(ur)
+        }
     }
-    
-    return results.map { String($0) }
-  }
+
+    func createModel() -> KeystoneSignView.Model {
+        KeystoneSignView.Model(
+            firstStepModel: createStepConfiguration(
+                title: TKLocales.KeystoneSign.stepOne,
+                description: TKLocales.KeystoneSign.stepOneDescription,
+                isFirst: true,
+                isLast: false
+            ),
+            secondStepModel: createStepConfiguration(
+                title: TKLocales.KeystoneSign.stepTwo,
+                description: TKLocales.KeystoneSign.stepTwoDescription,
+                isFirst: true,
+                isLast: false
+            ),
+            thirdStepModel: createStepConfiguration(
+                title: TKLocales.KeystoneSign.stepThree,
+                description: TKLocales.KeystoneSign.stepThreeDescription,
+                isFirst: true,
+                isLast: false
+            ),
+            qrCodeModel: TKFancyQRCodeView.Model(
+                images: qrCodeImages,
+                topString: TKLocales.KeystoneSign.transaction.uppercased(),
+                bottomLeftString: keystoneSignController.wallet.metaData.label
+            )
+        )
+    }
+
+    private func createStepConfiguration(
+        title: String,
+        description: String,
+        isFirst: Bool,
+        isLast: Bool
+    ) -> KeystoneSignStepView.Model {
+        KeystoneSignStepView.Model(
+            contentModel: TKListItemContentView.Configuration(
+                textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                    titleViewConfiguration: TKListItemTitleView.Configuration(
+                        title: title.withTextStyle(
+                            .body2,
+                            color: .Text.secondary
+                        ),
+                        numberOfLines: 0
+                    ),
+                    captionViewsConfigurations: [
+                        TKListItemTextView.Configuration(
+                            text: description,
+                            color: .Text.primary,
+                            textStyle: .label1,
+                            alignment: .left,
+                            lineBreakMode: .byWordWrapping,
+                            numberOfLines: 0
+                        ),
+                    ]
+                )
+            ),
+            isFirst: isFirst,
+            isLast: isLast
+        )
+    }
 }

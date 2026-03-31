@@ -1,123 +1,125 @@
-import UIKit
-import TKCoordinator
-import TKUIKit
 import KeeperCore
+import TKCoordinator
 import TKLocalize
+import TKUIKit
+import UIKit
 
 final class PasscodeCreateCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  
-  var didCreatePasscode: ((String) -> Void)?
-  var didCancel: (() -> Void)?
-  
-  private let passcodeNavigationController = UINavigationController()
-  private var passcodeInputs = [PasscodeInputModuleInput]()
-  
-  override init(router: NavigationControllerRouter) {
-    super.init(router: router)
-    passcodeNavigationController.setNavigationBarHidden(true, animated: false)
-  }
-  
-  override func start() {
-    open()
-  }
+    var didCreatePasscode: ((String) -> Void)?
+    var didCancel: (() -> Void)?
+
+    private let passcodeNavigationController = UINavigationController()
+    private var passcodeInputs = [PasscodeInputModuleInput]()
+
+    override init(router: NavigationControllerRouter) {
+        super.init(router: router)
+        passcodeNavigationController.setNavigationBarHidden(true, animated: false)
+    }
+
+    override func start() {
+        open()
+    }
 }
 
 private extension PasscodeCreateCoordinator {
-  func open() {
-    let passcodeModule = PasscodeAssembly.module(
-      navigationController: passcodeNavigationController
-    )
-    
-    passcodeModule.output.didTapBackspace = { [weak self] in
-      self?.passcodeInputs.last?.didTapBackspace()
-    }
-    
-    passcodeModule.output.didTapDigit = { [weak self] digit in
-      self?.passcodeInputs.last?.didTapDigit(digit)
-    }
-    
-    if router.rootViewController.viewControllers.isEmpty {
-      passcodeModule.view.setupLeftCloseButton { [weak self] in
-        self?.didCancel?()
-      }
-    } else {
-      passcodeModule.view.setupBackButton()
+    func open() {
+        let passcodeModule = PasscodeAssembly.module(
+            navigationController: passcodeNavigationController
+        )
+
+        passcodeModule.output.didTapBackspace = { [weak self] in
+            self?.passcodeInputs.last?.didTapBackspace()
+        }
+
+        passcodeModule.output.didTapDigit = { [weak self] digit in
+            self?.passcodeInputs.last?.didTapDigit(digit)
+        }
+
+        if router.rootViewController.viewControllers.isEmpty {
+            passcodeModule.view.setupLeftCloseButton { [weak self] in
+                self?.didCancel?()
+            }
+        } else {
+            passcodeModule.view.setupBackButton()
+        }
+
+        router.push(
+            viewController: passcodeModule.view,
+            animated: true
+        )
+        openCreatePasscode()
     }
 
-    router.push(viewController: passcodeModule.view,
-                animated: true)
-    openCreatePasscode()
-  }
-  
-  func openCreatePasscode() {
-    let passcodeInput = PasscodeInputAssembly.module(
-      title: TKLocales.Passcode.create
-    )
-    
-    passcodeInput.output.validateInput = { passcode in
-      return .none
+    func openCreatePasscode() {
+        let passcodeInput = PasscodeInputAssembly.module(
+            title: TKLocales.Passcode.create
+        )
+
+        passcodeInput.output.validateInput = { _ in
+            .none
+        }
+
+        passcodeInput.output.didFinish = { [weak self] passcode in
+            self?.openReenterPasscode(enteredPasscode: passcode)
+        }
+
+        passcodeInputs.append(passcodeInput.input)
+
+        passcodeNavigationController.pushViewController(
+            passcodeInput.viewController,
+            animated: true
+        )
     }
-    
-    passcodeInput.output.didFinish = { [weak self] passcode in
-      self?.openReenterPasscode(enteredPasscode: passcode)
+
+    func openReenterPasscode(enteredPasscode: String) {
+        let passcodeInput = PasscodeInputAssembly.module(
+            title: TKLocales.Passcode.reenter
+        )
+
+        passcodeInput.output.validateInput = { passcode in
+            passcode == enteredPasscode ? .success : .failed
+        }
+
+        passcodeInput.output.didFinish = { [weak self] passcode in
+            self?.didCreatePasscode?(passcode)
+        }
+
+        passcodeInput.output.didFailed = { [weak self] in
+            self?.passcodeNavigationController.popViewController(animated: true)
+            _ = self?.passcodeInputs.popLast()
+        }
+
+        passcodeInputs.append(passcodeInput.input)
+
+        passcodeNavigationController.pushViewController(
+            passcodeInput.viewController,
+            animated: true
+        )
     }
-    
-    passcodeInputs.append(passcodeInput.input)
-    
-    passcodeNavigationController.pushViewController(
-      passcodeInput.viewController,
-      animated: true
-    )
-  }
-  
-  func openReenterPasscode(enteredPasscode: String) {
-    let passcodeInput = PasscodeInputAssembly.module(
-      title: TKLocales.Passcode.reenter
-    )
-    
-    passcodeInput.output.validateInput = { passcode in
-      return passcode == enteredPasscode ? .success : .failed
-    }
-    
-    passcodeInput.output.didFinish = { [weak self] passcode in
-      self?.didCreatePasscode?(passcode)
-    }
-    
-    passcodeInput.output.didFailed = { [weak self] in
-      self?.passcodeNavigationController.popViewController(animated: true)
-      _ = self?.passcodeInputs.popLast()
-    }
-    
-    passcodeInputs.append(passcodeInput.input)
-    
-    passcodeNavigationController.pushViewController(
-      passcodeInput.viewController,
-      animated: true
-    )
-  }
 }
 
 extension PasscodeCreateCoordinator {
-  static func present(parentCoordinator: Coordinator,
-                      parentRouter: NavigationControllerRouter,
-                      repositoriesAssembly: KeeperCore.RepositoriesAssembly,
-                      onCancel: @escaping () -> Void,
-                      onCreate: @escaping (String) -> Void) {
-    let coordinator = PasscodeCreateCoordinator(router: parentRouter)
-    
-    coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
-      parentRouter.dismiss(animated: true) {
-        parentCoordinator?.removeChild(coordinator)
-        onCancel()
-      }
-    }
-    
-    coordinator.didCreatePasscode = { passcode in
-      onCreate(passcode)
-    }
+    static func present(
+        parentCoordinator: Coordinator,
+        parentRouter: NavigationControllerRouter,
+        repositoriesAssembly: KeeperCore.RepositoriesAssembly,
+        onCancel: @escaping () -> Void,
+        onCreate: @escaping (String) -> Void
+    ) {
+        let coordinator = PasscodeCreateCoordinator(router: parentRouter)
 
-    parentCoordinator.addChild(coordinator)
-    coordinator.start()
-  }
+        coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
+            parentRouter.dismiss(animated: true) {
+                parentCoordinator?.removeChild(coordinator)
+                onCancel()
+            }
+        }
+
+        coordinator.didCreatePasscode = { passcode in
+            onCreate(passcode)
+        }
+
+        parentCoordinator.addChild(coordinator)
+        coordinator.start()
+    }
 }
-

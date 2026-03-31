@@ -1,114 +1,107 @@
-import Foundation
 import BigInt
+import Foundation
 import KeeperCore
 
 struct TokenDetailsMapper {
-  private let amountFormatter: AmountFormatter
-  private let decimalAmountFormatter: DecimalAmountFormatter
-  private let rateConverter: RateConverter
-  
-  init(amountFormatter: AmountFormatter,
-       decimalAmountFormatter: DecimalAmountFormatter,
-       rateConverter: RateConverter) {
-    self.amountFormatter = amountFormatter
-    self.decimalAmountFormatter = decimalAmountFormatter
-    self.rateConverter = rateConverter
-  }
-  
-  func mapTonBalance(tonBalance: ConvertedTonBalance?, currency: Currency?) -> (tokenAmount: String, convertedAmount: String?) {
-    guard let amount = tonBalance?.tonBalance.amount else {
-      return ("0", nil)
-    }
-    let bigUIntAmount = BigUInt(amount)
+    private let amountFormatter: AmountFormatter
+    private let rateConverter: RateConverter
 
-    let formattedAmount = amountFormatter.formatAmount(
-      bigUIntAmount,
-      fractionDigits: TonInfo.fractionDigits,
-      maximumFractionDigits: TonInfo.fractionDigits,
-      symbol: TonInfo.symbol
-    )
-    var converted: String?
-    if let currency, let convertedAmount = tonBalance?.converted {
-      converted = decimalAmountFormatter.format(
-        amount: convertedAmount,
-        maximumFractionDigits: 2,
-        currency: currency
-      )
+    init(
+        amountFormatter: AmountFormatter,
+        rateConverter: RateConverter
+    ) {
+        self.amountFormatter = amountFormatter
+        self.rateConverter = rateConverter
     }
-    
-    return (formattedAmount, converted)
-  }
-  
-  func mapJettonBalance(jettonBalance: ConvertedJettonBalance, currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
-    let amount = amountFormatter.formatAmount(
-      jettonBalance.jettonBalance.quantity,
-      fractionDigits: jettonBalance.jettonBalance.item.jettonInfo.fractionDigits,
-      maximumFractionDigits: jettonBalance.jettonBalance.item.jettonInfo.fractionDigits,
-      symbol: jettonBalance.jettonBalance.item.jettonInfo.symbol
-    )
-    let converted = decimalAmountFormatter.format(
-      amount: jettonBalance.converted,
-      maximumFractionDigits: 2,
-      currency: currency
-    )
-    return (amount, converted)
-  }
-  
-  func mapTonBalance(amount: Int64,
-                     tonRates: [Rates.Rate],
-                     currency: Currency) -> (tokenAmount: String, convertedAmount: String?) {
-    let bigUIntAmount = BigUInt(amount)
-    let amount = amountFormatter.formatAmount(
-      bigUIntAmount,
-      fractionDigits: TonInfo.fractionDigits,
-      maximumFractionDigits: TonInfo.fractionDigits,
-      symbol: TonInfo.symbol
-    )
-    
-    var convertedAmount: String?
-    if let rate = tonRates.first(where: { $0.currency == currency }) {
-      let converted = rateConverter.convert(
-        amount: bigUIntAmount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rate
-      )
-      convertedAmount = amountFormatter.formatAmount(
-        converted.amount,
-        fractionDigits: converted.fractionLength,
-        maximumFractionDigits: 2,
-        currency: currency
-      )
+
+    func mapTonBalance(tonBalance: ProcessedBalanceTonItem?, currency: Currency?) -> (
+        tokenAmount: String,
+        convertedAmount: String?
+    ) {
+        guard let amount = tonBalance?.amount else {
+            return ("0", nil)
+        }
+        let bigUIntAmount = BigUInt(amount)
+
+        let formattedAmount = amountFormatter.format(
+            amount: bigUIntAmount,
+            fractionDigits: TonInfo.fractionDigits,
+            accessory: .symbol(TonInfo.symbol),
+            isNegative: false,
+            style: .exactValue
+        )
+        var converted: String?
+        if let currency, let convertedAmount = tonBalance?.converted {
+            converted = amountFormatter.format(
+                decimal: convertedAmount,
+                accessory: .currency(currency),
+                style: .compact
+            )
+        }
+
+        return (formattedAmount, converted)
     }
-    
-    return (amount, convertedAmount)
-  }
-  
-  func mapJettonBalance(jettonBalance: JettonBalance?,
-                        currency: Currency?) -> (tokenAmount: String, convertedAmount: String?) {
-    guard let jettonBalance else {
-      return ("0", nil)
+
+    func mapBalance(
+        amount: BigUInt,
+        converted: Decimal,
+        fractionDigits: Int,
+        symbol: String,
+        currency: Currency
+    ) -> (tokenAmount: String, convertedAmount: String?) {
+        let amount = amountFormatter.format(
+            amount: amount,
+            fractionDigits: fractionDigits,
+            accessory: .symbol(symbol),
+            isNegative: false,
+            style: .compact
+        )
+        let convertedFormatted = amountFormatter.format(
+            decimal: converted,
+            accessory: .currency(currency),
+            style: .compact
+        )
+        return (amount, convertedFormatted)
     }
-    let amount = amountFormatter.formatAmount(
-      jettonBalance.quantity,
-      fractionDigits: jettonBalance.item.jettonInfo.fractionDigits,
-      maximumFractionDigits: jettonBalance.item.jettonInfo.fractionDigits,
-      symbol: jettonBalance.item.jettonInfo.symbol
-    )
-    
-    var convertedAmount: String?
-    if let currency, let rate = jettonBalance.rates[currency] {
-      let converted = rateConverter.convert(
-        amount: jettonBalance.quantity,
-        amountFractionLength: jettonBalance.item.jettonInfo.fractionDigits,
-        rate: rate
-      )
-      convertedAmount = amountFormatter.formatAmount(
-        converted.amount,
-        fractionDigits: converted.fractionLength,
-        maximumFractionDigits: 2,
-        currency: currency
-      )
+
+    func mapJettonBalance(
+        jettonBalance: ProcessedBalanceJettonItem?,
+        currency: Currency?
+    ) -> (tokenAmount: String, convertedAmount: String?) {
+        guard let jettonBalance else {
+            return ("0", nil)
+        }
+
+        let amount = amountFormatter.format(
+            amount: jettonBalance.amount,
+            fractionDigits: jettonBalance.jetton.jettonInfo.fractionDigits,
+            accessory: jettonBalance.jetton.jettonInfo.symbol.flatMap { .symbol($0) } ?? .none,
+            isNegative: false,
+            style: .exactValue
+        )
+
+        let convertedAmount = amountFormatter.format(
+            decimal: jettonBalance.converted,
+            accessory: currency.flatMap { .currency($0) } ?? .none,
+            style: .compact
+        )
+        return (amount, convertedAmount)
     }
-    return (amount, convertedAmount)
-  }
+
+    func mapEphenaBalance(balance: ProcessedBalanceEthenaItem?) -> (tokenAmount: String, convertedAmount: String?) {
+        let amount = amountFormatter.format(
+            amount: balance?.amount ?? 0,
+            fractionDigits: USDe.fractionDigits,
+            accessory: .symbol(USDe.symbol),
+            isNegative: false,
+            style: .exactValue
+        )
+
+        let convertedAmount = amountFormatter.format(
+            decimal: balance?.converted ?? 0,
+            accessory: .currency((balance?.currency ?? .USD)),
+            style: .compact
+        )
+        return (amount, convertedAmount)
+    }
 }

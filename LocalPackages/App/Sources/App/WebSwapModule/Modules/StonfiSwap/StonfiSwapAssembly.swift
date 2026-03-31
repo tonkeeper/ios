@@ -1,26 +1,28 @@
 import Foundation
-import TKCore
 import KeeperCore
+import TKCore
 
 struct StonfiSwapAssembly {
-  private init() {}
-  static func module(wallet: Wallet,
-                     fromToken: String? = nil,
-                     toToken: String? = nil,
-                     keeperCoreAssembly: KeeperCore.MainAssembly,
-                     messageHandler: StonfiSwapMessageHandler)
-  -> MVVMModule<StonfiSwapViewController, Void, Void> {
-
-    let viewModel = StonfiSwapViewModelImplementation(
-      wallet: wallet,
-      configuration: keeperCoreAssembly.configurationAssembly.configuration,
-      messageHandler: messageHandler,
-      fromToken: fromToken,
-      toToken: toToken
+    private init() {}
+    static func module(
+        wallet: Wallet,
+        fromToken: String? = nil,
+        toToken: String? = nil,
+        keeperCoreAssembly: KeeperCore.MainAssembly,
+        messageHandler: StonfiSwapMessageHandler
     )
-    let viewController = StonfiSwapViewController(
-      viewModel: viewModel
-    )
-    return .init(view: viewController, output: Void(), input: Void())
-  }
+        -> MVVMModule<StonfiSwapViewController, Void, Void>
+    {
+        let viewModel = StonfiSwapViewModelImplementation(
+            wallet: wallet,
+            configuration: keeperCoreAssembly.configurationAssembly.configuration,
+            messageHandler: messageHandler,
+            fromToken: fromToken,
+            toToken: toToken
+        )
+        let viewController = StonfiSwapViewController(
+            viewModel: viewModel
+        )
+        return .init(view: viewController, output: (), input: ())
+    }
 }

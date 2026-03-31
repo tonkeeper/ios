@@ -1,11 +1,9 @@
-import Foundation
+import UIKit
 
-public enum TKFeatureFlags {
-  public static let provider: TKFeatureFlagsProvider = {
-    FirebaseFeatureFlagsProvider()
-  }()
-  
-  public static let localProvider: TKLocalFeatureFlagsProvider = {
-    UserDefaultsLocalFeatureFlagsProvider()
-  }()
+public protocol TKFeatureFlags: AnyObject {
+    subscript(flag: FeatureFlag) -> Bool { get set }
+    func resetValue(for flag: FeatureFlag)
+    func loadRemoteConfig() async
+
+    var allValues: [FeatureFlag: FeatureFlagValue] { get }
 }

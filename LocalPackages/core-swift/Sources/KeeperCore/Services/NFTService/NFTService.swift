@@ -2,53 +2,56 @@ import Foundation
 import TonSwift
 
 public protocol NFTService {
-  func loadNFTs(addresses: [Address], isTestnet: Bool) async throws -> [Address: NFT]
-  func getNFT(address: Address, isTestnet: Bool) throws -> NFT
-  func saveNFT(nft: NFT, isTestnet: Bool) throws
-  func changeSuspiciousState(_ nft: NFT, isTestnet: Bool, isScam: Bool) async throws
+    func loadNFTs(addresses: [Address], network: Network) async throws -> [Address: NFT]
+    func getNFT(address: Address, network: Network) throws -> NFT
+    func saveNFT(nft: NFT, network: Network) throws
+    func changeSuspiciousState(_ nft: NFT, network: Network, isScam: Bool) async throws
 }
 
 final class NFTServiceImplementation: NFTService {
-  private let apiProvider: APIProvider
-  private let scamAPI: ScamAPI
-  private let nftRepository: NFTRepository
-  
-  init(apiProvider: APIProvider,
-       scamAPI: ScamAPI,
-       nftRepository: NFTRepository) {
-    self.apiProvider = apiProvider
-    self.scamAPI = scamAPI
-    self.nftRepository = nftRepository
-  }
-  
-  func loadNFTs(addresses: [Address], isTestnet: Bool) async throws -> [Address: NFT] {
-    let nfts = try await apiProvider.api(isTestnet).getNftItemsByAddresses(addresses)
-    var result = [Address: NFT]()
-    nfts.forEach {
-      try? nftRepository.saveNFT(
-        $0,
-        key: FriendlyAddress(address: $0.address, testOnly: isTestnet, bounceable: true).toShort()
-      )
-      result[$0.address] = $0
+    private let apiProvider: APIProvider
+    private let scamAPI: ScamAPI
+    private let nftRepository: NFTRepository
+
+    init(
+        apiProvider: APIProvider,
+        scamAPI: ScamAPI,
+        nftRepository: NFTRepository
+    ) {
+        self.apiProvider = apiProvider
+        self.scamAPI = scamAPI
+        self.nftRepository = nftRepository
     }
-    return result
-  }
 
-  func getNFT(address: Address, isTestnet: Bool) throws -> NFT {
-    try nftRepository.getNFT(
-      FriendlyAddress(address: address, testOnly: isTestnet, bounceable: true).toShort()
-    )
-  }
-  
-  func saveNFT(nft: NFT, isTestnet: Bool) throws {
-    try nftRepository.saveNFT(
-      nft,
-      key: FriendlyAddress(address: nft.address, testOnly: isTestnet, bounceable: true).toShort()
-    )
-  }
+    func loadNFTs(addresses: [Address], network: Network) async throws -> [Address: NFT] {
+        let isTestnet = network == .testnet
+        let nfts = try await apiProvider.api(network).getNftItemsByAddresses(addresses)
+        var result = [Address: NFT]()
+        for nft in nfts {
+            try? nftRepository.saveNFT(
+                nft,
+                key: FriendlyAddress(address: nft.address, testOnly: isTestnet, bounceable: true).toShort()
+            )
+            result[nft.address] = nft
+        }
+        return result
+    }
 
-  func changeSuspiciousState(_ nft: NFT, isTestnet: Bool, isScam: Bool) async throws {
-    guard !isTestnet else { return }
-    try await scamAPI.changeSuspiciousState(nft, isScam: isScam, isTestnet: isTestnet)
-  }
+    func getNFT(address: Address, network: Network) throws -> NFT {
+        try nftRepository.getNFT(
+            FriendlyAddress(address: address, testOnly: network == .testnet, bounceable: true).toShort()
+        )
+    }
+
+    func saveNFT(nft: NFT, network: Network) throws {
+        try nftRepository.saveNFT(
+            nft,
+            key: FriendlyAddress(address: nft.address, testOnly: network == .testnet, bounceable: true).toShort()
+        )
+    }
+
+    func changeSuspiciousState(_ nft: NFT, network: Network, isScam: Bool) async throws {
+        guard network == .mainnet else { return }
+        try await scamAPI.changeSuspiciousState(nft, isScam: isScam, network: network)
+    }
 }

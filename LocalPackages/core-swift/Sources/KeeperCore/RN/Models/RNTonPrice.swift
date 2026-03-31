@@ -2,5 +2,5 @@ import Foundation
 import TonSwift
 
 public struct RNTonPrice: Codable {
-  public let currency: String
+    public let currency: String
 }

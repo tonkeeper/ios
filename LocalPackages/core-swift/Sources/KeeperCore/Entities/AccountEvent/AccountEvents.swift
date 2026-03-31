@@ -1,9 +1,9 @@
 import Foundation
-import TonSwift
+@preconcurrency import TonSwift
 
-public struct AccountEvents: Codable {
-  public let address: Address
-  public let events: [AccountEvent]
-  public let startFrom: Int64
-  public let nextFrom: Int64
+public struct AccountEvents: Codable, Sendable {
+    public let address: Address
+    public let events: [AccountEvent]
+    public let startFrom: Int64
+    public let nextFrom: Int64
 }

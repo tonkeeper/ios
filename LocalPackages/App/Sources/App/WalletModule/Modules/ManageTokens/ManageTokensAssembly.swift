@@ -1,19 +1,23 @@
 import Foundation
-import TKCore
 import KeeperCore
+import TKCore
 
 struct ManageTokensAssembly {
-  private init() {}
-  static func module(model: ManageTokensModel,
-                     mapper: ManageTokensListMapper,
-                     updateQueue: DispatchQueue) -> MVVMModule<ManageTokensViewController, ManageTokensModuleOutput, Void> {
-    let viewModel = ManageTokensViewModelImplementation(
-      model: model,
-      mapper: mapper,
-      updateQueue: updateQueue
-    )
-    
-    let viewController = ManageTokensViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: Void())
-  }
+    private init() {}
+    static func module(
+        model: ManageTokensModel,
+        mapper: ManageTokensListMapper,
+        updateQueue: DispatchQueue,
+        configuration: Configuration
+    ) -> MVVMModule<ManageTokensViewController, Void, Void> {
+        let viewModel = ManageTokensViewModelImplementation(
+            model: model,
+            mapper: mapper,
+            updateQueue: updateQueue,
+            configuration: configuration
+        )
+
+        let viewController = ManageTokensViewController(viewModel: viewModel)
+        return .init(view: viewController, output: (), input: ())
+    }
 }

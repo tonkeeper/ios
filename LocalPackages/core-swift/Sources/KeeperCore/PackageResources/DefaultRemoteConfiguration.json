@@ -109,6 +109,7 @@
     "web_swaps_referral_address": "0:f4684b10a661eaa395f87d4a660e6dfc3bec187a8b24f6f362c0c6b1d20f1b5d",
     "mercuryo_otc_id": "https://api.mercuryo.io/v1.6/get-otc-id",
     "scam_api_url": "https://scam.tonkeeper.com",
+    "tonkeeper_api_url": "https://api.tonkeeper.com",
     "mam_learn_more_url": "https://tonkeeper.helpscoutdocs.com",
     "mam_max_wallets_without_pro": 3,
     "multisig_help_url": "https://tonkeeper.helpscoutdocs.com",
@@ -228,6 +229,7 @@
     "web_swaps_referral_address": "0:f4684b10a661eaa395f87d4a660e6dfc3bec187a8b24f6f362c0c6b1d20f1b5d",
     "mercuryo_otc_id": "https://api.mercuryo.io/v1.6/get-otc-id",
     "scam_api_url": "https://scam.tonkeeper.com",
+    "tonkeeper_api_url": "https://api.tonkeeper.com",
     "mam_learn_more_url": "https://tonkeeper.helpscoutdocs.com",
     "mam_max_wallets_without_pro": 3,
     "multisig_help_url": "https://tonkeeper.helpscoutdocs.com",
@@ -253,5 +255,16 @@
       "disable_ledger": false,
       "disable_v5r1": false
     }
+  },
+  "tetra": {
+    "disable_battery": true,
+    "tonapiV2Endpoint": "https://tetra.tonapi.io",
+    "tonapiMainnetHost": "https://keeper.tonapi.io",
+    "tonApiV2Key": "AF77F5JNEUSNXPQAAAAMDXXG7RBQ3IRP6PC2HTHL4KYRWMZYOUQGDEKYFDKBETZ6FDVZJBI",
+    "tonkeeperNewsUrl": "https://t.me/tonkeeper_ru",
+    "telegram_global": "https://t.me/tonkeeper_ru",
+    "tonCommunityUrl": "https://t.me/toncoin_rus",
+    "tonCommunityChatUrl": "https://t.me/toncoin_rus_chat",
+    "faq_url": "https://tonkeeper.helpscoutdocs.com"
   }
 }

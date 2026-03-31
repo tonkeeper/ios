@@ -1,33 +1,33 @@
 import Foundation
+import KeeperCore
 import TKLocalize
 
 enum BatterySupportedTransaction: String, CaseIterable {
-  case swap
-  case jetton
-  case nft
-  
-  var name: String {
-    switch self {
-    case .swap:
-      TKLocales.Battery.Settings.Items.Swaps.title
-    case .jetton:
-      TKLocales.Battery.Settings.Items.Token.title
-    case .nft:
-      TKLocales.Battery.Settings.Items.Nft.title
+    case swap
+    case jetton
+    case nft
+    case trc20
+
+    var name: String {
+        switch self {
+        case .swap:
+            TKLocales.Battery.Settings.Items.Swaps.title
+        case .jetton:
+            TKLocales.Battery.Settings.Items.Token.title
+        case .nft:
+            TKLocales.Battery.Settings.Items.Nft.title
+        case .trc20:
+            TKLocales.Battery.Settings.Items.Trc20.title
+        }
     }
-  }
-  
-  func caption(chargesCount: Int) -> String {
-    let perPart: String
-    switch self {
-    case .swap:
-      perPart = TKLocales.Battery.Settings.Items.Swaps.caption
-    case .jetton:
-      perPart = TKLocales.Battery.Settings.Items.Token.caption
-    case .nft:
-      perPart = TKLocales.Battery.Settings.Items.Nft.caption
+}
+
+extension Wallet {
+    var supportedBatteryTransactions: [BatterySupportedTransaction] {
+        var transactions: [BatterySupportedTransaction] = [.swap, .jetton, .nft]
+        if isTronTurnOn {
+            transactions.append(.trc20)
+        }
+        return transactions
     }
-    
-    return "\u{2248} \(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount)) \(perPart)"
-  }
 }

@@ -1,73 +1,77 @@
+import BigInt
 import Foundation
 import TonSwift
-import BigInt
 
 public struct ChangeDNSRecordTransferBuilder {
-  private init() {}
-  
-  public static func createLinkDNSWalletTransfer(wallet: Wallet,
-                                                 seqno: UInt64,
-                                                 nftAddress: Address,
-                                                 linkAddress: Address?,
-                                                 linkAmount: BigUInt,
-                                                 timeout: UInt64?,
-                                                 messageType: MessageType) throws -> WalletTransfer {
-    try WalletTransferBuilder.buildWalletTransfer(
-      wallet: wallet,
-      sender: try wallet.address,
-      seqno: seqno,
-      internalMessages: { sender in
-        let internalMessage = try DNSLinkMessage.internalMessage(
-          nftAddress: nftAddress,
-          linkAddress: linkAddress,
-          dnsLinkAmount: linkAmount,
-          stateInit: try? wallet.stateInit
+    private init() {}
+
+    public static func createLinkDNSWalletTransfer(
+        wallet: Wallet,
+        seqno: UInt64,
+        nftAddress: Address,
+        linkAddress: Address?,
+        linkAmount: BigUInt,
+        timeout: UInt64?,
+        messageType: MessageType
+    ) throws -> WalletTransfer {
+        try WalletTransferBuilder.buildWalletTransfer(
+            wallet: wallet,
+            sender: wallet.address,
+            seqno: seqno,
+            internalMessages: { _ in
+                let internalMessage = try DNSLinkMessage.internalMessage(
+                    nftAddress: nftAddress,
+                    linkAddress: linkAddress,
+                    dnsLinkAmount: linkAmount,
+                    stateInit: try? wallet.stateInit
+                )
+                return [internalMessage]
+            },
+            timeout: timeout,
+            messageType: messageType
         )
-        return [internalMessage]
-      },
-      timeout: timeout,
-      messageType: messageType
-    )
-  }
-  
-  public static func createRenewDNSWalletTransfer(wallet: Wallet,
-                                                  seqno: UInt64,
-                                                  nftAddress: Address,
-                                                  linkAmount: BigUInt,
-                                                  timeout: UInt64?,
-                                                  messageType: MessageType) throws -> WalletTransfer {
-    try WalletTransferBuilder.buildWalletTransfer(
-      wallet: wallet,
-      sender: try wallet.address,
-      seqno: seqno,
-      internalMessages: { sender in
-        let internalMessage = try DNSRenewMessage.internalMessage(
-          nftAddress: nftAddress,
-          dnsLinkAmount: linkAmount,
-          stateInit: try? wallet.stateInit
+    }
+
+    public static func createRenewDNSWalletTransfer(
+        wallet: Wallet,
+        seqno: UInt64,
+        nftAddress: Address,
+        linkAmount: BigUInt,
+        timeout: UInt64?,
+        messageType: MessageType
+    ) throws -> WalletTransfer {
+        try WalletTransferBuilder.buildWalletTransfer(
+            wallet: wallet,
+            sender: wallet.address,
+            seqno: seqno,
+            internalMessages: { _ in
+                let internalMessage = try DNSRenewMessage.internalMessage(
+                    nftAddress: nftAddress,
+                    dnsLinkAmount: linkAmount,
+                    stateInit: try? wallet.stateInit
+                )
+                return [internalMessage]
+            },
+            timeout: timeout,
+            messageType: messageType
         )
-        return [internalMessage]
-      },
-      timeout: timeout,
-      messageType: messageType
-    )
-  }
+    }
 }
 
-//let renewData = DNSRenewData(queryId: UInt64(Date().timeIntervalSince1970))
-//let builder = Builder()
-//try renewData.storeTo(builder: builder)
-//let body = try builder.endCell()
-//let messages = [
+// let renewData = DNSRenewData(queryId: UInt64(Date().timeIntervalSince1970))
+// let builder = Builder()
+// try renewData.storeTo(builder: builder)
+// let body = try builder.endCell()
+// let messages = [
 //  MessageRelaxed.internal(
 //    to: nftAddress,
 //    value: linkAmount,
 //    bounce: true,
 //    body: body
 //  )
-//]
+// ]
 //
-//return try WalletTransferBuilder.buildWalletTransfer(
+// return try WalletTransferBuilder.buildWalletTransfer(
 //  wallet: wallet,
 //  sender: try wallet.address,
 //  seqno: seqno,
@@ -76,4 +80,4 @@ public struct ChangeDNSRecordTransferBuilder {
 //  },
 //  timeout: timeout,
 //  messageType: messageType
-//)
+// )

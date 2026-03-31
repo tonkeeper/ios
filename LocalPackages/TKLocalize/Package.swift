@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 
 import PackageDescription
 
@@ -8,16 +8,28 @@ let package = Package(
     products: [
         .library(
             name: "TKLocalize",
-            targets: ["TKLocalize"]),
+            targets: ["TKLocalize"]
+        ),
     ],
     targets: [
-      .target(
-        name: "TKLocalize",
-        resources: [.process("Resources/Locales")]
-      ),
-      .testTarget(name: "TKLocalizeTests",
-                  dependencies: [
-                    "TKLocalize"
-                  ]),
-    ]
+        .target(
+            name: "TKLocalize",
+            resources: [.process("Resources/Locales")],
+
+            swiftSettings: [
+                .treatAllWarnings(as: .error),
+            ]
+        ),
+        .testTarget(
+            name: "TKLocalizeTests",
+            dependencies: [
+                "TKLocalize",
+            ],
+
+            swiftSettings: [
+                .treatAllWarnings(as: .error),
+            ]
+        ),
+    ],
+    swiftLanguageModes: [.v5]
 )

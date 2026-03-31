@@ -1,5 +1,5 @@
 import Foundation
 
 struct TonConnectLastEventId: Codable {
-  let lastEventId: String
+    let lastEventId: String
 }

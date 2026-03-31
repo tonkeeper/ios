@@ -1,10 +1,10 @@
 import UIKit
 
 public extension UIViewController {
-  func topPresentedViewController() -> UIViewController {
-    guard let presented = self.presentedViewController else {
-      return self
+    func topPresentedViewController() -> UIViewController {
+        guard let presented = self.presentedViewController else {
+            return self
+        }
+        return presented.topPresentedViewController()
     }
-    return presented.topPresentedViewController()
-  }
 }

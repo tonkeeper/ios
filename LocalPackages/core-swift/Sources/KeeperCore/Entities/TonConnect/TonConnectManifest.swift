@@ -1,49 +1,57 @@
 import Foundation
 
-enum ManifestError: Swift.Error {
-  // hosts without dot in string are reserved for local usage and are not allowed publically because of security reasons
-  case protectedHostName
-}
-
 public struct TonConnectManifest: Codable, Equatable {
-  public let url: URL
-  public let name: String
-  public let iconUrl: URL?
-  public let termsOfUseUrl: URL?
-  public let privacyPolicyUrl: URL?
-  
-  public var host: String {
-    url.host ?? ""
-  }
-  
-  public init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.url = try container.decode(URL.self, forKey: .url)
-    self.name = try container.decode(String.self, forKey: .name)
-    
-    if url.host?.contains(".") == false {
-      throw ManifestError.protectedHostName
+    public let url: URL
+    public let name: String
+    public let iconUrl: URL?
+    public let termsOfUseUrl: URL?
+    public let privacyPolicyUrl: URL?
+
+    public var host: String {
+        url.host ?? ""
     }
 
-    if let iconUrlRaw = try container.decodeIfPresent(String.self, forKey: .iconUrl),
-    let iconUrl = URL(string: iconUrlRaw) {
-      self.iconUrl = iconUrl
-    } else {
-      self.iconUrl = nil
+    public init(
+        url: URL,
+        name: String,
+        iconUrl: URL? = nil,
+        termsOfUseUrl: URL? = nil,
+        privacyPolicyUrl: URL? = nil
+    ) {
+        self.url = url
+        self.name = name
+        self.iconUrl = iconUrl
+        self.termsOfUseUrl = termsOfUseUrl
+        self.privacyPolicyUrl = privacyPolicyUrl
     }
-    
-    if let termsOfUseRaw = try container.decodeIfPresent(String.self, forKey: .termsOfUseUrl),
-    let termsOfUseUrl = URL(string: termsOfUseRaw) {
-      self.termsOfUseUrl = termsOfUseUrl
-    } else {
-      self.termsOfUseUrl = nil
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.url = try container.decode(URL.self, forKey: .url)
+        self.name = try container.decode(String.self, forKey: .name)
+
+        if let iconUrlRaw = try container.decodeIfPresent(String.self, forKey: .iconUrl),
+           let iconUrl = URL(string: iconUrlRaw)
+        {
+            self.iconUrl = iconUrl
+        } else {
+            self.iconUrl = nil
+        }
+
+        if let termsOfUseRaw = try container.decodeIfPresent(String.self, forKey: .termsOfUseUrl),
+           let termsOfUseUrl = URL(string: termsOfUseRaw)
+        {
+            self.termsOfUseUrl = termsOfUseUrl
+        } else {
+            self.termsOfUseUrl = nil
+        }
+
+        if let privacyPolicyRaw = try container.decodeIfPresent(String.self, forKey: .privacyPolicyUrl),
+           let privacyPolicyUrl = URL(string: privacyPolicyRaw)
+        {
+            self.privacyPolicyUrl = privacyPolicyUrl
+        } else {
+            self.privacyPolicyUrl = nil
+        }
     }
-    
-    if let privacyPolicyRaw = try container.decodeIfPresent(String.self, forKey: .privacyPolicyUrl),
-    let privacyPolicyUrl = URL(string: privacyPolicyRaw) {
-      self.privacyPolicyUrl = privacyPolicyUrl
-    } else {
-      self.privacyPolicyUrl = nil
-    }
-  }
 }

@@ -1,11 +1,11 @@
-import Foundation
-import TonSwift
-import TKBatteryAPI
 import BigInt
+import Foundation
+import TKBatteryAPI
+import TonSwift
 
 extension BatteryBalance {
-  init(balance: TKBatteryAPI.Balance) throws {
-    self.balance = balance.balance
-    self.reserved = balance.reserved
-  }
+    init(balance: Components.Schemas.Balance) {
+        self.balance = balance.balance
+        self.reserved = balance.reserved
+    }
 }

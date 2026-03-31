@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/abseil-cpp-binary.git",
       "state" : {
-        "revision" : "194a6706acbd25e4ef639bcaddea16e8758a3e27",
-        "version" : "1.2024011602.0"
+        "revision" : "bbe8b69694d7873315fd3a4ad41efe043e1c07c5",
+        "version" : "1.2024072200.0"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/battery-api-swift",
       "state" : {
-        "revision" : "f0c6e89e88446000de0a81290d45cb57fb11a492",
-        "version" : "2.0.2"
+        "revision" : "74483223690d3ddcc5008d6725ed868e6e2b3f94",
+        "version" : "3.0.0"
       }
     },
     {
@@ -100,12 +100,29 @@
       }
     },
     {
+      "identity" : "cryptoswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/CryptoSwift",
+      "state" : {
+        "revision" : "1d31a1ffb6043655f3faba9d160db67b2e547e49"
+      }
+    },
+    {
       "identity" : "firebase-ios-sdk",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk",
       "state" : {
-        "revision" : "6318278e8e64d21f0fdcc69004395e4d34048aaf",
-        "version" : "11.8.1"
+        "revision" : "85560b48b0ff099ad83fe53d67df3c67fbc2b7a6",
+        "version" : "12.10.0"
+      }
+    },
+    {
+      "identity" : "google-ads-on-device-conversion-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/googleads/google-ads-on-device-conversion-ios-sdk",
+      "state" : {
+        "revision" : "a5cd95c80e8efdd02155c6cea1cecf743bb683a5",
+        "version" : "3.3.0"
       }
     },
     {
@@ -113,8 +130,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "be0881ff728eca210ccb628092af400c086abda3",
-        "version" : "11.7.0"
+        "revision" : "68ba955e540dcff5e0805970ef4b1fd0150be100",
+        "version" : "12.10.0"
       }
     },
     {
@@ -131,8 +148,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleUtilities.git",
       "state" : {
-        "revision" : "53156c7ec267db846e6b64c9f4c4e31ba4cf75eb",
-        "version" : "8.0.2"
+        "revision" : "60da361632d0de02786f709bdc0c4df340f7613e",
+        "version" : "8.1.0"
       }
     },
     {
@@ -140,8 +157,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/grpc-binary.git",
       "state" : {
-        "revision" : "f56d8fc3162de9a498377c7b6cea43431f4f5083",
-        "version" : "1.65.1"
+        "revision" : "cc0001a0cf963aa40501d9c2b181e7fc9fd8ec71",
+        "version" : "1.69.0"
       }
     },
     {
@@ -167,8 +184,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/interop-ios-for-google-sdks.git",
       "state" : {
-        "revision" : "2d12673670417654f08f5f90fdd62926dc3a2648",
-        "version" : "100.0.0"
+        "revision" : "040d087ac2267d2ddd4cca36c757d1c6a05fdbfe",
+        "version" : "101.0.0"
       }
     },
     {
@@ -178,6 +195,15 @@
       "state" : {
         "revision" : "2ef543ee21d63734e1c004ad6c870255e8716c50",
         "version" : "7.12.0"
+      }
+    },
+    {
+      "identity" : "kit-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/ton-connect/kit-ios.git",
+      "state" : {
+        "revision" : "fd5c9d4fadda0f213ad9ec44fe2e7e63428b0486",
+        "version" : "0.3.2"
       }
     },
     {
@@ -217,6 +243,14 @@
       }
     },
     {
+      "identity" : "punycodeswift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/PunycodeSwift",
+      "state" : {
+        "revision" : "30a462bdb4398ea835a3585472229e0d74b36ba5"
+      }
+    },
+    {
       "identity" : "snapkit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/SnapKit/SnapKit.git",
@@ -239,8 +273,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
-        "revision" : "ef18d829e8b92d731ad27bb81583edd2094d1ce3",
-        "version" : "1.3.1"
+        "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
+        "version" : "1.4.0"
       }
     },
     {
@@ -262,12 +296,11 @@
       }
     },
     {
-      "identity" : "swift-protobuf",
+      "identity" : "swift-secp256k1",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/apple/swift-protobuf.git",
+      "location" : "https://github.com/tonkeeper/swift-secp256k1",
       "state" : {
-        "revision" : "ebc7251dd5b37f627c93698e4374084d98409633",
-        "version" : "1.28.2"
+        "revision" : "6c50e65ec9959d9ab0039df9ffc31707ad19c01b"
       }
     },
     {
@@ -284,8 +317,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "8663c1c3e4851f65f7d9307d6edb1f09d355d6f5",
-        "version" : "0.4.0"
+        "revision" : "b2bed965e237fa069bcb29816fb6730b1dc7441c",
+        "version" : "0.6.0"
       }
     },
     {
@@ -293,8 +326,7 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "revision" : "fab15b574e274b040abe4e06e4e657a48d1103a7",
-        "version" : "1.0.29"
+        "revision" : "991959e784ce55b65f5a6f66647d149af6eaf362"
       }
     },
     {
