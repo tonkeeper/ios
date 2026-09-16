@@ -2,6 +2,7 @@ import TKUIKit
 import UIKit
 
 enum WalletsListSection: Hashable {
+    case raffleBanner(raffleId: String)
     case wallets(footerConfiguration: TKListCollectionViewButtonFooterView.Configuration)
 }
 
@@ -32,5 +33,21 @@ struct WalletsListItem: Hashable, Equatable {
         self.selectAccessories = selectAccessories
         self.editingAccessories = editingAccessories
         self.onSelection = onSelection
+    }
+
+    private static let raffleBannerIdentifierPrefix = "raffleBanner-"
+
+    static func raffleBannerItem(raffleId: String) -> WalletsListItem {
+        WalletsListItem(
+            identifier: raffleBannerIdentifierPrefix + raffleId,
+            accessories: [],
+            selectAccessories: [],
+            editingAccessories: []
+        )
+    }
+
+    /// Edit-mode reorder is wallet-only; the banner row isn't designed to participate.
+    var isRaffleBanner: Bool {
+        identifier.hasPrefix(Self.raffleBannerIdentifierPrefix)
     }
 }

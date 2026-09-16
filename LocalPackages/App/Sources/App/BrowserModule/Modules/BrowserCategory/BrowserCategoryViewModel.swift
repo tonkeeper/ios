@@ -5,7 +5,7 @@ import TKUIKit
 import UIKit
 
 protocol BrowserCategoryModuleOutput: AnyObject {
-    var didSelectDapp: ((Dapp) -> Void)? { get set }
+    var didSelectDapp: ((DappOpenIntent) -> Void)? { get set }
     var didTapSearch: (() -> Void)? { get set }
 }
 
@@ -20,7 +20,7 @@ protocol BrowserCategoryViewModel: AnyObject {
 final class BrowserCategoryViewModelImplementation: BrowserCategoryViewModel, BrowserCategoryModuleOutput {
     // MARK: - BrowserCategoryModuleOutput
 
-    var didSelectDapp: ((Dapp) -> Void)?
+    var didSelectDapp: ((DappOpenIntent) -> Void)?
     var didTapSearch: (() -> Void)?
 
     // MARK: - BrowserCategoryViewModel
@@ -70,8 +70,7 @@ private extension BrowserCategoryViewModelImplementation {
             identifier: UUID().uuidString,
             configuration: BrowserCategory.mapListItemConfiguration(app: dapp),
             selectionHandler: { [weak self] in
-                guard let dapp = Dapp(popularApp: dapp) else { return }
-                self?.didSelectDapp?(dapp)
+                self?.didSelectDapp?(.popularApp(source: .browser, app: dapp, catalogMode: .ton))
             }
         )
     }

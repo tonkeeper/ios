@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsTabCategoriesViewPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: TabCategoriesViewPreviews()
+    private let hostingController = TKHostingController(
+        content: TabCategoriesViewPreviews()
     )
 
     override func viewDidLoad() {

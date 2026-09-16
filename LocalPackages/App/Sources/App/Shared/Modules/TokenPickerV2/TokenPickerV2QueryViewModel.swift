@@ -2,6 +2,7 @@ import BigInt
 import Foundation
 import KeeperCore
 import TKLocalize
+import TKLogging
 import TKUIKit
 
 @MainActor
@@ -253,7 +254,7 @@ private extension TokenPickerV2QueryViewModel {
         let assets = result.assets
         state = .loaded(
             rowData: RowData(
-                items: assets.map(makeItem),
+                items: deduplicated(assets.map(makeItem)),
                 nextCursor: result.nextCursor,
                 hasNextPage: result.nextCursor != nil
             )
@@ -284,9 +285,11 @@ private extension TokenPickerV2QueryViewModel {
             return
         }
 
-        let mergedItems = merged(
-            current: fallbackData.items,
-            next: result.assets.map(makeItem)
+        let mergedItems = deduplicated(
+            merged(
+                current: fallbackData.items,
+                next: result.assets.map(makeItem)
+            )
         )
         state = .loaded(
             rowData: RowData(
@@ -323,9 +326,27 @@ private extension TokenPickerV2QueryViewModel {
         return mergedItems
     }
 
+    /// `ForEach(id:)` in `TokenPickerV2View` requires unique ids to lay out rows correctly;
+    /// duplicate ids (seen from overlapping catalog pages) desync SwiftUI's row diffing from
+    /// the row-rounding math, which shows up as broken/duplicated corners mid-list.
+    func deduplicated(_ items: [Item]) -> [Item] {
+        var seenIDs = Set<String>()
+        var result = [Item]()
+        result.reserveCapacity(items.count)
+        for item in items {
+            guard seenIDs.insert(item.id).inserted else {
+                Log.w("TokenPickerV2: dropping duplicate asset id \(item.id)")
+                continue
+            }
+            result.append(item)
+        }
+        return result
+    }
+
     func makeItem(asset: MultichainAsset) -> Item {
-        let chain = asset.asset.chain
-        let badge = category == .all ? chain?.badgeTitle : nil
+        let badge = category == .all
+            ? AssetIdResolver.tag(for: asset.asset.assetId, multichainEnabled: true)
+            : nil
 
         return Item(
             asset: asset,
@@ -334,21 +355,29 @@ private extension TokenPickerV2QueryViewModel {
                 title: title(for: asset),
                 badge: badge,
                 displayMode: rowDisplayMode(for: asset),
-                avatarImageSource: .url(
-                    URL(string: asset.asset.image),
-                    chainIcon: AssetIdResolver.chainIcon(for: asset.asset.assetId)
-                )
+                avatarImageSource: AssetIdResolver.imageSource(
+                    for: asset.asset.assetId,
+                    imageUrl: URL(string: asset.asset.image),
+                    multichainEnabled: true
+                ),
+                showsVerificationCheckmark: asset.asset.isTrusted,
+                accessibilityIdentifier: accessibilityIdentifier(for: asset)
             )
         )
     }
 
     func title(for asset: MultichainAsset) -> String {
-        switch displayMode {
-        case .includingMarketData:
-            return asset.asset.name
-        case .includingSelection:
-            return asset.asset.symbol.isEmpty ? asset.asset.name : asset.asset.symbol
+        asset.asset.symbol.isEmpty ? asset.asset.name : asset.asset.symbol
+    }
+
+    func accessibilityIdentifier(for asset: MultichainAsset) -> String {
+        let symbol = title(for: asset)
+            .lowercased()
+            .replacingOccurrences(of: "[^a-z0-9]+", with: "_", options: .regularExpression)
+        guard let chain = asset.asset.chain else {
+            return "token_picker_asset_\(symbol)"
         }
+        return "token_picker_asset_\(chain.rawValue)_\(symbol)"
     }
 
     func rowDisplayMode(for asset: MultichainAsset) -> AssetBalanceRowCellContent.DisplayMode {
@@ -368,6 +397,8 @@ private extension TokenPickerV2QueryViewModel {
                 fiat: formatFiatValue(asset),
                 showsPin: selectedAsset?.asset.assetId == asset.asset.assetId
             )
+        case .rampAsset:
+            return .rampAsset(subtitle: asset.asset.name)
         }
     }
 
@@ -559,8 +590,8 @@ private extension TokenPickerV2QueryViewModel {
 
     func decimalValue(from value: String) -> Decimal? {
         let normalized = value
-            .replacingOccurrences(of: FormatSymbol.minus, with: "-")
-            .replacingOccurrences(of: FormatSymbol.plus, with: "+")
+            .replacingOccurrences(of: String.Symbol.minus, with: "-")
+            .replacingOccurrences(of: String.Symbol.plus, with: "+")
             .filter { "0123456789.,+-".contains($0) }
 
         guard !normalized.isEmpty else {
@@ -615,7 +646,7 @@ private extension TokenPickerV2QueryViewModel {
 
 private extension String {
     var hasNegativePrefix: Bool {
-        hasPrefix("-") || hasPrefix(FormatSymbol.minus)
+        hasPrefix("-") || hasPrefix(String.Symbol.minus)
     }
 
     func dropFirstSign() -> (sign: String, value: String) {
@@ -630,9 +661,4 @@ private extension String {
             return ("", self)
         }
     }
-}
-
-private enum FormatSymbol {
-    static let minus = "\u{2212}"
-    static let plus = "\u{002B}"
 }

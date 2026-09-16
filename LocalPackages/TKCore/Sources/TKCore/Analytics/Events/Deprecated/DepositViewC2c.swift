@@ -15,9 +15,9 @@ import AnyCodable
 public struct DepositViewC2c: Codable, JSONEncodable, Hashable {
 
     public enum BuyAsset: String, Codable, CaseIterable {
-        case tonNativeTon = "ton:native:TON"
-        case tonJettonUsdt = "ton:jetton:USDT"
-        case tronTrc20Usdt = "tron:trc20:USDT"
+        case tonNativeTon = "ton/mainnet/coin"
+        case tonJettonUsdt = "ton/mainnet/jetton/0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe"
+        case tronTrc20Usdt = "tron/mainnet/trc20/TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
     }
     public static let sellAssetRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[a-z0-9]+:[a-z0-9]+:[A-Z0-9]+$/")
     public var eventName: String = "deposit_view_c2c"

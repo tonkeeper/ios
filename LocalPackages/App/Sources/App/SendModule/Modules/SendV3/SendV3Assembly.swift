@@ -7,7 +7,7 @@ struct SendV3Assembly {
     static func module(
         wallet: Wallet,
         sendInput: SendInput,
-        recipient: Recipient?,
+        recipient: LegacyRecipient?,
         comment: String?,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -20,7 +20,6 @@ struct SendV3Assembly {
             sendController: keeperCoreMainAssembly.sendV3Controller(wallet: wallet),
             balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
             appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-            buySellMethodsService: keeperCoreMainAssembly.buySellAssembly.buySellMethodsService(),
             onRampService: keeperCoreMainAssembly.servicesAssembly.onRampService(),
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration
         )

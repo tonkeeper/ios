@@ -1,31 +1,10 @@
 import SnapKit
+import SwiftUI
 import TKUIKit
 import UIKit
 
 final class ChartErrorView: UIView, ConfigurableView {
-    private let stackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        return stackView
-    }()
-
-    let titleLabel: UILabel = {
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.textColor = .Text.primary
-        label.textAlignment = .center
-        label.font = TKTextStyle.label1.font
-        return label
-    }()
-
-    let subtitleLabel: UILabel = {
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.textColor = .Text.secondary
-        label.textAlignment = .center
-        label.font = TKTextStyle.body2.font
-        return label
-    }()
+    private let hostingView = SwiftUIHostingView()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -41,27 +20,31 @@ final class ChartErrorView: UIView, ConfigurableView {
 
     struct Model {
         let title: String?
-        let subtitle: String?
+        let buttons: ChartBottomButtonsView.Config?
     }
 
     func configure(model: Model) {
-        titleLabel.text = model.title
-        subtitleLabel.text = model.subtitle
+        hostingView.setContent {
+            VStack(spacing: 0) {
+                ChartErrorContentView(title: model.title)
+
+                if let buttons = model.buttons {
+                    ChartBottomButtonsView(config: buttons)
+                }
+            }
+        }
     }
 }
 
 private extension ChartErrorView {
     func setup() {
-        addSubview(stackView)
-        stackView.addArrangedSubview(titleLabel)
-        stackView.addArrangedSubview(subtitleLabel)
+        addSubview(hostingView)
         setupConstraints()
     }
 
     func setupConstraints() {
-        stackView.snp.makeConstraints { make in
-            make.centerY.equalToSuperview()
-            make.left.right.equalToSuperview()
+        hostingView.snp.makeConstraints { make in
+            make.edges.equalToSuperview()
         }
     }
 }

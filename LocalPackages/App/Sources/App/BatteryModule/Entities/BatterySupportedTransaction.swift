@@ -25,7 +25,7 @@ enum BatterySupportedTransaction: String, CaseIterable {
 extension Wallet {
     var supportedBatteryTransactions: [BatterySupportedTransaction] {
         var transactions: [BatterySupportedTransaction] = [.swap, .jetton, .nft]
-        if isTronTurnOn {
+        if tron != nil {
             transactions.append(.trc20)
         }
         return transactions

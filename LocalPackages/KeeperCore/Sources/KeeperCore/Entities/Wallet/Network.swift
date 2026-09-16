@@ -25,6 +25,18 @@ public extension Network {
             return Network.testnet.rawValue
         }
     }
+
+    /// ChainKit detects TON addresses by format alone; the test-only flag lives in the tag byte and
+    /// stays invisible to it, so a testnet address remains a valid TON candidate on mainnet.
+    func matchesTonAddress(_ address: FriendlyAddress) -> Bool {
+        address.isTestOnly == (self == .testnet)
+    }
+
+    /// Raw addresses carry no network flag and belong to either network.
+    func matchesTonAddress(_ string: String) -> Bool {
+        guard let friendlyAddress = try? FriendlyAddress(string: string) else { return true }
+        return matchesTonAddress(friendlyAddress)
+    }
 }
 
 /// storage uses 16 bits per network type, tetra value exeedes 16bit limits

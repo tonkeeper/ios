@@ -7,7 +7,7 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class BatteryRefillCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
     var didRechargeSuccess: (() -> Void)?
 
@@ -43,11 +43,11 @@ public final class BatteryRefillCoordinator: RouterCoordinator<NavigationControl
         super.init(router: router)
     }
 
-    override public func start(deeplink: (any CoordinatorDeeplink)? = nil) {
+    override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
         openBatteryRefill()
     }
 
-    public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+    func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
         guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
         walletTransferSignCoordinator.externalSignHandler?(sign)
         walletTransferSignCoordinator.externalSignHandler = nil
@@ -173,7 +173,6 @@ private extension BatteryRefillCoordinator {
             payload: payload,
             batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
             sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
-            tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration
         )
 
@@ -188,6 +187,7 @@ private extension BatteryRefillCoordinator {
                 }
             ),
             sendFrom: .tonconnectRemote,
+            initiatedBy: .user,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in
@@ -226,7 +226,7 @@ private extension BatteryRefillCoordinator {
 
         module.output.didSelectToken = { token in
             switch token {
-            case .tronUSDT: break
+            case .tron: break
             case let .ton(token):
                 completion(token)
             }

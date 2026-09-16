@@ -7,6 +7,7 @@ enum TradingAssetToken {
     case ton
     case jetton(TonSwift.Address)
     case tronUsdt(TronSwift.Address)
+    case tronTrx
 
     init?(assetId: String) {
         guard let components = AssetIdComponents(assetId: assetId) else {
@@ -29,6 +30,8 @@ enum TradingAssetToken {
         case let .coin(chain, _, _):
             if isTonChain(chain) {
                 self = .ton
+            } else if isTronChain(chain) {
+                self = .tronTrx
             } else {
                 return nil
             }
@@ -52,9 +55,5 @@ enum TradingAssetToken {
 extension TradingAssetInfo {
     var typedAssetId: TradingAssetToken? {
         TradingAssetToken(assetId: assetId)
-    }
-
-    var canDisplayPrice: Bool {
-        AssetIdResolver.chartIdentifier(for: assetId) != nil
     }
 }

@@ -23,7 +23,6 @@ public final class TransferAssembly {
 
     public func transferService() -> TransferService {
         TransferService(
-            tonProofTokenService: servicesAssembly.tonProofTokenService(),
             batteryService: batteryAssembly.batteryService(),
             balanceService: servicesAssembly.balanceService(),
             sendService: servicesAssembly.sendService(),

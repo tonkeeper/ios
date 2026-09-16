@@ -2,14 +2,14 @@ import BigInt
 import Foundation
 import TonSwift
 
-public struct SignRawTransferBuilder {
-    public struct Payload {
+struct SignRawTransferBuilder {
+    struct Payload {
         let value: BigInt
         let recipientAddress: AnyAddress
         let stateInit: String?
         let payload: String?
 
-        public init(
+        init(
             value: BigInt,
             recipientAddress: AnyAddress,
             stateInit: String?,
@@ -23,7 +23,7 @@ public struct SignRawTransferBuilder {
     }
 
     private init() {}
-    public static func createWalletTransfer(
+    static func createWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         payloads: [Payload],

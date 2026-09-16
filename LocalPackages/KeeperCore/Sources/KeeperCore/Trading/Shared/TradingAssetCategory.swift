@@ -2,7 +2,7 @@ import TKTradingAPI
 
 public enum TradingAssetCategory: String, CaseIterable, Identifiable, Sendable {
     case all
-    case crypto
+    case tokens
     case stocks
     case etfs
 
@@ -12,34 +12,18 @@ public enum TradingAssetCategory: String, CaseIterable, Identifiable, Sendable {
 }
 
 extension TradingAssetCategory {
-    public init?(assetID: String) {
-        let components = assetID.split(separator: "/", omittingEmptySubsequences: true)
-        guard components.count >= 3 else {
-            return nil
-        }
-
-        switch components[2].lowercased() {
-        case "coin", "jetton", "token", "tokens":
-            self = .crypto
-        case "stock", "stocks":
-            self = .stocks
-        case "etf", "etfs":
-            self = .etfs
-        default:
-            return nil
-        }
-    }
-
     init?(tradingApiValue: Components.Schemas.AssetsTab) {
         switch tradingApiValue {
         case .all:
             self = .all
         case .tokens:
-            self = .crypto
+            self = .tokens
         case .stocks:
             self = .stocks
         case .etfs:
             self = .etfs
+        case .commodities, .perpetuals:
+            return nil
         }
     }
 
@@ -47,7 +31,7 @@ extension TradingAssetCategory {
         switch self {
         case .all:
             .all
-        case .crypto:
+        case .tokens:
             .tokens
         case .stocks:
             .stocks

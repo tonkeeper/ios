@@ -7,12 +7,6 @@ public extension UIViewController {
         }
     }
 
-    func setupSwipeDownButton() {
-        navigationItem.setupSwipeDown { [weak self] in
-            self?.dismiss(animated: true)
-        }
-    }
-
     func setupSwipeDownButton(_ action: @escaping () -> Void) {
         navigationItem.setupSwipeDown {
             action()
@@ -21,12 +15,12 @@ public extension UIViewController {
 
     func setupLeftCloseButton(_ action: @escaping () -> Void) {
         let closeButton = createCloseButton(action)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: closeButton)
+        navigationItem.leftBarButtonItem = .customView(closeButton, pinnedTo: .leading)
     }
 
     func setupRightCloseButton(_ action: @escaping () -> Void) {
         let closeButton = createCloseButton(action)
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: closeButton)
+        navigationItem.rightBarButtonItem = .customView(closeButton, pinnedTo: .trailing)
     }
 
     func createCloseButton(_ action: @escaping () -> Void) -> TKUIHeaderIconButton {
@@ -56,7 +50,7 @@ public extension UINavigationItem {
         backButton.addTapAction(action)
 
         backButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
-        leftBarButtonItem = UIBarButtonItem(customView: backButton)
+        leftBarButtonItem = .customView(backButton, pinnedTo: .leading)
     }
 
     func setupSwipeDown(action: @escaping () -> Void) {
@@ -70,6 +64,6 @@ public extension UINavigationItem {
         backButton.addTapAction(action)
 
         backButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
-        leftBarButtonItem = UIBarButtonItem(customView: backButton)
+        leftBarButtonItem = .customView(backButton, pinnedTo: .leading)
     }
 }

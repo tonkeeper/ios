@@ -12,20 +12,41 @@ public struct Story: Decodable, Equatable {
             public let title: String
             public let payload: String
             public let type: ButtonType
+
+            public init(title: String, payload: String, type: ButtonType) {
+                self.title = title
+                self.payload = payload
+                self.type = type
+            }
         }
 
         public let title: String
         public let description: String
         public let image: URL?
         public let button: Button?
+
+        public init(title: String, description: String, image: URL?, button: Button?) {
+            self.title = title
+            self.description = description
+            self.image = image
+            self.button = button
+        }
     }
 
     public let id: String
     public let pages: [Page]
+    public let isAutoShow: Bool
+
+    public init(id: String, pages: [Page], isAutoShow: Bool = false) {
+        self.id = id
+        self.pages = pages
+        self.isAutoShow = isAutoShow
+    }
 
     public init(id: String, story: KeeperCore.Story) {
         self.id = id
         self.pages = story.pages.map { Story.Page(page: $0) }
+        self.isAutoShow = story.isAutoShow
     }
 }
 

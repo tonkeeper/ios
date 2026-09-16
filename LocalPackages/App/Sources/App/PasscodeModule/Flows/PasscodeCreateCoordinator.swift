@@ -7,11 +7,17 @@ import UIKit
 final class PasscodeCreateCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didCreatePasscode: ((String) -> Void)?
     var didCancel: (() -> Void)?
+    var didMismatch: (() -> Void)?
 
+    private let biometryEnabler: PasscodeBiometryEnabler?
     private let passcodeNavigationController = UINavigationController()
     private var passcodeInputs = [PasscodeInputModuleInput]()
 
-    override init(router: NavigationControllerRouter) {
+    init(
+        router: NavigationControllerRouter,
+        biometryEnabler: PasscodeBiometryEnabler? = nil
+    ) {
+        self.biometryEnabler = biometryEnabler
         super.init(router: router)
         passcodeNavigationController.setNavigationBarHidden(true, animated: false)
     }
@@ -81,10 +87,18 @@ private extension PasscodeCreateCoordinator {
         }
 
         passcodeInput.output.didFinish = { [weak self] passcode in
-            self?.didCreatePasscode?(passcode)
+            Task {
+                if let enabler = self?.biometryEnabler {
+                    await enabler.offerBiometry(passcode: passcode)
+                }
+                await MainActor.run {
+                    self?.didCreatePasscode?(passcode)
+                }
+            }
         }
 
         passcodeInput.output.didFailed = { [weak self] in
+            self?.didMismatch?()
             self?.passcodeNavigationController.popViewController(animated: true)
             _ = self?.passcodeInputs.popLast()
         }
@@ -102,11 +116,15 @@ extension PasscodeCreateCoordinator {
     static func present(
         parentCoordinator: Coordinator,
         parentRouter: NavigationControllerRouter,
-        repositoriesAssembly: KeeperCore.RepositoriesAssembly,
+        biometryEnabler: PasscodeBiometryEnabler? = nil,
         onCancel: @escaping () -> Void,
+        onMismatch: @escaping () -> Void = {},
         onCreate: @escaping (String) -> Void
     ) {
-        let coordinator = PasscodeCreateCoordinator(router: parentRouter)
+        let coordinator = PasscodeCreateCoordinator(
+            router: parentRouter,
+            biometryEnabler: biometryEnabler
+        )
 
         coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
             parentRouter.dismiss(animated: true) {
@@ -118,6 +136,8 @@ extension PasscodeCreateCoordinator {
         coordinator.didCreatePasscode = { passcode in
             onCreate(passcode)
         }
+
+        coordinator.didMismatch = onMismatch
 
         parentCoordinator.addChild(coordinator)
         coordinator.start()

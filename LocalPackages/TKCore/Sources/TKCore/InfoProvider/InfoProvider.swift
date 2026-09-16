@@ -51,14 +51,6 @@ public struct InfoProvider {
         self.value(key: .appName) ?? .defaultAppName
     }
 
-    public static func keychainAccessGroup() -> String? {
-        self.value(key: .keychainAccessGroup)
-    }
-
-    public static func appIdentifierPrefix() -> String? {
-        self.value(key: .appIdentifierPrefix)
-    }
-
     public static func platform() -> String {
         self.value(key: .platform) ?? "ios"
     }
@@ -75,5 +67,5 @@ public struct InfoProvider {
 }
 
 private extension String {
-    static let defaultAppName = "Tonkeeper"
+    static let defaultAppName = "Keeper"
 }

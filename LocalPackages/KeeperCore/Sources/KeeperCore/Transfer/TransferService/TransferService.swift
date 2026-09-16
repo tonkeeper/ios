@@ -1,5 +1,8 @@
 import BigInt
 import Foundation
+import KeeperCoreComponents
+import TKBatteryAPI
+import TKLogging
 import TonAPI
 import TonSwift
 
@@ -26,15 +29,6 @@ public struct TransferEmulationResult {
         public let token: TonToken
         public let amount: Amount
         public let excess: UInt?
-
-        public var jettonInfo: JettonInfo? {
-            switch token {
-            case .ton:
-                return nil
-            case let .jetton(jettonItem):
-                return jettonItem.jettonInfo
-            }
-        }
     }
 
     public let transferType: TransferType
@@ -79,7 +73,6 @@ public enum TransferType {
 }
 
 public struct TransferService {
-    private let tonProofTokenService: TonProofTokenService
     private let batteryService: BatteryService
     private let balanceService: BalanceService
     private let sendService: SendService
@@ -88,7 +81,6 @@ public struct TransferService {
     private let currencyStore: CurrencyStore
 
     init(
-        tonProofTokenService: TonProofTokenService,
         batteryService: BatteryService,
         balanceService: BalanceService,
         sendService: SendService,
@@ -97,7 +89,6 @@ public struct TransferService {
         settingsRepository: SettingsRepository,
         currencyStore: CurrencyStore
     ) {
-        self.tonProofTokenService = tonProofTokenService
         self.batteryService = batteryService
         self.balanceService = balanceService
         self.sendService = sendService
@@ -106,31 +97,75 @@ public struct TransferService {
         self.currencyStore = currencyStore
     }
 
+    private func adjustExcessAddressIfNeeded(
+        wallet: Wallet,
+        transferType: TransferType
+    ) async throws(TransferError) -> TransferType {
+        guard case .battery = transferType else {
+            return transferType
+        }
+        func getTransferType(
+            from address: @autoclosure () throws -> Address
+        ) throws(TransferError) -> TransferType {
+            let excessAddress: Address
+            do {
+                excessAddress = try address()
+            } catch {
+                throw .failedToCreateTransferData(
+                    message: "battery transfer: failed to get excess address due to error: \(error.localizedDescription)"
+                )
+            }
+            return .battery(excessAddress: excessAddress)
+        }
+        let batteryConfig: Components.Schemas.Config
+        do {
+            batteryConfig = try await batteryService.loadBatteryConfig(
+                wallet: wallet
+            )
+        } catch {
+            Log.w("adjust excess address: failed to fetch battery config")
+            return try getTransferType(from: wallet.address)
+        }
+        do {
+            return try getTransferType(from: batteryConfig.excessAddress)
+        } catch {
+            Log.w("adjust excess address: failed to parse battery config excess address")
+            return try getTransferType(from: wallet.address)
+        }
+    }
+
     @discardableResult
     public func sendTransaction<SignError: Error>(
         wallet: Wallet,
         transfer: Transfer,
+        transferType rawTransferType: TransferType,
+        signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
+    ) async throws(SomeOf<TransferError, SignError>) -> SignedTransactions {
+        let transferType: TransferType
+        do {
+            // TODO: kinda bullshit, should do something with this
+            transferType = try await adjustExcessAddressIfNeeded(
+                wallet: wallet,
+                transferType: rawTransferType
+            )
+        } catch {
+            throw .certain(error)
+        }
+        return try await doSendTransaction(
+            wallet: wallet,
+            transfer: transfer,
+            transferType: transferType,
+            signClosure: signClosure
+        )
+    }
+
+    @discardableResult
+    private func doSendTransaction<SignError: Error>(
+        wallet: Wallet,
+        transfer: Transfer,
         transferType: TransferType,
         signClosure: (TransferData) async -> Result<SignedTransactions, SignError>
-    ) async throws(SomeOf<TransferError, SignError>) -> String {
-        // TODO: kinda bullshit, should do something with this
-        var transferType = transferType
-        if case .battery = transferType {
-            do {
-                let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
-                let updatedExcessAddress: Address
-                if let excessAddress = try? batteryConfig?.excessAddress {
-                    updatedExcessAddress = excessAddress
-                } else {
-                    updatedExcessAddress = try wallet.address
-                }
-                transferType = .battery(excessAddress: updatedExcessAddress)
-            } catch {
-                throw .certain(
-                    .failedToCreateTransferData(message: "battery transfer: failed to get excess address due to error: \(error.localizedDescription)")
-                )
-            }
-        }
+    ) async throws(SomeOf<TransferError, SignError>) -> SignedTransactions {
         let seqno: UInt64
         do {
             seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -177,19 +212,11 @@ public struct TransferService {
                     )
                 }
             case .battery, .gasless:
-                let tonProofToken: String
-                do {
-                    tonProofToken = try tonProofTokenService.getWalletToken(wallet)
-                } catch {
-                    throw .certain(
-                        .sendFailed(message: "failed to get proof token on single send due to error: \(error.localizedDescription)")
-                    )
-                }
                 do {
                     try await batteryService.sendTransaction(
                         wallet: wallet,
                         boc: boc,
-                        tonProofToken: tonProofToken
+                        proof: signedTransactions.batterySendProof(for: boc)
                     )
                 } catch {
                     throw .certain(
@@ -202,7 +229,7 @@ public struct TransferService {
             case .default:
                 do {
                     try await sendService.sendTransactions(
-                        batch: signedTransactions,
+                        batch: signedTransactions.bocs,
                         wallet: wallet
                     )
                 } catch {
@@ -211,20 +238,12 @@ public struct TransferService {
                     )
                 }
             case .battery, .gasless:
-                let tonProofToken: String
-                do {
-                    tonProofToken = try tonProofTokenService.getWalletToken(wallet)
-                } catch {
-                    throw .certain(
-                        .sendFailed(message: "failed to get proof token on batch send due to error: \(error.localizedDescription)")
-                    )
-                }
                 for boc in signedTransactions {
                     do {
                         try await batteryService.sendTransaction(
                             wallet: wallet,
                             boc: boc,
-                            tonProofToken: tonProofToken
+                            proof: signedTransactions.batterySendProof(for: boc)
                         )
                     } catch {
                         throw .certain(
@@ -235,7 +254,7 @@ public struct TransferService {
             }
         }
 
-        return signedTransactions[0]
+        return signedTransactions
     }
 
     public func emulate(
@@ -246,7 +265,6 @@ public struct TransferService {
         withoutRelayer: Bool = false,
         isPreferGasless: Bool = true
     ) async throws -> TransferEmulationResult {
-        let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
         let isRelayer = await isRelayerAvailable(wallet: wallet, transfer: transfer)
         let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
         let isGaslessToken = await isGaslessToken(wallet: wallet, transfer: transfer)
@@ -262,7 +280,6 @@ public struct TransferService {
             )
         } else if isRelayer,
                   !withoutRelayer,
-                  let tonProofToken,
                   await configuration.isBatteryEnable(network: wallet.network),
                   await configuration.isBatterySendEnable(network: wallet.network)
         {
@@ -271,7 +288,6 @@ public struct TransferService {
                     wallet: wallet,
                     transfer: transfer,
                     excessAddress: wallet.address,
-                    tonProofToken: tonProofToken,
                     transferType: .battery(excessAddress: wallet.address)
                 )
             } catch {
@@ -286,7 +302,6 @@ public struct TransferService {
         } else if !ignoreGasless,
                   wallet.isGaslessAvailable,
                   isPreferGasless,
-                  let tonProofToken,
                   let excessesAddress = try? batteryConfig?.excessAddress,
                   isGaslessToken
         {
@@ -295,7 +310,6 @@ public struct TransferService {
                     wallet: wallet,
                     transfer: transfer,
                     excessAddress: excessesAddress,
-                    tonProofToken: tonProofToken,
                     transferType: .gasless(excessAddress: excessesAddress, fee: 1)
                 )
             } catch {
@@ -318,7 +332,6 @@ public struct TransferService {
             }
 
             guard wallet.isGaslessAvailable,
-                  let tonProofToken,
                   let excessesAddress = try? batteryConfig?.excessAddress,
                   isGaslessToken
             else {
@@ -330,12 +343,20 @@ public struct TransferService {
                 includingTransferFees: true
             ).balance.tonBalance.amount) ?? 0
 
+            let jettonMasterAddress: Address? = {
+                if case let .jetton(jettonItem, _, _, _, _) = transfer {
+                    return jettonItem.jettonInfo.address
+                }
+                return nil
+            }()
+            let transferCost = batteryConfig?.transferCost(jettonMasterAddress: jettonMasterAddress)
+                ?? Components.Schemas.Config.fallbackTransferCost
             let amount = {
                 switch result.extra.amount {
                 case let .fee(fee):
-                    return fee + BigUInt(50_000_000)
+                    return fee + transferCost
                 case .refund:
-                    return BigUInt(50_000_000)
+                    return transferCost
                 }
             }()
             guard amount > tonBalance else {
@@ -345,21 +366,25 @@ public struct TransferService {
                 wallet: wallet,
                 transfer: transfer,
                 excessAddress: excessesAddress,
-                tonProofToken: tonProofToken,
                 transferType: .gasless(excessAddress: excessesAddress, fee: 1)
             )
         }
     }
 
+    /// `includeUnavailableBattery` asks for the battery estimate even when the battery cannot pay
+    /// for this transfer. Only a caller that lists fee options wants it: the option has to reach the
+    /// picker to be marked insufficient and offer a refill. A caller that is *choosing* the method
+    /// must leave it off, otherwise it preselects a method the user cannot confirm with.
     public func emulate(
         wallet: Wallet,
         transfer: Transfer,
         params: [EmulateMessageToWalletRequestParamsInner]? = nil,
-        preferredExtraType: TransactionConfirmationModel.ExtraType
+        preferredExtraType: TransactionConfirmationModel.ExtraType,
+        includeUnavailableBattery: Bool = false
     ) async throws -> TransferEmulationResult {
         do {
             switch preferredExtraType {
-            case .default:
+            case .default, .multichain:
                 return try await defaultEmulate(
                     wallet: wallet,
                     transfer: transfer,
@@ -367,25 +392,22 @@ public struct TransferService {
                     isGaslessAvailable: false
                 )
             case .battery:
-                let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
                 let batteryConfig = try await batteryService.loadBatteryConfig(wallet: wallet)
                 guard let excessAddress = try? batteryConfig.excessAddress else { throw TransferError.noExcessesAddress }
                 return try await emulateWithBattery(
                     wallet: wallet,
                     transfer: transfer,
                     excessAddress: excessAddress,
-                    tonProofToken: tonProofToken,
-                    transferType: .battery(excessAddress: excessAddress)
+                    transferType: .battery(excessAddress: excessAddress),
+                    keepsUnavailableEstimate: includeUnavailableBattery
                 )
             case .gasless:
-                let tonProofToken = try tonProofTokenService.getWalletToken(wallet)
                 let batteryConfig = try await batteryService.loadBatteryConfig(wallet: wallet)
                 guard let excessesAddress = try? batteryConfig.excessAddress else { throw TransferError.noExcessesAddress }
                 return try await emulateWithGasless(
                     wallet: wallet,
                     transfer: transfer,
                     excessAddress: excessesAddress,
-                    tonProofToken: tonProofToken,
                     transferType: .gasless(excessAddress: excessesAddress, fee: 1)
                 )
             }
@@ -399,15 +421,24 @@ public struct TransferService {
         }
     }
 
+    /// Transfer cost (in nano-TON) attached to a transfer to cover its cost,
+    /// sourced from the battery config (`transfer_cost`). Uses the per-jetton
+    /// override when `jettonMasterAddress` matches, otherwise the config
+    /// default, falling back to the legacy 0.05 TON when the config is
+    /// unavailable or contains an invalid value.
+    public func transferCost(wallet: Wallet, jettonMasterAddress: Address?) async -> BigUInt {
+        let config = try? await batteryService.loadBatteryConfig(wallet: wallet)
+        return config?.transferCost(jettonMasterAddress: jettonMasterAddress)
+            ?? Components.Schemas.Config.fallbackTransferCost
+    }
+
     func isGaslessAvailable(wallet: Wallet, transfer: Transfer) async -> Bool {
         guard !configuration.flag(\.gaslessDisabled, network: wallet.network) else { return false }
 
-        let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
         let isGaslessToken = await isGaslessToken(wallet: wallet, transfer: transfer)
         let batteryConfig = try? await batteryService.loadBatteryConfig(wallet: wallet)
 
         guard wallet.isGaslessAvailable,
-              tonProofToken != nil,
               let _ = try? batteryConfig?.excessAddress,
               isGaslessToken
         else {
@@ -416,43 +447,46 @@ public struct TransferService {
         return true
     }
 
+    /// Whether the wallet's settings let the battery pay for this kind of transfer at all, ignoring
+    /// how many charges are left. Listing a fee option is this question; preselecting one is
+    /// `isRelayerAvailable`, which also demands a balance.
+    static func isRelayerEnabled(
+        wallet: Wallet,
+        transfer: Transfer
+    ) -> Bool {
+        switch transfer {
+        case .ton, .renewDNS:
+            return false
+        case .jetton:
+            return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable
+        case .nft:
+            return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable
+        case .stonfiSwap, .nativeSwap, .multichainSwap:
+            return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable
+        case let .signRaw(_, isForceRelayer):
+            return isForceRelayer
+        }
+    }
+
     func isRelayerAvailable(
         wallet: Wallet,
         transfer: Transfer
     ) async -> Bool {
-        let tonProofToken = try? tonProofTokenService.getWalletToken(wallet)
-        guard let tonProofToken else { return false }
-
-        let isBalanceAvailable: () async -> Bool = {
-            await isBatteryBalanceEnable(wallet: wallet, tonProofToken: tonProofToken)
+        guard Self.isRelayerEnabled(wallet: wallet, transfer: transfer) else {
+            return false
         }
         switch transfer {
-        case .ton:
-            return false
-        case .jetton:
-            let isBalanceAvailable = await isBalanceAvailable()
-            return wallet.isBatteryEnable && wallet.batterySettings.isJettonTransactionEnable && isBalanceAvailable
-        case .nft:
-            let isBalanceAvailable = await isBalanceAvailable()
-            return wallet.isBatteryEnable && wallet.batterySettings.isNFTTransactionEnable && isBalanceAvailable
-        case .stonfiSwap:
-            let isBalanceAvailable = await isBalanceAvailable()
-            return wallet.isBatteryEnable && wallet.batterySettings.isSwapTransactionEnable && isBalanceAvailable
-        case let .signRaw(_, isForceRelayer):
-            return isForceRelayer
-        case .renewDNS:
-            return false
-        case .nativeSwap:
-            let isBalanceAvailable = await isBalanceAvailable()
-            return wallet.isBatteryEnable
-                && wallet.batterySettings.isSwapTransactionEnable
-                && isBalanceAvailable
+        case .signRaw:
+            // A forced relayer is the caller's decision and carries no balance precondition.
+            return true
+        case .ton, .jetton, .nft, .stonfiSwap, .renewDNS, .nativeSwap, .multichainSwap:
+            return await isBatteryBalanceEnable(wallet: wallet)
         }
     }
 
-    func isBatteryBalanceEnable(wallet: Wallet, tonProofToken: String) async -> Bool {
+    func isBatteryBalanceEnable(wallet: Wallet) async -> Bool {
         do {
-            let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProofToken)
+            let batteryBalance = try await batteryService.loadBatteryBalance(wallet: wallet)
             let compareResult = batteryBalance.balanceDecimalNumber.compare(0)
             return compareResult == .orderedDescending
         } catch {
@@ -464,8 +498,8 @@ public struct TransferService {
         wallet: Wallet,
         transfer: Transfer,
         excessAddress: Address,
-        tonProofToken: String,
-        transferType: TransferType
+        transferType: TransferType,
+        keepsUnavailableEstimate: Bool = false
     ) async throws -> TransferEmulationResult {
         let seqno = try await sendService.loadSeqno(wallet: wallet)
         do {
@@ -486,10 +520,11 @@ public struct TransferService {
             do {
                 let transactionInfo = try await batteryService.loadTransactionInfo(
                     wallet: wallet,
-                    boc: signed.toBoc().base64EncodedString(),
-                    tonProofToken: tonProofToken
+                    boc: signed.toBoc().base64EncodedString()
                 )
-                if transactionInfo.isBatteryAvailable {
+                // `isBatteryAvailable == false` means "cannot pay right now", not "no estimate":
+                // the charges are what the picker needs to mark the option insufficient.
+                if transactionInfo.isBatteryAvailable || keepsUnavailableEstimate {
                     return TransferEmulationResult(
                         transferType: .battery(excessAddress: excessAddress),
                         extra: TransferEmulationResult.Extra(
@@ -525,7 +560,6 @@ public struct TransferService {
         wallet: Wallet,
         transfer: Transfer,
         excessAddress: Address,
-        tonProofToken: String,
         transferType: TransferType
     ) async throws -> TransferEmulationResult {
         guard case let .jetton(jettonItem, _, _, _, _) = transfer else {
@@ -550,7 +584,6 @@ public struct TransferService {
 
         let comission = try await batteryService.loadGasslessCommission(
             wallet: wallet,
-            tonProofToken: tonProofToken,
             jettonMasterAddress: jettonItem.jettonInfo.address.toRaw(),
             boc: signed.toBoc().base64EncodedString()
         )
@@ -744,7 +777,7 @@ public struct TransferService {
                 seqno: seqno,
                 timeout: safelyTimeout
             )
-        case let .stonfiSwap(signRawRequest):
+        case let .stonfiSwap(signRawRequest), let .multichainSwap(signRawRequest):
             let transferData: TransferData
             do {
                 transferData = try TransferData(
@@ -752,7 +785,8 @@ public struct TransferService {
                         wallet: wallet,
                         signRawRequest: signRawRequest,
                         seqno: seqno,
-                        transferType: transferType
+                        transferType: transferType,
+                        keepsPayloadExcessAddress: transfer.keepsPayloadExcessAddress
                     ),
                     wallet: wallet,
                     messageType: messageType,
@@ -761,7 +795,7 @@ public struct TransferService {
                 )
             } catch {
                 throw .failedToCreateTransferData(
-                    message: "failed to build native swap transfer data due to error: \(error.localizedDescription)"
+                    message: "failed to build swap transfer data due to error: \(error.localizedDescription)"
                 )
             }
             return transferData
@@ -808,15 +842,18 @@ public struct TransferService {
                 timeout: safelyTimeout
             )
         case let .nativeSwap(model):
-            let payloads = model.messages.map { message in
-                TransferData.TonConnect.Payload(
-                    value: BigInt(message.sendAmount) ?? 0,
-                    recipientAddress: message.targetAddress,
-                    stateInit: nil,
-                    payload: Data(hex: message.payload)?.base64EncodedString()
-                )
-            }
-
+            let payloads = try model.messages
+                .map { message throws(TransferError) in
+                    try TransferData.TonConnect.Payload(
+                        value: BigInt(message.sendAmount) ?? 0,
+                        recipientAddress: message.targetAddress,
+                        stateInit: nil,
+                        payload: nativeSwapPayload(
+                            message.payload,
+                            excessAddress: transferType.excessAddress
+                        )
+                    )
+                }
             return TransferData(
                 transfer: .tonConnect(TransferData.TonConnect(
                     payloads: payloads,
@@ -834,9 +871,15 @@ public struct TransferService {
         wallet: Wallet,
         signRawRequest: SignRawRequest,
         seqno: UInt64,
-        transferType: TransferType
+        transferType: TransferType,
+        keepsPayloadExcessAddress: Bool = false
     ) async throws -> TransferData.Transfer {
-        let payloads = try await getTonconnectPayloads(wallet: wallet, signRawRequest: signRawRequest, transferType: transferType)
+        let payloads = try await getTonconnectPayloads(
+            wallet: wallet,
+            signRawRequest: signRawRequest,
+            transferType: transferType,
+            keepsPayloadExcessAddress: keepsPayloadExcessAddress
+        )
 
         return TransferData.Transfer.tonConnect(
             TransferData.TonConnect(
@@ -846,7 +889,12 @@ public struct TransferService {
         )
     }
 
-    private func getTonconnectPayloads(wallet: Wallet, signRawRequest: SignRawRequest, transferType: TransferType) async throws -> [TransferData.TonConnect.Payload] {
+    private func getTonconnectPayloads(
+        wallet: Wallet,
+        signRawRequest: SignRawRequest,
+        transferType: TransferType,
+        keepsPayloadExcessAddress: Bool = false
+    ) async throws -> [TransferData.TonConnect.Payload] {
         if case .battery = transferType, let batteryMessageVariant = signRawRequest.messagesVariants?.battery {
             return batteryMessageVariant.map {
                 TransferData.TonConnect.Payload(
@@ -904,9 +952,12 @@ public struct TransferService {
         }
         return try rebuildedMessages.map {
             var resultPayload: String? = $0.payload
-            if let payload = $0.payload, let excessesAddress = transferType.excessAddress {
+            if !keepsPayloadExcessAddress, let payload = $0.payload, let excessesAddress = transferType.excessAddress {
                 var payloadCell = try Cell.fromBase64(src: payload.fixBase64())
-                payloadCell = try rebuildPayloadWithExcessesAddress(payload: payloadCell, excessesAddress)
+                payloadCell = try TransferPayloadExcessAddressRewriter.rewrite(
+                    payload: payloadCell,
+                    excessAddress: excessesAddress
+                )
                 resultPayload = try payloadCell.toBoc().base64EncodedString()
             }
 
@@ -919,34 +970,38 @@ public struct TransferService {
         }
     }
 
-    private func rebuildPayloadWithExcessesAddress(payload: Cell, _ excessesAddress: Address) throws -> Cell {
-        let payloadSlice = try payload.toSlice()
-        guard let opcode = try? payloadSlice.loadUint(bits: 32),
-              opcode <= Int32.max
-        else {
-            return payload
-        }
-        let builder = Builder()
-
-        switch Int32(opcode) {
-        case OpCodes.JETTON_TRANSFER:
-            try builder.store(uint: OpCodes.JETTON_TRANSFER, bits: 32)
-            try builder.store(uint: payloadSlice.loadUint(bits: 64), bits: 64)
-            try builder.store(payloadSlice.loadCoins())
-            try builder.store(payloadSlice.loadType() as Address)
-            let _: TonSwift.AnyAddress = try payloadSlice.loadType()
-            while payloadSlice.remainingRefs > 0 {
-                let forwardCell = try payloadSlice.loadRef()
-                let rebuildedRef = try rebuildPayloadWithExcessesAddress(payload: forwardCell, excessesAddress)
-                try builder.store(ref: rebuildedRef)
-            }
-            try builder.store(excessesAddress)
-            try builder.store(bits: payloadSlice.loadBits(payloadSlice.remainingBits))
-        default:
-            return payload
+    private func nativeSwapPayload(_ payload: String, excessAddress: Address?) throws(TransferError) -> String? {
+        guard let excessAddress else {
+            return Data(strictHex: payload)?.base64EncodedString()
         }
 
-        return try builder.endCell()
+        guard let payloadData = Data(strictHex: payload) else {
+            throw TransferError.failedToCreateTransferData(message: "native swap payload is not valid hex")
+        }
+
+        let payloadCells: [Cell]
+        do {
+            payloadCells = try Cell.fromBoc(src: payloadData)
+        } catch {
+            throw TransferError.failedToCreateTransferData(
+                message: "native swap payload is not a valid cell: \(error.localizedDescription)"
+            )
+        }
+        guard payloadCells.count == 1, let payloadCell = payloadCells.first else {
+            throw TransferError.failedToCreateTransferData(message: "native swap payload must contain exactly one root cell")
+        }
+
+        do {
+            let rebuildedPayload = try TransferPayloadExcessAddressRewriter.rewrite(
+                payload: payloadCell,
+                excessAddress: excessAddress
+            )
+            return try rebuildedPayload.toBoc().base64EncodedString()
+        } catch {
+            throw TransferError.failedToCreateTransferData(
+                message: "failed to rebuild native swap payload: \(error.localizedDescription)"
+            )
+        }
     }
 
     private func isGaslessToken(

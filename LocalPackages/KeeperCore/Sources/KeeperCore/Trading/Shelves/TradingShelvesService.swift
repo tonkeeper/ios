@@ -5,8 +5,13 @@ public enum LoadShelvesFailure: Error {
     )
 }
 
-public protocol TradingShelvesService {
-    var shelves: TradingShelvesSnapshot? { get async }
+public enum TradingShelvesMode: Hashable, Sendable {
+    case legacy
+    case multichain
+}
 
-    func loadShelves() async throws(LoadShelvesFailure) -> TradingShelvesSnapshot
+public protocol TradingShelvesService {
+    func shelves(for mode: TradingShelvesMode) async -> TradingShelvesSnapshot?
+
+    func loadShelves(for mode: TradingShelvesMode) async throws(LoadShelvesFailure) -> TradingShelvesSnapshot
 }

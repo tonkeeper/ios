@@ -7,6 +7,7 @@ public struct ProcessedBalance: Equatable, Codable {
     public let items: [ProcessedBalanceItem]
     public let tonItem: ProcessedBalanceTonItem
     public let tronUSDTItem: ProcessedBalanceTronUSDTItem?
+    public let tronTRXItem: ProcessedBalanceTronTRXItem?
     public let jettonItems: [ProcessedBalanceJettonItem]
     public let stakingItems: [ProcessedBalanceStakingItem]
     public let batteryBalance: BatteryBalance?
@@ -41,6 +42,7 @@ public enum ProcessedBalanceItem: Equatable, Codable {
     case jetton(ProcessedBalanceJettonItem)
     case staking(ProcessedBalanceStakingItem)
     case tronUSDT(ProcessedBalanceTronUSDTItem)
+    case tronTRX(ProcessedBalanceTronTRXItem)
     case ethena(ProcessedBalanceEthenaItem)
 
     var shouldCalculateInTotal: Bool {
@@ -52,6 +54,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
         case let .staking(item):
             return item.shouldCalculateInTotal
         case let .tronUSDT(item):
+            return item.shouldCalculateInTotal
+        case let .tronTRX(item):
             return item.shouldCalculateInTotal
         case let .ethena(item):
             let usdeFlag = item.usde?.shouldCalculateInTotal ?? false
@@ -70,6 +74,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
             return item.amountConverted
         case let .tronUSDT(item):
             return item.converted
+        case let .tronTRX(item):
+            return item.converted
         case let .ethena(item):
             return (item.usde?.converted ?? 0) + (item.stakedUsde?.converted ?? 0)
         }
@@ -85,6 +91,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
             return staking.info.pool.toRaw()
         case .tronUSDT:
             return USDT.address.base58
+        case .tronTRX:
+            return TRX.symbol
         case .ethena:
             return JettonMasterAddress.USDe.toRaw()
         }
@@ -99,6 +107,8 @@ public enum ProcessedBalanceItem: Equatable, Codable {
         case let .staking(staking):
             return staking.info.amount == 0
         case let .tronUSDT(item):
+            return item.amount == 0
+        case let .tronTRX(item):
             return item.amount == 0
         case let .ethena(item):
             return ((item.usde?.amount ?? 0) + (item.stakedUsde?.amount ?? 0)) == 0
@@ -137,6 +147,17 @@ public struct ProcessedBalanceTronUSDTItem: Equatable, Codable {
     public let trxAmount: BigUInt
     public let fractionalDigits: Int
     public let tag: String?
+    public let currency: Currency
+    public let converted: Decimal
+    public let price: Decimal
+    public let diff: String?
+    public let shouldCalculateInTotal: Bool
+}
+
+public struct ProcessedBalanceTronTRXItem: Equatable, Codable {
+    public let id: String
+    public let amount: BigUInt
+    public let fractionalDigits: Int
     public let currency: Currency
     public let converted: Decimal
     public let price: Decimal

@@ -1,35 +1,40 @@
 import SwiftUI
 
 private struct SegmentedControlStyle: ViewModifier {
+    @Environment(\.tkResolvedTheme) private var resolvedTheme
+    @Environment(\.tkPalette) private var palette
+
     func body(content: Content) -> some View {
         content
             .frame(height: 40)
             .background(
                 Capsule(style: .continuous)
-                    .fill(Color(uiColor: backgroundColor))
+                    .fill(backgroundColor)
             )
     }
 
-    private var backgroundColor: UIColor {
-        UIColor {
-            let scheme = TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle)
-            switch scheme {
-            case is LightColorScheme:
-                return scheme.backgroundContentAlternate
-            case is DarkColorScheme:
-                return scheme.backgroundTransparent
-            default:
-                return scheme.backgroundOverlayExtraLight
-            }
+    private var backgroundColor: Color {
+        switch resolvedTheme {
+        case .light:
+            palette.background.contentAlternate
+        case .dark:
+            palette.background.transparent
+        case .deepBlue:
+            palette.background.overlayExtraLight
         }
     }
 }
 
-private struct SegmentedControlButtonStyle: ButtonStyle {
+private struct SegmentedControlButtonStyle<Selection: Hashable>: ButtonStyle {
+    let segmentID: Selection
+    @Binding var pressedSegmentID: Selection?
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(configuration.isPressed ? 0.89 : 1)
-            .animation(.easeInOut(duration: 0.14), value: configuration.isPressed)
+            .tkTapAnimation(isPressed: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { isPressed in
+                pressedSegmentID = isPressed ? segmentID : nil
+            }
     }
 }
 
@@ -63,11 +68,15 @@ public struct SegmentedControlShimmer: View {
 }
 
 public struct SegmentedControl<Selection: Hashable>: View {
+    @Environment(\.tkResolvedTheme) private var resolvedTheme
+    @Environment(\.tkPalette) private var palette
+
     private let segments: [Segment]
     private let initialSelection: Selection
     private let onSelectionChange: (Selection) -> Void
 
     @State private var selectedSegmentID: Selection
+    @State private var pressedSegmentID: Selection?
 
     public init(
         segments: [Segment],
@@ -141,8 +150,18 @@ private extension SegmentedControl {
             select(segment.id)
         } label: {
             segmentContent(segment)
+                .transaction { transaction in
+                    transaction.animation = nil
+                }
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(SegmentedControlButtonStyle())
+        .buttonStyle(
+            SegmentedControlButtonStyle(
+                segmentID: segment.id,
+                pressedSegmentID: $pressedSegmentID
+            )
+        )
         .frame(maxWidth: .infinity)
         .anchorPreference(
             key: SegmentBoundsPreferenceKey<Selection>.self,
@@ -157,10 +176,12 @@ private extension SegmentedControl {
             if let anchor = preferences[selectedSegmentID] {
                 let rect = proxy[anchor]
                 Capsule(style: .continuous)
-                    .fill(Color(uiColor: selectedItemBackgroundColor))
+                    .fill(selectedItemBackgroundColor)
                     .frame(width: rect.width, height: rect.height)
+                    .scaleEffect(isSelectedSegmentPressed ? TapAnimation.scale : 1)
                     .offset(x: rect.minX, y: rect.minY)
                     .animation(selectionChangeAnimation, value: selectedSegmentID)
+                    .animation(tapAnimation, value: pressedSegmentID)
             }
         }
     }
@@ -176,15 +197,16 @@ private extension SegmentedControl {
             Text(segment.title)
                 .textStyle(.label2)
                 .padding([.leading], 1)
-                .foregroundStyle(Color(uiColor: foregroungColor))
+                .foregroundStyle(foregroungColor)
         }
-        .padding(.vertical, 7)
+        .padding(.vertical, 6)
     }
 
     func select(_ segmentID: Selection) {
         guard selectedSegmentID != segmentID else { return }
 
         setSelectedSegmentID(segmentID)
+        TKTapAnimationHaptic.soft.impactOccurred()
 
         onSelectionChange(segmentID)
     }
@@ -199,27 +221,29 @@ private extension SegmentedControl {
         .spring(response: 0.28, dampingFraction: 0.84)
     }
 
-    private var foregroungColor: UIColor {
-        UIColor {
-            let scheme = TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle)
-            switch scheme {
-            case is LightColorScheme:
-                return scheme.textPrimary
-            default:
-                return scheme.buttonPrimaryForeground
-            }
+    private var tapAnimation: Animation {
+        isSelectedSegmentPressed ? TapAnimation.pressAnimation : TapAnimation.releaseAnimation
+    }
+
+    private var isSelectedSegmentPressed: Bool {
+        pressedSegmentID == selectedSegmentID
+    }
+
+    private var foregroungColor: Color {
+        switch resolvedTheme {
+        case .light:
+            palette.text.primary
+        case .dark, .deepBlue:
+            palette.button.primaryForeground
         }
     }
 
-    private var selectedItemBackgroundColor: UIColor {
-        UIColor {
-            let scheme = TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle)
-            switch scheme {
-            case is LightColorScheme:
-                return scheme.buttonPrimaryForeground
-            default:
-                return scheme.buttonTertiaryBackground
-            }
+    private var selectedItemBackgroundColor: Color {
+        switch resolvedTheme {
+        case .light:
+            palette.button.primaryForeground
+        case .dark, .deepBlue:
+            palette.button.tertiaryBackground
         }
     }
 }

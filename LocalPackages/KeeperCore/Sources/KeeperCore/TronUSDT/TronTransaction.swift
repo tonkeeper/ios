@@ -34,26 +34,6 @@ public struct TronTransaction: Codable, Hashable, Equatable, Sendable {
     public let isFailed: Bool
     public let batteryCharges: Int?
 
-    init(
-        txID: String,
-        timestamp: Int64,
-        fromAccount: TronSwift.Address,
-        toAccount: TronSwift.Address,
-        amount: BigUInt,
-        isPending: Bool,
-        isFailed: Bool,
-        batteryCharges: Int?
-    ) {
-        self.txID = txID
-        self.timestamp = timestamp
-        self.fromAccount = fromAccount
-        self.toAccount = toAccount
-        self.amount = amount
-        self.isPending = isPending
-        self.isFailed = isFailed
-        self.batteryCharges = batteryCharges
-    }
-
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         txID = try container.decode(String.self, forKey: .txID)

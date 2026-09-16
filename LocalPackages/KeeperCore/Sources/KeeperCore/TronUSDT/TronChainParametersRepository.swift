@@ -1,26 +1,48 @@
 import Foundation
 import TKLogging
 
-struct TronTRXResourcePrices: Codable, Sendable {
+struct TronChainFees: Codable, Sendable {
     let energySun: Int64
     let bandwidthSun: Int64
+    let createAccountSun: Int64
+    let createNewAccountSun: Int64
+    let createNewAccountBandwidthRate: Int64
 }
 
 protocol TronChainParametersRepository: AnyObject {
-    func trxResourcePrices() async -> TronTRXResourcePrices?
-    func setTrxResourcePrices(_ value: TronTRXResourcePrices) async
+    func chainFees() async -> TronChainFees?
+    func setChainFees(_ value: TronChainFees) async
 }
 
 actor TronChainParametersRepositoryImplementation: TronChainParametersRepository {
-    private var cachedTRXResourcePrices: TronTRXResourcePrices?
+    /// TRON can raise `getEnergyFee`/`getTransactionFee` at any time, and a stale price understates the fee.
+    static let cacheLifetime: TimeInterval = 10 * 60
 
-    init() {}
+    private var cachedChainFees: TronChainFees?
+    private var cachedAt: Date?
+    private let lifetime: TimeInterval
+    private let now: @Sendable () -> Date
 
-    func trxResourcePrices() -> TronTRXResourcePrices? {
-        cachedTRXResourcePrices
+    init(
+        lifetime: TimeInterval = TronChainParametersRepositoryImplementation.cacheLifetime,
+        now: @escaping @Sendable () -> Date = Date.init
+    ) {
+        self.lifetime = lifetime
+        self.now = now
     }
 
-    func setTrxResourcePrices(_ value: TronTRXResourcePrices) {
-        cachedTRXResourcePrices = value
+    func chainFees() -> TronChainFees? {
+        guard let cachedChainFees,
+              let cachedAt,
+              now().timeIntervalSince(cachedAt) < lifetime
+        else {
+            return nil
+        }
+        return cachedChainFees
+    }
+
+    func setChainFees(_ value: TronChainFees) {
+        cachedChainFees = value
+        cachedAt = now()
     }
 }

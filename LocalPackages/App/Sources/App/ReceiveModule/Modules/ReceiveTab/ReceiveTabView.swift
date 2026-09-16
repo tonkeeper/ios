@@ -51,19 +51,21 @@ final class ReceiveTabView: UIView, ConfigurableView {
         let buttonsModel: ReceiveButtonsView.Model
         let address: String?
         let addressButtonAction: () -> Void
-        let iconConfiguration: TKListItemIconView.Configuration
-        let tag: TKTagView.Configuration?
+        let avatarImageSource: AssetAvatarViewImageSource
+        let tag: TKTagSwiftUIViewConfig?
     }
 
     func configure(model: Model) {
         titleDescriptionView.configure(model: model.titleDescriptionModel)
         buttonsView.configure(model: model.buttonsModel)
-        qrCodeView.iconView.configuration = model.iconConfiguration
-        qrCodeView.setTagModel(model.tag)
-        qrCodeView.addressButton.address = model.address
-        qrCodeView.addressButton.tapHandler = {
-            model.addressButtonAction()
-        }
+        qrCodeView.configure(
+            model: ReceiveQRCodeView.Model(
+                address: model.address,
+                avatarImageSource: model.avatarImageSource,
+                tag: model.tag,
+                onCopy: model.addressButtonAction
+            )
+        )
         qrCodeView.sizeToFit()
         setNeedsLayout()
     }
@@ -104,7 +106,7 @@ private extension ReceiveTabView {
 private extension NSDirectionalEdgeInsets {
     static func titleDescriptionPadding(source: ReceiveTabView.Source) -> NSDirectionalEdgeInsets {
         NSDirectionalEdgeInsets(
-            top: source == .receive ? 24 : 0,
+            top: source == .receive ? 32 : 0,
             leading: 32,
             bottom: 16,
             trailing: 32

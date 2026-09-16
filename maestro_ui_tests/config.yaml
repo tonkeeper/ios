@@ -1,7 +1,36 @@
-flows:
-  - flows/import_wallet/*
-  - flows/battery/*
-  - flows/collectibles/*
-  - flows/transactions/*
+clusters:
+  ton-state:
+    gate_pipeline: true
+    build_artifact: maestro-ios-tonkeeper-app
+    # DefaultBootConfiguration.json ships disable_battery_crypto_recharge_module=true,
+    # which hides the crypto recharge entry the battery flows drive.
+    feature_flags_file: ci/ton-state-flags.json
+    flows:
+      - flows/ton-state/backup/*
+      - flows/ton-state/battery/*
+      - flows/ton-state/browser/*
+      - flows/ton-state/collectibles/*
+      - flows/ton-state/transactions/*
+      - flows/ton-state/staking/*
+      - flows/ton-state/trade/*
+      - flows/ton-state/tonconnect/*
+
+  multichain:
+    gate_pipeline: true
+    build_artifact: maestro-ios-tonkeeper-app-multichain
+    # Same JSON shape as MAESTRO_FEATURE_FLAG_OVERRIDES (disable_swap, disable_battery, …).
+    # Merged into FlagsOverride.json on the multichain simulator build — not via GHA job output.
+    feature_flags_file: ci/multichain-flags.json
+    flows:
+      - flows/multichain/portfolio/*
+      - flows/multichain/wallet/*
+      - flows/multichain/import/*
+      - flows/multichain/battery/*
+      - flows/multichain/swap_common/*
+      # swap_pairs parked: the pair matrix is not run in CI for now.
+      # Re-add this line (and skip_auto_rerun: [swap_pairs]) to bring it back.
+      - flows/multichain/send/*
+      - flows/multichain/trade/*
+      - flows/multichain/staking/*
 
 testOutputDir: ../build/maestro-output

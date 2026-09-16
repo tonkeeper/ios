@@ -13,9 +13,15 @@ let package = Package(
             targets: ["TKKeychain"]
         ),
     ],
+    dependencies: [
+        .package(path: "../TKLogging"),
+    ],
     targets: [
         .target(
             name: "TKKeychain",
+            dependencies: [
+                .product(name: "TKLogging", package: "TKLogging"),
+            ],
 
             swiftSettings: [
                 .treatAllWarnings(as: .error),

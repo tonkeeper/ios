@@ -74,7 +74,10 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
     }
 
     private func loadSwapURL() async throws -> URL? {
-        let methods = try await buySellMethodsService.loadFiatMethods(countryCode: nil)
+        let methods = try await buySellMethodsService.loadFiatMethods(
+            countryCode: nil,
+            walletId: wallet.multichainWalletState?.walletId
+        )
 
         if Task.isCancelled { return nil }
 
@@ -192,7 +195,7 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
                 text: TronSwift.USDT.tag.withTextStyle(.body2, color: .Text.secondary, alignment: .center),
                 action: nil
             ),
-            image: .image(.App.Currency.Size96.usdt),
+            image: .image(.TKUIKit.Icons.Size96.currencyUsdt),
             network: .trc20,
             tokenAmount: tokenAmount,
             convertedAmount: convertedAmount,
@@ -212,33 +215,10 @@ final class TronUSDTTokenDetailsConfigurator: TokenDetailsConfigurator {
         for snapshot: TronUsdtFeesSnapshot,
         onGetTrx: @escaping () -> Void
     ) -> InfoPopupBottomSheetViewController.Configuration {
-        let getTrxButton = {
-            var button = TKButton.Configuration.actionButtonConfiguration(
-                category: .secondary,
-                size: .large
-            )
-            button.content = .init(title: .plainString(TKLocales.TronUsdtFees.Common.Buttons.getTrx))
-            button.action = onGetTrx
-            return button
-        }()
-        return InfoPopupBottomSheetViewController.Configuration(
-            image: .TKUIKit.Icons.Size84.exclamationmarkCircle,
-            imageTintColor: .Icon.secondary,
-            title: TKLocales.TronUsdtFees.InsufficientPopup.title,
-            caption: TKLocales.TronUsdtFees.InsufficientPopup.caption(
-                amountFormatter.format(
-                    amount: snapshot.requiredTRX,
-                    fractionDigits: TRX.fractionDigits,
-                    accessory: .none
-                ),
-                amountFormatter.format(
-                    amount: snapshot.trxBalance,
-                    fractionDigits: TRX.fractionDigits,
-                    accessory: .none
-                )
-            ),
-            bodyContent: nil,
-            buttons: [getTrxButton]
+        TronUsdtInsufficientTrxSheet.configuration(
+            for: snapshot,
+            amountFormatter: amountFormatter,
+            onGetTrx: onGetTrx
         )
     }
 

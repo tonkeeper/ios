@@ -20,7 +20,7 @@ let package = Package(
         .target(
             name: "WalletExtensions",
             dependencies: [
-                .product(name: "TKUIKitDynamic", package: "TKUIKit"),
+                .product(name: "TKUIKit", package: "TKUIKit"),
                 .product(name: "KeeperCore", package: "KeeperCore"),
                 .product(name: "TKLocalize", package: "TKLocalize"),
             ],

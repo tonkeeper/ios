@@ -1,9 +1,10 @@
 import SnapKit
 import SwiftUI
+import TKUIKit
 import UIKit
 
 final class SwiftUIHostingView: UIView {
-    private let hostingController = UIHostingController(rootView: AnyView(EmptyView()))
+    private let hostingController = TKHostingController(content: AnyView(EmptyView()))
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -20,7 +21,7 @@ final class SwiftUIHostingView: UIView {
     }
 
     func setContent<Content: View>(@ViewBuilder _ content: () -> Content) {
-        hostingController.rootView = AnyView(content())
+        hostingController.content = AnyView(content())
         invalidateIntrinsicContentSize()
         setNeedsLayout()
     }
@@ -29,7 +30,7 @@ final class SwiftUIHostingView: UIView {
         id: ID,
         @ViewBuilder _ content: () -> Content
     ) {
-        hostingController.rootView = AnyView(
+        hostingController.content = AnyView(
             content()
                 .id(id)
         )
@@ -135,12 +136,7 @@ private extension SwiftUIHostingView {
         guard let hostingView = hostingController.view else {
             return CGSize(width: width, height: 0)
         }
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        hostingView.setNeedsLayout()
-        hostingView.layoutIfNeeded()
 
-        let widthConstraint = hostingView.widthAnchor.constraint(equalToConstant: width)
-        widthConstraint.isActive = true
         let fittingSize = hostingView.systemLayoutSizeFitting(
             CGSize(
                 width: width,
@@ -149,7 +145,6 @@ private extension SwiftUIHostingView {
             withHorizontalFittingPriority: .required,
             verticalFittingPriority: .fittingSizeLevel
         )
-        widthConstraint.isActive = false
 
         return CGSize(
             width: width,

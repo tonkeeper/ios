@@ -33,19 +33,21 @@ public struct RateConverter {
         return (amount: converted, fractionLength: fractionLength)
     }
 
+    /// `amount` in `amountFractionLength` decimals × `rate` (dest major / source major)
+    /// → result in `targetFractionLength` decimals.
     public func convert(
         amount: BigUInt,
         amountFractionLength: Int,
-        rate: NSDecimalNumber
+        rate: NSDecimalNumber,
+        targetFractionLength: Int
     ) -> BigUInt {
-        let amountDecimalNumber = NSDecimalNumber(string: String(amount))
-        let converted = amountDecimalNumber.multiplying(by: rate)
-        guard let convertedIntegerPart = converted.stringValue.components(separatedBy: ".").first,
-              let result = BigUInt(convertedIntegerPart)
-        else {
-            return 0
+        convertByScaling(
+            amount: amount,
+            amountFractionLength: amountFractionLength,
+            targetFractionLength: targetFractionLength
+        ) { amountMajor in
+            amountMajor.multiplying(by: rate)
         }
-        return result
     }
 
     public func convertFromCurrency(
@@ -64,19 +66,21 @@ public struct RateConverter {
         return result
     }
 
+    /// `amount` in `amountFractionLength` decimals ÷ `rate` (dest major / source major)
+    /// → result in `targetFractionLength` decimals.
     public func convertFromCurrency(
         amount: BigUInt,
         amountFractionLength: Int,
-        rate: NSDecimalNumber
+        rate: NSDecimalNumber,
+        targetFractionLength: Int
     ) -> BigUInt {
-        let amountDecimalNumber = NSDecimalNumber(string: String(amount))
-        let converted = amountDecimalNumber.dividing(by: rate)
-        guard let convertedIntegerPart = converted.stringValue.components(separatedBy: ".").first,
-              let result = BigUInt(convertedIntegerPart)
-        else {
-            return 0
+        convertByScaling(
+            amount: amount,
+            amountFractionLength: amountFractionLength,
+            targetFractionLength: targetFractionLength
+        ) { amountMajor in
+            amountMajor.dividing(by: rate)
         }
-        return result
     }
 
     public func convertToDecimal(
@@ -103,6 +107,25 @@ public struct RateConverter {
 
         guard let convertedIntegerPart = finalAmount.stringValue.components(separatedBy: ".").first,
               let result = BigUInt(convertedIntegerPart)
+        else {
+            return 0
+        }
+        return result
+    }
+
+    private func convertByScaling(
+        amount: BigUInt,
+        amountFractionLength: Int,
+        targetFractionLength: Int,
+        transform: (NSDecimalNumber) -> NSDecimalNumber
+    ) -> BigUInt {
+        let amountMajor = NSDecimalNumber(string: String(amount))
+            .multiplying(byPowerOf10: Int16(-amountFractionLength))
+        let convertedMajor = transform(amountMajor)
+        let convertedScaled = convertedMajor.multiplying(byPowerOf10: Int16(targetFractionLength))
+        let rounded = convertedScaled.rounding(accordingToBehavior: NSDecimalNumberHandler.roundBehaviour)
+        guard rounded.compare(NSDecimalNumber.zero) != .orderedAscending,
+              let result = BigUInt(rounded.stringValue)
         else {
             return 0
         }

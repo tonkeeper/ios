@@ -32,7 +32,6 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
 
     // MARK: - HistoryViewModel
 
-    var didChangeWallet: ((Wallet) -> Void)?
     var didUpdateIsConnecting: ((Bool) -> Void)?
     var didUpdateTabs: (([TKTabsView.Item]) -> Void)?
     var didUpdateTabViewIsHidden: ((Bool) -> Void)?
@@ -43,6 +42,7 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
     private let historyListModuleInput: HistoryListModuleInput
     private let configuration: Configuration
     private var tabs: [TKTabsView.Item] = []
+    private var backgroundStateTask: Task<Void, Never>?
 
     init(
         wallet: Wallet,
@@ -58,6 +58,10 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
         self.presentationStyle = presentationStyle
     }
 
+    deinit {
+        backgroundStateTask?.cancel()
+    }
+
     func setHistoryListState(_ state: HistoryList.State) {
         switch state {
         case .loading:
@@ -67,18 +71,19 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
         }
     }
 
-    var didSelectFilter: ((HistoryList.Filter) -> Void)?
-
     @MainActor func viewDidLoad() {
         setupTabs()
 
-        backgroundUpdate.addStateObserver(self) { observer, wallet, state in
-            DispatchQueue.main.async {
-                guard wallet == observer.wallet else { return }
-                observer.didUpdateIsConnecting?(observer.isConnecting(state))
+        let walletID = wallet.id
+        didUpdateIsConnecting?(isConnecting(backgroundUpdate.connectionState(walletID: walletID)))
+        backgroundStateTask?.cancel()
+        backgroundStateTask = Task { @MainActor [weak self, backgroundUpdate] in
+            for await update in backgroundUpdate.stateUpdates() {
+                guard let self else { return }
+                guard update.walletID == walletID else { continue }
+                didUpdateIsConnecting?(isConnecting(update.state))
             }
         }
-        didUpdateIsConnecting?(isConnecting(backgroundUpdate.getState(wallet: wallet)))
     }
 
     private func isConnecting(_ backgroundUpdateState: BackgroundUpdateConnectionState) -> Bool {
@@ -128,6 +133,7 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
     }
 
     @MainActor func close() {
+        backgroundStateTask?.cancel()
         presentationStyle.closeAction?()
     }
 }

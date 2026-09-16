@@ -12,7 +12,6 @@ public struct BootConfigurations: Codable {
 public struct BootConfiguration: Codable, Equatable {
     public let tonapiV2Endpoint: String
     public let tonapiTestnetHost: String
-    public let tonAPISSEEndpoint: String
     public let tonAPISSEEndpointV2: String?
     public let batteryHost: String
     public let tonApiV2Key: String
@@ -53,6 +52,41 @@ public struct BootConfiguration: Codable, Equatable {
     public let tronSwapTitle: String
     public let tonkeeperApiUrl: String?
     public let multichainHelpUrl: URL?
+    public let multichain: Endpoint
+    public let trading: Endpoint
+    public let explorers: [ChainExplorer]
+
+    public struct Endpoint: Codable, Equatable {
+        public let domain: URL
+    }
+
+    public struct ChainExplorer: Codable, Equatable {
+        public let chain: String
+        public let name: String
+        /// Transaction page template carrying a `{tx_hash}` placeholder.
+        public let url: String
+        /// Token page template carrying a `{token_address}` placeholder. Absent on chains without tokens.
+        public let tokenURL: String?
+
+        public init(
+            chain: String,
+            name: String,
+            url: String,
+            tokenURL: String?
+        ) {
+            self.chain = chain
+            self.name = name
+            self.url = url
+            self.tokenURL = tokenURL
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case chain
+            case name
+            case url
+            case tokenURL = "token_url"
+        }
+    }
 
     public struct Flags: Codable, Equatable {
         public let isSwapDisable: Bool
@@ -68,6 +102,7 @@ public struct BootConfiguration: Codable, Equatable {
         public let onboardingStoryDisabled: Bool
         public let nftsDisabled: Bool
         public let nativeSwapDisabled: Bool
+        public let multichainEnabled: Bool
     }
 }
 
@@ -76,7 +111,6 @@ extension BootConfiguration {
         BootConfiguration(
             tonapiV2Endpoint: "",
             tonapiTestnetHost: "",
-            tonAPISSEEndpoint: "",
             tonAPISSEEndpointV2: nil,
             batteryHost: "",
             tonApiV2Key: "",
@@ -116,7 +150,10 @@ extension BootConfiguration {
             tronSwapUrl: "https://widget.letsexchange.io/en?affiliate_id=ffzymmunvvyxyypo&coin_from=ton&coin_to=USDT-TRC20&is_iframe=true",
             tronSwapTitle: "LetsExchange",
             tonkeeperApiUrl: nil,
-            multichainHelpUrl: URL(string: "https://tonkeeper.helpscoutdocs.com/article/137-multichain#Transfer-fees-for-USDT-TRC20-tHzDd")
+            multichainHelpUrl: URL(string: "https://tonkeeper.helpscoutdocs.com/article/137-multichain#Transfer-fees-for-USDT-TRC20-tHzDd"),
+            multichain: Endpoint(domain: URL(string: "https://multi.tonkeeper.com")!),
+            trading: Endpoint(domain: URL(string: "https://trading.tonkeeper.com")!),
+            explorers: []
         )
     }
 }
@@ -136,7 +173,8 @@ extension BootConfiguration.Flags {
             storiesDisabled: true,
             onboardingStoryDisabled: true,
             nftsDisabled: true,
-            nativeSwapDisabled: true
+            nativeSwapDisabled: true,
+            multichainEnabled: true
         )
     }
 }

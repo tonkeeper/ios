@@ -7,21 +7,24 @@ import UIKit
 final class DefaultLottieTabBarController: NSObject {
     private final class LottieTabView {
         let animationView: LottieAnimationView
-        weak var imageView: UIImageView?
+        weak var iconContainer: UIView?
 
-        init(animationView: LottieAnimationView, imageView: UIImageView? = nil) {
+        init(animationView: LottieAnimationView, iconContainer: UIView? = nil) {
             self.animationView = animationView
-            self.imageView = imageView
+            self.iconContainer = iconContainer
         }
     }
 
-    private weak var tabBarController: UITabBarController?
+    private weak var tabBarController: TKTabBarController?
     private let animatedViews: [LottieTabView]
 
     init?(
         tabBarController: UITabBarController,
         items: [LottieResourceConvertible]
     ) {
+        guard let tabBarController = tabBarController as? TKTabBarController else {
+            return nil
+        }
         self.tabBarController = tabBarController
 
         let resources = items.compactMap(\.asLottieResource)
@@ -45,17 +48,24 @@ final class DefaultLottieTabBarController: NSObject {
             }
 
         super.init()
+        startAppStateObservation()
+        startTabBarLayoutObservation()
         installAnimationViewsIfNeeded()
         updateSelection(selectedIndex: tabBarController.selectedIndex)
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
 extension DefaultLottieTabBarController: LottieTabBarControlling {
     func uninstall() {
-        for view in animatedViews {
-            view.imageView?.isHidden = false
+        NotificationCenter.default.removeObserver(self)
+        tabBarController?.didLayoutTabBar = nil
+        for (index, view) in animatedViews.enumerated() {
+            detachAnimationView(view, at: index)
             view.animationView.stop()
-            view.animationView.removeFromSuperview()
         }
     }
 
@@ -73,31 +83,57 @@ extension DefaultLottieTabBarController: LottieTabBarControlling {
 }
 
 extension DefaultLottieTabBarController {
-    private func installAnimationViewsIfNeeded() {
-        guard let tabBarItems = tabBarController?.tabBar.items else { return }
-
-        for (index, view) in animatedViews.enumerated() {
-            guard
-                let tabBarItem = tabBarItems[safe: index],
-                let imageView = tabBarItem.firstImageView
-            else {
-                continue
-            }
-
-            let needsInstall = view.animationView.superview !== imageView.superview || view.imageView !== imageView
-            guard needsInstall else { continue }
-
-            view.animationView.removeFromSuperview()
-            imageView.superview?.addSubview(view.animationView)
-            view.animationView.snp.remakeConstraints { make in
-                make.edges.equalTo(imageView)
-            }
-            imageView.isHidden = true
-            view.imageView = imageView
+    private func startAppStateObservation() {
+        for name in LottieTabBarRecovery.notificationNames {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(recoverAfterAppStateChange),
+                name: name,
+                object: nil
+            )
         }
     }
 
+    private func startTabBarLayoutObservation() {
+        tabBarController?.didLayoutTabBar = { [weak self] in
+            self?.installAnimationViewsIfNeeded()
+        }
+    }
+
+    private func installAnimationViewsIfNeeded() {
+        guard let tabBarController else { return }
+
+        for (index, view) in animatedViews.enumerated() {
+            guard let iconContainer = tabBarController.tabBarIconContainer(at: index) else {
+                detachAnimationView(view, at: index)
+                continue
+            }
+
+            let hidesStaticIcon = view.animationView.animation != nil
+            guard view.animationView.superview !== iconContainer else {
+                tabBarController.setTabBarStaticIconHidden(hidesStaticIcon, at: index)
+                iconContainer.bringSubviewToFront(view.animationView)
+                continue
+            }
+
+            view.animationView.removeFromSuperview()
+            iconContainer.addSubview(view.animationView)
+            view.animationView.snp.remakeConstraints { make in
+                make.edges.equalTo(iconContainer)
+            }
+            tabBarController.setTabBarStaticIconHidden(hidesStaticIcon, at: index)
+            view.iconContainer = iconContainer
+        }
+    }
+
+    private func detachAnimationView(_ view: LottieTabView, at index: Int) {
+        tabBarController?.setTabBarStaticIconHidden(false, at: index)
+        view.iconContainer = nil
+        view.animationView.removeFromSuperview()
+    }
+
     private func updateSelection(selectedIndex: Int) {
+        tabBarController?.applyCustomBarSelection(at: selectedIndex)
         for (index, view) in animatedViews.enumerated() {
             let color = index == selectedIndex ? UIColor.TabBar.activeIcon : UIColor.TabBar.inactiveIcon
             let valueProvider = ColorValueProvider(color.asLottieColor)
@@ -110,6 +146,21 @@ extension DefaultLottieTabBarController {
                 valueProvider,
                 keypath: AnimationKeypath(keypath: "**.Stroke 1.Color")
             )
+        }
+    }
+
+    @objc
+    private func recoverAfterAppStateChange() {
+        guard let tabBarController else { return }
+
+        LottieTabBarRecovery.refreshLayout(of: tabBarController)
+        installAnimationViewsIfNeeded()
+        for view in animatedViews {
+            LottieTabBarRecovery.resetPlayback(of: view.animationView)
+        }
+        updateSelection(selectedIndex: tabBarController.selectedIndex)
+        for view in animatedViews {
+            view.animationView.forceDisplayUpdate()
         }
     }
 }

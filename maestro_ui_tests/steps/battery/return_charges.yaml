@@ -1,0 +1,33 @@
+# Refunds the remaining Battery balance: Charges history → Details → Return charges.
+# Prerequisite: Battery refill screen is open.
+# Ends back on the refill screen, scrolled to the history section, browser closed.
+appId: com.jbig.tonkeeper
+---
+- scrollUntilVisible:
+    centerElement: true
+    direction: DOWN
+    element:
+      id: battery_charges_history
+    timeout: 40000
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: battery_charges_history
+    waitToSettleTimeoutMs: 5000
+    retryTapIfNoChange: true
+
+# Opens bat.tonkeeper.com in the in-app browser — wait for native title.
+- extendedWaitUntil:
+    visible: Charges history
+    timeout: 30000
+- extendedWaitUntil:
+    visible: Details
+    timeout: 5000
+- tapOn: Details
+- scrollUntilVisible:
+    element: Return charges
+    direction: DOWN
+    timeout: 30000
+- tapOn: Return charges
+- tapOn:
+    id: close

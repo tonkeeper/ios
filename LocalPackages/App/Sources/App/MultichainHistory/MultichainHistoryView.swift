@@ -1,3 +1,6 @@
+import AppUI
+import Foundation
+import KeeperCore
 import SwiftUI
 import TKLocalize
 import TKUIKit
@@ -5,19 +8,25 @@ import UIKit
 
 struct MultichainHistoryView: View {
     @ObservedObject var viewModel: MultichainHistoryViewModelImplementation
-    let onClose: () -> Void
+    let onClose: (() -> Void)?
+    let onOpenTransaction: (URL, String?) -> Void
+    @State private var selectedActivity: MultichainActivity?
+    @State private var isFiltersPresented = false
+    @Environment(\.tkPalette) private var palette
 
     init(
         viewModel: MultichainHistoryViewModelImplementation,
-        onClose: @escaping () -> Void = {}
+        onClose: (() -> Void)? = nil,
+        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in }
     ) {
         self.viewModel = viewModel
         self.onClose = onClose
+        self.onOpenTransaction = onOpenTransaction
     }
 
     var body: some View {
         ZStack {
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -26,15 +35,38 @@ struct MultichainHistoryView: View {
                 content
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                typeFilterActionBar
+            }
         }
+        .tkBottomSheet(
+            item: $selectedActivity,
+            header: { _, _ in .compact },
+            content: { activity in
+                MultichainTransactionDetailsView(
+                    model: viewModel.transactionDetailsModel(for: activity),
+                    onOpenTransaction: onOpenTransaction,
+                    onCopy: { Pasteboard.copy(value: $0) }
+                )
+            }
+        )
+        .tkBottomSheet(
+            isPresented: $isFiltersPresented,
+            header: { dismiss in
+                TKBottomSheetHeaderConfiguration(
+                    title: .title(title: TKLocales.Filters.title),
+                    rightButton: .close(action: { _ in dismiss() })
+                )
+            },
+            content: {
+                FiltersSheet(viewModel: viewModel)
+            }
+        )
         .task {
             viewModel.viewDidLoad()
         }
         .onDisappear {
             viewModel.disappeared()
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            typeFilterActionBar
         }
     }
 }
@@ -43,50 +75,75 @@ private extension MultichainHistoryView {
     var header: some View {
         DefaultModalCardHeader(
             config: DefaultModalCardHeader.Config(
-                leftIcon: DefaultModalCardHeader.Icon(
-                    image: .TKUIKit.Icons.Size16.chevronLeft,
-                    size: 16,
-                    padding: 8,
-                    onTap: { _ in onClose() }
-                ),
+                leftIcon: onClose.map { onClose in
+                    DefaultModalCardHeader.Icon(
+                        image: .TKUIKit.Icons.Size16.chevronLeft,
+                        size: 16,
+                        padding: 8,
+                        accessibilityIdentifier: "history_back_button",
+                        onTap: { _ in onClose() }
+                    )
+                },
                 title: DefaultModalCardHeader.Title(
                     text: TKLocales.History.title
+                ),
+                rightIcon: DefaultModalCardHeader.Icon(
+                    image: .TKUIKit.Icons.Size16.sliders,
+                    size: 16,
+                    padding: 8,
+                    accessibilityIdentifier: "history_filters_button",
+                    onTap: { _ in isFiltersPresented = true }
                 )
             )
         )
     }
 
+    @ViewBuilder
     var chainTabs: some View {
-        TabCategoriesView(
-            items: viewModel.chainTabs.map { tab in
-                TabCategoriesView<MultichainHistoryChainFilter>.Item(
-                    id: tab.id,
-                    title: tab.title,
-                    image: tab.image,
-                    isSelectable: tab.isSelectable
-                )
-            },
-            initialSelection: viewModel.selectedChainFilter,
-            onSelectionChange: { selection in
-                viewModel.selectChainFilter(selection)
-            },
-            insetsModifier: { insets in
-                insets.leading = Layout.tabsHorizontalPadding
-                insets.trailing = Layout.tabsHorizontalPadding
-                insets.bottom = Layout.tabsBottomPadding
-            }
-        )
-        .frame(height: Layout.tabsHeight)
+        if !viewModel.chainTabs.isEmpty {
+            TabCategoriesView(
+                items: viewModel.chainTabs.map { tab in
+                    TabCategoriesView<MultichainHistoryChainFilter>.Item(
+                        id: tab.id,
+                        title: tab.title,
+                        image: tab.image,
+                        isSelectable: tab.isSelectable
+                    )
+                },
+                initialSelection: viewModel.selectedChainFilter,
+                onSelectionChange: { selection in
+                    viewModel.selectChainFilter(selection)
+                },
+                style: .secondary,
+                insetsModifier: { insets in
+                    insets.leading = Layout.tabsHorizontalPadding
+                    insets.trailing = Layout.tabsHorizontalPadding
+                    insets.bottom = Layout.tabsBottomPadding
+                }
+            )
+            .frame(height: Layout.tabsHeight)
+        }
     }
 
     @ViewBuilder
     var content: some View {
-        if let queryViewModel = viewModel.currentQueryViewModel {
-            MultichainHistoryContentView(
-                viewModel: queryViewModel
-            )
-        } else {
+        if viewModel.contentDescriptors.isEmpty {
             MultichainHistorySkeletonView()
+        } else {
+            ZStack {
+                ForEach(viewModel.contentDescriptors) { descriptor in
+                    MultichainHistoryContentView(
+                        viewModel: descriptor.queryViewModel,
+                        onSelectActivity: selectActivity,
+                        isActive: descriptor.isActive
+                    )
+                    .opacity(descriptor.isActive ? 1 : 0)
+                    .allowsHitTesting(descriptor.isActive)
+                    .accessibilityHidden(!descriptor.isActive)
+                    .id(descriptor.id)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 
@@ -100,10 +157,32 @@ private extension MultichainHistoryView {
         }
     }
 
+    func selectActivity(_ activity: MultichainActivity) {
+        selectedActivity = activity
+    }
+
+    struct FiltersSheet: View {
+        @ObservedObject var viewModel: MultichainHistoryViewModelImplementation
+
+        var body: some View {
+            FilterToggleView(
+                items: [
+                    FilterToggleItem(
+                        title: TKLocales.Filters.History.hideDust,
+                        subtitle: TKLocales.Filters.History.hideDustCaption,
+                        isOn: viewModel.hidesDustTransactions,
+                        onToggle: viewModel.setHidesDustTransactions
+                    ),
+                ]
+            )
+        }
+    }
+
     struct TypeFilterActionBar: View {
         @ObservedObject var viewModel: MultichainHistoryViewModelImplementation
         @ObservedObject var queryViewModel: MultichainHistoryQueryViewModel
         @State private var typeFilterButtonAnchorView: UIView?
+        @Environment(\.tkPalette) private var palette
 
         var body: some View {
             if viewModel.isTypeFilterActionBarVisible(for: queryViewModel) {
@@ -133,11 +212,11 @@ private extension MultichainHistoryView {
                     LinearGradient(
                         stops: [
                             Gradient.Stop(
-                                color: Color(uiColor: .Background.page).opacity(0),
+                                color: palette.background.page.opacity(0),
                                 location: 0
                             ),
                             Gradient.Stop(
-                                color: Color(uiColor: .Background.page),
+                                color: palette.background.page,
                                 location: 1
                             ),
                         ],
@@ -185,6 +264,8 @@ private extension MultichainHistoryView {
 
 private struct MultichainHistoryContentView: View {
     @ObservedObject var viewModel: MultichainHistoryQueryViewModel
+    let onSelectActivity: (MultichainActivity) -> Void
+    let isActive: Bool
 
     var body: some View {
         let presentation = viewModel.presentation
@@ -203,6 +284,7 @@ private struct MultichainHistoryContentView: View {
                 }
             }
         }
+        .tkImmediateButtonPresses()
         .refreshable {
             await Task {
                 await MinimumRefreshDurationBehavior.perform {
@@ -210,50 +292,49 @@ private struct MultichainHistoryContentView: View {
                 }
             }.value
         }
+        .onAppear {
+            guard isActive else {
+                return
+            }
+            viewModel.appeared()
+        }
     }
 }
 
 private extension MultichainHistoryContentView {
     func sectionsView(_ sections: [MultichainHistorySection]) -> some View {
         ForEach(sections) { section in
-            VStack(alignment: .leading, spacing: 0) {
-                ListTitleView(
-                    config: .text(section.title)
-                )
-                .padding(.horizontal, Layout.horizontalPadding)
-
-                LazyVStack(spacing: Layout.cellSpacing) {
-                    ForEach(section.items) { item in
-                        transactionCell(item)
+            Section {
+                ForEach(Array(section.groups.enumerated()), id: \.element.id) { index, group in
+                    VStack(spacing: 0) {
+                        ForEach(Array(group.items.enumerated()), id: \.element.id) { index, item in
+                            MultichainHistoryTransactionCell(
+                                item: item,
+                                showsDivider: index < group.items.count - 1
+                            ) {
+                                onSelectActivity(item.activity)
+                            }
                             .onAppear {
+                                guard isActive else {
+                                    return
+                                }
                                 viewModel.loadNextPageIfNeeded(currentItem: item)
                             }
+                        }
                     }
+                    .asCellsGroup()
+                    .padding(.top, index == 0 ? 0 : Layout.cellSpacing)
                 }
 
                 Spacer()
                     .frame(height: Layout.sectionSpacing)
+            } header: {
+                ListTitleView(
+                    config: .text(section.title)
+                )
+                .padding(.horizontal, Layout.horizontalPadding)
             }
         }
-    }
-
-    func transactionCell(_ item: MultichainHistoryActivityItem) -> some View {
-        TransactionCell(
-            config: .content(
-                TransactionCellContent(
-                    icon: item.transactionIcon,
-                    title: item.title,
-                    subtitle: TransactionCellContent.Subtitle(
-                        text: item.subtitle ?? "",
-                        style: .primary
-                    ),
-                    amount: item.transactionAmount,
-                    accessory: item.transactionAccessory,
-                    details: item.transactionDetails
-                )
-            )
-        )
-        .asCellsGroup()
     }
 
     func placeholderView(_ placeholder: MultichainHistoryQueryViewModel.Placeholder) -> some View {
@@ -279,6 +360,12 @@ private extension MultichainHistoryContentView {
                     action: viewModel.addFunds
                 )
             )
+        case .filtered:
+            return PlaceholderView.Config(
+                lottieResource: .clock,
+                title: TKLocales.MultichainHistory.Placeholder.Filtered.title,
+                subtitle: TKLocales.MultichainHistory.Placeholder.Filtered.subtitle
+            )
         case let .error(message):
             return PlaceholderView.Config(
                 lottieResource: .exclamationmarkCircle,
@@ -298,19 +385,20 @@ private extension MultichainHistoryContentView {
     }
 
     var loadingMoreView: some View {
-        ProgressView()
-            .tint(Color(uiColor: .Accent.blue))
-            .frame(maxWidth: .infinity)
-            .frame(height: Layout.loadingMoreHeight)
+        CircularLoader(
+            mode: .indeterminate,
+            preset: .medium
+        )
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, Layout.loadingMorePadding)
     }
 
     enum Layout {
         static let horizontalPadding: CGFloat = 16
         static let cellSpacing: CGFloat = 8
         static let sectionSpacing: CGFloat = 16
-        static let bottomPadding: CGFloat = 16
         static let placeholderTopPadding: CGFloat = 139
-        static let loadingMoreHeight: CGFloat = 56
+        static let loadingMorePadding: CGFloat = 16
     }
 }
 
@@ -319,7 +407,7 @@ private struct MultichainHistorySkeletonView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ListTitleView(config: .shimmer)
+            ListTitleView(config: .shimmer(hasAccessory: false))
                 .padding(.horizontal, Layout.horizontalPadding)
 
             LazyVStack(spacing: Layout.cellSpacing) {
@@ -336,67 +424,5 @@ private extension MultichainHistorySkeletonView {
     enum Layout {
         static let horizontalPadding: CGFloat = 16
         static let cellSpacing: CGFloat = 8
-    }
-}
-
-private extension MultichainHistoryActivityItem {
-    var transactionIcon: TransactionCellContent.Icon {
-        TransactionCellContent.Icon(
-            image: icon,
-            tintColor: Color(uiColor: .Icon.secondary)
-        )
-    }
-
-    var transactionAmount: TransactionCellContent.Amount {
-        TransactionCellContent.Amount(
-            title: primaryAmount?.text ?? "-",
-            style: primaryAmount.map(\.transactionAmountStyle) ?? .tertiary
-        )
-    }
-
-    var transactionAccessory: TransactionCellContent.Accessory {
-        guard let secondaryAmount else {
-            return TransactionCellContent.Accessory(text: time)
-        }
-
-        return TransactionCellContent.Accessory(
-            text: secondaryAmount.text,
-            textStyle: .label1,
-            color: secondaryAmount.transactionAccessoryColor
-        )
-    }
-
-    var transactionDetails: TransactionCellContent.Details? {
-        guard secondaryAmount != nil else {
-            return nil
-        }
-
-        return TransactionCellContent.Details(
-            accessory: TransactionCellContent.DetailsAccessory(
-                text: time
-            )
-        )
-    }
-}
-
-private extension MultichainHistoryActivityItem.Amount {
-    var transactionAmountStyle: TransactionCellContent.AmountStyle {
-        switch style {
-        case .primary:
-            return .primary
-        case .positive:
-            return .positive
-        case .negative:
-            return .primary
-        }
-    }
-
-    var transactionAccessoryColor: Color {
-        switch style {
-        case .positive:
-            return Color(uiColor: .Accent.green)
-        case .primary, .negative:
-            return Color(uiColor: .Text.primary)
-        }
     }
 }

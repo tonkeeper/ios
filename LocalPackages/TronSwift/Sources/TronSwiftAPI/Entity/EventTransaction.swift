@@ -44,24 +44,6 @@ public struct EventTransaction: Decodable {
     public let type: TransactionType
     public let value: BigUInt
 
-    public init(
-        transactionId: String,
-        tokenInfo: TokenInfo,
-        timestamp: Int64,
-        from: Address,
-        to: Address,
-        type: TransactionType,
-        value: BigUInt
-    ) {
-        self.transactionId = transactionId
-        self.tokenInfo = tokenInfo
-        self.timestamp = timestamp
-        self.from = from
-        self.to = to
-        self.type = type
-        self.value = value
-    }
-
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         transactionId = try container.decode(String.self, forKey: .transactionId)

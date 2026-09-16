@@ -31,9 +31,7 @@ private extension BrowserExploreView {
         backgroundColor = .Background.page
         collectionView.backgroundColor = .Background.page
 
-        if !UIApplication.useSystemBarsAppearance {
-            collectionView.contentInsetAdjustmentBehavior = .never
-        }
+        collectionView.contentInsetAdjustmentBehavior = .never
 
         addSubview(collectionView)
 

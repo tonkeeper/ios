@@ -3,6 +3,7 @@ import Foundation
 import KeeperCore
 import TKLocalize
 import TKUIKit
+import TronSwift
 import UIKit
 
 @MainActor
@@ -10,16 +11,24 @@ struct TradeAssetDetailsScreenMapper {
     let initialHeader: TradeAssetDetailsHeaderViewData
 
     private let assetID: String
+    private let multichainState: MultichainWalletState?
+    private let isSwapDisabled: Bool
+    private let amountFormatter: AmountFormatter
     private let valueFormatter: TradeAssetDetailsValueFormatter
     private let displayFormatter: TradeAssetDetailsDisplayFormatter
 
     init(
+        multichainState: MultichainWalletState?,
         preview: TradeAssetDetailsViewModel.PreviewContext,
+        isSwapDisabled: Bool,
         amountFormatter: AmountFormatter,
         signedAmountFormatter: AmountFormatter,
         currencyProvider: @escaping () -> Currency
     ) {
         self.assetID = preview.assetID
+        self.multichainState = multichainState
+        self.isSwapDisabled = isSwapDisabled
+        self.amountFormatter = amountFormatter
         let valueFormatter = TradeAssetDetailsValueFormatter(
             amountFormatter: amountFormatter,
             signedAmountFormatter: signedAmountFormatter,
@@ -33,11 +42,16 @@ struct TradeAssetDetailsScreenMapper {
         )
         self.initialHeader = TradeAssetDetailsHeaderViewData(
             title: preview.title ?? "",
-            imageSource: AssetIdResolver.imageSource(for: preview.assetID, imageUrl: preview.imageURL),
-            subtitle: TradeAssetDetailsHeaderSubtitleViewData(
-                assetCategory: preview.assetCategory,
-                isUnverified: preview.isUnverified
+            imageSource: AssetIdResolver.imageSource(
+                for: preview.assetID,
+                imageUrl: preview.imageURL,
+                multichainEnabled: multichainState != nil
             ),
+            subtitle: TradeAssetDetailsViewModel.HeaderSubtitleViewData(
+                preview: preview,
+                isMultichain: multichainState != nil
+            ),
+            showsVerificationCheckmark: preview.isTrusted == true,
             earnText: nil
         )
     }
@@ -46,7 +60,10 @@ struct TradeAssetDetailsScreenMapper {
         details: TradingAssetDetails?,
         marketData: TradeAssetDetailsMarketData?,
         balance: TradeAssetDetailsBalanceSnapshot?,
-        history: TradeAssetDetailsHistoryPreview?
+        history: TradeAssetDetailsHistorySectionViewData?,
+        multichainHistory: TradeAssetDetailsMultichainHistorySectionViewData?,
+        tronFees: TronUsdtFeesSnapshot?,
+        isSecureMode: Bool
     ) -> (header: TradeAssetDetailsHeaderViewData, screen: TradeAssetDetailsScreenViewData?) {
         guard let details else {
             return (initialHeader, nil)
@@ -58,23 +75,26 @@ struct TradeAssetDetailsScreenMapper {
             .flatMap(displayFormatter.formatTradingChange)
         let earnText = valueFormatter.earnApyButtonFormatter(assetInfo.earnAPY)
 
-        let displayTitle: String
-        if case .ton = assetInfo.typedAssetId {
-            displayTitle = TonInfo.name
-        } else {
-            displayTitle = assetInfo.title
-        }
-
         let header = TradeAssetDetailsHeaderViewData(
-            title: displayTitle,
-            imageSource: AssetIdResolver.imageSource(for: assetInfo.assetId, imageUrl: assetInfo.imageURL),
-            subtitle: TradeAssetDetailsHeaderSubtitleViewData(assetInfo: assetInfo),
+            title: assetInfo.title,
+            imageSource: AssetIdResolver.imageSource(
+                for: assetInfo.assetId,
+                imageUrl: assetInfo.imageURL,
+                multichainEnabled: multichainState != nil
+            ),
+            subtitle: TradeAssetDetailsViewModel.HeaderSubtitleViewData(
+                assetInfo: assetInfo,
+                isMultichain: multichainState != nil
+            ),
+            showsVerificationCheckmark: assetInfo.isTrusted,
             earnText: earnText
         )
 
+        let balanceSection = balanceSection(balance, isSecureMode: isSecureMode)
+
         let screen = TradeAssetDetailsScreenViewData(
             id: details.id,
-            title: displayTitle,
+            title: assetInfo.title,
             imageURL: assetInfo.imageURL,
             priceText: marketData?.priceText ?? valueFormatter.formatPrice(assetInfo.price),
             changeText: marketData?.changeText ?? valueFormatter.formatChange(assetInfo.changePercent),
@@ -82,7 +102,7 @@ struct TradeAssetDetailsScreenMapper {
             changeColor: marketData?.changeColor
                 ?? ((assetInfo.changePercent ?? 0) < 0 ? .Accent.red : .Accent.green),
             earnText: earnText,
-            balance: balanceSection(balance),
+            balance: balanceSection,
             aboutParagraph: details.aboutParagraph,
             overview: details.overview.map {
                 TradeAssetDetailsMetricViewData(
@@ -108,10 +128,17 @@ struct TradeAssetDetailsScreenMapper {
                         title: TKLocales.BuySellList.sell,
                         value: tradingActivity.sellText
                     ),
-                    buyFraction: tradingActivity.buyFraction
+                    buyFraction: tradingActivity.buyFraction,
+                    attributionText: attributionText(source: details.infoSource)
                 )
             },
-            history: historySection(history),
+            assetType: multichainState
+                .flatMap { _ in
+                    TradeAssetDetailsAssetTypeSectionKind(assetInfo: assetInfo)
+                },
+            tronFees: tronFees.map(tronFeesSection(_:)),
+            history: isSecureMode ? history?.maskingAmounts() : history,
+            multichainHistory: isSecureMode ? multichainHistory?.maskingAmounts() : multichainHistory,
             links: details.links.map {
                 TradeAssetDetailsLinkViewData(
                     id: $0.id,
@@ -121,7 +148,12 @@ struct TradeAssetDetailsScreenMapper {
                 )
             },
             primaryActionTitle: details.primaryActionTitle,
-            isSendAvailable: isSendAvailable(balance)
+            actionBarState: TradeAssetDetailsActionBarState(
+                supportsSwap: details.capabilities.supportsSwap && !isSwapDisabled,
+                hasBalance: balanceSection != nil
+            ),
+            actionButtons: actionButtons(details: details, hasBalance: balanceSection != nil),
+            isSendAvailable: balanceSection != nil
         )
 
         return (header, screen)
@@ -129,8 +161,48 @@ struct TradeAssetDetailsScreenMapper {
 }
 
 private extension TradeAssetDetailsScreenMapper {
+    func tronFeesSection(_ snapshot: TronUsdtFeesSnapshot) -> TradeAssetDetailsTronFeesViewData {
+        if snapshot.hasEnoughForAtLeastOneTransfer {
+            return .transfersAvailable(
+                TKLocales.TronUsdtFees.TokenDetails.transferAvailability(snapshot.totalTransfersAvailable)
+            )
+        }
+
+        let formatTRX: (BigUInt) -> String = { [amountFormatter] amount in
+            amountFormatter.format(
+                amount: amount,
+                fractionDigits: TRX.fractionDigits,
+                accessory: .none
+            )
+        }
+
+        if snapshot.isTRXOnlyRegion {
+            return .banner(
+                TradeAssetDetailsTronFeesViewData.Banner(
+                    title: TKLocales.TronUsdtFees.TokenDetails.Banners.TrxInsufficient.title,
+                    caption: TKLocales.TronUsdtFees.TokenDetails.Banners.TrxInsufficient.caption(
+                        formatTRX(snapshot.requiredTRX),
+                        formatTRX(snapshot.trxBalance)
+                    ),
+                    buttonTitle: TKLocales.TronUsdtFees.Common.Buttons.getTrx,
+                    style: .trx
+                )
+            )
+        }
+
+        return .banner(
+            TradeAssetDetailsTronFeesViewData.Banner(
+                title: TKLocales.TronUsdtFees.TokenDetails.Banners.FeeOptionsInsufficient.title,
+                caption: TKLocales.TronUsdtFees.TokenDetails.Banners.FeeOptionsInsufficient.caption,
+                buttonTitle: TKLocales.TronUsdtFees.Common.Buttons.allFeeOptions,
+                style: .battery
+            )
+        )
+    }
+
     func balanceSection(
-        _ snapshot: TradeAssetDetailsBalanceSnapshot?
+        _ snapshot: TradeAssetDetailsBalanceSnapshot?,
+        isSecureMode: Bool
     ) -> TradeAssetDetailsBalanceSectionViewData? {
         guard let snapshot, !snapshot.amount.isZero else {
             return nil
@@ -138,90 +210,101 @@ private extension TradeAssetDetailsScreenMapper {
 
         return TradeAssetDetailsBalanceSectionViewData(
             symbol: snapshot.symbol,
-            iconImageSource: AssetIdResolver.imageSource(for: assetID, imageUrl: snapshot.imageURL),
-            amountText: displayFormatter.formatBalanceAmount(
-                amount: snapshot.amount,
-                fractionDigits: snapshot.fractionDigits,
-                symbol: snapshot.symbol
+            iconImageSource: AssetIdResolver.imageSource(
+                for: assetID,
+                imageUrl: snapshot.imageURL,
+                multichainEnabled: multichainState != nil
             ),
-            convertedAmountText: displayFormatter.formatBalanceConverted(snapshot.convertedAmount),
-            chainTag: snapshot.tagText ?? AssetIdResolver.tag(for: assetID)
+            amountText: isSecureMode
+                ? String.secureModeValueShort
+                : displayFormatter.formatBalanceAmount(
+                    amount: snapshot.amount,
+                    fractionDigits: snapshot.fractionDigits,
+                    symbol: snapshot.symbol
+                ),
+            convertedAmountText: isSecureMode
+                ? String.secureModeValueShort
+                : displayFormatter.formatBalanceConverted(snapshot.convertedAmount),
+            chainTag: snapshot.tagText ?? AssetIdResolver.tag(
+                for: assetID,
+                multichainEnabled: multichainState != nil
+            ),
+            freshness: snapshot.freshness
         )
     }
 
-    func historySection(
-        _ preview: TradeAssetDetailsHistoryPreview?
-    ) -> TradeAssetDetailsHistorySectionViewData? {
-        guard let preview, !preview.items.isEmpty else {
-            return nil
+    func attributionText(source: TradingAssetInfoSource) -> AttributedString {
+        var text = AttributedString(
+            TKLocales.Trade.AssetDetails.TradingActivity.attribution(source.displayedName)
+        )
+        if let url = source.url, let range = text.range(of: source.displayedName) {
+            text[range].link = url
         }
+        return text
+    }
 
-        return TradeAssetDetailsHistorySectionViewData(
-            items: preview.items.map {
+    func actionButtons(details: TradingAssetDetails, hasBalance: Bool) -> [TradeAssetDetailsActionButton] {
+        var buttons: [TradeAssetDetailsActionButton] = []
+        if hasBalance {
+            buttons.append(.send)
+        }
+        buttons.append(.receive)
+        if multichainState != nil, details.capabilities.supportsOnramp {
+            buttons.append(.cashBuy)
+        }
+        if hasBalance, multichainState != nil, details.capabilities.supportsOfframp {
+            buttons.append(.cashSell)
+        }
+        return buttons
+    }
+}
+
+private extension TradeAssetDetailsHistorySectionViewData {
+    func maskingAmounts() -> TradeAssetDetailsHistorySectionViewData {
+        TradeAssetDetailsHistorySectionViewData(
+            items: items.map { item in
                 TradeAssetDetailsHistoryItemViewData(
-                    id: $0.id,
-                    icon: $0.icon,
-                    title: $0.title,
-                    subtitle: $0.subtitle,
-                    amountText: $0.amountText,
-                    amountStyle: $0.amountStyle,
-                    dateText: $0.dateText
+                    id: item.id,
+                    icon: item.icon,
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    amountText: .secureModeValueShort,
+                    amountStyle: item.amountStyle,
+                    dateText: item.dateText
                 )
             }
         )
     }
-
-    func isSendAvailable(_ snapshot: TradeAssetDetailsBalanceSnapshot?) -> Bool {
-        guard let snapshot else {
-            return false
-        }
-
-        return !snapshot.amount.isZero
-    }
 }
 
-private extension TradeAssetDetailsHeaderSubtitleViewData {
-    init?(
-        assetCategory: TradingAssetCategory?,
-        isUnverified: Bool?
-    ) {
-        if isUnverified == true {
-            self.init(
-                title: TKLocales.Token.unverified,
-                color: .Accent.orange,
-                action: .unverifiedTokenInfo
-            )
-            return
-        }
-
-        guard let kind = assetCategory?.tokenizedAssetInfoKind else {
-            return nil
-        }
-
-        self.init(
-            title: kind.badgeTitle,
-            color: .Accent.blue,
-            action: .tokenizedAssetInfo(kind)
-        )
-    }
-
-    init?(assetInfo: TradingAssetInfo) {
-        self.init(
-            assetCategory: assetInfo.category,
-            isUnverified: assetInfo.isUnverified
+private extension TradeAssetDetailsMultichainHistorySectionViewData {
+    func maskingAmounts() -> TradeAssetDetailsMultichainHistorySectionViewData {
+        TradeAssetDetailsMultichainHistorySectionViewData(
+            items: items.map { item in
+                MultichainHistoryActivityItem(
+                    id: item.id,
+                    activity: item.activity,
+                    title: item.title,
+                    subtitle: item.subtitle,
+                    comment: item.comment,
+                    time: item.time,
+                    icon: item.icon,
+                    primaryAmount: item.primaryAmount?.masked(),
+                    secondaryAmount: item.secondaryAmount?.masked(),
+                    status: item.status,
+                    nft: item.nft
+                )
+            }
         )
     }
 }
 
-private extension TradingAssetCategory {
-    var tokenizedAssetInfoKind: TokenizedAssetInfoKind? {
-        switch self {
-        case .stocks:
-            return .stock
-        case .etfs:
-            return .etf
-        case .all, .crypto:
-            return nil
-        }
+private extension MultichainHistoryActivityItem.Amount {
+    func masked() -> Self {
+        MultichainHistoryActivityItem.Amount(
+            text: .secureModeValueShort,
+            chainTitle: chainTitle,
+            style: style
+        )
     }
 }

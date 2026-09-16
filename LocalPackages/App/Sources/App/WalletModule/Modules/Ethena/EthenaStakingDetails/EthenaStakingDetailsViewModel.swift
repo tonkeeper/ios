@@ -19,8 +19,6 @@ protocol EthenaStakingDetailsModuleOutput: AnyObject {
     ) -> Void)? { get set }
 }
 
-protocol EthenaStakingDetailsModuleInput: AnyObject {}
-
 protocol EthenaStakingDetailsViewModel: AnyObject {
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
@@ -53,12 +51,10 @@ final class EthenaStakingDetailsViewModelImplementation: EthenaStakingDetailsVie
 
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
-    var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)?
     var didUpdateDescription: ((NSAttributedString?) -> Void)?
     var didUpdateLinksViewModel: ((StakingDetailsLinksView.Model?) -> Void)?
     var didUpdateJettonItemView: ((TKListItemButton.Configuration?) -> Void)?
     var didUpdateJettonButtonDescription: ((NSAttributedString?, _ actionItems: [TKActionLabel.ActionItem]) -> Void)?
-    var didUpdateStakeStateView: ((TKListItemButton.Configuration?) -> Void)?
     var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model?) -> Void)?
     var didUpdateStakingInfoView: ((EthenaStakingDetailsInfoView.Configuration?) -> Void)?
 
@@ -132,7 +128,7 @@ final class EthenaStakingDetailsViewModelImplementation: EthenaStakingDetailsVie
 private extension EthenaStakingDetailsViewModelImplementation {
     func updateLinks() {
         guard isUSDeAvailable else { return }
-        Task { @MainActor in
+        Task { @MainActor [self] in
             if let response = await ethenaStakingResponseTask.value {
                 let model = linksViewModelBuilder
                     .buildModelEthena(
@@ -185,7 +181,7 @@ private extension EthenaStakingDetailsViewModelImplementation {
         let imageConfiguration = TKListItemIconView.Configuration(
             content: .image(
                 TKImageView.Model(
-                    image: .image(.App.Currency.Size64.usde),
+                    image: .image(.TKUIKit.Icons.Size64.currencyUsde),
                     size: .size(CGSize(width: 64, height: 64)),
                     corners: .circle
                 )
@@ -194,7 +190,7 @@ private extension EthenaStakingDetailsViewModelImplementation {
             size: CGSize(width: 64, height: 64),
             badge: TKListItemIconView.Configuration.Badge(
                 configuration: TKListItemBadgeView.Configuration(
-                    item: .image(.image(.App.Currency.Vector.ethena)),
+                    item: .image(.image(.TKUIKit.Icons.Size44.currencyEthena)),
                     size: .large
                 ),
                 position: .bottomRight
@@ -236,7 +232,7 @@ private extension EthenaStakingDetailsViewModelImplementation {
             )
         )
 
-        Task { @MainActor in
+        Task { @MainActor [self] in
             if let response = await ethenaStakingResponseTask.value, isUSDeAvailable {
                 let actionItems = [TKActionLabel.ActionItem(
                     text: TKLocales.Ethena.aboutEthena,
@@ -378,20 +374,6 @@ private extension EthenaStakingDetailsViewModelImplementation {
 }
 
 private extension String {
-    static let mostProfitableTag = TKLocales.maxApy
-    static let apy = TKLocales.apy
-    static let minimalDeposit = TKLocales.StakingBalanceDetails.minimalDeposit
-    static let description = TKLocales.StakingBalanceDetails.description
-    static let pendingStakeTitle = TKLocales.StakingBalanceDetails.pendingStake
-    static let pendingUntakeTitle = TKLocales.StakingBalanceDetails.pendingUnstake
-    static let unstakeReadyTitle = TKLocales.StakingBalanceDetails.unstakeReady
-    static let afterTheEndOfTheCycle = TKLocales.StakingBalanceDetails.afterEndOfCycle
-    static let tapToCollect = TKLocales.StakingBalanceDetails.tapToCollect
     static let stakeTitle = TKLocales.StakingBalanceDetails.stake
     static let unstakeTitle = TKLocales.StakingBalanceDetails.unstake
-}
-
-private extension CGSize {
-    static let iconSize = CGSize(width: 44, height: 44)
-    static let badgeIconSize = CGSize(width: 24, height: 24)
 }

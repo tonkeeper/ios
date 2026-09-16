@@ -1,78 +1,61 @@
+import AppUI
 import KeeperCore
 import TKLocalize
-import TKScreenKit
 import TKUIKit
-import UIKit
 
 struct SettingsTRC20RecoveryPhraseProvider: TKRecoveryPhraseDataProvider {
-    var didTapTRC20Button: (() -> Void)?
+    private enum ActionID {
+        static let copy = "copy"
+    }
 
-    var model: TKRecoveryPhraseView.Model {
-        createModel()
+    var state: RecoveryPhraseScreenState {
+        createState()
     }
 
     private let wallet: Wallet
     private let tonMnemonic: [String]
-    private let useBip39DerivationForBip39Mnemonics: Bool
 
     init(
         wallet: Wallet,
-        tonMnemonic: [String],
-        useBip39DerivationForBip39Mnemonics: Bool
+        tonMnemonic: [String]
     ) {
         self.wallet = wallet
         self.tonMnemonic = tonMnemonic
-        self.useBip39DerivationForBip39Mnemonics = useBip39DerivationForBip39Mnemonics
     }
 }
 
 private extension SettingsTRC20RecoveryPhraseProvider {
-    func createModel() -> TKRecoveryPhraseView.Model {
-        let tronMnemonic = TonTron.tonMnemonicToTronMnemonic(
-            tonMnemonic,
-            useBip39DerivationForBip39Mnemonics: useBip39DerivationForBip39Mnemonics
-        )
+    func createState() -> RecoveryPhraseScreenState {
+        let tronMnemonic = TonTron.tonMnemonicToTronMnemonic(tonMnemonic)
 
-        let phraseListViewModel = TKRecoveryPhraseListView.Model(
-            wordModels: tronMnemonic
-                .enumerated()
-                .map { index, word in
-                    TKRecoveryPhraseItemView.Model(index: index + 1, word: word)
-                }
+        return RecoveryPhraseScreenState(
+            title: TKLocales.Backup.Trc20.Show.title,
+            caption: TKLocales.Backup.Trc20.Show.caption,
+            banner: TKLocales.Backup.Trc20.Show.banner,
+            words: tronMnemonic.enumerated().map {
+                RecoveryPhraseScreenState.Word(
+                    index: $0.offset + 1,
+                    value: $0.element
+                )
+            },
+            actions: [
+                RecoveryPhraseScreenState.Action(
+                    id: ActionID.copy,
+                    title: TKLocales.Backup.Trc20.Show.Button.title,
+                    icon: .TKUIKit.Icons.Size16.copy,
+                    style: .secondary
+                ),
+            ]
         )
+    }
+}
 
-        var buttons = [TKRecoveryPhraseView.Model.Button]()
-
-        var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .secondary,
-            size: .medium
-        )
-        copyButtonConfiguration.content = TKButton.Configuration.Content(
-            title: .plainString(TKLocales.Backup.Trc20.Show.Button.title),
-            icon: .TKUIKit.Icons.Size16.copy
-        )
-        copyButtonConfiguration.action = {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            UIPasteboard.general.string = tronMnemonic.joined(separator: " ")
-            ToastPresenter.showToast(configuration: .copied)
-        }
-        buttons.append(
-            TKRecoveryPhraseView.Model.Button(
-                configuration: copyButtonConfiguration,
-                isFullWidth: false
-            )
-        )
-
-        return TKRecoveryPhraseView.Model(
-            titleDescriptionModel: TKTitleDescriptionView.Model(
-                title: TKLocales.Backup.Trc20.Show.title,
-                bottomDescription: TKLocales.Backup.Trc20.Show.caption
-            ),
-            bannerViewModel: TKRecoverPhraseBannerView.Model(
-                text: TKLocales.Backup.Trc20.Show.banner
-            ),
-            phraseListViewModel: phraseListViewModel,
-            buttons: buttons
+extension SettingsTRC20RecoveryPhraseProvider {
+    func didTapAction(id: RecoveryPhraseScreenState.Action.ID) {
+        guard id == ActionID.copy else { return }
+        let tronMnemonic = TonTron.tonMnemonicToTronMnemonic(tonMnemonic)
+        Pasteboard.copySensitive(
+            value: tronMnemonic.joined(separator: " ")
         )
     }
 }

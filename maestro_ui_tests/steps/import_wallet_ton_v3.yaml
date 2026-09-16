@@ -1,0 +1,96 @@
+appId: com.jbig.tonkeeper
+---
+# Import mnemonic as TON-only v3R2 on a multichain-enabled build.
+# Pasteboard must hold TON_v4 (CI: import shard primes UIPasteboard via simctl pbcopy).
+# Do not use Maestro setClipboard — the app Paste button reads iOS UIPasteboard only.
+- evalScript: ${output.importAttempt = 0; output.importPasteOk = false}
+
+- repeat:
+    while:
+      true: ${output.importAttempt < 3 && !output.importPasteOk}
+    commands:
+      - evalScript: ${output.importAttempt = output.importAttempt + 1}
+      - launchApp:
+          stopApp: true
+      - extendedWaitUntil:
+          visible: "Import Existing Wallet"
+          timeout: 45000
+      - tapOn: Import Existing Wallet
+      - extendedWaitUntil:
+          visible: "Import your existing TON or multichain wallet"
+          timeout: 30000
+      - tapOn: "Import your existing TON or multichain wallet"
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn: Paste
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - tapOn:
+          text: Allow Paste
+          optional: true
+      - tapOn: Continue
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose wallet"
+          commands:
+            - tapOn: "TON wallet"
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose wallet version"
+          commands:
+            - tapOn: V3R2
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: "Choose Wallets"
+          commands:
+            - tapOn:
+                text: "w5.*"
+                optional: true
+            - tapOn:
+                text: "v4R2.*"
+                optional: true
+            - assertVisible: "v3R2.*"
+            - tapOn: Continue
+            - waitForAnimationToEnd:
+                timeout: 5000
+      - runFlow:
+          when:
+            visible: Create passcode
+          commands:
+            - evalScript: ${output.importPasteOk = true}
+
+- assertVisible: Create passcode
+
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- assertVisible: Re-enter passcode
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- runFlow: skip_notifications_onboarding.yaml
+
+- tapOn:
+    text: Continue
+    waitToSettleTimeoutMs: 15000
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    id: stories_close
+    optional: true

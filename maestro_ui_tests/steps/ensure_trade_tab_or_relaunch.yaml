@@ -1,0 +1,10 @@
+appId: com.jbig.tonkeeper
+---
+# Trade tab can be missing from the tab bar until a fresh launch; recover without failing the suite.
+- runFlow:
+    when:
+      notVisible: Trade
+    commands:
+      - stopApp
+      - runFlow: launch_app_ensure_wallet.yaml
+      - runFlow: ../service/account/compare_ton_balance.yaml

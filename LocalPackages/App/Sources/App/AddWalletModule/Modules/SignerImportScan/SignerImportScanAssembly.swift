@@ -12,7 +12,9 @@ struct SignerImportScanAssembly {
     ) -> MVVMModule<UIViewController, SignerImportScanModuleOutput, Void> {
         let scannerModule = ScannerAssembly.module(
             scannerController: scannerAssembly.scannerController(
-                configurator: SignerScannerControllerConfigurator()
+                configurator: SignerScannerControllerConfigurator(
+                    deeplinkParser: scannerAssembly.deeplinkParser
+                )
             ),
             urlOpener: coreAssembly.urlOpener(),
             uiConfiguration: ScannerUIConfiguration(

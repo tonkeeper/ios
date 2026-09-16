@@ -108,7 +108,3 @@ final class StakingBalanceDetailsView: TKView {
         scrollView.verticalScrollIndicatorInsets.bottom = safeAreaInsets.bottom
     }
 }
-
-private extension CGFloat {
-    static let contentPadding: CGFloat = 16
-}

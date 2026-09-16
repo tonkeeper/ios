@@ -1,0 +1,6 @@
+appId: com.jbig.tonkeeper
+---
+- tapOn: "Search by ticker or name"
+- extendedWaitUntil:
+    visible: Crypto
+    timeout: 60000

@@ -32,7 +32,11 @@ public extension BleTransportProtocol {
 
         let response = try await exchange(apdu: apdu)
 
-        guard let responseData = Data(hex: response) else {
+        // `TonSwift`'s decoder drops a trailing half-byte instead of failing, which would leave a
+        // short APDU to be read past its end below.
+        guard response.count.isMultiple(of: 2), let responseData = Data(hex: response),
+              responseData.count >= 2
+        else {
             throw BleTransportSendError.invalidResponse(response)
         }
 

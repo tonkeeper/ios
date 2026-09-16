@@ -1,6 +1,6 @@
 import BigInt
 import Foundation
-import TKCryptoKit
+import TKLogging
 import TronSwift
 
 public enum TronTransferSignError: Error {
@@ -27,13 +27,21 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
 
     public func getModel() -> TransactionConfirmationModel {
         let currentState = state
-        let isMax = amount > 0 && amount == tronUSDTBalance
+        let isMax = amount > 0 && amount == balance
+        let amountItem: TransactionConfirmationModel.Amount.Item = switch token {
+        case .usdt: .tronUSDT
+        case .trx: .tronTRX
+        }
+        let transfer: TransactionConfirmationModel.Transaction.Transfer = switch token {
+        case .usdt: .tronUSDT
+        case .trx: .tronTRX
+        }
         return TransactionConfirmationModel(
             wallet: wallet,
             recipient: nil,
             recipientAddress: recipientDisplayAddress ?? recipient.base58,
-            transaction: .transfer(.tronUSDT),
-            amount: .init(token: .tronUSDT, value: amount),
+            transaction: .transfer(transfer),
+            amount: .init(token: amountItem, value: amount),
             extraState: currentState.extraState,
             extraOptions: currentState.extraOptions,
             availableExtraTypes: currentState.availableTypes,
@@ -53,76 +61,111 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
 
     public func emulate() async -> Result<Void, TransactionConfirmationError> {
         do {
-            guard let address = wallet.tron?.address else {
+            guard let address = resolvedSenderAddress else {
                 throw Error.tronAddressIsNotAvailable
             }
 
-            let estimate = try await tronUsdtApi.estimateTransferFees(
-                address: address,
-                method: TransferMethod(
-                    to: recipient,
-                    amount: amount
+            let estimate = switch token {
+            case .usdt:
+                try await tronUsdtApi.estimateTransferFees(
+                    wallet: wallet,
+                    address: address,
+                    method: TransferMethod(
+                        to: recipient,
+                        amount: amount
+                    )
                 )
-            )
+            case .trx:
+                try await tronUsdtApi.estimateNativeTransferFees(
+                    wallet: wallet,
+                    from: address,
+                    to: recipient,
+                    amountSun: amount
+                )
+            }
 
             let resolvedFees = feeOptionsResolver.resolve(
                 estimate: estimate,
                 wallet: wallet,
-                preferredExtraType: state.preferredExtraType
+                preferredExtraType: state.preferredExtraType,
+                requiresSelfPaidTRX: token == .trx
             )
             applyResolvedFees(resolvedFees)
             return .success(())
         } catch {
+            Log.tron.w("TRON \(token.symbol) fee estimate failed", extraInfo: [
+                "wallet": maskedSenderAddress,
+                "error": TronSendErrorMessage.logDescription(for: error),
+            ])
             return .failure(.failedToCalculateFee)
         }
     }
 
-    public func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
-        guard let address = wallet.tron?.address else {
-            return .failure(
-                .failedToSendTransaction(
-                    message: "tron address is not available"
-                )
-            )
-        }
-        let signedTransaction: Transaction
-        do {
-            signedTransaction = try await makeSignedTransaction(address: address)
-        } catch {
-            return .failure(
-                .failedToSendTransaction(
-                    message: "failed to sign transaction due to error: \(error.localizedDescription)"
-                )
-            )
+    public func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
+        guard let address = resolvedSenderAddress else {
+            return .failure(failure(stage: "resolve address", error: Error.tronAddressIsNotAvailable))
         }
         let currentState = state
-        let instantFeePayment: TronUSDTTransactionSender.InstantFeePayment?
+        var stage = "build transaction"
         do {
-            instantFeePayment = try await makeInstantFeePaymentIfNeeded(currentState: currentState)
-        } catch {
-            return .failure(
-                .failedToSendTransaction(
-                    message: "failed to make instant fee due to error: \(error.localizedDescription)"
+            let txID = try await TronExpirationRetry.run(
+                isEnabled: feeOptionsResolver.isTRXType(currentState.selectedExtraType)
+            ) {
+                stage = "build transaction"
+                let transaction = switch self.token {
+                case .usdt:
+                    try await self.tronUsdtApi.getSendTransaction(
+                        address: address,
+                        method: TransferMethod(to: self.recipient, amount: self.amount)
+                    )
+                case .trx:
+                    try await self.tronUsdtApi.getNativeTransferTransaction(
+                        from: address,
+                        to: self.recipient,
+                        amountSun: self.amount
+                    )
+                }
+                stage = "extend expiration"
+                let extendedTransaction = try transaction.extendingExpiration(byMilliseconds: 600_000)
+                stage = "sign"
+                let signedTransaction = try await self.sign(transaction: extendedTransaction)
+                stage = "instant fee"
+                let instantFeePayment = try await self.makeInstantFeePaymentIfNeeded(currentState: currentState)
+                stage = "send"
+                try await self.transactionSender.send(
+                    signedTransaction: signedTransaction,
+                    selectedExtraType: currentState.selectedExtraType,
+                    wallet: self.wallet,
+                    address: address,
+                    resources: currentState.resources,
+                    instantFeePayment: instantFeePayment
+                )
+                return signedTransaction.txID
+            }
+            return .success(
+                .chain(
+                    .tron,
+                    wallet: wallet,
+                    txHashes: [txID],
+                    activityType: .send
                 )
             )
-        }
-        do {
-            try await transactionSender.send(
-                signedTransaction: signedTransaction,
-                selectedExtraType: currentState.selectedExtraType,
-                wallet: wallet,
-                address: address,
-                resources: currentState.resources,
-                instantFeePayment: instantFeePayment
-            )
         } catch {
-            return .failure(
-                .failedToSendTransaction(
-                    message: "failed to send transaction due to error: \(error.localizedDescription)"
-                )
-            )
+            return .failure(failure(stage: stage, error: error))
         }
-        return .success(())
+    }
+
+    private func failure(stage: String, error: Swift.Error) -> TransactionConfirmationError {
+        if let confirmationError = error as? TransactionConfirmationError, confirmationError.isCancel {
+            return confirmationError
+        }
+        Log.tron.e("TRON \(token.symbol) send failed at \(stage)", extraInfo: [
+            "wallet": maskedSenderAddress,
+            "error": TronSendErrorMessage.logDescription(for: error),
+        ])
+        return .failedToSendTransaction(
+            message: TronSendErrorMessage.userMessage(for: error)
+        )
     }
 
     @Atomic private var state = TronUSDTTransactionConfirmationState()
@@ -130,10 +173,12 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
     private var totalFee: BigInt = 0
 
     private let wallet: Wallet
+    private let token: TronToken
     private let recipient: TronRecipient
     private let amount: BigUInt
     private let recipientDisplayAddress: String?
-    private let tronUSDTBalance: BigUInt
+    private let balance: BigUInt
+    private let senderAddress: TronSwift.Address?
     private let tronUsdtApi: TronUSDTAPI
     private let feeOptionsResolver: TronUSDTFeeOptionsResolver
     private let transactionSender: TronUSDTTransactionSender
@@ -141,28 +186,30 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
 
     init(
         wallet: Wallet,
+        token: TronToken,
         recipient: TronRecipient,
         amount: BigUInt,
-        tronUSDTBalance: BigUInt,
+        balance: BigUInt,
+        senderAddress: TronSwift.Address? = nil,
         recipientDisplayAddress: String? = nil,
         tronUsdtApi: TronUSDTAPI,
-        tonProofService: TonProofTokenService,
         sendService: SendService,
         balanceService: BalanceService,
         configuration: Configuration
     ) {
         self.wallet = wallet
+        self.token = token
         self.recipient = recipient
         self.amount = amount
         self.recipientDisplayAddress = recipientDisplayAddress
-        self.tronUSDTBalance = tronUSDTBalance
+        self.balance = balance
+        self.senderAddress = senderAddress
         self.tronUsdtApi = tronUsdtApi
 
         let feeOptionsResolver = TronUSDTFeeOptionsResolver(configuration: configuration)
         self.feeOptionsResolver = feeOptionsResolver
         transactionSender = TronUSDTTransactionSender(
             tronUsdtApi: tronUsdtApi,
-            tonProofService: tonProofService,
             feeOptionsResolver: feeOptionsResolver
         )
         tonFeePaymentBuilder = TronUSDTTonFeePaymentBuilder(
@@ -171,20 +218,18 @@ public final class TronUSDTTransactionConfirmationController: TransactionConfirm
         )
     }
 
-    private func makeSignedTransaction(address: Address) async throws -> Transaction {
-        let method = TransferMethod(
-            to: recipient,
-            amount: amount
-        )
-        let transaction = try await tronUsdtApi.getSendTransaction(address: address, method: method)
-        let extendedTransaction = try await tronUsdtApi.extendTransactionExpiration(
-            transaction: transaction,
-            expirationExtension: 600_000
-        )
-        let txID = SHA256.hash(data: Data(hex: extendedTransaction.rawDataHex))
-        let signature = try await signedTronTransaction(txID: txID)
+    private var resolvedSenderAddress: TronSwift.Address? {
+        senderAddress ?? wallet.tron?.address
+    }
 
-        var signedTransaction = extendedTransaction
+    private var maskedSenderAddress: String {
+        resolvedSenderAddress?.base58.pretty.masked ?? "unavailable"
+    }
+
+    private func sign(transaction: Transaction) async throws -> Transaction {
+        let signature = try await signedTronTransaction(txID: transaction.signingDigest())
+
+        var signedTransaction = transaction
         signedTransaction.signature = signature.hexString()
         return signedTransaction
     }

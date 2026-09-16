@@ -1,0 +1,13 @@
+# Opens Multichain Swap from the wallet home action row.
+appId: com.jbig.tonkeeper
+---
+- extendedWaitUntil:
+    visible: Swap
+    timeout: 15000
+- tapOn: Swap
+- waitForAnimationToEnd:
+    timeout: 1000
+- extendedWaitUntil:
+    visible:
+      id: swap_send_token
+    timeout: 6000

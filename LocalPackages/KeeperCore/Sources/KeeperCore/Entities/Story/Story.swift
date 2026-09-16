@@ -49,8 +49,26 @@ public struct Story: Decodable, Equatable {
     public let preview: URL
     public let main_screen: MainScreen
     public let pages: [Page]
+    public let isAutoShow: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case story_id
+        case preview
+        case main_screen
+        case pages
+        case isAutoShow = "is_auto_show"
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        story_id = try container.decode(String.self, forKey: .story_id)
+        preview = try container.decode(URL.self, forKey: .preview)
+        main_screen = try container.decode(MainScreen.self, forKey: .main_screen)
+        pages = try container.decode([Page].self, forKey: .pages)
+        isAutoShow = try container.decodeIfPresent(Bool.self, forKey: .isAutoShow) ?? false
+    }
 }
 
-public struct StoriesResponse: Decodable, Equatable {
-    public let stories: [Story]
+struct StoriesResponse: Decodable, Equatable {
+    let stories: [Story]
 }

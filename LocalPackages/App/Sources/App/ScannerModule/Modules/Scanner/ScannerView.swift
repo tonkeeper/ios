@@ -234,7 +234,6 @@ private extension CGFloat {
     static let holeSideOffset: CGFloat = 56
     static let cornerRadius: CGFloat = 8
     static let cornerSide: CGFloat = 24
-    static let cornerWidth: CGFloat = 3
     static let flashlightButtonSide: CGFloat = 56
     static let flashlightButtonTopOffset: CGFloat = 32
     static let titleBottomOffset: CGFloat = 32

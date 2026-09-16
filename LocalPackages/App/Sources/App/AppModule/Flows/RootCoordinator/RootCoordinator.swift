@@ -1,4 +1,5 @@
 import KeeperCore
+import KeeperCoreSensitive
 import TKCoordinator
 import TKCore
 import TKLogging
@@ -22,13 +23,17 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     private let rootController: RootController
 
     private let stateManager: RootCoordinatorStateManager
+    private let multichainStartupController: MultichainStartupController
     private let pushNotificationsManager: PushNotificationManager
-    private let brokenTronWalletAnalyticsTracker: BrokenTronWalletAnalyticsCounter
-    private let mnemonicDerivationAnalyticsTracker: MnemonicDerivationAnalyticsCounter
     private let argon2DeriveTimeMeasurementController: Argon2DeriveTimeMeasurementController
     private let batteryChargedAnalyticsObserver: BatteryChargedAnalyticsObserver
     private let depositCompletedAnalyticsObserver: DepositCompletedAnalyticsObserver
     private let depositPendingTracker: DepositPendingTracker
+    private var foregroundObserver: NSObjectProtocol?
+
+    deinit {
+        foregroundObserver.map(NotificationCenter.default.removeObserver)
+    }
 
     init(
         router: ViewControllerRouter,
@@ -39,22 +44,25 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         self.stateManager = RootCoordinatorStateManager(
             walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore
         )
+        let configuration = dependencies.keeperCoreRootAssembly.mainAssembly().configurationAssembly.configuration
+        let isMultichainEnabled = configuration.featureEnabled(.multichainEnabled)
+        let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
+        self.multichainStartupController = MultichainStartupController(
+            isEnabled: isMultichainEnabled,
+            authService: multichainAssembly.multichainAuthService,
+            walletSyncController: multichainAssembly.walletSyncController
+        )
         self.pushNotificationsManager = PushNotificationManager(
             appSettings: dependencies.coreAssembly.appSettings,
             uniqueIdProvider: dependencies.coreAssembly.uniqueIdProvider,
             pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
             pushNotificationAPI: dependencies.keeperCoreRootAssembly.mainAssembly().apiAssembly.pushNotificationsAPI,
             walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore,
+            walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore,
             tonConnectAppsStore: dependencies.keeperCoreRootAssembly.mainAssembly().tonConnectAssembly.tonConnectAppsStore,
-            tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
-        )
-        self.brokenTronWalletAnalyticsTracker = BrokenTronWalletAnalyticsCounter(
-            walletsUpdateAssembly: dependencies.keeperCoreRootAssembly.walletsUpdateAssembly,
-            analyticsProvider: dependencies.coreAssembly.analyticsProvider
-        )
-        self.mnemonicDerivationAnalyticsTracker = MnemonicDerivationAnalyticsCounter(
-            walletsUpdateAssembly: dependencies.keeperCoreRootAssembly.walletsUpdateAssembly,
-            analyticsProvider: dependencies.coreAssembly.analyticsProvider
+            tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService(),
+            multichainAuthService: multichainAssembly.multichainAuthService,
+            isMultichainEnabled: isMultichainEnabled
         )
         self.argon2DeriveTimeMeasurementController = Argon2DeriveTimeMeasurementController(
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
@@ -75,8 +83,15 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     override func start(deeplink: CoordinatorDeeplink? = nil) {
+        // Push setup kicks off an async registration that can reach the device session, so the
+        // device-change handler has to be wired first.
+        setupMultichainDeviceChangeHandling()
+        setupMultichainForegroundReconcile()
         pushNotificationsManager.setup()
         rootController.loadConfigurations()
+        Task {
+            await multichainStartupController.startPendingUnregisterFlush()
+        }
 
         stateManager.didUpdateState = { [weak self] state in
             self?.handleStateUpdate(state: state, deeplink: deeplink)
@@ -85,29 +100,65 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         let state = stateManager.state
         switch state {
         case .onboarding:
-            migrateRNIfNeed(deeplink: deeplink) { [weak self] isSuccess in
+            migrateRNIfNeed(deeplink: deeplink) { [weak self] isSuccess, passcode in
                 if isSuccess {
-                    self?.stateManager.didPerformRNMigration()
+                    self?.completeRNMigration(passcode: passcode)
                 } else {
                     self?.openOnboarding(deeplink: deeplink)
                 }
             }
         case .main:
-            migrateNativeIfNeed { [weak self] didNeedToMigrate, isSuccess in
-                if !isSuccess {
-                    self?.openOnboarding(deeplink: deeplink)
-                    return
-                }
-                if didNeedToMigrate {
-                    self?.openMain(deeplink: deeplink)
-                } else {
-                    self?.handlePasscodeFlowIfNeeded {
-                        self?.openMain(deeplink: deeplink)
+            resolveRaffleUserAtLaunch()
+            migrateBiometryIfNeed { [weak self] in
+                self?.migrateNativeIfNeed { [weak self] didNeedToMigrate, isSuccess, passcode in
+                    if !isSuccess {
+                        self?.openOnboarding(deeplink: deeplink)
+                        return
+                    }
+                    if didNeedToMigrate {
+                        if let passcode {
+                            Task {
+                                await self?.performStartupEnrichment(passcode: passcode)
+                                await MainActor.run {
+                                    self?.openMain(deeplink: deeplink)
+                                }
+                                await self?.multichainStartupController.startBindingsReconcile()
+                            }
+                        } else {
+                            // Migration can succeed without a passcode prompt; still run
+                            // startup enrichment when wallets need tron/multichain backfill.
+                            self?.handlePasscodeFlowIfNeeded {
+                                self?.openMain(deeplink: deeplink)
+                            }
+                        }
+                    } else {
+                        self?.handlePasscodeFlowIfNeeded {
+                            self?.openMain(deeplink: deeplink)
+                        }
                     }
                 }
             }
         }
         sendFirstLaunchAnalyticsEvent()
+    }
+
+    private func completeRNMigration(passcode: String?) {
+        stateManager.reloadWalletsAfterRNMigration { [weak self] in
+            guard let self else { return }
+            if let passcode {
+                Task {
+                    await self.performStartupEnrichment(passcode: passcode)
+                    await MainActor.run {
+                        self.stateManager.didPerformRNMigration()
+                    }
+                    await self.multichainStartupController.startBindingsReconcile()
+                }
+            } else {
+                handlePasscodeFlowIfNeeded { [weak self] in
+                    self?.stateManager.didPerformRNMigration()
+                }
+            }
+        }
     }
 
     override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -121,9 +172,36 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
             } else {
                 return false
             }
+        } catch let error as DeeplinkParserError where error.isSilent {
+            return true
         } catch {
             ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
             return false
+        }
+    }
+
+    /// Has to be wired before anything can touch the device session, so a rotation during startup
+    /// is never silently dropped.
+    private func setupMultichainDeviceChangeHandling() {
+        let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
+        multichainAssembly.didChangeDevice = { [weak self] in
+            // Bindings are rebuilt inside KeeperCore; the push subscription is ours.
+            self?.pushNotificationsManager.refreshSubscriptions()
+        }
+    }
+
+    /// The startup reconcile is the only unattended one, so a launch that happened offline would
+    /// otherwise leave the device without bindings until the next cold start.
+    private func setupMultichainForegroundReconcile() {
+        foregroundObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            guard let self else { return }
+            Task {
+                await self.multichainStartupController.startBindingsReconcile()
+            }
         }
     }
 
@@ -132,43 +210,96 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
         let tonProofTokenService = dependencies.keeperCoreRootAssembly.mainAssembly().servicesAssembly.tonProofTokenService()
         let mnemonicAccess = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicAccess
         let missedTonProofWallets = tonProofTokenService.getWalletsWithMissedToken()
+        let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
+        let shouldEnrichStartupMultichainWallets = multichainAssembly.walletAddressesEnricher.needsStartupEnrichment
+        let shouldSyncStartupMultichainWallets = multichainAssembly.walletSyncController.needsStartupSync
+        let shouldMigrateLegacyTronWallets = dependencies.keeperCoreRootAssembly.mainAssembly()
+            .tronUSDTAssembly
+            .walletMigration()
+            .needsMigration
 
-        guard isLockScreen
-            || !missedTonProofWallets.isEmpty
-            || brokenTronWalletAnalyticsTracker.needsStartupCheck
-            || mnemonicDerivationAnalyticsTracker.needsStartupCheck
-        else {
-            completion()
-            return
-        }
+        Task { [weak self] in
+            guard let self else { return }
+            let shouldWarmStartupAppKeys = await multichainAssembly.walletSyncController.needsStartupAppKeyWarm()
+            await MainActor.run {
+                guard isLockScreen
+                    || !missedTonProofWallets.isEmpty
+                    || shouldEnrichStartupMultichainWallets
+                    || shouldSyncStartupMultichainWallets
+                    || shouldWarmStartupAppKeys
+                    || shouldMigrateLegacyTronWallets
+                else {
+                    completion()
+                    Task {
+                        await self.multichainStartupController.startBindingsReconcile()
+                    }
+                    return
+                }
 
-        showPasscode(validator: PasscodeConfirmationValidator(mnemonicAccess: mnemonicAccess)) { [brokenTronWalletAnalyticsTracker, mnemonicDerivationAnalyticsTracker] passcode in
-            Task {
-                await brokenTronWalletAnalyticsTracker.countWalletsAtStartupIfNeeded(passcode: passcode)
-                await mnemonicDerivationAnalyticsTracker.countWalletsAtStartupIfNeeded(passcode: passcode)
-            }
-            guard !missedTonProofWallets.isEmpty else {
-                completion()
-                return
-            }
-            Task {
-                for wallet in missedTonProofWallets {
-                    do {
-                        let mnemonic = try await mnemonicAccess.getMnemonic(wallet: wallet, passcode: passcode)
-                        let keyPair = try mnemonic.toKeyPair()
-                        let pair = WalletPrivateKeyPair(
-                            wallet: wallet,
-                            privateKey: keyPair.privateKey
-                        )
-                        await tonProofTokenService.loadTokensFor(pairs: [pair])
-                    } catch {
-                        Log.e("🪵 failed to load mnemonic for TonProof (v2): \(error)")
-                        continue
+                self.showPasscode(validator: PasscodeConfirmationValidator(mnemonicAccess: mnemonicAccess)) { [weak self] passcode in
+                    Task {
+                        await self?.performStartupEnrichment(passcode: passcode)
+                        await MainActor.run {
+                            completion()
+                        }
+                        await self?.multichainStartupController.startBindingsReconcile()
                     }
                 }
-                await MainActor.run {
-                    completion()
+            }
+        }
+    }
+
+    private func performStartupEnrichment(passcode: String) async {
+        let tonProofTokenService = dependencies.keeperCoreRootAssembly.mainAssembly().servicesAssembly.tonProofTokenService()
+        let mnemonicAccess = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicAccess
+        let missedTonProofWallets = tonProofTokenService.getWalletsWithMissedToken()
+        let multichainAssembly = dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly
+        let multichainWalletEnricher = multichainAssembly.walletAddressesEnricher
+        let multichainWalletSyncController = multichainAssembly.walletSyncController
+        let tronWalletMigration = dependencies.keeperCoreRootAssembly.mainAssembly().tronUSDTAssembly.walletMigration()
+        let shouldEnrichStartupMultichainWallets = multichainWalletEnricher.needsStartupEnrichment
+        let shouldSyncStartupMultichainWallets = multichainWalletSyncController.needsStartupSync
+
+        if shouldEnrichStartupMultichainWallets {
+            await multichainWalletEnricher.enrichMissingWallets(passcode: passcode)
+        }
+        if shouldEnrichStartupMultichainWallets || shouldSyncStartupMultichainWallets {
+            await multichainWalletSyncController.syncPendingWallets(passcode: passcode)
+            // Wallets only become notifiable once the backend has them bound.
+            pushNotificationsManager.refreshSubscriptions()
+        }
+        // Synced wallets created before app-key persistence still need a one-shot warm; sync above
+        // does not touch `.synced`, so this runs whenever a passcode is already in hand.
+        await multichainWalletSyncController.warmMissingAppKeys(passcode: passcode)
+        if tronWalletMigration.needsMigration {
+            await tronWalletMigration.migrate(passcode: passcode)
+        }
+
+        let tonProofMnemonics: [String: CoreMnemonic]
+        do {
+            tonProofMnemonics = try await mnemonicAccess.getMnemonics(
+                wallets: missedTonProofWallets,
+                passcode: passcode
+            )
+        } catch {
+            Log.e("🪵 failed to load mnemonics for TonProof startup refresh: \(error)")
+            tonProofMnemonics = [:]
+        }
+        for wallet in missedTonProofWallets {
+            do {
+                guard let mnemonic = tonProofMnemonics[wallet.id] else {
+                    Log.e("🪵 failed to load mnemonic for TonProof (v2): missing mnemonic for wallet=\(wallet.id)")
+                    continue
                 }
+                let keyPair = try mnemonic.toKeyPair()
+                let pair = WalletPrivateKeyPair(
+                    wallet: wallet,
+                    privateKey: keyPair.privateKey
+                )
+                await tonProofTokenService.loadTokensFor(pairs: [pair])
+            } catch {
+                Log.e("🪵 failed to load mnemonic for TonProof (v2): \(error)")
+                continue
             }
         }
     }
@@ -189,7 +320,12 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
             context: .entry,
             validator: validator,
             biometryProvider: passcodeBiometry,
-            securityStore: securityStore
+            securityStore: securityStore,
+            bruteForceController: PasscodeBruteForceController(
+                securityStore: securityStore,
+                analyticsProvider: dependencies.coreAssembly.analyticsProvider,
+                from: .unlock
+            )
         )
 
         coordinator.didInputPasscode = { [weak self, weak coordinator] passcode in
@@ -217,6 +353,14 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
 
 private extension RootCoordinator {
     func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
+        if state == .main, dependencies.coreAssembly.tkAppSettings.raffleIsNewUser == nil {
+            if let pendingIsNewUser = dependencies.coreAssembly.tkAppSettings.pendingRaffleIsNewUser {
+                resolveRaffleUser(isNewUser: pendingIsNewUser)
+            } else {
+                resolveRaffleUser(isNewUser: false)
+            }
+        }
+
         removeChild(mainCoordinator)
         removeChild(onboardingCoordinator)
         self.mainCoordinator = nil
@@ -234,15 +378,35 @@ private extension RootCoordinator {
             dependencies: OnboardingModule.Dependencies(
                 coreAssembly: dependencies.coreAssembly,
                 keeperCoreOnboardingAssembly: dependencies.keeperCoreRootAssembly.onboardingAssembly(),
+                keeperCoreMainAssembly: dependencies.keeperCoreRootAssembly.mainAssembly(),
+                multichainAssembly: dependencies.keeperCoreRootAssembly.mainAssembly().multichainAssembly,
                 configurationAssembly: dependencies.keeperCoreRootAssembly.mainAssembly().configurationAssembly
             )
         )
         let coordinator = module.createOnboardingCoordinator()
 
-        coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
-            self?.onboardingCoordinator = nil
-            guard let coordinator = coordinator else { return }
-            self?.removeChild(coordinator)
+        coordinator.didFinishOnboarding = { [weak self, weak coordinator] completion in
+            guard let self else { return }
+            switch completion {
+            case .walletCreated:
+                resolveRaffleUser(isNewUser: true)
+            case .walletImported:
+                resolveRaffleUser(isNewUser: false)
+            }
+
+            if let coordinator {
+                removeChild(coordinator)
+            }
+            onboardingCoordinator = nil
+
+            if stateManager.state == .main, mainCoordinator == nil {
+                handleStateUpdate(state: .main, deeplink: deeplink)
+            }
+
+            let reachabilityTracker = dependencies.coreAssembly.reachabilityTracker
+            ToastPresenter.showNoInternetConnectionToastIfNeeded {
+                reachabilityTracker.state == .noInternetConnection
+            }
         }
 
         self.onboardingCoordinator = coordinator
@@ -273,6 +437,20 @@ private extension RootCoordinator {
         showViewController(navigationController, animated: true)
         Task {
             await argon2DeriveTimeMeasurementController.runInBackgroundIfNeeded()
+        }
+    }
+
+    func resolveRaffleUser(isNewUser: Bool) {
+        dependencies.coreAssembly.tkAppSettings.resolveRaffleIsNewUser(isNewUser)
+    }
+
+    func resolveRaffleUserAtLaunch() {
+        let settings = dependencies.coreAssembly.tkAppSettings
+        guard settings.raffleIsNewUser == nil else { return }
+        if let pendingIsNewUser = settings.pendingRaffleIsNewUser {
+            resolveRaffleUser(isNewUser: pendingIsNewUser)
+        } else {
+            resolveRaffleUser(isNewUser: false)
         }
     }
 
@@ -312,7 +490,49 @@ private extension RootCoordinator {
         router.rootViewController.topPresentedViewController().present(alertController, animated: true)
     }
 
-    func migrateNativeIfNeed(completion: @escaping (_ didNeedToMigrate: Bool, _ isSuccess: Bool) -> Void) {
+    func migrateBiometryIfNeed(completion: @escaping () -> Void) {
+        let storesAssembly = dependencies.keeperCoreRootAssembly.storesAssembly
+        let securityStore = storesAssembly.securityStore
+        let mnemonicAccess = dependencies.keeperCoreRootAssembly.secureAssembly.mnemonicAccess
+
+        let biometryEnabled = securityStore.getState().isBiometryEnable
+        guard biometryEnabled else {
+            return completion()
+        }
+        // Keep biometry while there is anything it can unlock, judged from two
+        // independent signals so neither failure mode disables it spuriously:
+        //  • a mnemonic-backed (regular) wallet in metadata — keychain-free, so a
+        //    transient keychain failure (a background launch before first unlock
+        //    returns errSecInteractionNotAllowed, or a biometryCurrentSet item
+        //    invalidated by an enrollment change reads as missing) is never
+        //    mistaken for "no wallet" and never persistently disables biometry;
+        //  • mnemonics present in the keychain — covers any other mnemonic-backed
+        //    kind (e.g. lockup) that the regular-wallet metadata check would miss.
+        // Only disable when BOTH say there is genuinely nothing to unlock. The
+        // passcode cache is recreatable and is re-saved on the next passcode entry.
+        let hasMnemonicWallet = storesAssembly.walletsStore.wallets.contains { $0.kind == .regular }
+        let hasStoredMnemonics = mnemonicAccess.hasMnemonics()
+        let hasNothingToUnlock = !hasMnemonicWallet && !hasStoredMnemonics
+        // Independent second reason: the biometry cache is gone from every storage,
+        // marker included, so it was discarded rather than invalidated by an
+        // enrollment change — a storage-version rollback drops it, since the
+        // passcode lives in the storage being switched away from. Turn biometry off
+        // silently: a "biometry changed" notice would be wrong, and the biometry
+        // button could only fail. The user re-enables it in settings.
+        let isBiometryCacheDiscarded = mnemonicAccess.isBiometryCacheDiscarded()
+        guard hasNothingToUnlock || isBiometryCacheDiscarded else {
+            return completion()
+        }
+        securityStore.setIsBiometryEnable(false) { _ in
+            DispatchQueue.main.async {
+                completion()
+            }
+        }
+    }
+
+    func migrateNativeIfNeed(
+        completion: @escaping (_ didNeedToMigrate: Bool, _ isSuccess: Bool, _ passcode: String?) -> Void
+    ) {
         let secureAssembly = dependencies.keeperCoreRootAssembly.secureAssembly
         let mergeMigration = MergeMigration(
             asyncStorage: dependencies.keeperCoreRootAssembly.rnAssembly.rnAsyncStorage,
@@ -324,24 +544,43 @@ private extension RootCoordinator {
             tonProofTokenService: dependencies.keeperCoreRootAssembly.servicesAssembly.tonProofTokenService()
         )
 
-        let (needsMigrate, currentVersion) = mergeMigration.currentMnemonicsVersion()
-        guard needsMigrate else {
-            completion(false, true)
+        switch mergeMigration.currentMnemonicsMigrationCheck() {
+        case .ready:
+            completion(false, true, nil)
             return
-        }
-        mergeMigration.performNativeMigration(from: currentVersion) { [weak self] handler in
-            guard let self else { return }
-            showPasscode(validator: handler.validator) { passcode in
-                handler.onSuccess(passcode)
+
+        case let .needsMigration(currentVersion):
+            final class PasscodeBox {
+                var value: String?
             }
-        } completion: { [weak self] result in
-            self?.handleMigrationResult(result, completion: { isSuccess in
-                completion(true, isSuccess)
-            })
+            let passcodeBox = PasscodeBox()
+            mergeMigration.performNativeMigration(from: currentVersion) { [weak self] handler in
+                guard let self else { return }
+                showPasscode(validator: handler.validator) { passcode in
+                    passcodeBox.value = passcode
+                    handler.onSuccess(passcode)
+                }
+            } completion: { [weak self] result in
+                self?.handleMigrationResult(result, completion: { isSuccess in
+                    completion(true, isSuccess, passcodeBox.value)
+                })
+            }
+
+        case let .blocked(error):
+            handleMigrationResult(.failedMigrateMnemonics(error: error)) { isSuccess in
+                completion(true, isSuccess, nil)
+            }
         }
     }
 
-    func migrateRNIfNeed(deeplink: CoordinatorDeeplink?, completion: @escaping (_ isSuccess: Bool) -> Void) {
+    func migrateRNIfNeed(
+        deeplink: CoordinatorDeeplink?,
+        completion: @escaping (_ isSuccess: Bool, _ passcode: String?) -> Void
+    ) {
+        final class PasscodeBox {
+            var value: String?
+        }
+        let passcodeBox = PasscodeBox()
         let mergeMigration = MergeMigration(
             asyncStorage: dependencies.keeperCoreRootAssembly.rnAssembly.rnAsyncStorage,
             appInfoProvider: dependencies.coreAssembly.appInfoProvider,
@@ -362,18 +601,14 @@ private extension RootCoordinator {
             let result = await mergeMigration.performRNMigration { [weak self] handler in
                 guard let self else { return }
                 DispatchQueue.main.async {
-                    self.showPasscode(validator: handler.validator) { [weak self] passcode in
-                        Task { [weak self] in
-                            guard let self else { return }
-                            await brokenTronWalletAnalyticsTracker.countWalletsAtStartupIfNeeded(passcode: passcode)
-                            await mnemonicDerivationAnalyticsTracker.countWalletsAtStartupIfNeeded(passcode: passcode)
-                        }
+                    self.showPasscode(validator: handler.validator) { passcode in
+                        passcodeBox.value = passcode
                         handler.onSuccess(passcode)
                     }
                 }
             }
             handleMigrationResult(result) { isSuccess in
-                completion(isSuccess)
+                completion(isSuccess, passcodeBox.value)
             }
         }
     }

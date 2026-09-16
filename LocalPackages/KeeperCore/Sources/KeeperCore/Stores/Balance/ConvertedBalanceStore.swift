@@ -40,6 +40,10 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
 
         let tonRates = rates.tonRates.first(where: { $0.currency == currency })
         let usdtRates = rates.usdtRates.first(where: { $0.currency == currency })
+        let trxRates = rates.jettonRates
+            .first { $0.key.caseInsensitiveCompare(TRX.symbol) == .orderedSame }?
+            .value
+            .first { $0.currency == currency }
 
         var state = State()
         for wallet in wallets {
@@ -47,6 +51,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
                 wallet: wallet,
                 tonRate: tonRates,
                 usdtRate: usdtRates,
+                trxRate: trxRates,
                 currency: currency
             )
             if walletState != nil {
@@ -54,6 +59,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
                     wallet: wallet,
                     tonRate: tonRates,
                     usdtRate: usdtRates,
+                    trxRate: trxRates,
                     currency: currency
                 )
             }
@@ -88,6 +94,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
         wallet: Wallet,
         tonRate: Rates.Rate?,
         usdtRate: Rates.Rate?,
+        trxRate: Rates.Rate?,
         currency: Currency
     ) -> ConvertedBalanceState? {
         let balanceStates = balanceStore.state
@@ -124,6 +131,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
         }
 
         let tronUSDTItem = calculateTronUSDTBalance(balance.tronBalance, usdtRates: usdtRate)
+        let tronTRXItem = calculateTronTRXBalance(balance.tronBalance, trxRates: trxRate)
 
         let convertedBalance = ConvertedBalance(
             date: balance.date,
@@ -132,6 +140,7 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
             jettonsBalance: jettonItems,
             stackingBalance: stackingItems,
             tronUSDT: tronUSDTItem,
+            tronTRX: tronTRXItem,
             batteryBalance: balance.batteryBalance
         )
 
@@ -271,6 +280,38 @@ public final class ConvertedBalanceStore: Store<ConvertedBalanceStore.Event, Con
 
         return ConvertedBalanceTronUSDTItem(
             amount: tronUSDTBalance.amount,
+            converted: converted,
+            price: price,
+            diff: diff
+        )
+    }
+
+    private func calculateTronTRXBalance(
+        _ tronBalance: TronBalance?,
+        trxRates: Rates.Rate?
+    ) -> ConvertedBalanceTronTRXItem? {
+        guard let tronBalance else {
+            return nil
+        }
+        let converted: Decimal
+        let price: Decimal
+        let diff: String?
+        if let rate = trxRates {
+            converted = RateConverter().convertToDecimal(
+                amount: tronBalance.trxAmount,
+                amountFractionLength: TRX.fractionDigits,
+                rate: rate
+            )
+            price = rate.rate
+            diff = rate.diff24h
+        } else {
+            converted = 0
+            price = 0
+            diff = nil
+        }
+
+        return ConvertedBalanceTronTRXItem(
+            amount: tronBalance.trxAmount,
             converted: converted,
             price: price,
             diff: diff

@@ -6,7 +6,7 @@ extension TKListItemIconView.Configuration {
     static func tronUSDTConfiguration() -> TKListItemIconView.Configuration {
         return TKListItemIconView.Configuration(
             content: .image(TKImageView.Model(
-                image: .image(.App.Currency.Size44.usdt),
+                image: .image(.TKUIKit.Icons.Size44.currencyUsdt),
                 size: .size(CGSize(width: 44, height: 44)),
                 corners: .circle
             )),
@@ -16,7 +16,7 @@ extension TKListItemIconView.Configuration {
             size: CGSize(width: 44, height: 44),
             badge: Badge(
                 configuration: TKListItemBadgeView.Configuration(
-                    item: .image(.image(.App.Currency.Vector.trc20)),
+                    item: .image(.image(.TKUIKit.Icons.Size44.currencyTrc20)),
                     size: .small
                 ),
                 position: .bottomRight

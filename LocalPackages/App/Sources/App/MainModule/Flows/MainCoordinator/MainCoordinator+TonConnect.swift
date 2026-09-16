@@ -1,7 +1,8 @@
-import DisconnectDappToast
+import AppUI
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKLogging
 import UIKit
 
 extension MainCoordinator {
@@ -16,13 +17,16 @@ extension MainCoordinator {
 
             let sendFrom: SendOpen.From
             let appId: String?
+            let initiatedBy: InitiatedBy
             switch app.connectionType {
             case .bridge:
                 sendFrom = .tonconnectLocal
                 appId = app.manifest.host
+                initiatedBy = .tonconnectLocal
             case .remote, .unknown:
                 sendFrom = .tonconnectRemote
                 appId = nil
+                initiatedBy = .tonconnectRemote
             }
 
             var resultHandler = BridgeSignRawResultHandler(
@@ -36,7 +40,7 @@ extension MainCoordinator {
 
             openSignRaw(wallet: wallet, transferProvider: {
                 .signRaw(signRawRequest, forceRelayer: false)
-            }, resultHandler: resultHandler, sendFrom: sendFrom, appId: appId, redAnalyticsConfiguration: .init(
+            }, resultHandler: resultHandler, sendFrom: sendFrom, appId: appId, initiatedBy: initiatedBy, dappUrl: app.manifest.host, redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
                 operation: .confirmTransaction,
                 attemptSource: sendFrom == .tonconnectLocal
@@ -73,6 +77,19 @@ extension MainCoordinator {
                         .connectionType: app.connectionType.rawValue,
                     ]
                 )
+            )
+        case let .disconnect(request):
+            let tonConnectService = keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
+            Task {
+                do {
+                    try await tonConnectService.confirmDisconnectRequest(appRequest: request, app: app)
+                } catch {
+                    Log.w("failed to confirm Ton Connect disconnect request due to error: \(error)")
+                }
+            }
+            try? keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(
+                wallet: wallet,
+                appClientId: app.clientId
             )
         }
     }

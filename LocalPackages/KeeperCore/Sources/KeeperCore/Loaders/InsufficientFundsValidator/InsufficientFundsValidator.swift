@@ -16,6 +16,12 @@ public enum InsufficientFundsError: Error {
         wallet: Wallet,
         isInternalPurchasing: Bool
     )
+    /// A TRX transfer whose amount and fee together outgrow the TRX balance they both come from.
+    case tronFee(
+        wallet: Wallet,
+        balance: BigUInt,
+        requiredAmount: BigUInt
+    )
 }
 
 public protocol InsufficientFundsValidator: AnyObject {
@@ -175,6 +181,8 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
                         if requiredAmount > balance {
                             throw .blockchainFee(wallet: wallet, balance: balance, amount: requiredAmount)
                         }
+                    case .multichain:
+                        break
                     }
                 }
             case .nft:
@@ -185,11 +193,32 @@ final class InsufficientFundsValidatorImplementation: InsufficientFundsValidator
                         if !isRefund, formattedTonBalance < extraAmount {
                             throw .blockchainFee(wallet: wallet, balance: formattedTonBalance, amount: extraAmount)
                         }
-                    case .battery, .gasless:
+                    case .battery, .gasless, .multichain:
                         break
                     }
                 }
-            case .tronUSDT:
+            case .tronTRX:
+                guard let amount = emulationModel.amount?.value else {
+                    return
+                }
+                // The amount alone is worth checking before a fee is known: an unresolved estimate
+                // must not turn into a pass, and the fee only ever raises the requirement.
+                let feeAmount: BigUInt
+                if case let .extra(extra) = emulationModel.extraState,
+                   case let .gasless(_, resolvedFee) = extra.value
+                {
+                    feeAmount = resolvedFee
+                } else {
+                    feeAmount = 0
+                }
+                let trxBalance = balanceStore.getState()[wallet]?.walletBalance.tronBalance?.trxAmount ?? 0
+                let requiredAmount = amount + feeAmount
+                guard trxBalance >= requiredAmount else {
+                    throw .tronFee(wallet: wallet, balance: trxBalance, requiredAmount: requiredAmount)
+                }
+            // A USDT TRC20 transfer pays its fee out of TRX, battery charges or GRAM, so the
+            // confirmation screen decides which of those balances has to cover it.
+            case .tronUSDT, .multichain:
                 break
             }
         }

@@ -28,37 +28,46 @@ public struct TKBottomSheetHeaderConfiguration {
         }
 
         let kind: Kind
-        public var action: ((_ button: UIControl) -> Void)?
+        /// The button renders in SwiftUI, so the value passed back is a zero-sized anchor view that
+        /// tracks its frame — use it to position a popup, not to reconfigure the button.
+        public var action: ((_ sourceView: UIView?) -> Void)?
         public var isEnabled: Bool
+        public var accessibilityIdentifier: String?
 
         public init(
             content: ButtonContent,
-            action: @escaping ((_ button: UIControl) -> Void),
-            isEnabled: Bool = true
+            action: @escaping ((_ sourceView: UIView?) -> Void),
+            isEnabled: Bool = true,
+            accessibilityIdentifier: String? = nil
         ) {
             kind = .custom(content)
             self.action = action
             self.isEnabled = isEnabled
+            self.accessibilityIdentifier = accessibilityIdentifier
         }
 
         private init(
             preset: Preset,
-            action: ((_ button: UIControl) -> Void)?,
-            isEnabled: Bool
+            action: ((_ sourceView: UIView?) -> Void)?,
+            isEnabled: Bool,
+            accessibilityIdentifier: String?
         ) {
             kind = .preset(preset)
             self.action = action
             self.isEnabled = isEnabled
+            self.accessibilityIdentifier = accessibilityIdentifier
         }
 
         public static func close(
-            action: ((_ button: UIControl) -> Void)? = nil,
-            isEnabled: Bool = true
+            action: ((_ sourceView: UIView?) -> Void)? = nil,
+            isEnabled: Bool = true,
+            accessibilityIdentifier: String? = nil
         ) -> Self {
             Self(
                 preset: .close,
                 action: action,
-                isEnabled: isEnabled
+                isEnabled: isEnabled,
+                accessibilityIdentifier: accessibilityIdentifier
             )
         }
     }
@@ -70,16 +79,17 @@ public struct TKBottomSheetHeaderConfiguration {
         }
 
         public struct TextConfiguration {
-            public let text: Text
+            /// Built where rendered so span colors resolve against the live theme.
+            public let text: (TKPalette) -> Text
             public let textStyle: TKTextStyle
-            public let foregroundColor: UIColor?
+            public let foregroundColor: TKColor?
             public let lineLimit: Int?
             public let truncationMode: Text.TruncationMode
 
             public init(
-                text: Text,
+                text: @escaping (TKPalette) -> Text,
                 textStyle: TKTextStyle,
-                foregroundColor: UIColor? = nil,
+                foregroundColor: TKColor? = nil,
                 lineLimit: Int? = 1,
                 truncationMode: Text.TruncationMode = .tail
             ) {
@@ -93,12 +103,12 @@ public struct TKBottomSheetHeaderConfiguration {
             public init(
                 _ string: String,
                 textStyle: TKTextStyle,
-                foregroundColor: UIColor? = nil,
+                foregroundColor: TKColor? = nil,
                 lineLimit: Int? = 1,
                 truncationMode: Text.TruncationMode = .tail
             ) {
                 self.init(
-                    text: Text(string),
+                    text: { _ in Text(string) },
                     textStyle: textStyle,
                     foregroundColor: foregroundColor,
                     lineLimit: lineLimit,
@@ -150,15 +160,30 @@ public struct TKBottomSheetHeaderConfiguration {
         }
     }
 
+    /// Close-only header for sheets whose content carries its own title, so it sits tight above it.
+    public static var compact: TKBottomSheetHeaderConfiguration {
+        TKBottomSheetHeaderConfiguration(
+            title: .empty,
+            contentInsets: UIEdgeInsets(
+                top: 8,
+                left: 16,
+                bottom: 0,
+                right: 16
+            )
+        )
+    }
+
     let title: Title
     public let leftButton: Button?
     public let rightButton: Button?
+    let buttonsAlignment: VerticalAlignment
     let contentInsets: UIEdgeInsets
 
     public init(
         title: Title,
         leftButton: Button? = nil,
         rightButton: Button? = .close(),
+        buttonsAlignment: VerticalAlignment = .top,
         contentInsets: UIEdgeInsets? = nil
     ) {
         let resolvedContentInsets: UIEdgeInsets
@@ -195,17 +220,21 @@ public struct TKBottomSheetHeaderConfiguration {
         self.leftButton = leftButton
         self.rightButton = rightButton
         self.contentInsets = resolvedContentInsets
+        self.buttonsAlignment = buttonsAlignment
     }
 }
 
 struct TKBottomSheetHeaderContentView: View {
+    @Environment(\.tkPalette) private var palette
+
     let configuration: TKBottomSheetHeaderConfiguration
     let closeAction: () -> Void
 
     var body: some View {
         ModalCardHeader(
             config: ModalCardHeader.Config(
-                alignment: configuration.title.alignment
+                headerContentAlignment: configuration.title.alignment,
+                accessoriesAlignment: configuration.buttonsAlignment
             )
         ) {
             buttonView(configuration.leftButton)
@@ -215,7 +244,7 @@ struct TKBottomSheetHeaderContentView: View {
             buttonView(configuration.rightButton)
         }
         .padding(configuration.contentInsets.edgeInsets)
-        .background(Color(uiColor: .Background.page))
+        .background(.backgroundPage)
     }
 }
 
@@ -223,14 +252,12 @@ private extension TKBottomSheetHeaderContentView {
     @ViewBuilder
     func buttonView(_ button: TKBottomSheetHeaderConfiguration.Button?) -> some View {
         if let button {
-            TKBottomSheetHeaderButtonRepresentable(
+            TKBottomSheetHeaderButton(
                 button: button,
                 closeAction: closeAction
             )
             .fixedSize(horizontal: true, vertical: true)
             .layoutPriority(1)
-        } else {
-            EmptyView()
         }
     }
 
@@ -244,13 +271,14 @@ private extension TKBottomSheetHeaderContentView {
                 title: .init(
                     title,
                     textStyle: .h3,
-                    foregroundColor: .Text.primary
+                    foregroundColor: .textPrimary
                 ),
                 subtitle: subtitle.map {
                     .init(
                         $0,
                         textStyle: .body2,
-                        foregroundColor: .Text.secondary
+                        foregroundColor: .textSecondary,
+                        lineLimit: nil
                     )
                 },
                 alignment: alignment
@@ -300,9 +328,11 @@ private extension TKBottomSheetHeaderContentView {
         alignment: ModalCardHeaderContentAlignment
     ) -> some View {
         VStack(alignment: alignment.horizontalAlignment, spacing: 0) {
-            configuredText(title)
+            configuredText(title, alignment: alignment)
             if let subtitle {
-                configuredText(subtitle)
+                configuredText(subtitle, alignment: alignment)
+                    .padding(.top, 3)
+                    .padding(.bottom, 1)
             }
         }
         .frame(
@@ -314,222 +344,120 @@ private extension TKBottomSheetHeaderContentView {
 
     @ViewBuilder
     func configuredText(
-        _ configuration: TKBottomSheetHeaderConfiguration.Title.TextConfiguration
+        _ configuration: TKBottomSheetHeaderConfiguration.Title.TextConfiguration,
+        alignment: ModalCardHeaderContentAlignment
     ) -> some View {
-        let text = configuration.text
+        let text = configuration.text(palette)
             .textStyle(configuration.textStyle)
             .lineLimit(configuration.lineLimit)
             .truncationMode(configuration.truncationMode)
+            .multilineTextAlignment(alignment.textAlignment)
 
         if let foregroundColor = configuration.foregroundColor {
-            text.foregroundStyle(Color(uiColor: foregroundColor))
+            text.foregroundStyle(foregroundColor)
         } else {
             text
         }
     }
 }
 
-private struct TKBottomSheetHeaderButtonRepresentable: UIViewRepresentable {
+private struct TKBottomSheetHeaderButton: View {
     let button: TKBottomSheetHeaderConfiguration.Button
     let closeAction: () -> Void
 
-    func makeUIView(context: Context) -> TKBottomSheetHeaderButtonContainerView {
-        let view = TKBottomSheetHeaderButtonContainerView()
-        view.update(
-            button: button,
-            closeAction: closeAction
-        )
-        return view
-    }
+    @State private var anchorView: UIView?
 
-    func updateUIView(_ uiView: TKBottomSheetHeaderButtonContainerView, context: Context) {
-        uiView.update(
-            button: button,
-            closeAction: closeAction
+    var body: some View {
+        SwiftUI.Button(action: performAction) {
+            content
+                .frame(height: Layout.height)
+                .background(
+                    TKColor.buttonSecondaryBackground
+                        .opacity(contentOpacity)
+                )
+                .clipShape(Capsule())
+        }
+        .buttonStyle(TKTapAnimationButtonStyle(haptic: .light))
+        .disabled(!button.isEnabled)
+        .accessibilityIdentifier(button.accessibilityIdentifier)
+        .overlay(
+            AnchorViewResolver { view in
+                guard anchorView !== view else { return }
+                anchorView = view
+            }
         )
     }
 }
 
-private final class TKBottomSheetHeaderButtonContainerView: UIView {
-    private enum DisplayKind {
-        case icon
-        case titleIcon
-    }
-
-    private var displayKind: DisplayKind?
-    private var embeddedButton: UIControl?
-
-    func update(
-        button: TKBottomSheetHeaderConfiguration.Button,
-        closeAction: @escaping () -> Void
-    ) {
-        let desiredKind = displayKind(for: button)
-        if desiredKind != displayKind {
-            displayKind = desiredKind
-            embeddedButton?.removeFromSuperview()
-            embeddedButton = makeButton(for: desiredKind)
-            if let embeddedButton {
-                addSubview(embeddedButton)
-                embeddedButton.snp.makeConstraints { make in
-                    make.edges.equalToSuperview()
-                }
-            }
-        }
-
-        guard let embeddedButton else { return }
-
+private extension TKBottomSheetHeaderButton {
+    @ViewBuilder
+    var content: some View {
         switch button.kind {
-        case let .custom(content):
-            configure(
-                embeddedButton: embeddedButton,
-                with: content
-            )
-        case let .preset(preset):
-            configure(
-                embeddedButton: embeddedButton,
-                with: preset
-            )
-        }
-
-        embeddedButton.isEnabled = button.isEnabled
-        configureAction(
-            for: embeddedButton,
-            button: button,
-            closeAction: closeAction
-        )
-
-        invalidateIntrinsicContentSize()
-    }
-
-    override var intrinsicContentSize: CGSize {
-        fittingSize
-    }
-
-    override func sizeThatFits(_ size: CGSize) -> CGSize {
-        fittingSize
-    }
-}
-
-private extension TKBottomSheetHeaderButtonContainerView {
-    var fittingSize: CGSize {
-        guard let embeddedButton else {
-            return .zero
-        }
-
-        let size = embeddedButton.systemLayoutSizeFitting(
-            UIView.layoutFittingCompressedSize,
-            withHorizontalFittingPriority: .fittingSizeLevel,
-            verticalFittingPriority: .fittingSizeLevel
-        )
-
-        return CGSize(
-            width: ceil(size.width),
-            height: ceil(size.height)
-        )
-    }
-
-    private func displayKind(
-        for button: TKBottomSheetHeaderConfiguration.Button
-    ) -> DisplayKind {
-        switch button.kind {
-        case let .custom(content):
-            switch content {
-            case .icon:
-                return .icon
-            case .titleIcon:
-                return .titleIcon
-            }
-        case .preset:
-            return .icon
-        }
-    }
-
-    private func makeButton(for kind: DisplayKind) -> UIControl {
-        switch kind {
-        case .icon:
-            return TKUIHeaderIconButton()
-        case .titleIcon:
-            return TKUIHeaderTitleIconButton()
-        }
-    }
-
-    func configure(
-        embeddedButton: UIControl,
-        with content: TKBottomSheetHeaderConfiguration.ButtonContent
-    ) {
-        switch content {
-        case let .icon(image):
-            guard let button = embeddedButton as? TKUIHeaderIconButton else { return }
-            button.configure(
-                model: TKUIHeaderButtonIconContentView.Model(image: image)
-            )
-        case let .titleIcon(title, icon, iconPosition):
-            guard let button = embeddedButton as? TKUIHeaderTitleIconButton else { return }
-            let icon = icon.map {
-                TKUIButtonTitleIconContentView.Model.Icon(
-                    icon: $0,
-                    position: iconPosition.tkUIKitPosition
-                )
-            }
-            button.configure(
-                model: TKUIButtonTitleIconContentView.Model(
-                    title: title,
-                    icon: icon
-                )
-            )
-        }
-    }
-
-    func configure(
-        embeddedButton: UIControl,
-        with preset: TKBottomSheetHeaderConfiguration.Button.Preset
-    ) {
-        switch preset {
-        case .close:
-            configure(
-                embeddedButton: embeddedButton,
-                with: .icon(.TKUIKit.Icons.Size16.close)
-            )
-        }
-    }
-
-    func configureAction(
-        for embeddedButton: UIControl,
-        button: TKBottomSheetHeaderConfiguration.Button,
-        closeAction: @escaping () -> Void
-    ) {
-        let action: (UIControl) -> Void = {
-            switch button.kind {
-            case let .custom(content):
-                switch content {
-                case .icon, .titleIcon:
-                    return { control in
-                        button.action?(control)
-                    }
-                }
-            case let .preset(preset):
-                switch preset {
-                case .close:
-                    return { control in
-                        if let action = button.action {
-                            action(control)
-                        } else {
-                            closeAction()
-                        }
-                    }
+        case let .custom(.icon(image)):
+            iconView(image)
+                .padding(.horizontal, Layout.iconHorizontalPadding)
+        case let .custom(.titleIcon(title, icon, iconPosition)):
+            // Spacing only when both sit in the stack: an absent one resolves to an empty view, which
+            // a plain stack spacing would still pad around.
+            HStack(spacing: title != nil && icon != nil ? Layout.titleIconSpacing : 0) {
+                switch iconPosition {
+                case .left:
+                    iconView(icon)
+                    titleView(title)
+                case .right:
+                    titleView(title)
+                    iconView(icon)
                 }
             }
-        }()
-
-        if let embeddedButton = embeddedButton as? TKUIHeaderIconButton {
-            embeddedButton.addTapAction {
-                action(embeddedButton)
-            }
-        } else if let embeddedButton = embeddedButton as? TKUIHeaderTitleIconButton {
-            embeddedButton.addTapAction {
-                action(embeddedButton)
-            }
+            .padding(.horizontal, Layout.titleHorizontalPadding)
+        case .preset(.close):
+            iconView(.TKUIKit.Icons.Size16.close)
+                .padding(.horizontal, Layout.iconHorizontalPadding)
         }
+    }
+
+    /// Rendered at the image's own size, matching the `contentMode = .center` of the UIKit header
+    /// buttons this replaced — the content insets, not the image, set the button's size.
+    @ViewBuilder
+    func iconView(_ image: UIImage?) -> some View {
+        if let image {
+            SwiftUI.Image(uiImage: image)
+                .renderingMode(.template)
+                .foregroundStyle(.buttonSecondaryForeground)
+                .opacity(contentOpacity)
+        }
+    }
+
+    @ViewBuilder
+    func titleView(_ title: String?) -> some View {
+        if let title {
+            Text(title)
+                .textStyle(.label2)
+                .foregroundStyle(.buttonSecondaryForeground)
+                .opacity(contentOpacity)
+        }
+    }
+
+    var contentOpacity: CGFloat {
+        button.isEnabled ? 1 : Layout.disabledOpacity
+    }
+
+    func performAction() {
+        guard let action = button.action else {
+            if case .preset(.close) = button.kind {
+                closeAction()
+            }
+            return
+        }
+        action(anchorView)
+    }
+
+    enum Layout {
+        static let height: CGFloat = 32
+        static let iconHorizontalPadding: CGFloat = 8
+        static let titleHorizontalPadding: CGFloat = 12
+        static let titleIconSpacing: CGFloat = 8
+        static let disabledOpacity: CGFloat = 0.48
     }
 }
 
@@ -613,17 +541,6 @@ private extension TKBottomSheetHeaderConfiguration.Title {
             return alignment
         case let .customView(_, alignment, _):
             return alignment
-        }
-    }
-}
-
-private extension TKBottomSheetHeaderConfiguration.IconPosition {
-    var tkUIKitPosition: TKUIButtonTitleIconContentView.Model.IconPosition {
-        switch self {
-        case .left:
-            return .left
-        case .right:
-            return .right
         }
     }
 }

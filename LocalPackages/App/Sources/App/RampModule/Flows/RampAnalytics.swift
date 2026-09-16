@@ -35,21 +35,29 @@ enum WithdrawAnalyticsSource {
 
 extension OnRampLayoutToken {
     var depositAnalyticsAssetIdentifier: String? {
-        resolveAnalyticsAssetIdentifier(symbol: symbol, isTron: isTronNetwork)
+        analyticsAssetId
     }
 
     var withdrawAnalyticsAssetIdentifier: String? {
-        resolveAnalyticsAssetIdentifier(symbol: symbol, isTron: isTronNetwork)
+        analyticsAssetId
+    }
+
+    private var analyticsAssetId: String? {
+        canonicalAnalyticsAssetId(assetId: assetId, symbol: symbol, isTron: isTronNetwork)
     }
 }
 
 extension OnRampLayoutCryptoMethod {
     var depositAnalyticsAssetIdentifier: String? {
-        resolveAnalyticsAssetIdentifier(symbol: symbol, isTron: isTronNetwork)
+        analyticsAssetId
     }
 
     var withdrawAnalyticsAssetIdentifier: String? {
-        resolveAnalyticsAssetIdentifier(symbol: symbol, isTron: isTronNetwork)
+        analyticsAssetId
+    }
+
+    private var analyticsAssetId: String? {
+        canonicalAnalyticsAssetId(assetId: assetId, symbol: symbol, isTron: isTronNetwork)
     }
 }
 
@@ -64,20 +72,27 @@ extension Token {
     }
 }
 
-private func resolveAnalyticsAssetIdentifier(symbol: String, isTron: Bool) -> String? {
+private func canonicalAnalyticsAssetId(assetId: String, symbol: String, isTron: Bool) -> String? {
+    if AssetIdComponents(assetId: assetId) != nil {
+        return assetId
+    }
+    return resolveCanonicalAnalyticsAssetIdentifier(symbol: symbol, isTron: isTron)
+}
+
+private func resolveCanonicalAnalyticsAssetIdentifier(symbol: String, isTron: Bool) -> String? {
     if isTron {
         switch symbol.lowercased() {
         case "usdt":
-            return DepositClickBuy.BuyAsset.tronTrc20Usdt.rawValue
+            return Token.tron(.usdt).assetId(network: .mainnet)
         default:
             return nil
         }
     } else {
         switch symbol.lowercased() {
         case "ton":
-            return DepositClickBuy.BuyAsset.tonNativeTon.rawValue
+            return Token.ton(.ton).assetId(network: .mainnet)
         case "usdt":
-            return DepositClickBuy.BuyAsset.tonJettonUsdt.rawValue
+            return "ton/mainnet/jetton/\(JettonMasterAddress.tonUSDT.toRaw())"
         default:
             return nil
         }

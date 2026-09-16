@@ -14,10 +14,6 @@ public extension DNSService {
 }
 
 final class DNSServiceImplementation: DNSService {
-    enum Error: Swift.Error {
-        case noWalletData
-    }
-
     private let apiProvider: APIProvider
 
     init(apiProvider: APIProvider) {

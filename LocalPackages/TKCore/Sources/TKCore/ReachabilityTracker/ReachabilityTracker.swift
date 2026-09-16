@@ -33,15 +33,10 @@ public final class ReachabilityTracker {
     private var observers = [ReachabilityTrackerObserverWrapper]()
 
     init() {
-        pathMonitor.start(queue: .main)
         pathMonitor.pathUpdateHandler = { [weak self] path in
-            switch path.status {
-            case .satisfied:
-                self?.state = .connected
-            default:
-                self?.state = .noInternetConnection
-            }
+            self?.state = Self.state(for: path)
         }
+        pathMonitor.start(queue: .main)
     }
 
     deinit {
@@ -57,5 +52,18 @@ private extension ReachabilityTracker {
     func notifyObservers(_ state: State) {
         observers = observers.filter { $0.observer != nil }
         observers.forEach { $0.observer?.didUpdateState(state) }
+    }
+
+    static func state(for path: NWPath) -> State {
+        guard path.status == .satisfied else {
+            return .noInternetConnection
+        }
+        return internetCapableInterfaceTypes.contains(where: path.usesInterfaceType)
+            ? .connected
+            : .noInternetConnection
+    }
+
+    static var internetCapableInterfaceTypes: [NWInterface.InterfaceType] {
+        [.wifi, .cellular, .wiredEthernet]
     }
 }

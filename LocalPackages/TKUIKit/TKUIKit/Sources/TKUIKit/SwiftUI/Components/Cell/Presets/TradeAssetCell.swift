@@ -12,6 +12,7 @@ public struct TradeAssetCellContent: Sendable, Equatable {
     public var iconImageSource: AssetAvatarViewImageSource
     public var priceText: String
     public var changeText: ChangeText?
+    public var showsVerificationCheckmark: Bool
 
     public init(
         assetSymbol: String,
@@ -19,7 +20,8 @@ public struct TradeAssetCellContent: Sendable, Equatable {
         chainTag: String?,
         iconImageSource: AssetAvatarViewImageSource,
         priceText: String,
-        changeText: ChangeText?
+        changeText: ChangeText?,
+        showsVerificationCheckmark: Bool = false
     ) {
         self.assetSymbol = assetSymbol
         self.assetDisplayName = assetDisplayName
@@ -27,6 +29,7 @@ public struct TradeAssetCellContent: Sendable, Equatable {
         self.iconImageSource = iconImageSource
         self.priceText = priceText
         self.changeText = changeText
+        self.showsVerificationCheckmark = showsVerificationCheckmark
     }
 }
 
@@ -108,14 +111,25 @@ extension TradeAssetCell {
                 .init(
                     title: content.assetSymbol,
                     tags: content.chainTag.map { tag in
-                        [TKTagSwiftUIViewConfig(tagConfiguration: .tag(text: tag))]
+                        [.tag(text: tag)]
                     },
+                    statusIcons: content.showsVerificationCheckmark ? [.verificationCheckmark] : nil,
                     value: .init(
                         title: content.priceText
                     )
                 )
             )
         }
+    }
+}
+
+private extension CellCenterPrimaryRow.StatusIcon {
+    static var verificationCheckmark: Self {
+        .init(
+            image: .TKUIKit.Icons.Size16.verification,
+            color: .accentBlue,
+            size: 16
+        )
     }
 }
 
@@ -136,11 +150,9 @@ extension TradeAssetCell {
                         .map { changeText in
                             CellCenterSecondaryRow.AccessoryConfig(
                                 title: changeText.title,
-                                color: Color(
-                                    uiColor: changeText.positive
-                                        ? .Accent.green
-                                        : .Accent.red
-                                )
+                                color: changeText.positive
+                                    ? .accentGreen
+                                    : .accentRed
                             )
                         }
                 )

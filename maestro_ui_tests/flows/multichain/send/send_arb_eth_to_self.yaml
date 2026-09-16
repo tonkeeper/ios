@@ -1,0 +1,17 @@
+# Multichain Send: ETH on Arbitrum to self (address from Receive).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "Arbitrum"
+      ADDRESS_TITLE: "Your Arbitrum address"
+- runFlow:
+    file: "../../../steps/send/send_to_clipboard_recipient.yaml"
+    env:
+      SEARCH_QUERY: "ETH"
+      ASSET_ID: "token_picker_asset_arb_eth"
+      TOKEN_SYMBOL: "ETH"
+      AMOUNT: "0.0001"
+      RECIPIENT: ${output.fullAddr}

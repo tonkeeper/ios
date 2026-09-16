@@ -1,303 +1,166 @@
 import SwiftUI
 import UIKit
 
-public struct TKBottomSheetConfiguration {
-    public var cornerRadius: CGFloat
-    public var overlayColor: UIColor
-    public var backgroundColor: UIColor
-    public var dismissOnOverlayTap: Bool
-    public var sheetAnimation: Animation
-    public var overlayAnimation: Animation
-
-    public init(
-        cornerRadius: CGFloat = 20,
-        overlayColor: UIColor = .Background.overlayStrong,
-        backgroundColor: UIColor = .Background.page,
-        dismissOnOverlayTap: Bool = true,
-        sheetAnimation: Animation = .interactiveSpring(
-            response: 0.36,
-            dampingFraction: 0.88,
-            blendDuration: 0.12
-        ),
-        overlayAnimation: Animation = .easeOut(duration: 0.2)
-    ) {
-        self.cornerRadius = cornerRadius
-        self.overlayColor = overlayColor
-        self.backgroundColor = backgroundColor
-        self.dismissOnOverlayTap = dismissOnOverlayTap
-        self.sheetAnimation = sheetAnimation
-        self.overlayAnimation = overlayAnimation
-    }
-
-    public static let `default` = TKBottomSheetConfiguration()
-}
-
 public extension View {
+    /// Presents SwiftUI content in a `TKBottomSheetViewController`, so the sheet chrome, drag
+    /// physics and header are the same ones the UIKit screens use.
+    ///
+    /// - Parameter header: Built with the sheet's own dismissal, so a custom button needs no state
+    /// of its own at the call site. Returning `nil` keeps the sheet's default close-only header.
     func tkBottomSheet<SheetContent: View>(
         isPresented: Binding<Bool>,
-        configuration: TKBottomSheetConfiguration = .default,
+        header: @escaping (_ dismiss: @escaping () -> Void) -> TKBottomSheetHeaderConfiguration? = { _ in nil },
         @ViewBuilder content: @escaping () -> SheetContent
     ) -> some View {
         modifier(
-            TKBottomSheetBoolModifier(
-                isPresented: isPresented,
-                configuration: configuration,
-                sheetContent: content
+            TKBottomSheetModifier(
+                item: Binding(
+                    get: { isPresented.wrappedValue ? TKBottomSheetPresentedItem() : nil },
+                    set: { isPresented.wrappedValue = $0 != nil }
+                ),
+                header: { _, dismiss in header(dismiss) },
+                sheetContent: { _ in content() }
             )
         )
     }
 
+    /// - Parameter header: Built with the presented item and the sheet's own dismissal. Returning
+    /// `nil` keeps the sheet's default close-only header.
     func tkBottomSheet<Item: Hashable, SheetContent: View>(
         item: Binding<Item?>,
-        configuration: TKBottomSheetConfiguration = .default,
+        header: @escaping (_ item: Item, _ dismiss: @escaping () -> Void) -> TKBottomSheetHeaderConfiguration? = { _, _ in nil },
         @ViewBuilder content: @escaping (Item) -> SheetContent
     ) -> some View {
         modifier(
-            TKBottomSheetItemModifier(
+            TKBottomSheetModifier(
                 item: item,
-                configuration: configuration,
+                header: header,
                 sheetContent: content
             )
         )
     }
 }
 
-private struct TKBottomSheetBoolModifier<SheetContent: View>: ViewModifier {
-    @Binding var isPresented: Bool
-    let configuration: TKBottomSheetConfiguration
-    let sheetContent: () -> SheetContent
+private struct TKBottomSheetPresentedItem: Hashable {}
 
-    func body(content: Content) -> some View {
-        content
-            .overlay {
-                GeometryReader { safeAreaGeometry in
-                    GeometryReader { geometry in
-                        ZStack(alignment: .bottom) {
-                            ZStack {
-                                if isPresented {
-                                    TKBottomSheetDimmingLayer(
-                                        configuration: configuration,
-                                        dismiss: { isPresented = false }
-                                    )
-                                    .transition(.opacity)
-                                }
-                            }
-                            .animation(configuration.overlayAnimation, value: isPresented)
-
-                            ZStack(alignment: .bottom) {
-                                if isPresented {
-                                    TKBottomSheetContainer(
-                                        configuration: configuration,
-                                        bottomSafeAreaInset: safeAreaGeometry.safeAreaInsets.bottom,
-                                        maxHeight: maxSheetHeight(
-                                            geometry: geometry,
-                                            safeAreaInsets: safeAreaGeometry.safeAreaInsets
-                                        ),
-                                        dismiss: { isPresented = false },
-                                        sheetContent: sheetContent
-                                    )
-                                    .transition(.move(edge: .bottom))
-                                }
-                            }
-                            .animation(configuration.sheetAnimation, value: isPresented)
-                            .zIndex(1)
-                        }
-                        .frame(
-                            width: geometry.size.width,
-                            height: geometry.size.height,
-                            alignment: .bottom
-                        )
-                        .allowsHitTesting(isPresented)
-                    }
-                    .ignoresSafeArea()
-                }
-            }
-    }
-}
-
-private struct TKBottomSheetItemModifier<Item: Hashable, SheetContent: View>: ViewModifier {
+private struct TKBottomSheetModifier<Item: Hashable, SheetContent: View>: ViewModifier {
     @Binding var item: Item?
-    let configuration: TKBottomSheetConfiguration
+    let header: (Item, @escaping () -> Void) -> TKBottomSheetHeaderConfiguration?
     let sheetContent: (Item) -> SheetContent
 
     func body(content: Content) -> some View {
         content
-            .overlay {
-                GeometryReader { safeAreaGeometry in
-                    GeometryReader { geometry in
-                        ZStack(alignment: .bottom) {
-                            ZStack {
-                                if item != nil {
-                                    TKBottomSheetDimmingLayer(
-                                        configuration: configuration,
-                                        dismiss: { self.item = nil }
-                                    )
-                                    .transition(.opacity)
-                                }
-                            }
-                            .animation(configuration.overlayAnimation, value: item != nil)
-
-                            ZStack(alignment: .bottom) {
-                                if let item {
-                                    TKBottomSheetContainer(
-                                        configuration: configuration,
-                                        bottomSafeAreaInset: safeAreaGeometry.safeAreaInsets.bottom,
-                                        maxHeight: maxSheetHeight(
-                                            geometry: geometry,
-                                            safeAreaInsets: safeAreaGeometry.safeAreaInsets
-                                        ),
-                                        dismiss: { self.item = nil },
-                                        sheetContent: { sheetContent(item) }
-                                    )
-                                    .id(item)
-                                    .transition(.move(edge: .bottom))
-                                }
-                            }
-                            .animation(configuration.sheetAnimation, value: item)
-                            .zIndex(1)
-                        }
-                        .frame(
-                            width: geometry.size.width,
-                            height: geometry.size.height,
-                            alignment: .bottom
-                        )
-                        .allowsHitTesting(item != nil)
-                    }
-                    .ignoresSafeArea()
-                }
-            }
-    }
-}
-
-private struct TKBottomSheetDimmingLayer: View {
-    @Environment(\.colorScheme) private var colorScheme
-
-    let configuration: TKBottomSheetConfiguration
-    let dismiss: () -> Void
-
-    var body: some View {
-        Color.tkResolved(
-            uiColor: configuration.overlayColor,
-            colorScheme: colorScheme
-        )
-        .opacity(.dimmingPresentedOpacity)
-        .ignoresSafeArea()
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard configuration.dismissOnOverlayTap else { return }
-            dismiss()
-        }
-    }
-}
-
-private struct TKBottomSheetContainer<SheetContent: View>: View {
-    let configuration: TKBottomSheetConfiguration
-    let bottomSafeAreaInset: CGFloat
-    let maxHeight: CGFloat
-    let dismiss: () -> Void
-    let sheetContent: () -> SheetContent
-
-    @GestureState private var dragOffset: CGFloat = .zero
-
-    var body: some View {
-        sheetSurface
-            .frame(
-                maxWidth: .infinity,
-                maxHeight: maxHeight,
-                alignment: .bottom
-            )
-            .offset(y: normalizedDragOffset(dragOffset))
-            .animation(dragOffset == .zero ? configuration.sheetAnimation : nil, value: dragOffset)
-            .accessibilityAddTraits(.isModal)
-    }
-
-    private var sheetSurface: some View {
-        sheetContent()
-            .frame(maxWidth: .infinity)
-            .padding(.bottom, bottomSafeAreaInset + upwardDragStretch(dragOffset))
-            .background(Color(uiColor: configuration.backgroundColor))
-            .clipShape(
-                RoundedRectExt(
-                    radius: configuration.cornerRadius,
-                    corners: [.topLeft, .topRight]
+            .background(
+                TKBottomSheetPresenter(
+                    item: $item,
+                    header: header,
+                    sheetContent: sheetContent
                 )
+                .frame(width: 0, height: 0)
+                .accessibilityHidden(true)
             )
-            .contentShape(Rectangle())
-            .gesture(dragGesture)
+    }
+}
+
+private struct TKBottomSheetPresenter<Item: Hashable, SheetContent: View>: UIViewControllerRepresentable {
+    @Binding var item: Item?
+    let header: (Item, @escaping () -> Void) -> TKBottomSheetHeaderConfiguration?
+    let sheetContent: (Item) -> SheetContent
+
+    func makeUIViewController(context: Context) -> UIViewController {
+        UIViewController()
     }
 
-    private var dragGesture: some Gesture {
-        DragGesture(minimumDistance: 3, coordinateSpace: .global)
-            .updating($dragOffset) { value, state, transaction in
-                transaction.animation = nil
-                state = value.translation.height
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        context.coordinator.presenter = self
+        context.coordinator.update(item: item, from: uiViewController)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    @MainActor
+    final class Coordinator {
+        var presenter: TKBottomSheetPresenter?
+
+        private var presentedItem: Item?
+        private weak var sheetViewController: TKBottomSheetViewController?
+        private weak var contentViewController: TKBottomSheetHostingController<SheetContent>?
+
+        func update(item: Item?, from viewController: UIViewController) {
+            guard let presenter, let item else {
+                dismiss()
+                return
             }
-            .onEnded { value in
-                if shouldDismiss(translation: value.translation.height, predictedTranslation: value.predictedEndTranslation.height) {
-                    dismiss()
+
+            guard let contentViewController else {
+                present(item: item, from: viewController)
+                return
+            }
+
+            // Every enclosing render reaches here; re-pushing identical content would make the sheet
+            // re-measure and re-animate for nothing, so swap only when the presented item changed.
+            guard presentedItem != item else { return }
+
+            presentedItem = item
+            contentViewController.headerConfiguration = headerConfiguration(for: item)
+            contentViewController.setContent(presenter.sheetContent(item))
+        }
+
+        private func present(item: Item, from viewController: UIViewController) {
+            guard let presenter else { return }
+
+            // The representable's controller reaches a window only once SwiftUI has installed it, so
+            // a sheet presented on appear has to wait for that pass.
+            guard viewController.view.window != nil else {
+                DispatchQueue.main.async { [weak self, weak viewController] in
+                    guard let self, let viewController, self.contentViewController == nil else { return }
+                    self.update(item: self.presenter?.item, from: viewController)
                 }
+                return
             }
-    }
 
-    private func normalizedDragOffset(_ offset: CGFloat) -> CGFloat {
-        guard offset < 0 else {
-            return offset
+            let contentViewController = TKBottomSheetHostingController(
+                content: presenter.sheetContent(item),
+                headerConfiguration: headerConfiguration(for: item)
+            )
+            let sheetViewController = TKBottomSheetViewController(
+                contentViewController: contentViewController,
+                ignoreBottomSafeArea: true
+            )
+            // Fires for interactive dismissal only — a programmatic one already went through the
+            // binding, and reporting it again would write to it twice.
+            sheetViewController.didClose = { [weak self] _ in
+                self?.clear()
+                self?.presenter?.item = nil
+            }
+
+            presentedItem = item
+            self.contentViewController = contentViewController
+            self.sheetViewController = sheetViewController
+
+            sheetViewController.present(fromViewController: viewController)
         }
 
-        return max(offset / 3, -.maximumUpwardDragOffset)
-    }
-
-    private func upwardDragStretch(_ offset: CGFloat) -> CGFloat {
-        max(-normalizedDragOffset(offset), 0)
-    }
-
-    private func shouldDismiss(translation: CGFloat, predictedTranslation: CGFloat) -> Bool {
-        translation > .dismissDragOffset || predictedTranslation > .dismissPredictedDragOffset
-    }
-}
-
-private extension CGFloat {
-    static let dismissDragOffset: CGFloat = 60
-    static let dismissPredictedDragOffset: CGFloat = 120
-    static let maximumUpwardDragOffset: CGFloat = 24
-}
-
-private extension Double {
-    static let dimmingPresentedOpacity: Double = 0.72
-}
-
-private func maxSheetHeight(
-    geometry: GeometryProxy,
-    safeAreaInsets: EdgeInsets
-) -> CGFloat {
-    max(geometry.size.height - safeAreaInsets.top, 0)
-}
-
-private extension Color {
-    static func tkResolved(
-        uiColor: UIColor,
-        colorScheme: SwiftUI.ColorScheme
-    ) -> Color {
-        let style: UIUserInterfaceStyle = colorScheme == .dark ? .dark : .light
-        let resolvedColor = uiColor.resolvedColor(
-            with: UITraitCollection(userInterfaceStyle: style)
-        )
-
-        var red: CGFloat = 0
-        var green: CGFloat = 0
-        var blue: CGFloat = 0
-        var alpha: CGFloat = 0
-
-        guard resolvedColor.getRed(&red, green: &green, blue: &blue, alpha: &alpha) else {
-            return Color(uiColor: resolvedColor)
+        private func dismiss() {
+            guard let sheetViewController else { return }
+            clear()
+            sheetViewController.dismiss()
         }
 
-        return Color(
-            .sRGB,
-            red: Double(red),
-            green: Double(green),
-            blue: Double(blue),
-            opacity: Double(alpha)
-        )
+        private func clear() {
+            presentedItem = nil
+            sheetViewController = nil
+            contentViewController = nil
+        }
+
+        private func headerConfiguration(for item: Item) -> TKBottomSheetHeaderConfiguration? {
+            presenter?.header(item) { [weak self] in
+                // Routed through the binding so SwiftUI stays the source of truth and drives the
+                // dismissal back down.
+                self?.presenter?.item = nil
+            }
+        }
     }
 }

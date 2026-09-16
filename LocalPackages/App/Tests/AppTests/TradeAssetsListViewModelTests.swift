@@ -56,7 +56,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_selectCategory_switchesToIndependentCategoryViewModel() async {
+    func test_selectCategory_preservesSearchTextAndSwitchesToIndependentCategoryViewModel() async {
         let service = TradingAssetsListServiceSpy()
         await service.setLoadPlans([
             .success(
@@ -68,6 +68,12 @@ final class TradeAssetsListViewModelTests: XCTestCase {
             .success(
                 snapshot(
                     ids: ["aaplx"],
+                    nextCursor: nil
+                )
+            ),
+            .success(
+                snapshot(
+                    ids: ["ton-search"],
                     nextCursor: nil
                 )
             ),
@@ -83,14 +89,14 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         viewModel.updateSearchText("ton")
         viewModel.selectCategory(.stocks)
 
-        XCTAssertEqual(viewModel.searchText, "")
+        XCTAssertEqual(viewModel.searchText, "ton")
 
         await waitUntil {
             await service.loadRequests().count == 2
         }
 
         let loadRequests = await service.loadRequests()
-        XCTAssertEqual(loadRequests.last, .init(query: nil, category: .stocks))
+        XCTAssertEqual(loadRequests.last, .init(query: "ton", category: .stocks))
         XCTAssertFalse(loadRequests.contains(.init(query: "ton", category: .all)))
 
         await waitUntil {
@@ -101,15 +107,18 @@ final class TradeAssetsListViewModelTests: XCTestCase {
 
         viewModel.selectCategory(.all)
 
-        try? await Task.sleep(nanoseconds: 100_000_000)
+        await waitUntil {
+            await service.loadRequests().count == 3
+        }
         let requestsAfterSwitchingBack = await service.loadRequests()
         XCTAssertEqual(
             requestsAfterSwitchingBack.filter { $0 == .init(query: nil, category: .all) }.count,
             1
         )
+        XCTAssertEqual(requestsAfterSwitchingBack.last, .init(query: "ton", category: .all))
 
-        XCTAssertEqual(viewModel.searchText, "")
-        XCTAssertEqual(currentAssets(in: viewModel.currentQueryViewModel).map(\.id), ["ton"])
+        XCTAssertEqual(viewModel.searchText, "ton")
+        XCTAssertEqual(currentAssets(in: viewModel.currentQueryViewModel).map(\.id), ["ton-search"])
     }
 
     @MainActor
@@ -270,7 +279,7 @@ final class TradeAssetsListViewModelTests: XCTestCase {
         await viewModel.refresh()
 
         XCTAssertEqual(currentAssets(in: viewModel.currentQueryViewModel).map(\.id), ["ton"])
-        XCTAssertEqual(currentStateMessage(in: viewModel.currentQueryViewModel), TKLocales.Trade.Assets.Errors.load)
+        XCTAssertEqual(currentStateMessage(in: viewModel.currentQueryViewModel), TKLocales.ConnectionStatus.noInternet)
     }
 
     @MainActor
@@ -320,12 +329,13 @@ final class TradeAssetsListViewModelTests: XCTestCase {
     }
 
     @MainActor
-    func test_openAsset_usesCategoryDerivedFromAssetIDForAllTab() async {
+    func test_openAsset_usesAssetCategoryForAllTab() async {
         let service = TradingAssetsListServiceSpy()
         await service.setLoadPlans([
             .success(
                 snapshot(
                     ids: ["ton/mainnet/stocks/0:abcdef"],
+                    category: .stocks,
                     nextCursor: nil
                 )
             ),
@@ -355,6 +365,46 @@ final class TradeAssetsListViewModelTests: XCTestCase {
 
         XCTAssertEqual(openedCategory, .stocks)
     }
+
+    @MainActor
+    func test_cellConfig_setsVerificationCheckmarkOnlyForTrustedAssets() {
+        let formattersAssembly = FormattersAssembly()
+        let queryViewModel = TradeAssetsListQueryViewModel(
+            query: nil,
+            category: .all,
+            assetsListService: TradingAssetsListServiceSpy(),
+            amountFormatter: formattersAssembly.amountFormatter,
+            signedAmountFormatter: formattersAssembly.signedAmountFormatter,
+            onWillPerformSearch: {}
+        )
+
+        let trustedConfig = queryViewModel.cellConfig(
+            for: tradingAsset(id: "trusted", verification: .trusted),
+            currency: .USD
+        )
+        let whitelistConfig = queryViewModel.cellConfig(
+            for: tradingAsset(id: "whitelist", verification: .whitelist),
+            currency: .USD
+        )
+        let unverifiedConfig = queryViewModel.cellConfig(
+            for: tradingAsset(id: "unverified", verification: .none),
+            currency: .USD
+        )
+
+        guard case let .content(trustedContent) = trustedConfig else {
+            return XCTFail("Expected trusted content")
+        }
+        guard case let .content(whitelistContent) = whitelistConfig else {
+            return XCTFail("Expected whitelist content")
+        }
+        guard case let .content(unverifiedContent) = unverifiedConfig else {
+            return XCTFail("Expected unverified content")
+        }
+
+        XCTAssertTrue(trustedContent.showsVerificationCheckmark)
+        XCTAssertFalse(whitelistContent.showsVerificationCheckmark)
+        XCTAssertFalse(unverifiedContent.showsVerificationCheckmark)
+    }
 }
 
 private extension TradeAssetsListViewModelTests {
@@ -369,14 +419,15 @@ private extension TradeAssetsListViewModelTests {
             analyticsProvider: AnalyticsProvider(
                 analyticsServices: [],
                 uniqueIdProvider: CoreAssembly().uniqueIdProvider,
-                appInfoProvider: CoreAssembly().appInfoProvider
+                appInfoProvider: CoreAssembly().appInfoProvider,
+                keysCountryCodeProvider: CoreAssembly().keysCountryCodeProvider
             ),
             analyticsSource: .deepLink,
             assetsListService: assetsListService,
             amountFormatter: formattersAssembly.amountFormatter,
             signedAmountFormatter: formattersAssembly.signedAmountFormatter,
             selectedCategory: .all,
-            onClose: {},
+            onBack: {},
             onOpenAssetDetails: onOpenAssetDetails
         )
     }
@@ -413,6 +464,7 @@ private extension TradeAssetsListViewModelTests {
 
     func snapshot(
         ids: [String],
+        category: TradingAssetCategory = .tokens,
         nextCursor: String?
     ) -> TradingAssetListSnapshot {
         TradingAssetListSnapshot(
@@ -422,7 +474,7 @@ private extension TradeAssetsListViewModelTests {
                 TradingAsset(
                     id: id,
                     symbol: id.uppercased(),
-                    category: TradingAssetCategory(assetID: id) ?? .crypto,
+                    category: category,
                     name: id,
                     subtitle: id,
                     imageURL: nil,
@@ -430,10 +482,29 @@ private extension TradeAssetsListViewModelTests {
                     priceFractionDigits: 0,
                     change24hPercent: nil,
                     change24hPercentFractionDigits: 0,
-                    isUnverified: false
+                    verification: .whitelist
                 )
             },
             nextCursor: nextCursor
+        )
+    }
+
+    func tradingAsset(
+        id: String,
+        verification: TradingVerification
+    ) -> TradingAsset {
+        TradingAsset(
+            id: id,
+            symbol: id.uppercased(),
+            category: .tokens,
+            name: id,
+            subtitle: id,
+            imageURL: nil,
+            price: nil,
+            priceFractionDigits: 0,
+            change24hPercent: nil,
+            change24hPercentFractionDigits: 0,
+            verification: verification
         )
     }
 

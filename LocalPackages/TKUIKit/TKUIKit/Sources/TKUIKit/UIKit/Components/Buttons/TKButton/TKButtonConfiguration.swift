@@ -110,22 +110,6 @@ public extension TKButton.Configuration {
         )
     }
 
-    static func iconHeaderButtonConfiguration() -> TKButton.Configuration {
-        TKButton.Configuration(
-            content: Content(),
-            contentPadding: UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8),
-            padding: UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8),
-            iconTintColor: .Button.secondaryForeground,
-            backgroundColors: [
-                .normal: .Button.secondaryBackground,
-                .highlighted: .Button.secondaryBackgroundHighlighted,
-                .disabled: .Button.secondaryBackgroundDisabled,
-            ],
-            cornerRadius: 16,
-            action: nil
-        )
-    }
-
     static func titleHeaderButtonConfiguration(category: TKActionButtonCategory) -> TKButton.Configuration {
         TKButton.Configuration(
             content: Content(),
@@ -168,7 +152,7 @@ public extension TKButton.Configuration {
         TKButton.Configuration(
             content: Content(icon: .TKUIKit.Icons.Size16.xmarkCircle),
             contentPadding: .zero,
-            padding: UIEdgeInsets(top: 0, left: 20, bottom: 0, right: 20),
+            padding: UIEdgeInsets(top: 0, left: 8, bottom: 0, right: 12),
             iconTintColor: .Icon.secondary,
             contentAlpha: [.normal: 1, .disabled: 0.48, .highlighted: 0.48],
             action: nil

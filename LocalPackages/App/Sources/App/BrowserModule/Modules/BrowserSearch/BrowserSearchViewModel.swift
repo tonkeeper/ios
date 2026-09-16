@@ -1,11 +1,12 @@
 import KeeperCore
-import TKCore
 import TKLocalize
 import TKUIKit
 import UIKit
 
 protocol BrowserSearchModuleOutput: AnyObject {
-    var didSelectDapp: ((Dapp) -> Void)? { get set }
+    var didSelectDapp: ((DappOpenIntent) -> Void)? { get set }
+    var didUpdateSearchTarget: ((URL?) -> Void)? { get set }
+    var didSelectSearchResult: ((URL) -> Void)? { get set }
 }
 
 protocol BrowserSearchViewModel: AnyObject {
@@ -14,6 +15,7 @@ protocol BrowserSearchViewModel: AnyObject {
 
     func viewDidLoad()
     func searchInput(_ input: String)
+    func cancelSearch()
 }
 
 final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, BrowserSearchModuleOutput {
@@ -22,7 +24,9 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
         let url: URL?
     }
 
-    var didSelectDapp: ((Dapp) -> Void)?
+    var didSelectDapp: ((DappOpenIntent) -> Void)?
+    var didUpdateSearchTarget: ((URL?) -> Void)?
+    var didSelectSearchResult: ((URL) -> Void)?
 
     var didUpdateEmptyText: ((NSAttributedString) -> Void)?
     var didUpdateSnapshot: ((BrowserSearch.Snapshot) -> Void)?
@@ -42,9 +46,12 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
         searchPopularApps(input: input)
     }
 
-    // MARK: - Image Loader
+    func cancelSearch() {
+        suggestionsTask?.cancel()
+        didUpdateSearchTarget?(nil)
+    }
 
-    private let imageLoader = ImageLoader()
+    // MARK: - Image Loader
 
     // MARK: - State
 
@@ -74,17 +81,24 @@ final class BrowserSearchViewModelImplementation: BrowserSearchViewModel, Browse
     private let popularAppsService: PopularAppsService
     private let appSettingsStore: AppSettingsStore
     private let searchEngineService: SearchEngineServiceProtocol
+    private let isMultichainEnabled: Bool
 
     // MARK: - Init
 
     init(
         popularAppsService: PopularAppsService,
         appSettingsStore: AppSettingsStore,
-        searchEngineService: SearchEngineServiceProtocol
+        searchEngineService: SearchEngineServiceProtocol,
+        isMultichainEnabled: Bool
     ) {
         self.popularAppsService = popularAppsService
         self.appSettingsStore = appSettingsStore
         self.searchEngineService = searchEngineService
+        self.isMultichainEnabled = isMultichainEnabled
+    }
+
+    deinit {
+        suggestionsTask?.cancel()
     }
 }
 
@@ -103,8 +117,7 @@ private extension BrowserSearchViewModelImplementation {
                 configuration: mapValidURLSuggestion(suggestion: urlSuggestion),
                 isHighlighted: true,
                 onSelection: { [weak self] in
-                    guard let self, let dapp = composeDapp(urlSuggestion) else { return }
-                    didSelectDapp?(dapp)
+                    self?.selectSuggestion(urlSuggestion)
                 }
             )
             snapshot.appendItems([item], toSection: .dapps)
@@ -121,8 +134,7 @@ private extension BrowserSearchViewModelImplementation {
                     configuration: mapDapp(dapp, url: url),
                     isHighlighted: false
                 ) { [weak self] in
-                    guard let dapp = Dapp(popularApp: dapp) else { return }
-                    self?.didSelectDapp?(dapp)
+                    self?.selectPopularApp(dapp)
                 }
                 items.append(item)
                 identifiers.insert(dapp.id)
@@ -147,8 +159,7 @@ private extension BrowserSearchViewModelImplementation {
                     configuration: mapSuggestion(suggest),
                     isHighlighted: false,
                     onSelection: { [weak self] in
-                        guard let self, let dapp = composeDapp(suggest) else { return }
-                        didSelectDapp?(dapp)
+                        self?.selectSuggestion(suggest)
                     }
                 )
             }, toSection: section)
@@ -167,6 +178,7 @@ private extension BrowserSearchViewModelImplementation {
         guard !input.isEmpty else {
             dapps = [PopularApp]()
             suggestionsTask?.cancel()
+            didUpdateSearchTarget?(nil)
             searchSuggestions = [SearchEngineSuggestion]()
             urlSuggestion = nil
             return
@@ -186,6 +198,7 @@ private extension BrowserSearchViewModelImplementation {
         }
 
         suggestionsTask?.cancel()
+        let searchTargetURL = searchTargetURL(input: input)
         suggestionsTask = Task { [weak self] in
             guard let self else { return }
 
@@ -194,7 +207,44 @@ private extension BrowserSearchViewModelImplementation {
 
             await searchSuggestionsTask
             await searchSuggestURLTask
+            await sendSearchTargetIfSuggestionsTaskCompleted(searchTargetURL)
         }
+    }
+
+    func sendSearchTargetIfSuggestionsTaskCompleted(_ targetURL: URL?) async {
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+            didUpdateSearchTarget?(targetURL)
+        }
+    }
+
+    func selectPopularApp(_ app: PopularApp) {
+        guard let url = app.url else {
+            return
+        }
+
+        commitSearchSelection(url: url)
+        didSelectDapp?(.popularApp(
+            source: .browserSearch,
+            app: app,
+            catalogMode: isMultichainEnabled ? .multichain : .ton
+        ))
+    }
+
+    func selectSuggestion(_ suggestion: SearchEngineSuggestion) {
+        guard let dapp = composeDapp(suggestion),
+              let url = suggestion.url
+        else {
+            return
+        }
+
+        commitSearchSelection(url: url)
+        didSelectDapp?(.dapp(source: .browserSearch, dapp: dapp))
+    }
+
+    func commitSearchSelection(url: URL) {
+        cancelSearch()
+        didSelectSearchResult?(url)
     }
 
     func searchSuggestURL(input: String) async {
@@ -360,6 +410,19 @@ private extension BrowserSearchViewModelImplementation {
             input = httpsPrefix + input
         }
         return URL(string: input)
+    }
+
+    private func searchTargetURL(input: String) -> URL? {
+        if let url = updateURLInput(input: input),
+           url.isValidURL
+        {
+            return url
+        }
+
+        return searchEngineService.composeSearchURL(
+            input: input,
+            searchEngine: appSettingsStore.state.searchEngine
+        )
     }
 }
 

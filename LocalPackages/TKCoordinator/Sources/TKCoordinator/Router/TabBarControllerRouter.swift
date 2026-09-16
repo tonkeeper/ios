@@ -2,48 +2,11 @@ import UIKit
 
 public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBarController> {
     public var didSelectItem: ((Int) -> Void)?
+    public var transitionAnimator: ((_ fromIndex: Int, _ toIndex: Int) -> (any UIViewControllerAnimatedTransitioning)?)?
 
     override public init(rootViewController: UITabBarController) {
         super.init(rootViewController: rootViewController)
         rootViewController.delegate = self
-    }
-
-    public func set(
-        viewControllers: [UIViewController],
-        animated: Bool,
-        completion: (() -> Void)? = nil
-    ) {
-        rootViewController.set(
-            viewControllers: viewControllers,
-            animated: animated,
-            completion: completion
-        )
-    }
-
-    public func select(
-        viewController: UIViewController,
-        completion: (() -> Void)? = nil
-    ) {
-        rootViewController.select(
-            viewController: viewController,
-            completion: completion
-        )
-    }
-
-    public func select(index: Int, completion: (() -> Void)? = nil) {
-        rootViewController.select(
-            index: index,
-            completion: completion
-        )
-    }
-
-    public func insert(viewController: UIViewController, at index: Int) {
-        rootViewController.viewControllers?.insert(viewController, at: index)
-    }
-
-    public func remove(viewController: UIViewController) {
-        guard let index = rootViewController.viewControllers?.firstIndex(of: viewController) else { return }
-        rootViewController.viewControllers?.remove(at: index)
     }
 }
 
@@ -61,6 +24,19 @@ extension TabBarControllerRouter: UITabBarControllerDelegate {
     public func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
         guard let index = tabBarController.viewControllers?.firstIndex(of: viewController) else { return }
         didSelectItem?(index)
+    }
+
+    public func tabBarController(
+        _ tabBarController: UITabBarController,
+        animationControllerForTransitionFrom fromVC: UIViewController,
+        to toVC: UIViewController
+    ) -> (any UIViewControllerAnimatedTransitioning)? {
+        guard let transitionAnimator,
+              let viewControllers = tabBarController.viewControllers,
+              let fromIndex = viewControllers.firstIndex(of: fromVC),
+              let toIndex = viewControllers.firstIndex(of: toVC)
+        else { return nil }
+        return transitionAnimator(fromIndex, toIndex)
     }
 }
 

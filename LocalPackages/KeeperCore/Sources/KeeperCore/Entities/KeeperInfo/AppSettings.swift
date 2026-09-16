@@ -4,10 +4,33 @@ public extension KeeperInfo {
     struct AppSettings: Equatable {
         public let isSecureMode: Bool
         public let searchEngine: SearchEngine
+        public let hidesDustTransactions: Bool
+        public let hidesDustBalances: Bool
 
-        public init(isSecureMode: Bool, searchEngine: SearchEngine) {
+        public init(
+            isSecureMode: Bool,
+            searchEngine: SearchEngine,
+            hidesDustTransactions: Bool = false,
+            hidesDustBalances: Bool = false
+        ) {
             self.isSecureMode = isSecureMode
             self.searchEngine = searchEngine
+            self.hidesDustTransactions = hidesDustTransactions
+            self.hidesDustBalances = hidesDustBalances
+        }
+
+        public func updating(
+            isSecureMode: Bool? = nil,
+            searchEngine: SearchEngine? = nil,
+            hidesDustTransactions: Bool? = nil,
+            hidesDustBalances: Bool? = nil
+        ) -> AppSettings {
+            AppSettings(
+                isSecureMode: isSecureMode ?? self.isSecureMode,
+                searchEngine: searchEngine ?? self.searchEngine,
+                hidesDustTransactions: hidesDustTransactions ?? self.hidesDustTransactions,
+                hidesDustBalances: hidesDustBalances ?? self.hidesDustBalances
+            )
         }
     }
 }
@@ -21,5 +44,7 @@ extension KeeperInfo.AppSettings: Codable {
         } else {
             self.searchEngine = .duckduckgo
         }
+        self.hidesDustTransactions = (try? container.decode(Bool.self, forKey: .hidesDustTransactions)) ?? false
+        self.hidesDustBalances = (try? container.decode(Bool.self, forKey: .hidesDustBalances)) ?? false
     }
 }

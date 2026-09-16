@@ -26,7 +26,6 @@ final class SendV3AmountBalanceConvertedView: UIView {
 
     let convertedLabel = UILabel()
     let swapImageView = UIImageView()
-    let spacerView = UIView()
     let swapButton = TKButton()
     let stackView = UIStackView()
 
@@ -55,7 +54,6 @@ final class SendV3AmountBalanceConvertedView: UIView {
         swapImageView.setContentHuggingPriority(.required, for: .horizontal)
         convertedLabel.setContentHuggingPriority(.required, for: .horizontal)
         convertedLabel.isUserInteractionEnabled = false
-        spacerView.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         stackView.spacing = 4
         stackView.alignment = .center
@@ -65,10 +63,12 @@ final class SendV3AmountBalanceConvertedView: UIView {
 
         stackView.addArrangedSubview(convertedLabel)
         stackView.addArrangedSubview(swapImageView)
-        stackView.addArrangedSubview(spacerView)
 
+        // The view stretches to fill the row, but its content stays left aligned so the
+        // gap to the balance/error container is exactly the row spacing.
         stackView.snp.makeConstraints { make in
-            make.edges.equalTo(self)
+            make.top.left.bottom.equalTo(self)
+            make.right.lessThanOrEqualTo(self)
         }
         swapImageView.snp.makeConstraints { make in
             make.top.bottom.equalTo(self)

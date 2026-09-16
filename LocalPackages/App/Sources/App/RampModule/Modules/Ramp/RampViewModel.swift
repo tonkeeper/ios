@@ -5,7 +5,7 @@ import TKLocalize
 import TKUIKit
 import UIKit
 
-public protocol RampModuleOutput: AnyObject {
+protocol RampModuleOutput: AnyObject {
     var didTapReceiveTokens: (() -> Void)? { get set }
     var didTapSendTokens: (() -> Void)? { get set }
     var didTapLayoutItem: ((OnRampLayoutItem, OnRampLayout, RampDeeplinkParameters?, RampAsset?) -> Void)? { get set }
@@ -14,7 +14,7 @@ public protocol RampModuleOutput: AnyObject {
     var didClose: (() -> Void)? { get set }
 }
 
-public protocol RampModuleInput: AnyObject {
+protocol RampModuleInput: AnyObject {
     func set(currency: RemoteCurrency)
     var currentFiatCurrency: RemoteCurrency? { get }
 }
@@ -101,16 +101,21 @@ final class RampViewModelImplementation: RampViewModel, RampModuleOutput, RampMo
                 }
                 layout = try await onRampService.getLayout(
                     flow: flow.api,
-                    currency: currentFiatCurrency?.code
+                    currency: currentFiatCurrency?.code,
+                    walletId: wallet.multichainWalletId
                 )
             } else {
                 fiatCurrencies = []
-                layout = try await onRampService.getLayout(flow: flow.api, currency: nil)
+                layout = try await onRampService.getLayout(
+                    flow: flow.api,
+                    currency: nil,
+                    walletId: wallet.multichainWalletId
+                )
             }
 
             onRampLayout = layout
                 .filteredByCashOrCryptoAvailability(isAvailable: wallet.isRampCashOrCryptoAvailable)
-                .filteredByTRC20Availability(isAvailable: wallet.isTronAvailable)
+                .filteredByTRC20Availability(isAvailable: wallet.tron != nil)
             state = .loaded
             buildSnapshot()
             if let onRampLayout {
@@ -187,7 +192,7 @@ private extension RampViewModelImplementation {
                 fromToken: params.fromToken,
                 fromNetwork: params.fromNetwork
             ) else { return }
-            guard !asset.isTronNetwork || wallet.isTronAvailable else { return }
+            guard !asset.isTronNetwork || wallet.tron != nil else { return }
             guard let layoutItem = layoutItemsForMatching.first(where: { item in
                 (item.assets ?? []).contains { $0.assetId == asset.assetId && $0.symbol == asset.symbol && $0.network == asset.network }
             }) else { return }

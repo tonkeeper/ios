@@ -59,6 +59,8 @@ final class DepositCompletedAnalyticsObserver {
             return BigUInt(item.info.amount)
         case let .tronUSDT(item):
             return item.amount
+        case let .tronTRX(item):
+            return item.amount
         case let .ethena(item):
             return item.amount
         }

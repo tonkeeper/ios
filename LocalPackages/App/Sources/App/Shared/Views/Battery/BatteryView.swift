@@ -13,15 +13,15 @@ final class BatteryView: UIView {
         var bodyImage: UIImage {
             switch self {
             case .size24:
-                return .TKUIKit.Images.Battery.batteryBody24
+                return .TKUIKit.Icons.Size24.batteryBody
             case .size34:
-                return .TKUIKit.Images.Battery.batteryBody34
+                return .TKUIKit.Icons.Size34.batteryBody
             case .size44:
-                return .TKUIKit.Images.Battery.batteryBody44
+                return .TKUIKit.Icons.Size44.batteryBody
             case .size52:
-                return .TKUIKit.Images.Battery.batteryBody52
+                return .TKUIKit.Icons.Size52.batteryBody
             case .size128:
-                return .TKUIKit.Images.Battery.batteryBody128
+                return .TKUIKit.Icons.Size128.batteryBody
             }
         }
 
@@ -45,13 +45,13 @@ final class BatteryView: UIView {
             case .size24:
                 return nil
             case .size34:
-                return .TKUIKit.Icons.Vector.flash
+                return .TKUIKit.Icons.Size16.batteryFlash
             case .size44:
-                return .TKUIKit.Icons.Vector.flash
+                return .TKUIKit.Icons.Size16.batteryFlash
             case .size52:
                 return nil
             case .size128:
-                return .TKUIKit.Icons.Vector.flash
+                return .TKUIKit.Icons.Size16.batteryFlash
             }
         }
 

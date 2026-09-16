@@ -1,0 +1,9 @@
+# Opens Battery from the wallet header, then buys the smallest crypto pack (750 charges).
+# Env: RECHARGE_TOKEN — symbol after "Recharge with ", e.g. GRAM / USD₮ / TON
+appId: com.jbig.tonkeeper
+---
+- runFlow: open_battery.yaml
+- runFlow:
+    file: recharge_crypto_from_refill.yaml
+    env:
+      RECHARGE_TOKEN: ${RECHARGE_TOKEN}

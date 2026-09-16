@@ -4,6 +4,7 @@ import Foundation
 public enum SendData {
     case ton(TonSendData)
     case tron(TronSendData)
+    case multichain(MultichainSendData)
 }
 
 public struct TonSendData {
@@ -44,6 +45,32 @@ public struct TonSendData {
 public struct TronSendData {
     public enum Item {
         case usdt(amount: BigUInt)
+        case trx(amount: BigUInt)
+
+        public var token: TronToken {
+            switch self {
+            case .usdt:
+                .usdt
+            case .trx:
+                .trx
+            }
+        }
+
+        public var amount: BigUInt {
+            switch self {
+            case let .usdt(amount), let .trx(amount):
+                amount
+            }
+        }
+
+        public func settingAmount(_ amount: BigUInt) -> Item {
+            switch self {
+            case .usdt:
+                .usdt(amount: amount)
+            case .trx:
+                .trx(amount: amount)
+            }
+        }
     }
 
     public let wallet: Wallet
@@ -66,5 +93,30 @@ public struct TronSendData {
         self.item = item
         self.recipientDisplayAddress = recipientDisplayAddress
         self.estimatedDurationSeconds = estimatedDurationSeconds
+    }
+}
+
+public struct MultichainSendData {
+    public let wallet: Wallet
+    public let recipient: MultichainRecipient
+    public let asset: MultichainAsset
+    public let amount: BigUInt
+    public let comment: String?
+    public let isMaxAmount: Bool
+
+    public init(
+        wallet: Wallet,
+        recipient: MultichainRecipient,
+        asset: MultichainAsset,
+        amount: BigUInt,
+        comment: String?,
+        isMaxAmount: Bool
+    ) {
+        self.wallet = wallet
+        self.recipient = recipient
+        self.asset = asset
+        self.amount = amount
+        self.comment = comment
+        self.isMaxAmount = isMaxAmount
     }
 }

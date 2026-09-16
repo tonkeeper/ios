@@ -1,6 +1,5 @@
 import Foundation
 import KeeperCore
-import Mapping
 import TKCore
 import TKFeatureFlags
 

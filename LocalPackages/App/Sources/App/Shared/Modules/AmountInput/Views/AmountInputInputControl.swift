@@ -142,6 +142,6 @@ private extension CGFloat {
 
 private extension UIFont {
     static var inputFont: UIFont {
-        UIFont.montserratSemiBold(size: 40)
+        UIFont.tkMedium(size: 40, features: .display)
     }
 }

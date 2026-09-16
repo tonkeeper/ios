@@ -69,13 +69,14 @@ private extension HistoryViewController {
             )
             tkuiNavigationBar.isSeparatorHidden = true
             tkuiNavigationBar.centerView = titleView
-            tkuiNavigationBar.leftViews = [
-                TKUINavigationBar.createBackButton(
-                    action: { [weak viewModel] in
-                        viewModel?.presentationStyle.closeAction?()
-                    }
-                ),
-            ]
+            let backButton = TKUINavigationBar.createBackButton(
+                action: { [weak viewModel] in
+                    viewModel?.presentationStyle.closeAction?()
+                }
+            )
+            backButton.accessibilityIdentifier = "history_back_button"
+            backButton.isAccessibilityElement = true
+            tkuiNavigationBar.leftViews = [backButton]
         }
 
         setupBindings()

@@ -22,11 +22,6 @@ public final class TKMnemonicTextField: UIControl {
         set { textFieldInputView.inputText = newValue }
     }
 
-    public var placeholder: String {
-        get { textFieldInputView.placeholder }
-        set { textFieldInputView.placeholder = newValue }
-    }
-
     public var accessoryView: UIView? {
         get { textFieldInputView.accessoryView }
         set { textFieldInputView.accessoryView = newValue }

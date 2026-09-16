@@ -1,96 +1,75 @@
+import AppUI
 import TKUIKit
 import UIKit
 
-final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> {
+enum NFTDetailsNavigationButton {
+    case back
+    case swipeDown
+}
+
+final class NFTDetailsViewController: TKHostingController<NFTDetailsScreen> {
     private let viewModel: NFTDetailsViewModel
-    private let manageNFTViewController: NFTDetailsManageNFTViewController
 
-    init(
-        viewModel: NFTDetailsViewModel,
-        manageNFTViewController: NFTDetailsManageNFTViewController
-    ) {
+    init(viewModel: NFTDetailsViewModel) {
         self.viewModel = viewModel
-        self.manageNFTViewController = manageNFTViewController
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        super.init(
+            content: NFTDetailsScreen(
+                state: .empty,
+                onClose: {},
+                onCopy: { _ in }
+            )
+        )
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        setup()
+        view.backgroundColor = .Background.page
         setupBindings()
         viewModel.viewDidLoad()
     }
 
-    private func setup() {
-        setupNavigationBar()
-
-        addChild(manageNFTViewController)
-        customView.setManageNFTView(manageNFTViewController.view)
-        manageNFTViewController.didMove(toParent: self)
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: false)
     }
+}
 
-    private func setupNavigationBar() {
-        customView.navigationBar.leftViews = [
-            TKUINavigationBar.createSwipeDownButton(action: { [weak self] in
-                self?.viewModel.didTapClose()
-            }),
-        ]
-    }
-
-    private func setupBindings() {
-        viewModel.didUpdateTitleView = { [weak self] model in
-            self?.customView.titleView.configure(model: model)
-        }
-
-        viewModel.didUpdateManageNFTViewIsHidden = { [weak self] isHidden in
-            self?.customView.manageNFTContainerView.isHidden = isHidden
-        }
-
-        viewModel.didUpdateInformationView = { [weak self] model in
-            self?.customView.informationView.configure(model: model)
-        }
-
-        viewModel.didUpdateButtonsView = { [weak self] model in
-            if let model {
-                self?.customView.buttonsView.isHidden = false
-                self?.customView.buttonsView.configure(model: model)
-            } else {
-                self?.customView.buttonsView.isHidden = true
-            }
-        }
-
-        viewModel.didUpdateDetailsView = { [weak self] model in
-            self?.customView.detailsView.configure(model: model)
-        }
-
-        viewModel.didUpdatePropertiesView = { [weak self] model in
-            if let model {
-                self?.customView.propertiesView.isHidden = false
-                self?.customView.propertiesView.configure(model: model)
-            } else {
-                self?.customView.propertiesView.isHidden = true
-            }
-        }
-
-        viewModel.didUpdateMenuItems = { [weak self] items in
-            self?.customView.navigationBar.rightViews = [
-                TKUINavigationBar.createMoreButton(action: { targetView in
-                    TKPopupMenuController.show(
-                        sourceView: targetView,
-                        position: .bottomRight(inset: 8),
-                        minimumWidth: 0,
-                        items: items,
-                        isSelectable: false,
-                        selectedIndex: nil
-                    )
-                }),
-            ]
+private extension NFTDetailsViewController {
+    func setupBindings() {
+        viewModel.didUpdateState = { [weak self] state in
+            self?.content = NFTDetailsScreen(
+                state: state,
+                onClose: { [weak self] in
+                    self?.viewModel.didTapClose()
+                },
+                onCopy: { value in
+                    Pasteboard.copy(value: value)
+                }
+            )
         }
     }
+}
+
+private extension NFTDetailsScreenState {
+    static let empty = NFTDetailsScreenState(
+        header: Header(
+            title: "",
+            leftButton: .back
+        ),
+        information: Information(
+            imageSource: .image(nil),
+            name: "",
+            collectionName: "",
+            isCollectionVerified: false,
+            description: nil,
+            moreTitle: ""
+        ),
+        details: Details(
+            title: "",
+            explorerButtonTitle: "",
+            items: [],
+            onOpenExplorer: {}
+        )
+    )
 }

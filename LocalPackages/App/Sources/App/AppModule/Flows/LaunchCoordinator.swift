@@ -2,6 +2,7 @@ import TKCoordinator
 import TKCore
 import TKFeatureFlags
 import TKLogging
+import TKUIKit
 import UIKit
 
 public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
@@ -15,7 +16,8 @@ public final class LaunchCoordinator: RouterCoordinator<WindowRouter> {
         remoteConfig: any RemoteConfigProvider
     ) {
         self.featureFlags = TKFeatureFlagsImplementation(
-            remoteConfigProvider: remoteConfig
+            remoteConfigProvider: remoteConfig,
+            overrides: StaticFlagOverrides.shared?.featureFlags ?? [:]
         )
         super.init(router: router)
     }

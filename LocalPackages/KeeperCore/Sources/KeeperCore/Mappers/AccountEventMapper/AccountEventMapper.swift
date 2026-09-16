@@ -257,6 +257,8 @@ private extension AccountEventMapper {
                 status: status.rawValue,
                 network: network
             )
+        case .buyXTR:
+            return mapUnknownAction(action, rightTopDescription: rightTopDescription)
         case .unknown:
             return mapUnknownAction(action, rightTopDescription: rightTopDescription)
         default: return nil
@@ -851,7 +853,7 @@ private extension AccountEventMapper {
     ) -> AccountEventModel.Action {
         return AccountEventModel.Action(
             eventType: .domainRenew,
-            amount: action.domain,
+            amount: "-",
             subamount: nil,
             leftTopDescription: preview.accounts.first?.address.toShortString(bounceable: true),
             leftBottomDescription: nil,

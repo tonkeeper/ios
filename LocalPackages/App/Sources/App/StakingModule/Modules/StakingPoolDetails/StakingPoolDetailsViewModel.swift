@@ -12,8 +12,6 @@ protocol StakingPoolDetailsModuleOutput: AnyObject {
     var didClose: (() -> Void)? { get set }
 }
 
-protocol StakingPoolDetailsModuleInput: AnyObject {}
-
 protocol StakingPoolDetailsViewModel: AnyObject {
     var title: String { get }
     var buttonTitle: String { get }
@@ -90,8 +88,5 @@ final class StakingPoolDetailsViewModelImplementation: StakingPoolDetailsViewMod
 }
 
 private extension String {
-    static let mostProfitableTag = TKLocales.StakingPoolDetails.maxApy
-    static let apy = TKLocales.StakingPoolDetails.apy
-    static let minimalDeposit = TKLocales.StakingPoolDetails.minimalDeposit
     static let description = TKLocales.StakingPoolDetails.description
 }

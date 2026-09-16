@@ -8,17 +8,12 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     var didRequirePasscode: (() async -> String?)?
     var didTapChangePasscode: (() -> Void)?
 
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var didUpdateState: ((SettingsListState) -> Void)?
-    var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
 
     var title: String {
         TKLocales.Security.title
-    }
-
-    var isSelectable: Bool {
-        false
     }
 
     func getInitialState() -> SettingsListState {
@@ -49,42 +44,39 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
                     let state = observer.createState()
                     observer.didUpdateState?(state)
                 }
+            case .didUpdatePasscodeBruteForce:
+                break
             }
         }
     }
 
     private func createState() -> SettingsListState {
-        let sections = [
-            createBiometrySection(),
-            createLockscreenSection(),
-            createChangePasscodeSection(),
-        ]
-
-        return SettingsListState(
-            sections: sections
+        SettingsListState(
+            sections: [
+                createBiometrySection(),
+                createLockscreenSection(),
+                createChangePasscodeSection(),
+            ]
         )
     }
 
     private func createBiometrySection() -> SettingsListSection {
-        let items = [createBiometryItem()]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items.map(SettingsListItemsSectionItem.listItem),
-            footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.useBiometryDescription)
+        .items(SettingsListItemsSection(
+            items: [.listItem(createBiometryItem())],
+            footer: TKLocales.Security.useBiometryDescription
         ))
     }
 
     private func createLockscreenSection() -> SettingsListSection {
-        let items = [createLockScreenItem()]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items.map(SettingsListItemsSectionItem.listItem),
-            footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.lockScreenDescription)
+        .items(SettingsListItemsSection(
+            items: [.listItem(createLockScreenItem())],
+            footer: TKLocales.Security.lockScreenDescription
         ))
     }
 
     private func createChangePasscodeSection() -> SettingsListSection {
-        let items = [createChangePasscodeItem()]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items.map(SettingsListItemsSectionItem.listItem)
+        .items(SettingsListItemsSection(
+            items: [.listItem(createChangePasscodeItem())]
         ))
     }
 
@@ -92,27 +84,27 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
         let state = biometryProvider
             .getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics)
         let isOn: Bool
-        let isEnable: Bool
+        let isEnabled: Bool
         let title: String
         switch state {
         case let .success(state):
             switch state {
             case .none:
                 title = TKLocales.Security.unavailableError
-                isEnable = false
+                isEnabled = false
                 isOn = false
             case .faceID:
                 title = TKLocales.Security.use(String.faceId)
-                isEnable = true
+                isEnabled = true
                 isOn = securityStore.getState().isBiometryEnable
             case .touchID:
                 title = TKLocales.Security.use(String.touchId)
-                isEnable = true
+                isEnabled = true
                 isOn = securityStore.getState().isBiometryEnable
             }
         case .failure:
             title = TKLocales.Security.unavailableError
-            isEnable = false
+            isEnabled = false
             isOn = false
         }
 
@@ -152,45 +144,20 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
             }
         }
 
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: title
-                    )
-                )
-            )
-        )
-
         return SettingsListItem(
             id: .biometryItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
+            title: SettingsListItemTitle(title),
+            accessory: .toggle(
+                SettingsListItemToggleAccessory(
                     isOn: isOn,
-                    isEnable: isEnable,
-                    action: action
+                    isEnabled: isEnabled,
+                    onToggle: action
                 )
-            ),
-            onSelection: {
-                _ in
-                action(!isOn)
-            }
+            )
         )
     }
 
     private func createLockScreenItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Security.lockScreen
-                    )
-                )
-            )
-        )
-
-        let isEnabled = self.securityStore.getState().isLockScreen
         let action: (Bool) -> Void = { [weak self] isOn in
             guard let self else { return }
             Task {
@@ -200,38 +167,22 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
 
         return SettingsListItem(
             id: .locksreenItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
+            title: SettingsListItemTitle(TKLocales.Security.lockScreen),
+            accessory: .toggle(
+                SettingsListItemToggleAccessory(
                     isOn: securityStore.getState().isLockScreen,
-                    isEnable: true,
-                    action: { isEnabled in
-                        action(isEnabled)
-                    }
+                    onToggle: action
                 )
-            ),
-            onSelection: { _ in
-                action(!isEnabled)
-            }
+            )
         )
     }
 
     private func createChangePasscodeItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Security.changePasscode
-                    )
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .changePasscodeItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.lock, tintColor: .Accent.blue)),
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Security.changePasscode),
+            accessory: .icon(.TKUIKit.Icons.Size28.lock, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 self?.didTapChangePasscode?()
             }
         )

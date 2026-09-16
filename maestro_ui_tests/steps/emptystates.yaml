@@ -5,15 +5,15 @@ appId: com.jbig.tonkeeper.dev
     Your history
     will be shown here
 
-- tapOn: Buy Toncoin
-- assertVisible: Buy TON
+- tapOn: ${"Buy " + NATIVE_TOKEN_DISPLAY_TEXT}
+- assertVisible: ${"Buy " + NATIVE_TOKEN_DISPLAY_TEXT}
 - tapOn:
     id: ic-close-16
 - tapOn: Receive
 - runFlow: "recieve_modal/ton.yaml"
 - swipe:
     from:
-      text: TON
+      text: ${NATIVE_TOKEN_DISPLAY_TEXT}
     direction: DOWN
 
 - tapOn: Collectibles

@@ -2,6 +2,7 @@ import SwiftUI
 import UIKit
 
 public struct ChartPreviews: View {
+    @Environment(\.tkPalette) private var palette
     @State private var shimmering = false
 
     public init() {}
@@ -12,7 +13,7 @@ public struct ChartPreviews: View {
                 Toggle(isOn: $shimmering) {
                     Text("shimmering")
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
                 }
                 .padding(.horizontal, 16)
 
@@ -30,10 +31,9 @@ public struct ChartPreviews: View {
                     subtitle: "Chart data failed to load"
                 ) {
                     ChartErrorContentView(
-                        title: "Failed to load chart data",
-                        subtitle: "Please try again"
+                        title: "No price data is available."
                     )
-                    .frame(height: ChartView.height(showsBottonButtons: true))
+                    .frame(height: ChartView.height(showsBottomButtons: true))
                 }
 
                 previewSection(
@@ -51,8 +51,9 @@ public struct ChartPreviews: View {
             }
             .padding(.vertical, Layout.contentVerticalPadding)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -60,7 +61,6 @@ public struct ChartPreviews: View {
 
 private extension ChartPreviews {
     enum Layout {
-        static let contentHorizontalPadding: CGFloat = 24
         static let contentVerticalPadding: CGFloat = 20
         static let sectionSpacing: CGFloat = 24
         static let cardSpacing: CGFloat = 12
@@ -79,11 +79,11 @@ private extension ChartPreviews {
             VStack(alignment: .leading, spacing: Layout.textSpacing) {
                 Text(title)
                     .textStyle(.h3)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
 
                 Text(subtitle)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
             }
 
             content()
@@ -94,7 +94,7 @@ private extension ChartPreviews {
                         cornerRadius: Layout.cardCornerRadius,
                         style: .continuous
                     )
-                    .fill(Color(uiColor: .Background.page))
+                    .fill(.backgroundPage)
                 )
         }
     }
@@ -249,7 +249,6 @@ private enum PreviewData {
 
 #Preview {
     ChartPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

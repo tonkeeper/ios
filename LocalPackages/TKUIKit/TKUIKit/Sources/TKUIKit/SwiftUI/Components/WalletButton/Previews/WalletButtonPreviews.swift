@@ -3,23 +3,25 @@ import SwiftUI
 public struct WalletButtonPreviews: View {
     public init() {}
 
-    let configs: [WalletButtonConfig] = [
-        WalletButtonConfig(
-            title: "Main Wallet",
-            icon: .emoji("💎"),
-            color: .Background.content
-        ),
-        WalletButtonConfig(
-            title: "Money",
-            icon: .image(.TKUIKit.Icons.Size16.wallet),
-            color: UIColor(hex: "69CC5A")
-        ),
-        WalletButtonConfig(
-            title: "Very Long Wallet Name",
-            icon: .emoji("🐉"),
-            color: UIColor(hex: "925CFF")
-        ),
-    ]
+    var configs: [WalletButtonConfig] {
+        [
+            WalletButtonConfig(
+                title: "Main Wallet",
+                icon: .emoji("💎"),
+                color: .backgroundContent
+            ),
+            WalletButtonConfig(
+                title: "Money",
+                icon: .image(.TKUIKit.Icons.Size16.wallet),
+                color: .fixed(Color(uiColor: UIColor(hex: "69CC5A")))
+            ),
+            WalletButtonConfig(
+                title: "Very Long Wallet Name",
+                icon: .emoji("🐉"),
+                color: .fixed(Color(uiColor: UIColor(hex: "925CFF")))
+            ),
+        ]
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -29,12 +31,11 @@ public struct WalletButtonPreviews: View {
             }
         }
         .padding(.all, 16)
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
     }
 }
 
 #Preview {
     WalletButtonPreviews()
+        .tkThemed()
 }

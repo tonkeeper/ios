@@ -12,6 +12,7 @@ enum BalanceItem {
     case jetton(BalanceJettonItemModel)
     case staking(BalanceStakingItemModel)
     case tronUSDT(BalanceTronUSDTItemModel)
+    case tronTRX(BalanceTronTRXItemModel)
 }
 
 struct BalanceTonItemModel {
@@ -52,6 +53,17 @@ struct BalanceTronUSDTItemModel {
     let amount: BigUInt
     let fractionalDigits: Int
     let tag: String?
+    let currency: Currency
+    let converted: Decimal
+    let price: Decimal
+    let diff: String?
+}
+
+struct BalanceTronTRXItemModel {
+    let id: String
+    let title: String
+    let amount: BigUInt
+    let fractionalDigits: Int
     let currency: Currency
     let converted: Decimal
     let price: Decimal
@@ -170,7 +182,7 @@ extension BalanceItems {
 
         var items = stakingItems + jettonItems + [tonItem]
 
-        if let tronUSDT = balance.tronUSDT {
+        if let tronUSDT = balance.tronUSDT, !tronUSDT.amount.isZero {
             let tronUSDTItem = BalanceTronUSDTItemModel(
                 id: USDT.address.base58,
                 title: USDT.symbol,
@@ -183,6 +195,19 @@ extension BalanceItems {
                 diff: tronUSDT.diff
             )
             items.append(.tronUSDT(tronUSDTItem))
+        }
+
+        if let tronTRX = balance.tronTRX, !tronTRX.amount.isZero {
+            items.append(.tronTRX(BalanceTronTRXItemModel(
+                id: TRX.symbol,
+                title: TRX.name,
+                amount: tronTRX.amount,
+                fractionalDigits: TRX.fractionDigits,
+                currency: balance.currency,
+                converted: tronTRX.converted,
+                price: tronTRX.price,
+                diff: tronTRX.diff
+            )))
         }
 
         self.items = items

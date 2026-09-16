@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import LocalAuthentication
 import TKLocalize
+import TKLogging
 
 final class BiometryProvider {
     enum BiometryState {

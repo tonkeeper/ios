@@ -18,8 +18,13 @@ public struct OnRampMerchantInfo: Codable, Equatable {
 }
 
 public struct OnRampLimits: Codable, Equatable, Hashable {
-    public let min: Double
+    public let min: Double?
     public let max: Double?
+
+    public init(min: Double?, max: Double?) {
+        self.min = min
+        self.max = max
+    }
 }
 
 // MARK: - Calculate (v2/onramp/calculate)
@@ -68,6 +73,19 @@ public struct OnRampLayout: Codable, Equatable {
     public init(items: [OnRampLayoutItem]) {
         self.items = items
     }
+}
+
+// MARK: - Layout cards (v2/exchange/layout)
+
+public struct OnRampLayoutCard: Codable, Equatable, Hashable, Sendable {
+    public let title: String
+    public let itemDescription: String
+    public let image: String
+    public let preferredCurrency: String?
+}
+
+public struct OnRampLayoutCards: Codable, Equatable {
+    public let items: [OnRampLayoutCard]
 }
 
 public struct OnRampLayoutToken: Codable, Equatable, Hashable {

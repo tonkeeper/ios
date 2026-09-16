@@ -5,11 +5,11 @@ import TKUIKit
 import UIKit
 import WebKit
 
-public protocol DappModuleOutput: AnyObject {
+protocol DappModuleOutput: AnyObject {
     var didShareDappURL: ((_ dapp: Dapp, _ url: URL) -> Void)? { get set }
 }
 
-public protocol DappModuleInput: AnyObject {
+protocol DappModuleInput: AnyObject {
     func setLandscapeMode(isEnabled: Bool)
 }
 
@@ -65,7 +65,8 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     }
 
     func didLoadInitialRequest() {
-        self.reconnectIfNeeded()
+        analyticsSession.logLoaded()
+        reconnectIfNeeded()
     }
 
     func reconnectIfNeeded() {
@@ -133,41 +134,44 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
     }
 
     func copyDappURL(url: URL) {
-        let resultUrl = if checkIfUrlBlockchainExplorer(url: url) {
+        let resultUrl = if explorerURLMatcher.matches(url: url) {
             url
         } else {
             updateURLForCopyAndShare(url: url)
         }
         Pasteboard.copy(value: resultUrl.absoluteString)
-        sendAnalyticsEvent(action: .copy)
+        analyticsSession.logSharingCopy(from: .copyLink)
     }
 
     func shareDappURL(url: URL) {
-        if checkIfUrlBlockchainExplorer(url: url) {
+        if explorerURLMatcher.matches(url: url) {
             didShareURLSystemShareSheet?(url)
+            analyticsSession.logSharingCopy(from: .share)
         } else {
             let url = updateURLForCopyAndShare(url: url)
             didShareDappURL?(dapp, url)
         }
-        sendAnalyticsEvent(action: .share)
     }
 
     let dapp: Dapp
     let messageHandler: DappMessageHandler
 
+    private let analyticsSession: DappOpenAnalyticsSession
     private let wallet: Wallet?
-    private let analyticsProvider: AnalyticsProvider
+    private let explorerURLMatcher: BlockchainExplorerURLMatcher
 
     init(
         dapp: Dapp,
+        analyticsSession: DappOpenAnalyticsSession,
         messageHandler: DappMessageHandler,
         wallet: Wallet?,
-        analyticsProvider: AnalyticsProvider
+        explorerURLMatcher: BlockchainExplorerURLMatcher
     ) {
         self.dapp = dapp
+        self.analyticsSession = analyticsSession
         self.messageHandler = messageHandler
         self.wallet = wallet
-        self.analyticsProvider = analyticsProvider
+        self.explorerURLMatcher = explorerURLMatcher
     }
 
     private func sendResponse(_ response: DappBridgeResponse) {
@@ -304,33 +308,6 @@ class DappViewModelImplementation: DappViewModel, DappModuleOutput, DappModuleIn
         guard let encoded = urlEncoded(url) else { return url }
         guard let updatedUrl = URL(string: "https://app.tonkeeper.com/dapp/\(encoded)") else { return url }
         return updatedUrl
-    }
-
-    func checkIfUrlBlockchainExplorer(url: URL) -> Bool {
-        let urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: true)
-        return [BlockchainExplorer.tonviewer.host, BlockchainExplorer.tronscan.host].contains(urlComponents?.host)
-    }
-
-    private enum Action {
-        case copy
-        case share
-        var value: String {
-            switch self {
-            case .copy: "Copy link"
-            case .share: "Share"
-            }
-        }
-    }
-
-    private func sendAnalyticsEvent(action: Action) {
-        analyticsProvider.log(
-            eventKey: .dappSharingCopy,
-            args: [
-                "name": dapp.name,
-                "url": dapp.url.absoluteString,
-                "from": action.value,
-            ]
-        )
     }
 }
 

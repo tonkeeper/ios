@@ -235,11 +235,14 @@ private extension Argon2DeriveTimeMeasurementController {
     ) -> MeasurementResult {
         let encryptStartedAt = now()
         let rawData: RawMnemonicsData
+        let cipher: MnemonicsRepositoryV2Crypto.Cipher
         do {
-            rawData = try MnemonicsRepositoryV2Crypto.encrypt(
-                mnemonic,
-                passcode: password
+            let salt = try MnemonicsRepositoryV2Crypto.makeSalt()
+            cipher = try MnemonicsRepositoryV2Crypto.unlock(
+                passcode: password,
+                salt: salt
             )
+            rawData = try cipher.encrypt(mnemonic)
         } catch {
             return .failure(
                 step: .encrypt,
@@ -252,10 +255,7 @@ private extension Argon2DeriveTimeMeasurementController {
         let decryptStartedAt = now()
         let decryptedMnemonic: CoreMnemonic
         do {
-            decryptedMnemonic = try MnemonicsRepositoryV2Crypto.decrypt(
-                rawData,
-                passcode: password
-            )
+            decryptedMnemonic = try cipher.decrypt(rawData)
         } catch {
             return .failure(
                 step: .decrypt,

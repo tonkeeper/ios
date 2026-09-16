@@ -23,7 +23,8 @@ final class OnRampAPIAssembly {
         }
         let api = OnRampAPIImplementation(
             swapAPIClient: apiAssembly.swapAPIClient(userAgent: appInfoProvider.userAgent),
-            appInfoProvider: appInfoProvider
+            appInfoProvider: appInfoProvider,
+            firebaseUserIdProvider: apiAssembly.firebaseUserIdProvider
         )
         _onRampAPI = api
         return api

@@ -62,6 +62,7 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
     private var spamPaginationStopped = false
     private var hasTriedOneExtraLoad = false
     private let queue = DispatchQueue(label: "SpamHistoryListViewModelImplementationQueue")
+    private var historyLoaderEventsTask: Task<Void, Never>?
 
     private var eventCellConfigurations = [AccountEvent.EventID: HistoryCell.Model]()
     private var paginationCellConfiguration = HistoryListPaginationCell.Model(state: .none)
@@ -114,6 +115,10 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         self.cacheProvider = cacheProvider
     }
 
+    deinit {
+        historyLoaderEventsTask?.cancel()
+    }
+
     // MARK: - HistoryListModuleOutput
 
     var didSelectEvent: ((HistoryListSelectedEvent) -> Void)?
@@ -149,24 +154,41 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         }
 
         // No cache or empty cache, start loading
-        historyLoader.eventHandler = { [weak self] event in
-            self?.didGetHistoryLoaderEvent(event)
+        observeHistoryLoaderEvents()
+        Task { [historyLoader] in
+            await historyLoader.reload(reason: .immediate)
         }
-        historyLoader.reload(force: true)
     }
 
     func reload(force: Bool) {
-        queue.async { [weak self] in
+        reload(reason: force ? .immediate : .refresh)
+    }
+
+    private func reload(reason: HistoryPaginationLoader.ReloadReason) {
+        // Derived state is reset when a load actually delivers: a throttled reload may be
+        // coalesced or skipped, and wiping it here would leave the list without cell models.
+        Task { [weak self] in
             guard let self else { return }
-            resetSectionsCalculationState()
-            historyLoader.reload(force: force)
+            await historyLoader.reload(reason: reason)
         }
     }
 
     func loadNextPage() {
         // Spam pagination is controlled internally
         if !spamPaginationStopped {
-            historyLoader.loadNext()
+            Task { [historyLoader] in
+                await historyLoader.loadNext()
+            }
+        }
+    }
+
+    private func observeHistoryLoaderEvents() {
+        guard historyLoaderEventsTask == nil else { return }
+        historyLoaderEventsTask = Task { [weak self, events = historyLoader.events] in
+            for await event in events {
+                guard !Task.isCancelled else { return }
+                self?.didGetHistoryLoaderEvent(event)
+            }
         }
     }
 
@@ -193,9 +215,7 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         }
         backgroundUpdate.addEventObserver(self) { observer, wallet, _ in
             guard wallet == observer.wallet else { return }
-            observer.queue.async {
-                observer.reload(force: true)
-            }
+            observer.reload(reason: .streamingUpdate)
         }
         nftManagmentStore.addObserver(self) { observer, event in
             switch event {
@@ -210,7 +230,7 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
     private func showSpamEvents(_ spamEvents: [HistoryEvent], transactionsManagementState: TransactionsManagement.TransactionsStates) {
         resetSectionsCalculationState()
         let sections = calculateSections(sections: [], events: spamEvents)
-        update(withEvents: spamEvents)
+        update(withEvents: spamEvents, replacing: true)
         listState = .content(State.Content(sections: sections), pagination: .none)
     }
 
@@ -329,10 +349,16 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         }
     }
 
-    private func update(withEvents events: [HistoryEvent]) {
+    /// `eventCellConfigurations` is owned by the main queue: a full rebuild replaces it outright
+    /// instead of clearing it from `queue` and merging back.
+    private func update(withEvents events: [HistoryEvent], replacing: Bool = false) {
         let configurations = mapHistoryEventsCellConfigurations(events, relativeDate: relativeDate)
         DispatchQueue.main.async {
-            self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+            if replacing {
+                self.eventCellConfigurations = configurations
+            } else {
+                self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+            }
         }
     }
 
@@ -358,8 +384,6 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
         relativeDate = Date()
         eventsMap = [:]
         sectionsMap = [:]
-        eventCellConfigurations = [:]
-        paginationCellConfiguration = .init(state: .none)
     }
 
     private func calculateSections(events: [HistoryEvent], sections: [HistoryList.Section], relativeDate: Date) -> [HistoryList.Section] {
@@ -372,10 +396,8 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
                 let section = sections[sectionIndex]
                 var sectionEvents = section.events
 
-                let isEventExist = eventsMap[event.identifier] != nil
-                if isEventExist, let index = sectionEvents.firstIndex(where: { $0.eventId == event.eventId }) {
-                    sectionEvents.remove(at: index)
-                    sectionEvents.insert(event, at: index)
+                if let index = sectionEvents.firstIndex(where: { $0.eventId == event.eventId }) {
+                    sectionEvents[index] = event
                 } else {
                     if let indexToInsert = sectionEvents.firstIndex(where: { event.date > $0.date }) {
                         sectionEvents.insert(event, at: indexToInsert)
@@ -415,7 +437,7 @@ final class SpamHistoryListViewModelImplementation: HistoryListViewModel, Histor
             case .error:
                 return HistoryListPaginationCell.Model(
                     state: .error(title: TKLocales.State.failed, retryButtonAction: { [weak self] in
-                        self?.historyLoader.loadNext()
+                        self?.loadNextPage()
                     })
                 )
             case let .spamFooter(date):

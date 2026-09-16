@@ -4,7 +4,7 @@ import TKLocalize
 import TKUIKit
 import UIKit
 
-public protocol WatchOnlyWalletAddressInputModuleOutput: AnyObject {
+protocol WatchOnlyWalletAddressInputModuleOutput: AnyObject {
     var didInputWallet: ((ResolvableAddress) -> Void)? { get set }
 }
 

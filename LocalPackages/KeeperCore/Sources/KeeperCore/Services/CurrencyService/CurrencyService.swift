@@ -1,7 +1,7 @@
 import Foundation
 import KeeperCoreComponents
 
-public protocol CurrencyService {
+protocol CurrencyService {
     func getActiveCurrency() throws -> Currency
 }
 

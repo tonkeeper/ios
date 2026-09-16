@@ -12,15 +12,25 @@ final class PasscodeChangeCoordinator: RouterCoordinator<NavigationControllerRou
 
     private let passcodeNavigationController = UINavigationController()
     private var passcodeModuleInput: PasscodeModuleInput?
+    private weak var passcodeView: PasscodeViewController?
     private var passcodeInputs = [PasscodeInputModuleInput]()
 
     private let keeperCoreAssembly: KeeperCore.MainAssembly
+    private let bruteForceController: PasscodeBruteForceProtection
 
     init(
         router: NavigationControllerRouter,
-        keeperCoreAssembly: KeeperCore.MainAssembly
+        keeperCoreAssembly: KeeperCore.MainAssembly,
+        analyticsProvider: AnalyticsProvider? = nil
     ) {
         self.keeperCoreAssembly = keeperCoreAssembly
+        // Share the global passcode brute-force counter so the "enter current passcode" step is protected
+        // like every other passcode prompt (TK-1472: lockout closes all passcode-input places).
+        self.bruteForceController = PasscodeBruteForceController(
+            securityStore: keeperCoreAssembly.storesAssembly.securityStore,
+            analyticsProvider: analyticsProvider,
+            from: .change
+        )
         super.init(router: router)
         passcodeNavigationController.setNavigationBarHidden(true, animated: false)
     }
@@ -37,6 +47,7 @@ private extension PasscodeChangeCoordinator {
         )
 
         passcodeModuleInput = passcodeModule.input
+        passcodeView = passcodeModule.view
 
         passcodeModule.output.didTapBackspace = { [weak self] in
             self?.passcodeInputs.last?.didTapBackspace()
@@ -63,18 +74,29 @@ private extension PasscodeChangeCoordinator {
 
     func openInputPasscode() {
         let passcodeInput = PasscodeInputAssembly.module(
-            title: TKLocales.Passcode.enter
+            title: TKLocales.Passcode.enter,
+            lockoutUntil: bruteForceController.activeLockoutEndDate()
         )
 
-        passcodeInput.output.validateInput = { [weak self] input in
-            guard let self else { return .failed }
+        // Capture the assembly and brute-force controller directly (not via `self`) so a wrong attempt
+        // still advances the global counter / lockout even if the coordinator is torn down mid-dismiss
+        // while the input view is briefly retained by UIKit. Both write to the shared SecurityStore and
+        // don't reference the coordinator, so there is no retain cycle. (TK-1472)
+        passcodeInput.output.validateInput = { [keeperCoreAssembly, bruteForceController] input in
+            let isValid = await keeperCoreAssembly.secureAssembly.mnemonicAccess.validatePasscode(
+                input
+            )
+            if isValid {
+                await bruteForceController.registerSuccess()
+                return .success
+            } else {
+                let outcome = await bruteForceController.registerFailure()
+                return .failed(attemptsLeft: outcome.attemptsLeft, lockoutUntil: outcome.lockoutEndDate)
+            }
+        }
 
-            return await Task<PasscodeInputValidationResult, Never> {
-                let isValid = await self.keeperCoreAssembly.secureAssembly.mnemonicAccess.validatePasscode(
-                    input
-                )
-                return isValid ? .success : .failed
-            }.value
+        passcodeInput.output.didUpdateKeyboardEnabled = { [weak self] isEnabled in
+            self?.passcodeView?.setKeyboardEnabled(isEnabled)
         }
 
         passcodeInput.output.didFinish = { [weak self] passcode in

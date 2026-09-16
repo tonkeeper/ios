@@ -19,7 +19,9 @@ final class TonkeeperDeeplinkParserTests: XCTestCase {
         deeplink: String,
         expectedComment: String
     ) throws {
-        let parser = TonkeeperDeeplinkParser()
+        let parser = TonkeeperDeeplinkParser(
+            walletConnectDeeplinkValidator: WalletConnectDeeplinkValidatorImplementation()
+        )
         let parsed = try parser.parse(string: deeplink)
 
         guard case let .transfer(transfer) = parsed,

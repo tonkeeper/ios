@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct ButtonViewPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -64,8 +66,9 @@ public struct ButtonViewPreviews: View {
                 attributedStringButton(state: .active)
             }
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -92,8 +95,6 @@ private extension ButtonViewPreviews {
     enum Layout {
         static let contentHorizontalPadding: CGFloat = 24
         static let contentVerticalPadding: CGFloat = 24
-        static let headerHorizontalPadding: CGFloat = 24
-        static let headerVerticalPadding: CGFloat = 20
         static let rowSpacing: CGFloat = 16
         static let sectionSpacing: CGFloat = 24
         static let buttonSpacing: CGFloat = 16
@@ -210,7 +211,7 @@ private extension ButtonViewPreviews {
     var transactionTitle: AttributedString {
         var title = AttributedString("Transaction ")
         var hash = AttributedString("4d1e1608")
-        hash.foregroundColor = Color(uiColor: .Button.secondaryForeground.withAlphaComponent(0.48))
+        hash.foregroundColor = palette.button.secondaryForeground.opacity(0.48)
         title.append(hash)
         return title
     }
@@ -224,7 +225,6 @@ private extension ButtonViewPreviews {
                 style: .continuous
             )
         )
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

@@ -5,10 +5,13 @@ public struct TKTooltipView: View {
     public struct Configuration: Equatable {
         public let title: String
         public let badgeTitle: String?
+        /// Pass `nil` to let long tooltip titles wrap.
+        public let lineLimit: Int?
 
-        public init(title: String, badgeTitle: String? = nil) {
+        public init(title: String, badgeTitle: String? = nil, lineLimit: Int? = 1) {
             self.title = title
             self.badgeTitle = badgeTitle
+            self.lineLimit = lineLimit
         }
     }
 
@@ -29,19 +32,20 @@ public struct TKTooltipView: View {
                 HStack(alignment: .top, spacing: Layout.contentSpacing) {
                     if let badgeTitle = configuration.badgeTitle, !badgeTitle.isEmpty {
                         Text(badgeTitle.uppercased())
-                            .foregroundColor(Color(UIColor.Accent.blue))
+                            .foregroundStyle(.accentBlue)
                             .textStyle(.body4Bold)
                             .padding(.top, Layout.badgeTopPadding)
                             .padding(.bottom, Layout.badgeBottomPadding)
                             .padding(.horizontal, Layout.badgeHorizontalPadding)
-                            .background(Color(uiColor: .Constant.white))
+                            .background(.constantWhite)
                             .clipShape(RoundedRectangle(cornerRadius: Layout.badgeCornerRadius))
                     }
 
                     Text(configuration.title)
-                        .foregroundColor(Color(UIColor.Constant.white))
+                        .foregroundStyle(.constantWhite)
                         .textStyle(.label2)
-                        .lineLimit(1)
+                        .lineLimit(configuration.lineLimit)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(.top, Layout.topPadding)
                 .padding(.leading, Layout.leadingPadding)
@@ -52,6 +56,8 @@ public struct TKTooltipView: View {
                     parameters: Self.tailParameters,
                     direction: position
                 )
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("tooltip")
             } else {
                 Color.clear
             }
@@ -70,7 +76,7 @@ extension TKTooltipView: HintView {
 
     public static var appearance: HintAppearance {
         HintAppearance(
-            backgroundColor: Color(uiColor: .Accent.blue),
+            backgroundColor: .accentBlue,
             cornerRadius: Layout.cornerRadius,
             shadowColor: Color.black.opacity(0.04),
             shadowRadius: 8,
@@ -82,12 +88,12 @@ extension TKTooltipView: HintView {
 private extension TKTooltipView {
     enum Layout {
         static let contentSpacing: CGFloat = 6
-        static let topPadding: CGFloat = 10
+        static let topPadding: CGFloat = 9
         static let leadingPadding: CGFloat = 14
-        static let bottomPadding: CGFloat = 10
+        static let bottomPadding: CGFloat = 9
         static let trailingPadding: CGFloat = 16
-        static let badgeTopPadding: CGFloat = 2.5
-        static let badgeBottomPadding: CGFloat = 3.5
+        static let badgeTopPadding: CGFloat = 3
+        static let badgeBottomPadding: CGFloat = 3
         static let badgeHorizontalPadding: CGFloat = 5
         static let badgeCornerRadius: CGFloat = 4
         static let cornerRadius: CGFloat = 10

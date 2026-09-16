@@ -1,14 +1,15 @@
 import SnapKit
 import SwiftUI
+import TKUIKit
 import UIKit
 
 final class TradeAssetDetailsViewController: UIViewController {
     private let viewModel: TradeAssetDetailsViewModel
-    private let hostingController: UIHostingController<TradeAssetDetailsView>
+    private let hostingController: TKHostingController<TradeAssetDetailsView>
 
     init(viewModel: TradeAssetDetailsViewModel) {
         self.viewModel = viewModel
-        self.hostingController = UIHostingController(rootView: TradeAssetDetailsView(viewModel: viewModel))
+        self.hostingController = TKHostingController(content: TradeAssetDetailsView(viewModel: viewModel))
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -36,5 +37,15 @@ final class TradeAssetDetailsViewController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
         viewModel.handleAppear()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        viewModel.viewDidAppear()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        viewModel.viewDidDisappear()
     }
 }

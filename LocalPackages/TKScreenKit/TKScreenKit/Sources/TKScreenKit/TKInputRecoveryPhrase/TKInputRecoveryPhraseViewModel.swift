@@ -4,6 +4,7 @@ import UIKit
 
 public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
     var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)? { get set }
+    var didFailPhraseValidation: (([String]) -> Void)? { get set }
 }
 
 protocol TKInputRecoveryPhraseViewModel: AnyObject {
@@ -43,6 +44,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
     // MARK: - TKInputRecoveryPhraseModuleOutput
 
     var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)?
+    var didFailPhraseValidation: (([String]) -> Void)?
 
     var showToast: ((ToastPresenter.Configuration) -> Void)?
 
@@ -71,6 +73,17 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
         case mode24
         case mode12
 
+        init?(exactWordsCount: Int) {
+            switch exactWordsCount {
+            case 24:
+                self = .mode24
+            case 12:
+                self = .mode12
+            default:
+                return nil
+            }
+        }
+
         var wordsCount: Int {
             switch self {
             case .mode24:
@@ -79,9 +92,18 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
                 return 12
             }
         }
+
+        var segmentIndex: Int {
+            switch self {
+            case .mode12:
+                return 0
+            case .mode24:
+                return 1
+            }
+        }
     }
 
-    private var mode: WordsMode = .mode24 {
+    private var mode: WordsMode = .mode12 {
         didSet {
             didUpdateWordsMode()
         }
@@ -109,7 +131,6 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 
     // MARK: - Sync queue
 
-    private let dispatchQueue = DispatchQueue(label: "TKInputRecoveryPhraseViewModelImplementationQueue")
     private var wordValidationTasks = [Int: Task<Void, Never>]()
     private var formValidationTask: Task<Void, Never>?
     private var suggestsTasks = [Int: Task<Void, Never>]()
@@ -173,14 +194,14 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
 
     func setupSeedPhraseModeSegmentedControl() {
         let model = TKInputRecoveryPhraseView.SegmentedControlModel(
-            tabs: [set24WordsButtonTitle, set12WordsButtonTitle],
-            selectedIndex: 0,
+            tabs: [set12WordsButtonTitle, set24WordsButtonTitle],
+            selectedIndex: mode.segmentIndex,
             selectionClosure: { [weak self] index in
                 switch index {
                 case 0:
-                    self?.mode = .mode24
-                case 1:
                     self?.mode = .mode12
+                case 1:
+                    self?.mode = .mode24
                 default:
                     break
                 }
@@ -221,6 +242,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
         suggestsTasks.values.forEach { $0.cancel() }
         suggestsTasks.removeAll()
         phrase = Array(repeating: "", count: mode.wordsCount)
+        setupSeedPhraseModeSegmentedControl()
         setupInputFields()
     }
 
@@ -259,12 +281,16 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     }
 
     func shouldPaste(text: String, index: Int) -> Bool {
-        let wordsCount = mode.wordsCount
         guard index == 0 else { return false }
         let phrase = text
             .components(separatedBy: CharacterSet([" ", ",", "\n", "\u{00a0}"]))
             .filter { !$0.isEmpty }
 
+        if let pastedMode = WordsMode(exactWordsCount: phrase.count), pastedMode != mode {
+            mode = pastedMode
+        }
+
+        let wordsCount = mode.wordsCount
         guard phrase.count <= wordsCount else {
             let text = "Incorrect phrase: \(phrase.count) words phrase was inserted with \(wordsCount) words mode selected."
             ToastPresenter.showToast(
@@ -347,6 +373,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
                     for (index, isValid) in wordsValidation.enumerated() {
                         self.didUpdateInputValidationState?(index, isValid)
                     }
+                    self.didFailPhraseValidation?(phrase)
                 }
             case .multiaccount:
                 guard !Task.isCancelled else { return }

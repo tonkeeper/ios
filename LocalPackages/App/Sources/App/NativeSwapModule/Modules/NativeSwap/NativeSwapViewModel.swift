@@ -30,10 +30,6 @@ protocol NativeSwapViewModel: ObservableObject {
     var isSendFocused: Bool { get }
 
     var didTapClose: (() -> Void)? { get set }
-    var didTapPicker: ((KeeperCore.Token, KeeperCore.Token, Bool) -> Void)? { get set }
-    var didTapContinue: ((NativeSwapTransactionConfirmationModel) -> Void)? { get set }
-
-    var viewEvents: PassthroughSubject<SwapViewEvent, Never> { get }
     var viewState: PassthroughSubject<SwapViewState, Never> { get }
     var amountTextFieldFormatter: SendAmountTextFieldFormatter { get }
 
@@ -92,7 +88,6 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
     private let nativeSwapService: NativeSwapService
     private let swapAssetsStore: SwapAssetsStore
     private let currencyStore: CurrencyStore
-    private let ratesService: RatesService
     private let sendController: SendV3Controller
     private let amountFormatter: AmountFormatter
     private let analyticsProvider: AnalyticsProvider
@@ -200,7 +195,6 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         self.nativeSwapService = swapDependencies.nativeSwapService
         self.swapAssetsStore = swapDependencies.swapAssetsStore
         self.currencyStore = context.currencyStore
-        self.ratesService = swapDependencies.ratesService
         self.sendController = swapDependencies.sendController
         self.amountFormatter = context.amountFormatter
         self.analyticsProvider = context.analyticsProvider
@@ -505,7 +499,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
             }
             updateMaxAmountWithExactValue(amount)
         case .tron:
-            let amount = sendController.getTronUSDTMaximumAmount()
+            let amount = sendController.getTronMaximumAmount(token: .usdt)
             updateMaxAmountWithExactValue(amount)
         }
     }
@@ -632,11 +626,11 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
                 image = .urlImage(item.jettonInfo.imageURL)
             case .ton:
                 name = TonInfo.symbol
-                image = .image(.TKCore.Icons.Size44.tonLogo)
+                image = .image(.TKUIKit.Icons.Size44.tonLogo)
             }
         case .tron:
             name = TronSwift.USDT.symbol
-            image = .image(.App.Currency.Size44.usdt)
+            image = .image(.TKUIKit.Icons.Size44.currencyUsdt)
             network = "TRC20"
         }
 
@@ -734,7 +728,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         case let .ton(token):
             amount = sendController.getMaximumAmount(token: token)
         case .tron:
-            amount = sendController.getTronUSDTMaximumAmount()
+            amount = sendController.getTronMaximumAmount(token: .usdt)
         }
 
         return amountFormatter.format(
@@ -755,7 +749,7 @@ final class NativeSwapViewModelImplementation: NativeSwapViewModel, NativeSwapMo
         case let .ton(token):
             sendController.isAmountAvailableToSend(amount: model.fromAmount.amount, token: token)
         case .tron:
-            sendController.isTronUSDTAmountAvailableToSend(amount: model.fromAmount.amount)
+            sendController.isTronAmountAvailableToSend(token: .usdt, amount: model.fromAmount.amount)
         }
     }
 

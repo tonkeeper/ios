@@ -1,6 +1,7 @@
 import SwiftUI
 
 public struct CellPreviewsView: View {
+    @Environment(\.tkPalette) private var palette
     @State private var shimmering = false
 
     public init() {}
@@ -11,7 +12,7 @@ public struct CellPreviewsView: View {
                 Toggle(isOn: $shimmering) {
                     Text("shimmering")
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
                 }
                 .padding(.horizontal, 16)
 
@@ -19,8 +20,9 @@ public struct CellPreviewsView: View {
             }
             .padding(.vertical, 16)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -49,7 +51,7 @@ public struct CellPreviewsView: View {
                                         title: "Santa Coin",
                                         tags: [
                                             .tag(text: "FFF"),
-                                            .accentTag(text: "W5", color: .Accent.blue),
+                                            .accentTag(text: "W5", accent: .accentBlue),
                                         ],
                                         status: .init(
                                             image: .TKUIKit.Icons.Size12.pin,
@@ -166,10 +168,8 @@ public struct CellPreviewsView: View {
                 }, trailing: {
                     CellTrailingAccessory(
                         config: .init(
-                            color: .Icon.tertiary,
-                            icon: .init(
-                                uiImage: .TKUIKit.Icons.Size16.chevronRight
-                            ),
+                            color: .iconTertiary,
+                            icon: SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight,
                             iconSize: 16
                         )
                     )
@@ -244,18 +244,14 @@ public struct CellPreviewsView: View {
                     HStack(alignment: .center, spacing: 0) {
                         CellTrailingAccessory(
                             config: .init(
-                                color: .Icon.primary,
-                                icon: .init(
-                                    uiImage: .TKUIKit.Icons.Size28.qrCodeAlternate
-                                )
+                                color: .iconPrimary,
+                                icon: SwiftUI.Image.TKUIKit.Icons.Size28.qrCodeAlternate
                             )
                         )
                         CellTrailingAccessory(
                             config: .init(
-                                color: .Icon.secondary,
-                                icon: .init(
-                                    uiImage: .TKUIKit.Icons.Size28.copyOutline
-                                )
+                                color: .iconSecondary,
+                                icon: SwiftUI.Image.TKUIKit.Icons.Size28.copyOutline
                             )
                         )
                     }
@@ -281,10 +277,8 @@ public struct CellPreviewsView: View {
                 }, trailing: {
                     CellTrailingAccessory(
                         config: .init(
-                            color: .Icon.tertiary,
-                            icon: .init(
-                                uiImage: .TKUIKit.Icons.Size16.chevronRight
-                            ),
+                            color: .iconTertiary,
+                            icon: SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight,
                             iconSize: 16
                         )
                     )
@@ -292,22 +286,9 @@ public struct CellPreviewsView: View {
             )
         }
     }
-
-    private func section<Content: View>(
-        title: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .textStyle(.label1)
-                .foregroundStyle(Color(uiColor: .Text.primary))
-                .padding(.horizontal, 16)
-
-            content()
-        }
-    }
 }
 
 #Preview {
     CellPreviewsView()
+        .tkThemed()
 }

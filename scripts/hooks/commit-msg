@@ -63,8 +63,6 @@ add_task_prefix_to_commit_message() {
 }
 
 run_swiftformat() {
-  "${repo_root}/scripts/require_tool.sh" swiftformat "brew install swiftformat"
-
   staged_swift_files="$(git -C "${repo_root}" diff --cached --name-only --diff-filter=ACMR | grep -E '\.swift$' || true)"
   if [ -z "$staged_swift_files" ]; then
     return 0
@@ -78,7 +76,7 @@ run_swiftformat() {
 $staged_swift_files
 EOF
 
-  swiftformat --quiet --config "${repo_root}/.swiftformat" "$@"
+  "${repo_root}/scripts/tools/tool.sh" swiftformat --quiet --config "${repo_root}/.swiftformat" "$@"
 
   formatted_changed=""
   while IFS= read -r file; do
@@ -98,5 +96,24 @@ EOF
   fi
 }
 
+run_swiftlint() {
+  staged_swift_files="$(git -C "${repo_root}" diff --cached --name-only --diff-filter=ACMR | grep -E '\.swift$' || true)"
+  if [ -z "$staged_swift_files" ]; then
+    return 0
+  fi
+
+  set --
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    set -- "$@" "${repo_root}/${file}"
+  done <<EOF
+$staged_swift_files
+EOF
+
+  "${repo_root}/scripts/tools/tool.sh" swiftlint lint --quiet --force-exclude \
+    --config "${repo_root}/.swiftlint.yml" "$@" || true
+}
+
 add_task_prefix_to_commit_message "$1"
 run_swiftformat
+run_swiftlint

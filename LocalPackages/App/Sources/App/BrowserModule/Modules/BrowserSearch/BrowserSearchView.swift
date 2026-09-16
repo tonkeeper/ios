@@ -14,7 +14,7 @@ final class BrowserSearchView: TKView {
         }
     }
 
-    let searchBar = BrowserSearchBar(applyGlassEffect: true)
+    let searchBar = BrowserSearchBar()
     let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
     let emptyView = UIView()
     let emptyLabel = UILabel()

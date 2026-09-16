@@ -5,27 +5,33 @@ import TKLogging
 import TKUIKit
 import UIKit
 
-public final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didImportWallet: (() -> Void)?
+final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didImportWallet: (() -> Void)?
 
     private let walletsUpdateAssembly: WalletsUpdateAssembly
+    private let multichainAssembly: MultichainAssembly
     private let analyticsProvider: AnalyticsProvider
-    private let customizeWalletModule: (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+    private let customizeWalletModule: (_ name: String?) -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
+    private let analyticsContext: WalletFlowAnalyticsContext
 
     init(
         router: NavigationControllerRouter,
         analyticsProvider: AnalyticsProvider,
         walletsUpdateAssembly: WalletsUpdateAssembly,
-        customizeWalletModule: @escaping (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+        multichainAssembly: MultichainAssembly,
+        analyticsContext: WalletFlowAnalyticsContext,
+        customizeWalletModule: @escaping (_ name: String?) -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     ) {
         self.walletsUpdateAssembly = walletsUpdateAssembly
+        self.multichainAssembly = multichainAssembly
         self.customizeWalletModule = customizeWalletModule
         self.analyticsProvider = analyticsProvider
+        self.analyticsContext = analyticsContext
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openWatchOnlyWalletAddressInput()
     }
 }
@@ -35,7 +41,7 @@ private extension ImportWatchOnlyWalletCoordinator {
         let module = WatchOnlyWalletAddressInputAssembly.module(controller: walletsUpdateAssembly.watchOnlyWalletAddressInputController())
 
         module.output.didInputWallet = { [weak self] resolvableAddress in
-            self?.openCustomizeWallet(resolvableAddress: resolvableAddress)
+            self?.openNotifications(resolvableAddress: resolvableAddress)
         }
 
         if router.rootViewController.viewControllers.isEmpty {
@@ -49,6 +55,12 @@ private extension ImportWatchOnlyWalletCoordinator {
         router.push(viewController: module.view, onPopClosures: { [weak self] in
             self?.didCancel?()
         })
+    }
+
+    func openNotifications(resolvableAddress: ResolvableAddress) {
+        OnboardingNotificationsStep.push(router: router) { [weak self] in
+            self?.openCustomizeWallet(resolvableAddress: resolvableAddress)
+        }
     }
 
     func openCustomizeWallet(resolvableAddress: ResolvableAddress) {
@@ -72,11 +84,11 @@ private extension ImportWatchOnlyWalletCoordinator {
         }
 
         if router.rootViewController.viewControllers.isEmpty {
-            module.view.setupLeftCloseButton { [weak self] in
+            module.view.setupHeaderLeftCloseButton { [weak self] in
                 self?.didCancel?()
             }
         } else {
-            module.view.setupBackButton()
+            module.view.setupHeaderBackButton()
         }
 
         router.push(viewController: module.view)
@@ -86,17 +98,23 @@ private extension ImportWatchOnlyWalletCoordinator {
         resolvableAddress: ResolvableAddress,
         model: CustomizeWalletModel
     ) async {
-        let addController = walletsUpdateAssembly.walletAddController()
+        let addController = walletsUpdateAssembly.walletAddController(
+            multichainAssembly: multichainAssembly
+        )
         let metaData = WalletMetaData(
             label: model.name,
             tintColor: model.tintColor,
             icon: model.icon
         )
         do {
-            analyticsProvider.log(eventKey: .importWatchOnly)
             try await addController.importWatchOnlyWallet(
                 resolvableAddress: resolvableAddress,
                 metaData: metaData
+            )
+            analyticsProvider.logWalletImportSuccess(
+                walletMode: .single,
+                walletSource: .watchonly,
+                from: analyticsContext.from
             )
             await MainActor.run {
                 didImportWallet?()
@@ -105,6 +123,12 @@ private extension ImportWatchOnlyWalletCoordinator {
             Log.e("Watch only wallet import failed", extraInfo: [
                 "error": error.localizedDescription,
             ])
+            analyticsProvider.logWalletImportError(
+                walletMode: .single,
+                walletSource: .watchonly,
+                from: analyticsContext.from,
+                error: error
+            )
         }
     }
 }

@@ -29,13 +29,18 @@
 "result.failure" = "Error";
 
 "toast.copied" = "Copied";
+"toast.copied_sensitive" = "Copied. Clipboard will clear in %d seconds";
 "toast.loading" = "Loading";
 "toast.link_expired" = "Expired link";
 "toast.service_unavailable" = "Service unavailable";
+"toast.sensitive_screenshot_warning" = "For your safety, avoid taking screenshots of your seed phrase. Write it down.";
+"toast.sensitive_screenshot_warning_passcode" = "For your safety, avoid taking screenshots of your passcode. Memorize it.";
 "toast.failed" = "Failed";
+"toast.hidden" = "Hidden";
+"toast.shown" = "Shown";
 
 "errors.unknown" = "Error";
-"errors.multiaccount_error" = "Please use Tonkeeper Desktop for Multi-Wallet Account";
+"errors.multiaccount_error" = "Please use Keeper Desktop for Multi-Wallet Account";
 
 "dates.today" = "Today";
 "dates.yesterday" = "Yesterday";
@@ -45,6 +50,200 @@
 "tabs.history.hint" = "History is here now";
 "tabs.browser" = "Browser";
 "tabs.trade" = "Trade";
+"tabs.perps" = "Perps";
+"perps.title" = "Perpetuals";
+"perps.learn_basics" = "Learn Basics";
+"perps.balance" = "Perps balance";
+"perps.deposit" = "Deposit";
+"perps.account_inactive" = "Account Inactive";
+"perps.activate" = "Activate";
+"perps.activate_account" = "Activate Account";
+"perps.activating_toast" = "Activating account on this device";
+"perps.account_activated" = "Account successfully activated";
+"perps.explore" = "Explore Perps";
+"perps.volume" = "Volume";
+"perps.volume_short" = "vol";
+"perps.price_change" = "Price Change";
+"perps.open_interest" = "Open Interest";
+"perps.withdraw" = "Withdraw";
+"perps.history" = "History";
+"perps.search" = "Search";
+"perps.search.placeholder" = "Search by ticker or name";
+"perps.search.empty_title" = "Not Found";
+"perps.search.empty_subtitle" = "No markets found.";
+"perps.search.empty_subtitle_for_query" = "There were no results for '%@'.";
+"perps.search.error_title" = "Something went wrong";
+"perps.search.error" = "Unable to load markets.";
+"perps.asset_page" = "Asset Page";
+"perps.placeholder.subtitle" = "This feature is coming soon.";
+"perps.asset.perpetual" = "Perpetual";
+"perps.asset.info" = "Info";
+"perps.asset.volume_24h" = "24h Volume";
+"perps.asset.funding" = "Funding";
+"perps.asset.about" = "About";
+"perps.asset.less" = "Less";
+"perps.asset.long" = "Long";
+"perps.asset.short" = "Short";
+"perps.asset.failed_title" = "Couldn’t load market";
+"perps.asset.not_found_title" = "Market not found";
+"perps.asset.retry" = "Retry";
+"perps.asset.your_position" = "Your position";
+"perps.asset.share" = "Share";
+"perps.asset.size" = "Size";
+"perps.asset.liquidation_price" = "Liquidation price";
+"perps.asset.liquidation_distance" = "%@ from current price";
+"perps.asset.mark_price" = "Mark price";
+"perps.asset.entry_price" = "Entry price";
+"perps.asset.adjust_margin" = "Adjust Margin";
+"perps.asset.set_auto_close" = "Set Auto Close";
+"perps.asset.set_take_profit" = "Set Take Profit";
+"perps.asset.set_stop_loss" = "Set Stop Loss";
+"perps.asset.edit" = "Edit";
+"perps.asset.cash_out" = "Cash Out";
+"perps.asset.orders" = "Orders";
+"perps.asset.transaction_history" = "Transaction history";
+"perps.asset.see_all" = "See all";
+"perps.asset.buy" = "Buy";
+"perps.asset.sell" = "Sell";
+"perps.asset.activity_opened" = "%@ opened";
+"perps.asset.activity_closed" = "%@ closed";
+"perps.asset.activity_liquidated" = "%@ liquidated";
+"perps.asset.activity_funding" = "Funding";
+"perps.asset.share_position" = "Share position";
+"perps.asset.entry" = "Entry";
+"perps.asset.current" = "Current";
+"perps.asset.date" = "Date";
+"perps.chart.empty" = "No chart data";
+"perps.chart.failed" = "Couldn’t load chart";
+"perps.chart.open" = "Open";
+"perps.chart.close" = "Close";
+"perps.chart.high" = "High";
+"perps.chart.low" = "Low";
+"perps.chart.volume" = "Vol";
+"perps.open_position.price" = "Price";
+"perps.open_position.market" = "Market";
+"perps.open_position.size" = "Size:";
+"perps.open_position.max" = "MAX";
+"perps.open_position.balance" = "Balance:";
+"perps.open_position.deposit" = "Deposit";
+"perps.open_position.leverage" = "Leverage";
+"perps.open_position.auto_close" = "Auto Close";
+"perps.open_position.set" = "Set";
+"perps.open_position.review" = "Review";
+"perps.open_position.min" = "Min";
+"perps.open_position.max_leverage" = "Max";
+"perps.open_position.liquidation_price" = "Liquidation price";
+"perps.open_position.leverage_risk" = "Setting a higher leverage increases the risk of liquidation.";
+"perps.open_position.save" = "Save";
+"perps.open_position.apply" = "Apply";
+"perps.open_position.min_short" = "MIN";
+"perps.open_position.take_profit" = "Take Profit";
+"perps.open_position.stop_loss" = "Stop Loss";
+"perps.open_position.tp" = "TP";
+"perps.open_position.sl" = "SL";
+"perps.open_position.auto_close_hint" = "Set a price to automatically close your position.";
+"perps.open_position.auto_close_title" = "Auto close";
+"perps.open_position.take_profit_when" = "Take profit when";
+"perps.open_position.stop_loss_when" = "Stop loss when";
+"perps.open_position.profit_percent" = "+ Profit %";
+"perps.open_position.loss_percent" = "− Loss %";
+"perps.open_position.price_field" = "$ Price";
+"perps.open_position.take_profit_must_be_above_current_price" = "The Take Profit value must be above the current price.";
+"perps.open_position.take_profit_must_be_below_current_price" = "The Take Profit value must be below the current price.";
+"perps.open_position.stop_loss_must_be_above_current_price" = "The Stop Loss value must be above the current price.";
+"perps.open_position.stop_loss_must_be_below_current_price" = "The Stop Loss value must be below the current price.";
+"perps.open_position.stop_loss_must_be_above_liquidation_price" = "The Stop Loss value must be above the liquidation price (%@).";
+"perps.open_position.stop_loss_must_be_below_liquidation_price" = "The Stop Loss value must be below the liquidation price (%@).";
+"perps.order_type.title" = "Order type";
+"perps.order_type.market" = "Market";
+"perps.order_type.market_description" = "Long or short at the best available current market price";
+"perps.order_type.limit" = "Limit";
+"perps.order_type.limit_description" = "Long or short at a specific price or better";
+"perps.edit_position.title" = "Edit position";
+"perps.edit_position.add" = "Add to position";
+"perps.edit_position.add_description" = "Increase your current %@ exposure";
+"perps.edit_position.reduce" = "Reduce position";
+"perps.edit_position.reduce_description" = "Lower your exposure by closing part of your position";
+"perps.edit_position.add_title" = "Add to %@";
+"perps.edit_position.reduce_title" = "Reduce %@";
+"perps.edit_position.reduce_exceeds_margin" = "The amount must be below the position margin (%@).";
+"perps.adjust_margin.title" = "Adjust margin";
+"perps.adjust_margin.add" = "Add margin";
+"perps.adjust_margin.add_description" = "Add margin to make your position safer and lower the risk of liquidation";
+"perps.adjust_margin.reduce" = "Reduce margin";
+"perps.adjust_margin.reduce_description" = "Pull back margin when your position looks strong";
+"perps.adjust_margin.reduce_risk" = "This amount would put the position at risk of immediate liquidation.";
+"perps.adjust_margin.add_confirm_title" = "Add margin to %@";
+"perps.adjust_margin.reduce_confirm_title" = "Reduce margin for %@";
+"perps.set_limit_price.title" = "Set Limit Price";
+"perps.set_limit_price.set" = "Set";
+"perps.set_limit_price.mid" = "MID";
+"perps.set_limit_price.warning_at_or_below_current_price" = "The Limit price must be at or below the current price.";
+"perps.set_limit_price.warning_at_or_above_current_price" = "The Limit price must be at or above the current price.";
+"perps.confirm.title" = "Confirm Action";
+"perps.confirm.open" = "Open";
+"perps.confirm.you_pay" = "You pay";
+"perps.confirm.you_close" = "You close";
+"perps.confirm.entry_price" = "Entry price";
+"perps.confirm.leverage" = "Leverage";
+"perps.confirm.liquidation" = "Liquidation";
+"perps.confirm.size" = "Size";
+"perps.confirm.fee" = "Fee";
+"perps.confirm.auto_close" = "Auto Close";
+"perps.confirm.unavailable" = "Unavailable";
+"perps.confirm.confirm" = "Confirm";
+"perps.confirm.swipe" = "Swipe right";
+"perps.confirm.close" = "Close";
+"perps.confirm.position" = "Position";
+"perps.confirm.pnl" = "P&L";
+"perps.confirm.you_receive" = "You receive";
+"perps.confirm.take_profit_needs_update_title" = "Take Profit needs an update";
+"perps.confirm.take_profit_needs_update_caption" = "Market price has moved past your Take Profit level. Please set a new TP before confirming this action.";
+"perps.confirm.continue_without_take_profit" = "Continue Without Take Profit";
+"perps.confirm.update_take_profit" = "Update Take Profit";
+"perps.confirm.stop_loss_needs_update_title" = "Stop Loss needs an update";
+"perps.confirm.stop_loss_needs_update_caption" = "Market price has moved past your Stop Loss level. Please set a new SL before confirming this action.";
+"perps.confirm.continue_without_stop_loss" = "Continue Without Stop Loss";
+"perps.confirm.update_stop_loss" = "Update Stop Loss";
+"perps.confirm.auto_close_needs_update_title" = "Auto Close needs an update";
+"perps.confirm.auto_close_needs_update_caption" = "Market price has changed, and your Take Profit and Stop Loss levels are no longer valid. Please update them before confirming this action.";
+"perps.confirm.continue_without_auto_close" = "Continue Without Auto Close";
+"perps.confirm.update_auto_close" = "Update Auto Close";
+"perps.toast.opening" = "Opening";
+"perps.toast.closing" = "Closing";
+"perps.toast.opened" = "Opened";
+"perps.toast.closed" = "Closed";
+"perps.toast.placing" = "Placing";
+"perps.toast.order_placed" = "Order placed";
+"perps.toast.increasing" = "Increasing";
+"perps.toast.increased" = "Increased";
+"perps.toast.reducing" = "Reducing";
+"perps.toast.reduced" = "Reduced";
+"perps.toast.margin_adding" = "Adding %@ margin";
+"perps.toast.margin_added" = "Added %@ margin";
+"perps.toast.margin_reducing" = "Reducing margin by %@";
+"perps.toast.margin_reduced" = "Reduced margin by %@";
+"perps.toast.open_failed" = "Couldn’t open position";
+"perps.toast.close_failed" = "Couldn’t close position";
+"perps.toast.adjust_failed" = "Couldn’t update position";
+"perps.toast.status_unknown" = "Order status unknown";
+"perps.toast.share_failed" = "Couldn’t create image";
+"perps.error.offline" = "No internet connection. Check your network and try again.";
+"perps.error.timeout" = "The request timed out. Please try again.";
+"perps.error.rate_limited" = "Too many requests. Please wait a moment and retry.";
+"perps.error.server_unavailable" = "The service is temporarily unavailable. Try again shortly.";
+"perps.error.server_rejected" = "The order was rejected.";
+"perps.error.composite_blocked" = "Removing both orders at once isn’t available yet. Clear them one by one.";
+"perps.error.auth_expired" = "Your session expired. Please try again.";
+"perps.error.credentials_revoked" = "Your credentials are no longer valid. Please re-activate.";
+"perps.error.activation_required" = "Activation is required before trading.";
+"perps.error.region_unavailable" = "Trading isn’t available in your region.";
+"perps.error.insufficient_balance" = "Insufficient balance for this order.";
+"perps.error.insufficient_liquidity" = "Not enough market liquidity to fill this size.";
+"perps.error.position_not_found" = "The position is already closed.";
+"perps.error.stale_inputs" = "Your inputs changed. Please review again.";
+"perps.error.submit_unknown" = "We couldn’t confirm the order. Check your positions before retrying.";
+"perps.error.generic" = "Something went wrong. Please try again.";
 "tabs.trade.hint" = "Trade US Stocks & ETFs";
 "tabs.purchases" = "Purchases";
 "tabs.collectibles" = "Collectibles";
@@ -61,6 +260,9 @@
 "country_picker.all_regions" = "All Regions";
 
 "collectibles.title" = "Collectibles";
+"collectibles.only_ton_collectibles_for_now" = "Only TON collectibles for now";
+"collectibles.ton_collectibles_popup.title" = "Only TON collectibles\nare supported for now";
+"collectibles.ton_collectibles_popup.caption" = "This wallet currently supports collectibles on the TON network only. Support for other networks is coming soon.";
 "collectibles.collection_hidden" = "Collection hidden";
 "collectibles.nft_hidden" = "NFT hidden";
 "collectibles.collection_marked_as_spam" = "Collection marked as Spam";
@@ -76,10 +278,13 @@
 "history.placeholder.title" = "Your history\nwill be shown here";
 "history.placeholder.subtitle" = "Make your first transaction!";
 "history.placeholder.buttons.receive" = "Receive";
-"history.placeholder.buttons.buy" = "Buy Gram (prev. Toncoin)";
+"history.placeholder.buttons.buy" = "Buy GRAM";
+"multichain.asset_picker.choose_title" = "Choose asset";
 "multichain_history.placeholder.title" = "Your activity\nwill be shown here";
 "multichain_history.placeholder.subtitle" = "Make your first transaction!";
 "multichain_history.placeholder.buttons.add_funds" = "Add Funds";
+"multichain_history.placeholder.filtered.title" = "Nothing to show";
+"multichain_history.placeholder.filtered.subtitle" = "Nothing matches the current filters.";
 "history.tab.all" = "All";
 "history.tab.all_types" = "All Types";
 "history.tab.sent" = "Sent";
@@ -100,7 +305,7 @@
 "browser.list.all" = "All";
 
 "browser.connected_apps.empty_title" = "Connected apps will be\U00A0shown here";
-"browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Tonkeeper browser.";
+"browser.connected_apps.empty_description" = "Explore apps and services in\U00A0Keeper browser.";
 "browser.connected_apps.disconnect.title" = "Remove";
 "browser.connected_apps.disconnect.button" = "Remove";
 
@@ -118,6 +323,8 @@
 "event_details.sender.title" = "Sender";
 "event_details.sender.address" = "Sender address";
 "event_details.fee" = "Fee";
+"event_details.tron_resource_energy" = "%@ Energy";
+"event_details.tron_resource_bandwidth" = "%@ Bandwidth";
 "event_details.comment" = "Comment";
 "event_details.description" = "Description";
 "event_details.operation" = "Operation";
@@ -129,14 +336,14 @@
 "settings.title" = "Settings";
 "settings.items.language" = "Language";
 "settings.items.security" = "Security";
-"settings.items.backup" = "Backup";
+"settings.items.backup" = "Recovery Phrase";
 "settings.items.currency" = "Currency";
 "settings.items.theme" = "Theme";
 "settings.items.search" = "Search";
 "settings.items.logout" = "Sign out";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Support";
-"settings.items.tk_news" = "Tonkeeper news";
+"settings.items.tk_news" = "Keeper news";
 "settings.items.contact_us" = "Contact us";
 "settings.items.rate" = "Rate %@";
 "settings.items.legal" = "Legal";
@@ -153,7 +360,40 @@
 "settings.items.battery" = "Battery";
 "settings.items.connected_apps" = "Connected Apps";
 "settings.items.migration" = "Migration";
-"settings.items.migration_description" = "Migrate assets from your other Tonkeeper wallets";
+"settings.items.migration_description" = "Migrate assets from your TON wallets";
+"settings.migration.title" = "Migrate assets from your TON wallets";
+"settings.migration.description" = "Choose one TON wallet to migrate from. Its assets will be moved to this multichain wallet.";
+"settings.migration.how_it_works" = "How does it work?";
+"settings.migration.info.title" = "How migration works";
+"settings.migration.info.caption" = "We'll move supported assets from your TON wallet to multichain. Unsupported assets will stay in your TON wallet.";
+"settings.migration.info.will_migrate" = "Will migrate: verified jettons and NFTs, TON DNS NFTs, Telegram usernames and numbers, as well as liquid staking tokens like tsTON.";
+"settings.migration.info.will_stay" = "Will stay in your TON wallet: unverified or blacklisted assets, lending positions, non-liquid staking positions, SBT and Tonstakers NFTs.";
+"settings.migration.info.note" = "Please note: TON DNS NFTs will migrate, but rebinding them to your new address is done manually.";
+"settings.migration.nft_count" = "%d NFT";
+"settings.migration.nfts_count" = "%d NFTs";
+"settings.migration.jettons_count" = "%d tokens";
+"settings.migration.empty.title" = "Nothing to migrate";
+"settings.migration.empty.subtitle" = "Add a TON wallet with assets to migrate them to this wallet.";
+"settings.migration.empty.add_wallet" = "Add TON Wallet";
+"settings.migration.error.insufficient_ton.title" = "Insufficient TON for fees in wallet %@";
+"settings.migration.error.insufficient_ton.details" = "Required: %@.\nYour balance: %@.";
+"settings.migration.error.insufficient_ton.description" = "Only TRON transactions will be sent now. TON transactions will be paused until you add more TON.";
+"settings.migration.error.insufficient_ton.deposit" = "Deposit TON";
+"settings.migration.error.insufficient_trx.title" = "Insufficient TRX for fees in wallet %@";
+"settings.migration.error.insufficient_trx.details" = "Required: %@.\nYour balance: %@.";
+"settings.migration.error.insufficient_trx.description" = "Only TON transactions will be sent now. TRON transactions will be paused until you add more TRX.";
+"settings.migration.error.insufficient_trx.deposit" = "Deposit TRX";
+"settings.migration.error.insufficient_fees.title" = "Insufficient funds for fees in wallet %@";
+"settings.migration.error.insufficient_fees.details" = "Required: %@ + %@.\nYour balance: %@ + %@.";
+"settings.migration.error.insufficient_fees.deposit" = "Deposit Wallet";
+"settings.migration.error.continue" = "Continue";
+"settings.migration.confirm.transaction_failed" = "Transaction failed";
+"settings.migration.confirm.sending_transaction" = "Sending transaction";
+"settings.migration.usdt" = "USD₮";
+"settings.migration.trc20" = "TRC20";
+"settings.migration.trx" = "TRX";
+"settings.migration.ton_fee" = "TON Fee";
+"settings.migration.tron_fee" = "TRON Fee";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -161,10 +401,7 @@
 "settings.legal.title" = "Legal";
 "settings.legal.items.terms_of_service" = "Terms of service";
 "settings.legal.items.privacy_policy" = "Privacy policy";
-"settings.legal.items.montserrat_font" = "Montserrat font";
-"settings.legal.sections.licenses" = "Licences";
 
-"settings.trc20.description" = "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.";
 
 "settings.purchases.title" = "Purchases";
 "settings.purchases.sections.visible" = "Visible";
@@ -207,6 +444,10 @@
 "settings.connected_apps.actions.cancel" = "Cancel";
 
 "settings.connected_apps.empty.title" = "No connected apps";
+"settings.connected_apps.source.browser" = "Phone browser";
+"settings.connected_apps.source.dapp" = "Keeper";
+"settings.connected_apps.source.deeplink" = "External link";
+"settings.connected_apps.source.qr" = "Another device";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";
@@ -247,10 +488,10 @@
 "currency.items.UGX" = "Ugandan shilling";
 "currency.items.VES" = "Venezuelan bolívar";
 "currency.items.BTC" = "Bitcoin";
-"currency.items.TON" = "Gram (prev. Toncoin)";
+"currency.items.TON" = "Gram";
 "currency.items.AUD" = "Australian dollar";
 
-"backup.title" = "Backup";
+"backup.title" = "Recovery Phrase";
 "backup.information.title" = "Manual";
 "backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
 "backup.balance.warning" = "Your balance is %@, and it's only protected by a recovery phrase you haven't written down yet. Backup the phrase to avoid losing funds in case of device issues.";
@@ -259,11 +500,12 @@
 "backup.manually.button" = "Back Up Manually";
 "backup.show_phrase.title" = "Show Recovery Phrase";
 
-"backup.warning.title" = "Attention";
-"backup.warning.caption" = "Please read the following carefully before viewing your recovery phrase.";
-"backup.warning.list.item1" = "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.";
-"backup.warning.list.item2" = "Tonkeeper Support never asks for a recovery phrase.";
-"backup.warning.list.item3" = "Anyone with your recovery phrase can use your wallet.";
+"backup.safety_check.title" = "Safety Check";
+"backup.safety_check.list.item1" = "Never share your Recovery Phrase with anyone.";
+"backup.safety_check.list.item2" = "If someone has your Recovery Phrase they can access your wallet and withdraw funds.";
+"backup.safety_check.list.item3" = "Keeper Support will never ask you for your Recovery Phrase.";
+"backup.safety_check.agreement.text" = "I understand that sharing my Recovery Phrase could result in %@";
+"backup.safety_check.agreement.highlighted" = "permanent loss of funds.";
 
 "backup.show.title" = "Recovery phrase";
 "backup.show.caption" = "Write down these words with their numbers and store them in a safe place.";
@@ -275,13 +517,14 @@
 "backup.trc20.show.banner" = "This phrase is for TRC20 only. It cannot restore your TON wallet. Use your TON recovery phrase for TON wallet recovery.";
 "backup.trc20.show.button.title" = "Copy Phrase";
 
-"backup.check.title" = "Recovery phrase";
+"backup.check.title" = "Back up your\nrecovery phrase";
 "backup.check.caption" = "Write down these words with their numbers and store them in a safe place.";
 "backup.check.button.title" = "Check Backup";
 
-"backup.check.input.title" = "Backup Check";
-"backup.check.input.caption" = "Let's see if you've got everything right. Enter words %d, %d, and %d.";
+"backup.check.input.title" = "Backup check";
+"backup.check.input.caption" = "Let's see if you've got everything right. Choose words %d, %d, and %d.";
 "backup.check.input.button.title" = "Done";
+"backup.check.input.error" = "Some words don't match your phrase. Check your phrase and try again.";
 
 "security.title" = "Security";
 "security.use" = "Use %@";
@@ -362,7 +605,7 @@
 "ramp.provider_picker.section_title" = "Provider";
 "ramp.provider_picker.min_amount" = "Min. amount: %@ %@";
 "ramp.provider_picker.max_amount" = "Max. amount: %@ %@";
-"ramp.provider_picker.footer" = "Other providers available for different currency pairs.";
+"ramp.provider_picker.footer" = "Other providers are available for different currency pairs.";
 
 "ramp.deposit.payment_qr_code.title" = "Payment QR code";
 "ramp.deposit.payment_qr_code.subtitle" = "Scan QR code or copy the address to complete the payment.";
@@ -372,6 +615,7 @@
 "send.recepient.address" = "Address";
 "send.amount.placeholder" = "Amount";
 "send.remaining" = "Remaining";
+"send.balance" = "Balance:";
 
 "send.comment.placeholder" = "Comment";
 "send.comment.description" = "Will be visible to everyone.";
@@ -387,6 +631,8 @@
 "send.alert.message" = "Are you sure you want to send your entire balance of %@?";
 
 "send.invalid_address" = "Invalid wallet address.";
+"send.trx_self_send_forbidden" = "The TRON network doesn’t support sending TRX to your own address.";
+"send.invalid_address_for_network" = "Invalid address format for the selected network. Use a valid %1$@ address.";
 "send.scam_address" = "Transfers to this address are not supported.";
 
 "confirm_send.token_transfer.title" = "Confirm action";
@@ -399,6 +645,7 @@
 "confirm_send.recipient.address" = "Recipient address";
 "confirm_send.confirm_button" = "Confirm and send";
 "confirm_send.confirm" = "Confirm";
+"confirm_send.scroll_hint" = "Check all details to confirm";
 "confirm_send.risk.total" = "Total: %@";
 "confirm_send.risk.total_nft" = "Total: %@ + %ld NFT";
 "confirm_send.risk.total_nft_multiple" = "Total: %@ + %ld NFTs";
@@ -417,36 +664,50 @@
 "connection_status.no_internet" = "No Internet connection";
 "connection_status.updated_at" = "Updated %@";
 
+"token.verified" = "Verified Token";
 "token.unverified" = "Unverified token";
+"token.scam" = "Scam";
 "token.view_details" = "View details";
-"token.unverified_popup.caption" = "This token looks suspicious for one or several reasons.";
-"token.unverified_popup.low_liquidity" = "Low liquidity. Token may have some value, but it is extremely low.";
-"token.unverified_popup.not_listed" = "Token is not listed on trading platforms and has limited demand.";
-"token.unverified_popup.used_for_spam" = "Used for spam. Employed for sending unwanted and often irrelevant messages at scale.";
-"token.unverified_popup.used_for_scam" = "Used for scam. Token's name or image can lead users into deception.";
+"token.hide_in_wallet" = "Hide in Wallet";
+"token.show_in_wallet" = "Show in Wallet";
+"token.verified_popup.caption" = "This token is actively traded and widely recognized. Verification is not an endorsement by Keeper.";
+"token.unverified_popup.caption" = "This token looks suspicious for one or more of the following reasons:";
+"token.unverified_popup.low_liquidity" = "Low liquidity. The token may hold some value, but very little.";
+"token.unverified_popup.not_listed" = "This token isn't listed on trading platforms and has limited demand.";
+"token.unverified_popup.used_for_spam" = "Used for spam. Sent in bulk as unwanted, often irrelevant messages.";
+"token.unverified_popup.used_for_scam" = "Used for scams. The token's name or image may be designed to deceive.";
 
+"onboarding.title" = "Keeper";
 "onboarding.caption" = "Create a new wallet or add an existing one";
 "onboarding.buttons.create_new" = "Create New Wallet";
 "onboarding.buttons.import_existing" = "Import Existing Wallet";
 "onboarding.backup_intro.title" = "Back up your recovery phrase";
-"onboarding.backup_intro.caption" = "Without it, you won’t be able to access your wallet";
-"onboarding.backup_intro.later" = "Later";
+"onboarding.backup_intro.caption" = "Without this phrase you may lose access to your funds if you delete the app or change device.";
+"onboarding.backup_intro.later" = "Skip";
 "onboarding.notifications.title" = "Get instant notifications";
-"onboarding.notifications.caption" = "Get notified when you receive GRAM, tokens and NFTs";
-"onboarding.notifications.button_title" = "Enable Notifications";
+"onboarding.notifications.caption" = "Get notified when you receive new transactions.";
+"onboarding.notifications.button_title" = "Enable";
 "onboarding.terms.caption" = "By continuing, you agree to our %@";
 "onboarding.terms.title" = "Terms of Use";
 
 "passcode.create" = "Create passcode";
 "passcode.reenter" = "Re-enter passcode";
 "passcode.enter" = "Enter passcode";
+"passcode.attempts_left" = "%d attempts left";
+"passcode.attempt_left" = "1 attempt left";
+"passcode.too_many_attempts" = "Too many attempts";
+"passcode.try_again_in" = "Try again in %@";
 "passcode.logout" = "Log Out";
 "passcode.logout_confirmation_title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
 "passcode.logout_confirmation_description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
+"passcode.biometry_changed_description" = "Face ID or Touch ID on this device has changed.\nEnter your passcode to confirm.";
+"passcode.biometry_changed_face_id_description" = "Face ID on this device has changed.\nEnter your passcode to confirm.";
+"passcode.biometry_changed_touch_id_description" = "Touch ID on this device has changed.\nEnter your passcode to confirm.";
 
 "import_wallet.title" = "Enter recovery phrase";
-"import_wallet.description" = "To restore access to your wallet, enter the 24 or 12 secret recovery words given to you when you created your wallet.";
+"import_wallet.description" = "To restore access to your wallet, enter the 12 or 24 secret recovery words given to you when you created your wallet.";
 "import_wallet.incorrect_phrase" = "Incorrect phrase";
+"import_wallet.already_imported" = "You already have this wallet";
 "import_wallet.set_12_words" = "12 words";
 "import_wallet.set_24_words" = "24 words";
 
@@ -455,17 +716,48 @@
 "choose_wallets.tokens" = "tokens";
 "choose_wallets.alreadyAdded" = "Already added";
 
+"choose_wallet_version.title" = "Choose wallet version";
+"choose_wallet_version.description" = "This seed phrase contains TON wallets in different versions. Choose one to import now.";
+"choose_wallet_version.learn_more" = "Learn about TON wallet versions";
+"choose_wallet_version.info_title" = "About TON wallet versions";
+"choose_wallet_version.info_description" = "V4R2 and W5 use different public TON addresses. You can import one version now and add the other later as a separate wallet.";
+"choose_wallet_version.w5_description" = "We recommend W5 because it's the latest TON wallet version. It supports gasless transactions and batch sends.";
+"choose_wallet_version.v4r2_description" = "V4R2 is an older version with wider compatibility. Use it if a service doesn't support W5 yet.";
+"choose_wallet_version.nfts_count" = "%ld NFTs";
+
+"choose_wallet_kind.title" = "Choose wallet";
+"choose_wallet_kind.description" = "This seed phrase contains two wallets. Choose one to import now.";
+"choose_wallet_kind.ton_wallet" = "TON wallet";
+"choose_wallet_kind.multichain_wallet" = "Multichain wallet";
+"choose_wallet_kind.no_activity_yet" = "No activity yet";
+"choose_wallet_kind.nfts_count" = "%ld NFTs";
+
 "fee_method_picker.title" = "Network fee";
 "fee_method_picker.subtitle" = "Choose method";
+"fee_method_picker.deposit" = "Deposit";
 
+"filters.title" = "Filters";
+"filters.history.hide_dust" = "Hide tiny transfers";
+"filters.history.hide_dust_caption" = "Transfers worth less than $0.01.";
+"filters.balances.hide_dust" = "Hide assets with no cost";
+"filters.balances.hide_dust_caption" = "Assets worth less than $0.01.";
+
+"finish_setup.skip" = "Skip";
 "finish_setup.title" = "Finish setting up";
 "finish_setup.setup_biometry" = "Use %@ to approve transactions";
 "finish_setup.biometry_unavailable" = "Biometry unavailable";
 "finish_setup.backup.title" = "Back up your recovery phrase";
 "finish_setup.backup.description" = "Without it, you can’t restore your wallet";
+"finish_setup.migration.title" = "Migrate assets from your TON wallets";
+"finish_setup.migration.wallets_left.zero" = "%d wallets left";
+"finish_setup.migration.wallets_left.one" = "%d wallet left";
+"finish_setup.migration.wallets_left.few" = "%d wallets left";
+"finish_setup.migration.wallets_left.many" = "%d wallets left";
+"finish_setup.migration.wallets_left.other" = "%d wallets left";
 
 "wallets_list.title" = "Wallets list";
 "wallets_list.add_wallet" = "Add Wallet";
+"tooltip_add_multichain_wallet" = "Add a wallet for new blockchains";
 
 "add_wallet.title" = "Add Wallet";
 "add_wallet.description" = "Create a new wallet or add an existing one.";
@@ -475,6 +767,7 @@
 
 "add_wallet.items.existing_wallet.title" = "Existing Wallet";
 "add_wallet.items.existing_wallet.subtitle" = "Import wallet with 12 or 24 secret recovery words";
+"add_wallet.items.existing_wallet.subtitle_multichain" = "Import your existing TON or multichain wallet";
 
 "add_wallet.items.watch_only.title" = "Watch Account";
 "add_wallet.items.watch_only.subtitle" = "For monitor wallet activity without recovery phrase";
@@ -504,10 +797,11 @@
 "signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";
 "signer.scan.open_signer_button" = "Open Signer on this device";
 
-"keystone.scan.subtitle" = "Open Keystone » Connect Software Wallet » Tonkeeper";
+"keystone.scan.subtitle" = "Open Keystone » Connect Software Wallet » Keeper";
 "keystone.scan.about_keystone_button" = "About Keystone";
 
 "chart.price" = "Price";
+"chart.error.title" = "No price data is available.";
 "chart.last_day" = "Last day";
 "chart.last_half_year" = "Last 6 months";
 "chart.last_hour" = "Last hour";
@@ -528,10 +822,9 @@
 "balance_header.address" = "Address: ";
 
 "balance_list.staking_item.title" = "Staked";
-"balance_list.ton_item.title" = "GRAM (prev. TON)";
 "balance_list.staking_item.comment.ready" = "%@ GRAM ready.\nTap to collect.";
 "balance_list.staking_item.comment.staked" = "%@ GRAM staked";
-"balance_list.staking_item.comment.unstaked" = "%@ GRAM unstaked";
+"balance_list.staking_item.comment.unstaked" = "%@ GRAM will be unstaked";
 "balance_list.staking_item.comment.time_estimate" = "in %@";
 "balance_list.staking_item.comment.after_end_of_cycle" = "after the end of the cycle";
 
@@ -541,26 +834,30 @@
 "receive.segments.trc20" = "TRC20";
 
 "receive.multichain.address_title" = "Your %@ address";
-"receive.multichain.disclaimer" = "Send only assets in the %@ network to this address, or you might lose your funds.";
+"receive.multichain.disclaimer" = "Send only %1$@ (%2$@) and tokens in %3$@ network to this address, or you might lose your funds.";
 "receive.multichain.network_picker.title" = "Receiving address";
 "receive.multichain.network_picker.subtitle" = "For all network tokens";
 "receive.multichain.networks.ton.title" = "TON";
+"receive.multichain.networks.ton.display_title" = "TON (TON)";
+"receive.multichain.networks.ton.disclaimer_title" = "Gram";
 "receive.multichain.networks.ethereum.title" = "Ethereum";
+"receive.multichain.networks.ethereum.display_title" = "Ethereum (ERC20)";
 "receive.multichain.networks.bitcoin.title" = "Bitcoin";
+"receive.multichain.networks.bitcoin.display_title" = "Bitcoin (BTC)";
 "receive.multichain.networks.base.title" = "Base";
+"receive.multichain.networks.base.display_title" = "Base (Base)";
 "receive.multichain.networks.smartchain.title" = "BSC";
+"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain (BEP20)";
 "receive.multichain.networks.smartchain.disclaimer_title" = "BNB Smart Chain";
 "receive.multichain.networks.arbitrum.title" = "Arbitrum";
+"receive.multichain.networks.arbitrum.display_title" = "Arbitrum (ARB)";
 "receive.multichain.networks.tron.title" = "TRON";
+"receive.multichain.networks.tron.display_title" = "TRON (TRC20)";
 "receive.multichain.networks.solana.title" = "Solana";
 
 "receive.trx.description" = "Send only Tron TRX to this address, or you might lose your funds.";
 
 "receive.trc20.description" = "Send only USD₮ TRC20 to this address, or you might lose your funds.";
-"receive.trc20.popup.title" = "USD₮ TRC20";
-"receive.trc20.popup.caption" = "Use USD₮ TRC20 without TRX. Fees are covered by Tonkeeper Battery.";
-"receive.trc20.popup.buttons.enable" = "Enable USD₮ TRC20";
-"receive.trc20.popup.buttons.later" = "Later";
 
 "watch_account.title" = "Watch Account";
 "watch_account.description" = "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet.";
@@ -573,8 +870,11 @@
 "event_details.recipient" = "Recipient";
 "event_details.recipient_address" = "Recipient address";
 "event_details.comment" = "Comment";
+"event_details.protocol" = "Protocol";
+"event_details.tx_hash" = "Tx hash";
 "event_details.sent_on" = "Sent on %@";
 "event_details.received_on" = "Received on %@";
+"event_details.burned_on" = "Burned on %@";
 "event_details.purchased_on" = "Purchased on %@";
 "event_details.renewed_on" = "Renewed on %@";
 "event_details.swapped_on" = "Swapped on %@";
@@ -620,6 +920,13 @@
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
 "action_types.pending" = "Pending…";
+"action_types.sending" = "Sending";
+"action_types.receiving" = "Receiving";
+"action_types.swapping" = "Swapping";
+"action_types.staking" = "Staking";
+"action_types.unstaking" = "Unstaking";
+"action_types.burning" = "Burning";
+"action_types.domain_renewing" = "Renewing Domain";
 
 "ledger_connect.title" = "Connect Ledger";
 "ledger_connect.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
@@ -688,10 +995,10 @@
 "nft_details.actions.not_spam" = "Not Spam";
 "nft_details.manage_button.title" = "Manage";
 
-"buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Tonkeeper.";
+"buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Keeper.";
 
 "p2p_express_popup.title" = "Buy via Wallet P2P";
-"p2p_express_popup.caption" = "To purchase crypto with fiat, complete the payment via Wallet in Telegram using P2P, then transfer the funds to your Tonkeeper wallet.";
+"p2p_express_popup.caption" = "To purchase crypto with fiat, complete the payment via Wallet in Telegram using P2P, then transfer the funds to your Keeper wallet.";
 
 "ugly_buy_list.buy" = "Buy";
 
@@ -723,7 +1030,7 @@
 "staking_list.minimal_deposit" = "Minimal Deposit";
 
 "staking_balance_details.minimal_deposit" = "Minimal Deposit";
-"staking_balance_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_balance_details.description" = "Staking is based on smart contracts by third parties. Keeper is not responsible for staking experience.";
 "staking_balance_details.jetton_button_description" = "When you stake GRAM in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of GRAM.";
 "staking_balance_details.pending_stake" = "Pending Stake";
 "staking_balance_details.pending_unstake" = "Pending Unstake";
@@ -741,6 +1048,9 @@
 "staking_deposit_input.other" = "Other";
 "staking_deposit_input.continue_title" = "Continue";
 "staking_deposit_input.options" = "Options";
+"staking_deposit_input.your_apy" = "Your APY";
+"staking_deposit_input.after_stake" = "After stake";
+"staking_deposit_input.current" = "Current";
 
 "staking_deposit_pool_picker.max_apy" = "MAX APY";
 "staking_deposit_pool_picker.apy" = "APY";
@@ -755,7 +1065,7 @@
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Minimal Deposit";
-"staking_pool_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_pool_details.description" = "Staking is based on smart contracts by third parties. Keeper is not responsible for staking experience.";
 "staking_pool_details.choose" = "Choose";
 
 "ton_connect_mapper.connect_to" = "Connect to ";
@@ -768,9 +1078,53 @@
 "ton_connect.sure_check_service_address" = "Be sure to check the service address before connecting the wallet.";
 "ton_connect.sure_check_service_address_connect_without_checking" = "Be sure to check the service address before connecting · Connect without additional check in Browser";
 
+"wallet_connect.common.dapp" = "dApp";
+"wallet_connect.proposal.networks" = "Networks";
+"wallet_connect.proposal.networks_to_connect" = "Networks to connect";
+"wallet_connect.proposal.permissions.title" = "This app will be able to:";
+"wallet_connect.proposal.permissions.info_and_activity" = "View your wallet info and activity";
+"wallet_connect.proposal.permissions.transaction_approval" = "Request approvals for transactions";
+"wallet_connect.proposal.permissions.message_sign" = "Sign messages";
+"wallet_connect.proposal.connect_wallet" = "Connect Wallet";
+"wallet_connect.proposal.connect_to" = "Connect to %@?";
+"wallet_connect.proposal.requesting_access" = "%@ is requesting access to your wallet address:";
+"wallet_connect.proposal.validation.valid_description" = "Be sure to check the service address before connecting the wallet.";
+"wallet_connect.proposal.validation.unknown_description" = "This domain cannot be verified. Check the request carefully before approving.";
+"wallet_connect.proposal.validation.invalid_description" = "This website has a domain that does not match the sender of this request.";
+"wallet_connect.proposal.validation.scam_description" = "This domain is flagged as unsafe by multiple security providers. Leave immediately.";
+"wallet_connect.request.confirm_action" = "Confirm Action";
+"wallet_connect.request.advanced_details" = "Advanced details";
+"wallet_connect.request.actions.sign_message" = "Sign Message";
+"wallet_connect.request.actions.transfer" = "Transfer %@";
+"wallet_connect.request.actions.send_transaction" = "Send Transaction";
+"wallet_connect.request.actions.sign_transaction" = "Sign Transaction";
+"wallet_connect.request.rows.wallet" = "Wallet";
+"wallet_connect.request.rows.app" = "App";
+"wallet_connect.request.rows.network" = "Network";
+"wallet_connect.request.rows.request" = "Request";
+"wallet_connect.request.rows.amount" = "Amount";
+"wallet_connect.request.rows.address" = "Address: %@";
+"wallet_connect.request.rows.to" = "To: %@";
+"wallet_connect.request.rows.transaction_id" = "TxID: %@";
+"wallet_connect.request.rows.network_fee" = "Network fee";
+"wallet_connect.request.rows.approximate_value" = "≈ %@";
+"wallet_connect.request.rows.provided_by_dapp" = "Provided by dApp";
+"wallet_connect.request.details.message" = "Message";
+"wallet_connect.request.details.raw_data" = "Raw data";
+"wallet_connect.request.details.raw_data_hex" = "Raw data hex";
+"wallet_connect.request.values.tron_transaction" = "TRON transaction";
+"wallet_connect.request.signature.personal" = "Personal signature";
+"wallet_connect.request.signature.typed_data" = "Typed data";
+"wallet_connect.request.signature.tron_message" = "TRON message";
+
 "wallet_balance_list.transaction_notifications" = "Enable transaction notifications";
 "wallet_balance_list.stories_onboarding" = "Learn how to use your wallet";
 "wallet_balance_list.manage_button.title" = "Manage";
+"wallet_balance_list.all_assets_hidden.title" = "All assets are hidden";
+"wallet_balance_list.all_assets_hidden.subtitle" = "Show them in 'Manage'";
+"wallet_balance_list.all_collectibles_hidden.title" = "All collectibles are hidden.";
+"wallet_balance_list.all_collectibles_hidden.subtitle" = "Show them in “collectibles settings.”";
+"wallet_balance_list.more_assets.title" = "More assets";
 
 "buy_sell_list.buy" = "Buy";
 "buy_sell_list.sell" = "Sell";
@@ -804,6 +1158,7 @@
 "transaction_confirmation.wallet" = "Wallet";
 "transaction_confirmation.recipient" = "Recipient";
 "transaction_confirmation.fee" = "Fee";
+"transaction_confirmation.fee_unavailable" = "Unavailable";
 "transaction_confirmation.amount" = "Amount";
 "transaction_confirmation.unstake_amount" = "Unstake amount";
 "transaction_confirmation.unstake" = "Unstake";
@@ -818,8 +1173,9 @@
 "transaction_confirmation.tap_to_pay" = "Tap to pay in %@";
 "transaction_confirmation.change_payment_method" = "Change Payment Method";
 
-"battery.refill.title" = "Tonkeeper Battery";
+"battery.refill.title" = "Keeper Battery";
 "battery.refill.empty_caption" = "Swap and send TON tokens and pay less in TRC-20 fees";
+"battery.refill.negative_balance_caption" = "Your battery ran out due to refunded purchases. Top up your charges to keep going.";
 "battery.refill.supported_transactions" = "Supported transactions";
 "battery.refill.transactions" = "Transactions";
 "battery.refill.refunded.few" = "refund";
@@ -849,8 +1205,8 @@
 "battery.refill.toast.recharged" = "Battery recharged";
 
 "battery.settings.title" = "Battery Settings";
-"battery.settings.caption" = "Selected transactions will be paid by Tonkeeper Battery.";
-"battery.settings.items.swaps.title" = "Swaps via Tonkeeper";
+"battery.settings.caption" = "Selected transactions will be paid by Keeper Battery.";
+"battery.settings.items.swaps.title" = "Swaps via Keeper";
 "battery.settings.items.swaps.caption" = "per swap";
 "battery.settings.items.token.title" = "Token transfers";
 "battery.settings.items.token.caption" = "per transfer";
@@ -882,17 +1238,16 @@
 "dapp.disconnect_toast.button" = "Disconnect";
 
 "dapp.sharing_popup.title" = "Share %@";
-"dapp.sharing_popup.caption" = "This link opens %@ directly in Tonkeeper. You can use it again later or share it if needed.";
+"dapp.sharing_popup.caption" = "This link opens %@ directly in Keeper. You can use it again later or share it if needed.";
 "dapp.sharing_popup.buttons.copy" = "Copy Link";
 "dapp.sharing_popup.buttons.share" = "Share";
 
-"dapp.open_warning_popup.warning" = "You are opening an external app not operated by Tonkeeper. Proceed only if you trust the source.";
+"dapp.open_warning_popup.warning" = "You are opening an external app not operated by Keeper. Proceed only if you trust the source.";
 
 "extra_type.ton" = "GRAM";
-"extra_type.battery" = "Tonkeeper Battery";
+"extra_type.battery" = "Keeper Battery";
 
-"token_details.trc20.usdt.battery_banner.title" = "Tonkeeper Battery required for USD₮ TRC20";
-"token.ton_name" = "Gram (prev. Toncoin)";
+"token_details.trc20.usdt.battery_banner.title" = "Keeper Battery required for USD₮ TRC20";
 "token_details.trc20.usdt.battery_banner.caption" = "Battery charges are used to cover transaction fees, making transfers simpler and more cost-effective.";
 "token_details.trc20.usdt.battery_banner.charge_button" = "Charge Battery";
 
@@ -942,24 +1297,84 @@
 "tokens_picker.market_cap_suffix" = "mcap";
 "tokens_picker.sort.market_cap" = "Market Cap";
 "tokens_picker.sort.volume" = "Volume";
+"tokens_picker.sort.top_gainers" = "Top Gainers";
+"tokens_picker.sort.top_losers" = "Top Losers";
 
 "native_swap.screen.swap.title" = "Swap";
 "native_swap.balance" = "Balance: %@";
 "native_swap.remaining" = "Remaining: %@";
 "native_swap.field.send" = "Send";
 "native_swap.field.receive" = "Receive";
+"native_swap.quote.no_quote" = "No quote";
+"native_swap.quote.rate.enter_amount" = "Enter amount";
+"native_swap.quote.rate.route_expired" = "Route expired";
+"native_swap.quote.rate.unavailable" = "Couldn't get a quote. Change amount";
+"native_swap.quote.rate.pair_unavailable" = "This pair isn't available for swaps";
+"native_swap.quote.rate.updating" = "Fetching quote";
 
 "native_swap.confirm.actions.edit" = "Edit";
 
 "native_swap.screen.confirm.title" = "Confirm swap";
 "native_swap.screen.confirm.field.rate" = "Exchange rate";
 "native_swap.screen.confirm.field.fee" = "Fee";
+"native_swap.screen.confirm.field.temporary_reserve" = "Temporary reserve";
+"native_swap.screen.confirm.field.temporary_reserve.info" = "Additionally, %@ will be locked during transaction processing. Any unused fees will be refunded.";
+"native_swap.screen.confirm.field.temporary_reserve.battery_info" = "Additionally, %@ will be locked during transaction processing. Any unused fees will be refunded. Might be in GRAM.";
 "native_swap.screen.confirm.field.provider" = "Provider";
 "native_swap.screen.confirm.field.slippage" = "Slippage tolerance";
 "native_swap.screen.confirm.field.value_difference" = "Value difference";
 "native_swap.screen.confirm.field.value_difference.info" = "How much your trade moves the price — positive gets you more, negative gets you less.";
 "native_swap.screen.confirm.field.slippage.info" = "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.";
 "native_swap.screen.confirm.field.expires" = "Expires in";
+"native_swap.screen.confirm.price_impact_alert.title" = "Value difference is too high";
+"native_swap.screen.confirm.price_impact_alert.subtitle" = "Swap may be conducted at a rate that differs significantly from market prices.";
+"native_swap.screen.confirm.price_impact_alert.description" = "Please wait a little longer before conducting this exchange, or try changing the amount to be swapped.";
+"native_swap.screen.confirm.price_impact_alert.confirm_button" = "Swap at the Changed Price";
+"native_swap.screen.confirm.price_impact_alert.back_button" = "Back to Swap";
+
+"multichain_swap.screen.confirm.field.rate" = "Rate";
+"multichain_swap.screen.confirm.field.slippage" = "Slippage";
+"multichain_swap.screen.confirm.field.minimum_received" = "Minimum received";
+"multichain_swap.screen.confirm.field.value_difference" = "Value difference";
+"multichain_swap.screen.confirm.field.route_fees" = "Route fees";
+"multichain_swap.screen.confirm.field.warnings" = "Warnings";
+"multichain_swap.screen.confirm.field.network_fee" = "Network fee";
+"multichain_swap.screen.confirm.field.status" = "Status";
+"multichain_swap.screen.confirm.value.calculating" = "Calculating";
+"multichain_swap.screen.confirm.value.unknown" = "Unknown";
+"multichain_swap.screen.confirm.network_fee.estimated_time" = "Estimated time: %@ min";
+"multichain_swap.screen.confirm.network_fee.estimated_time_seconds" = "Estimated time: %@ sec";
+"multichain_swap.screen.confirm.network_fee.insufficient_native_token" = "Insufficient %@ to pay the network fee";
+"multichain_swap.screen.confirm.battery_fee_shortage.title" = "Not Enough %@ for the Fee";
+"multichain_swap.screen.confirm.battery_fee_shortage.caption" = "%1$@ charges %2$@ for this swap. Recharge Battery to pay the fee — no %3$@ needed.";
+"multichain_swap.screen.confirm.battery_fee_shortage.recharge_battery" = "Recharge Battery";
+"multichain_swap.screen.confirm.approval.avoid_extra_fees" = "Avoid extra fees on future swaps";
+"multichain_swap.screen.confirm.error.unknown" = "Unable to complete the swap. Please try again.";
+"multichain_swap.screen.confirm.error.insufficient_balance" = "Insufficient balance";
+"multichain_swap.screen.confirm.error.invalid_address" = "Recipient address is invalid";
+"multichain_swap.screen.confirm.error.unsupported_transaction" = "This transaction type is not supported";
+"multichain_swap.screen.confirm.error.unsupported_asset" = "This pair isn't available for swaps";
+"multichain_swap.screen.confirm.error.missing_field" = "Required transaction data is missing";
+"multichain_swap.screen.confirm.error.dust_amount" = "Amount is too small to send";
+"multichain_swap.screen.confirm.error.verification_failed" = "Signature verification failed";
+"multichain_swap.screen.confirm.error.sign_internal_error" = "Failed to sign the transaction";
+"multichain_swap.screen.confirm.error.unauthorized" = "Unauthorized request to the network";
+"multichain_swap.screen.confirm.error.no_available_nodes" = "No available nodes, try again later";
+"multichain_swap.screen.confirm.error.network_error" = "Network error, check your connection";
+"multichain_swap.screen.confirm.error.bad_response" = "Received an invalid response from the node";
+"multichain_swap.screen.confirm.error.bitcoin_error" = "Bitcoin network error, try again later";
+"multichain_swap.screen.confirm.error.mempool_conflict" = "Transaction conflicts with the mempool";
+"multichain_swap.screen.confirm.error.utxo_error" = "Failed to build UTXO set, try again later";
+"multichain_swap.screen.confirm.error.internal_error" = "Internal error, please try again";
+"multichain_swap.screen.confirm.error.prepare_failed" = "Unable to prepare the swap. Please try again.";
+"multichain_swap.screen.confirm.error.route_unavailable" = "This swap route is no longer available. Try again.";
+"multichain_swap.screen.confirm.error.unsupported_provider" = "This swap provider is not supported.";
+"multichain_swap.screen.swap.error.asset_unavailable" = "This token isn't available for swaps";
+"multichain_swap.screen.swap.error.ton_max_amount_unavailable" = "Please enter amount greater than %@ GRAM";
+"multichain_swap.provider_error.min_amount_not_met" = "Amount is too small for a swap. Try a larger amount.";
+"multichain_swap.provider_error.country_blocked" = "Swaps aren't available in your region.";
+"multichain_swap.provider_error.provider_unavailable" = "Swap provider is temporarily unavailable. Please try again.";
+"multichain_swap.provider_error.unknown" = "Couldn't get a quote. Please try again.";
 
 "native_swap_screen.privacy.stonfi" = "Service provided by [STON.fi](https://ston.fi)";
 "native_swap_screen.privacy.stonfi_terms" = "[Terms of Use](https://ston.fi/terms)";
@@ -973,18 +1388,21 @@
 "subscription_plugin_warning.title.many" = "You have %@ expired subscriptions from @donate";
 "subscription_plugin_warning.title.other" = "You have %@ expired subscriptions from @donate";
 
-"subscription_plugin_warning.caption_one" = "It may continue charging your wallet. Manage it in Tonkeeper Web — sign in with your recovery phrase.";
-"subscription_plugin_warning.caption_many" = "Some of them may continue charging your wallet. Manage them in Tonkeeper Web — sign in with your recovery phrase.";
+"subscription_plugin_warning.caption_one" = "It may continue charging your wallet. Manage it in Keeper Web — sign in with your recovery phrase.";
+"subscription_plugin_warning.caption_many" = "Some of them may continue charging your wallet. Manage them in Keeper Web — sign in with your recovery phrase.";
 
-"subscription_plugin_warning.button" = "Open Tonkeeper Web";
+"subscription_plugin_warning.button" = "Open Keeper Web";
 
 "stories_updates.all_updates" = "All Updates";
 "actions.retry" = "Retry";
-"trade.assets.title" = "Assets";
+"actions.try_again" = "Try Again";
+"trade.assets.title" = "Crypto";
 "trade.assets.categories.all" = "All";
-"trade.assets.categories.crypto" = "Crypto";
+"trade.assets.categories.tokens" = "Tokens";
 "trade.assets.categories.stocks" = "Stocks";
 "trade.assets.categories.etfs" = "ETFs";
+"trade.services.perps" = "Perps";
+"trade.perps_shelf.title" = "Trending Perpetuals";
 "trade.assets.errors.load" = "Unable to load assets.";
 "trade.assets.placeholder.empty" = "No assets found.";
 "trade.errors.load_shelves" = "Unable to load market shelves.";
@@ -993,12 +1411,20 @@
 "trade.placeholder.error_subtitle" = "We couldn't load content.";
 "trade.placeholder.not_found_title" = "Not Found";
 "trade.placeholder.no_results_for_query" = "There were no results for '%@'.";
+"trade.favorites.title" = "Favorite tokens";
+"trade.favorites.edit_title" = "Edit favorite tokens";
+"trade.favorites.tooltip" = "Add to favorites";
 "trade.search.placeholder" = "Search by ticker or name";
 "trade.asset_details.apy_value" = "%@ APY";
 "token_management.save_changes" = "Save Changes";
 "token_management.title" = "Manage crypto";
 "trade.asset_details.earn_apy" = "Earn %@ APY";
-"trade.asset_details.about_fallback" = "%@ is available in the Tonkeeper trading catalog.";
+"trade.asset_details.about_fallback" = "%@ is available in the Keeper trading catalog.";
+"trade.asset_details.actions.cash_buy" = "Cash buy";
+"trade.asset_details.actions.cash_sell" = "Cash sell";
+"trade.asset_details.asset_type.tokenized_stock" = "This asset is a Tokenized Stock";
+"trade.asset_details.asset_type.tokenized_etf" = "This asset is a Tokenized ETF";
+"trade.asset_details.asset_type.unverified" = "This asset is an Unverified Token";
 "trade.asset_details.balance.title" = "Your balance";
 "trade.asset_details.common.not_available" = "N/A";
 "trade.asset_details.common.see_all" = "See All";
@@ -1015,20 +1441,20 @@
 "trade.asset_details.sections.links" = "Links";
 "trade.asset_details.sections.overview" = "Overview";
 "trade.asset_details.sections.trading_activity" = "24h Trading activity";
-"trade.asset_details.trading_activity.attribution" = "Price chart, overview and performance are provided by dyor.io.";
+"trade.asset_details.trading_activity.attribution" = "Price chart, overview and trading activity are provided by %@.";
 "trade.asset_details.trading_activity.volume_hint" = "The total volume of all transactions over the past 24 hours.";
 "trade.asset_details.trading_activity.volume_title" = "Volume";
 "trade.asset_details.tokenized.stock.badge" = "Tokenized Stock";
 "trade.asset_details.tokenized.stock.title" = "What are\ntokenized stocks?";
 "trade.asset_details.tokenized.stock.caption" = "Tokenized stocks are blockchain tokens backed 1:1 by real shares, allowing fractional purchases and linking traditional markets with crypto.";
 "trade.asset_details.tokenized.stock.point_one" = "Buy or sell 24/7, beyond regular market hours.";
-"trade.asset_details.tokenized.stock.point_two" = "Send this asset across the TON Network anytime.";
+"trade.asset_details.tokenized.stock.point_two" = "Send this asset on-chain anytime.";
 "trade.asset_details.tokenized.stock.point_three" = "Purchase fractions of stocks starting with just $1.";
 "trade.asset_details.tokenized.etf.badge" = "Tokenized ETF";
 "trade.asset_details.tokenized.etf.title" = "What are\ntokenized ETFs?";
 "trade.asset_details.tokenized.etf.caption" = "Tokenized ETFs are blockchain tokens backed 1:1 by real ETF shares, allowing fractional purchases and linking traditional markets with crypto.";
 "trade.asset_details.tokenized.etf.point_one" = "Buy or sell 24/7, beyond regular market hours.";
-"trade.asset_details.tokenized.etf.point_two" = "Send this asset across the TON Network anytime.";
+"trade.asset_details.tokenized.etf.point_two" = "Send this asset on-chain anytime.";
 "trade.asset_details.tokenized.etf.point_three" = "Purchase fractions of ETFs starting with just $1.";
 
 "tron_usdt_fees.common.item_title.battery" = "Battery";
@@ -1040,7 +1466,7 @@
 "tron_usdt_fees.common.fee_options.title.insufficient" = "Not enough funds to cover transactions fees";
 "tron_usdt_fees.common.fee_options.title.default" = "Blockchain Fees";
 "tron_usdt_fees.common.fee_options.caption.insufficient" = "Сhoose a fee payment method and top up.";
-"tron_usdt_fees.common.fee_options.caption.default" = "Tonkeeper Battery is the easiest way to pay blockchain fees. You can also top up balance with GRAM and TRX coins directly.";
+"tron_usdt_fees.common.fee_options.caption.default" = "Keeper Battery is the easiest way to pay blockchain fees. You can also top up balance with GRAM and TRX coins directly.";
 "tron_usdt_fees.common.disclaimer" = "Fees change in real time based on market conditions and other factors.";
 "tron_usdt_fees.common.links.learn_more" = " Learn more";
 "tron_usdt_fees.trx_balance_popup.title" = "TRX Balance";
@@ -1057,3 +1483,43 @@
 "tron_usdt_fees.transaction_confirmation.no_enough_funds" = "No enough funds";
 "tron_usdt_fees.transaction_confirmation.refill" = "Refill";
 "tron_usdt_fees.transaction_confirmation.out_of_available" = "out of %@ available";
+
+"mystery_raffle.tickets.your_tickets" = "Your tickets";
+"mystery_raffle.tickets.final_count" = "Your final ticket count";
+"mystery_raffle.tickets.get_more" = "Get More";
+"mystery_raffle.tickets.count.one" = "1 ticket";
+"mystery_raffle.tickets.count.other" = "%d tickets";
+"mystery_raffle.countdown.ends_in" = "Ends in";
+"mystery_raffle.countdown.day" = "day";
+"mystery_raffle.countdown.days" = "days";
+"mystery_raffle.more_on" = "More on %@";
+"mystery_raffle.section.earn_tickets" = "How to earn tickets";
+"mystery_raffle.section.milestones" = "Milestone bonuses";
+"mystery_raffle.section.history" = "Tickets history";
+"mystery_raffle.swap_promo" = "Get 0%% fee cross-chain swaps";
+"mystery_raffle.faq.title" = "FAQ";
+"mystery_raffle.faq.about.question" = "What’s the Mystery Raffle?";
+"mystery_raffle.faq.about.answer" = "On %1$@ we will launch a multichain giveaway with more than 2,000 winners. Tickets are your chances to win.\n\nMigrate to multichain before then and you get %2$d tickets, our thank you for being an early Keeper user.\n\nPrizes, extra ways to earn tickets, and the full mechanic all get revealed next week.";
+"mystery_raffle.faq.migrate_before.question" = "What do I get if I migrate before %@?";
+"mystery_raffle.faq.migrate_before.answer" = "• %d tickets\n• 0%% cross-chain fee";
+"mystery_raffle.faq.migrate_after.question" = "What do I get if I migrate after %@?";
+"mystery_raffle.faq.migrate_after.answer" = "• 5 tickets";
+"mystery_raffle.faq.fee_end.question" = "When will the 0%% fee offer end?";
+"mystery_raffle.faq.fee_end.answer" = "On %@";
+"mystery_raffle.faq.earn.question" = "How do I earn tickets?";
+"mystery_raffle.faq.earn.answer" = "• %1$d tickets for migration from TON Wallet to Multichain Wallet\n• 1 ticket for every $100 cross-chain swap\n• Up to %2$d bonus tickets for completing Milestone Bonuses\n• Additional tasks to be revealed during the campaign";
+"mystery_raffle.faq.prizes.question" = "What are the prizes?";
+"mystery_raffle.faq.prizes.answer" = "• $100,000 in prizes\n• 2,000 winners\n• Stablecoins, NFTs and Batteries";
+"mystery_raffle.faq.end.question" = "When does the raffle end?";
+"mystery_raffle.faq.end.answer" = "• The raffle will be open for 6 weeks\n• It will end on %@";
+"mystery_raffle.faq.winners.question" = "When will you announce the winners?";
+"mystery_raffle.faq.winners.answer" = "Within 1 week after the raffle conclusion";
+"mystery_raffle.faq.rewards.question" = "When will rewards be distributed?";
+"mystery_raffle.faq.rewards.answer" = "Within 2 weeks after the raffle conclusion";
+"multichain.insufficient_native_fee.title" = "Insufficient %1$@ (%2$@) for fees in wallet %3$@";
+"multichain.insufficient_native_fee.caption" = "Required: %@ %@.";
+"multichain.insufficient_native_fee.deposit" = "Deposit %@";
+"multichain.transaction.error.failed_to_calculate_fee" = "Unable to calculate the network fee. Please try again.";
+"multichain.transaction.error.failed_to_prepare" = "Unable to prepare the transaction. Please try again.";
+"multichain.transaction.error.failed_to_send" = "Unable to send the transaction. Please try again.";
+"multichain.transaction.error.unsupported_asset" = "This asset is not supported for transfers.";

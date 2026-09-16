@@ -1,3 +1,3 @@
 appId: com.jbig.tonkeeper.dev
 ---
-- assertVisible: Receive Toncoin
+- assertVisible: ${"Receive " + NATIVE_TOKEN_DISPLAY_TEXT}

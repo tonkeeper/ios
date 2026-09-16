@@ -234,7 +234,7 @@ extension TKTextFieldInputView {
 
         clearButton.snp.makeConstraints { make in
             make.top.right.bottom.equalTo(self)
-            make.left.equalTo(stackView.snp.right).inset(-8)
+            make.left.equalTo(stackView.snp.rightMargin)
         }
     }
 

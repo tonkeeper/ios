@@ -1,4 +1,5 @@
 import Foundation
+import TKFeatureFlags
 
 extension BootConfiguration {
     public init(from decoder: Decoder) throws {
@@ -7,7 +8,6 @@ extension BootConfiguration {
 
         tonapiV2Endpoint = (try? container.decode(String.self, forKey: .tonapiV2Endpoint)) ?? empty.tonapiV2Endpoint
         tonapiTestnetHost = (try? container.decode(String.self, forKey: .tonapiTestnetHost)) ?? empty.tonapiTestnetHost
-        tonAPISSEEndpoint = (try? container.decode(String.self, forKey: .tonAPISSEEndpoint)) ?? empty.tonAPISSEEndpoint
         tonAPISSEEndpointV2 = try? container.decodeIfPresent(String.self, forKey: .tonAPISSEEndpointV2)
         batteryHost = (try? container.decode(String.self, forKey: .batteryHost)) ?? empty.batteryHost
         tonApiV2Key = (try? container.decode(String.self, forKey: .tonApiV2Key)) ?? empty.tonApiV2Key
@@ -48,12 +48,14 @@ extension BootConfiguration {
         tronSwapTitle = (try? container.decode(String.self, forKey: .tronSwapTitle)) ?? empty.tronSwapTitle
         tonkeeperApiUrl = try? container.decodeIfPresent(String.self, forKey: .tonkeeperApiUrl)
         multichainHelpUrl = try? container.decodeIfPresent(URL.self, forKey: .multichainHelpUrl) ?? empty.multichainHelpUrl
+        multichain = (try? container.decode(Endpoint.self, forKey: .multichain)) ?? empty.multichain
+        trading = (try? container.decode(Endpoint.self, forKey: .trading)) ?? empty.trading
+        explorers = (try? container.decode([ChainExplorer].self, forKey: .explorers)) ?? empty.explorers
     }
 
     enum CodingKeys: String, CodingKey {
         case tonapiV2Endpoint
         case tonapiTestnetHost
-        case tonAPISSEEndpoint = "tonapi_sse_endpoint"
         case tonAPISSEEndpointV2 = "tonapi_sse_endpoint_v2"
         case batteryHost
         case tonApiV2Key
@@ -94,6 +96,9 @@ extension BootConfiguration {
         case tronSwapTitle = "tron_swap_title"
         case tonkeeperApiUrl = "tonkeeper_api_url"
         case multichainHelpUrl = "multichain_help_url"
+        case multichain
+        case trading
+        case explorers
     }
 }
 
@@ -101,20 +106,29 @@ extension BootConfiguration.Flags {
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let defaults = BootConfiguration.Flags.default
+        let overrides = StaticFlagOverrides.shared?.bootConfigurationFlags ?? [:]
 
-        isSwapDisable = (try? container.decode(Bool.self, forKey: .isSwapDisable)) ?? defaults.isSwapDisable
-        stakingDisabled = (try? container.decode(Bool.self, forKey: .stakingDisabled)) ?? defaults.stakingDisabled
-        tronDisabled = (try? container.decode(Bool.self, forKey: .tronDisabled)) ?? defaults.tronDisabled
-        batteryDisabled = (try? container.decode(Bool.self, forKey: .batteryDisabled)) ?? defaults.batteryDisabled
-        gaslessDisabled = (try? container.decode(Bool.self, forKey: .gaslessDisabled)) ?? defaults.gaslessDisabled
-        usdeDisabled = (try? container.decode(Bool.self, forKey: .usdeDisabled)) ?? defaults.usdeDisabled
-        exchangeMethodsDisabled = (try? container.decode(Bool.self, forKey: .exchangeMethodsDisabled)) ?? defaults.exchangeMethodsDisabled
-        dappsDisabled = (try? container.decode(Bool.self, forKey: .dappsDisabled)) ?? defaults.dappsDisabled
-        storiesDisabled = (try? container.decode(Bool.self, forKey: .storiesDisabled)) ?? defaults.storiesDisabled
-        onboardingStoryDisabled = (try? container.decode(Bool.self, forKey: .onboardingStoryDisabled)) ?? defaults.onboardingStoryDisabled
-        nftsDisabled = (try? container.decode(Bool.self, forKey: .nftsDisabled)) ?? defaults.nftsDisabled
-        nativeSwapDisabled = (try? container.decode(Bool.self, forKey: .nativeSwapDisabled)) ?? defaults.nativeSwapDisabled
-        trxOnlyRegion = (try? container.decode(Bool.self, forKey: .trxOnlyRegion)) ?? defaults.trxOnlyRegion
+        func value(_ key: CodingKeys, default fallback: Bool) -> Bool {
+            if let override = overrides[key.rawValue] {
+                return override
+            }
+            return (try? container.decode(Bool.self, forKey: key)) ?? fallback
+        }
+
+        isSwapDisable = value(.isSwapDisable, default: defaults.isSwapDisable)
+        stakingDisabled = value(.stakingDisabled, default: defaults.stakingDisabled)
+        tronDisabled = value(.tronDisabled, default: defaults.tronDisabled)
+        batteryDisabled = value(.batteryDisabled, default: defaults.batteryDisabled)
+        gaslessDisabled = value(.gaslessDisabled, default: defaults.gaslessDisabled)
+        usdeDisabled = value(.usdeDisabled, default: defaults.usdeDisabled)
+        exchangeMethodsDisabled = value(.exchangeMethodsDisabled, default: defaults.exchangeMethodsDisabled)
+        dappsDisabled = value(.dappsDisabled, default: defaults.dappsDisabled)
+        storiesDisabled = value(.storiesDisabled, default: defaults.storiesDisabled)
+        onboardingStoryDisabled = value(.onboardingStoryDisabled, default: defaults.onboardingStoryDisabled)
+        nftsDisabled = value(.nftsDisabled, default: defaults.nftsDisabled)
+        nativeSwapDisabled = value(.nativeSwapDisabled, default: defaults.nativeSwapDisabled)
+        trxOnlyRegion = value(.trxOnlyRegion, default: defaults.trxOnlyRegion)
+        multichainEnabled = value(.multichainEnabled, default: defaults.multichainEnabled)
     }
 
     enum CodingKeys: String, CodingKey {
@@ -131,5 +145,6 @@ extension BootConfiguration.Flags {
         case onboardingStoryDisabled = "disable_onboarding_story"
         case nftsDisabled = "disable_nfts"
         case nativeSwapDisabled = "disable_native_swap"
+        case multichainEnabled = "multichain_enabled"
     }
 }

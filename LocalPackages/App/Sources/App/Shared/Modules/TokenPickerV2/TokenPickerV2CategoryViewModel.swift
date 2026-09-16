@@ -46,4 +46,9 @@ final class TokenPickerV2CategoryViewModel {
     func disappeared() {
         queryViewModels.values.forEach { $0.disappeared() }
     }
+
+    func invalidateCachedQueries() {
+        queryViewModels.values.forEach { $0.disappeared() }
+        queryViewModels.removeAll()
+    }
 }

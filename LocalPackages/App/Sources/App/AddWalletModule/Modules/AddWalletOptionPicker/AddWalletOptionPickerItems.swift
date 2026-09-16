@@ -1,30 +1,64 @@
+import KeeperCore
 import TKLocalize
 import TKUIKit
 import UIKit
 
-struct AddWalletOptionPickerSection: Hashable {
+struct AddWalletOptionPickerSection: Identifiable {
+    let type: AddWalletOptionPickerSectionType
     let header: String?
     let items: [AddWalletOptionPickerItem]
+
+    var id: AddWalletOptionPickerSectionType {
+        type
+    }
 }
 
-struct AddWalletOptionPickerItem: Hashable {
+struct AddWalletOptionPickerItem: Identifiable {
     let option: AddWalletOption
-    let cellConfiguration: TKListItemCell.Configuration
+    let title: String
+    let subtitle: String
+    let icon: UIImage
+    let tag: TKTagSwiftUIViewConfig?
+    let chains: [MultichainChain]
 
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(option)
+    var id: AddWalletOption {
+        option
+    }
+}
+
+enum AddWalletOptionPickerSectionType: CaseIterable, Hashable {
+    case main
+    case other
+    case developer
+
+    var header: String? {
+        switch self {
+        case .main:
+            nil
+        case .other:
+            TKLocales.AddWallet.Sections.otherOptions
+        case .developer:
+            TKLocales.AddWallet.Sections.forDevelopers
+        }
     }
 
-    static func == (lhs: AddWalletOptionPickerItem, rhs: AddWalletOptionPickerItem) -> Bool {
-        lhs.option == rhs.option
+    var options: [AddWalletOption] {
+        switch self {
+        case .main:
+            [.createRegular, .createMultichain, .importRegular]
+        case .other:
+            [.ledger, .keystone, .signer, .importWatchOnly]
+        case .developer:
+            [.importTetra]
+        }
     }
 }
 
 enum AddWalletOption: String, Hashable {
     case createRegular
+    case createMultichain
     case importRegular
     case importWatchOnly
-    case importTestnet
     case importTetra
     case signer
     case keystone
@@ -34,12 +68,12 @@ enum AddWalletOption: String, Hashable {
         switch self {
         case .createRegular:
             return TKLocales.AddWallet.Items.NewWallet.title
+        case .createMultichain:
+            return TKLocales.AddWallet.Items.NewWallet.title
         case .importRegular:
             return TKLocales.AddWallet.Items.ExistingWallet.title
         case .importWatchOnly:
             return TKLocales.AddWallet.Items.WatchOnly.title
-        case .importTestnet:
-            return TKLocales.AddWallet.Items.Testnet.title
         case .importTetra:
             return TKLocales.AddWallet.Items.Tetra.title
         case .signer:
@@ -55,12 +89,12 @@ enum AddWalletOption: String, Hashable {
         switch self {
         case .createRegular:
             return TKLocales.AddWallet.Items.NewWallet.subtitle
+        case .createMultichain:
+            return TKLocales.AddWallet.Items.NewWallet.subtitle
         case .importRegular:
             return TKLocales.AddWallet.Items.ExistingWallet.subtitle
         case .importWatchOnly:
             return TKLocales.AddWallet.Items.WatchOnly.subtitle
-        case .importTestnet:
-            return TKLocales.AddWallet.Items.Testnet.subtitle
         case .importTetra:
             return TKLocales.AddWallet.Items.Tetra.subtitle
         case .signer:
@@ -76,12 +110,12 @@ enum AddWalletOption: String, Hashable {
         switch self {
         case .createRegular:
             return .TKUIKit.Icons.Size28.plusCircle
+        case .createMultichain:
+            return .TKUIKit.Icons.Size28.plusOutline
         case .importRegular:
             return .TKUIKit.Icons.Size28.importWalletOutline
         case .importWatchOnly:
             return .TKUIKit.Icons.Size28.magnifyingGlassOutline
-        case .importTestnet:
-            return .TKUIKit.Icons.Size28.testnetOutline
         case .importTetra:
             return .TKUIKit.Icons.Size28.tetraOutline
         case .signer:
@@ -90,6 +124,15 @@ enum AddWalletOption: String, Hashable {
             return .TKUIKit.Icons.Size28.keystone
         case .ledger:
             return .TKUIKit.Icons.Size28.ledger
+        }
+    }
+
+    var badgeTagSwiftUIConfiguration: TKTagSwiftUIViewConfig? {
+        switch self {
+        case .createMultichain:
+            WalletMultichainPresentation.badgeTagSwiftUIConfiguration
+        case .createRegular, .importRegular, .importWatchOnly, .importTetra, .signer, .keystone, .ledger:
+            nil
         }
     }
 }

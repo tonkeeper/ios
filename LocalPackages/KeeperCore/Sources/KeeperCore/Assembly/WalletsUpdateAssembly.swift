@@ -24,12 +24,15 @@ public final class WalletsUpdateAssembly {
         self.configurationAssembly = configurationAssembly
     }
 
-    public func walletAddController() -> WalletAddController {
+    public func walletAddController(
+        multichainAssembly: MultichainAssembly
+    ) -> WalletAddController {
         WalletAddController(
             walletsStore: storesAssembly.walletsStore,
             tonProofTokenService: servicesAssembly.tonProofTokenService(),
             mnemonicAccess: secureAssembly.mnemonicAccess,
             tronBalanceService: servicesAssembly.tronBalanceService(),
+            multichainAssembly: multichainAssembly,
             configurationAssembly: configurationAssembly
         )
     }
@@ -38,6 +41,22 @@ public final class WalletsUpdateAssembly {
         WalletImportController(
             activeWalletService: servicesAssembly.activeWalletsService(),
             currencyService: servicesAssembly.currencyService()
+        )
+    }
+
+    public func importWalletKindPreviewLoader(
+        multichainAssembly: MultichainAssembly
+    ) -> ImportWalletKindPreviewLoader {
+        ImportWalletKindPreviewLoader(
+            walletImportController: walletImportController(),
+            importedWalletTronResolver: ImportedWalletTronResolver(
+                tronBalanceService: servicesAssembly.tronBalanceService()
+            ),
+            multichainService: servicesAssembly.multichainService(),
+            chainKitService: multichainAssembly.chainKitService,
+            walletSynchronizer: multichainAssembly.walletSynchronizer,
+            walletAuthEphemeralKeyProvider: multichainAssembly.walletAuthTokenProvider,
+            ratesService: servicesAssembly.ratesService()
         )
     }
 

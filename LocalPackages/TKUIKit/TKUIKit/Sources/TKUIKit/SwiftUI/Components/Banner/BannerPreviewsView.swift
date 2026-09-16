@@ -1,6 +1,7 @@
 import SwiftUI
 
-public struct BannerPreviewsView: View {
+struct BannerPreviewsView: View {
+    @Environment(\.tkPalette) private var palette
     @State private var singlePreviewID = UUID()
     @State private var stackPreviewID = UUID()
     @State private var customPreviewID = UUID()
@@ -8,9 +9,9 @@ public struct BannerPreviewsView: View {
     @State private var isStackPreviewVisible = true
     @State private var isCustomPreviewVisible = true
 
-    public init() {}
+    init() {}
 
-    public var body: some View {
+    var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 24) {
                 section(
@@ -63,8 +64,9 @@ public struct BannerPreviewsView: View {
             }
             .padding(.vertical, 16)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -82,11 +84,11 @@ private extension BannerPreviewsView {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
 
                     Text(description)
                         .textStyle(.body3)
-                        .foregroundStyle(Color(uiColor: .Text.secondary))
+                        .foregroundStyle(.textSecondary)
                 }
 
                 Spacer(minLength: 0)
@@ -94,12 +96,12 @@ private extension BannerPreviewsView {
                 Button(action: resetAction) {
                     Text("Reset")
                         .textStyle(.body3)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(
                             Capsule(style: .continuous)
-                                .fill(Color(uiColor: .Background.content))
+                                .fill(.backgroundContent)
                         )
                 }
                 .buttonStyle(BannerPreviewResetButtonStyle())
@@ -121,7 +123,7 @@ private extension BannerPreviewsView {
     var customBannerItem: BannerItem {
         BannerItem(
             id: "banner-custom",
-            title: "Boost rewards with Tonkeeper Battery",
+            title: "Boost rewards with Keeper Battery",
             description: "Top up once and cover network fees automatically",
             actionTitle: "Open",
             imageURL: URL(string: "https://picsum.photos/seed/tonkeeper-banner/800/400"),
@@ -165,4 +167,5 @@ private struct BannerPreviewResetButtonStyle: ButtonStyle {
 
 #Preview {
     BannerPreviewsView()
+        .tkThemed()
 }

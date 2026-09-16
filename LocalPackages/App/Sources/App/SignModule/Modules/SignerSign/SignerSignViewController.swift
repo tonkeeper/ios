@@ -60,7 +60,9 @@ final class SignerSignViewController: GenericViewViewController<SignerSignView>,
 
 private extension SignerSignViewController {
     func setup() {
+        addChild(scannerViewController)
         customView.embedScannerView(scannerViewController.view)
+        scannerViewController.didMove(toParent: self)
     }
 
     func setupBindings() {

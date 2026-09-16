@@ -1,9 +1,11 @@
+import TKLocalize
 import TKUIKit
 import UIKit
 
 public final class TKInputRecoveryPhraseViewController: GenericViewViewController<TKInputRecoveryPhraseView>, KeyboardObserving {
     private let viewModel: TKInputRecoveryPhraseViewModel
     private let bannerViewProvider: (() -> UIView)?
+    private let sensitiveContentController = TKSensitiveContentController()
 
     init(
         viewModel: TKInputRecoveryPhraseViewModel,
@@ -29,6 +31,11 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
 
     override public func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+
+        sensitiveContentController.start(
+            in: self,
+            title: TKLocales.Toast.sensitiveScreenshotWarning
+        )
         registerForKeyboardEvents()
     }
 
@@ -39,6 +46,8 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
 
     override public func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
+
+        sensitiveContentController.stop()
         unregisterFromKeyboardEvents()
     }
 

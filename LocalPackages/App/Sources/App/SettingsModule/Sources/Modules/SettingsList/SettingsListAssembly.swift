@@ -1,13 +1,12 @@
-import Foundation
-import KeeperCore
+import UIKit
 
 struct SettingsListAssembly {
     private init() {}
     static func module(configurator: SettingsListConfigurator)
-        -> (viewController: SettingsListViewController, output: SettingsListModuleOutput)
+        -> (viewController: UIViewController, viewModel: SettingsListViewModel)
     {
-        let viewModel = SettingsListViewModelImplementation(configurator: configurator)
-        let viewController = SettingsListViewController(viewModel: viewModel)
+        let viewModel = SettingsListViewModel(configurator: configurator)
+        let viewController = SettingsListHostingViewController(viewModel: viewModel)
         return (viewController, viewModel)
     }
 }

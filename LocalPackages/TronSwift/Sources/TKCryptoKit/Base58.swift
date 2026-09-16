@@ -1,11 +1,11 @@
 import Foundation
 
-public enum Base58 {
+enum Base58 {
     static let alphabets: [UInt8] = [UInt8]("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz".utf8)
     static let zero: UInt8 = 49
     static let base: Int = 58
 
-    public static func encode(_ data: Data) -> String {
+    static func encode(_ data: Data) -> String {
         var data = data
         var zerosCount = 0
 
@@ -22,7 +22,7 @@ public enum Base58 {
         return String(data: zeroesPart + signPart, encoding: .utf8) ?? ""
     }
 
-    public static func decode(_ string: String) -> Data {
+    static func decode(_ string: String) -> Data {
         guard !string.isEmpty else { return Data() }
         let stringBytes = string.utf8
 

@@ -9,9 +9,8 @@ import TKUIKit
 import UIKit
 
 @MainActor
-public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
+final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRouter> {
     var didRequireSign: ((TransferData, Wallet, UIViewController) async throws(WalletTransferSignError) -> SignedTransactions)?
-    var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
     var didRequestReplanishWallet: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
     private let wallet: Wallet
@@ -19,18 +18,23 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     private let resultHandler: SignRawControllerResultHandler?
     private let sendFrom: SendOpen.From
     private let appId: String?
+    private let initiatedBy: InitiatedBy
+    private let dappUrl: String?
     private let redAnalyticsConfiguration: RedAnalyticsConfiguration?
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
     private var lastSendAnalyticsPayload: SignRawSendAnalyticsPayload?
+    private var lastEmulatedTransaction: SignRawEmulatedTransaction?
 
-    public init(
+    init(
         router: WindowRouter,
         wallet: Wallet,
         transferProvider: @escaping () async throws -> Transfer,
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
         appId: String?,
+        initiatedBy: InitiatedBy,
+        dappUrl: String?,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
@@ -40,6 +44,8 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
         self.resultHandler = resultHandler
         self.sendFrom = sendFrom
         self.appId = appId
+        self.initiatedBy = initiatedBy
+        self.dappUrl = dappUrl
         self.redAnalyticsConfiguration = redAnalyticsConfiguration
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
@@ -52,7 +58,7 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openConfirmation()
     }
 
@@ -100,8 +106,14 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
                 base: resultHandler,
                 analyticsProvider: coreAssembly.analyticsProvider,
                 payloadProvider: { [weak self] in self?.lastSendAnalyticsPayload },
+                emulatedTransactionProvider: { [weak self] in self?.lastEmulatedTransaction },
                 sendFrom: sendFrom,
                 appId: resolvedAppId,
+                origin: TransactionOrigin(
+                    initiatedBy: initiatedBy,
+                    appId: resolvedAppId,
+                    dappUrl: dappUrl
+                ),
                 redSession: redSession,
                 wallet: wallet
             ),
@@ -155,11 +167,20 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
                     ) { _, newValue in newValue }
                 )
             }
-            guard case let .send(sendPayload) = payload else {
-                return
+            switch payload {
+            case let .send(sendPayload, emulation, transferType):
+                lastSendAnalyticsPayload = sendPayload
+                lastEmulatedTransaction = SignRawEmulatedTransaction(
+                    emulation: emulation,
+                    transferType: transferType
+                )
+                logSendConfirm(payload: sendPayload)
+            case let .general(emulation, transferType):
+                lastEmulatedTransaction = SignRawEmulatedTransaction(
+                    emulation: emulation,
+                    transferType: transferType
+                )
             }
-            lastSendAnalyticsPayload = sendPayload
-            logSendConfirm(payload: sendPayload)
         }
         module.output.didCancelAttempt = {
             redSession?.finish(
@@ -185,6 +206,9 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
             let internalPurchasingFlow: Bool
 
             switch error {
+            // Raised for a TRX transfer only, which this flow never performs.
+            case .tronFee:
+                return
             case let .blockchainFee(_, balance, requiredAmount):
                 let token = TonToken.ton
                 symbol = token.symbol
@@ -242,10 +266,9 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
     private func logSendConfirm(payload: SignRawSendAnalyticsPayload) {
         coreAssembly.analyticsProvider.log(SendConfirm(
             from: sendFrom.sendConfirmFrom,
-            assetNetwork: payload.assetNetwork,
-            tokenSymbol: payload.tokenSymbol,
+            asset: payload.asset,
             amount: payload.amount,
-            feePaidIn: toSendConfirmFeePaidIn(payload.feePaidIn),
+            feeAsset: feeAsset(payload.feePaidIn),
             appId: resolvedAppId
         ))
     }
@@ -323,12 +346,12 @@ public final class SignRawConfirmationCoordinator: RouterCoordinator<WindowRoute
         bottomSheetViewController.present(fromViewController: rootViewController)
     }
 
-    private func toSendConfirmFeePaidIn(_ value: SignRawSendAnalyticsPayload.FeePaidIn) -> SendConfirm.FeePaidIn {
+    private func feeAsset(_ value: SignRawSendAnalyticsPayload.FeePaidIn) -> FeeAsset {
         switch value {
         case .ton:
-            return .ton
+            return .coin
         case .battery:
-            return .battery
+            return .batteryCharges
         case .gasless:
             return .gasless
         }
@@ -343,8 +366,10 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
     let base: SignRawControllerResultHandler?
     let analyticsProvider: AnalyticsProvider
     let payloadProvider: () -> SignRawSendAnalyticsPayload?
+    let emulatedTransactionProvider: () -> SignRawEmulatedTransaction?
     let sendFrom: SendOpen.From
     let appId: String?
+    let origin: TransactionOrigin
     let redSession: RedAnalyticsSessionHolder?
     let wallet: Wallet
 
@@ -352,14 +377,15 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
         if let payload = payloadProvider() {
             analyticsProvider.log(SendSuccess(
                 from: sendFrom.sendSuccessFrom,
-                assetNetwork: payload.assetNetwork,
-                tokenSymbol: payload.tokenSymbol,
+                asset: payload.asset,
                 amount: payload.amount,
-                feePaidIn: toSendSuccessFeePaidIn(payload.feePaidIn),
+                feeAsset: feeAsset(payload.feePaidIn),
                 appId: resolvedAppId
             ))
         }
-        analyticsProvider.log(TransactionSent(wallet: wallet, eventType: .smartContractExec))
+        if let event = transactionSentEvent() {
+            analyticsProvider.log(event)
+        }
         redSession?.finish(
             outcome: .success,
             stage: "send"
@@ -371,10 +397,9 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
         if let payload = payloadProvider() {
             analyticsProvider.log(SendFailed(
                 from: sendFrom.sendFailedFrom,
-                assetNetwork: payload.assetNetwork,
-                tokenSymbol: payload.tokenSymbol,
+                asset: payload.asset,
                 amount: payload.amount,
-                feePaidIn: toSendFailedFeePaidIn(payload.feePaidIn),
+                feeAsset: feeAsset(payload.feePaidIn),
                 errorCode: error.code,
                 errorMessage: error.message,
                 appId: resolvedAppId
@@ -396,23 +421,30 @@ private struct SignRawAnalyticsResultHandler: SignRawControllerResultHandler {
         base?.didCancel()
     }
 
-    private func toSendSuccessFeePaidIn(_ value: SignRawSendAnalyticsPayload.FeePaidIn) -> SendSuccess.FeePaidIn {
-        switch value {
-        case .ton:
-            return .ton
-        case .battery:
-            return .battery
-        case .gasless:
-            return .gasless
+    private func transactionSentEvent() -> TransactionSent? {
+        guard let emulated = emulatedTransactionProvider() else {
+            return TransactionSent(
+                wallet: wallet,
+                callDetail: .unknown,
+                callAmount: 0,
+                feeAsset: .coin,
+                origin: origin
+            )
         }
+        return TransactionSent(
+            wallet: wallet,
+            emulation: emulated.emulation,
+            transferType: emulated.transferType,
+            origin: origin
+        )
     }
 
-    private func toSendFailedFeePaidIn(_ value: SignRawSendAnalyticsPayload.FeePaidIn) -> SendFailed.FeePaidIn {
+    private func feeAsset(_ value: SignRawSendAnalyticsPayload.FeePaidIn) -> FeeAsset {
         switch value {
         case .ton:
-            return .ton
+            return .coin
         case .battery:
-            return .battery
+            return .batteryCharges
         case .gasless:
             return .gasless
         }
@@ -439,4 +471,9 @@ private extension SendOpen.From {
     var requiresAppId: Bool {
         self == .tonconnectLocal
     }
+}
+
+private struct SignRawEmulatedTransaction {
+    let emulation: SignRawEmulation
+    let transferType: TransferType
 }

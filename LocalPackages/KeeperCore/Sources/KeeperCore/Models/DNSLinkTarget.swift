@@ -28,26 +28,6 @@ public enum DNSLink {
                 return domain.friendlyAddress.toShort()
             }
         }
-
-        public var name: String? {
-            switch self {
-            case let .domain(domain):
-                return domain.domain
-            default:
-                return nil
-            }
-        }
-
-        public var isBouncable: Bool {
-            switch self {
-            case let .friendly(friendlyAddress):
-                return friendlyAddress.isBounceable
-            case .raw:
-                return false
-            case let .domain(domain):
-                return domain.friendlyAddress.isBounceable
-            }
-        }
     }
 
     case link(address: LinkAddress)

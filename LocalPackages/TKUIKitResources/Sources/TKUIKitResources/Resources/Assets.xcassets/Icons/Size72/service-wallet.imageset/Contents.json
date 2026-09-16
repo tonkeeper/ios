@@ -1,0 +1,15 @@
+{
+  "images" : [
+    {
+      "filename" : "service-wallet-72.pdf",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  },
+  "properties" : {
+    "preserves-vector-representation" : true
+  }
+}

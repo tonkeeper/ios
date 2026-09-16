@@ -1,5 +1,5 @@
 import TKLocalize
-import TKScreenKit
+import TonSwift
 
 struct OnboardingCheckRecoveryPhraseProvider: TKCheckRecoveryPhraseProvider {
     let phrase: [String]
@@ -14,5 +14,13 @@ struct OnboardingCheckRecoveryPhraseProvider: TKCheckRecoveryPhraseProvider {
 
     var buttonTitle: String {
         TKLocales.Actions.continueAction
+    }
+
+    var validWords: [String] {
+        Mnemonic.words
+    }
+
+    var errorCaption: String {
+        TKLocales.Backup.Check.Input.error
     }
 }

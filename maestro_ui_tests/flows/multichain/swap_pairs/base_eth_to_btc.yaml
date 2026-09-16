@@ -1,0 +1,17 @@
+# Multichain Swap success: Base ETH → BTC at $4 fiat send amount.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow: "../../../steps/swap/open_swap.yaml"
+- runFlow:
+    file: "../../../steps/swap/select_pair.yaml"
+    env:
+      SEND_QUERY: "ETH"
+      SEND_ASSET_ID: "token_picker_asset_base_eth"
+      RECEIVE_QUERY: "BTC"
+      RECEIVE_ASSET_ID: "token_picker_asset_btc_btc"
+- runFlow:
+    file: "../../../steps/swap/enter_fiat_amount.yaml"
+    env:
+      FIAT_AMOUNT: "4"
+- runFlow: "../../../steps/swap/confirm_and_sign.yaml"

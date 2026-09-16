@@ -12,15 +12,18 @@ final class DappViewController: UIViewController {
 
     private var bridgeWebViewController: TKBridgeWebViewController?
     private let deeplinkHandler: (_ deeplink: Deeplink) -> Void
+    private let deeplinkParser: DeeplinkParser
     private let logger: Logger
 
     init(
         viewModel: DappViewModel,
         logger: Logger,
-        deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void
+        deeplinkHandler: @escaping (_ deeplink: Deeplink) -> Void,
+        deeplinkParser: DeeplinkParser
     ) {
         self.viewModel = viewModel
         self.deeplinkHandler = deeplinkHandler
+        self.deeplinkParser = deeplinkParser
         self.logger = logger
         super.init(nibName: nil, bundle: nil)
     }
@@ -76,9 +79,17 @@ private extension DappViewController {
                     guard let self else {
                         return
                     }
-                    let deeplinkParser = DeeplinkParser()
-                    let deeplink = try deeplinkParser.parse(string: url)
-                    self.deeplinkHandler(deeplink)
+                    do {
+                        let deeplink = try deeplinkParser.parse(
+                            string: url,
+                            source: .dapp
+                        )
+                        self.deeplinkHandler(deeplink)
+                    } catch let error as DeeplinkParserError where error.isSilent {
+                        return
+                    } catch {
+                        throw error
+                    }
                 },
                 customizeWebView: { [weak self] webView in
                     self?.viewModel.webViewCustomizationHandler?(webView)

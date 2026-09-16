@@ -1,0 +1,14 @@
+# Opens the Network fee method picker from a confirmation screen.
+appId: com.jbig.tonkeeper
+---
+- extendedWaitUntil:
+    visible:
+      id: ".*switch.*"
+    timeout: 180000
+- tapOn:
+    id: ".*switch.*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: Choose method
+    timeout: 15000

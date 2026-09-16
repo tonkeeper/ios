@@ -1,5 +1,6 @@
 import EventSource
 import Foundation
+import KeeperCoreComponents
 import TKLogging
 import TonConnectAPI
 import TonSwift
@@ -46,6 +47,7 @@ public actor TonConnectEventsStore {
                 .map { $0.apps.map { $0.keyPair.publicKey.hexString } }
                 .flatMap { $0 }
                 .joined(separator: ",")
+            guard !ids.isEmpty else { return }
 
             let errorParser = EventSourceDecodableErrorParser<TonConnectError>()
             let stream = try await EventSource.eventSource({
@@ -65,6 +67,7 @@ public actor TonConnectEventsStore {
 
     public func addObserver(_ observer: TonConnectEventsStoreObserver) {
         removeNilObservers()
+        guard !observers.contains(where: { $0.observer === observer }) else { return }
         observers = observers + CollectionOfOne(
             TonConnectEventsStoreObserverWrapper(observer: observer)
         )
@@ -105,7 +108,7 @@ private extension TonConnectEventsStore {
 
             do {
                 let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
-                guard let senderPublicKey = Data(hex: app.clientId),
+                guard let senderPublicKey = Data(strictHex: app.clientId),
                       let message = Data(base64Encoded: tonConnectEvent.message) else { continue }
                 let decryptedMessage = try sessionCrypto
                     .decrypt(message: message, senderPublicKey: senderPublicKey)

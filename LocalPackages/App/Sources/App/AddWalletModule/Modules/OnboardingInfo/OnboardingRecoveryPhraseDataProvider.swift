@@ -1,12 +1,15 @@
+import AppUI
 import TKLocalize
-import TKScreenKit
-import TKUIKit
 
 struct OnboardingRecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
+    private enum ActionID {
+        static let checkBackup = "checkBackup"
+    }
+
     var didTapNext: (() -> Void)?
 
-    var model: TKRecoveryPhraseView.Model {
-        createModel()
+    var state: RecoveryPhraseScreenState {
+        createState()
     }
 
     private let phrase: [String]
@@ -17,36 +20,30 @@ struct OnboardingRecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
 }
 
 private extension OnboardingRecoveryPhraseDataProvider {
-    func createModel() -> TKRecoveryPhraseView.Model {
-        let phraseListViewModel = TKRecoveryPhraseListView.Model(
-            wordModels: phrase.enumerated().map { index, word in
-                TKRecoveryPhraseItemView.Model(index: index + 1, word: word)
-            }
-        )
-
-        var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .primary,
-            size: .large
-        )
-        continueButtonConfiguration.content = TKButton.Configuration.Content(
-            title: .plainString(TKLocales.Actions.continueAction)
-        )
-        continueButtonConfiguration.action = {
-            self.didTapNext?()
-        }
-
-        return TKRecoveryPhraseView.Model(
-            titleDescriptionModel: TKTitleDescriptionView.Model(
-                title: TKLocales.Backup.Check.title,
-                bottomDescription: TKLocales.Backup.Check.caption
-            ),
-            phraseListViewModel: phraseListViewModel,
-            buttons: [
-                TKRecoveryPhraseView.Model.Button(
-                    configuration: continueButtonConfiguration,
-                    isFullWidth: true
+    func createState() -> RecoveryPhraseScreenState {
+        RecoveryPhraseScreenState(
+            title: TKLocales.Backup.Check.title,
+            caption: TKLocales.Backup.Check.caption,
+            words: phrase.enumerated().map {
+                RecoveryPhraseScreenState.Word(
+                    index: $0.offset + 1,
+                    value: $0.element
+                )
+            },
+            actions: [
+                RecoveryPhraseScreenState.Action(
+                    id: ActionID.checkBackup,
+                    title: TKLocales.Backup.Check.Button.title,
+                    style: .primary
                 ),
             ]
         )
+    }
+}
+
+extension OnboardingRecoveryPhraseDataProvider {
+    func didTapAction(id: RecoveryPhraseScreenState.Action.ID) {
+        guard id == ActionID.checkBackup else { return }
+        didTapNext?()
     }
 }

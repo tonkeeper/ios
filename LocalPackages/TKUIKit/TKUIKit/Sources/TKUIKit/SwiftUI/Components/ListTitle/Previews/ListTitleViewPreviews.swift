@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct ListTitleViewPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -10,7 +12,7 @@ public struct ListTitleViewPreviews: View {
                     config: .text("Title")
                 )
                 .padding(.horizontal, Layout.rowHorizontalPadding)
-                .background(Color(uiColor: .Background.content))
+                .background(.backgroundContent)
 
                 ListTitleView(
                     config: .text(
@@ -22,18 +24,34 @@ public struct ListTitleViewPreviews: View {
                     )
                 )
                 .padding(.horizontal, Layout.rowHorizontalPadding)
-                .background(Color(uiColor: .Background.content))
+                .background(.backgroundContent)
 
                 ListTitleView(
-                    config: .shimmer
+                    config: .text(
+                        "Title",
+                        titleAction: {}
+                    )
                 )
                 .padding(.horizontal, Layout.rowHorizontalPadding)
-                .background(Color(uiColor: .Background.content))
+                .background(.backgroundContent)
+
+                ListTitleView(
+                    config: .shimmer(hasAccessory: true)
+                )
+                .padding(.horizontal, Layout.rowHorizontalPadding)
+                .background(.backgroundContent)
+
+                ListTitleView(
+                    config: .shimmer(hasAccessory: false)
+                )
+                .padding(.horizontal, Layout.rowHorizontalPadding)
+                .background(.backgroundContent)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -41,16 +59,13 @@ public struct ListTitleViewPreviews: View {
 
 private extension ListTitleViewPreviews {
     enum Layout {
-        static let contentVerticalPadding: CGFloat = 24
         static let sectionSpacing: CGFloat = 24
         static let rowHorizontalPadding: CGFloat = 16
-        static let sectionHeaderBottomPadding: CGFloat = 12
     }
 }
 
 #Preview {
     ListTitleViewPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

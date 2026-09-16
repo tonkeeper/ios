@@ -10,7 +10,7 @@ public protocol SendService {
         params: [EmulateMessageToWalletRequestParamsInner]?,
         currency: Currency?
     ) async throws -> TonAPI.MessageConsequences
-    func sendTransaction(boc: String, wallet: Wallet) async throws
+    func sendTransaction(boc: String, wallet: Wallet, headers: [String: String]) async throws
     func sendTransactions(batch: [String], wallet: Wallet) async throws
     func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
     func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload
@@ -29,6 +29,10 @@ public extension SendService {
         currency: Currency? = nil
     ) async throws -> TonAPI.MessageConsequences {
         try await self.loadTransactionInfo(boc: boc, wallet: wallet, params: params, currency: currency)
+    }
+
+    func sendTransaction(boc: String, wallet: Wallet) async throws {
+        try await sendTransaction(boc: boc, wallet: wallet, headers: [:])
     }
 }
 
@@ -54,9 +58,9 @@ final class SendServiceImplementation: SendService {
             .emulateMessageWallet(boc: boc, params: params, currency: currency?.code)
     }
 
-    func sendTransaction(boc: String, wallet: Wallet) async throws {
+    func sendTransaction(boc: String, wallet: Wallet, headers: [String: String]) async throws {
         try await apiProvider.api(wallet.network)
-            .sendTransaction(boc: boc)
+            .sendTransaction(boc: boc, headers: headers)
     }
 
     func sendTransactions(batch: [String], wallet: Wallet) async throws {

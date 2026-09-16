@@ -16,9 +16,9 @@ public struct DepositViewQrCode: Codable, JSONEncodable, Hashable {
     public var eventName: String = "deposit_view_qr_code"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
-    /** Carried from deposit_view_send_asset */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var sellAsset: String
-    /** Carried from deposit_view_send_asset */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
 
     public init(eventName: String = "deposit_view_qr_code", from: RampSource, addFundsOption: AddFundsOption, sellAsset: String, buyAsset: String) {

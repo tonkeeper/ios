@@ -3,12 +3,19 @@ import TKUIKit
 import UIKit
 
 final class SendV3ViewController: GenericViewViewController<SendV3View>, KeyboardObserving {
+    enum Autofocus {
+        case recipient
+        case amount
+    }
+
     private let viewModel: SendV3ViewModel
+    private let autofocus: Autofocus
 
     private var isFirstAppear = true
 
-    init(viewModel: SendV3ViewModel) {
+    init(viewModel: SendV3ViewModel, autofocus: Autofocus = .recipient) {
         self.viewModel = viewModel
+        self.autofocus = autofocus
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -29,9 +36,23 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         registerForKeyboardEvents()
-        if isFirstAppear {
+        guard isFirstAppear else { return }
+        isFirstAppear = false
+        if let coordinator = transitionCoordinator, animated {
+            coordinator.animate(alongsideTransition: nil) { _ in
+                self.applyAutofocus()
+            }
+        } else {
+            applyAutofocus()
+        }
+    }
+
+    private func applyAutofocus() {
+        switch autofocus {
+        case .recipient:
             customView.recipientTextField.becomeFirstResponder()
-            isFirstAppear = false
+        case .amount:
+            customView.amountInputView.amountTextField.becomeFirstResponder()
         }
     }
 
@@ -94,6 +115,8 @@ private extension SendV3ViewController {
 
         customView.recipientTextField.accessibilityIdentifier = "input_field"
         customView.amountInputView.amountTextField.accessibilityIdentifier = "amount"
+        customView.amountInputView.tokenView.accessibilityIdentifier = "send_token"
+        customView.amountInputView.tokenView.tokenTitleAccessibilityIdentifier = "send_token_title"
 
         let tapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(viewTapGestureHandler))
         tapGestureRecognizer.delegate = self
@@ -122,9 +145,14 @@ private extension SendV3ViewController {
                     actionItems: recipientDescription.actionItems
                 )
                 customView.recipientDescriptionContainer.isHidden = false
+                customView.stackView.setCustomSpacing(8, after: customView.recipientTextField)
             } else {
                 customView.recipientDescriptionLabel.attributedText = nil
                 customView.recipientDescriptionContainer.isHidden = true
+                customView.stackView.setCustomSpacing(
+                    UIStackView.spacingUseDefault,
+                    after: customView.recipientTextField
+                )
             }
 
             switch viewState.balanceState.remaining {
@@ -136,6 +164,11 @@ private extension SendV3ViewController {
                 customView.amountInputView.balanceView.insufficientLabel.isHidden = true
 
                 customView.amountInputView.balanceView.remainingView.remaining = "\(TKLocales.Send.remaining) \(value)"
+            case let .balance(value):
+                customView.amountInputView.balanceView.remainingView.isHidden = false
+                customView.amountInputView.balanceView.insufficientLabel.isHidden = true
+
+                customView.amountInputView.balanceView.remainingView.remaining = "\(TKLocales.Send.balance) \(value)"
             }
             customView.amountInputView.balanceView.convertedValue = viewState.balanceState.converted
             customView.amountInputView.balanceView.limitError = viewState.balanceState.limitError

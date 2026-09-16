@@ -61,6 +61,6 @@ final class TokenDetailsHeaderViewController: UIViewController {
 
 private extension TokenDetailsHeaderViewController {
     enum Layout {
-        static let chartContainerHeight: CGFloat = TKUIKit.ChartView.height(showsBottonButtons: true)
+        static let chartContainerHeight: CGFloat = TKUIKit.ChartView.height(showsBottomButtons: true)
     }
 }

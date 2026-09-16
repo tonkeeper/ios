@@ -21,13 +21,15 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
         let didAvailableExtraTypes: Bool
         let rate: Configuration.Item
         let fee: Configuration.Item
+        let reserve: Configuration.Item
         let provider: Configuration.Item
         let slippage: Configuration.Item
         let valueDifference: Configuration.Item?
         let didTapEdit: ((Bool) -> Void)?
         let didTapFeeType: ((UIView) -> Void)?
-        let didTapSlippageInfo: (() -> Void)?
-        let didTapValueDifferenceInfo: (() -> Void)?
+        let didTapSlippageInfo: ((UIView) -> Void)?
+        let didTapValueDifferenceInfo: ((UIView) -> Void)?
+        let didTapReserveInfo: ((UIView) -> Void)?
         let tradeStartDeadline: Date?
         let didTimerFinished: (() -> Void)?
 
@@ -64,6 +66,7 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
     private let receiveView = NativeSwapTransactionConfirmationReceiveView()
     private let rateView = NativeSwapTransactionConfirmationItemView()
     private let feeView = NativeSwapTransactionConfirmationItemView()
+    private let reserveView = NativeSwapTransactionConfirmationItemView()
     private let providerView = NativeSwapTransactionConfirmationItemView()
     private let slippageView = NativeSwapTransactionConfirmationItemView()
     private let valueDifference = NativeSwapTransactionConfirmationItemView()
@@ -136,6 +139,7 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
 
         receiveContainerView.addSubview(rateView)
         receiveContainerView.addSubview(feeView)
+        receiveContainerView.addSubview(reserveView)
         receiveContainerView.addSubview(providerView)
         receiveContainerView.addSubview(slippageView)
         receiveContainerView.addSubview(valueDifference)
@@ -187,6 +191,12 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
             make.height.equalTo(36)
         }
 
+        reserveView.snp.makeConstraints { make in
+            make.top.equalTo(feeView.snp.bottom)
+            make.left.right.equalTo(receiveContainerView)
+            make.height.equalTo(36)
+        }
+
         valueDifference.snp.makeConstraints { make in
             make.top.equalTo(slippageView.snp.bottom)
             make.left.right.equalTo(receiveContainerView)
@@ -194,7 +204,7 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
         }
 
         providerView.snp.makeConstraints { make in
-            make.top.equalTo(feeView.snp.bottom)
+            make.top.equalTo(reserveView.snp.bottom)
             make.left.right.equalTo(receiveContainerView)
             make.height.equalTo(36)
         }
@@ -221,16 +231,41 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
             title: configuration.fee.title,
             value: configuration.fee.value,
             captionModel: configuration.didAvailableExtraTypes ? TKPlainButton.Model(
-                title: TKLocales.NativeSwap.Confirm.Actions.edit.withTextStyle(
-                    .body2,
-                    color: .Text.accent
+                title: makeFeeEditCaptionTitle(),
+                icon: TKPlainButton.Model.Icon(
+                    image: .TKUIKit.Icons.Size12.chevronRight,
+                    tintColor: .Text.accent,
+                    padding: .init(top: 4, left: 2, bottom: 4, right: 0)
                 ),
                 action: { [weak self] in
                     guard let sourceView = self?.feeView.captionButton else { return }
 
                     configuration.didTapFeeType?(sourceView)
                 }
-            ) : nil
+            ) : nil,
+            captionAccessibilityIdentifier: configuration.didAvailableExtraTypes
+                ? "native_swap_confirm_fee_edit"
+                : nil
+        )
+        reserveView.update(
+            title: configuration.reserve.title,
+            value: configuration.reserve.value,
+            captionModel: configuration.didTapReserveInfo == nil ? nil : .init(
+                title: nil,
+                icon: TKPlainButton.Model.Icon(
+                    image: .TKUIKit.Icons.Size16.informationCircle,
+                    tintColor: .Icon.secondary,
+                    padding: .zero
+                ),
+                action: { [weak self] in
+                    guard let sourceView = self?.reserveView.captionButton else { return }
+
+                    configuration.didTapReserveInfo?(sourceView)
+                }
+            ),
+            captionAccessibilityIdentifier: configuration.didTapReserveInfo == nil
+                ? nil
+                : "native_swap_confirm_fee_info"
         )
         providerView.update(
             title: configuration.provider.title,
@@ -247,8 +282,10 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
                     tintColor: .Icon.secondary,
                     padding: .zero
                 ),
-                action: {
-                    configuration.didTapSlippageInfo?()
+                action: { [weak self] in
+                    guard let sourceView = self?.slippageView.captionButton else { return }
+
+                    configuration.didTapSlippageInfo?(sourceView)
                 }
             )
         )
@@ -277,8 +314,10 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
                         tintColor: .Icon.secondary,
                         padding: .zero
                     ),
-                    action: {
-                        configuration.didTapValueDifferenceInfo?()
+                    action: { [weak self] in
+                        guard let sourceView = self?.valueDifference.captionButton else { return }
+
+                        configuration.didTapValueDifferenceInfo?(sourceView)
                     }
                 )
             )
@@ -308,6 +347,13 @@ final class NativeSwapTransactionConfirmationContainerView: UIView {
         receiveView.didTapEdit = {
             configuration.didTapEdit?(false)
         }
+    }
+
+    private func makeFeeEditCaptionTitle() -> NSAttributedString {
+        let title = NSMutableAttributedString()
+        title.append("· ".withTextStyle(.body2, color: .Text.tertiary))
+        title.append(TKLocales.NativeSwap.Confirm.Actions.edit.withTextStyle(.body2, color: .Text.accent))
+        return title
     }
 
     private func setTradeStartDeadline(_ deadline: Date?, didTimerFinished: (() -> Void)? = nil) {

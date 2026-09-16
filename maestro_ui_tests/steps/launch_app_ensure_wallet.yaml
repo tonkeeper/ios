@@ -1,0 +1,18 @@
+appId: com.jbig.tonkeeper
+---
+- launchApp
+
+- runFlow:
+    when:
+      visible: Enter passcode
+    file: password/enter_password.yaml
+
+- runFlow:
+    when:
+      visible: Import existing wallet
+    file: import_wallet.yaml
+
+- runFlow: close_home_overlays.yaml
+
+- waitForAnimationToEnd:
+    timeout: 3000

@@ -9,7 +9,8 @@ public final class WalletAddController {
     private let walletsStore: WalletsStore
     private let tonProofTokenService: TonProofTokenService
     private let mnemonicAccess: MnemonicAccess
-    private let tronBalanceService: TronBalanceService
+    private let importedWalletTronResolver: ImportedWalletTronResolver
+    private let multichainAssembly: MultichainAssembly
     private let configurationAssembly: ConfigurationAssembly
 
     init(
@@ -17,12 +18,16 @@ public final class WalletAddController {
         tonProofTokenService: TonProofTokenService,
         mnemonicAccess: MnemonicAccess,
         tronBalanceService: TronBalanceService,
+        multichainAssembly: MultichainAssembly,
         configurationAssembly: ConfigurationAssembly
     ) {
         self.walletsStore = walletsStore
         self.tonProofTokenService = tonProofTokenService
         self.mnemonicAccess = mnemonicAccess
-        self.tronBalanceService = tronBalanceService
+        self.importedWalletTronResolver = ImportedWalletTronResolver(
+            tronBalanceService: tronBalanceService
+        )
+        self.multichainAssembly = multichainAssembly
         self.configurationAssembly = configurationAssembly
     }
 
@@ -30,9 +35,13 @@ public final class WalletAddController {
         metaData: WalletMetaData,
         passcode: String,
         mnemonicWords: [String],
-        setupSettings: WalletSetupSettings = WalletSetupSettings()
+        setupSettings: WalletSetupSettings = WalletSetupSettings(),
+        derivationType: DerivationType? = nil
     ) async throws {
-        let mnemonic = CoreMnemonic(mnemonicWords: mnemonicWords, type: .guessByWords(mnemonicWords))
+        let mnemonic = CoreMnemonic(
+            mnemonicWords: mnemonicWords,
+            type: derivationType ?? .guessByWords(mnemonicWords)
+        )
         let keyPair = try mnemonic.toKeyPair()
         let walletIdentity = WalletIdentity(
             network: .mainnet,
@@ -43,7 +52,11 @@ public final class WalletAddController {
             identity: walletIdentity,
             metaData: metaData,
             setupSettings: setupSettings,
-            batterySettings: BatterySettings()
+            batterySettings: BatterySettings(),
+            tron: Self.deriveWalletTron(
+                mnemonic: mnemonic,
+                network: .mainnet
+            )
         )
 
         await tonProofTokenService.loadTokensFor(
@@ -55,6 +68,7 @@ public final class WalletAddController {
         try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: passcode)
 
         await walletsStore.addWallets([wallet])
+        await enrichWalletsIfNeeded(passcode: passcode)
     }
 
     public enum AddWalletRevisionError: Swift.Error {
@@ -82,12 +96,10 @@ public final class WalletAddController {
             kind: newWalletKind
         )
 
-        let wallet = Wallet(
-            id: UUID().uuidString,
+        let wallet = Self.makeWalletRevision(
+            sourceWallet: wallet,
             identity: newWalletIdentity,
-            metaData: wallet.metaData,
-            setupSettings: wallet.setupSettings,
-            batterySettings: BatterySettings()
+            mnemonic: mnemonic
         )
 
         await tonProofTokenService.loadTokensFor(
@@ -98,6 +110,7 @@ public final class WalletAddController {
         )
         try await mnemonicAccess.saveMnemonic(mnemonic, wallet: wallet, passcode: passcode)
         await walletsStore.addWallets([wallet])
+        await enrichWalletsIfNeeded(passcode: passcode)
     }
 
     public func importWallets(
@@ -105,12 +118,14 @@ public final class WalletAddController {
         revisions: [WalletContractVersion],
         metaData: WalletMetaData,
         passcode: String,
-        network: Network
+        network: Network,
+        walletKindPreference: ImportWalletKindPreference
     ) async throws {
         let keyPair = try mnemonic.toKeyPair()
-        let tron = await loadImportedWalletTronIfPositiveBalance(
-            mnemonicWords: mnemonic.mnemonicWords,
-            network: network
+        let tronResolution = await importedWalletTronResolver.resolve(
+            mnemonic: mnemonic,
+            network: network,
+            walletKindPreference: walletKindPreference
         )
         let addPostfix = revisions.count > 1
 
@@ -133,7 +148,8 @@ public final class WalletAddController {
                 metaData: revisionMetaData,
                 setupSettings: WalletSetupSettings(backupDate: Date()),
                 batterySettings: BatterySettings(),
-                tron: tron
+                tron: tronResolution.tron,
+                multichain: tronResolution.multichain
             )
         }
 
@@ -151,40 +167,47 @@ public final class WalletAddController {
             passcode: passcode
         )
         await walletsStore.addWallets(wallets)
+        await enrichImportedWallets(wallets, passcode: passcode)
+        await reportRaffleImport(of: wallets)
     }
 
-    private func loadImportedWalletTronIfPositiveBalance(
-        mnemonicWords: [String],
-        network: Network
-    ) async -> WalletTron? {
-        guard network == .mainnet else {
-            return nil
+    static func makeWalletRevision(
+        sourceWallet: Wallet,
+        identity: WalletIdentity,
+        mnemonic: CoreMnemonic
+    ) -> Wallet {
+        let tron: WalletTron?
+        let multichain: MultichainWallet?
+        if case .Regular = identity.kind {
+            tron = sourceWallet.tron ?? deriveWalletTron(
+                mnemonic: mnemonic,
+                network: identity.network
+            )
+            multichain = tron == nil ? nil : .unavailable
+        } else {
+            tron = nil
+            multichain = nil
         }
 
-        guard let tronKeyPair = try? TonTron.derivedKeyPair(
-            tonMnemonic: mnemonicWords,
-            index: 0,
-            useBip39DerivationForBip39Mnemonics: configurationAssembly
-                .configuration
-                .featureEnabled(.tronBip39ImportFix)
-        ),
-            let tronAddress = try? TronSwift.Address(publicKey: tronKeyPair.publicKey)
-        else {
-            return nil
-        }
-
-        guard let tronBalance = try? await tronBalanceService.loadBalance(
-            address: tronAddress,
-            includingTransferFees: true
-        ), !tronBalance.amount.isZero else {
-            return nil
-        }
-
-        return WalletTron(
-            publicKey: tronKeyPair.publicKey,
-            address: tronAddress,
-            isOn: false
+        return Wallet(
+            id: UUID().uuidString,
+            identity: identity,
+            metaData: sourceWallet.metaData,
+            setupSettings: sourceWallet.setupSettings,
+            batterySettings: BatterySettings(),
+            tron: tron,
+            multichain: multichain
         )
+    }
+
+    private static func deriveWalletTron(
+        mnemonic: CoreMnemonic,
+        network: Network
+    ) -> WalletTron? {
+        guard network == .mainnet, mnemonic.type == .ton else {
+            return nil
+        }
+        return WalletTron(tonMnemonic: mnemonic.mnemonicWords)
     }
 
     public func importWatchOnlyWallet(
@@ -306,5 +329,34 @@ public final class WalletAddController {
             )
         }
         await walletsStore.addWallets(wallets)
+    }
+}
+
+private extension WalletAddController {
+    func enrichWalletsIfNeeded(passcode: String) async {
+        guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
+            return
+        }
+        await multichainAssembly.walletAddressesEnricher.enrichMissingWallets(passcode: passcode)
+        await multichainAssembly.walletSyncController.syncPendingWallets(passcode: passcode)
+        await multichainAssembly.walletSyncController.warmMissingAppKeys(passcode: passcode)
+    }
+
+    /// A raffle task can send the user here to import a wallet, and the tickets go to the wallet
+    /// the task was started from. Only the local ids are handed over: the reporter resolves them
+    /// once the wallet is registered, which the enrichment above does not always get to.
+    func reportRaffleImport(of wallets: [Wallet]) async {
+        await multichainAssembly.raffleImportReporter.recordImported(walletIds: wallets.map(\.id))
+    }
+
+    func enrichImportedWallets(_ wallets: [Wallet], passcode: String) async {
+        let configuration = configurationAssembly.configuration
+        if configuration.featureEnabled(.multichainEnabled) {
+            await enrichWalletsIfNeeded(passcode: passcode)
+        } else if configuration.featureEnabled(.importMultichainEnabled) {
+            await multichainAssembly.walletAddressesEnricher.enrichWallets(wallets, passcode: passcode)
+            await multichainAssembly.walletSyncController.syncPendingWallets(passcode: passcode)
+            await multichainAssembly.walletSyncController.warmMissingAppKeys(passcode: passcode)
+        }
     }
 }

@@ -1,0 +1,11 @@
+# Send/Receive live under "Your balance" (below the chart), not in the header.
+appId: com.jbig.tonkeeper
+---
+- scrollUntilVisible:
+    element:
+      id: trade_asset_details_send
+    direction: DOWN
+    timeout: 30000
+    centerElement: true
+- tapOn:
+    id: trade_asset_details_send

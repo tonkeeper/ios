@@ -1,0 +1,48 @@
+# Opens Receive for NETWORK_NAME and copies its full address into output.fullAddr.
+# Ends by relaunching the app: the Receive sheets have no identifier on their close
+# buttons, so a relaunch is the only deterministic way back to the wallet home.
+# Env: NETWORK_NAME, ADDRESS_TITLE
+appId: com.jbig.tonkeeper
+---
+- extendedWaitUntil:
+    visible: Add Funds
+    timeout: 12000
+- tapOn: Add Funds
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: Receive tokens
+    timeout: 6000
+- tapOn: Receive tokens
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: Receiving address
+    timeout: 6000
+- assertVisible: ${NETWORK_NAME}
+
+# "rightOf" only filters by horizontal position, so it matches the QR icon of the
+# first row instead of this network's. The row cell exposes "<network>, <short addr>",
+# which scopes the icon to the correct row.
+- tapOn:
+    text: Icons/Size28/qr-code-alternate
+    childOf:
+      text: "${NETWORK_NAME}, .*"
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: ${ADDRESS_TITLE}
+    timeout: 6000
+
+# The address label is the only node below the title made purely of address characters;
+# a ".*" selector matches the "Send only … network" warning instead.
+# Long addresses wrap, so the optional \n is part of the matched text.
+- copyTextFrom:
+    text: '^[A-Za-z0-9_\-]+\n?[A-Za-z0-9_\-]*$'
+    below: ${ADDRESS_TITLE}
+- evalScript: ${output.fullAddr = (maestro.copiedText || '').replace(/\n/g, '')}
+- assertTrue:
+    condition: ${output.fullAddr != null && output.fullAddr.length > 25}
+    label: ${NETWORK_NAME} full address copied
+
+- runFlow: ../launch_app_ensure_multichain_wallet.yaml

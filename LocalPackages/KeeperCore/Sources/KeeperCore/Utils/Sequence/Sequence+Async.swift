@@ -1,9 +1,9 @@
 import Foundation
 
 public extension Sequence {
-    func asyncForEach(_ handler: (Element) async throws -> Void) async rethrows {
+    func asyncNonThrowingForEach(_ handler: (Element) async -> Void) async {
         for element in self {
-            try await handler(element)
+            await handler(element)
         }
     }
 }

@@ -33,15 +33,6 @@ public enum TKActionButtonCategory {
         }
     }
 
-    public var disabledTitleColor: UIColor {
-        switch self {
-        case .primary: return .Button.primaryForeground.withAlphaComponent(0.48)
-        case .secondary: return .Button.secondaryForeground.withAlphaComponent(0.48)
-        case .tertiary: return .Button.tertiaryForeground.withAlphaComponent(0.48)
-        case .overlay: return .Button.overlayForeground.withAlphaComponent(0.48)
-        }
-    }
-
     public var disabledBackgroundColor: UIColor {
         switch self {
         case .primary: return .Button.primaryBackgroundDisabled

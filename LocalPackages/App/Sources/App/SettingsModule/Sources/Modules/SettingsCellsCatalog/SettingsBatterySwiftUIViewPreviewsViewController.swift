@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsBatterySwiftUIViewPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: BatterySwiftUIViewPreviews()
+    private let hostingController = TKHostingController(
+        content: BatterySwiftUIViewPreviews()
     )
 
     override func viewDidLoad() {

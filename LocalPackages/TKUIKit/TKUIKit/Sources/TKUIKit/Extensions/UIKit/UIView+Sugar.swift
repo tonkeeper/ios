@@ -14,7 +14,7 @@ public extension UIView {
     }
 
     var isReachableByUser: Bool {
-        guard let window else {
+        guard let window, !isHidden, alpha > 0.01, !bounds.isEmpty else {
             return false
         }
 
@@ -24,6 +24,20 @@ public extension UIView {
             return false
         }
 
-        return hitView === self || hitView.isDescendant(of: self)
+        guard let owningView = nearestViewControllerView else {
+            return hitView === self || hitView.isDescendant(of: self)
+        }
+        return hitView.isDescendant(of: owningView)
+    }
+
+    private var nearestViewControllerView: UIView? {
+        var responder: UIResponder? = next
+        while let current = responder {
+            if let viewController = current as? UIViewController {
+                return viewController.viewIfLoaded
+            }
+            responder = current.next
+        }
+        return nil
     }
 }

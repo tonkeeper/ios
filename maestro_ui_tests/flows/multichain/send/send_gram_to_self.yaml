@@ -1,0 +1,17 @@
+# Multichain Send: GRAM on TON to self (address from Receive).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "TON"
+      ADDRESS_TITLE: "Your TON address"
+- runFlow:
+    file: "../../../steps/send/send_to_clipboard_recipient.yaml"
+    env:
+      SEARCH_QUERY: "GRAM"
+      ASSET_ID: "token_picker_asset_ton_gram"
+      TOKEN_SYMBOL: "GRAM"
+      AMOUNT: "0.01"
+      RECIPIENT: ${output.fullAddr}

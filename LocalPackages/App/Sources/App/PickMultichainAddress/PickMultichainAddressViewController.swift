@@ -1,82 +1,64 @@
-import TKLocalize
 import TKUIKit
 import UIKit
 
-final class PickMultichainAddressViewController: GenericViewViewController<PickMultichainAddressUiView>, TKBottomSheetScrollContentViewController {
+final class PickMultichainAddressViewController: TKHostingController<PickMultichainAddressScreen> {
+    var didDismissInteractively: (() -> Void)?
+
     private let viewModel: PickMultichainAddressViewModelImplementation
-
-    var headerConfiguration: TKBottomSheetHeaderConfiguration? {
-        TKBottomSheetHeaderConfiguration(
-            title: .title(
-                title: TKLocales.Receive.Multichain.NetworkPicker.title,
-                subtitle: TKLocales.Receive.Multichain.NetworkPicker.subtitle
-            )
-        )
-    }
-
-    var scrollView: UIScrollView {
-        customView.tableView
-    }
-
-    var didUpdateHeight: (() -> Void)?
-    var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration?) -> Void)?
+    private var isProgrammaticDismissal = false
 
     init(viewModel: PickMultichainAddressViewModelImplementation) {
         self.viewModel = viewModel
-        super.init(nibName: nil, bundle: nil)
+        super.init(content: PickMultichainAddressScreen(viewModel: viewModel))
+        configurePresentation()
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    @MainActor
+    dynamic required init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        customView.tableView.register(
-            SwiftUIHostingTableViewCell.self,
-            forCellReuseIdentifier: String(describing: SwiftUIHostingTableViewCell.self)
-        )
-        customView.tableView.dataSource = self
-        customView.tableView.reloadData()
+        view.backgroundColor = .Background.page
+        presentationController?.delegate = self
     }
 
-    func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-        customView.calculateHeight()
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        view.endEditing(true)
+    }
+
+    func dismissFromCoordinator(
+        animated: Bool,
+        completion: (() -> Void)? = nil
+    ) {
+        isProgrammaticDismissal = true
+        dismiss(animated: animated, completion: completion)
     }
 }
 
-extension PickMultichainAddressViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        viewModel.items.count
+private extension PickMultichainAddressViewController {
+    func configurePresentation() {
+        modalPresentationStyle = .pageSheet
+
+        guard let sheetPresentationController else {
+            return
+        }
+
+        sheetPresentationController.detents = [.large()]
+        sheetPresentationController.prefersGrabberVisible = false
+        sheetPresentationController.prefersScrollingExpandsWhenScrolledToEdge = false
     }
+}
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let reuseIdentifier = String(describing: SwiftUIHostingTableViewCell.self)
-        let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
-        guard let hostingCell = cell as? SwiftUIHostingTableViewCell else {
-            return cell
+extension PickMultichainAddressViewController: UIAdaptivePresentationControllerDelegate {
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        guard !isProgrammaticDismissal else {
+            return
         }
 
-        hostingCell.applyGroupedBackground(
-            .init(index: indexPath.row, count: viewModel.items.count)
-        )
-
-        let item = viewModel.items[indexPath.row]
-        hostingCell.setContent(id: item.id) {
-            PickMultichainAddressRowView(
-                item: item,
-                isSelected: item.address == viewModel.selectedAddress,
-                onSelect: { [weak viewModel] in
-                    viewModel?.selectAddress(item.address)
-                },
-                onCopy: { [weak viewModel] in
-                    viewModel?.copyAddress(item.address)
-                },
-                showDivider: indexPath.row < viewModel.items.count - 1
-            )
-        }
-
-        return hostingCell
+        didDismissInteractively?()
     }
 }

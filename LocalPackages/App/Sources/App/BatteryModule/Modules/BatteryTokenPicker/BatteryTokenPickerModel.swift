@@ -80,6 +80,7 @@ private extension BatteryTokenPickerModel {
             tonBalance: balance.tonBalance,
             jettonBalances: jettonBalances,
             tronUSDTBalance: nil,
+            tronTRXBalance: nil,
             selectedToken: .ton(selectedToken),
             scrollToSelected: scrollToSelected,
             mode: .balance(showConverted: false)

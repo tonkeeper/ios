@@ -63,8 +63,7 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
             transferService: keeperCoreMainAssembly.transferAssembly.transferService(),
             tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
             balanceService: keeperCoreMainAssembly.servicesAssembly.balanceService(),
-            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository(),
-            batteryCalculation: keeperCoreMainAssembly.batteryAssembly.batteryCalculation
+            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository()
         )
 
         let module = NativeSwapTransactionConfirmationAssembly.module(
@@ -97,9 +96,23 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
 
         module.output.didConfirmTransaction = { [weak self] in
             guard let self else { return }
-            coreAssembly.analyticsProvider.log(
-                TransactionSent(wallet: wallet, eventType: .jettonSwap)
+            let confirmationModel = transactionConfirmationController.getModel()
+            let fromAsset = model.fromToken.assetId(network: wallet.network)
+            let feeAsset = FeeAsset(
+                extraState: confirmationModel.extraState,
+                asset: fromAsset
             )
+            if let event = TransactionSent(
+                wallet: wallet,
+                swapFromToken: model.fromToken,
+                toToken: model.toToken,
+                amount: model.fromAmount,
+                feeAsset: feeAsset,
+                origin: .user,
+                isMax: confirmationModel.isMax
+            ) {
+                coreAssembly.analyticsProvider.log(event)
+            }
             didClose?()
         }
 
@@ -132,6 +145,9 @@ final class NativeSwapTransactionConfirmationCoordinator: RouterCoordinator<Navi
             switch error {
             case .unknownJetton:
                 ToastPresenter.showToast(configuration: .failed)
+                return
+            // Raised for a TRX transfer only, which this flow never performs.
+            case .tronFee:
                 return
             case let .blockchainFee(_, balance, requiredAmount):
                 let tonToken = TonToken.ton

@@ -20,9 +20,10 @@ public struct SendOpen: Codable, JSONEncodable, Hashable {
         case tonconnectLocal = "tonconnect_local"
         case tonconnectRemote = "tonconnect_remote"
         case qrCode = "qr_code"
+        case walletconnect = "walletconnect"
     }
     public var eventName: String = "send_open"
-    /** Source location where send was opened: | wallet_screen: main wallet screen | jetton_screen: jetton info screen | deep_link: from deep link | tonconnect_local: initiated by dapp on the same device | tonconnect_remote: initiated by dapp on another device or browser | qr_code: user scans a QR code  */
+    /** Source location where send was opened:  - wallet_screen: main wallet screen - jetton_screen: jetton info screen - deep_link: from deep link - tonconnect_local: initiated by dapp on the same device - tonconnect_remote: initiated by dapp on another device or browser - qr_code: user scans a QR code - walletconnect: requested by a dapp over WalletConnect  walletconnect stays a single flat value with no local / remote split, unlike tonconnect_*: it mirrors `initiated_by` on transaction_sent, which is flat too, and keeping the two vocabularies identical matters more than the transport detail. WalletConnect sends carry no dapp_url here — dapp identity for them lives on transaction_sent.  */
     public var from: From
 
     public init(eventName: String = "send_open", from: From) {

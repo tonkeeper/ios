@@ -1,12 +1,10 @@
 import BigInt
 import KeeperCore
-import Mapping
 import TKLocalize
 import TKUIKit
-import UIComponents
 import UIKit
 
-public struct SignRawConfirmationModel {
+struct SignRawConfirmationModel {
     struct Risk {
         let total: String
         let title: String
@@ -25,7 +23,7 @@ struct SignRawConfirmationMapper {
     private let totalBalanceStore: TotalBalanceStore
     private let nftManagmentStore: WalletNFTsManagementStore
     private let accountEventMapper: AccountEventMapper
-    private let accountEventModelMapper: Mapping.AccountEventModelMapper
+    private let accountEventModelMapper: AccountEventModelMapper
     private let amountFormatter: AmountFormatter
 
     init(
@@ -35,7 +33,7 @@ struct SignRawConfirmationMapper {
         totalBalanceStore: TotalBalanceStore,
         nftManagmentStore: WalletNFTsManagementStore,
         accountEventMapper: AccountEventMapper,
-        accountEventModelMapper: Mapping.AccountEventModelMapper,
+        accountEventModelMapper: AccountEventModelMapper,
         amountFormatter: AmountFormatter
     ) {
         self.nftService = nftService

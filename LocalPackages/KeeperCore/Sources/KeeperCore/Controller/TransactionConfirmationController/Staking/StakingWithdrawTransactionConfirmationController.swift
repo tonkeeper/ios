@@ -29,7 +29,7 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
         }
     }
 
-    func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+    func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         guard let signHandler else {
             return .failure(.cancelledByUser)
         }
@@ -55,9 +55,15 @@ final class StakingWithdrawTransactionConfirmationController: TransactionConfirm
             if signedTransactions.count == 1 {
                 try await sendService.sendTransaction(boc: signedTransactions[0], wallet: wallet)
             } else {
-                try await sendService.sendTransactions(batch: signedTransactions, wallet: wallet)
+                try await sendService.sendTransactions(batch: signedTransactions.bocs, wallet: wallet)
             }
-            return .success(())
+            return .success(
+                .ton(
+                    wallet: wallet,
+                    signedTransactions: signedTransactions,
+                    activityType: .unstake
+                )
+            )
         } catch {
             return .failure(.failedToSendTransaction())
         }

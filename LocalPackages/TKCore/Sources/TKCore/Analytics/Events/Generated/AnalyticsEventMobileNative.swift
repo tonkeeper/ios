@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Base event schema for mobile native apps using Aptabase SDK. SDK prefills all properties except firebase_user_id. */
+/** Base event schema for mobile native apps using Aptabase SDK. SDK prefills all properties except firebase_user_id and device_id. */
 public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
 
     public enum Platform: String, Codable, CaseIterable {
@@ -24,9 +24,11 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
     public static let storeCountryCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[A-Z]{2}$/")
     public static let deviceCountryCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[A-Z]{2}$/")
     public static let keysCountryCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[A-Z]{2}$/")
-    public var schemaVersion: String? = "2.14.0"
+    public var schemaVersion: String? = "6.0.1"
     /** Firebase user identifier, NOT NULL for iOS & Android, NULL for web-family */
     public var firebaseUserId: String?
+    /** Device identifier (`device_id`) from Total Auth: https://app.notion.com/p/tonapps/Total-Auth-3a14714a32a680489006c933bc64f91b#ec55e8dfc9e14c44a8f9959377a791c0 Tonkeeper's new multichain analogue of the legacy `firebase_user_id` that supports authentication and is intended to supersede `firebase_user_id` over time.  */
+    public var deviceId: String?
     /** persistent user identifier, NOT NULL for web-family, NULL for iOS & android */
     public var uuidPersistent: String?
     /** Platform identifier */
@@ -37,29 +39,27 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
     public var deviceCountryCode: String?
     /** Value from keys['region'] response from backend in ISO 3166-1 alpha-2 format (2-letter uppercase) */
     public var keysCountryCode: String?
-    /** A nested JSON containing ALL feature flag values in format {\"feature_1\":\"value\", \"feature_2\":\"value\"}  */
-    public var featureFlags: String?
 
-    public init(schemaVersion: String? = "2.14.0", firebaseUserId: String? = nil, uuidPersistent: String? = nil, platform: Platform? = nil, storeCountryCode: String? = nil, deviceCountryCode: String? = nil, keysCountryCode: String? = nil, featureFlags: String? = nil) {
+    public init(schemaVersion: String? = "6.0.1", firebaseUserId: String? = nil, deviceId: String? = nil, uuidPersistent: String? = nil, platform: Platform? = nil, storeCountryCode: String? = nil, deviceCountryCode: String? = nil, keysCountryCode: String? = nil) {
         self.schemaVersion = schemaVersion
         self.firebaseUserId = firebaseUserId
+        self.deviceId = deviceId
         self.uuidPersistent = uuidPersistent
         self.platform = platform
         self.storeCountryCode = storeCountryCode
         self.deviceCountryCode = deviceCountryCode
         self.keysCountryCode = keysCountryCode
-        self.featureFlags = featureFlags
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case schemaVersion = "schema_version"
         case firebaseUserId = "firebase_user_id"
+        case deviceId = "device_id"
         case uuidPersistent = "uuid_persistent"
         case platform
         case storeCountryCode = "store_country_code"
         case deviceCountryCode = "device_country_code"
         case keysCountryCode = "keys_country_code"
-        case featureFlags = "feature_flags"
     }
 
     // Encodable protocol methods
@@ -68,12 +68,12 @@ public struct AnalyticsEventMobileNative: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(schemaVersion, forKey: .schemaVersion)
         try container.encodeIfPresent(firebaseUserId, forKey: .firebaseUserId)
+        try container.encodeIfPresent(deviceId, forKey: .deviceId)
         try container.encodeIfPresent(uuidPersistent, forKey: .uuidPersistent)
         try container.encodeIfPresent(platform, forKey: .platform)
         try container.encodeIfPresent(storeCountryCode, forKey: .storeCountryCode)
         try container.encodeIfPresent(deviceCountryCode, forKey: .deviceCountryCode)
         try container.encodeIfPresent(keysCountryCode, forKey: .keysCountryCode)
-        try container.encodeIfPresent(featureFlags, forKey: .featureFlags)
     }
 }
 

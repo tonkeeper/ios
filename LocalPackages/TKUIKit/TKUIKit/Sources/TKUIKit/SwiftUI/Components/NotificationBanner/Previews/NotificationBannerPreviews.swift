@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct NotificationBannerPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -38,8 +40,9 @@ public struct NotificationBannerPreviews: View {
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.vertical, Layout.verticalPadding)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -55,7 +58,6 @@ private extension NotificationBannerPreviews {
 
 #Preview {
     NotificationBannerPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

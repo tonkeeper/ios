@@ -1,0 +1,35 @@
+# TonAPI → formatted strings matching History list (DepositStake TON outcome + JettonMint tsTON income).
+appId: com.jbig.tonkeeper
+---
+# Poll until TonAPI indexes the deposit we just sent — otherwise the script matches the
+# previous run's event and the asserted amounts drift with the tsTON/TON rate.
+- runScript:
+    file: ../../scripts/api/v2/accounts/getLastTonstakersStakeDepositEvent.js
+    env:
+      addr: ${WALLET_WITH_MONEY_ADDR}
+      auth_token: ${auth}
+      fresh_within_sec: "600"
+      events_limit: "15"
+      poll_attempts: "8"
+      poll_delay_ms: "12000"
+
+- runScript: ../../scripts/utils/formatter.js
+
+- evalScript: ${output.stakeDepositTonHistoryLine = output.formatter.toExactVisiblePattern(output.formatter.formatSignedCompactTonWithTokenSuffix(output.tonstakersDepositTonNano, true))}
+- evalScript: ${output.tsTonMintHistoryLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonIncomeLine(output.tonstakersMintTsTonAmount, output.tonstakersMintTsTonDecimals, "tsTON"))}
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 12000
+
+- scrollUntilVisible:
+    element: ${output.stakeDepositTonHistoryLine}
+    direction: DOWN
+    timeout: 12000
+- assertVisible: ${output.stakeDepositTonHistoryLine}
+
+- scrollUntilVisible:
+    element: ${output.tsTonMintHistoryLine}
+    direction: DOWN
+    timeout: 12000
+- assertVisible: ${output.tsTonMintHistoryLine}

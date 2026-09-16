@@ -17,7 +17,9 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
     public let topLabel = UILabel()
     public let bottomLeftLabel = UILabel()
     public let bottomRightLabel = UILabel()
-    public let maskImageView = UIImageView(image: UIImage.imageWithName("Rectangle"))
+    public let maskImageView = UIImageView(image: .TKUIKit.Artwork.QR.rectangleMask)
+
+    private var qrCodeContentView: UIView?
 
     override public init(frame: CGRect) {
         super.init(frame: frame)
@@ -43,7 +45,7 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
         public let bottomRightString: String?
 
         public init(
-            images: [UIImage],
+            images: [UIImage] = [],
             topString: String?,
             bottomLeftString: String,
             bottomRightString: String? = nil
@@ -57,8 +59,12 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
 
     public func configure(model: Model) {
         if model.images.isEmpty {
+            setQRCodeContentView(nil)
+            qrCodeImageView.stopAnimating()
+            qrCodeImageView.animationImages = nil
             qrCodeImageView.image = nil
         } else {
+            setQRCodeContentView(nil)
             qrCodeImageView.stopAnimating()
             qrCodeImageView.animationImages = fixImages(model.images)
             qrCodeImageView.animationDuration = 0.1 * TimeInterval(model.images.count)
@@ -74,6 +80,26 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
         bottomLeftLabel.text = model.bottomLeftString.uppercased()
         bottomRightLabel.text = model.bottomRightString?.uppercased()
         setNeedsLayout()
+    }
+
+    public func setQRCodeContentView(_ view: UIView?) {
+        guard qrCodeContentView !== view else {
+            qrCodeImageView.isHidden = view != nil
+            return
+        }
+
+        qrCodeContentView?.removeFromSuperview()
+        qrCodeContentView = view
+        qrCodeImageView.isHidden = view != nil
+
+        guard let view else {
+            return
+        }
+
+        qrCodeImageViewContainer.addSubview(view)
+        view.snp.makeConstraints { make in
+            make.edges.equalTo(qrCodeImageViewContainer)
+        }
     }
 }
 

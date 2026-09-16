@@ -16,7 +16,8 @@ struct SettingsModule {
             inAppReviewService: dependencies.inAppReviewService,
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             coreAssembly: dependencies.coreAssembly,
-            router: router
+            router: router,
+            depositPendingTracker: dependencies.depositPendingTracker
         )
     }
 }
@@ -26,15 +27,18 @@ extension SettingsModule {
         let inAppReviewService: InAppReviewService
         let keeperCoreMainAssembly: KeeperCore.MainAssembly
         let coreAssembly: TKCore.CoreAssembly
+        let depositPendingTracker: DepositPendingTracker
 
         init(
             inAppReviewService: InAppReviewService,
             keeperCoreMainAssembly: KeeperCore.MainAssembly,
-            coreAssembly: TKCore.CoreAssembly
+            coreAssembly: TKCore.CoreAssembly,
+            depositPendingTracker: DepositPendingTracker
         ) {
             self.inAppReviewService = inAppReviewService
             self.keeperCoreMainAssembly = keeperCoreMainAssembly
             self.coreAssembly = coreAssembly
+            self.depositPendingTracker = depositPendingTracker
         }
     }
 }

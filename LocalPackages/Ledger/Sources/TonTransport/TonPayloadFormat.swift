@@ -16,21 +16,6 @@ public enum TonPayloadFormat {
     case tokenBridgePaySwap(TokenBridgePaySwap)
     case unsafe(Cell)
 
-    public enum PayloadType: String, Codable {
-        case comment
-        case jettonTransfer
-        case nftTransfer
-        case jettonBurn
-        case singleNominatorWithdraw
-        case singleNominatorChangeValidator
-        case addWhitelist
-        case tonstakersDeposit
-        case voteForProposal
-        case changeDNSRecord
-        case tokenBridgePaySwap
-        case unsafe
-    }
-
     public struct JettonTransfer {
         let queryId: BigUInt?
         let coins: Coins

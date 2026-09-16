@@ -66,14 +66,14 @@ public struct PlaceholderView: View {
                 .padding(.top, Layout.imageTopPadding)
             Text(config.title)
                 .textStyle(.h3)
-                .foregroundStyle(Color(uiColor: .Text.primary))
+                .foregroundStyle(.textPrimary)
                 .multilineTextAlignment(.center)
                 .padding(.top, Layout.titleTopPadding)
 
             if let subtitle = config.subtitle {
                 Text(subtitle)
                     .textStyle(.body1)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.top, Layout.subtitleTopPadding)
             }
@@ -107,7 +107,7 @@ public struct PlaceholderView: View {
                     width: Layout.iconSize,
                     height: Layout.iconSize
                 )
-                .foregroundStyle(Color(uiColor: .Accent.blue))
+                .foregroundStyle(.accentBlue)
         case let .lottie(resource):
             PlaceholderLottieView(resource: resource)
                 .frame(
@@ -122,9 +122,9 @@ extension PlaceholderView {
     enum Layout {
         static let iconSize: CGFloat = 56
         static let imageTopPadding: CGFloat = 32
-        static let titleTopPadding: CGFloat = 18
-        static let subtitleTopPadding: CGFloat = 8
-        static let buttonTopPadding: CGFloat = 18
+        static let titleTopPadding: CGFloat = 16
+        static let subtitleTopPadding: CGFloat = 4
+        static let buttonTopPadding: CGFloat = 16
     }
 }
 
@@ -141,9 +141,8 @@ extension PlaceholderView {
             )
         )
     )
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .debugPreview(background: .page)
+    .tkThemed()
 }
 
 private struct PlaceholderLottieView: UIViewRepresentable {

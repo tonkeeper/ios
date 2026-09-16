@@ -162,14 +162,22 @@ final class TradeAssetsListQueryViewModel: ObservableObject {
             TradeAssetCellContent(
                 assetSymbol: asset.symbol,
                 assetDisplayName: asset.subtitle,
-                chainTag: AssetIdResolver.tag(for: asset.id),
-                iconImageSource: AssetIdResolver.imageSource(for: asset.id, imageUrl: asset.imageURL),
+                chainTag: AssetIdResolver.tag(
+                    for: asset.id,
+                    multichainEnabled: false
+                ),
+                iconImageSource: AssetIdResolver.imageSource(
+                    for: asset.id,
+                    imageUrl: asset.imageURL,
+                    multichainEnabled: false
+                ),
                 priceText: formatPrice(
                     asset.price,
                     fractionDigits: asset.priceFractionDigits,
                     currency: currency
                 ),
-                changeText: formatChangeText(for: asset)
+                changeText: formatChangeText(for: asset),
+                showsVerificationCheckmark: asset.isTrusted
             )
         )
     }

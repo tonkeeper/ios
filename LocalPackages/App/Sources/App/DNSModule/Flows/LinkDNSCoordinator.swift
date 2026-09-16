@@ -1,6 +1,9 @@
+import BigInt
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKLocalize
+import TKLogging
 import TKUIKit
 import TonSwift
 import UIKit
@@ -12,6 +15,7 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
     }
 
     var didCancel: (() -> Void)?
+    var didRequestDepositTon: (() -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
 
@@ -55,14 +59,21 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
                 case .unlink:
                     dnsLink = .unlink
                 }
-                let model = try await linkDNSController.emulate(dnsLink: dnsLink)
+                let emulation = try await linkDNSController.emulate(dnsLink: dnsLink)
                 await MainActor.run {
                     ToastPresenter.hideAll()
-                    openConfirmation(model: model, dnsLink: dnsLink)
+                    switch emulation {
+                    case let .confirmation(model):
+                        openConfirmation(model: model, dnsLink: dnsLink)
+                    case let .insufficientFunds(required, available):
+                        openInsufficientFunds(required: required, available: available)
+                    }
                 }
             } catch {
+                Log.w("failed to emulate dns link due to error: \(error)")
                 await MainActor.run {
                     ToastPresenter.hideAll()
+                    ToastPresenter.showToast(configuration: .failed)
                     didCancel?()
                 }
             }
@@ -77,6 +88,50 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
 }
 
 private extension LinkDNSCoordinator {
+    func openInsufficientFunds(required: BigUInt, available: BigUInt) {
+        let rootViewController = UIViewController()
+        router.window.rootViewController = rootViewController
+        router.window.makeKeyAndVisible()
+
+        let (requiredText, availableText) = keeperCoreMainAssembly.formattersAssembly.amountFormatter
+            .formatDistinctly(
+                required,
+                available,
+                fractionDigits: TonInfo.fractionDigits,
+                accessory: .tokenSymbol(TonInfo.symbol)
+            )
+
+        let walletTitle = InsufficientFeePopupContent.walletTitle(for: wallet)
+        let content = InsufficientFeePopupContent(
+            title: TKLocales.InsufficientFunds.Wallet.title(walletTitle.argument),
+            caption: TKLocales.InsufficientFunds.toBePaidYourBalance(
+                requiredText,
+                availableText
+            ),
+            primaryButtonTitle: TKLocales.InsufficientFunds.buyTokenTitle(TonInfo.symbol),
+            walletIcon: walletTitle.icon,
+            walletName: walletTitle.name,
+            walletNamePlaceholder: walletTitle.namePlaceholder
+        )
+
+        var didHandleAction = false
+        let sheetViewController = PopupContentPresenter.presentInsufficientFee(
+            content: content,
+            from: rootViewController,
+            onPrimary: { [didRequestDepositTon] in
+                guard !didHandleAction else { return }
+                didHandleAction = true
+                didRequestDepositTon?()
+            }
+        )
+
+        sheetViewController.didClose = { [weak self] isInteractivly in
+            guard isInteractivly, !didHandleAction else { return }
+            didHandleAction = true
+            self?.didCancel?()
+        }
+    }
+
     func openConfirmation(model: SendTransactionModel, dnsLink: DNSLink) {
         let rootViewController = UIViewController()
         router.window.rootViewController = rootViewController

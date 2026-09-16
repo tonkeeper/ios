@@ -4,6 +4,7 @@ import KeeperCore
 enum SendTokenV2PickerDisplayMode {
     case includingMarketData
     case includingSelection(MultichainAsset?)
+    case rampAsset
 }
 
 enum SendTokenV2PickerSearchBehavior {
@@ -12,11 +13,13 @@ enum SendTokenV2PickerSearchBehavior {
 }
 
 final class SendTokenV2PickerModel: TokenPickerV2Model {
-    private let wallet: Wallet
-    private let displayMode: SendTokenV2PickerDisplayMode
+    private let multichainState: MultichainWalletState
     private let searchBehavior: SendTokenV2PickerSearchBehavior
     private let multichainService: MultichainService
     private let currencyStore: CurrencyStore
+    private let isTransferSupported: (MultichainAsset) -> Bool
+
+    let initialState: TokenPickerV2ModelState
 
     private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
 
@@ -25,17 +28,32 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
     }
 
     init(
-        wallet: Wallet,
+        multichainState: MultichainWalletState,
         displayMode: SendTokenV2PickerDisplayMode,
         searchBehavior: SendTokenV2PickerSearchBehavior,
         multichainService: MultichainService,
-        currencyStore: CurrencyStore
+        currencyStore: CurrencyStore,
+        initialCatalogSearchSort: MultichainAssetSearchSort = .marketCap,
+        isTransferSupported: @escaping (MultichainAsset) -> Bool = { _ in true },
+        allowedChains: Set<MultichainChain>? = nil,
+        initialChain: MultichainChain? = nil
     ) {
-        self.wallet = wallet
-        self.displayMode = displayMode
+        self.multichainState = multichainState
         self.searchBehavior = searchBehavior
         self.multichainService = multichainService
         self.currencyStore = currencyStore
+        self.isTransferSupported = isTransferSupported
+        catalogSearchSort = initialCatalogSearchSort
+        let selection = Self.chainFilters(
+            walletFilters: multichainState.tokenPickerV2Filters,
+            allowedChains: allowedChains,
+            initialChain: initialChain
+        )
+        initialState = TokenPickerV2ModelState(
+            filters: selection.filters,
+            displayMode: displayMode,
+            initialFilter: selection.initialFilter
+        )
     }
 
     func setCatalogSearchSort(_ sort: MultichainAssetSearchSort) {
@@ -45,15 +63,27 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         catalogSearchSort = sort
     }
 
-    func initialState() -> TokenPickerV2ModelState? {
-        let filters = wallet.tokenPickerV2Filters.isEmpty
-            ? [.all]
-            : wallet.tokenPickerV2Filters
-
-        return TokenPickerV2ModelState(
-            filters: filters,
-            displayMode: displayMode
-        )
+    static func chainFilters(
+        walletFilters: [TokenPickerV2ChainFilter],
+        allowedChains: Set<MultichainChain>?,
+        initialChain: MultichainChain?
+    ) -> (filters: [TokenPickerV2ChainFilter], initialFilter: TokenPickerV2ChainFilter) {
+        guard let allowedChains else {
+            return (walletFilters.isEmpty ? [.all] : walletFilters, .all)
+        }
+        let filters = walletFilters.filter { filter in
+            if case let .chain(chain) = filter {
+                return allowedChains.contains(chain)
+            }
+            return false
+        }
+        guard let firstFilter = filters.first else {
+            return ([.all], .all)
+        }
+        let initialFilter = initialChain.flatMap { chain in
+            filters.contains(.chain(chain)) ? TokenPickerV2ChainFilter.chain(chain) : nil
+        }
+        return (filters, initialFilter ?? firstFilter)
     }
 
     func loadAssets(
@@ -62,7 +92,7 @@ final class SendTokenV2PickerModel: TokenPickerV2Model {
         limit: Int,
         cursor: String?
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
-        let accounts = wallet.tokenPickerV2Accounts(for: filter)
+        let accounts = multichainState.tokenPickerV2Accounts(for: filter)
         guard !accounts.isEmpty else {
             return TokenPickerLoadResult(assets: [], nextCursor: nil)
         }
@@ -112,7 +142,7 @@ private extension SendTokenV2PickerModel {
                 balance: walletAssetById[asset.asset.assetId]?.balance ?? .zero,
                 marketCap: asset.marketCap
             )
-        }
+        }.filter(isTransferSupported)
         return TokenPickerLoadResult(
             assets: prioritizedAssets(merged, isFirstPage: cursor == nil),
             nextCursor: page.nextCursor
@@ -127,17 +157,22 @@ private extension SendTokenV2PickerModel {
     ) async throws(MultichainServiceError) -> TokenPickerLoadResult {
         let currencyCodes = requestedCurrencyCodes(for: currencyStore.state)
         let page = try await multichainService.getWalletAssets(
-            walletId: wallet.id,
+            state: multichainState,
             currencies: currencyCodes,
+            assetIds: nil,
+            capabilities: nil,
             chain: nil,
             search: nil,
             availableOnly: nil,
             showHidden: nil,
+            hideDust: nil,
             limit: limit,
             cursor: cursor
         )
         let filteredAssets = page.assets.filter {
-            matchesFilter(filter, asset: $0) && matchesQuery(query, asset: $0)
+            matchesFilter(filter, asset: $0)
+                && matchesQuery(query, asset: $0)
+                && isTransferSupported($0)
         }
         return TokenPickerLoadResult(
             assets: prioritizedAssets(filteredAssets, isFirstPage: cursor == nil),
@@ -157,15 +192,15 @@ private extension SendTokenV2PickerModel {
     func walletAssetsByIdForMergingBalances() async throws(MultichainServiceError) -> [String: MultichainAsset] {
         var map: [String: MultichainAsset] = [:]
         let currencyCodes = requestedCurrencyCodes(for: currencyStore.state)
-        let assets = try await multichainService.getWalletAssets(
-            walletId: wallet.id,
+        let assets = try await multichainService.getAllWalletAssets(
+            state: multichainState,
             currencies: currencyCodes,
+            capabilities: nil,
             chain: nil,
             search: nil,
             availableOnly: nil,
             showHidden: nil,
-            limit: nil,
-            cursor: nil
+            hideDust: nil
         ).assets
         for asset in assets {
             map[asset.asset.assetId] = asset
@@ -222,10 +257,10 @@ private extension SendTokenV2PickerModel {
         isFirstPage: Bool
     ) -> [MultichainAsset] {
         let selectedAsset: MultichainAsset?
-        switch displayMode {
+        switch initialState.displayMode {
         case let .includingSelection(asset):
             selectedAsset = asset
-        case .includingMarketData:
+        case .includingMarketData, .rampAsset:
             selectedAsset = nil
         }
         guard

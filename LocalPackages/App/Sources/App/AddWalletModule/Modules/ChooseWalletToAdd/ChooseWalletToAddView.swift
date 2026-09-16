@@ -75,11 +75,6 @@ private extension ChooseWalletToAddView {
     }
 }
 
-private extension CGFloat {
-    static let titleBottomPadding: CGFloat = 32
-    static let buttonsContainerSpacing: CGFloat = 16
-}
-
 private extension NSDirectionalEdgeInsets {
     static let titleDescriptionPadding = NSDirectionalEdgeInsets(
         top: 24,

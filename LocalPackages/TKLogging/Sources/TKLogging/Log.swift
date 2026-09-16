@@ -26,9 +26,10 @@ public enum Log {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        self.default.d(message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        self.default.d(message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public static func i(
@@ -36,9 +37,10 @@ public enum Log {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        self.default.i(message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        self.default.i(message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public static func w(
@@ -46,9 +48,10 @@ public enum Log {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        self.default.w(message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        self.default.w(message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public static func e(
@@ -56,9 +59,10 @@ public enum Log {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        self.default.e(message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        self.default.e(message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 }
 
@@ -82,13 +86,13 @@ public extension LogDomain {
     static var mnemonicStorage: LogDomain {
         LogDomain(category: "MnemonicStorage")
     }
+
+    static var migration: LogDomain {
+        LogDomain(category: "Migration")
+    }
 }
 
 public extension Log {
-    static var inAppPurchases: LogDomain {
-        .inAppPurchases
-    }
-
     static var signRaw: LogDomain {
         .signRaw
     }
@@ -97,11 +101,7 @@ public extension Log {
         .nativeSwapAPI
     }
 
-    static var consoleAnalytics: LogDomain {
-        .consoleAnalytics
-    }
-
-    static var mnemonicStorage: LogDomain {
-        .mnemonicStorage
+    static var migration: LogDomain {
+        .migration
     }
 }

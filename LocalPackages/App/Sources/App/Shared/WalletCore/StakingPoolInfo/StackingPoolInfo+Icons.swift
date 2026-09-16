@@ -8,8 +8,8 @@ extension StackingPoolInfo {
         case .liquidTF: .TKUIKit.Icons.Size44.tonStakersLogo
         case .tf: .TKUIKit.Icons.Size44.tonNominatorsLogo
         case .whales:
-            if name.lowercased().contains("tonkeeper") {
-                .TKUIKit.Icons.Size44.tonkeeperLogo
+            if name.lowercased().contains("keeper") {
+                BrandMarks.stakingPoolBadge
             } else {
                 .TKUIKit.Icons.Size44.tonWhalesLogo
             }
@@ -18,13 +18,13 @@ extension StackingPoolInfo {
 
     var bigIcon: UIImage {
         switch implementation.type {
-        case .liquidTF: .App.Images.StakingImplementation.tonstakers
-        case .tf: .App.Images.StakingImplementation.tonNominators
+        case .liquidTF: .TKUIKit.Icons.Size96.stakingTonstakers
+        case .tf: .TKUIKit.Icons.Size96.stakingTonNominators
         case .whales:
-            if name.lowercased().contains("tonkeeper") {
-                .TKUIKit.Icons.Size44.tonkeeperLogo
+            if name.lowercased().contains("keeper") {
+                BrandMarks.stakingPoolBadge
             } else {
-                .App.Images.StakingImplementation.whales
+                .TKUIKit.Icons.Size96.stakingWhales
             }
         }
     }
@@ -41,9 +41,9 @@ extension StackingPoolInfo.Implementation {
 
     var bigIcon: UIImage {
         switch type {
-        case .liquidTF: .App.Images.StakingImplementation.tonstakers
-        case .tf: .App.Images.StakingImplementation.tonNominators
-        case .whales: .App.Images.StakingImplementation.whales
+        case .liquidTF: .TKUIKit.Icons.Size96.stakingTonstakers
+        case .tf: .TKUIKit.Icons.Size96.stakingTonNominators
+        case .whales: .TKUIKit.Icons.Size96.stakingWhales
         }
     }
 }

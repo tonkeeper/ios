@@ -71,18 +71,15 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
     actor State {
         var period: Period = .day
         var coordinates = [KeeperCore.Coordinate]()
-        var hasPresentedInitialChartData = false
+        var coordinatesPeriod: Period?
 
         func setPeriod(_ period: Period) {
             self.period = period
         }
 
-        func setCoordinates(_ coordinates: [KeeperCore.Coordinate]) {
+        func setCoordinates(_ coordinates: [KeeperCore.Coordinate], period: Period) {
             self.coordinates = coordinates
-        }
-
-        func markInitialChartDataPresented() {
-            hasPresentedInitialChartData = true
+            coordinatesPeriod = period
         }
     }
 
@@ -122,44 +119,32 @@ private extension ChartViewModelImplementation {
     func updateChart(
         diffAnimationStyle: ChartHeaderView.DiffAnimationStyle
     ) async {
-        let didDisplayCachedChart = await cachedChartData(diffAnimationStyle: diffAnimationStyle)
-        if !didDisplayCachedChart {
-            await displaySkeletonIfNeeded()
-        }
+        await displayLoadingChart()
         await loadChartData(diffAnimationStyle: diffAnimationStyle)
     }
 
-    func displaySkeletonIfNeeded() async {
-        let hasPresentedInitialChartData = await state.hasPresentedInitialChartData
-        guard !hasPresentedInitialChartData else {
-            return
-        }
+    func displayLoadingChart() async {
+        let selectedPeriod = await state.period
+        let coordinates = await state.coordinates
+        let coordinatesPeriod = await state.coordinatesPeriod
 
-        let period = await state.period
-        let model = prepareSkeletonChartModel(period: period)
-
-        await MainActor.run {
-            didUpdateChartData?(model)
-            didUpdateHeader?(shimmerHeaderModel())
+        if let coordinatesPeriod, !coordinates.isEmpty {
+            let model = prepareLoadingChartModel(
+                coordinates: coordinates,
+                coordinatesPeriod: coordinatesPeriod,
+                selectedPeriod: selectedPeriod,
+                currency: currencyStore.state
+            )
+            await MainActor.run {
+                didUpdateChartData?(model)
+            }
+        } else {
+            let model = prepareSkeletonChartModel(period: selectedPeriod)
+            await MainActor.run {
+                didUpdateChartData?(model)
+                didUpdateHeader?(shimmerHeaderModel())
+            }
         }
-    }
-
-    func cachedChartData(
-        diffAnimationStyle: ChartHeaderView.DiffAnimationStyle
-    ) async -> Bool {
-        let currency = currencyStore.state
-        let period = await state.period
-        let cachedCoordinates = chartController.getCachedChartData(period: period, currency: currency)
-        guard !cachedCoordinates.isEmpty else {
-            return false
-        }
-        await presentChartData(
-            coordinates: cachedCoordinates,
-            period: period,
-            currency: currency,
-            diffAnimationStyle: diffAnimationStyle
-        )
-        return true
     }
 
     func loadChartData(
@@ -169,11 +154,28 @@ private extension ChartViewModelImplementation {
         pollingTask = Task {
             let currency = currencyStore.state
             let period = await state.period
+
+            let minimumVisibility = Task {
+                try? await Task.sleep(nanoseconds: Self.loadingTransitionMinimumDuration)
+            }
+
+            var didPresentCachedData = false
+            if let cachedCoordinates = chartController.getCachedChartData(period: period, currency: currency) {
+                await minimumVisibility.value
+                didPresentCachedData = await presentChartData(
+                    coordinates: cachedCoordinates,
+                    period: period,
+                    currency: currency,
+                    diffAnimationStyle: diffAnimationStyle
+                )
+            }
+
             do {
-                let loadedCoordinates = try await chartController.loadChartData(period: period, currency: currency)
-                guard !loadedCoordinates.isEmpty else {
-                    return
-                }
+                let loadedCoordinates = try await chartController.loadChartData(
+                    period: period,
+                    currency: currency
+                )
+                await minimumVisibility.value
                 await presentChartData(
                     coordinates: loadedCoordinates,
                     period: period,
@@ -182,11 +184,10 @@ private extension ChartViewModelImplementation {
                 )
             } catch {
                 guard !error.isCancelledError else { return }
-                let title = "Failed to load chart data"
-                let subtitle = "Please try again"
+                guard !didPresentCachedData, await state.period == period else { return }
                 let model = ChartErrorView.Model(
-                    title: title,
-                    subtitle: subtitle
+                    title: TKLocales.Chart.Error.title,
+                    buttons: buttonsConfig(selectedPeriod: period)
                 )
                 await MainActor.run {
                     didFailedUpdateChartData?(model)
@@ -196,14 +197,15 @@ private extension ChartViewModelImplementation {
         }
     }
 
+    @discardableResult
     func presentChartData(
         coordinates: [KeeperCore.Coordinate],
         period: Period,
         currency: Currency,
         diffAnimationStyle: ChartHeaderView.DiffAnimationStyle
-    ) async {
-        await state.setCoordinates(coordinates)
-        await state.markInitialChartDataPresented()
+    ) async -> Bool {
+        guard await state.period == period else { return false }
+        await state.setCoordinates(coordinates, period: period)
 
         let model = prepareChartModel(
             coordinates: coordinates,
@@ -222,6 +224,7 @@ private extension ChartViewModelImplementation {
             didUpdateChartData?(model)
             didUpdateHeader?(lastPointModel)
         }
+        return true
     }
 
     func prepareChartModel(
@@ -235,7 +238,8 @@ private extension ChartViewModelImplementation {
             mode: mode,
             coordinates: coordinates,
             smoothing: mode == .stepped ? .none : .tension(0.58),
-            style: style
+            style: style,
+            appearance: chartController.isMultichainAsset ? .trend : .standard
         )
 
         let values = coordinates.map { $0.y }
@@ -267,6 +271,22 @@ private extension ChartViewModelImplementation {
             ),
             buttons: buttonsConfig(selectedPeriod: period)
         )
+    }
+
+    func prepareLoadingChartModel(
+        coordinates: [KeeperCore.Coordinate],
+        coordinatesPeriod: Period,
+        selectedPeriod: Period,
+        currency: Currency
+    ) -> TKUIKit.ChartView.Model {
+        var model = prepareChartModel(
+            coordinates: coordinates,
+            period: coordinatesPeriod,
+            currency: currency,
+            style: .skeleton
+        )
+        model.buttons = buttonsConfig(selectedPeriod: selectedPeriod)
+        return model
     }
 
     func prepareSkeletonChartModel(period: Period) -> TKUIKit.ChartView.Model {
@@ -414,6 +434,8 @@ private extension ChartViewModelImplementation {
 extension KeeperCore.Coordinate: TKUIKit.Coordinate {}
 
 private extension ChartViewModelImplementation {
+    static let loadingTransitionMinimumDuration: UInt64 = 300_000_000
+
     struct SkeletonCoordinate: TKUIKit.Coordinate {
         let x: Double
         let y: Double

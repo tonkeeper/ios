@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 public struct TransactionCellPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -11,7 +13,7 @@ public struct TransactionCellPreviews: View {
             VStack(alignment: .leading, spacing: 16) {
                 Text("Transactions")
                     .textStyle(.h3)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
                     .padding(.horizontal, 24)
                     .padding(.vertical, 20)
 
@@ -20,7 +22,7 @@ public struct TransactionCellPreviews: View {
                         TransactionCell(
                             config: .content(items[index])
                         )
-                        .background(Color(uiColor: .Background.content))
+                        .background(.backgroundContent)
                         .padding(.bottom, index == 0 ? 15 : 16)
                     }
                 }
@@ -28,8 +30,9 @@ public struct TransactionCellPreviews: View {
             .padding(.bottom, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -286,7 +289,7 @@ public struct TransactionCellPreviews: View {
                 accessory: .init(
                     text: "−7 TON",
                     textStyle: .label1,
-                    color: Color(uiColor: .Text.primary)
+                    color: .textPrimary
                 ),
                 details: .init(
                     accessory: .init(text: "17:32")
@@ -321,7 +324,7 @@ private extension TransactionCellPreviews {
     var nftPreview: TransactionCellContent.NftPreview {
         .init(
             id: "mirra-yui",
-            image: nftPreviewImage,
+            imageSource: .image(nftPreviewImage),
             title: "Mirra Yui",
             subtitle: "Annihilation",
             isVerified: false
@@ -381,13 +384,11 @@ private extension TransactionCellPreviews {
     }
 
     func historyIcon(_ image: UIImage) -> TransactionCellContent.Icon {
-        .init(
-            image: image,
-            tintColor: Color(uiColor: .Icon.secondary)
-        )
+        .init(image: image)
     }
 }
 
 #Preview {
     TransactionCellPreviews()
+        .tkThemed()
 }

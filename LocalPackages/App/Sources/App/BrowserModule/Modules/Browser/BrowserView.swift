@@ -6,7 +6,7 @@ final class BrowserView: UIView {
     let headerView = BrowserHeaderView()
     let exploreContainer = UIView()
     let connectedContainer = UIView()
-    let searchBar = BrowserSearchBar(applyGlassEffect: UIApplication.useSystemBarsAppearance)
+    let searchBar = BrowserSearchBar()
     let blurView = TKBlurView()
 
     override init(frame: CGRect) {
@@ -42,8 +42,6 @@ private extension BrowserView {
         searchBar.blurView.isHidden = true
         searchBar.textField.isUserInteractionEnabled = false
         searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
-        blurView.isHidden = UIApplication.useSystemBarsAppearance
-        headerView.isHidden = UIApplication.useSystemBarsAppearance
 
         addSubviews(
             exploreContainer,

@@ -4,10 +4,19 @@ private struct ModernButtonPreviewStateKey: EnvironmentKey {
     static let defaultValue: ButtonView.State? = nil
 }
 
-private extension EnvironmentValues {
+private struct ModernButtonStateKey: EnvironmentKey {
+    static let defaultValue = ButtonView.State.normal
+}
+
+extension EnvironmentValues {
     var modernButtonPreviewState: ButtonView.State? {
         get { self[ModernButtonPreviewStateKey.self] }
         set { self[ModernButtonPreviewStateKey.self] = newValue }
+    }
+
+    var modernButtonState: ButtonView.State {
+        get { self[ModernButtonStateKey.self] }
+        set { self[ModernButtonStateKey.self] = newValue }
     }
 }
 
@@ -22,17 +31,23 @@ private struct TitlePaddingModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         switch config.size {
+        case .tab:
+            content
+                .frame(maxHeight: .infinity, alignment: .center)
+                .padding(horizontalPaddingEdges, Layout.Tab.horizontalPadding)
         case .small:
             content
-                .padding(.top, 9)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 16)
         case .medium:
             content
-                .padding(.top, 13)
+                .padding(.bottom, 2)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 20)
         case .large:
             content
-                .padding(.top, 18)
+                .padding(.bottom, 2)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 24)
         }
     }
@@ -56,17 +71,22 @@ private struct IconPaddingModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         switch size {
+        case .tab:
+            content
+                .padding(.bottom, 2)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .padding(horizontalPaddingEdges, Layout.Tab.horizontalPadding)
         case .small:
             content
-                .padding(.top, 10)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 16)
         case .medium:
             content
-                .padding(.top, 13)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 20)
         case .large:
             content
-                .padding(.top, 17)
+                .frame(maxHeight: .infinity, alignment: .center)
                 .padding(horizontalPaddingEdges, 24)
         }
     }
@@ -82,6 +102,19 @@ private struct IconPaddingModifier: ViewModifier {
 }
 
 private extension View {
+    /// Shrunk text reports a shorter line box, which would pull the title up inside the
+    /// top-aligned label, so the box is pinned to the unscaled line height.
+    @ViewBuilder
+    func shrinkToFit(minimumScaleFactor: CGFloat?, lineHeight: CGFloat) -> some View {
+        if let minimumScaleFactor {
+            lineLimit(1)
+                .minimumScaleFactor(minimumScaleFactor)
+                .frame(minHeight: lineHeight)
+        } else {
+            self
+        }
+    }
+
     func iconPadding(config: ButtonView.Icon, size: ButtonView.Size) -> some View {
         modifier(IconPaddingModifier(config: config, size: size))
     }
@@ -98,30 +131,30 @@ private struct ButtonStateStyle: SwiftUI.ButtonStyle {
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.modernButtonPreviewState) private var previewStateOverride
+    @Environment(\.tkPalette) private var palette
 
     func makeBody(configuration: Configuration) -> some View {
         let state = state(isPressed: configuration.isPressed)
 
-        VStack(spacing: 0) {
-            configuration.label
-                .foregroundStyle(Color(uiColor: config.textColor(for: state)))
-            Spacer()
-        }
-        .frame(height: height)
-        .background(
-            RoundedRectangle(
-                cornerRadius: cornerRadius,
-                style: .continuous
+        configuration.label
+            .foregroundStyle(config.appearance.textColor(for: state, palette: palette))
+            .environment(\.modernButtonState, state)
+            .frame(height: height)
+            .background(
+                RoundedRectangle(
+                    cornerRadius: cornerRadius,
+                    style: .continuous
+                )
+                .fill(config.appearance.backgroundColor(for: state, palette: palette))
             )
-            .fill(Color(uiColor: config.backgroundColor(for: state)))
-        )
-        .contentShape(
-            RoundedRectangle(
-                cornerRadius: cornerRadius,
-                style: .continuous
+            .contentShape(
+                RoundedRectangle(
+                    cornerRadius: cornerRadius,
+                    style: .continuous
+                )
             )
-        )
-        .animation(.easeInOut(duration: 0.14), value: state)
+            .animation(.easeInOut(duration: 0.14), value: state)
+            .tkTapAnimation(isPressed: configuration.isPressed, haptic: .light)
     }
 
     private func state(isPressed: Bool) -> ButtonView.State {
@@ -142,8 +175,12 @@ private struct ButtonStateStyle: SwiftUI.ButtonStyle {
 }
 
 public struct ButtonView: View {
+    @Environment(\.tkPalette) private var palette
+    @Environment(\.modernButtonState) private var state
+
     public enum Size {
         case small
+        case tab
         case medium
         case large
     }
@@ -155,9 +192,14 @@ public struct ButtonView: View {
 
     public enum Appearance {
         case primary
+        case primaryAttention
+        case primaryDestructive
+        case primaryGreen
         case secondary
         case secondaryOverlay
+        case attention
         case tertiary
+        case icon
         case overlay
         case destructive
     }
@@ -191,6 +233,8 @@ public struct ButtonView: View {
         public var appearance: Appearance
         public var layoutMode: LayoutMode
         public var icon: Icon?
+        public var showsLoader: Bool
+        public var minimumTitleScaleFactor: CGFloat?
         public var action: () -> Void
 
         public init(
@@ -199,6 +243,8 @@ public struct ButtonView: View {
             layoutMode: LayoutMode = .intrinsic,
             appearance: Appearance,
             icon: Icon? = nil,
+            showsLoader: Bool = false,
+            minimumTitleScaleFactor: CGFloat? = nil,
             action: @escaping () -> Void
         ) {
             self.title = .plain(title)
@@ -206,6 +252,8 @@ public struct ButtonView: View {
             self.appearance = appearance
             self.layoutMode = layoutMode
             self.icon = icon
+            self.showsLoader = showsLoader
+            self.minimumTitleScaleFactor = minimumTitleScaleFactor
             self.action = action
         }
 
@@ -215,6 +263,8 @@ public struct ButtonView: View {
             layoutMode: LayoutMode = .intrinsic,
             appearance: Appearance,
             icon: Icon? = nil,
+            showsLoader: Bool = false,
+            minimumTitleScaleFactor: CGFloat? = nil,
             action: @escaping () -> Void
         ) {
             self.title = .attributed(title)
@@ -222,6 +272,8 @@ public struct ButtonView: View {
             self.appearance = appearance
             self.layoutMode = layoutMode
             self.icon = icon
+            self.showsLoader = showsLoader
+            self.minimumTitleScaleFactor = minimumTitleScaleFactor
             self.action = action
         }
     }
@@ -255,22 +307,54 @@ public struct ButtonView: View {
                 height: height
             )
         )
+        .allowsHitTesting(!config.showsLoader)
     }
 
+    @ViewBuilder
     private var content: some View {
-        HStack(spacing: 8) {
-            if let icon = config.icon {
-                switch icon.alignment {
-                case .leading:
-                    iconView(icon)
+        if config.showsLoader {
+            loaderView
+        } else {
+            HStack(spacing: 8) {
+                if let icon = config.icon {
+                    switch icon.alignment {
+                    case .leading:
+                        iconView(icon)
+                        titleView
+                    case .trailing:
+                        titleView
+                        iconView(icon)
+                    }
+                } else {
                     titleView
-                case .trailing:
-                    titleView
-                    iconView(icon)
                 }
-            } else {
-                titleView
             }
+        }
+    }
+
+    private var loaderView: some View {
+        CircularLoader(
+            mode: .indeterminate,
+            preset: .custom(
+                CircularLoaderConfiguration(
+                    lineWidth: 2,
+                    progressColor: config.appearance.textColor(for: .normal, palette: palette),
+                    trackColor: config.appearance.textColor(for: .normal, palette: palette).opacity(0.32),
+                    size: CGSize(width: loaderSize, height: loaderSize),
+                    contentPadding: 1
+                )
+            )
+        )
+        .frame(width: loaderSize, height: loaderSize)
+        .titlePadding(config: config)
+    }
+
+    private var loaderSize: CGFloat {
+        switch config.size {
+        case .tab, .small:
+            16
+        case .medium, .large:
+            20
         }
     }
 
@@ -279,6 +363,9 @@ public struct ButtonView: View {
             .renderingMode(.template)
             .resizable()
             .scaledToFit()
+            .foregroundStyle(
+                config.appearance.iconColor(for: state, palette: palette)
+            )
             .frame(width: iconSize, height: iconSize)
             .iconPadding(config: icon, size: config.size)
     }
@@ -294,20 +381,17 @@ public struct ButtonView: View {
                     .textStyle(textStyle)
             }
         }
+        .shrinkToFit(
+            minimumScaleFactor: config.minimumTitleScaleFactor,
+            lineHeight: textStyle.lineHeight
+        )
         .titlePadding(config: config)
     }
 
     private var iconSize: CGFloat {
         switch config.size {
-        case .small, .medium, .large:
+        case .tab, .small, .medium, .large:
             16
-        }
-    }
-
-    private var iconTrailingPadding: CGFloat {
-        switch config.size {
-        case .small, .medium, .large:
-            8
         }
     }
 
@@ -315,13 +399,15 @@ public struct ButtonView: View {
         switch config.size {
         case .large, .medium:
             .label1
-        case .small:
+        case .tab, .small:
             .label2
         }
     }
 
     private var cornerRadius: CGFloat {
         switch config.size {
+        case .tab:
+            Layout.Tab.cornerRadius
         case .small:
             18
         case .medium:
@@ -333,6 +419,8 @@ public struct ButtonView: View {
 
     private var height: CGFloat {
         switch config.size {
+        case .tab:
+            Layout.Tab.height
         case .small:
             36
         case .medium:
@@ -343,106 +431,175 @@ public struct ButtonView: View {
     }
 }
 
-private extension ButtonView.Config {
-    func textColor(for state: ButtonView.State) -> UIColor {
+private enum Layout {
+    enum Tab {
+        static let titleTopPadding: CGFloat = 6
+        static let iconTopPadding: CGFloat = 7
+        static let horizontalPadding: CGFloat = 12
+        static let cornerRadius: CGFloat = 16
+        static let height: CGFloat = 32
+    }
+}
+
+extension ButtonView.Appearance {
+    func textColor(for state: ButtonView.State, palette: TKPalette) -> Color {
         switch state {
         case .normal:
-            normalTextColor
+            normalTextColor(palette)
         case .highlighted:
-            highlightedTextColor
+            highlightedTextColor(palette)
         case .disabled:
-            disabledTextColor
+            disabledTextColor(palette)
         }
     }
 
-    func backgroundColor(for state: ButtonView.State) -> UIColor {
+    func iconColor(for state: ButtonView.State, palette: TKPalette) -> Color {
+        guard self == .tertiary || self == .icon else {
+            return textColor(for: state, palette: palette)
+        }
+
         switch state {
-        case .normal:
-            normalBackgroundColor
-        case .highlighted:
-            highlightedBackgroundColor
+        case .normal, .highlighted:
+            if self == .tertiary {
+                return palette.icon.secondary
+            }
+            return palette.button.tertiaryForeground
         case .disabled:
-            disabledBackgroundColor
+            if self == .tertiary {
+                return palette.icon.secondary.opacity(0.48)
+            }
+            return palette.button.tertiaryForeground.opacity(0.48)
         }
     }
 
-    private var normalTextColor: UIColor {
-        switch appearance {
+    func backgroundColor(for state: ButtonView.State, palette: TKPalette) -> Color {
+        switch state {
+        case .normal:
+            normalBackgroundColor(palette)
+        case .highlighted:
+            highlightedBackgroundColor(palette)
+        case .disabled:
+            disabledBackgroundColor(palette)
+        }
+    }
+
+    private func normalTextColor(_ palette: TKPalette) -> Color {
+        switch self {
         case .primary:
-            .Button.primaryForeground
+            palette.button.primaryForeground
+        case .primaryAttention, .primaryDestructive, .primaryGreen:
+            palette.button.primaryForeground
         case .secondary, .secondaryOverlay:
-            .Button.secondaryForeground
+            palette.button.secondaryForeground
+        case .attention:
+            palette.accent.orange
         case .tertiary:
-            .Button.tertiaryForeground
+            palette.button.tertiaryForeground
+        case .icon:
+            palette.text.secondary
         case .overlay:
-            .Constant.black
+            palette.constant.black
         case .destructive:
-            .Accent.red
+            palette.accent.red
         }
     }
 
-    private var normalBackgroundColor: UIColor {
-        switch appearance {
+    private func normalBackgroundColor(_ palette: TKPalette) -> Color {
+        switch self {
         case .primary:
-            .Button.primaryBackground
+            palette.button.primaryBackground
+        case .primaryAttention:
+            palette.accent.orange
+        case .primaryDestructive:
+            palette.accent.red
+        case .primaryGreen:
+            palette.button.primaryBackgroundGreen
         case .secondary:
-            .Button.secondaryBackground
+            palette.button.secondaryBackground
         case .secondaryOverlay:
             .clear
+        case .attention:
+            palette.accent.orange.opacity(0.08)
         case .tertiary:
-            .Button.tertiaryBackground
+            palette.button.tertiaryBackground
+        case .icon:
+            palette.button.secondaryBackground
         case .overlay:
-            .Constant.white
+            palette.constant.white
         case .destructive:
-            .Accent.red.withAlphaComponent(0.16)
+            palette.accent.red.opacity(0.08)
         }
     }
 
-    private var highlightedTextColor: UIColor {
-        switch appearance {
-        case .primary, .secondary, .secondaryOverlay, .tertiary, .overlay, .destructive:
-            normalTextColor
+    private func highlightedTextColor(_ palette: TKPalette) -> Color {
+        switch self {
+        case .primary, .primaryAttention, .primaryDestructive, .primaryGreen,
+             .secondary, .secondaryOverlay, .attention,
+             .tertiary, .icon, .overlay, .destructive:
+            normalTextColor(palette)
         }
     }
 
-    private var highlightedBackgroundColor: UIColor {
-        switch appearance {
+    private func highlightedBackgroundColor(_ palette: TKPalette) -> Color {
+        switch self {
         case .primary:
-            .Button.primaryBackgroundHighlighted
+            palette.button.primaryBackgroundHighlighted
+        case .primaryAttention:
+            palette.accent.orange.opacity(0.84)
+        case .primaryDestructive:
+            palette.accent.red.opacity(0.84)
+        case .primaryGreen:
+            palette.button.primaryBackgroundGreenHighlighted
         case .secondary:
-            .Button.secondaryBackgroundHighlighted
+            palette.button.secondaryBackgroundHighlighted
         case .secondaryOverlay:
             .clear
+        case .attention:
+            palette.accent.orange.opacity(0.12)
         case .tertiary:
-            .Button.tertiaryBackgroundHighlighted
+            palette.button.tertiaryBackgroundHighlighted
+        case .icon:
+            palette.button.secondaryBackgroundHighlighted
         case .overlay:
-            .Button.overlayBackgroundHighlighted
+            palette.constant.white
         case .destructive:
-            .Accent.red.withAlphaComponent(0.24)
+            palette.accent.red.opacity(0.12)
         }
     }
 
-    private var disabledTextColor: UIColor {
-        switch appearance {
-        case .primary, .secondary, .secondaryOverlay, .tertiary, .overlay, .destructive:
-            normalTextColor.withAlphaComponent(0.48)
+    private func disabledTextColor(_ palette: TKPalette) -> Color {
+        switch self {
+        case .primary, .primaryAttention, .primaryDestructive, .primaryGreen,
+             .secondary, .secondaryOverlay, .attention,
+             .tertiary, .icon, .overlay, .destructive:
+            normalTextColor(palette).opacity(0.48)
         }
     }
 
-    private var disabledBackgroundColor: UIColor {
-        switch appearance {
+    private func disabledBackgroundColor(_ palette: TKPalette) -> Color {
+        switch self {
         case .primary:
-            .Button.primaryBackgroundDisabled
+            palette.button.primaryBackgroundDisabled
+        case .primaryAttention:
+            palette.accent.orange.opacity(0.48)
+        case .primaryDestructive:
+            palette.accent.red.opacity(0.48)
+        case .primaryGreen:
+            palette.button.primaryBackgroundGreenDisabled
         case .secondary:
-            .Button.secondaryBackgroundDisabled
+            palette.button.secondaryBackgroundDisabled
         case .secondaryOverlay:
             .clear
+        case .attention:
+            palette.accent.orange.opacity(0.04)
         case .tertiary:
-            .Button.tertiaryBackgroundDisabled
+            palette.button.tertiaryBackgroundDisabled
+        case .icon:
+            palette.button.secondaryBackgroundDisabled
         case .overlay:
-            .Button.overlayBackgroundDisabled
+            palette.constant.white
         case .destructive:
-            .Accent.red.withAlphaComponent(0.12)
+            palette.accent.red.opacity(0.04)
         }
     }
 }

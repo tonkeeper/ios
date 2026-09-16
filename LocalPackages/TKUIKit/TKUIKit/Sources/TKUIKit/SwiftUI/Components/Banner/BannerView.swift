@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct BannerView: View {
+    @Environment(\.tkPalette) private var palette
+
     let items: [BannerItem]
     let onDismiss: (BannerItem, _ remainingCount: Int) -> Void
     let onItemShown: ((BannerItem) -> Void)?
@@ -8,6 +10,8 @@ public struct BannerView: View {
     @State private var stackOrder: BannerStackOrder
     @State private var isAnimatingPopStack = false
     @State private var isTrackingHorizontalSwipe = false
+    @State private var isCurrentItemTapSuppressed = false
+    @GestureState private var isSwipeGestureActive = false
     @State private var currentItemHorizontalOffset: CGFloat = 0
     @State private var dismissalProgress: CGFloat = 0
     @State private var currentItemPromotionProgress: CGFloat = 1
@@ -34,9 +38,9 @@ public struct BannerView: View {
                         height: Layout.height
                     )
                     .overlay {
-                        Color(uiColor: .Background.content)
+                        palette.background.content
+                            .clipShape(bannerItemShape)
                     }
-                    .bannerItem()
                     .scaleEffect(
                         x: Layout.downscaleCoefficient,
                         y: Layout.downscaleCoefficient,
@@ -53,10 +57,10 @@ public struct BannerView: View {
                         height: Layout.height
                     )
                     .overlay {
-                        Color(uiColor: .Background.content)
+                        palette.background.content
                             .opacity(1 - dismissalProgress)
+                            .clipShape(bannerItemShape)
                     }
-                    .bannerItem()
                     .scaleEffect(
                         x: downscaleCoefficient(progress: dismissalProgress),
                         y: downscaleCoefficient(progress: dismissalProgress),
@@ -73,13 +77,14 @@ public struct BannerView: View {
                         height: Layout.height,
                         onTapDismiss: {
                             popStack()
-                        }
+                        },
+                        isTapEnabled: !isCurrentItemTapSuppressed
                     )
                     .overlay {
-                        Color(uiColor: .Background.content)
+                        palette.background.content
                             .opacity(1 - currentItemPromotionProgress)
+                            .clipShape(bannerItemShape)
                     }
-                    .bannerItem()
                     .scaleEffect(
                         x: downscaleCoefficient(progress: currentItemPromotionProgress),
                         y: downscaleCoefficient(progress: currentItemPromotionProgress),
@@ -94,14 +99,13 @@ public struct BannerView: View {
                     )
                     .blur(radius: currentItemBlurRadius)
                     .opacity(currentItemOpacity)
-                    .highPriorityGesture(horizontalSwipeGesture(containerWidth: proxy.size.width))
+                    .simultaneousGesture(horizontalSwipeGesture(containerWidth: proxy.size.width))
                 }
                 if let outgoingSwipeItem {
                     BannerItemView(
                         item: outgoingSwipeItem,
                         height: Layout.height
                     )
-                    .bannerItem()
                     .offset(x: outgoingSwipeItemOffset)
                     .allowsHitTesting(false)
                 }
@@ -118,6 +122,18 @@ public struct BannerView: View {
         }
         .onChange(of: stackOrder.currentID) { _ in
             notifyCurrentItemShown()
+        }
+        .onChange(of: isSwipeGestureActive) { isActive in
+            guard !isActive else { return }
+            DispatchQueue.main.async {
+                isCurrentItemTapSuppressed = false
+                // GestureState resets before onEnded; the second hop lets a pending
+                // onEnded run first, so only a truly cancelled gesture is rolled back.
+                DispatchQueue.main.async {
+                    guard !isSwipeGestureActive, isTrackingHorizontalSwipe else { return }
+                    cancelSwipeDismissal()
+                }
+            }
         }
     }
 
@@ -188,6 +204,13 @@ public struct BannerView: View {
         isSwipePresentationActive
     }
 
+    private var bannerItemShape: RoundedRectangle {
+        RoundedRectangle(
+            cornerRadius: BannerItemModifier.Layout.cornerRadius,
+            style: .continuous
+        )
+    }
+
     private func downscaleCoefficient(progress: CGFloat) -> CGFloat {
         let initial = Layout.downscaleCoefficient
         return initial + (1 - initial) * progress
@@ -232,6 +255,9 @@ public struct BannerView: View {
 
     private func horizontalSwipeGesture(containerWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: Layout.swipeMinimumDistance, coordinateSpace: .local)
+            .updating($isSwipeGestureActive) { _, state, _ in
+                state = true
+            }
             .onChanged { value in
                 updateSwipe(value, containerWidth: containerWidth)
             }
@@ -254,6 +280,7 @@ public struct BannerView: View {
 
             finishCurrentItemPromotion()
             isTrackingHorizontalSwipe = true
+            isCurrentItemTapSuppressed = true
         }
 
         withTransaction(Transaction(animation: nil)) {
@@ -382,7 +409,6 @@ extension BannerView {
         static let popAnimationDuration: TimeInterval = 0.5
         static let popAnimation: Animation = .easeInOut(duration: popAnimationDuration)
         static let swipeMinimumDistance: CGFloat = 3
-        static let swipeFullProgressOffsetRatio: CGFloat = 0.5
         static let swipeDismissThresholdRatio: CGFloat = 0.32
         static let swipeMinimumDismissThreshold: CGFloat = 96
         static let swipeMaximumDismissThreshold: CGFloat = 180

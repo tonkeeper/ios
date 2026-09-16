@@ -3,16 +3,13 @@ import TonSwift
 
 final class HistoryListAllEventsLoader: HistoryListLoader {
     private let historyService: HistoryService
-    private let tonProofTokenService: TonProofTokenService
     private let tronUsdtApi: TronUSDTAPI
 
     init(
         historyService: HistoryService,
-        tonProofTokenService: TonProofTokenService,
         tronUsdtApi: TronUSDTAPI
     ) {
         self.historyService = historyService
-        self.tonProofTokenService = tonProofTokenService
         self.tronUsdtApi = tronUsdtApi
     }
 
@@ -49,8 +46,12 @@ final class HistoryListAllEventsLoader: HistoryListLoader {
         let hasTronTransactions = !(tronTransactions?.isEmpty ?? true)
 
         if !hasAccountsEvents && !hasTronTransactions {
-            if case let .failure(error) = accountsResult { throw error }
-            if case let .failure(error) = tronResult { throw error }
+            if case let .failure(error) = accountsResult {
+                throw error
+            }
+            if case let .failure(error) = tronResult {
+                throw error
+            }
         }
 
         return HistoryEventsBatch(
@@ -105,10 +106,10 @@ final class HistoryListAllEventsLoader: HistoryListLoader {
         }
         do {
             let events = try await tronUsdtApi.loadAllTronEvents(
+                wallet: wallet,
                 events: [],
                 address: address,
                 limit: limit,
-                tonProofToken: tonProofTokenService.getWalletToken(wallet),
                 startTimestamp: maxTimestamp,
                 finishTimestamp: finishTimestamp
             )

@@ -1,7 +1,8 @@
 import Foundation
+import KeeperCoreComponents
 import TonSwift
 
-public enum TonConnectResponseBuilder {
+enum TonConnectResponseBuilder {
     static func buildReconnectConnectEventSuccessResponse(
         wallet: Wallet,
         keeperVersion: String,
@@ -65,50 +66,42 @@ public enum TonConnectResponseBuilder {
         )
     }
 
-    public static func buildSendTransactionResponseSuccess(
+    static func buildSendTransactionResponseSuccess(
         sessionCrypto: TonConnectSessionCrypto,
         boc: String,
         id: String,
         clientId: String
     ) throws -> String {
-        let response = TonConnect.SendResponse.success(
-            .init(
-                result: boc,
-                id: id
-            )
+        try encrypt(
+            .success(.init(result: boc, id: id)),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
         )
-        let transactionResponseData = try JSONEncoder().encode(response)
-        guard let receiverPublicKey = Data(hex: clientId) else { return "" }
-
-        let encryptedTransactionResponse = try sessionCrypto.encrypt(
-            message: transactionResponseData,
-            receiverPublicKey: receiverPublicKey
-        )
-
-        return encryptedTransactionResponse.base64EncodedString()
     }
 
-    public static func buildSignDataResponseSuccess(
+    static func buildSignDataResponseSuccess(
         sessionCrypto: TonConnectSessionCrypto,
         signed: SignedDataResult,
         id: String,
         clientId: String
     ) throws -> String {
-        let response = TonConnect.SendResponse.success(
-            .init(
-                result: signed,
-                id: id
-            )
+        try encrypt(
+            .success(.init(result: signed, id: id)),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
         )
-        let transactionResponseData = try JSONEncoder().encode(response)
-        guard let receiverPublicKey = Data(hex: clientId) else { return "" }
+    }
 
-        let encryptedTransactionResponse = try sessionCrypto.encrypt(
-            message: transactionResponseData,
-            receiverPublicKey: receiverPublicKey
+    static func buildDisconnectResponseSuccess(
+        sessionCrypto: TonConnectSessionCrypto,
+        id: String,
+        clientId: String
+    ) throws -> String {
+        try encrypt(
+            .success(.init(id: id)),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
         )
-
-        return encryptedTransactionResponse.base64EncodedString()
     }
 
     static func buildSendTransactionResponseError(
@@ -117,23 +110,24 @@ public enum TonConnectResponseBuilder {
         id: String,
         clientId: String
     ) throws -> String {
-        let response = TonConnect.SendResponse.error(
-            .init(
-                id: id,
-                error: .init(
-                    code: errorCode,
-                    message: ""
-                )
-            )
+        try encrypt(
+            .error(.init(id: id, error: .init(code: errorCode, message: ""))),
+            sessionCrypto: sessionCrypto,
+            clientId: clientId
         )
-        let transactionResponseData = try JSONEncoder().encode(response)
-        guard let receiverPublicKey = Data(hex: clientId) else { return "" }
+    }
 
-        let encryptedTransactionResponse = try sessionCrypto.encrypt(
-            message: transactionResponseData,
+    private static func encrypt(
+        _ response: TonConnect.SendResponse,
+        sessionCrypto: TonConnectSessionCrypto,
+        clientId: String
+    ) throws -> String {
+        let responseData = try JSONEncoder().encode(response)
+        guard let receiverPublicKey = Data(strictHex: clientId) else { return "" }
+
+        return try sessionCrypto.encrypt(
+            message: responseData,
             receiverPublicKey: receiverPublicKey
-        )
-
-        return encryptedTransactionResponse.base64EncodedString()
+        ).base64EncodedString()
     }
 }

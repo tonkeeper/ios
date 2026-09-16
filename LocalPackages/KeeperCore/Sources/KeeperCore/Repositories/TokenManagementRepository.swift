@@ -1,7 +1,6 @@
 import Foundation
 import KeeperCoreComponents
 import TonSwift
-import TronSwift
 
 protocol TokenManagementRepository {
     func getState(wallet: Wallet) -> TokenManagementState
@@ -28,6 +27,6 @@ struct TokenManagementRepositoryImplementation: TokenManagementRepository {
     }
 
     private enum Constants {
-        static var defaultPinnedItems = [JettonMasterAddress.tonUSDT.toRaw(), TronSwift.USDT.address.base58]
+        static var defaultPinnedItems = [JettonMasterAddress.tonUSDT.toRaw()]
     }
 }

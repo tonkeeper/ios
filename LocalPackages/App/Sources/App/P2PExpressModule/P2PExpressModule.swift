@@ -4,15 +4,18 @@ import TKCoordinator
 
 struct P2PExpressParams {
     let wallet: String
-    let network: String
-    let cryptoCurrency: String
+    let assetId: String?
+    let network: String?
+    let cryptoCurrency: String?
     let fiatCurrency: String
     let amount: Int64?
     let requestNetwork: Network
+    let walletId: String?
 
     var createP2PSession: CreateP2PSession {
         CreateP2PSession(
             wallet: wallet,
+            assetId: assetId,
             network: network,
             cryptoCurrency: cryptoCurrency,
             fiatCurrency: fiatCurrency,

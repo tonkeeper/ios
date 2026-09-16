@@ -13,7 +13,15 @@ public struct TradingAsset: Equatable, Identifiable, Sendable {
     public var priceFractionDigits: Int
     public var change24hPercent: BigInt?
     public var change24hPercentFractionDigits: Int
-    public var isUnverified: Bool
+    public var verification: TradingVerification
+
+    public var isUnverified: Bool {
+        verification.isUnverified
+    }
+
+    public var isTrusted: Bool {
+        verification.isTrusted
+    }
 }
 
 extension TradingAsset {
@@ -32,7 +40,7 @@ extension TradingAsset {
             priceFractionDigits: price?.fractionDigits ?? 0,
             change24hPercent: change24hPercent?.value,
             change24hPercentFractionDigits: change24hPercent?.fractionDigits ?? 0,
-            isUnverified: item.asset.verification != .whitelist
+            verification: TradingVerification(api: item.asset.verification)
         )
     }
 }

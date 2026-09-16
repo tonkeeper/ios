@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import TKLogging
 import TKUIKit
 
 struct PasscodeBiometryProvider: PasscodeInputBiometryProvider {

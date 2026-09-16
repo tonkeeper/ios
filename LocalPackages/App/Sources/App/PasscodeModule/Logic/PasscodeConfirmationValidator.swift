@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import KeeperCoreSensitive
 
 struct PasscodeConfirmationValidator: PasscodeInputValidator {
     private let mnemonicAccess: MnemonicAccess
@@ -18,5 +19,24 @@ struct PasscodeConfirmationValidator: PasscodeInputValidator {
 
     func resetPasscodeStorage() throws {
         try mnemonicAccess.deletePasscode()
+    }
+
+    func refreshStoredPasscode(_ passcode: String) throws {
+        try mnemonicAccess.setPasscode(passcode)
+    }
+
+    func biometryAccessProbe() -> BiometryAccessProbe {
+        switch mnemonicAccess.biometryAccessProbe() {
+        case .accessible:
+            return .satisfiable
+        case .invalidated:
+            return .invalidated
+        case .missing, .indeterminate:
+            return .indeterminate
+        }
+    }
+
+    func isBiometryItemMigrated() -> Bool {
+        mnemonicAccess.isBiometryItemMigrated()
     }
 }

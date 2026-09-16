@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsListTitleViewPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: ListTitleViewPreviews()
+    private let hostingController = TKHostingController(
+        content: ListTitleViewPreviews()
     )
 
     override func viewDidLoad() {

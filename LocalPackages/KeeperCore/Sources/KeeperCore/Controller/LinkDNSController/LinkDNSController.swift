@@ -1,6 +1,13 @@
 import BigInt
 import Foundation
+import TKLogging
+import TonAPI
 import TonSwift
+
+public enum LinkDNSEmulation {
+    case confirmation(SendTransactionModel)
+    case insufficientFunds(required: BigUInt, available: BigUInt)
+}
 
 public final class LinkDNSController {
     public enum Error: Swift.Error {
@@ -8,21 +15,31 @@ public final class LinkDNSController {
         case indexerOffline
     }
 
+    /// The API rejects emulation the wallet balance cannot cover, so the operation is emulated
+    /// against an overridden balance and the shortage is reported from the wallet balance instead.
+    private static let emulationBalance: Int64 = 2_000_000_000
+
     private let wallet: Wallet
     private let nft: NFT
     private let sendService: SendService
+    private let balanceStore: BalanceStore
+    private let balanceService: BalanceService
 
     init(
         wallet: Wallet,
         nft: NFT,
-        sendService: SendService
+        sendService: SendService,
+        balanceStore: BalanceStore,
+        balanceService: BalanceService
     ) {
         self.wallet = wallet
         self.nft = nft
         self.sendService = sendService
+        self.balanceStore = balanceStore
+        self.balanceService = balanceService
     }
 
-    public func emulate(dnsLink: DNSLink) async throws -> SendTransactionModel {
+    public func emulate(dnsLink: DNSLink) async throws -> LinkDNSEmulation {
         let signedTransactions = try await createSignedTransactions(dnsLink: dnsLink) { transferData in
             let walletTransfer = try await UnsignedTransferBuilder(transferData: transferData)
                 .createUnsignedWalletTransfer(
@@ -39,19 +56,36 @@ public final class LinkDNSController {
         }
 
         let boc = signedTransactions[0]
+        let walletAddress = try wallet.address
 
         let transactionInfo = try await sendService.loadTransactionInfo(
             boc: boc,
             wallet: wallet,
-            params: nil,
+            params: [
+                EmulateMessageToWalletRequestParamsInner(
+                    address: walletAddress.toRaw(),
+                    balance: Self.emulationBalance
+                ),
+            ],
             currency: nil
         )
 
-        return try SendTransactionModel(
+        let model = try SendTransactionModel(
             accountEvent: transactionInfo.event,
             risk: transactionInfo.risk,
             transaction: transactionInfo.trace.transaction
         )
+
+        guard let available = await availableTonBalance() else {
+            return .confirmation(model)
+        }
+
+        let required = requiredAmount(for: transactionInfo)
+        guard required <= available else {
+            return .insufficientFunds(required: required, available: available)
+        }
+
+        return .confirmation(model)
     }
 
     public func sendLinkTransaction(
@@ -75,7 +109,7 @@ public final class LinkDNSController {
             if signedTransactions.count == 1 {
                 try await sendService.sendTransaction(boc: signedTransactions[0], wallet: wallet)
             } else {
-                try await sendService.sendTransactions(batch: signedTransactions, wallet: wallet)
+                try await sendService.sendTransactions(batch: signedTransactions.bocs, wallet: wallet)
             }
             NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
         } catch {
@@ -85,6 +119,38 @@ public final class LinkDNSController {
 }
 
 private extension LinkDNSController {
+    /// What the wallet has to hold when the message is sent: the Gram the operation puts at
+    /// stake plus its fee. Change comes back only after the transaction lands.
+    func requiredAmount(for transactionInfo: MessageConsequences) -> BigUInt {
+        BigUInt(max(transactionInfo.risk.gram, 0))
+            + BigUInt(max(transactionInfo.trace.transaction.totalFees, 0))
+    }
+
+    /// A stale or missing snapshot would either block a funded wallet or wave an empty one through
+    /// to a broadcast that cannot succeed, so anything but a fresh balance is loaded again.
+    func availableTonBalance() async -> BigUInt? {
+        let storedState = balanceStore.getState()[wallet]
+        if case let .current(walletBalance) = storedState {
+            return tonAmount(of: walletBalance)
+        }
+
+        do {
+            let walletBalance = try await balanceService.loadWalletBalance(
+                wallet: wallet,
+                currency: .USD,
+                includingTransferFees: false
+            )
+            return tonAmount(of: walletBalance)
+        } catch {
+            Log.w("failed to load wallet balance for dns link due to error: \(error)")
+            return storedState.map { tonAmount(of: $0.walletBalance) }
+        }
+    }
+
+    func tonAmount(of walletBalance: WalletBalance) -> BigUInt {
+        BigUInt(max(walletBalance.balance.tonBalance.amount, 0))
+    }
+
     func createSignedTransactions(dnsLink: DNSLink, signClosure: (TransferData) async throws -> SignedTransactions) async throws -> SignedTransactions {
         let seqno = try await sendService.loadSeqno(wallet: wallet)
         let timeout = await sendService.getTimeoutSafely(wallet: wallet, TTL: DEFAULT_TTL)

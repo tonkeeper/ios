@@ -20,11 +20,12 @@ final class TradeAssetsListViewModel: ObservableObject {
     private let categoryViewModels: [TradingAssetCategory: TradeAssetsListCategoryViewModel]
     private let analyticsProvider: AnalyticsProvider
     private let analyticsSource: TradeFlowAnalyticsSource
-    private let onClose: () -> Void
+    private let onBack: () -> Void
     private let onOpenAssetDetails: (TradingAsset) -> Void
 
     private var activateQueryTask: Task<Void, Never>?
     private var hasLoaded = false
+    private var hasDisappeared = false
 
     init(
         analyticsProvider: AnalyticsProvider,
@@ -33,13 +34,13 @@ final class TradeAssetsListViewModel: ObservableObject {
         amountFormatter: AmountFormatter,
         signedAmountFormatter: AmountFormatter,
         selectedCategory: TradingAssetCategory,
-        onClose: @escaping () -> Void,
+        onBack: @escaping () -> Void,
         onOpenAssetDetails: @escaping (TradingAsset) -> Void
     ) {
         self.analyticsProvider = analyticsProvider
         self.analyticsSource = analyticsSource
         self.selectedCategory = selectedCategory
-        self.onClose = onClose
+        self.onBack = onBack
         self.onOpenAssetDetails = onOpenAssetDetails
 
         let categoryViewModels = Dictionary(
@@ -123,10 +124,17 @@ final class TradeAssetsListViewModel: ObservableObject {
         currentQueryViewModel.loadNextPageIfNeeded(currentAsset: currentAsset)
     }
 
-    func close() {
+    func back() {
+        disappeared()
+        onBack()
+    }
+
+    func disappeared() {
+        guard !hasDisappeared else { return }
+
+        hasDisappeared = true
         cancelActivateQueryTask()
         categoryViewModels.values.forEach { $0.disappeared() }
-        onClose()
     }
 
     func openAsset(_ asset: TradingAsset) {

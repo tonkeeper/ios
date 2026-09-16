@@ -4,7 +4,7 @@ import TKLocalize
 import TKUIKit
 import UIKit
 
-public final class RampViewController: GenericViewViewController<RampView> {
+final class RampViewController: GenericViewViewController<RampView> {
     typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
     typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
     typealias SectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
@@ -38,7 +38,7 @@ public final class RampViewController: GenericViewViewController<RampView> {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override public func viewDidLoad() {
+    override func viewDidLoad() {
         super.viewDidLoad()
         setup()
         setupBindings()
@@ -87,7 +87,7 @@ private extension RampViewController {
             }
         }
 
-        return DataSource(collectionView: customView.collectionView) { collectionView, indexPath, item in
+        return DataSource(collectionView: customView.collectionView) { [weak self] collectionView, indexPath, item in
             switch item {
             case .shimmer:
                 return collectionView.dequeueConfiguredReusableCell(using: shimmerCellRegistration, for: indexPath, item: RampShimmerCell.Model())
@@ -152,7 +152,7 @@ private extension RampViewController {
 }
 
 extension RampViewController: UICollectionViewDelegate {
-    public func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
+    func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
         let snapshot = dataSource.snapshot()
         let section = snapshot.sectionIdentifiers[indexPath.section]
         let items = snapshot.itemIdentifiers(inSection: section)
@@ -163,17 +163,17 @@ extension RampViewController: UICollectionViewDelegate {
         return true
     }
 
-    public func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         (cell as? RampShimmerCell)?.startAnimation()
         (cell as? RampFiatCurrencyCell)?.resumeCurrencyShimmerIfNeeded()
     }
 
-    public func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView, didEndDisplaying cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
         (cell as? RampShimmerCell)?.stopAnimation()
         (cell as? RampFiatCurrencyCell)?.pauseCurrencyShimmer()
     }
 
-    public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let snapshot = dataSource.snapshot()
         let section = snapshot.sectionIdentifiers[indexPath.section]
         let items = snapshot.itemIdentifiers(inSection: section)
@@ -183,8 +183,4 @@ extension RampViewController: UICollectionViewDelegate {
         if case .shimmer = item { return }
         viewModel.didSelect(item: item)
     }
-}
-
-private extension RampViewController {
-    static let sectionHeaderElementKind = "RampSectionHeaderElementKind"
 }

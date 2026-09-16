@@ -16,7 +16,7 @@ public struct DepositClickStablecoinPaymentMethod: Codable, JSONEncodable, Hasha
     public var eventName: String = "deposit_click_stablecoin_payment_method"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
-    /** Carried from deposit_click_stablecoin */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Symbol of the stablecoin the user will send (e.g. USDC, USDT, DAI). Network is not yet known at this step.  */
     public var stablecoinSymbol: String

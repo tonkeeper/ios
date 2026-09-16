@@ -76,6 +76,12 @@ private extension StakingInputViewController {
         customView.setAmountInputView(amountInputViewController.view)
         amountInputViewController.didMove(toParent: self)
 
+        if let amountInputVC = amountInputViewController as? AmountInputViewController {
+            amountInputVC.customView.valueView.inputControl.inputTextField.accessibilityIdentifier =
+                "staking_amount_input"
+        }
+        customView.continueButton.accessibilityIdentifier = "staking_deposit_continue"
+
         addChild(detailsViewController)
         customView.setDetailsView(detailsViewController.view)
         detailsViewController.didMove(toParent: self)

@@ -123,4 +123,24 @@ struct ManageTokensListMapper {
             )
         )
     }
+
+    func mapTronTRXItem(_ item: BalanceTronTRXItemModel) -> TKListItemCell.Configuration {
+        let amount = amountFormatter.format(
+            amount: item.amount,
+            fractionDigits: item.fractionalDigits,
+            accessory: .tokenSymbol(TRX.symbol)
+        )
+
+        return TKListItemCell.Configuration(
+            listItemContentViewConfiguration: TKListItemContentView.Configuration(
+                iconViewConfiguration: .tronTRXConfiguration(),
+                textContentViewConfiguration: TKListItemTextContentView.Configuration(
+                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TRX.symbol),
+                    captionViewsConfigurations: [
+                        TKListItemTextView.Configuration(text: amount, color: .Text.secondary, textStyle: .body2),
+                    ]
+                )
+            )
+        )
+    }
 }

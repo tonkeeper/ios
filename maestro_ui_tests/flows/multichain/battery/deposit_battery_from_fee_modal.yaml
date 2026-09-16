@@ -1,0 +1,107 @@
+# From Network fee modal: Deposit opens Battery refill. After a crypto recharge,
+# Battery remains available and Deposit disappears after the recharge lands.
+# The transfer is deliberately not sent.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+# Deposit only shows up while the fee cannot be paid in charges, so refund a real
+# leftover balance first; a residue below the threshold still keeps Deposit on screen.
+- runFlow:
+    file: "../../../steps/battery/ensure_battery_low.yaml"
+    env:
+      MAX_CHARGES: "100"
+# Relaunch dismisses the Battery sheet and lands back on the wallet.
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "TRON"
+      ADDRESS_TITLE: "Your TRON address"
+
+# Reach confirmation for a small TRC20 self-transfer (do not sign yet).
+- extendedWaitUntil:
+    visible: Send
+    timeout: 60000
+- tapOn: Send
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 30000
+- runFlow:
+    file: "../../../steps/token_picker/select_asset.yaml"
+    env:
+      SEARCH_QUERY: "USDT"
+      CHAIN_ID: "token_picker_chain_tron"
+      ASSET_ID: "token_picker_asset_tron_usdt"
+- tapOn:
+    id: input_field
+- inputText: ${output.fullAddr}
+- tapOn:
+    id: amount
+- inputText: "0.01"
+- tapOn: Continue
+- extendedWaitUntil:
+    visible: Network fee
+    timeout: 180000
+
+# Fee modal: Battery is listed but needs a top-up.
+- runFlow: "../../../steps/battery/open_network_fee_picker.yaml"
+- assertVisible: Tonkeeper Battery
+- assertVisible: Deposit
+- tapOn: Deposit
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Tonkeeper Battery
+    timeout: 30000
+
+# Crypto recharge from the refill screen opened via Deposit (already on Battery).
+- runFlow:
+    file: "../../../steps/battery/recharge_crypto_from_refill.yaml"
+    env:
+      RECHARGE_TOKEN: "GRAM"
+
+# Back through send confirmation and verify the recharge is available for fees.
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "TRON"
+      ADDRESS_TITLE: "Your TRON address"
+- extendedWaitUntil:
+    visible: Send
+    timeout: 60000
+- tapOn: Send
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 30000
+- runFlow:
+    file: "../../../steps/token_picker/select_asset.yaml"
+    env:
+      SEARCH_QUERY: "USDT"
+      CHAIN_ID: "token_picker_chain_tron"
+      ASSET_ID: "token_picker_asset_tron_usdt"
+- tapOn:
+    id: input_field
+- inputText: ${output.fullAddr}
+- tapOn:
+    id: amount
+- inputText: "0.01"
+- tapOn: Continue
+- extendedWaitUntil:
+    visible: Network fee
+    timeout: 180000
+- runFlow: "../../../steps/battery/open_network_fee_picker.yaml"
+- assertVisible: Tonkeeper Battery
+
+# Recharge settlement can take a few minutes. Stop once Battery no longer offers Deposit;
+# do not select the fee method or sign the transfer.
+- extendedWaitUntil:
+    notVisible: Deposit
+    timeout: 180000
+- assertNotVisible: Deposit

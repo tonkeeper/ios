@@ -222,6 +222,4 @@ public final class TKUINavigationBar: UIView, UIGestureRecognizerDelegate {
 
 private extension CGFloat {
     static let barHeight: CGFloat = 64
-    static let edgesPadding: CGFloat = 8
-    static let contentPadding: CGFloat = 8
 }

@@ -18,13 +18,7 @@ public final class OSLogBackend: LogBackend {
 
     public func log(_ record: LogRecord) {
         let logger = logger(for: record)
-
-        let message: String
-        if record.extraInfo.isEmpty {
-            message = record.message
-        } else {
-            message = "\(record.message) \(record.extraInfo)"
-        }
+        let message = Self.message(for: record)
 
         switch record.severity {
         case .debug:
@@ -36,6 +30,22 @@ public final class OSLogBackend: LogBackend {
         case .error:
             logger.fault("\(message, privacy: .public)")
         }
+    }
+
+    /// The call site travels with warnings and errors only — those are the lines someone goes looking for.
+    private static func message(for record: LogRecord) -> String {
+        var message = record.message
+        if !record.extraInfo.isEmpty {
+            let info = record.extraInfo
+                .sorted { $0.key < $1.key }
+                .map { "\($0.key)=\($0.value)" }
+                .joined(separator: ", ")
+            message += " {\(info)}"
+        }
+        guard record.severity >= .warning else {
+            return message
+        }
+        return "\(message) at \(record.file):\(record.line)"
     }
 
     private func logger(for record: LogRecord) -> Logger {

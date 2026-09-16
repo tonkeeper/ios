@@ -27,14 +27,6 @@ struct BannerStackOrder: Equatable {
         return currentID
     }
 
-    func presentationItemIDs(isSwipePresentationActive: Bool) -> [String] {
-        [
-            presentationPreviousPreviousID(isSwipePresentationActive: isSwipePresentationActive),
-            previousID,
-            currentID,
-        ].compactMap { $0 }
-    }
-
     var count: Int {
         itemIDs.count
     }

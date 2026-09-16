@@ -12,8 +12,6 @@ final class SignDataViewController: GenericViewViewController<SignDataView>, TKB
 
     var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration?) -> Void)?
 
-    var didSign: ((String?) -> Void)?
-
     func calculateHeight(withWidth width: CGFloat) -> CGFloat {
         popUpViewController.calculateHeight(withWidth: width)
     }
@@ -51,15 +49,6 @@ private extension SignDataViewController {
         viewModel.didUpdateConfiguration = { [weak self] configuration in
             self?.popUpViewController.configuration = configuration
             self?.didUpdateHeight?()
-        }
-
-        viewModel.didTapCopy = { text in
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            UIPasteboard.general.string = text
-        }
-
-        viewModel.showToast = { configuration in
-            ToastPresenter.showToast(configuration: configuration)
         }
     }
 

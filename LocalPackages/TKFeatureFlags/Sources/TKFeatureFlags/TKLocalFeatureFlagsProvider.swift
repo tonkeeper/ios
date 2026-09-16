@@ -1,5 +1,5 @@
-import UIKit
 internal import TKAppInfo
+import UIKit
 
 public protocol TKLocalFeatureFlagsProvider: AnyObject {
     subscript(key: String) -> Bool? { get set }

@@ -12,7 +12,10 @@ struct MainModule {
 
     func createMainCoordinator() -> MainCoordinator {
         let tabBarController = TKTabBarController()
-        tabBarController.configureAppearance()
+        let router = TabBarControllerRouter(rootViewController: tabBarController)
+        router.transitionAnimator = { fromIndex, toIndex in
+            TKTabBarTransitionAnimator(fromIndex: fromIndex, toIndex: toIndex)
+        }
         let inAppReviewService = InAppReviewServiceImplementation(
             featureFlags: dependencies.coreAssembly.featureFlags,
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
@@ -21,7 +24,7 @@ struct MainModule {
         )
 
         return MainCoordinator(
-            router: TabBarControllerRouter(rootViewController: tabBarController),
+            router: router,
             coreAssembly: dependencies.coreAssembly,
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             appStateTracker: dependencies.coreAssembly.appStateTracker,

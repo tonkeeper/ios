@@ -172,6 +172,10 @@ final class ManageTokensModel {
                 return true
             case (_, .tronUSDT):
                 return false
+            case (.tronTRX, _):
+                return true
+            case (_, .tronTRX):
+                return false
             case let (.jetton(lModel), .jetton(rModel)):
                 if lModel.jetton.jettonInfo.address == JettonMasterAddress.tonUSDT {
                     return true
@@ -211,19 +215,8 @@ extension BalanceItem {
             return staking.info.pool.toRaw()
         case .tronUSDT:
             return USDT.address.base58
-        }
-    }
-
-    var isZeroBalance: Bool {
-        switch self {
-        case let .ton(ton):
-            return ton.amount == 0
-        case let .jetton(jetton):
-            return jetton.amount.isZero
-        case let .staking(staking):
-            return staking.info.amount == 0
-        case let .tronUSDT(item):
-            return item.amount.isZero
+        case .tronTRX:
+            return TRX.symbol
         }
     }
 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct CellCenterSecondaryRow: View {
+    @Environment(\.tkPalette) private var palette
+
     private let config: Config
 
     public init(config: Config) {
@@ -21,14 +23,14 @@ public struct CellCenterSecondaryRow: View {
             if let value = content.value {
                 Text(value.title)
                     .textStyle(value.textStyle)
-                    .foregroundStyle(Color(uiColor: value.textColor))
+                    .foregroundStyle(value.textColor)
                     .lineLimit(value.lineLimit)
                     .truncationMode(value.truncationMode)
             }
             if let delta = content.delta {
                 Text(delta.text)
                     .textStyle(delta.textStyle)
-                    .foregroundStyle(delta.color)
+                    .foregroundStyle(deltaColor(delta))
                     .padding(.leading, 6)
             }
             Spacer(minLength: 0)
@@ -42,13 +44,22 @@ public struct CellCenterSecondaryRow: View {
         }
     }
 
+    private func deltaColor(_ delta: Delta) -> Color {
+        switch delta.style {
+        case let .sign(isPositive):
+            isPositive ? palette.accent.green : palette.accent.red
+        case let .custom(color):
+            color
+        }
+    }
+
     private func shimmerView(primaryWidth: CGFloat) -> some View {
         HStack(alignment: .center, spacing: 0) {
             VStack(spacing: 0) {
                 Spacer(minLength: 0)
                 ShimmerSwiftUIView(
                     config: ShimmerSwiftUIView.Config(
-                        color: .Background.contentTint,
+                        color: .backgroundContentTint,
                         cornerRadius: .capsule
                     )
                 )
@@ -74,14 +85,14 @@ public extension CellCenterSecondaryRow {
         public var title: String
         public var textStyle: TKTextStyle
         public var lineLimit: Int
-        public var textColor: UIColor
+        public var textColor: TKColor
         public var truncationMode: Text.TruncationMode
 
         public init(
             title: String,
             textStyle: TKTextStyle? = nil,
             lineLimit: Int = 1,
-            textColor: UIColor = .Text.secondary,
+            textColor: TKColor = .textSecondary,
             truncationMode: Text.TruncationMode = .tail
         ) {
             self.title = title
@@ -93,16 +104,32 @@ public extension CellCenterSecondaryRow {
     }
 
     struct AccessoryConfig {
-        public var title: String
+        public var title: AttributedString
         public var textStyle: TKTextStyle
-        public var color: Color
+        public var color: TKColor
         public var lineLimit: Int
         public var truncationMode: Text.TruncationMode
 
-        init(
+        public init(
             title: String,
             textStyle: TKTextStyle = .body2,
-            color: Color = Color(uiColor: .Text.secondary),
+            color: TKColor = .textSecondary,
+            lineLimit: Int = 1,
+            truncationMode: Text.TruncationMode = .tail
+        ) {
+            self.init(
+                title: AttributedString(title),
+                textStyle: textStyle,
+                color: color,
+                lineLimit: lineLimit,
+                truncationMode: truncationMode
+            )
+        }
+
+        public init(
+            title: AttributedString,
+            textStyle: TKTextStyle = .body2,
+            color: TKColor = .textSecondary,
             lineLimit: Int = 1,
             truncationMode: Text.TruncationMode = .tail
         ) {
@@ -115,9 +142,15 @@ public extension CellCenterSecondaryRow {
     }
 
     struct Delta {
+        /// Semantic style resolved against `tkPalette` where the delta is rendered.
+        public enum Style {
+            case sign(isPositive: Bool)
+            case custom(Color)
+        }
+
         public var text: String
         public var textStyle: TKTextStyle
-        public var color: Color
+        public var style: Style
 
         public init(
             text: String,
@@ -126,19 +159,7 @@ public extension CellCenterSecondaryRow {
         ) {
             self.text = text
             self.textStyle = textStyle ?? defaultDeltaTextStyle
-            self.color = Color(
-                uiColor: isPositive ? .Accent.green : .Accent.red
-            )
-        }
-
-        public init(
-            text: String,
-            textStyle: TKTextStyle? = nil,
-            color: Color
-        ) {
-            self.text = text
-            self.textStyle = textStyle ?? defaultDeltaTextStyle
-            self.color = color
+            style = .sign(isPositive: isPositive)
         }
     }
 

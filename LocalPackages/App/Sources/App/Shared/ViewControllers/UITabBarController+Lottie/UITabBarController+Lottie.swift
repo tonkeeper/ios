@@ -18,17 +18,10 @@ extension UITabBarController {
         if let lottieController {
             lottieController.uninstall()
         }
-        let lottieController: LottieTabBarControlling? = if UIApplication.useSystemBarsAppearance {
-            LiquidGlassLottieTabBarController(
-                tabBarController: self,
-                items: items
-            )
-        } else {
-            DefaultLottieTabBarController(
-                tabBarController: self,
-                items: items
-            )
-        }
+        let lottieController = DefaultLottieTabBarController(
+            tabBarController: self,
+            items: items
+        )
         self.lottieController = lottieController?.denyingTapOnSelectedItem()
     }
 

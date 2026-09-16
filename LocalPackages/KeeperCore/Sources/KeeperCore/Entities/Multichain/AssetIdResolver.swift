@@ -1,4 +1,5 @@
 import TKLogging
+import TonSwift
 import TronSwift
 import UIKit
 
@@ -13,6 +14,8 @@ public enum AssetIdResolver {
             switch normalizedChain {
             case "ton":
                 return TonInfo.symbol
+            case "tron":
+                return TRX.symbol
             default:
                 return nil
             }
@@ -24,6 +27,42 @@ public enum AssetIdResolver {
             default:
                 return address
             }
+        }
+    }
+}
+
+public enum AssetId {
+    public static func coin(chain: MultichainChain, network: Network) -> String {
+        "\(chain.rawValue)/\(network.assetIdNetworkIdentifier)/coin"
+    }
+
+    public static func jetton(address: TonSwift.Address, network: Network) -> String {
+        asset(chain: .ton, type: "jetton", address: address.toRaw(), network: network)
+    }
+
+    public static func nft(address: TonSwift.Address, network: Network) -> String {
+        asset(chain: .ton, type: "nft", address: address.toRaw(), network: network)
+    }
+
+    public static func trc20(address: String, network: Network) -> String {
+        asset(chain: .tron, type: "trc20", address: address, network: network)
+    }
+
+    private static func asset(
+        chain: MultichainChain,
+        type: String,
+        address: String,
+        network: Network
+    ) -> String {
+        "\(chain.rawValue)/\(network.assetIdNetworkIdentifier)/\(type)/\(address)"
+    }
+}
+
+private extension Network {
+    var assetIdNetworkIdentifier: String {
+        switch self {
+        case .mainnet, .tetra: "mainnet"
+        case .testnet: "testnet"
         }
     }
 }
@@ -54,7 +93,10 @@ public enum AssetIdComponents {
                 address: components[3]
             )
         default:
-            Log.w("invalid asset id type \(assetId): wrong components count")
+            Log.w(
+                "invalid asset identifier",
+                error: MultichainLoggingError.invalidAssetIdentifier(componentCount: components.count)
+            )
             return nil
         }
     }

@@ -32,40 +32,6 @@ public struct StackingPoolInfo: Codable, Equatable, Hashable {
     public let nominatorsStake: Int64
     public let validatorStake: Int64
     public let cycleLength: TimeInterval?
-
-    init(
-        address: Address,
-        name: String,
-        totalAmount: Int64,
-        implementation: Implementation,
-        apy: Decimal,
-        minStake: Int64,
-        cycleStart: TimeInterval,
-        cycleEnd: TimeInterval,
-        isVerified: Bool,
-        currentNominators: Int64,
-        maxNominators: Int64,
-        liquidJettonMaster: Address,
-        nominatorsStake: Int64,
-        validatorStake: Int64,
-        cycleLength: TimeInterval
-    ) {
-        self.address = address
-        self.name = name
-        self.totalAmount = totalAmount
-        self.implementation = implementation
-        self.apy = apy
-        self.minStake = minStake
-        self.cycleStart = cycleStart
-        self.cycleEnd = cycleEnd
-        self.isVerified = isVerified
-        self.currentNominators = currentNominators
-        self.maxNominators = maxNominators
-        self.liquidJettonMaster = liquidJettonMaster
-        self.nominatorsStake = nominatorsStake
-        self.validatorStake = validatorStake
-        self.cycleLength = cycleLength
-    }
 }
 
 public extension Array where Element == StackingPoolInfo {
@@ -123,5 +89,16 @@ public extension StackingPoolInfo.Implementation {
         case .whales:
             return 0
         }
+    }
+}
+
+public extension StackingPoolInfo {
+    /// Yearly reward for `amount` at this pool's APY, in the same fraction digits as `amount`.
+    func annualProfit(for amount: BigUInt) -> BigUInt {
+        let apyFractionLength = max(Int(-apy.exponent), 0)
+        let apyPlain = NSDecimalNumber(decimal: apy).multiplying(byPowerOf10: Int16(apyFractionLength))
+        guard let apyBigInt = BigUInt(apyPlain.stringValue) else { return 0 }
+        let scalingFactor = BigUInt(100) * BigUInt(10).power(apyFractionLength)
+        return amount * apyBigInt / scalingFactor
     }
 }

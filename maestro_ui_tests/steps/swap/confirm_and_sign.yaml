@@ -1,0 +1,43 @@
+# Waits until Multichain Swap Continue is enabled (quote ready), then confirms + signs.
+appId: com.jbig.tonkeeper
+---
+# Continue stays visible but disabled until a quote arrives, so wait on the enabled state
+# itself. This replaced a 40-attempt JS retry loop: every attempt cost a full hierarchy
+# dump, and a rejected quote ("Couldn't get a quote. Change amount" — a normal provider
+# outcome for a small amount) burned the whole budget, minutes, before failing.
+# Above the 15s house limit because the quote is a third-party provider round trip.
+- extendedWaitUntil:
+    visible:
+      id: swap_continue
+      enabled: true
+    timeout: 30000
+    label: Wait for the swap quote to enable Continue
+
+- tapOn:
+    id: swap_continue
+
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 36000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+# High price-impact swaps show a sheet with "Swap Anyway" before passcode.
+- tapOn:
+    text: "Swap Anyway"
+    optional: true
+
+- runFlow: ../password/enter_password.yaml
+
+# Success shows a "Done" toast that lives ~2s, which a hierarchy poll can easily miss while
+# execution runs for minutes. The stable signal is the navigation that only a broadcast swap
+# triggers: the swap sheet is dismissed and History is pushed.
+- extendedWaitUntil:
+    visible:
+      id: history_back_button
+    timeout: 60000
+- assertVisible: History

@@ -6,7 +6,13 @@ import TonSwift
 final class JettonTransferTransactionConfirmationController: TransactionConfirmationController {
     private var preferredExtraType: TransactionConfirmationModel.ExtraType?
     private var availableTypes: [TransactionConfirmationModel.ExtraType] = []
+    /// The subset of `availableTypes` that `prepareFeeOptions` managed to price. Kept apart from
+    /// `availableTypes` so a method that failed to price is only hidden, not forgotten: the next
+    /// `prepareFeeOptions` still sees it as pending and retries it.
+    private var pricedTypes: [TransactionConfirmationModel.ExtraType]?
+    private var extraOptions: [TransactionConfirmationModel.ExtraOption] = []
     private var unavailableGaslessTokenAddresses: Set<String> = []
+    private var lastTransfer: Transfer?
 
     func getModel() -> TransactionConfirmationModel {
         createModel()
@@ -14,6 +20,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
 
     func setLoading() {
         extraState = .loading
+        extraOptions = []
+        pricedTypes = nil
     }
 
     func emulate() async -> Result<Void, TransactionConfirmationError> {
@@ -23,6 +31,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         do {
             defer {
                 self.availableTypes = availableTypes
+                self.pricedTypes = nil
             }
 
             let amountToSend = jettonItem.jettonInfo.scaleValue.flatMap {
@@ -32,22 +41,6 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                     resultScale: jettonItem.jettonInfo.fractionDigits
                 )
             } ?? getAmountValue().value
-
-            let transfer: Transfer = .jetton(jettonItem, transferAmount: BigUInt(65_000_000), amount: isMax ? 1 : amountToSend, recipient: recipient, comment: comment)
-
-            let (gaslessAvailable, isBatteryAvailable) =
-                await(
-                    transferService.isGaslessAvailable(wallet: wallet, transfer: transfer),
-                    transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
-                )
-
-            if isBatteryAvailable {
-                availableTypes.append(.battery)
-            }
-
-            if gaslessAvailable, !unavailableGaslessTokenAddresses.contains(gaslessTokenAddress) {
-                availableTypes.append(.gasless(token: jettonItem.jettonInfo))
-            }
 
             let isMax = await {
                 do {
@@ -66,25 +59,50 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
             }()
             self.isMax = isMax
 
+            let transferAmount = await transferService.transferCost(
+                wallet: wallet,
+                jettonMasterAddress: jettonItem.jettonInfo.address
+            )
+            let transfer: Transfer = .jetton(jettonItem, transferAmount: transferAmount, amount: isMax ? 1 : amountToSend, recipient: recipient, comment: comment)
+            lastTransfer = transfer
+
+            let (gaslessAvailable, isBatteryAvailable) =
+                await(
+                    transferService.isGaslessAvailable(wallet: wallet, transfer: transfer),
+                    transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
+                )
+
+            // With a fee picker in front of the user, zero charges is a state to show and offer a
+            // refill for, not a reason to hide the method. Without one there is nowhere to recover,
+            // so the option only appears when it can actually pay.
+            let listsBattery = buildsFeeOptions
+                ? TransferService.isRelayerEnabled(wallet: wallet, transfer: transfer)
+                : isBatteryAvailable
+            if listsBattery {
+                availableTypes.append(.battery)
+            }
+
+            if gaslessAvailable, !unavailableGaslessTokenAddresses.contains(gaslessTokenAddress) {
+                availableTypes.append(.gasless(token: jettonItem.jettonInfo))
+            }
+
             let preferredType: TransactionConfirmationModel.ExtraType = {
-                if let preferredExtraType {
-                    // This gasless token was previously rejected because its fee exceeded the send amount.
-                    if case let .gasless(token) = preferredExtraType,
-                       unavailableGaslessTokenAddresses.contains(token.address.toRaw())
-                    {
-                        return isBatteryAvailable ? .battery : .default
-                    }
+                if let preferredExtraType,
+                   availableTypes.contains(preferredExtraType)
+                {
                     return preferredExtraType
                 }
 
                 switch settingsRepository.getTransferSettings(wallet: wallet).jettonTransfer {
                 case .default:
                     return .default
-                case .gasless:
-                    return unavailableGaslessTokenAddresses.contains(gaslessTokenAddress)
-                        ? (isBatteryAvailable ? .battery : .default)
-                        : .gasless(token: jettonItem.jettonInfo)
                 case .battery:
+                    return isBatteryAvailable ? .battery : .default
+                case .gasless:
+                    let gaslessType = TransactionConfirmationModel.ExtraType.gasless(token: jettonItem.jettonInfo)
+                    if availableTypes.contains(gaslessType) {
+                        return gaslessType
+                    }
                     return isBatteryAvailable ? .battery : .default
                 }
             }()
@@ -119,19 +137,128 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
             }
 
             self.emulationResult = result
+            self.extraOptions = buildsFeeOptions ? [makeExtraOption(for: result)] : []
             await updateFee(emulationResult: emulationResult)
             return .success(())
         } catch {
             self.emulationResult = nil
+            self.extraOptions = []
             await updateFee(emulationResult: nil)
             return .failure(.failedToCalculateFee)
         }
     }
 
-    func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+    func prepareFeeOptions() async {
+        guard buildsFeeOptions,
+              let selectedResult = emulationResult,
+              let transfer = lastTransfer
+        else {
+            return
+        }
+
+        let availableTypes = self.availableTypes
+        let isComplete = !extraOptions.isEmpty
+            && availableTypes.allSatisfy { type in extraOptions.contains { $0.type == type } }
+        guard !isComplete else {
+            return
+        }
+
+        let emulateWithType: (TransactionConfirmationModel.ExtraType) async throws -> TransferEmulationResult = { extraType in
+            try await self.transferService.emulate(
+                wallet: self.wallet,
+                transfer: transfer,
+                params: [.init(address: self.wallet.address.toRaw(), balance: Int64(2_000_000_000))],
+                preferredExtraType: extraType,
+                includeUnavailableBattery: true
+            )
+        }
+
+        let preparedOptions = await makeExtraOptions(
+            availableTypes: availableTypes,
+            selectedResult: selectedResult,
+            emulateWithType: emulateWithType
+        )
+        extraOptions = preparedOptions
+        // A method that could not be priced has nothing to show in the picker and nothing to
+        // select: keeping it listed leaves a row that silently falls back to another method.
+        pricedTypes = availableTypes.filter { type in
+            preparedOptions.contains { $0.type == type }
+        }
+    }
+
+    private func makeExtraOptions(
+        availableTypes: [TransactionConfirmationModel.ExtraType],
+        selectedResult: TransferEmulationResult,
+        emulateWithType: (TransactionConfirmationModel.ExtraType) async throws -> TransferEmulationResult
+    ) async -> [TransactionConfirmationModel.ExtraOption] {
+        var options: [TransactionConfirmationModel.ExtraOption] = []
+        let selectedType = extraType(for: selectedResult)
+
+        for type in availableTypes where !options.contains(where: { $0.type == type }) {
+            let result: TransferEmulationResult?
+            if type == selectedType {
+                result = selectedResult
+            } else {
+                result = try? await emulateWithType(type)
+            }
+            // emulate may fall back to another type; only keep an exact match.
+            guard let result, extraType(for: result) == type else {
+                continue
+            }
+            options.append(makeExtraOption(for: result))
+        }
+
+        return options
+    }
+
+    private func makeExtraOption(
+        for result: TransferEmulationResult
+    ) -> TransactionConfirmationModel.ExtraOption {
+        TransactionConfirmationModel.ExtraOption(
+            type: extraType(for: result),
+            value: extraValue(for: result)
+        )
+    }
+
+    private func extraType(for result: TransferEmulationResult) -> TransactionConfirmationModel.ExtraType {
+        switch result.transferType {
+        case .battery:
+            return .battery
+        case .gasless:
+            return .gasless(token: jettonItem.jettonInfo)
+        case .default:
+            return .default
+        }
+    }
+
+    private func extraValue(for result: TransferEmulationResult) -> TransactionConfirmationModel.ExtraValue {
+        let amount: BigUInt = switch result.extra.amount {
+        case let .fee(value): value
+        case let .refund(value): value
+        }
+        switch result.transferType {
+        case .battery:
+            let excess = result.extra.excess.flatMap {
+                batteryCalculation.calculateCharges(tonAmount: BigUInt($0))
+            }
+            return .battery(
+                charges: batteryCalculation.calculateCharges(tonAmount: amount),
+                excess: excess
+            )
+        case .gasless:
+            return .gasless(token: jettonItem.jettonInfo, amount: amount)
+        case .default:
+            return .default(amount: amount)
+        }
+    }
+
+    func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         do {
+            let minimumTransferAmount = await transferService.transferCost(
+                wallet: wallet,
+                jettonMasterAddress: jettonItem.jettonInfo.address
+            )
             let transferAmount: BigUInt = {
-                let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
                 guard let emulationResult else {
                     return BigUInt(100_000_000)
                 }
@@ -162,7 +289,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                 )
             } ?? getAmountValue().value
 
-            try await transferService.sendTransaction(
+            let broadcastedTransactions = try await transferService.sendTransaction(
                 wallet: wallet,
                 transfer: .jetton(
                     jettonItem,
@@ -180,7 +307,13 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                 }
             )
 
-            return .success(())
+            return .success(
+                .ton(
+                    wallet: wallet,
+                    signedTransactions: broadcastedTransactions,
+                    activityType: .send
+                )
+            )
         } catch {
             switch error {
             case let .firstOption(transferError):
@@ -214,7 +347,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     }
 
     func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {
-        preferredExtraType = extraType
+        setExtraTypeForCurrentTransaction(extraType: extraType)
         var transferSettings = settingsRepository.getTransferSettings(wallet: wallet)
         switch extraType {
         case .default:
@@ -223,8 +356,14 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
             transferSettings.jettonTransfer = .battery
         case .gasless:
             transferSettings.jettonTransfer = .gasless
+        case .multichain:
+            return
         }
         try? settingsRepository.setTransferSettings(wallet: wallet, transferSettings: transferSettings)
+    }
+
+    func setExtraTypeForCurrentTransaction(extraType: TransactionConfirmationModel.ExtraType) {
+        preferredExtraType = extraType
     }
 
     var signHandler: ((TransferData, Wallet) async throws(TransactionConfirmationError) -> SignedTransactions)?
@@ -247,10 +386,10 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
     private let ratesStore: TonRatesStore
     private let currencyStore: CurrencyStore
     private let transferService: TransferService
-    private let ratesService: RatesService
     private let balanceService: BalanceService
     private let settingsRepository: SettingsRepository
     private let batteryCalculation: BatteryCalculation
+    private let buildsFeeOptions: Bool
 
     init(
         wallet: Wallet,
@@ -264,10 +403,10 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         ratesStore: TonRatesStore,
         currencyStore: CurrencyStore,
         transferService: TransferService,
-        ratesService: RatesService,
         balanceService: BalanceService,
         settingsRepository: SettingsRepository,
-        batteryCalculation: BatteryCalculation
+        batteryCalculation: BatteryCalculation,
+        buildsFeeOptions: Bool = false
     ) {
         self.wallet = wallet
         self.recipient = recipient
@@ -280,10 +419,10 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
         self.ratesStore = ratesStore
         self.currencyStore = currencyStore
         self.transferService = transferService
-        self.ratesService = ratesService
         self.balanceService = balanceService
         self.settingsRepository = settingsRepository
         self.batteryCalculation = batteryCalculation
+        self.buildsFeeOptions = buildsFeeOptions
     }
 
     private func createModel() -> TransactionConfirmationModel {
@@ -294,8 +433,9 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
             transaction: .transfer(.jetton(jettonItem.jettonInfo)),
             amount: getAmountValue(),
             extraState: extraState,
+            extraOptions: extraOptions,
             comment: comment,
-            availableExtraTypes: self.availableTypes,
+            availableExtraTypes: pricedTypes ?? availableTypes,
             isMax: isMax,
             totalFee: totalFee
         )
@@ -341,6 +481,8 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                 )
             case let .gasless(token):
                 return .gasless(token: token, amount: amount)
+            case let .multichain(token):
+                return .multichain(token: token, amount: amount)
             }
         }()
 
@@ -364,7 +506,7 @@ final class JettonTransferTransactionConfirmationController: TransactionConfirma
                     return self.amount
                 case let .extra(extra):
                     switch extra.value {
-                    case .battery, .default:
+                    case .battery, .default, .multichain:
                         return self.amount
                     case let .gasless(_, amount):
                         return self.amount - amount

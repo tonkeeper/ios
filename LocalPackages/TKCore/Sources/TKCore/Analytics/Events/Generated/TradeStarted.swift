@@ -21,7 +21,7 @@ public struct TradeStarted: Codable, JSONEncodable, Hashable {
         case qrCode = "qr_code"
     }
     public var eventName: String = "trade_started"
-    /** Source location where the Trade page was opened: | wallet_screen: main wallet screen | jetton_screen: jetton info screen | tab_bar: bottom tab bar | deep_link: from deep link | qr_code: user scans a QR code  */
+    /** Source location where the Trade page was opened:  - wallet_screen: main wallet screen - jetton_screen: jetton info screen - tab_bar: bottom tab bar - deep_link: from deep link - qr_code: user scans a QR code  */
     public var from: From
 
     public init(eventName: String = "trade_started", from: From) {

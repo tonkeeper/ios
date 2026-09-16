@@ -1,9 +1,9 @@
+import Foundation
 import KeeperCore
 import TKCore
 import TKLocalize
 import TKLogging
 import TKUIKit
-import UIKit
 
 protocol BatteryRefillModuleOutput: AnyObject {
     var didTapSupportedTransactions: (() -> Void)? { get set }
@@ -15,19 +15,7 @@ protocol BatteryRefillModuleOutput: AnyObject {
 
 protocol BatteryRefillModuleInput: AnyObject {}
 
-protocol BatteryRefillViewModel: AnyObject {
-    var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)? { get set }
-    var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)? { get set }
-    var didUpdateHeaderView: ((BatteryRefillHeaderView.Configuration) -> Void)? { get set }
-
-    func viewDidLoad()
-    func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
-    func getListItemCellConfiguration(identifier: String) -> TKListItemCell.Configuration?
-    func getFooterCellConfiguration() -> BatteryRefillFooterView.Configuration?
-    func purchaseItem(productIdentifier: String)
-}
-
-final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, BatteryRefillModuleOutput, BatteryRefillModuleInput {
+final class BatteryRefillViewModelImplementation: ObservableObject, BatteryRefillModuleOutput, BatteryRefillModuleInput {
     // MARK: - BatteryRefillModuleOutput
 
     var didTapSupportedTransactions: (() -> Void)?
@@ -36,79 +24,64 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
     var didOpenRefundURL: ((_ url: URL, _ title: String) -> Void)?
     var didFinish: (() -> Void)?
 
-    // MARK: - BatteryRefillViewModel
-
-    var didUpdateSnapshot: ((BatteryRefill.Snapshot) -> Void)?
-    var didUpdatePromocodeResolveState: ((BatteryPromocodeResolveState) -> Void)?
-    var didUpdateHeaderView: ((BatteryRefillHeaderView.Configuration) -> Void)?
-
-    func viewDidLoad() {
-        setupPromocode()
-
-        headerModel.didUpdateState = { [weak self] state in
-            self?.headerState = state
-            self?.updateHeader()
-            self?.updateList()
-        }
-        headerState = headerModel.getState()
-
-        iapItems = inAppPurchaseModel.items
-        inAppPurchaseModel.loadProducts()
-        inAppPurchaseModel.eventHandler = { [weak self] event in
-            switch event {
-            case let .didUpdateItems(items):
-                self?.iapItems = items
-                self?.updateList()
-            case .didPerformTransaction:
-                ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Refill.Toast.recharged))
-            case let .didFailTransaction(error: error):
-                Log.e("battery refill didFailTransaction", extraInfo: [
-                    "error": error?.localizedDescription ?? "unknown error",
-                ])
-            }
-        }
-        rechargeMethodsModelState = rechargeMethodsModel.state
-        rechargeMethodsModel.stateHandler = { [weak self] state in
-            self?.rechargeMethodsModelState = state
-            self?.updateList()
-        }
-        rechargeMethodsModel.loadMethods()
-
-        updateHeader()
-        updateList()
-    }
-
-    func getInAppPurchaseCellConfiguration(identifier: String) -> TKListItemCell.Configuration? {
-        purchasesCellConfigurations[identifier]
-    }
-
-    func getListItemCellConfiguration(identifier: String) -> TKListItemCell.Configuration? {
-        listItemCellConfigurations[identifier]
-    }
-
-    func getFooterCellConfiguration() -> BatteryRefillFooterView.Configuration? {
-        footerCellConfiguration
-    }
-
-    func purchaseItem(productIdentifier: String) {
-        inAppPurchaseModel.startProcessing(identifier: productIdentifier)
-    }
-
     // MARK: - State
 
-    private var headerState: BatteryRefillHeaderModel.State?
-    private var iapItems = [BatteryIAPItem]()
-    private var rechargeMethodsModelState: BatteryRefillRechargeMethodsModel.State = .loading
+    struct HeaderState {
+        let batteryState: BatterySwiftUIViewConfig.State
+        let showsBetaTag: Bool
+        let caption: String
+        let warning: String?
+        let showsSupportedTransactionsButton: Bool
+    }
+
+    struct InAppPurchaseRow: Identifiable {
+        let id: String
+        let title: String
+        let caption: String
+        let batteryPercent: CGFloat
+        let buttonTitle: String
+        let isEnabled: Bool
+    }
+
+    struct RechargeMethodRow: Identifiable {
+        enum Icon {
+            case ton
+            case jetton(URL?)
+            case gift
+        }
+
+        let id: String
+        let title: String
+        let caption: String?
+        let icon: Icon
+    }
+
+    @Published private(set) var header: HeaderState?
+    @Published private(set) var showsSettings = false
+    @Published private(set) var inAppPurchaseRows = [InAppPurchaseRow]()
+    @Published private(set) var rechargeMethodRows = [RechargeMethodRow]()
+    @Published var showsCloseButton = false
+
+    var showsRefillSections: Bool {
+        !configuration.flag(\.batteryDisabled, network: wallet.network)
+    }
+
+    var footerDescription: String {
+        configuration.flag(\.batteryDisabled, network: wallet.network)
+            ? TKLocales.Battery.Refill.Footer.unavailable
+            : TKLocales.Battery.Refill.Footer.description
+    }
+
+    var didTapClose: (() -> Void)?
+    var endEditing: (() -> Void)?
+    var endPromocodeEditing: (() -> Void)?
+
+    private var rechargeMethodItems = [BatteryRefillRechargeMethodsModel.RechargeMethodItem]()
     private var promocode: String? {
         didSet {
             inAppPurchaseModel.promocode = promocode
         }
     }
-
-    private var purchasesCellConfigurations = [String: TKListItemCell.Configuration]()
-    private var listItemCellConfigurations = [String: TKListItemCell.Configuration]()
-    private var headerCellConfiguration: BatteryRefillHeaderView.Configuration?
-    private var footerCellConfiguration: BatteryRefillFooterView.Configuration?
 
     // MARK: - Dependencies
 
@@ -143,323 +116,192 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
         self.promocodeOutput = promocodeOutput
     }
 
-    private func updateList() {
-        let snapshot = createSnapshot()
-        didUpdateSnapshot?(snapshot)
-    }
+    func viewDidLoad() {
+        setupPromocode()
 
-    private func updateHeader() {
-        let batteryViewState: BatteryView.State
-        let caption: String
-        let informationButtonModel: TKPlainButton.Model?
-        var tagConfiguration: TKTagView.Configuration?
+        headerModel.didUpdateState = { [weak self] state in
+            self?.updateHeader(state: state)
+        }
+        updateHeader(state: headerModel.getState())
 
-        if headerState?.isBeta == true {
-            tagConfiguration = .accentTag(text: "BETA", color: .Accent.orange)
+        updateInAppPurchaseRows(items: inAppPurchaseModel.items)
+        inAppPurchaseModel.loadProducts()
+        inAppPurchaseModel.loadPurchasesAvailability()
+        inAppPurchaseModel.eventHandler = { [weak self] event in
+            switch event {
+            case let .didUpdateItems(items):
+                self?.updateInAppPurchaseRows(items: items)
+            case .didPerformTransaction:
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: TKLocales.Battery.Refill.Toast.recharged))
+            case let .didFailTransaction(error: error):
+                Log.e("battery refill didFailTransaction", extraInfo: [
+                    "error": error?.localizedDescription ?? "unknown error",
+                ])
+            }
         }
 
-        switch headerState?.charge {
+        updateRechargeMethodRows(state: rechargeMethodsModel.state)
+        rechargeMethodsModel.stateHandler = { [weak self] state in
+            self?.updateRechargeMethodRows(state: state)
+        }
+        rechargeMethodsModel.loadMethods()
+    }
+
+    // MARK: - Actions
+
+    func purchase(productIdentifier: String) {
+        inAppPurchaseModel.startProcessing(identifier: productIdentifier)
+    }
+
+    func selectRechargeMethod(id: String) {
+        guard let item = rechargeMethodItems.first(where: { $0.identifier == id }) else { return }
+        endPromocodeEditing?()
+        didTapRecharge?(item)
+    }
+
+    func openSettings() {
+        endPromocodeEditing?()
+        didTapTransactionsSettings?()
+    }
+
+    func openHistory() {
+        endPromocodeEditing?()
+        guard let url = createRefundURL() else { return }
+        didOpenRefundURL?(url, TKLocales.Battery.Refill.ChargesHistory.title)
+    }
+
+    func openSupportedTransactions() {
+        didTapSupportedTransactions?()
+    }
+
+    func close() {
+        didTapClose?()
+    }
+
+    func restorePurchases() {
+        ToastPresenter.showToast(configuration: .loading)
+        Task { @MainActor [weak self] in
+            guard let self else {
+                ToastPresenter.hideAll()
+                return
+            }
+            let result = await self.inAppPurchaseModel.restorePurchases()
+
+            ToastPresenter.hideAll()
+
+            switch result {
+            case .success:
+                ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.restored))
+            case let .failure(error):
+                switch error {
+                case .nothingToRestore:
+                    ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.nothingToRestore))
+                default:
+                    ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.failed(error.rawValue)))
+                }
+            }
+        }
+    }
+
+    // MARK: - State updates
+
+    private func updateHeader(state: BatteryRefillHeaderModel.State) {
+        switch state.charge {
         case let .charged(chargesCount, batteryPercent):
-            batteryViewState = .fill(batteryPercent)
-            caption = "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: chargesCount))"
-            informationButtonModel = nil
+            header = HeaderState(
+                batteryState: .fill(batteryPercent),
+                showsBetaTag: state.isBeta,
+                caption: chargesCaption(chargesCount: chargesCount),
+                warning: nil,
+                showsSupportedTransactionsButton: false
+            )
+            showsSettings = true
+        case let .refunded(chargesCount):
+            header = HeaderState(
+                batteryState: .negative,
+                showsBetaTag: state.isBeta,
+                caption: chargesCaption(chargesCount: chargesCount),
+                warning: TKLocales.Battery.Refill.negativeBalanceCaption,
+                showsSupportedTransactionsButton: false
+            )
+            showsSettings = true
         case .notCharged:
-            batteryViewState = .emptyTinted
-            caption = TKLocales.Battery.Refill.emptyCaption
-            informationButtonModel = TKPlainButton.Model(
-                title: TKLocales.Battery.Refill.supportedTransactions.withTextStyle(.body2, color: .Accent.blue, alignment: .center, lineBreakMode: .byWordWrapping),
-                icon: nil,
-                action: { [weak self] in
-                    self?.didTapSupportedTransactions?()
-                }
+            header = HeaderState(
+                batteryState: .emptyTinted,
+                showsBetaTag: state.isBeta,
+                caption: TKLocales.Battery.Refill.emptyCaption,
+                warning: nil,
+                showsSupportedTransactionsButton: true
             )
-        case .none:
-            return
+            showsSettings = false
         }
-
-        let configuration = BatteryRefillHeaderView.Configuration(
-            batteryViewState: batteryViewState,
-            tagConfiguration: tagConfiguration,
-            title: TKLocales.Battery.Refill.title,
-            caption: caption,
-            informationButtonModel: informationButtonModel
-        )
-
-        didUpdateHeaderView?(configuration)
     }
 
-    private func createSnapshot() -> BatteryRefill.Snapshot {
-        var snapshot = BatteryRefill.Snapshot()
-
-        createHeaderSections(snapshot: &snapshot)
-
-        if !configuration.flag(\.batteryDisabled, network: wallet.network) {
-            createPromoSnapshotSection(snapshot: &snapshot)
-            createInAppPurchasesSnapshotSection(snapshot: &snapshot)
-            createRechargeMethodsSnapshotSection(snapshot: &snapshot)
-        }
-
-        createHistorySnapshotSection(snapshot: &snapshot)
-        createFooterSection(snapshot: &snapshot)
-
-        return snapshot
+    private func chargesCaption(chargesCount: Int) -> String {
+        "\(chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: abs(chargesCount)))"
     }
 
-    private func createHeaderSections(snapshot: inout BatteryRefill.Snapshot) {
-        snapshot.appendSections([.header])
-        snapshot.appendItems([.header], toSection: .header)
-        if #available(iOS 15.0, *) {
-            snapshot.reconfigureItems([.header])
-        } else {
-            snapshot.reloadItems([.header])
-        }
-
-        switch headerState?.charge {
-        case .charged:
-            listItemCellConfigurations[.settingsCellIdentifier] = createSettingsCellConfiguration()
-
-            snapshot.appendSections([.settings])
-            snapshot.appendItems([.listItem(
-                BatteryRefill.ListItem(
-                    identifier: .settingsCellIdentifier,
-                    onSelection: { [weak self] in
-                        self?.didTapTransactionsSettings?()
-                    }
+    private func updateInAppPurchaseRows(items: [BatteryIAPItem]) {
+        inAppPurchaseRows = items.map { item in
+            let caption: String
+            let buttonTitle: String
+            switch item.state {
+            case .loading:
+                caption = "Loading"
+                buttonTitle = "Loading"
+            case let .amount(amount):
+                caption = "\(amount.charges) \(TKLocales.Battery.Refill.chargesCount(count: amount.charges))"
+                buttonTitle = amountFormatter.format(
+                    decimal: amount.price,
+                    accessory: .fiat(amount.currency),
+                    style: .compact
                 )
-            )], toSection: .settings)
-
-        case .notCharged, .none:
-            return
-        }
-    }
-
-    private func createPromoSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
-        snapshot.appendSections([.promocode])
-        snapshot.appendItems([.promocode], toSection: .promocode)
-    }
-
-    private func createInAppPurchasesSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
-        var purchasesCellConfigurations = [String: TKListItemCell.Configuration]()
-        var snapshotItems = [BatteryRefill.SnapshotItem]()
-        for item in iapItems {
-            snapshotItems.append(createInAppPurchaseSnapshotItem(item: item))
-            purchasesCellConfigurations[item.pack.productIdentifier] = createInAppPurchaseCellConfiguration(item: item)
-        }
-
-        snapshot.appendSections([.inAppPurchases])
-        snapshot.appendItems(snapshotItems, toSection: .inAppPurchases)
-        self.purchasesCellConfigurations = purchasesCellConfigurations
-    }
-
-    private func createRechargeMethodsSnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
-        var cellConfigurations = [String: TKListItemCell.Configuration]()
-        var snapshotItems = [BatteryRefill.SnapshotItem]()
-        switch rechargeMethodsModelState {
-        case .loading:
-            break
-        case let .idle(items):
-            for item in items {
-                snapshotItems.append(createRechargeMethodSnapshotItem(item: item))
-                cellConfigurations[item.identifier] = createRechargeMethodCellConfiguration(item: item)
             }
-        }
 
-        snapshot.appendSections([.rechargeMethods])
-        snapshot.appendItems(snapshotItems, toSection: .rechargeMethods)
-        self.listItemCellConfigurations.merge(cellConfigurations, uniquingKeysWith: { $1 })
-    }
-
-    private func createHistorySnapshotSection(snapshot: inout BatteryRefill.Snapshot) {
-        snapshot.appendSections([.history])
-        snapshot.appendItems([.listItem(BatteryRefill.ListItem(
-            identifier: .historyCellIdentifier,
-            onSelection: { [weak self] in
-                guard let url = self?.createRefundURL() else {
-                    return
-                }
-                self?.didOpenRefundURL?(url, TKLocales.Battery.Refill.ChargesHistory.title)
-            }
-        ))], toSection: .history)
-        listItemCellConfigurations[.historyCellIdentifier] = createHistoryCellConfiguration()
-    }
-
-    private func createFooterSection(snapshot: inout BatteryRefill.Snapshot) {
-        snapshot.appendSections([.footer])
-        snapshot.appendItems([.footer], toSection: .footer)
-
-        let description = configuration.flag(\.batteryDisabled, network: wallet.network) ?
-            TKLocales.Battery.Refill.Footer.unavailable :
-            TKLocales.Battery.Refill.Footer.description
-
-        footerCellConfiguration = BatteryRefillFooterView.Configuration(
-            description: description,
-            restoreButtonTitle: TKLocales.Battery.Refill.Footer.restorePurchase,
-            restoreButtonAction: { [weak self] in
-                ToastPresenter.showToast(configuration: .loading)
-                Task { @MainActor in
-                    guard let self else {
-                        ToastPresenter.hideAll()
-                        return
-                    }
-                    let result = await self.inAppPurchaseModel.restorePurchases()
-
-                    ToastPresenter.hideAll()
-
-                    switch result {
-                    case .success:
-                        ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.restored))
-                    case let .failure(error):
-                        switch error {
-                        case .nothingToRestore:
-                            ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.nothingToRestore))
-                        default:
-                            ToastPresenter.showToast(configuration: ToastPresenter.Configuration(title: TKLocales.RestorePurchases.failed(error.rawValue)))
-                        }
-                    }
-                }
-            }
-        )
-    }
-
-    private func createInAppPurchaseSnapshotItem(item: BatteryIAPItem) -> BatteryRefill.SnapshotItem {
-        let buttonTitle: String
-        switch item.state {
-        case let .amount(amount):
-            let value = amountFormatter.format(
-                decimal: amount.price,
-                accessory: .fiat(amount.currency),
-                style: .compact
-            )
-            buttonTitle = value
-        case .loading:
-            buttonTitle = "Loading"
-        }
-
-        return .inAppPurchase(
-            BatteryRefill.InAppPurchaseItem(
-                identifier: item.pack.productIdentifier,
+            return InAppPurchaseRow(
+                id: item.pack.productIdentifier,
+                title: item.pack.name,
+                caption: caption,
                 batteryPercent: item.pack.batteryPercent,
                 buttonTitle: buttonTitle,
-                isEnable: item.isEnable
+                isEnabled: item.isEnable
             )
-        )
+        }
     }
 
-    private func createRechargeMethodSnapshotItem(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> BatteryRefill.SnapshotItem {
-        let listItem = BatteryRefill.ListItem(
-            identifier: item.identifier,
-            onSelection: { [weak self] in
-                self?.didTapRecharge?(item)
-            }
-        )
-        return .listItem(listItem)
-    }
-
-    private func createInAppPurchaseCellConfiguration(item: BatteryIAPItem) -> TKListItemCell.Configuration {
-        let caption: String
-        switch item.state {
+    private func updateRechargeMethodRows(state: BatteryRefillRechargeMethodsModel.State) {
+        switch state {
         case .loading:
-            caption = "Loading"
-        case let .amount(amount):
-            caption = "\(amount.charges) \(TKLocales.Battery.Refill.chargesCount(count: amount.charges))"
+            rechargeMethodItems = []
+        case let .idle(items):
+            rechargeMethodItems = items
         }
 
-        return TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: item.pack.name),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2),
-                    ]
+        rechargeMethodRows = rechargeMethodItems.map { item in
+            switch item {
+            case let .token(token):
+                let icon: RechargeMethodRow.Icon
+                switch token {
+                case .ton:
+                    icon = .ton
+                case let .jetton(jettonItem):
+                    icon = .jetton(jettonItem.jettonInfo.imageURL)
+                }
+                return RechargeMethodRow(
+                    id: item.identifier,
+                    title: "\(TKLocales.Battery.Refill.Crypto.recharge) \(token.symbol)",
+                    caption: nil,
+                    icon: icon
                 )
-            )
-        )
-    }
-
-    private func createRechargeMethodCellConfiguration(item: BatteryRefillRechargeMethodsModel.RechargeMethodItem) -> TKListItemCell.Configuration {
-        let title: String
-        let caption: String?
-        let iconViewConfiguration: TKListItemIconView.Configuration
-        switch item {
-        case let .token(token):
-            title = "\(TKLocales.Battery.Refill.Crypto.recharge) \(token.symbol)"
-
-            switch token {
-            case .ton:
-                iconViewConfiguration = .tonConfiguration()
-            case let .jetton(jettonItem):
-                iconViewConfiguration = .configuration(jettonInfo: jettonItem.jettonInfo, isNetworkBadgeVisible: false)
+            case .gift:
+                return RechargeMethodRow(
+                    id: item.identifier,
+                    title: TKLocales.Battery.Refill.Gift.title,
+                    caption: TKLocales.Battery.Refill.Gift.caption,
+                    icon: .gift
+                )
             }
-            caption = nil
-        case .gift:
-            title = TKLocales.Battery.Refill.Gift.title
-            caption = TKLocales.Battery.Refill.Gift.caption
-            iconViewConfiguration = TKListItemIconView.Configuration(
-                content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Images.Size44.gift))),
-                alignment: .center,
-                cornerRadius: 12,
-                backgroundColor: .clear,
-                size: CGSize(width: 44, height: 44)
-            )
         }
-
-        let captionViewsConfigurations: [TKListItemTextView.Configuration] = {
-            if let caption {
-                [TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2)]
-            } else {
-                []
-            }
-        }()
-
-        return TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                iconViewConfiguration: iconViewConfiguration,
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
-                    captionViewsConfigurations: captionViewsConfigurations
-                )
-            )
-        )
-    }
-
-    private func createHistoryCellConfiguration() -> TKListItemCell.Configuration {
-        let title = TKLocales.Battery.Refill.ChargesHistory.title
-        let caption = TKLocales.Battery.Refill.ChargesHistory.caption
-        let iconViewConfiguration = TKListItemIconView.Configuration(
-            content: TKListItemIconView.Configuration.Content.image(TKImageView.Model(image: TKImage.image(.App.Images.Size44.clock))),
-            alignment: .center,
-            cornerRadius: 12,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44)
-        )
-
-        return TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                iconViewConfiguration: iconViewConfiguration,
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2),
-                    ]
-                )
-            )
-        )
-    }
-
-    private func createSettingsCellConfiguration() -> TKListItemCell.Configuration {
-        let title = TKLocales.Battery.Refill.Settings.title
-        let caption = TKLocales.Battery.Refill.Settings.caption
-
-        return TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2, numberOfLines: 0),
-                    ]
-                )
-            )
-        )
     }
 
     private func createRefundURL() -> URL? {
@@ -487,9 +329,4 @@ final class BatteryRefillViewModelImplementation: BatteryRefillViewModel, Batter
             }
         }
     }
-}
-
-private extension String {
-    static let historyCellIdentifier = "history_item"
-    static let settingsCellIdentifier = "settings_item"
 }

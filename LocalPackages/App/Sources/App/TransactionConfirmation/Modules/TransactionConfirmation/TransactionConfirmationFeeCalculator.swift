@@ -67,6 +67,13 @@ struct TransactionConfirmationFeeCalculator {
                 symbol: token.symbol ?? token.name,
                 tokenKind: tokenKind
             )
+        case let .multichain(token, amount):
+            return .token(
+                amount: amount,
+                fractionDigits: token.decimals,
+                symbol: token.symbol,
+                tokenKind: .other
+            )
         }
     }
 
@@ -79,18 +86,6 @@ struct TransactionConfirmationFeeCalculator {
         }
 
         let tonAmount = batteryMeanFee.multiplying(by: NSDecimalNumber(value: charges))
-        let nanoAmount = tonAmount
-            .multiplying(byPowerOf10: Int16(TonInfo.fractionDigits))
-            .rounding(
-                accordingToBehavior: NSDecimalNumberHandler(
-                    roundingMode: .up,
-                    scale: 0,
-                    raiseOnExactness: false,
-                    raiseOnOverflow: false,
-                    raiseOnUnderflow: false,
-                    raiseOnDivideByZero: false
-                )
-            )
-        return BigUInt(nanoAmount.stringValue)
+        return tonAmount.toNanoTonsBigUInt()
     }
 }

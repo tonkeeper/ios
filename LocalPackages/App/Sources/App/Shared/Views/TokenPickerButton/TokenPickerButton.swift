@@ -9,6 +9,19 @@ final class TokenPickerButton: UIControl {
         let name: String
         let network: String?
         let image: TKImage
+        let networkIcon: UIImage?
+
+        init(
+            name: String,
+            network: String? = nil,
+            image: TKImage,
+            networkIcon: UIImage? = nil
+        ) {
+            self.name = name
+            self.network = network
+            self.image = image
+            self.networkIcon = networkIcon
+        }
     }
 
     var configuration: Configuration? {
@@ -38,6 +51,7 @@ final class TokenPickerButton: UIControl {
     var category: TKActionButtonCategory = .tertiary {
         didSet {
             backgroundView.backgroundColor = category.backgroundColor
+            networkBadgeImageView.layer.borderColor = category.backgroundColor.cgColor
         }
     }
 
@@ -47,14 +61,23 @@ final class TokenPickerButton: UIControl {
 
     override var isHighlighted: Bool {
         didSet {
-            backgroundView.backgroundColor = isHighlighted ? category.highlightedBackgroundColor : category.backgroundColor
+            let color = isHighlighted ? category.highlightedBackgroundColor : category.backgroundColor
+            backgroundView.backgroundColor = color
+            networkBadgeImageView.layer.borderColor = color.cgColor
         }
     }
 
     let imageView = TKImageView()
     let nameLabel = UILabel()
     let networkLabel = UILabel()
+    let networkBadgeImageView = UIImageView()
     let switchImageView = UIImageView()
+
+    private enum Layout {
+        static let imageSize: CGFloat = 24
+        static let badgeSize: CGFloat = 14
+        static let badgeBorderWidth: CGFloat = 1.5
+    }
 
     let stackView: UIStackView = {
         let stackView = UIStackView()
@@ -111,12 +134,22 @@ final class TokenPickerButton: UIControl {
         switchImageView.tintColor = .Icon.secondary
         switchImageView.isUserInteractionEnabled = false
 
+        networkBadgeImageView.contentMode = .scaleAspectFit
+        networkBadgeImageView.isUserInteractionEnabled = false
+        networkBadgeImageView.isHidden = true
+        networkBadgeImageView.layer.cornerRadius = Layout.badgeSize / 2
+        networkBadgeImageView.layer.masksToBounds = true
+        networkBadgeImageView.layer.borderWidth = Layout.badgeBorderWidth
+        networkBadgeImageView.layer.borderColor = category.backgroundColor.cgColor
+
         stackView.isUserInteractionEnabled = false
 
         stackView.addArrangedSubview(imageView)
         stackView.addArrangedSubview(nameLabel)
         stackView.addArrangedSubview(networkLabel)
         stackView.addArrangedSubview(switchImageView)
+
+        addSubview(networkBadgeImageView)
 
         addAction(UIAction(handler: { [weak self] _ in
             self?.didTap?()
@@ -131,7 +164,13 @@ final class TokenPickerButton: UIControl {
         }
 
         imageView.snp.makeConstraints { make in
-            make.width.height.equalTo(24)
+            make.width.height.equalTo(Layout.imageSize)
+        }
+
+        networkBadgeImageView.snp.makeConstraints { make in
+            make.width.height.equalTo(Layout.badgeSize)
+            make.trailing.equalTo(imageView)
+            make.bottom.equalTo(imageView)
         }
     }
 
@@ -140,6 +179,8 @@ final class TokenPickerButton: UIControl {
             imageView.image = nil
             nameLabel.text = nil
             networkLabel.text = nil
+            networkBadgeImageView.image = nil
+            networkBadgeImageView.isHidden = true
 
             return
         }
@@ -148,17 +189,24 @@ final class TokenPickerButton: UIControl {
             model: TKImageView.Model(
                 image: configuration.image,
                 tintColor: .clear,
-                size: .size(CGSize(width: 24, height: 24)),
+                size: .size(CGSize(width: Layout.imageSize, height: Layout.imageSize)),
                 corners: .circle
             )
         )
         nameLabel.text = configuration.name
 
-        if let network = configuration.network {
-            networkLabel.text = network
-            networkLabel.isHidden = false
-        } else {
+        if let networkIcon = configuration.networkIcon {
+            networkBadgeImageView.image = networkIcon
+            networkBadgeImageView.isHidden = false
             networkLabel.isHidden = true
+        } else {
+            networkBadgeImageView.isHidden = true
+            if let network = configuration.network {
+                networkLabel.text = network
+                networkLabel.isHidden = false
+            } else {
+                networkLabel.isHidden = true
+            }
         }
     }
 }

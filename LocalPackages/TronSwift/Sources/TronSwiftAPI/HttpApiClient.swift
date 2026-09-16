@@ -15,14 +15,14 @@ struct HttpApiClient {
         self.urlSession = urlSession
         self.baseApiUrl = baseApiUrl
         self.isSuccessStatusCode = isSuccessStatusCode
+        // Keyless TronGrid throttles per API method: the 429 body says
+        // "allowed_rps(1)", and measured spacing of exactly 1000ms still fails
+        // while 1200ms is reliably clean, so pace with a margin (1250ms).
         let rateLimiter = RequestRateLimiter(
-            rps: 2
+            rps: 0.8
         )
         self.middlewares = [
-            RetrierMiddleware(
-                rateLimitRetryHandler: RequestRetrier(),
-                rateLimiter: rateLimiter
-            ),
+            RetrierMiddleware(rateLimitRetryHandler: RequestRetrier()),
             RateLimiterMiddleware(rateLimiter: rateLimiter),
         ]
     }

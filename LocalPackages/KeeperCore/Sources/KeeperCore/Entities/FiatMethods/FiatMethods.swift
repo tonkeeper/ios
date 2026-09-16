@@ -71,24 +71,14 @@ public struct FiatMethodCategory: Codable, Equatable, Hashable {
     }
 }
 
-public struct FiatMethodDefaultLayout: Codable, Equatable {
-    public let methods: [FiatMethodItem.ID]
-}
-
-public struct FiatMethodLayoutByCountry: Codable, Equatable {
-    public let countryCode: String
-    public let currency: String
-    public let methods: [FiatMethodItem.ID]
-}
-
 public struct FiatMethods: Codable, Equatable {
     public let categories: [FiatMethodCategory]
     public let buy: [FiatMethodCategory]
     public let sell: [FiatMethodCategory]
 }
 
-public struct FiatMethodsResponse: Codable {
-    public let data: FiatMethods
+struct FiatMethodsResponse: Codable {
+    let data: FiatMethods
 }
 
 public extension FiatMethodItem {

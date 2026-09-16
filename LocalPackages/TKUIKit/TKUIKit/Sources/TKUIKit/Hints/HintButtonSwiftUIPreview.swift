@@ -2,13 +2,12 @@ import SwiftUI
 
 private struct HintButtonPreviewPlayground: View {
     private let selectedDirection: RequestedDirection
+    @Environment(\.tkPalette) private var palette
     @State private var horizontalMode = HorizontalMode.relative
     @State private var horizontalValue = 0.0
     @State private var verticalOffset = 8.0
     @State private var maximumWidth = 220.0
     @State private var messageVariant = MessageVariant.long
-    @State private var isSettingsPresented = false
-
     init(initialDirection: RequestedDirection) {
         selectedDirection = initialDirection
     }
@@ -17,7 +16,7 @@ private struct HintButtonPreviewPlayground: View {
         interactiveCoverage
             .padding(.vertical, 20)
             .ignoresSafeArea(.all)
-            .debugPreview(backgroundColor: Color(uiColor: .Background.page))
+            .debugPreview(background: .page)
     }
 
     private var controlPanel: some View {
@@ -25,7 +24,7 @@ private struct HintButtonPreviewPlayground: View {
             VStack(alignment: .leading, spacing: Layout.controlLabelSpacing) {
                 Text("Horizontal Mode")
                     .textStyle(.label2)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
 
                 Picker("Horizontal Mode", selection: $horizontalMode) {
                     ForEach(HorizontalMode.allCases) { mode in
@@ -62,7 +61,7 @@ private struct HintButtonPreviewPlayground: View {
             VStack(alignment: .leading, spacing: Layout.controlLabelSpacing) {
                 Text("Message")
                     .textStyle(.label2)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
 
                 Picker("Message", selection: $messageVariant) {
                     ForEach(MessageVariant.allCases) { variant in
@@ -123,11 +122,11 @@ private struct HintButtonPreviewPlayground: View {
     private func previewLabel(_ title: String) -> some View {
         Text(title)
             .textStyle(.body2)
-            .foregroundStyle(Color(uiColor: .Text.primary))
+            .foregroundStyle(.textPrimary)
             .padding(.horizontal, Layout.labelHorizontalPadding)
             .padding(.vertical, Layout.labelVerticalPadding)
             .background(
-                Color(uiColor: .Background.contentTint)
+                palette.background.contentTint
                     .clipped()
             )
     }
@@ -143,13 +142,13 @@ private struct HintButtonPreviewPlayground: View {
             HStack {
                 Text(title)
                     .textStyle(.label2)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
 
                 Spacer(minLength: Layout.minimumSpacer)
 
                 Text(value)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
             }
 
             Slider(
@@ -157,7 +156,7 @@ private struct HintButtonPreviewPlayground: View {
                 in: range,
                 step: step
             )
-            .tint(Color(uiColor: .Accent.blue))
+            .tint(.accentBlue)
         }
     }
 
@@ -182,6 +181,8 @@ private struct HintButtonPreviewPlayground: View {
         switch horizontalMode {
         case .relative:
             .relative(CGFloat(horizontalValue))
+        case .relativeToGlobal:
+            .relativeToGlobal(CGFloat(horizontalValue))
         case .absolute:
             .absolute(CGFloat(horizontalValue))
         }
@@ -189,7 +190,7 @@ private struct HintButtonPreviewPlayground: View {
 
     private var horizontalValueText: String {
         switch horizontalMode {
-        case .relative:
+        case .relative, .relativeToGlobal:
             horizontalValue.formatted(.number.precision(.fractionLength(2)))
         case .absolute:
             "\(Int(horizontalValue)) pt"
@@ -219,30 +220,30 @@ private extension HintButtonPreviewPlayground {
         static let minimumSpacer: CGFloat = 12
         static let canvasPadding: CGFloat = 24
         static let canvasSpacing: CGFloat = 16
-        static let canvasCornerRadius: CGFloat = 24
-        static let cardSpacing: CGFloat = 12
         static let labelHorizontalPadding: CGFloat = 14
         static let labelVerticalPadding: CGFloat = 10
-        static let settingsHorizontalPadding: CGFloat = 14
-        static let settingsVerticalPadding: CGFloat = 10
-        static let popoverPadding: CGFloat = 16
-        static let popoverWidth: CGFloat = 320
     }
 
     enum RequestedDirection: String, CaseIterable, Identifiable {
         case topLeft
+        case topCenter
         case topRight
         case bottomLeft
+        case bottomCenter
         case bottomRight
 
         init(direction: HintPosition.Direction) {
             switch direction {
             case .topLeft:
                 self = .topLeft
+            case .topCenter:
+                self = .topCenter
             case .topRight:
                 self = .topRight
             case .bottomLeft:
                 self = .bottomLeft
+            case .bottomCenter:
+                self = .bottomCenter
             case .bottomRight:
                 self = .bottomRight
             }
@@ -256,10 +257,14 @@ private extension HintButtonPreviewPlayground {
             switch self {
             case .topLeft:
                 "Top Left"
+            case .topCenter:
+                "Top Center"
             case .topRight:
                 "Top Right"
             case .bottomLeft:
                 "Bottom Left"
+            case .bottomCenter:
+                "Bottom Center"
             case .bottomRight:
                 "Bottom Right"
             }
@@ -269,10 +274,14 @@ private extension HintButtonPreviewPlayground {
             switch self {
             case .topLeft:
                 .topLeft
+            case .topCenter:
+                .topCenter
             case .topRight:
                 .topRight
             case .bottomLeft:
                 .bottomLeft
+            case .bottomCenter:
+                .bottomCenter
             case .bottomRight:
                 .bottomRight
             }
@@ -281,6 +290,7 @@ private extension HintButtonPreviewPlayground {
 
     enum HorizontalMode: String, CaseIterable, Identifiable {
         case relative
+        case relativeToGlobal
         case absolute
 
         var id: Self {
@@ -291,6 +301,8 @@ private extension HintButtonPreviewPlayground {
             switch self {
             case .relative:
                 "Relative"
+            case .relativeToGlobal:
+                "Global"
             case .absolute:
                 "Absolute"
             }
@@ -300,6 +312,8 @@ private extension HintButtonPreviewPlayground {
             switch self {
             case .relative:
                 "Horizontal Offset"
+            case .relativeToGlobal:
+                "Global Horizontal Offset"
             case .absolute:
                 "Horizontal Offset"
             }
@@ -307,7 +321,7 @@ private extension HintButtonPreviewPlayground {
 
         var range: ClosedRange<Double> {
             switch self {
-            case .relative:
+            case .relative, .relativeToGlobal:
                 -1 ... 1
             case .absolute:
                 -120 ... 120
@@ -316,7 +330,7 @@ private extension HintButtonPreviewPlayground {
 
         var step: Double {
             switch self {
-            case .relative:
+            case .relative, .relativeToGlobal:
                 0.05
             case .absolute:
                 4
@@ -352,16 +366,30 @@ private extension HintButtonPreviewPlayground {
 
 #Preview("Top Left") {
     HintButtonPreviewPlayground(initialDirection: .topLeft)
+        .tkThemed()
+}
+
+#Preview("Top Center") {
+    HintButtonPreviewPlayground(initialDirection: .topCenter)
+        .tkThemed()
 }
 
 #Preview("Top Right") {
     HintButtonPreviewPlayground(initialDirection: .topRight)
+        .tkThemed()
 }
 
 #Preview("Bottom Left") {
     HintButtonPreviewPlayground(initialDirection: .bottomLeft)
+        .tkThemed()
+}
+
+#Preview("Bottom Center") {
+    HintButtonPreviewPlayground(initialDirection: .bottomCenter)
+        .tkThemed()
 }
 
 #Preview("Bottom Right") {
     HintButtonPreviewPlayground(initialDirection: .bottomRight)
+        .tkThemed()
 }

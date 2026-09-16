@@ -146,7 +146,7 @@ private extension TokenDetailsTRC20FeesBannerView {
         case .trx:
             iconBackgroundView.layer.cornerRadius = 22
             iconBackgroundView.backgroundColor = .clear
-            iconImageView.image = .App.Currency.Vector.trc20.withRenderingMode(.alwaysOriginal)
+            iconImageView.image = .TKUIKit.Icons.Size44.currencyTrc20.withRenderingMode(.alwaysOriginal)
             iconImageView.tintColor = nil
             iconImageView.snp.updateConstraints { make in
                 make.width.height.equalTo(44)

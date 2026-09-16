@@ -18,8 +18,6 @@ protocol StakingBalanceDetailsModuleOutput: AnyObject {
     ) -> Void)? { get set }
 }
 
-protocol StakingBalanceDetailsModuleInput: AnyObject {}
-
 protocol StakingBalanceDetailsViewModel: AnyObject {
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
     var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
@@ -208,7 +206,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
         let imageConfiguration = TKListItemIconView.Configuration(
             content: .image(
                 TKImageView.Model(
-                    image: .image(.App.Currency.Vector.ton),
+                    image: .image(.TKUIKit.Icons.Size44.currencyTon),
                     size: .size(CGSize(width: 64, height: 64)),
                     corners: .circle
                 )
@@ -386,7 +384,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
                     isEnabled: !configuration.flag(\.stakingDisabled, network: wallet.network) && wallet.isStakeEnable,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapStake?(wallet, stakingPoolInfo)
-                    }
+                    },
+                    accessibilityIdentifier: "staking_balance_stake"
                 ),
                 TokenDetailsHeaderButtonsView.Model.Button(
                     configuration: TKUIIconButton.Model(
@@ -396,7 +395,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
                     isEnabled: wallet.isStakeEnable,
                     action: { [weak self, wallet, stakingPoolInfo] in
                         self?.didTapUnstake?(wallet, stakingPoolInfo)
-                    }
+                    },
+                    accessibilityIdentifier: "staking_balance_unstake"
                 ),
             ]
         )
@@ -405,9 +405,6 @@ private extension StakingBalanceDetailsViewModelImplementation {
 }
 
 private extension String {
-    static let mostProfitableTag = TKLocales.maxApy
-    static let apy = TKLocales.apy
-    static let minimalDeposit = TKLocales.StakingBalanceDetails.minimalDeposit
     static let description = TKLocales.StakingBalanceDetails.description
     static let jettonButtonDescription = TKLocales.StakingBalanceDetails.jettonButtonDescription
     static let pendingStakeTitle = TKLocales.StakingBalanceDetails.pendingStake
@@ -417,9 +414,4 @@ private extension String {
     static let tapToCollect = TKLocales.StakingBalanceDetails.tapToCollect
     static let stakeTitle = TKLocales.StakingBalanceDetails.stake
     static let unstakeTitle = TKLocales.StakingBalanceDetails.unstake
-}
-
-private extension CGSize {
-    static let iconSize = CGSize(width: 44, height: 44)
-    static let badgeIconSize = CGSize(width: 24, height: 24)
 }

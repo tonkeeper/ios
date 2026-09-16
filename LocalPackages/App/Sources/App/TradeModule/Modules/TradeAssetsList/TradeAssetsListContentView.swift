@@ -146,13 +146,16 @@ private extension TradeAssetsListContentView {
                 }
 
                 if showsLoadingMore {
-                    ProgressView()
-                        .tint(Color(uiColor: .Accent.blue))
-                        .padding(.vertical, Layout.pageLoaderVerticalPadding)
+                    CircularLoader(
+                        mode: .indeterminate,
+                        preset: .medium
+                    )
+                    .padding(.vertical, Layout.pageLoaderVerticalPadding)
                 }
             }
             .padding(.bottom, Layout.bottomPadding)
         }
+        .tkImmediateButtonPresses()
         .clipShape(
             RoundedRectangle(cornerRadius: rowCornerRadius, style: .continuous)
         )

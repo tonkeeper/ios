@@ -24,9 +24,11 @@ public struct TrackableScrollView<Content: View>: View {
                 ScrollViewOffsetTracker()
                 content()
             }
-        }.withOffsetTracking(
+        }
+        .withOffsetTracking(
             action: onOffsetChange
         )
+        .tkImmediateButtonPresses()
     }
 }
 

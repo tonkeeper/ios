@@ -9,15 +9,42 @@ public protocol Coordinate {
 public struct TKLineChartCanvasView: View {
     private let chartData: ChartData
     private let scenario: Scenario
+    private let selectionGuideHeight: CGFloat?
+    private let providedInteractionState: TKLineChartInteractionState?
+    private let showsSelectionIndicator: Bool
 
-    @StateObject private var interactionState = InteractionState()
+    @StateObject private var ownedInteractionState: TKLineChartInteractionState
 
     public init(
         chartData: ChartData,
         scenario: Scenario = .nonInteractive
     ) {
+        self.init(
+            chartData: chartData,
+            scenario: scenario,
+            selectionGuideHeight: nil,
+            interactionState: nil,
+            showsSelectionIndicator: true
+        )
+    }
+
+    init(
+        chartData: ChartData,
+        scenario: Scenario = .nonInteractive,
+        selectionGuideHeight: CGFloat?,
+        interactionState: TKLineChartInteractionState? = nil,
+        showsSelectionIndicator: Bool = true
+    ) {
         self.chartData = chartData
         self.scenario = scenario
+        self.selectionGuideHeight = selectionGuideHeight
+        self.providedInteractionState = interactionState
+        self.showsSelectionIndicator = showsSelectionIndicator
+        self._ownedInteractionState = StateObject(
+            wrappedValue: interactionState == nil
+                ? TKLineChartInteractionState(chartData: chartData)
+                : TKLineChartInteractionState()
+        )
     }
 
     public var body: some View {
@@ -30,24 +57,29 @@ public struct TKLineChartCanvasView: View {
     }
 
     private func interactiveContent(interaction: Interaction) -> some View {
-        GeometryReader { geometry in
-            TKLineChartContentView(renderer: interactionState.renderer)
-                .contentShape(Rectangle())
-                .overlay {
-                    TKLineChartGestureOverlay(
-                        minimumPressDuration: Layout.minimumPressDuration,
-                        isEnabled: chartData.style.allowsSelection,
-                        onSelectionBegan: { location in
-                            interactionState.updateSelection(at: location, in: geometry.size)
-                        },
-                        onSelectionChanged: { location in
-                            interactionState.updateSelection(at: location, in: geometry.size)
-                        },
-                        onSelectionEnded: {
-                            interactionState.finishDragging()
-                        }
-                    )
-                }
+        let interactionState = activeInteractionState
+        return GeometryReader { geometry in
+            TKLineChartContentView(
+                renderer: interactionState.renderer,
+                selectionGuideHeight: selectionGuideHeight,
+                showsSelectionIndicator: showsSelectionIndicator
+            )
+            .contentShape(Rectangle())
+            .overlay {
+                TKLineChartGestureOverlay(
+                    minimumPressDuration: Layout.minimumPressDuration,
+                    isEnabled: chartData.style.allowsSelection,
+                    onSelectionBegan: { location in
+                        interactionState.updateSelection(at: location, in: geometry.size)
+                    },
+                    onSelectionChanged: { location in
+                        interactionState.updateSelection(at: location, in: geometry.size)
+                    },
+                    onSelectionEnded: {
+                        interactionState.finishDragging()
+                    }
+                )
+            }
         }
         .background(Color.clear)
         .task(id: RenderToken(chartData: chartData)) {
@@ -61,16 +93,65 @@ public struct TKLineChartCanvasView: View {
         }
     }
 
+    @ViewBuilder
     private var staticContent: some View {
-        let renderer = makeStaticRenderer()
-        return TKLineChartContentView(renderer: renderer)
+        if let providedInteractionState {
+            TKLineChartContentView(
+                renderer: providedInteractionState.renderer,
+                selectionGuideHeight: selectionGuideHeight,
+                showsSelectionIndicator: showsSelectionIndicator
+            )
             .background(Color.clear)
+            .task(id: RenderToken(chartData: chartData)) {
+                providedInteractionState.updateChartData(chartData)
+            }
+        } else {
+            let renderer = makeStaticRenderer()
+            TKLineChartContentView(
+                renderer: renderer,
+                selectionGuideHeight: selectionGuideHeight,
+                showsSelectionIndicator: showsSelectionIndicator
+            )
+            .background(Color.clear)
+        }
     }
 
     private func makeStaticRenderer() -> TKLineChartRenderer {
         let renderer = TKLineChartRenderer()
         renderer.setChartData(chartData)
         return renderer
+    }
+
+    private var activeInteractionState: TKLineChartInteractionState {
+        providedInteractionState ?? ownedInteractionState
+    }
+}
+
+@MainActor
+final class TKLineChartInteractionState: ObservableObject {
+    let renderer: TKLineChartRenderer
+
+    init(chartData: TKLineChartCanvasView.ChartData? = nil) {
+        renderer = TKLineChartRenderer(chartData: chartData)
+    }
+
+    func updateCallbacks(interaction: TKLineChartCanvasView.Interaction) {
+        renderer.didSelectValue = interaction.didSelectValue
+        renderer.didDeselectValue = interaction.didDeselectValue
+        renderer.didStartDragging = interaction.didStartDragging
+        renderer.didEndDragging = interaction.didEndDragging
+    }
+
+    func updateChartData(_ chartData: TKLineChartCanvasView.ChartData) {
+        renderer.setChartData(chartData)
+    }
+
+    func updateSelection(at location: CGPoint, in size: CGSize) {
+        renderer.updateSelection(at: location, in: size)
+    }
+
+    func finishDragging() {
+        renderer.finishDragging()
     }
 }
 
@@ -134,22 +215,30 @@ public extension TKLineChartCanvasView {
         }
     }
 
+    enum Appearance: Equatable, Sendable {
+        case standard
+        case trend
+    }
+
     struct ChartData {
         public let mode: ChartMode
         public let coordinates: [Coordinate]
         public let smoothing: Smoothing
         public let style: VisualStyle
+        public let appearance: Appearance
 
         public init(
             mode: ChartMode,
             coordinates: [Coordinate],
             smoothing: Smoothing = .automatic,
-            style: VisualStyle = .active
+            style: VisualStyle = .active,
+            appearance: Appearance = .standard
         ) {
             self.mode = mode
             self.coordinates = coordinates
             self.smoothing = smoothing
             self.style = style
+            self.appearance = appearance
         }
     }
 }
@@ -158,42 +247,20 @@ private extension TKLineChartCanvasView {
     enum Layout {
         static let minimumPressDuration = 0.3
     }
-
-    @MainActor
-    final class InteractionState: ObservableObject {
-        let renderer = TKLineChartRenderer()
-
-        func updateCallbacks(interaction: Interaction) {
-            renderer.didSelectValue = interaction.didSelectValue
-            renderer.didDeselectValue = interaction.didDeselectValue
-            renderer.didStartDragging = interaction.didStartDragging
-            renderer.didEndDragging = interaction.didEndDragging
-        }
-
-        func updateChartData(_ chartData: ChartData) {
-            renderer.setChartData(chartData)
-        }
-
-        func updateSelection(at location: CGPoint, in size: CGSize) {
-            renderer.updateSelection(at: location, in: size)
-        }
-
-        func finishDragging() {
-            renderer.finishDragging()
-        }
-    }
 }
 
 private struct RenderToken: Equatable {
     let mode: TKLineChartCanvasView.ChartMode
     let smoothing: CGFloat
     let style: TKLineChartCanvasView.VisualStyle
+    let appearance: TKLineChartCanvasView.Appearance
     let points: [CGPoint]
 
     init(chartData: TKLineChartCanvasView.ChartData) {
         mode = chartData.mode
         smoothing = chartData.smoothing.resolvedTension
         style = chartData.style
+        appearance = chartData.appearance
         points = chartData.coordinates.map { coordinate in
             CGPoint(x: coordinate.x, y: coordinate.y)
         }

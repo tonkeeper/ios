@@ -206,7 +206,7 @@ private extension HistoryEventDetailsViewModelImplementation {
         let headerButton = TKBottomSheetHeaderConfiguration.Button(
             content: .icon(.TKUIKit.Icons.Size16.ellipses),
             action: { [weak self] targetView in
-                guard let self else {
+                guard let self, let targetView else {
                     return
                 }
 
@@ -498,9 +498,7 @@ private extension HistoryEventDetailsViewModelImplementation {
                     self?.didTapTransactionDetails?(detailsButton.url, detailsButton.browserTitle)
                 },
                 longPressAction: {
-                    ToastPresenter.showToast(configuration: .copied)
-                    UIPasteboard.general.string = detailsButton.hash
-                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                    Pasteboard.copy(value: detailsButton.hash)
                 }
             ),
             bottomSpace: 32
@@ -551,9 +549,9 @@ private extension TokenImage {
     var tkImage: TKImage {
         switch self {
         case .ton:
-            return .image(.App.Currency.Vector.ton)
+            return .image(.TKUIKit.Icons.Size44.tonLogo)
         case .usdt:
-            return .image(.App.Currency.Size44.usdt)
+            return .image(.TKUIKit.Icons.Size44.currencyUsdt)
         case let .url(url):
             return .urlImage(url)
         }

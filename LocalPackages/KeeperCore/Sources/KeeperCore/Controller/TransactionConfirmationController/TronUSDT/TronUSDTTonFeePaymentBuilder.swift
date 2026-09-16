@@ -2,13 +2,17 @@ import BigInt
 import Foundation
 import TonSwift
 
-struct TronUSDTTonFeePaymentBuilder {
+public struct TronUSDTTonFeePaymentBuilder {
     enum Error: Swift.Error {
         case insufficientTONBalance(required: BigUInt, balance: BigUInt)
     }
 
     private static let identifyingComment = "Tron gas fee"
     private static let tonTransferOwnFeeNano = BigUInt(10_000_000)
+
+    public static func requiredTonBalance(for tonFeeAmount: BigUInt) -> BigUInt {
+        tonFeeAmount + tonTransferOwnFeeNano
+    }
 
     private let sendService: SendService
     private let balanceService: BalanceService
@@ -24,7 +28,7 @@ struct TronUSDTTonFeePaymentBuilder {
         tonFeeAddress: String,
         signHandler: ((TransferData, Wallet) async throws(TransactionConfirmationError) -> SignedTransactions)?
     ) async throws -> TronUSDTTransactionSender.InstantFeePayment {
-        let requiredTonBalance = tonFeeAmount + Self.tonTransferOwnFeeNano
+        let requiredTonBalance = Self.requiredTonBalance(for: tonFeeAmount)
         let tonBalance = try await loadTONBalance(wallet: wallet)
         guard tonBalance >= requiredTonBalance else {
             throw Error.insufficientTONBalance(required: requiredTonBalance, balance: tonBalance)
@@ -66,16 +70,18 @@ struct TronUSDTTonFeePaymentBuilder {
     }
 
     private func loadTONBalance(wallet: Wallet) async throws -> BigUInt {
-        if let cachedBalance = try? balanceService.getBalance(wallet: wallet).balance.tonBalance.amount {
-            return BigUInt(max(cachedBalance, 0))
-        }
-
-        let balance = try await balanceService.loadWalletBalance(
+        // Load a fresh balance so a just-completed TON top-up isn't missed on the send path; fall
+        // back to the cached balance only if the network load fails.
+        if let balance = try? await balanceService.loadWalletBalance(
             wallet: wallet,
             currency: .USD,
             includingTransferFees: true
-        )
-        return BigUInt(max(balance.balance.tonBalance.amount, 0))
+        ) {
+            return BigUInt(max(balance.balance.tonBalance.amount, 0))
+        }
+
+        let cachedBalance = try balanceService.getBalance(wallet: wallet).balance.tonBalance.amount
+        return BigUInt(max(cachedBalance, 0))
     }
 
     private func signedTonFeeTransaction(

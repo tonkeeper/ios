@@ -6,13 +6,11 @@ import UIKit
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
     var didScroll: ((CGFloat) -> Void)?
 
-    private var balanceItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
-
     private let viewModel: WalletBalanceViewModel
     private let tooltipsService: TooltipsService
     private let homeBannersContainerView = WalletBalanceHomeBannersContainerView()
+    private let collectiblesContainerView = WalletBalanceCollectiblesContainerView()
     private let cryptoAssetsHeaderContainerView = WalletBalanceCryptoAssetsSectionHeaderContainerView()
-
     init(
         viewModel: WalletBalanceViewModel,
         tooltipsService: TooltipsService
@@ -38,6 +36,17 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         setupBindings()
         viewModel.viewDidLoad()
         configureHomeBannersIfNeeded()
+        configureCollectiblesIfNeeded()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        viewModel.viewWillAppear()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        viewModel.viewDidDisappear()
     }
 
     func scrollToTop() {
@@ -93,14 +102,19 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         viewModel.didCopy = { configuration in
             ToastPresenter.showToast(configuration: configuration)
         }
-        viewModel.homeBannersViewModel.onSectionHeightChanged = { [weak self] height in
-            guard height > 0 else { return }
-            self?.invalidateHomeBannersLayout()
+        viewModel.didChangeHomeBannersViewModel = { [weak self] in
+            self?.configureHomeBannersIfNeeded()
+        }
+        viewModel.collectiblesViewModel.onContentHeightChanged = { [weak self] in
+            self?.invalidateCollectiblesLayout()
         }
     }
 
     private lazy var dataSource: WalletBalance.DataSource = {
         let balanceListCellRegistration = WalletBalanceListCellRegistration.registration(collectionView: customView.collectionView)
+        let moreAssetsListCellRegistration = WalletBalanceMoreAssetsListCellRegistration.registration(
+            collectionView: customView.collectionView
+        )
         let notifiationCellRegistration = NotificationBannerCellRegistration.registration
 
         let dataSource = WalletBalance.DataSource(
@@ -136,6 +150,13 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
                     for: indexPath,
                     item: configuration
                 )
+            case .collectibles:
+                let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+                    for: indexPath
+                )
+                (cell as? TKContainerCollectionViewCell)?.setContentView(self.collectiblesContainerView)
+                return cell
             case .banners:
                 let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
@@ -163,6 +184,14 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
                     }
                 )
                 (cell as? TKContainerCollectionViewCell)?.setContentView(self.cryptoAssetsHeaderContainerView)
+                return cell
+            case .moreAssets:
+                let cell = collectionView.dequeueConfiguredReusableCell(
+                    using: moreAssetsListCellRegistration,
+                    for: indexPath,
+                    item: ()
+                )
+                cell.configure(previewAvatars: self.viewModel.moreAssetsPreviewAvatars)
                 return cell
             }
         }
@@ -310,6 +339,24 @@ private extension WalletBalanceViewController {
                         trailing: 0
                     )
                     return layoutSection
+                case .collectibles:
+                    let itemLayoutSize = NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1.0),
+                        heightDimension: .absolute(viewModel?.collectiblesViewModel.sectionContentHeight ?? 0)
+                    )
+                    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
+                    let group = NSCollectionLayoutGroup.horizontal(
+                        layoutSize: itemLayoutSize,
+                        subitems: [item]
+                    )
+                    let layoutSection = NSCollectionLayoutSection(group: group)
+                    layoutSection.contentInsets = NSDirectionalEdgeInsets(
+                        top: 0,
+                        leading: 0,
+                        bottom: viewModel?.collectiblesViewModel.isSectionVisible == true ? 16 : 0,
+                        trailing: 0
+                    )
+                    return layoutSection
                 }
             },
             configuration: configuration
@@ -317,15 +364,52 @@ private extension WalletBalanceViewController {
     }
 
     func configureHomeBannersIfNeeded() {
-        homeBannersContainerView.configure(viewModel: viewModel.homeBannersViewModel)
+        let homeBannersViewModel = viewModel.homeBannersViewModel
+        // A deck that has nothing left reports zero, and the section has to follow it there: the
+        // snapshot drops the section on its own schedule, and until it does the layout would hold
+        // the height the cards used to need.
+        homeBannersViewModel.onSectionHeightChanged = { [weak self] _ in
+            self?.invalidateHomeBannersLayout()
+        }
+        homeBannersContainerView.configure(viewModel: homeBannersViewModel)
+        // The deck that just arrived brings its own height and has no change of its own to report
+        // it, so the layout would keep the height the previous wallet's deck asked for.
+        invalidateHomeBannersLayout(animated: false)
     }
 
-    func invalidateHomeBannersLayout() {
+    func configureCollectiblesIfNeeded() {
+        collectiblesContainerView.configure(viewModel: viewModel.collectiblesViewModel)
+        Task { @MainActor in
+            await viewModel.reloadCollectibles()
+        }
+    }
+
+    func invalidateHomeBannersLayout(animated: Bool = true) {
         let snapshot = dataSource.snapshot()
         guard snapshot.itemIdentifiers.contains(.banners) else { return }
 
+        guard animated else {
+            customView.collectionView.collectionViewLayout.invalidateLayout()
+            customView.collectionView.layoutIfNeeded()
+            return
+        }
+
         UIView.animate(
             withDuration: WalletBalanceHomeBannersLayout.animationDuration,
+            delay: 0,
+            options: [.allowUserInteraction, .beginFromCurrentState]
+        ) {
+            self.customView.collectionView.collectionViewLayout.invalidateLayout()
+            self.customView.collectionView.layoutIfNeeded()
+        }
+    }
+
+    func invalidateCollectiblesLayout() {
+        let snapshot = dataSource.snapshot()
+        guard snapshot.itemIdentifiers.contains(.collectibles) else { return }
+
+        UIView.animate(
+            withDuration: WalletBalanceCollectiblesLayout.animationDuration,
             delay: 0,
             options: [.allowUserInteraction, .beginFromCurrentState]
         ) {
@@ -342,6 +426,8 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
         switch item {
         case let .listItem(listItem):
             listItem.onSelection?()
+        case .moreAssets:
+            viewModel.expandMoreAssets()
         default:
             return
         }
@@ -354,5 +440,4 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
 
 private extension String {
     static let balanceHeaderElementKind = "BalanceHeaderElementKind"
-    static let setupSectionHeaderElementKind = "SetupSectionHeaderElementKind"
 }

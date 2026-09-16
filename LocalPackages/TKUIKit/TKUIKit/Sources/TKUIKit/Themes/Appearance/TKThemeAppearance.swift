@@ -3,7 +3,7 @@ import UIKit
 public protocol TKThemeAppearance {
     var userInterfaceStyle: UIUserInterfaceStyle { get }
     func statusBarStyle(for userInterfaceStyle: UIUserInterfaceStyle) -> UIStatusBarStyle
-    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> ColorScheme
+    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> TKColorScheme
 }
 
 struct DeepBlueThemeAppearance: TKThemeAppearance {
@@ -15,7 +15,7 @@ struct DeepBlueThemeAppearance: TKThemeAppearance {
         .lightContent
     }
 
-    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> ColorScheme {
+    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> TKColorScheme {
         DeepBlueColorScheme()
     }
 }
@@ -29,7 +29,7 @@ struct DarkThemeAppearance: TKThemeAppearance {
         .lightContent
     }
 
-    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> ColorScheme {
+    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> TKColorScheme {
         DarkColorScheme()
     }
 }
@@ -43,7 +43,7 @@ struct LightThemeAppearance: TKThemeAppearance {
         .darkContent
     }
 
-    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> ColorScheme {
+    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> TKColorScheme {
         LightColorScheme()
     }
 }
@@ -66,7 +66,7 @@ struct SystemThemeAppearance: TKThemeAppearance {
         }
     }
 
-    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> ColorScheme {
+    func colorScheme(for userInterfaceStyle: UIUserInterfaceStyle) -> TKColorScheme {
         switch userInterfaceStyle {
         case .unspecified:
             return LightColorScheme()

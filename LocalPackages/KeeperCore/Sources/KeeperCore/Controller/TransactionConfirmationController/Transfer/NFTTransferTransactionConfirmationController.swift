@@ -25,6 +25,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
             transferSettings.jettonTransfer = .battery
         case .gasless:
             return
+        case .multichain:
+            return
         }
         try? settingsRepository.setTransferSettings(wallet: wallet, transferSettings: transferSettings)
     }
@@ -37,7 +39,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
                 self.availableTypes = availableTypes
             }
 
-            let transfer: Transfer = .nft(nft, transferAmount: BigUInt(65_000_000), recipient: recipient, comment: comment)
+            let transferAmount = await transferService.transferCost(wallet: wallet, jettonMasterAddress: nil)
+            let transfer: Transfer = .nft(nft, transferAmount: transferAmount, recipient: recipient, comment: comment)
 
             let isBatteryAvailable = await transferService.isRelayerAvailable(wallet: wallet, transfer: transfer)
 
@@ -73,14 +76,17 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         }
     }
 
-    func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+    func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         do {
+            let minimumTransferAmount = await transferService.transferCost(
+                wallet: wallet,
+                jettonMasterAddress: nil
+            )
             let transferAmount: BigUInt = {
                 guard let emulationResult else {
                     return BigUInt(100_000_000)
                 }
                 let emulationExtra = emulationResult.extra.amount
-                let minimumTransferAmount = BigUInt(stringLiteral: "50000000")
 
                 var transferAmount = {
                     switch emulationExtra {
@@ -96,7 +102,7 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
                     : transferAmount
                 return transferAmount
             }()
-            try await transferService.sendTransaction(
+            let broadcastedTransactions = try await transferService.sendTransaction(
                 wallet: wallet,
                 transfer: .nft(nft, transferAmount: transferAmount, recipient: recipient, comment: comment),
                 transferType: emulationResult?.transferType ?? .default,
@@ -107,7 +113,13 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
                     return await signedTransactions(transferData: transferData, wallet: wallet)
                 }
             )
-            return .success(())
+            return .success(
+                .ton(
+                    wallet: wallet,
+                    signedTransactions: broadcastedTransactions,
+                    activityType: .send
+                )
+            )
         } catch {
             if case let .secondOption(transactionError) = error,
                case .cancelledByUser = transactionError
@@ -138,7 +150,6 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
     private let ratesStore: TonRatesStore
     private let currencyStore: CurrencyStore
     private let transferService: TransferService
-    private let ratesService: RatesService
     private let settingsRepository: SettingsRepository
     private let batteryCalculation: BatteryCalculation
 
@@ -153,7 +164,6 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         ratesStore: TonRatesStore,
         currencyStore: CurrencyStore,
         transferService: TransferService,
-        ratesService: RatesService,
         settingsRepository: SettingsRepository,
         batteryCalculation: BatteryCalculation
     ) {
@@ -167,7 +177,6 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
         self.ratesStore = ratesStore
         self.currencyStore = currencyStore
         self.transferService = transferService
-        self.ratesService = ratesService
         self.settingsRepository = settingsRepository
         self.batteryCalculation = batteryCalculation
     }
@@ -221,6 +230,8 @@ final class NFTTransferTransactionConfirmationController: TransactionConfirmatio
                 )
             case let .gasless(token):
                 return .gasless(token: token, amount: amount)
+            case let .multichain(token):
+                return .multichain(token: token, amount: amount)
             }
         }()
 

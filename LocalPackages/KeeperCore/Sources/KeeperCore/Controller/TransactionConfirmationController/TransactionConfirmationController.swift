@@ -21,6 +21,8 @@ public struct TransactionConfirmationModel {
             case jetton(JettonInfo)
             case nft(NFT)
             case tronUSDT
+            case tronTRX
+            case multichain(MultichainAsset)
         }
 
         case staking(Staking)
@@ -31,13 +33,19 @@ public struct TransactionConfirmationModel {
         public enum Item {
             case ton(TonToken)
             case tronUSDT
+            case tronTRX
+            case multichain(MultichainAsset)
 
             public var fractionDigits: Int {
                 switch self {
                 case let .ton(token):
                     token.fractionDigits
                 case .tronUSDT:
-                    TronSwift.USDT.fractionDigits
+                    TronToken.usdt.fractionDigits
+                case .tronTRX:
+                    TronToken.trx.fractionDigits
+                case let .multichain(asset):
+                    asset.asset.decimals
                 }
             }
 
@@ -46,7 +54,11 @@ public struct TransactionConfirmationModel {
                 case let .ton(token):
                     token.symbol
                 case .tronUSDT:
-                    TronSwift.USDT.symbol
+                    TronToken.usdt.symbol
+                case .tronTRX:
+                    TronToken.trx.symbol
+                case let .multichain(asset):
+                    asset.asset.symbol
                 }
             }
         }
@@ -69,6 +81,13 @@ public struct TransactionConfirmationModel {
     public struct ExtraOption {
         public let type: ExtraType
         public let value: ExtraValue
+        public let isInsufficient: Bool
+
+        public init(type: ExtraType, value: ExtraValue, isInsufficient: Bool = false) {
+            self.type = type
+            self.value = value
+            self.isInsufficient = isInsufficient
+        }
     }
 
     public enum ExtraKind {
@@ -80,17 +99,7 @@ public struct TransactionConfirmationModel {
         case `default`(amount: BigUInt)
         case battery(charges: Int?, excess: Int?)
         case gasless(token: JettonInfo, amount: BigUInt)
-
-        public var amount: BigUInt? {
-            switch self {
-            case let .default(amount):
-                return amount
-            case .battery:
-                return nil
-            case let .gasless(_, amount):
-                return amount
-            }
-        }
+        case multichain(token: MultichainAssetDetails, amount: BigUInt)
 
         public var extraType: ExtraType {
             switch self {
@@ -100,6 +109,8 @@ public struct TransactionConfirmationModel {
                 return .battery
             case let .gasless(token, _):
                 return .gasless(token: token)
+            case let .multichain(token, _):
+                return .multichain(token: token)
             }
         }
     }
@@ -108,6 +119,7 @@ public struct TransactionConfirmationModel {
         case `default`
         case battery
         case gasless(token: JettonInfo)
+        case multichain(token: MultichainAssetDetails)
     }
 
     public let wallet: Wallet
@@ -121,6 +133,15 @@ public struct TransactionConfirmationModel {
     public let availableExtraTypes: [ExtraType]
     public let isMax: Bool
     public let totalFee: BigInt
+
+    /// A legacy TRON account's feed carries USDT transfers only, so a TRX transfer sent from one
+    /// never shows up in a history screen.
+    public var hasHistoryFeed: Bool {
+        guard case .transfer(.tronTRX) = transaction else {
+            return true
+        }
+        return wallet.isMultichain
+    }
 
     init(
         wallet: Wallet,
@@ -152,6 +173,7 @@ public struct TransactionConfirmationModel {
 public enum TransactionConfirmationError: Swift.Error {
     case failedToCalculateFee
     case failedToSendTransaction(message: String? = nil)
+    case multichainTransactionFailure(MultichainTransactionFailure)
     case failedToSign(message: String? = nil)
     case cancelledByUser
 
@@ -169,17 +191,26 @@ public protocol TransactionConfirmationController: AnyObject {
     func getModel() -> TransactionConfirmationModel
     func setLoading()
     func emulate() async -> Result<Void, TransactionConfirmationError>
-    func sendTransaction() async -> Result<Void, TransactionConfirmationError>
+    func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError>
 
     func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType)
+    func prepareFeeOptions() async
 }
 
 public extension TransactionConfirmationController {
     func setPrefferedExtraType(extraType: TransactionConfirmationModel.ExtraType) {}
+    func prepareFeeOptions() async {}
 }
 
 public extension TransactionConfirmationModel {
     var isMaxAmountUsed: Bool {
         isMax
+    }
+
+    var isSelectedFeeInsufficient: Bool {
+        guard case let .extra(extra) = extraState else {
+            return false
+        }
+        return extraOptions.first { $0.type == extra.value.extraType }?.isInsufficient ?? false
     }
 }

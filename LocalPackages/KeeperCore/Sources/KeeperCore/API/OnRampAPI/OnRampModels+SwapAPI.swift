@@ -3,7 +3,7 @@ import SwapAPI
 
 extension OnRampLimits {
     init(api: SwapAPI.Components.Schemas.ExchangeLimits) {
-        self.min = api.min ?? 0
+        self.min = api.min
         self.max = api.max
     }
 }
@@ -46,6 +46,21 @@ extension OnRampQuoteResult {
 extension OnRampLayout {
     init(api: SwapAPI.Components.Schemas.ExchangeLayout) {
         self.items = api.items.compactMap { OnRampLayoutItem(api: $0) }
+    }
+}
+
+extension OnRampLayoutCard {
+    init(api: SwapAPI.Components.Schemas.ExchangeLayoutCard) {
+        self.title = api.title
+        self.itemDescription = api.description
+        self.image = api.image
+        self.preferredCurrency = api.preferred_currency
+    }
+}
+
+extension OnRampLayoutCards {
+    init(api: SwapAPI.Components.Schemas.ExchangeLayoutCards) {
+        self.items = api.items.map { OnRampLayoutCard(api: $0) }
     }
 }
 

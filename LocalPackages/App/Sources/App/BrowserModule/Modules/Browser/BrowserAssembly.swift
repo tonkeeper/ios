@@ -1,14 +1,26 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKFeatureFlags
+import UIKit
 
 @MainActor
 struct BrowserAssembly {
     private init() {}
     static func module(
         keeperCoreAssembly: KeeperCore.MainAssembly,
-        coreAssembly: TKCore.CoreAssembly
-    ) -> MVVMModule<BrowserViewController, BrowserModuleOutput, BrowserModuleInput> {
+        coreAssembly: TKCore.CoreAssembly,
+        analyticsController: DappBrowserAnalyticsController
+    ) -> MVVMModule<UIViewController, BrowserModuleOutput, BrowserModuleInput> {
+        if keeperCoreAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) {
+            let module = BrowserMultichainAssembly.module(
+                keeperCoreAssembly: keeperCoreAssembly,
+                coreAssembly: coreAssembly,
+                analyticsController: analyticsController
+            )
+            return .init(view: module.view, output: module.output, input: module.input)
+        }
+
         let exploreModule = BrowserExploreAssembly.module(
             keeperCoreAssembly: keeperCoreAssembly,
             coreAssembly: coreAssembly
@@ -22,7 +34,7 @@ struct BrowserAssembly {
             exploreModuleInput: exploreModule.input,
             exploreModuleOutput: exploreModule.output,
             connectedModuleOutput: connectedModule.output,
-            analyticsProvider: coreAssembly.analyticsProvider
+            analyticsController: analyticsController
         )
         let viewController = BrowserViewController(
             viewModel: viewModel,

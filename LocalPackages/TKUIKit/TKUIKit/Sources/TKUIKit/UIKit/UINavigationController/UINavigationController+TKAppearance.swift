@@ -12,12 +12,6 @@ public extension UINavigationController {
 
 public extension UINavigationBar {
     func configureDefaultAppearance(separatorHidden: Bool = false) {
-        guard !UIApplication.useSystemBarsAppearance else {
-            UINavigationBar.appearance().titleTextAttributes = customTitleTextAttributes
-            UINavigationBar.appearance().largeTitleTextAttributes = customLargeTitleTextAttributes
-            return
-        }
-
         func createAppearance() -> UINavigationBarAppearance {
             let standartAppearance = UINavigationBarAppearance()
             standartAppearance.configureWithOpaqueBackground()
@@ -33,10 +27,6 @@ public extension UINavigationBar {
     }
 
     func configureTransparentAppearance() {
-        guard !UIApplication.useSystemBarsAppearance else {
-            return
-        }
-
         let navigationBarAppearance = UINavigationBarAppearance()
         navigationBarAppearance.configureWithTransparentBackground()
 

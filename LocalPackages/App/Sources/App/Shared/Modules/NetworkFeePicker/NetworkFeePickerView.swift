@@ -3,14 +3,10 @@ import TKUIKit
 
 struct NetworkFeePickerView: View {
     @ObservedObject var viewModel: NetworkFeePickerViewModelImplementation
-
     var body: some View {
-        VStack(spacing: 0) {
-            categoriesSection
-            itemsSection
-        }
-        .frame(maxWidth: .infinity, alignment: .top)
-        .background(Color(uiColor: .Background.page))
+        categoriesSection
+            .frame(maxWidth: .infinity, alignment: .top)
+            .background(.backgroundPage)
     }
 }
 
@@ -18,19 +14,15 @@ private extension NetworkFeePickerView {
     enum Layout {
         static let contentHorizontalInset: CGFloat = 16
         static let categoriesBottomInset: CGFloat = 16
-        static let itemsBottomInset: CGFloat = 4
-        static let skeletonItemCount = 3
     }
 
     @ViewBuilder
     var categoriesSection: some View {
         switch viewModel.viewState {
-        case .list:
+        case .list, .loading:
+            // Uncategorized pickers have no segmented control, so the loading state shows only the
+            // list skeleton (rendered by the view controller) — no category shimmer above it.
             EmptyView()
-        case .loading:
-            SegmentedControlShimmer()
-                .padding(.horizontal, Layout.contentHorizontalInset)
-                .padding(.bottom, Layout.categoriesBottomInset)
         case let .categories(categories, selectedCategoryID):
             SegmentedControl(
                 segments: categories.map { category in
@@ -52,57 +44,32 @@ private extension NetworkFeePickerView {
             .padding(.bottom, Layout.categoriesBottomInset)
         }
     }
+}
 
-    @ViewBuilder
-    var itemsSection: some View {
-        switch viewModel.viewState {
-        case .loading:
-            VStack(spacing: 0) {
-                ForEach(0 ..< Layout.skeletonItemCount, id: \.self) { index in
-                    skeletonRow(
-                        showsDivider: index < Layout.skeletonItemCount - 1
-                    )
-                }
-            }
-            .asCellsGroup()
-            .padding(.bottom, Layout.itemsBottomInset)
-        case let .categories(categories, selectedCategoryID):
-            if let category = categories.first(where: { $0.id == selectedCategoryID }) {
-                itemsSection(with: category.dataSource)
-            } else {
-                EmptyView()
-            }
-        case let .list(dataSource):
-            itemsSection(with: dataSource)
-        }
+struct NetworkFeePickerItemRowView: View {
+    let item: NetworkFeePickerItem
+    let showsDivider: Bool
+    let action: () -> Void
+
+    var body: some View {
+        FeePickerCell(
+            config: .content(item.feePickerCellContent),
+            showsDivider: showsDivider,
+            action: action
+        )
+        .frame(maxWidth: .infinity)
     }
+}
 
-    @ViewBuilder
-    func itemsSection(
-        with dataSource: NetworkFeePickerItemsDataSource
-    ) -> some View {
-        if !dataSource.items.isEmpty {
-            VStack(spacing: 0) {
-                ForEach(Array(dataSource.items.enumerated()), id: \.element.id) { index, item in
-                    FeePickerCell(
-                        config: .content(item.feePickerCellContent),
-                        showsDivider: index < dataSource.items.count - 1,
-                        action: { viewModel.selectItem(item) }
-                    )
-                }
-            }
-            .asCellsGroup()
-            .padding(.bottom, Layout.itemsBottomInset)
-        }
-    }
+struct NetworkFeePickerSkeletonRowView: View {
+    let showsDivider: Bool
 
-    func skeletonRow(
-        showsDivider: Bool
-    ) -> some View {
+    var body: some View {
         FeePickerCell(
             config: .shimmer,
             showsDivider: showsDivider
         )
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -112,7 +79,9 @@ private extension NetworkFeePickerItem {
             leading: feePickerCellLeading,
             title: title,
             subtitle: subtitle,
-            badge: feePickerCellBadge
+            isDisabled: isDisabled,
+            subtitleActionTitle: actionTitle,
+            isSelected: isSelected
         )
     }
 
@@ -141,21 +110,6 @@ private extension NetworkFeePickerItem {
                 image: image,
                 tintColor: tintColor,
                 backgroundColor: backgroundColor
-            )
-        }
-    }
-
-    var feePickerCellBadge: FeePickerCellContent.Badge? {
-        guard let badge else {
-            return nil
-        }
-
-        switch badge {
-        case let .accent(text, foreground, background):
-            return .init(
-                text: text,
-                foreground: foreground,
-                background: background
             )
         }
     }

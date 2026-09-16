@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsNotificationBannerPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: NotificationBannerPreviews()
+    private let hostingController = TKHostingController(
+        content: NotificationBannerPreviews()
     )
 
     override func viewDidLoad() {

@@ -188,13 +188,10 @@ private extension HistoryCellActionView.NFTView {
 }
 
 private extension CGFloat {
-    static let topInset: CGFloat = 8
     static let cornerRadius: CGFloat = 12
     static let imageSize: CGFloat = 64
     static let verificationImageSide: CGFloat = 16
-    static let width: CGFloat = 176
     static let height: CGFloat = 64
-    static let labelsSideSpace: CGFloat = 12
 }
 
 private extension UIEdgeInsets {

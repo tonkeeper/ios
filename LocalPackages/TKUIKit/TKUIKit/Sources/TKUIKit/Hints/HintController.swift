@@ -24,14 +24,17 @@ public enum HintController {
 
         self.sourceView = sourceView
 
-        let hintViewController = HintViewController()
-        hintViewController.didTapToDismiss = {
+        let requestDismiss: () -> Void = {
             if let didTapOutside {
                 didTapOutside()
             } else {
                 dismiss()
             }
         }
+
+        let hintViewController = HintViewController()
+        hintViewController.didTapToDismiss = requestDismiss
+        hintViewController.didLoseSourceView = requestDismiss
         hintViewController.didTapHintContent = didTapHintContent
         hintViewController.didTapTargetActionView = didTapTargetActionView
         hintViewController.didHide = didHide

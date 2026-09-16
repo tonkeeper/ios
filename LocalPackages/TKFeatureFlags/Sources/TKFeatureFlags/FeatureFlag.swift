@@ -4,10 +4,15 @@ public enum FeatureFlag: CaseIterable, Hashable {
     case inAppReviewEnabled
     case walletKitEnabled
     case multichainEnabled
-    case streamingApiV2Enabled
-    case tronBip39ImportFix
-    case tradingUiEnabled
+    case importMultichainEnabled
     case mnemonicsStorageV2
+    case perpsEnabled
+    case mysteryRaffleEnabled
+    case migrationEnabled
+    case migrationBatteryDisabled
+    case swapKitEnabled
+    case analyticsPersistentCache
+    case realtimeEnabled
 }
 
 public extension FeatureFlag {
@@ -19,14 +24,24 @@ public extension FeatureFlag {
             "walletKitEnabled"
         case .multichainEnabled:
             "multichainEnabled"
-        case .streamingApiV2Enabled:
-            "streamingApiV2Enabled"
-        case .tronBip39ImportFix:
-            "tronBip39ImportFix"
-        case .tradingUiEnabled:
-            "tradingUiEnabled"
+        case .importMultichainEnabled:
+            "importMultichainEnabled"
         case .mnemonicsStorageV2:
             "mnemonicsStorageV2"
+        case .perpsEnabled:
+            "perpsEnabled"
+        case .mysteryRaffleEnabled:
+            "mysteryRaffleEnabled"
+        case .migrationEnabled:
+            "migrationEnabled"
+        case .migrationBatteryDisabled:
+            "migrationBatteryDisabled"
+        case .swapKitEnabled:
+            "swapKitEnabled"
+        case .analyticsPersistentCache:
+            "analyticsPersistentCache"
+        case .realtimeEnabled:
+            "realtimeEnabled"
         }
     }
 
@@ -38,14 +53,24 @@ public extension FeatureFlag {
             "ios_wallet_kit_enabled"
         case .multichainEnabled:
             "ios_multichain_enabled"
-        case .streamingApiV2Enabled:
-            "ios_is_streaming_api_v2_enabled"
-        case .tronBip39ImportFix:
-            "ios_tron_bip39_import_fix"
-        case .tradingUiEnabled:
-            "ios_is_trading_ui_enabled"
+        case .importMultichainEnabled:
+            "ios_import_multichain_enabled"
         case .mnemonicsStorageV2:
             "ios_mnemonic_storage_v2"
+        case .perpsEnabled:
+            "ios_perps_enabled"
+        case .mysteryRaffleEnabled:
+            "ios_mystery_raffle_enabled"
+        case .migrationEnabled:
+            "ios_migration_enabled"
+        case .migrationBatteryDisabled:
+            "ios_migration_battery_disabled"
+        case .swapKitEnabled:
+            "ios_swapkit_enabled"
+        case .analyticsPersistentCache:
+            "ios_analytics_persistent_cache"
+        case .realtimeEnabled:
+            "ios_is_realtime_enabled"
         }
     }
 
@@ -56,20 +81,31 @@ public extension FeatureFlag {
         case .walletKitEnabled:
             false
         case .multichainEnabled:
-            false
-        case .streamingApiV2Enabled:
-            false
-        case .tronBip39ImportFix:
-            false
-        case .tradingUiEnabled:
-            false
+            true
+        case .importMultichainEnabled:
+            true
         case .mnemonicsStorageV2:
             false
+        case .perpsEnabled:
+            false
+        case .mysteryRaffleEnabled:
+            false
+        case .migrationEnabled:
+            false
+        case .migrationBatteryDisabled:
+            false
+        case .swapKitEnabled:
+            false
+        case .analyticsPersistentCache:
+            false
+        case .realtimeEnabled:
+            true
         }
     }
 }
 
 public struct FeatureFlagValue {
+    public var bundleValue: Bool?
     public var localValue: Bool?
     public var remoteValue: Bool?
     public var defaultValue: Bool

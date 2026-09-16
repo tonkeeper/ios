@@ -14,44 +14,80 @@ public final class TKProcessContainerView: UIView {
             case .idle:
                 contentContainer.isHidden = false
                 resultView.isHidden = true
-                loaderView.isHidden = true
+                processContainer.isHidden = true
             case .process:
                 contentContainer.isHidden = true
                 resultView.isHidden = true
-                loaderView.isHidden = false
+                processContainer.isHidden = false
             case .success:
                 contentContainer.isHidden = true
-                loaderView.isHidden = true
+                processContainer.isHidden = true
                 resultView.isHidden = false
                 resultView.state = .success
             case .failed:
                 contentContainer.isHidden = true
-                loaderView.isHidden = true
+                processContainer.isHidden = true
                 resultView.isHidden = false
                 resultView.state = .failure
             }
         }
     }
 
-    var successTitle: String = "Done" {
+    public var successTitle: String {
         didSet {
             resultView.successTitle = successTitle
         }
     }
 
-    var errorTitle: String = "Error" {
+    public var errorTitle: String {
         didSet {
             resultView.errorTitle = errorTitle
         }
     }
 
+    public var processTitle: String {
+        didSet {
+            processTitleLabel.text = processTitle
+            processTitleLabel.isHidden = processTitle.isEmpty
+        }
+    }
+
     private let contentContainer = UIView()
     private let resultView = TKResultView(state: .success)
-    private let loaderView = TKLoaderView(size: .medium, style: .secondary)
+    private let processContainer = UIView()
+    private let processStackView: UIStackView = {
+        let stackView = UIStackView()
+        stackView.axis = .vertical
+        stackView.alignment = .center
+        stackView.spacing = 4
+        return stackView
+    }()
 
-    override public init(frame: CGRect) {
+    private let loaderView = TKLoaderView(size: .medium, style: .secondary)
+    private let processTitleLabel: UILabel = {
+        let label = UILabel()
+        label.font = TKTextStyle.label2.font
+        label.textAlignment = .center
+        label.textColor = .Text.secondary
+        label.isHidden = true
+        return label
+    }()
+
+    public init(
+        frame: CGRect = .zero,
+        successTitle: String = "Done",
+        errorTitle: String = "Error",
+        processTitle: String = ""
+    ) {
+        self.successTitle = successTitle
+        self.errorTitle = errorTitle
+        self.processTitle = processTitle
         super.init(frame: frame)
         setup()
+        resultView.successTitle = successTitle
+        resultView.errorTitle = errorTitle
+        processTitleLabel.text = processTitle
+        processTitleLabel.isHidden = processTitle.isEmpty
     }
 
     @available(*, unavailable)
@@ -69,10 +105,15 @@ public final class TKProcessContainerView: UIView {
 
     private func setup() {
         resultView.isHidden = true
+        processContainer.isHidden = true
 
         addSubview(contentContainer)
         addSubview(resultView)
-        addSubview(loaderView)
+        addSubview(processContainer)
+
+        processContainer.addSubview(processStackView)
+        processStackView.addArrangedSubview(loaderView)
+        processStackView.addArrangedSubview(processTitleLabel)
 
         contentContainer.snp.makeConstraints { make in
             make.edges.equalTo(self)
@@ -82,8 +123,14 @@ public final class TKProcessContainerView: UIView {
             make.edges.equalTo(self).priority(.high)
         }
 
-        loaderView.snp.makeConstraints { make in
+        processContainer.snp.makeConstraints { make in
             make.edges.equalTo(self).priority(.high)
         }
+
+        processStackView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            processStackView.centerXAnchor.constraint(equalTo: processContainer.centerXAnchor),
+            processStackView.centerYAnchor.constraint(equalTo: processContainer.centerYAnchor),
+        ])
     }
 }

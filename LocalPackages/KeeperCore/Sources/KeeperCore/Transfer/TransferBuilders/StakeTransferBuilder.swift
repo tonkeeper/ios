@@ -2,10 +2,10 @@ import BigInt
 import Foundation
 import TonSwift
 
-public struct StakeTransferBuilder {
+struct StakeTransferBuilder {
     private init() {}
 
-    public static func createWhalesDepositWalletTransfer(
+    static func createWhalesDepositWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,
@@ -36,7 +36,7 @@ public struct StakeTransferBuilder {
         )
     }
 
-    public static func createLiquidTFDepositWalletTransfer(
+    static func createLiquidTFDepositWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,
@@ -65,7 +65,7 @@ public struct StakeTransferBuilder {
         )
     }
 
-    public static func createTFDepositWalletTransfer(
+    static func createTFDepositWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,
@@ -94,7 +94,7 @@ public struct StakeTransferBuilder {
         )
     }
 
-    public static func createWhalesWithdrawWalletTransfer(
+    static func createWhalesWithdrawWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,
@@ -126,7 +126,7 @@ public struct StakeTransferBuilder {
         )
     }
 
-    public static func createLiquidTFWithdrawWalletTransfer(
+    static func createLiquidTFWithdrawWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,
@@ -157,7 +157,7 @@ public struct StakeTransferBuilder {
         )
     }
 
-    public static func tfWithdrawWalletTransfer(
+    static func tfWithdrawWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         queryId: BigUInt,

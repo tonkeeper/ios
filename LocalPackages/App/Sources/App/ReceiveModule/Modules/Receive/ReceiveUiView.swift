@@ -1,4 +1,5 @@
 import SnapKit
+import TKUIKit
 import UIKit
 
 final class ReceiveUiView: UIView {
@@ -21,7 +22,7 @@ final class ReceiveUiView: UIView {
 
     func configure(
         network: ReceiveNetworkViewData,
-        qrCodeImage: UIImage?,
+        qrCodeMatrix: QrCodeMatrix?,
         onCopy: @escaping () -> Void,
         onShare: @escaping () -> Void
     ) {
@@ -30,7 +31,7 @@ final class ReceiveUiView: UIView {
         }
         qrCardHostingView.setContent {
             ReceiveQRCardView(
-                image: qrCodeImage,
+                matrix: qrCodeMatrix,
                 network: network,
                 onCopy: onCopy
             )
@@ -44,13 +45,13 @@ final class ReceiveUiView: UIView {
     }
 
     func updateQRCode(
-        image: UIImage?,
+        matrix: QrCodeMatrix?,
         network: ReceiveNetworkViewData,
         onCopy: @escaping () -> Void
     ) {
         qrCardHostingView.setContent {
             ReceiveQRCardView(
-                image: image,
+                matrix: matrix,
                 network: network,
                 onCopy: onCopy
             )
@@ -75,10 +76,10 @@ final class ReceiveUiView: UIView {
 
 private extension ReceiveUiView {
     enum Layout {
-        static let actionBottomPadding: CGFloat = 16
+        static let actionBottomPadding: CGFloat = 37
         static let actionTopPadding: CGFloat = 16
         static let cardHorizontalPadding: CGFloat = 47
-        static let cardTopPadding: CGFloat = 32
+        static let cardTopPadding: CGFloat = 33
     }
 
     func setup() {

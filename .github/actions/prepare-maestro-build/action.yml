@@ -1,0 +1,131 @@
+name: Prepare Maestro iOS build
+description: Checkout, signing, Firebase resources, and Swift package resolution for Maestro simulator builds.
+
+inputs:
+  gh-app-id:
+    description: GitHub App ID used to mint a token for cloning ios_keys.
+    required: true
+  gh-app-private-key:
+    description: GitHub App private key used to mint a token for cloning ios_keys.
+    required: true
+  dev-certificate-p12-base64:
+    description: Base64-encoded development signing certificate (.p12).
+    required: true
+  dev-certificate-p12-password:
+    description: Password for the development signing certificate.
+    required: true
+  dev-provisioning-profile-base64:
+    description: Base64-encoded development provisioning profile (.mobileprovision).
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Generate ios_keys access token
+      id: generate_token
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ inputs.gh-app-id }}
+        private-key: ${{ inputs.gh-app-private-key }}
+        owner: tonkeeper
+        repositories: ios_keys
+
+    - name: Clone ios_keys
+      shell: bash
+      env:
+        GH_TOKEN: ${{ steps.generate_token.outputs.token }}
+      run: |
+        set -euo pipefail
+        git clone --branch main --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/tonkeeper/ios_keys.git" ./ios_keys
+
+    - name: Select Xcode
+      uses: ./.github/actions/select-xcode
+
+    - name: Import Development certificate and provisioning profile
+      shell: bash
+      env:
+        DEV_CERTIFICATE_P12_BASE64: ${{ inputs.dev-certificate-p12-base64 }}
+        DEV_CERTIFICATE_P12_PASSWORD: ${{ inputs.dev-certificate-p12-password }}
+        DEV_PROVISIONING_PROFILE_BASE64: ${{ inputs.dev-provisioning-profile-base64 }}
+      run: |
+        set -euo pipefail
+        if [[ -z "${DEV_CERTIFICATE_P12_BASE64:-}" || -z "${DEV_CERTIFICATE_P12_PASSWORD:-}" ]]; then
+          echo "Set repository secrets DEV_CERTIFICATE_P12_BASE64 and DEV_CERTIFICATE_P12_PASSWORD."
+          exit 1
+        fi
+        if [[ -z "${DEV_PROVISIONING_PROFILE_BASE64:-}" ]]; then
+          echo "Set repository secret DEV_PROVISIONING_PROFILE_BASE64 (base64 of the .mobileprovision file)."
+          exit 1
+        fi
+        KEYCHAIN_PATH="$RUNNER_TEMP/maestro-signing.keychain-db"
+        KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+        echo -n "$DEV_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dev_cert.p12"
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | sed 's/"//g')
+        security default-keychain -s "$KEYCHAIN_PATH"
+        security import "$RUNNER_TEMP/dev_cert.p12" -P "$DEV_CERTIFICATE_P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/security
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        rm -f "$RUNNER_TEMP/dev_cert.p12"
+
+        echo -n "$DEV_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/dev.mobileprovision"
+        security cms -D -i "$RUNNER_TEMP/dev.mobileprovision" > "$RUNNER_TEMP/dev_profile.plist"
+        PROFILE_UUID="$(plutil -extract UUID raw "$RUNNER_TEMP/dev_profile.plist")"
+        PP_RUNNER="$HOME/Library/MobileDevice/Provisioning Profiles"
+        PP_CODEX="${{ github.workspace }}/build/codex_home/Library/MobileDevice/Provisioning Profiles"
+        mkdir -p "$PP_RUNNER" "$PP_CODEX"
+        cp "$RUNNER_TEMP/dev.mobileprovision" "$PP_RUNNER/${PROFILE_UUID}.mobileprovision"
+        cp "$RUNNER_TEMP/dev.mobileprovision" "$PP_CODEX/${PROFILE_UUID}.mobileprovision"
+        rm -f "$RUNNER_TEMP/dev.mobileprovision" "$RUNNER_TEMP/dev_profile.plist"
+
+        {
+          echo "KEYCHAIN_PATH<<MAESTRO_KC_EOF"
+          echo "$KEYCHAIN_PATH"
+          echo "MAESTRO_KC_EOF"
+          echo "KEYCHAIN_PASSWORD<<MAESTRO_KC_EOF"
+          echo "$KEYCHAIN_PASSWORD"
+          echo "MAESTRO_KC_EOF"
+        } >> "$GITHUB_ENV"
+
+    - name: Copy Firebase resources
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ ! -d ./ios_keys/Firebase ]]; then
+          echo "ios_keys/Firebase not found"
+          exit 1
+        fi
+        rm -rf ./Tonkeeper/Resources/Firebase
+        cp -R ./ios_keys/Firebase ./Tonkeeper/Resources/Firebase
+        rm -rf ./ios_keys
+
+    - name: Configure Swift package SCM
+      shell: bash
+      run: |
+        set -euo pipefail
+        defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM -bool NO
+        defaults read com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM
+
+    - name: Resolve Swift packages
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: "0"
+        GCM_INTERACTIVE: Never
+        HOME: ${{ github.workspace }}/build/codex_home
+        SWIFTPM_CACHE_PATH: ${{ github.workspace }}/build/swiftpm-cache
+        SWIFTPM_CONFIG_DIR: ${{ github.workspace }}/build/swiftpm-config
+        CLANG_MODULE_CACHE_PATH: ${{ github.workspace }}/build/clang-module-cache
+        CLONED_SOURCE_PACKAGES_DIR: ${{ github.workspace }}/build/SourcePackages
+      run: |
+        set -euo pipefail
+        export NSUnbufferedIO=YES
+        mkdir -p "$HOME" "$SWIFTPM_CACHE_PATH" "$SWIFTPM_CONFIG_DIR" "$CLANG_MODULE_CACHE_PATH" "$CLONED_SOURCE_PACKAGES_DIR"
+        xcodebuild \
+          -scmProvider system \
+          -resolvePackageDependencies \
+          -onlyUsePackageVersionsFromResolvedFile \
+          -skipPackageUpdates \
+          -project Tonkeeper.xcodeproj \
+          -scheme Tonkeeper \
+          -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR"

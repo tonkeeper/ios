@@ -1,3 +1,4 @@
+internal import TKAppInfo
 import UIKit
 
 public final class TKFeatureFlagsImplementation {
@@ -7,22 +8,29 @@ public final class TKFeatureFlagsImplementation {
 
     private let localProvider: TKLocalFeatureFlagsProvider
     private let remoteConfigProvider: RemoteConfigProvider
+    private let overrides: [String: Bool]
 
     public init(
         localProvider: TKLocalFeatureFlagsProvider,
-        remoteConfigProvider: RemoteConfigProvider
+        remoteConfigProvider: RemoteConfigProvider,
+        overrides: [String: Bool] = [:]
     ) {
         self.localProvider = localProvider
         self.remoteConfigProvider = remoteConfigProvider
+        self.overrides = overrides
     }
 
-    public convenience init(remoteConfigProvider: RemoteConfigProvider) {
+    public convenience init(
+        remoteConfigProvider: RemoteConfigProvider,
+        overrides: [String: Bool] = [:]
+    ) {
         self.init(
             localProvider: UserDefaultsLocalFeatureFlagsProvider(
                 userDefault: .tkFeatureFlagsDefaults,
                 isDevOverridesEnabled: Self.isDevOverridesEnabled
             ),
-            remoteConfigProvider: remoteConfigProvider
+            remoteConfigProvider: remoteConfigProvider,
+            overrides: overrides
         )
     }
 }
@@ -32,9 +40,8 @@ public final class TKFeatureFlagsImplementation {
 extension TKFeatureFlagsImplementation: TKFeatureFlags {
     public subscript(flag: FeatureFlag) -> Bool {
         get {
-            let localValue = localProvider[flag.localKey]
-            if let localValue {
-                return localValue
+            if let overrideValue = devOverride(for: flag) {
+                return overrideValue
             }
             let remoteValue = flag.remoteKey.flatMap { remoteKey in
                 remoteConfigProvider[remoteKey]
@@ -49,6 +56,10 @@ extension TKFeatureFlagsImplementation: TKFeatureFlags {
         }
     }
 
+    public func devOverride(for flag: FeatureFlag) -> Bool? {
+        overrides[flag.localKey] ?? localProvider[flag.localKey]
+    }
+
     public func resetValue(for flag: FeatureFlag) {
         localProvider[flag.localKey] = nil
     }
@@ -60,6 +71,7 @@ extension TKFeatureFlagsImplementation: TKFeatureFlags {
     public var allValues: [FeatureFlag: FeatureFlagValue] {
         return FeatureFlag.allCases.reduce(into: [:]) { dict, flag in
             dict[flag] = FeatureFlagValue(
+                bundleValue: overrides[flag.localKey],
                 localValue: localProvider[flag.localKey],
                 remoteValue: flag.remoteKey.flatMap { key in
                     remoteConfigProvider[key]

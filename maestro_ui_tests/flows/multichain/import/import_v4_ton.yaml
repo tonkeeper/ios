@@ -1,0 +1,25 @@
+appId: com.jbig.tonkeeper
+---
+# Import TON-only v4R2 from Maestro env TON_v4 (multichain build).
+- launchApp:
+    clearState: true
+
+- runFlow: "../../../steps/import_wallet_ton_v4.yaml"
+
+- runFlow: "../../../steps/close_home_overlays.yaml"
+
+- extendedWaitUntil:
+    visible: "Your address: UQ.*"
+    timeout: 60000
+- assertVisible: "Your address: UQ.*"
+- assertNotVisible: W5
+- scrollUntilVisible:
+    element: ${NATIVE_TOKEN_DISPLAY_TEXT}
+    direction: DOWN
+    timeout: 15000
+- assertVisible: ${NATIVE_TOKEN_DISPLAY_TEXT}
+- scrollUntilVisible:
+    element: Collectibles
+    direction: DOWN
+    timeout: 30000
+- assertVisible: Collectibles

@@ -8,18 +8,6 @@ public struct CoreAssembly {
     let appInfoProvider: AppInfoProvider
     public let seedProvider: () -> String
 
-    init(
-        cacheURL: URL,
-        sharedCacheURL: URL,
-        appInfoProvider: AppInfoProvider,
-        seedProvider: @escaping () -> String
-    ) {
-        self.cacheURL = cacheURL
-        self.sharedCacheURL = sharedCacheURL
-        self.appInfoProvider = appInfoProvider
-        self.seedProvider = seedProvider
-    }
-
     func rnMnemonicsVault() -> RNMnemonicsVault {
         RNMnemonicsVault(
             keychainVault: keychainVault

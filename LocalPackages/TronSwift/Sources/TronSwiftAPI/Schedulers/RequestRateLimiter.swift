@@ -27,29 +27,21 @@ private extension TimeInterval {
 
 actor RequestRateLimiter {
     private let minIntervalNs: UInt64
-    private var nextAllowedUptimeNs: UInt64 = 0
+    private var nextAllowedUptimeNsByKey = [String: UInt64]()
 
     init(rps: Double) {
-        minIntervalNs = (1 / max(1, rps)).nanoseconds
+        minIntervalNs = (1 / max(0.001, rps)).nanoseconds
     }
 }
 
 extension RequestRateLimiter {
-    func waitForPermit() async {
+    func waitForPermit(key: String) async {
         let now = DispatchTime.now().uptimeNanoseconds
-        let scheduledUptimeNanoseconds = max(now, nextAllowedUptimeNs)
-        nextAllowedUptimeNs = scheduledUptimeNanoseconds.saturatingAdd(minIntervalNs)
+        let scheduledUptimeNanoseconds = max(now, nextAllowedUptimeNsByKey[key, default: 0])
+        nextAllowedUptimeNsByKey[key] = scheduledUptimeNanoseconds.saturatingAdd(minIntervalNs)
         guard scheduledUptimeNanoseconds > now else {
             return
         }
         try? await Task.sleep(nanoseconds: scheduledUptimeNanoseconds - now)
-    }
-
-    func applyCooldown(seconds: TimeInterval) async {
-        let until = DispatchTime.now()
-            .uptimeNanoseconds
-            .saturatingAdd(seconds.nanoseconds)
-
-        nextAllowedUptimeNs = max(nextAllowedUptimeNs, until)
     }
 }

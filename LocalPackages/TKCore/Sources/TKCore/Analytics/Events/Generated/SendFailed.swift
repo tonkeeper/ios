@@ -20,25 +20,16 @@ public struct SendFailed: Codable, JSONEncodable, Hashable {
         case tonconnectLocal = "tonconnect_local"
         case tonconnectRemote = "tonconnect_remote"
         case qrCode = "qr_code"
-    }
-    public enum FeePaidIn: String, Codable, CaseIterable {
-        case ton = "ton"
-        case trx = "trx"
-        case battery = "battery"
-        case gasless = "gasless"
-        case free = "free"
+        case walletconnect = "walletconnect"
     }
     public var eventName: String = "send_failed"
     /** Source location where send was opened (same value as in send_open event) */
     public var from: From
-    /** Network of the asset being sent */
-    public var assetNetwork: String
-    /** Symbol of the token being sent */
-    public var tokenSymbol: String
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
+    public var asset: String
     /** Amount of the token being sent */
     public var amount: Double
-    /** Method used to pay network fees */
-    public var feePaidIn: FeePaidIn
+    public var feeAsset: FeeAsset
     /** Error code for the failed send */
     public var errorCode: Int
     /** Error message for the failed send */
@@ -46,13 +37,12 @@ public struct SendFailed: Codable, JSONEncodable, Hashable {
     /** Required if from=tonconnect_local; same as app_id in dapp_* events */
     public var appId: String?
 
-    public init(eventName: String = "send_failed", from: From, assetNetwork: String, tokenSymbol: String, amount: Double, feePaidIn: FeePaidIn, errorCode: Int, errorMessage: String, appId: String? = nil) {
+    public init(eventName: String = "send_failed", from: From, asset: String, amount: Double, feeAsset: FeeAsset, errorCode: Int, errorMessage: String, appId: String? = nil) {
         self.eventName = eventName
         self.from = from
-        self.assetNetwork = assetNetwork
-        self.tokenSymbol = tokenSymbol
+        self.asset = asset
         self.amount = amount
-        self.feePaidIn = feePaidIn
+        self.feeAsset = feeAsset
         self.errorCode = errorCode
         self.errorMessage = errorMessage
         self.appId = appId
@@ -61,10 +51,9 @@ public struct SendFailed: Codable, JSONEncodable, Hashable {
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case from
-        case assetNetwork = "asset_network"
-        case tokenSymbol = "token_symbol"
+        case asset
         case amount
-        case feePaidIn = "fee_paid_in"
+        case feeAsset = "fee_asset"
         case errorCode = "error_code"
         case errorMessage = "error_message"
         case appId = "app_id"
@@ -76,10 +65,9 @@ public struct SendFailed: Codable, JSONEncodable, Hashable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
-        try container.encode(assetNetwork, forKey: .assetNetwork)
-        try container.encode(tokenSymbol, forKey: .tokenSymbol)
+        try container.encode(asset, forKey: .asset)
         try container.encode(amount, forKey: .amount)
-        try container.encode(feePaidIn, forKey: .feePaidIn)
+        try container.encode(feeAsset, forKey: .feeAsset)
         try container.encode(errorCode, forKey: .errorCode)
         try container.encode(errorMessage, forKey: .errorMessage)
         try container.encodeIfPresent(appId, forKey: .appId)

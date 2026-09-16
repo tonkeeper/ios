@@ -21,7 +21,6 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
     var didUpdateButton: ((TKButton.Configuration) -> Void)?
     var didUpdateProviderView: ((InsertAmountProviderViewState) -> Void)?
     var didUpdateProviderViewHidden: ((Bool) -> Void)?
-    var didUpdateAmountError: ((String?) -> Void)?
     var didShowError: ((String) -> Void)?
 
     @MainActor
@@ -30,7 +29,14 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
             didUpdateProviderView?(providerViewState)
             amountInputModuleInput.isConvertedAmountHidden = shouldHideConvertedAmount
             amountInputModuleInput.isConvertedShimmering = isLoading
-            didUpdateButton?(continueButtonConfiguration)
+            updateContinueButton()
+        }
+    }
+
+    @MainActor
+    var isContinueLoading = false {
+        didSet {
+            updateContinueButton()
         }
     }
 
@@ -38,16 +44,16 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
 
     var amountInputEnabled = false
 
-    var lastCalculateResult: OnRampCalculateResult?
+    var lastQuotesState: InsertAmountQuotesState?
     var lastCalculatedAmount: BigUInt?
 
     let flow: RampFlow
-    let asset: RampAsset
-    let paymentMethod: OnRampLayoutCashMethod
+    let assetContext: InsertAmountAssetContext
+    let paymentMethodContext: InsertAmountPaymentMethodContext
     let currency: RemoteCurrency
     let wallet: Wallet
     let processedBalanceStore: ProcessedBalanceStore
-    let onRampService: OnRampService
+    let quoteService: InsertAmountQuoteServicing
     let amountInputModuleInput: AmountInputModuleInput
     let amountInputModuleOutput: AmountInputModuleOutput
     let amountFormatter: AmountFormatter
@@ -58,6 +64,8 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
     var availableMerchants: [OnRampMerchantInfo] = []
 
     var calculateTask: Task<Void, Never>?
+    var quoteTask: Task<Void, Never>?
+    var quoteRequestGeneration: UInt64 = 0
 
     var calculatedRate: Decimal?
 
@@ -69,24 +77,24 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
 
     init(
         flow: RampFlow,
-        asset: RampAsset,
-        paymentMethod: OnRampLayoutCashMethod,
+        assetContext: InsertAmountAssetContext,
+        paymentMethodContext: InsertAmountPaymentMethodContext,
         currency: RemoteCurrency,
         wallet: Wallet,
         processedBalanceStore: ProcessedBalanceStore,
-        onRampService: OnRampService,
+        quoteService: InsertAmountQuoteServicing,
         amountInputModuleInput: AmountInputModuleInput,
         amountInputModuleOutput: AmountInputModuleOutput,
         amountFormatter: AmountFormatter,
         analyticsProvider: AnalyticsProvider
     ) {
         self.flow = flow
-        self.asset = asset
-        self.paymentMethod = paymentMethod
+        self.assetContext = assetContext
+        self.paymentMethodContext = paymentMethodContext
         self.currency = currency
         self.wallet = wallet
         self.processedBalanceStore = processedBalanceStore
-        self.onRampService = onRampService
+        self.quoteService = quoteService
         self.amountInputModuleInput = amountInputModuleInput
         self.amountInputModuleOutput = amountInputModuleOutput
         self.amountFormatter = amountFormatter
@@ -99,7 +107,6 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
         didUpdateTitle?(TKLocales.Ramp.InsertAmount.title)
         setupAmountInput()
         amountInputModuleInput.isCurrencySwitchEnabled = false
-        didUpdateAmountError?(nil)
         updateAmountErrorAndContinueButton()
         didUpdateProviderView?(providerViewState)
         didUpdateProviderViewHidden?(true)
@@ -117,48 +124,89 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
     }
 
     func didTapContinueButton() {
-        guard let selectedMerchant, let itemQuote = currentMerchantQuote, let currentQuoteWidgetURL else { return }
+        guard !isContinueLoading else { return }
+        guard let selectedMerchant, let itemQuote = currentMerchantQuote else { return }
         guard isInputWithinMinMaxLimit, canContinueToProvider else { return }
 
         let decimalAmount = NSDecimalNumber.fromBigUInt(value: inputAmount, decimals: inputDecimals).decimalValue
+        let amountString = (decimalAmount as NSDecimalNumber).stringValue
+
+        calculateTask?.cancel()
+        calculateTask = nil
+        invalidateQuoteRequest()
+        isContinueLoading = true
+
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+
+            defer { isContinueLoading = false }
+
+            do {
+                let widgetURL: URL
+                if quoteService.createsOrderOnContinue {
+                    widgetURL = try await quoteService.resolveWidgetURL(
+                        flow: flow,
+                        amount: amountString,
+                        currencyCode: currency.code,
+                        paymentMethodType: paymentMethodContext.type,
+                        merchantId: selectedMerchant.id,
+                        merchantTransactionId: itemQuote.merchantTransactionId
+                    )
+                } else if let url = itemQuote.widgetURL {
+                    widgetURL = url
+                } else {
+                    didShowError?(TKLocales.Errors.unknown)
+                    return
+                }
+
+                logContinueAnalytics(decimalAmount: decimalAmount, providerName: selectedMerchant.title)
+
+                didTapContinue?(
+                    RampOnrampContinueContext(
+                        amount: decimalAmount,
+                        providerName: selectedMerchant.title,
+                        txId: itemQuote.merchantTransactionId
+                    ),
+                    selectedMerchant,
+                    widgetURL
+                )
+            } catch {
+                didShowError?(TKLocales.Errors.unknown)
+            }
+        }
+    }
+
+    private func logContinueAnalytics(decimalAmount: Decimal, providerName: String) {
         switch flow {
         case .deposit:
-            if let buyAsset = asset.depositAnalyticsAssetIdentifier.flatMap(DepositClickOnrampContinue.BuyAsset.init(rawValue:)) {
+            if let buyAsset = assetContext.depositAnalyticsAssetIdentifier.flatMap(DepositClickOnrampContinue.BuyAsset.init(rawValue:)) {
                 analyticsProvider.log(
                     DepositClickOnrampContinue(
                         buyAsset: buyAsset,
-                        providerName: selectedMerchant.title,
+                        providerName: providerName,
                         buyAmount: NSDecimalNumber(decimal: decimalAmount).floatValue
                     )
                 )
             }
         case .withdraw:
-            if let sellAsset = asset.withdrawAnalyticsAssetIdentifier.flatMap(WithdrawClickOnrampContinue.SellAsset.init(rawValue:)) {
+            if let sellAsset = assetContext.withdrawAnalyticsAssetIdentifier.flatMap(WithdrawClickOnrampContinue.SellAsset.init(rawValue:)) {
                 analyticsProvider.log(
                     WithdrawClickOnrampContinue(
                         sellAsset: sellAsset,
-                        providerName: selectedMerchant.title,
+                        providerName: providerName,
                         sellAmount: NSDecimalNumber(decimal: decimalAmount).floatValue
                     )
                 )
             }
         }
-
-        didTapContinue?(
-            RampOnrampContinueContext(
-                amount: decimalAmount,
-                providerName: selectedMerchant.title,
-                txId: itemQuote.merchantTransactionId
-            ),
-            selectedMerchant,
-            currentQuoteWidgetURL
-        )
     }
 
     func didTapProviderView() {
-        guard let selectedMerchant, !availableMerchants.isEmpty else { return }
+        guard let selectedMerchant else { return }
+        let items = buildProviderPickerItems()
+        guard !items.isEmpty else { return }
 
-        didTapProvider?(buildProviderPickerItems(), selectedMerchant)
+        didTapProvider?(items, selectedMerchant)
     }
 
     @MainActor
@@ -175,37 +223,52 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
     }
 
     func selectBestMerchant() {
-        if let merchant = availableMerchants.first(where: { $0.id == bestMerchantId }), selectedMerchant != merchant {
-            selectedMerchant = merchant
-            logViewOnrampInsertAmount(for: merchant)
-            notifyInitialMerchantIfNeeded(merchant)
-            didUpdateProviderView?(providerViewState)
+        let candidates = selectableMerchants
+        let merchant = bestMerchantId.flatMap { id in candidates.first { $0.id == id } }
+            ?? candidates.first
+
+        guard let merchant else {
+            if selectedMerchant != nil {
+                selectedMerchant = nil
+                didUpdateProviderView?(providerViewState)
+            }
+            return
         }
+
+        guard selectedMerchant != merchant else { return }
+
+        selectedMerchant = merchant
+        if hasNotifiedInitialMerchant {
+            logViewOnrampInsertAmount(for: merchant)
+        }
+        didUpdateProviderView?(providerViewState)
     }
 
-    func notifyInitialMerchantIfNeeded(_ merchant: OnRampMerchantInfo) {
-        guard !hasNotifiedInitialMerchant else { return }
-        hasNotifiedInitialMerchant = true
-        didLoadInitialMerchant?(merchant)
+    func resyncSelectedMerchantWithSelectableMerchants() {
+        if let selectedMerchant, selectableMerchants.contains(where: { $0.id == selectedMerchant.id }) {
+            return
+        }
+        manualProviderChange = false
+        selectBestMerchant()
     }
 
     @MainActor
     func updateAmountErrorAndContinueButton() {
-        let error = amountValidationError()
-        didUpdateAmountError?(error.map { err in
-            switch err {
-            case let .belowMin(msg), let .aboveMax(msg): return msg
-            }
-        })
+        applyConvertedAmountRate()
         amountInputModuleInput.isConvertedAmountHidden = shouldHideConvertedAmount
+        updateContinueButton()
+        didUpdateProviderView?(providerViewState)
+        didUpdateProviderViewHidden?(selectedMerchant == nil)
+    }
+
+    func updateContinueButton() {
         didUpdateButton?(continueButtonConfiguration)
-        didUpdateProviderViewHidden?(error != nil || selectedMerchant == nil)
     }
 
     func logViewOnrampInsertAmount(for merchant: OnRampMerchantInfo?) {
         switch flow {
         case .deposit:
-            guard let buyAsset = asset.depositAnalyticsAssetIdentifier.flatMap(DepositViewOnrampInsertAmount.BuyAsset.init(rawValue:)) else {
+            guard let buyAsset = assetContext.depositAnalyticsAssetIdentifier.flatMap(DepositViewOnrampInsertAmount.BuyAsset.init(rawValue:)) else {
                 return
             }
             analyticsProvider.log(
@@ -215,7 +278,7 @@ final class InsertAmountViewModel: InsertAmountModuleOutput, InsertAmountModuleI
                 )
             )
         case .withdraw:
-            guard let sellAsset = asset.withdrawAnalyticsAssetIdentifier.flatMap(WithdrawViewOnrampInsertAmount.SellAsset.init(rawValue:)) else {
+            guard let sellAsset = assetContext.withdrawAnalyticsAssetIdentifier.flatMap(WithdrawViewOnrampInsertAmount.SellAsset.init(rawValue:)) else {
                 return
             }
             analyticsProvider.log(

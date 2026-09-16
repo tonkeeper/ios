@@ -1,0 +1,32 @@
+# regress_EN: Stake Screen — entry Wallet → Stake; Available; pool picker; list shows Tonstakers; Continue present.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+# Wait for the loaded balance header (the TON list row can be below the fold on the new main screen).
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+- extendedWaitUntil:
+    visible: "^Stake$"
+    timeout: 60000
+- tapOn:
+    text: "^Stake$"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_continue"
+    timeout: 60000
+- assertVisible: ""
+
+- tapOn:
+    id: "staking_deposit_pool_picker"
+- extendedWaitUntil:
+    visible:
+      id: "staking_pool_picker_list"
+    timeout: 60000
+- assertVisible: "Tonstakers"

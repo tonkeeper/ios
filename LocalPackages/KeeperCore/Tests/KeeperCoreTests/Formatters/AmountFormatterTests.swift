@@ -77,14 +77,47 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(formatter.format(decimal: decimal("999.999999999"), style: .compact), "999.99")
     }
 
-    func testCompactFormattingUsesRegularRulesForValuesLowerThanOne() {
+    func testCompactFormattingUsesThreeSignificantFractionDigitsForValuesLowerThanOne() {
         let formatter = makeFormatter(space: " ")
 
         XCTAssertEqual(formatter.format(decimal: decimal("0.000004027645372645327"), style: .compact), "0.00000402")
         XCTAssertEqual(formatter.format(decimal: decimal("0.0200002"), style: .compact), "0.02")
+        XCTAssertEqual(formatter.format(decimal: decimal("0.00000001"), style: .compact), "0.00000001")
+    }
+
+    func testCompactFormattingCapsValuesLowerThanOneAtEightFractionDigits() {
+        let formatter = makeFormatter(space: " ")
+
+        XCTAssertEqual(formatter.format(decimal: decimal("0.000000012345"), style: .compact), "0.00000001")
+        XCTAssertEqual(formatter.format(decimal: decimal("0.000000001"), style: .compact), "< 0.00000001")
         XCTAssertEqual(
             formatter.format(decimal: decimal("0.00000000000000000000000000101"), style: .compact),
-            "0.00000000000000000000000000101"
+            "< 0.00000001"
+        )
+    }
+
+    func testCompactFormattingShowsLessThanMinimumForEighteenDecimalsDust() {
+        let formatter = makeFormatter(space: " ")
+        let signedFormatter = makeFormatter(signPolicy: .always, space: " ")
+
+        XCTAssertEqual(
+            formatter.format(
+                amount: BigUInt(stringLiteral: "1"),
+                fractionDigits: 18,
+                accessory: .tokenSymbol("ETH"),
+                style: .compact
+            ),
+            "< 0.00000001 ETH"
+        )
+        XCTAssertEqual(
+            signedFormatter.format(
+                amount: BigUInt(stringLiteral: "1"),
+                fractionDigits: 18,
+                accessory: .tokenSymbol("ETH"),
+                isNegative: true,
+                style: .compact
+            ),
+            "\u{2212} < 0.00000001 ETH"
         )
     }
 
@@ -216,6 +249,107 @@ final class AmountFormatterTests: XCTestCase {
         XCTAssertEqual(
             formatter.format(decimal: decimal("0.000000001"), accessory: .fiat(Currency.USD), style: .regular),
             "$\u{2009}0.000000001"
+        )
+    }
+
+    func testBalanceHeaderAmountSplitsFractionAndAccessory() {
+        let formatter = makeFormatter(space: " ")
+
+        let rub = formatter.formatBalanceHeaderAmount(
+            decimal: decimal("7362.45"),
+            accessory: .fiat(Currency.RUB)
+        )
+        XCTAssertNil(rub.leadingAccessory)
+        XCTAssertEqual(rub.trailingAccessory, "₽")
+        XCTAssertEqual(
+            rub.numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "7 362", role: .primary),
+                BalanceHeaderAmountFormat.NumberPart(text: ".45", role: .fraction),
+            ]
+        )
+        XCTAssertEqual(rub.fullText, "7 362.45\u{2009}₽")
+        XCTAssertNil(rub.tooltipText)
+        XCTAssertEqual(rub.textSize, .regular)
+
+        let usd = formatter.formatBalanceHeaderAmount(
+            decimal: decimal("7362.45"),
+            accessory: .fiat(Currency.USD)
+        )
+        XCTAssertEqual(usd.leadingAccessory, "$")
+        XCTAssertNil(usd.trailingAccessory)
+        XCTAssertEqual(
+            usd.numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "7 362", role: .primary),
+                BalanceHeaderAmountFormat.NumberPart(text: ".45", role: .fraction),
+            ]
+        )
+        XCTAssertEqual(usd.fullText, "$\u{2009}7 362.45")
+    }
+
+    func testBalanceHeaderAmountUsesReducedTextSizeForMillionsBeforeCompactThreshold() {
+        let formatter = makeFormatter(space: " ")
+
+        let amount = formatter.formatBalanceHeaderAmount(
+            decimal: decimal("8456362.45"),
+            accessory: .fiat(Currency.RUB)
+        )
+
+        XCTAssertEqual(amount.textSize, .reduced)
+        XCTAssertNil(amount.tooltipText)
+        XCTAssertEqual(
+            amount.numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "8 456 362", role: .primary),
+                BalanceHeaderAmountFormat.NumberPart(text: ".45", role: .fraction),
+            ]
+        )
+    }
+
+    func testBalanceHeaderAmountUsesCompactDisplayWithFullTooltipForTenMillionsAndMore() {
+        let formatter = makeFormatter(space: " ")
+
+        let millions = formatter.formatBalanceHeaderAmount(
+            decimal: decimal("26666666.45"),
+            accessory: .fiat(Currency.RUB)
+        )
+        XCTAssertNil(millions.leadingAccessory)
+        XCTAssertEqual(millions.trailingAccessory, "₽")
+        XCTAssertEqual(
+            millions.numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "26.6M", role: .primary),
+            ]
+        )
+        XCTAssertEqual(millions.fullText, "26 666 666.45\u{2009}₽")
+        XCTAssertEqual(millions.tooltipText, "26 666 666.45\u{2009}₽")
+        XCTAssertEqual(millions.textSize, .regular)
+
+        let billions = formatter.formatBalanceHeaderAmount(
+            decimal: decimal("1250000000"),
+            accessory: .fiat(Currency.RUB)
+        )
+        XCTAssertEqual(
+            billions.numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "1.2B", role: .primary),
+            ]
+        )
+        XCTAssertEqual(billions.fullText, "1 250 000 000.00\u{2009}₽")
+        XCTAssertEqual(billions.tooltipText, "1 250 000 000.00\u{2009}₽")
+    }
+
+    func testBalanceHeaderAmountCompactDisplayRoundsDown() {
+        let formatter = makeFormatter(space: " ")
+
+        XCTAssertEqual(
+            formatter
+                .formatBalanceHeaderAmount(decimal: decimal("19999999.99"), accessory: .fiat(Currency.RUB))
+                .numberParts,
+            [
+                BalanceHeaderAmountFormat.NumberPart(text: "19.9M", role: .primary),
+            ]
         )
     }
 
@@ -454,6 +588,62 @@ final class AmountFormatterTests: XCTestCase {
             AmountInputFormatter.amount(from: "0.12345", targetFractionalDigits: 2).amount,
             BigUInt(12)
         )
+    }
+
+    func testFormatDistinctlyKeepsCompactStyleWhenAmountsAlreadyDiffer() {
+        let formatter = makeFormatter(style: .compact, space: " ")
+
+        let (required, available) = formatter.formatDistinctly(
+            BigUInt(stringLiteral: "1900000000"),
+            BigUInt(stringLiteral: "1800000000"),
+            fractionDigits: 9,
+            accessory: .tokenSymbol("TON")
+        )
+
+        XCTAssertEqual(required, "1.9 TON")
+        XCTAssertEqual(available, "1.8 TON")
+    }
+
+    func testFormatDistinctlyFallsBackToExactValueWhenCompactStyleCollidesDifferentAmounts() {
+        let formatter = makeFormatter(style: .compact, space: " ")
+
+        let (required, available) = formatter.formatDistinctly(
+            BigUInt(stringLiteral: "1800000002"),
+            BigUInt(stringLiteral: "1800000001"),
+            fractionDigits: 9,
+            accessory: .tokenSymbol("TON")
+        )
+
+        XCTAssertEqual(required, "1.800000002 TON")
+        XCTAssertEqual(available, "1.800000001 TON")
+    }
+
+    func testFormatDistinctlySeparatesAmountsBelowCompactMinimum() {
+        let formatter = makeFormatter(style: .compact, space: " ")
+
+        let (required, available) = formatter.formatDistinctly(
+            BigUInt(2),
+            BigUInt(1),
+            fractionDigits: 9,
+            accessory: .tokenSymbol("TON")
+        )
+
+        XCTAssertEqual(required, "0.000000002 TON")
+        XCTAssertEqual(available, "0.000000001 TON")
+    }
+
+    func testFormatDistinctlyKeepsEqualAmountsRenderedEqually() {
+        let formatter = makeFormatter(style: .compact, space: " ")
+
+        let (required, available) = formatter.formatDistinctly(
+            BigUInt(stringLiteral: "1800000001"),
+            BigUInt(stringLiteral: "1800000001"),
+            fractionDigits: 9,
+            accessory: .tokenSymbol("TON")
+        )
+
+        XCTAssertEqual(required, "1.8 TON")
+        XCTAssertEqual(available, "1.8 TON")
     }
 
     private func makeFormatter(

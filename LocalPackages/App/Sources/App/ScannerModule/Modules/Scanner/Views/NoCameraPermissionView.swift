@@ -4,18 +4,19 @@ import TKUIKit
 
 struct NoCameraPermissionView: View {
     var buttonHandler: () -> Void
+    @Environment(\.tkPalette) private var palette
 
     var body: some View {
         ZStack {
-            Color(UIColor.Background.page)
+            palette.background.page
                 .ignoresSafeArea()
             VStack {
                 Spacer()
                 VStack {
                     SwiftUI.Image.TKUIKit.Icons.Size84.camera
-                        .foregroundColor(Color(UIColor.Accent.blue))
+                        .foregroundStyle(.accentBlue)
                     Text(TKLocales.CameraPermission.title)
-                        .foregroundColor(Color(UIColor.Text.primary))
+                        .foregroundStyle(.textPrimary)
                         .textStyle(TKTextStyle.h2)
                         .multilineTextAlignment(.center)
                 }
@@ -37,6 +38,7 @@ struct NoCameraPermissionView: View {
 struct NoCameraPermissionView_Previews: PreviewProvider {
     static var previews: some View {
         NoCameraPermissionView(buttonHandler: {})
+            .tkThemed()
     }
 }
 

@@ -19,10 +19,8 @@ extension TKTradingAPI.Client {
         }
         self = Client(
             serverURL: hostUrl,
-            transport: StreamURLSessionTransport(
-                urlSessionConfiguration: urlSession.configuration
-            ),
-            middlewares: []
+            transport: URLSessionTransport(urlSession: urlSession),
+            middlewares: .logged()
         )
     }
 }

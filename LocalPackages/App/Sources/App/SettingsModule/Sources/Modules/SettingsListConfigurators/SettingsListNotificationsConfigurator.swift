@@ -6,17 +6,12 @@ import UIKit
 import UserNotifications
 
 final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var didUpdateState: ((SettingsListState) -> Void)?
-    var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
 
     var title: String {
         TKLocales.Settings.Notifications.title
-    }
-
-    var isSelectable: Bool {
-        false
     }
 
     func getInitialState() -> SettingsListState {
@@ -97,38 +92,18 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     }
 
     private func createPushNotificationsSection() -> SettingsListSection {
-        let items = [createPushNotificationsItem()]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items.map(SettingsListItemsSectionItem.listItem)
+        .items(SettingsListItemsSection(
+            items: [.listItem(createPushNotificationsItem())]
         ))
     }
 
     private func createNotificationsNotAvailableSection() -> SettingsListSection {
-        let items = [createNotificationsNotAvailableItem()]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items.map(SettingsListItemsSectionItem.notificationBanner)
+        .items(SettingsListItemsSection(
+            items: [.banner(createNotificationsNotAvailableItem())]
         ))
     }
 
     private func createPushNotificationsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Settings.Notifications.NotificationsItem.title
-                    ),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(
-                            text: TKLocales.Settings.Notifications.NotificationsItem.caption,
-                            color: .Text.secondary,
-                            textStyle: .body2,
-                            numberOfLines: 0
-                        ),
-                    ]
-                )
-            )
-        )
-
         let isOn: Bool = {
             guard let isOn = walletNotificationStore.getState()[wallet]?.isOn else { return false }
             return isOn
@@ -144,42 +119,35 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
 
         return SettingsListItem(
             id: .walletNotificationsIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
+            title: SettingsListItemTitle(TKLocales.Settings.Notifications.NotificationsItem.title),
+            captions: [SettingsListItemCaption(TKLocales.Settings.Notifications.NotificationsItem.caption)],
+            accessory: .toggle(
+                SettingsListItemToggleAccessory(
                     isOn: isOn,
-                    isEnable: isPushAvailable,
-                    action: action
+                    isEnabled: isPushAvailable,
+                    onToggle: action
                 )
-            ),
-            onSelection: { _ in
-                action(!isOn)
-            }
+            )
         )
     }
 
-    private func createNotificationsNotAvailableItem() -> SettingsNotificationBannerListItem {
-        SettingsNotificationBannerListItem(
+    private func createNotificationsNotAvailableItem() -> SettingsListBannerItem {
+        SettingsListBannerItem(
             id: .notificationsNotAvailableBannerIdentifier,
-            cellConfiguration: NotificationBannerCell.Configuration(
-                bannerViewConfiguration: NotificationBannerView.Model(
-                    title: TKLocales.Settings.Notifications.NotificationsDisabled.title,
-                    caption: TKLocales.Settings.Notifications.NotificationsDisabled.caption,
-                    appearance: .accentYellow,
-                    actionButton: NotificationBannerView.Model.ActionButton(
-                        title: TKLocales.Settings.Notifications.NotificationsDisabled.actionTitle,
-                        action: { [urlOpener] in
-                            guard let url = URL(string: UIApplication.openSettingsURLString),
-                                  urlOpener.canOpen(url: url)
-                            else {
-                                return
-                            }
-                            urlOpener.open(url: url)
-                        }
-                    ),
-                    closeButton: nil
-                )
-            )
+            content: NotificationBannerContent(
+                title: TKLocales.Settings.Notifications.NotificationsDisabled.title,
+                description: TKLocales.Settings.Notifications.NotificationsDisabled.caption,
+                state: .accentOrange,
+                buttonTitle: TKLocales.Settings.Notifications.NotificationsDisabled.actionTitle
+            ),
+            onButtonTap: { [urlOpener] in
+                guard let url = URL(string: UIApplication.openSettingsURLString),
+                      urlOpener.canOpen(url: url)
+                else {
+                    return
+                }
+                urlOpener.open(url: url)
+            }
         )
     }
 
@@ -190,9 +158,9 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
             let isOn = notificationsState?.dapps.first(where: { $0.key == app.manifest.host })?.value ?? false
             return createConnectedAppItem(app, isOn: isOn)
         }
-        return SettingsListSection.listItems(SettingsListItemsSection(
+        return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem),
-            headerConfiguration: SettingsListSectionHeaderView.Configuration(
+            header: SettingsListSectionHeader(
                 title: .connectedAppsSectionTitle,
                 caption: .connectedAppsSectionCaption
             )
@@ -200,23 +168,6 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     }
 
     private func createConnectedAppItem(_ app: TonConnectApp, isOn: Bool) -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                iconViewConfiguration: TKListItemIconView.Configuration(
-                    content: .image(TKImageView.Model(image: .urlImage(app.manifest.iconUrl), size: .size(CGSize(width: 44, height: 44)))),
-                    alignment: .center,
-                    cornerRadius: 12,
-                    backgroundColor: .clear,
-                    size: CGSize(width: 44, height: 44)
-                ),
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: app.manifest.name
-                    )
-                )
-            )
-        )
-
         let action: (Bool) -> Void = { [weak self, wallet] isOn in
             guard let self else { return }
             Task { [weak self] in
@@ -257,35 +208,24 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
 
         return SettingsListItem(
             id: app.manifest.host,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
+            icon: .url(app.manifest.iconUrl),
+            title: SettingsListItemTitle(app.manifest.name),
+            accessory: .toggle(
+                SettingsListItemToggleAccessory(
                     isOn: isOn,
-                    isEnable: true,
-                    action: { action($0) }
+                    onToggle: action
                 )
-            ),
-            onSelection: { _ in
-                action(!isOn)
-            }
+            )
         )
     }
 
     private func updateIsPushAvailable() {
         Task {
-            let center = UNUserNotificationCenter.current()
-            let isPushAvailable: Bool
-            switch await center.notificationSettings().authorizationStatus {
-            case .authorized: isPushAvailable = true
-            case .denied: isPushAvailable = false
-            case .ephemeral: isPushAvailable = false
-            case .notDetermined: isPushAvailable = true
-            case .provisional: isPushAvailable = false
-            @unknown default:
-                isPushAvailable = false
-            }
+            let status = await UNUserNotificationCenter.current()
+                .notificationSettings()
+                .authorizationStatus
             await MainActor.run {
-                self.isPushAvailable = isPushAvailable
+                self.isPushAvailable = status.isPushAuthorized || status == .notDetermined
             }
         }
     }

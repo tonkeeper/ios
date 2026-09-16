@@ -2,19 +2,19 @@ import SwiftUI
 
 public struct BalanceHeaderBalanceStatusViewConfig: Hashable {
     public enum State: Hashable {
-        case address(String, tags: [TKTagSwiftUIViewConfig])
+        case address(String, tags: [TKTagSwiftUIViewConfig], showsChevron: Bool = false)
         case updated(String)
         case connection(ConnectionStatus)
     }
 
     public struct ConnectionStatus: Hashable {
         public var title: String
-        public var titleColor: UIColor
+        public var titleColor: TKColor
         public var isLoading: Bool
 
         public init(
             title: String,
-            titleColor: UIColor,
+            titleColor: TKColor = .textSecondary,
             isLoading: Bool
         ) {
             self.title = title
@@ -30,25 +30,49 @@ public struct BalanceHeaderBalanceStatusViewConfig: Hashable {
     }
 }
 
-public struct BalanceHeaderBalanceStatusView: View {
-    public var config: BalanceHeaderBalanceStatusViewConfig
-    private let action: (() -> Void)?
+struct BalanceHeaderBalanceStatusView: View {
+    @Environment(\.tkPalette) private var palette
 
-    public init(
+    var config: BalanceHeaderBalanceStatusViewConfig
+    private let action: (() -> Void)?
+    private let longPressAction: (() -> Void)?
+
+    init(
         config: BalanceHeaderBalanceStatusViewConfig,
-        action: (() -> Void)? = nil
+        action: (() -> Void)? = nil,
+        longPressAction: (() -> Void)? = nil
     ) {
         self.config = config
         self.action = action
+        self.longPressAction = longPressAction
     }
 
-    public var body: some View {
-        SwiftUI.Button(action: {
-            action?()
-        }) {
-            content
+    var body: some View {
+        if let longPressAction {
+            SwiftUI.Button(action: {}) {
+                content
+            }
+            .buttonStyle(BalanceHeaderBalanceStatusSwiftUIViewStyle())
+            .simultaneousGesture(
+                TapGesture()
+                    .exclusively(before: LongPressGesture())
+                    .onEnded { value in
+                        switch value {
+                        case .first:
+                            action?()
+                        case .second:
+                            longPressAction()
+                        }
+                    }
+            )
+        } else {
+            SwiftUI.Button(action: {
+                action?()
+            }) {
+                content
+            }
+            .buttonStyle(BalanceHeaderBalanceStatusSwiftUIViewStyle())
         }
-        .buttonStyle(BalanceHeaderBalanceStatusSwiftUIViewStyle())
     }
 }
 
@@ -56,12 +80,19 @@ private extension BalanceHeaderBalanceStatusView {
     @ViewBuilder
     var content: some View {
         switch config.state {
-        case let .address(text, tags):
+        case let .address(text, tags, showsChevron):
             HStack(spacing: 0) {
                 label(text)
 
                 ForEach(Array(tags.enumerated()), id: \.offset) { _, tag in
                     TKTagSwiftUIView(config: tag)
+                }
+
+                if showsChevron {
+                    SwiftUI.Image.TKUIKit.Icons.Size16.switch
+                        .renderingMode(.template)
+                        .foregroundStyle(.textSecondary)
+                        .padding(.leading, Layout.chevronSpacing)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -72,13 +103,13 @@ private extension BalanceHeaderBalanceStatusView {
             HStack(spacing: Layout.connectionSpacing) {
                 Text(model.title)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: model.titleColor))
+                    .foregroundStyle(model.titleColor)
                     .multilineTextAlignment(.center)
 
                 if model.isLoading {
                     BalanceHeaderBalanceStatusLoaderView(
                         size: Layout.loaderSize,
-                        tintColor: .Icon.secondary
+                        tintColor: palette.icon.secondary
                     )
                     .frame(
                         width: Layout.loaderSize.side,
@@ -93,7 +124,7 @@ private extension BalanceHeaderBalanceStatusView {
     func label(_ text: String) -> some View {
         Text(text)
             .textStyle(.body2)
-            .foregroundStyle(Color(uiColor: .Text.secondary))
+            .foregroundStyle(.textSecondary)
             .lineLimit(1)
             .truncationMode(.tail)
             .multilineTextAlignment(.center)
@@ -103,21 +134,21 @@ private extension BalanceHeaderBalanceStatusView {
 private struct BalanceHeaderBalanceStatusSwiftUIViewStyle: SwiftUI.ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .opacity(configuration.isPressed ? BalanceHeaderBalanceStatusView.Layout.highlightedOpacity : 1)
             .contentShape(Rectangle())
+            .tkTapAnimation(isPressed: configuration.isPressed)
     }
 }
 
 private struct BalanceHeaderBalanceStatusLoaderView: View {
     var size: Size
-    var tintColor: UIColor
+    var tintColor: Color
     @State private var isAnimating = false
 
     var body: some View {
         ZStack {
             Circle()
                 .stroke(
-                    Color(uiColor: tintColor).opacity(Layout.bottomCircleOpacity),
+                    tintColor.opacity(Layout.bottomCircleOpacity),
                     lineWidth: size.circleWidth
                 )
                 .frame(
@@ -128,7 +159,7 @@ private struct BalanceHeaderBalanceStatusLoaderView: View {
             Circle()
                 .trim(from: 0, to: Layout.topCircleTrimEnd)
                 .stroke(
-                    Color(uiColor: tintColor),
+                    tintColor,
                     style: StrokeStyle(
                         lineWidth: size.circleWidth,
                         lineCap: .round
@@ -160,8 +191,8 @@ private struct BalanceHeaderBalanceStatusLoaderView: View {
 
 private extension BalanceHeaderBalanceStatusView {
     enum Layout {
-        static let highlightedOpacity: CGFloat = 0.48
         static let connectionSpacing: CGFloat = 4
+        static let chevronSpacing: CGFloat = 4
         static let loaderSize: BalanceHeaderBalanceStatusLoaderView.Size = .xSmall
     }
 }

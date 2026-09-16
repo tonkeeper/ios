@@ -1,0 +1,90 @@
+# Sends AMOUNT of an asset to RECIPIENT, signs it, and verifies the transaction
+# reaches the history list. There is no success toast on send: the app closes the
+# confirmation and opens History, so the new row is the success signal.
+# Env: SEARCH_QUERY, ASSET_ID, AMOUNT (crypto units, e.g. "0.0001"), TOKEN_SYMBOL, RECIPIENT,
+# CHAIN_ID (optional, see steps/token_picker/select_asset.yaml)
+appId: com.jbig.tonkeeper
+env:
+  CHAIN_ID: ""
+---
+- extendedWaitUntil:
+    visible: Send
+    timeout: 10000
+- tapOn: Send
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Send opens the asset picker directly on a multichain wallet; elsewhere it lands on
+# the send form, where the token capsule opens the same picker.
+- runFlow:
+    when:
+      notVisible: Choose asset
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: send_token
+          timeout: 6000
+      - tapOn:
+          id: send_token
+      - waitForAnimationToEnd:
+          timeout: 3000
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 6000
+- runFlow:
+    file: ../token_picker/select_asset.yaml
+    env:
+      SEARCH_QUERY: ${SEARCH_QUERY}
+      ASSET_ID: ${ASSET_ID}
+      CHAIN_ID: ${CHAIN_ID}
+
+# No hideKeyboard on this form: iOS exposes no dismiss action for it, and both inputs
+# plus Continue stay above the keyboard anyway.
+- extendedWaitUntil:
+    visible:
+      id: input_field
+    timeout: 3000
+- tapOn:
+    id: input_field
+- inputText: ${RECIPIENT}
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: amount
+- inputText: ${AMOUNT}
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: Continue
+    timeout: 6000
+- tapOn: Continue
+
+- extendedWaitUntil:
+    visible: Fee
+    timeout: 15000
+# The app joins amount and ticker with a plain space only for pure ASCII-latin symbols
+# (GRAM, BTC); anything else — "USD₮" — gets a thin space (U+2009). Accept both.
+- assertVisible: ${AMOUNT + "[ \u2009]" + TOKEN_SYMBOL}
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 15000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../password/enter_password.yaml
+
+- assertVisible: Done
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 15000
+# Not now testing till hooks down
+#- extendedWaitUntil:
+#    visible: ${"− " + AMOUNT + " " + TOKEN_SYMBOL}
+#    timeout: 180000

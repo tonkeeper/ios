@@ -1,4 +1,3 @@
-import SnapKit
 import SwiftUI
 import TKLocalize
 import TKScreenKit
@@ -7,7 +6,7 @@ import UIKit
 
 final class NativeSwapTransactionConfirmationViewController: GenericViewViewController<NativeSwapTransactionConfirmationView> {
     private let popUpViewController = TKPopUp.ViewController()
-    private var infoSnackbarView: UIView?
+    private weak var infoHintSourceView: UIView?
 
     private let viewModel: NativeSwapTransactionConfirmationViewModel
 
@@ -35,6 +34,7 @@ final class NativeSwapTransactionConfirmationViewController: GenericViewViewCont
 
     override func viewDidDisappear(_ animated: Bool) {
         super.viewDidDisappear(animated)
+        dismissInfoHint()
         viewModel.viewDidDisappear()
     }
 }
@@ -45,6 +45,7 @@ private extension NativeSwapTransactionConfirmationViewController {
             self?.navigationController?.popViewController(animated: true)
         }
         viewModel.didUpdateConfiguration = { [weak self] configuration in
+            self?.dismissInfoHint()
             self?.popUpViewController.configuration = configuration
         }
         viewModel.didRequestSendAllConfirmation = { [weak self] tokenName, completion in
@@ -53,11 +54,17 @@ private extension NativeSwapTransactionConfirmationViewController {
                 completion: completion
             )
         }
-        viewModel.didRequestSlippageInfo = { [weak self] in
-            self?.showSlippageInfoSnackbar()
+        viewModel.didRequestSlippageInfo = { [weak self] sourceView in
+            self?.showSlippageInfoHint(sourceView: sourceView)
         }
-        viewModel.didRequestValueDifferenceInfo = { [weak self] in
-            self?.showValueDifferenceInfoSnackbar()
+        viewModel.didRequestValueDifferenceInfo = { [weak self] sourceView in
+            self?.showValueDifferenceInfoHint(sourceView: sourceView)
+        }
+        viewModel.didRequestTemporaryReserveInfo = { [weak self] reserveAmount, sourceView in
+            self?.showTemporaryReserveInfoHint(reserveAmount: reserveAmount, sourceView: sourceView)
+        }
+        viewModel.didRequestBatteryTemporaryReserveInfo = { [weak self] reserveAmount, sourceView in
+            self?.showBatteryTemporaryReserveInfoHint(reserveAmount: reserveAmount, sourceView: sourceView)
         }
     }
 
@@ -118,88 +125,63 @@ private extension NativeSwapTransactionConfirmationViewController {
         popUpViewController.didMove(toParent: self)
     }
 
-    private func showSlippageInfoSnackbar() {
+    private func showSlippageInfoHint(sourceView: UIView) {
         let text = TKLocales.NativeSwap.Screen.Confirm.Field.Slippage.info
-        showInfoSnackbar(text: text)
+        showInfoHint(sourceView: sourceView, text: text)
     }
 
-    private func showValueDifferenceInfoSnackbar() {
+    private func showValueDifferenceInfoHint(sourceView: UIView) {
         let text = TKLocales.NativeSwap.Screen.Confirm.Field.ValueDifference.info
-        showInfoSnackbar(text: text)
+        showInfoHint(sourceView: sourceView, text: text)
     }
 
-    private func showInfoSnackbar(text: String) {
-        infoSnackbarView?.removeFromSuperview()
-
-        let swiftUIView = SnackbarContentView(text: text) { [weak self] in
-            self?.infoSnackbarView?.removeFromSuperview()
-        }
-        let hostingController = UIHostingController(rootView: swiftUIView)
-        hostingController.view.backgroundColor = .clear
-        customView.addSubview(hostingController.view)
-
-        if let sliderView = findSlider(in: customView) {
-            hostingController.view.snp.makeConstraints { make in
-                make.bottom.equalTo(sliderView.snp.top)
-                make.left.right.equalTo(customView).inset(16)
-            }
-        } else {
-            hostingController.view.snp.makeConstraints { make in
-                make.bottom.equalTo(customView).inset(140)
-                make.left.right.equalTo(customView).inset(16)
-            }
-        }
-
-        hostingController.view.alpha = 0
-        infoSnackbarView = hostingController.view
-
-        UIView.animate(withDuration: 0.3) {
-            hostingController.view.alpha = 1
-        }
+    private func showTemporaryReserveInfoHint(reserveAmount: String, sourceView: UIView) {
+        let text = TKLocales.NativeSwap.Screen.Confirm.Field.TemporaryReserve.info(reserveAmount)
+        showInfoHint(sourceView: sourceView, text: text)
     }
 
-    private func findSlider(in view: UIView) -> UIView? {
-        if view is TKSlider {
-            return view
-        }
-
-        for subview in view.subviews {
-            if let found = findSlider(in: subview) {
-                return found
-            }
-        }
-
-        return nil
+    private func showBatteryTemporaryReserveInfoHint(reserveAmount: String, sourceView: UIView) {
+        let text = TKLocales.NativeSwap.Screen.Confirm.Field.TemporaryReserve.batteryInfo(reserveAmount)
+        showInfoHint(sourceView: sourceView, text: text)
     }
-}
 
-private struct SnackbarContentView: View {
-    let text: String
-    let dismiss: () -> Void
-
-    var body: some View {
-        HStack(spacing: 0) {
-            Text(text)
-                .multilineTextAlignment(.leading)
-                .font(.init(TKTextStyle.body2.font))
-                .foregroundColor(Color(uiColor: .Text.primary))
-                .padding(.vertical, 12)
-                .padding(.horizontal, 16)
-            Spacer(minLength: 32)
-        }
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color(uiColor: .Background.contentTint))
+    private func showInfoHint(sourceView: UIView, text: String) {
+        let didShow = HintController.show(
+            sourceView: sourceView,
+            configuration: HintConfiguration(
+                position: HintPosition(
+                    tailParameters: TKHintTextView.tailParameters,
+                    horizontal: .default,
+                    vertical: .init(absolute: 7),
+                    direction: .bottomCenter
+                ),
+                maximumWidth: 200,
+                animationStyle: .bouncing
+            ),
+            didHide: { [weak self, weak sourceView] in
+                guard let self, self.infoHintSourceView === sourceView else { return }
+                self.infoHintSourceView = nil
+            },
+            contentViewControllerProvider: { position in
+                let hostingController = TKHostingController(
+                    content: TKHintTextView(
+                        text: text,
+                        position: position
+                    )
+                )
+                hostingController.view.backgroundColor = .clear
+                return hostingController
+            }
         )
-        .overlay(alignment: .topTrailing) {
-            Button {
-                dismiss()
-            } label: {
-                SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.close)
-            }
-            .tint(.init(uiColor: .Icon.primary))
-            .padding(.top, 16)
-            .padding(.trailing, 16)
+
+        if didShow {
+            infoHintSourceView = sourceView
         }
+    }
+
+    private func dismissInfoHint() {
+        guard let infoHintSourceView else { return }
+        self.infoHintSourceView = nil
+        HintController.dismiss(sourceView: infoHintSourceView)
     }
 }

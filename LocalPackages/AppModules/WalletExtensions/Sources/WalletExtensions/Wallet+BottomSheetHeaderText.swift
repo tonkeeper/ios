@@ -5,23 +5,24 @@ import UIKit
 
 public extension Wallet {
     func bottomSheetHeaderText(
-        nameColor: UIColor = .Text.secondary,
-        iconColor: UIColor = .Icon.primary
+        palette: TKPalette,
+        nameColor: TKColor = .textSecondary,
+        iconColor: TKColor = .iconPrimary
     ) -> Text {
         switch icon {
         case let .emoji(emoji):
             return Text("\(emoji) \(label)")
-                .foregroundColor(Color(uiColor: nameColor))
+                .foregroundColor(nameColor.resolve(palette))
         case let .icon(icon):
             guard let image = icon.image else {
                 return Text(label)
-                    .foregroundColor(Color(uiColor: nameColor))
+                    .foregroundColor(nameColor.resolve(palette))
             }
 
             return Text(Image(uiImage: image.withRenderingMode(.alwaysTemplate)))
-                .foregroundColor(Color(uiColor: iconColor))
+                .foregroundColor(iconColor.resolve(palette))
                 + Text(" \(label)")
-                .foregroundColor(Color(uiColor: nameColor))
+                .foregroundColor(nameColor.resolve(palette))
         }
     }
 }

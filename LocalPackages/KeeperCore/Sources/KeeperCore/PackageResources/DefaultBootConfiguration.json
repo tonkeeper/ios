@@ -12,6 +12,49 @@
     "NFTOnExplorerUrl": "https://tonviewer.com/%s?section=nft",
     "transactionExplorer": "https://tonviewer.com/transaction/%s",
     "accountExplorer": "https://tonviewer.com/%s",
+    "explorers": [
+      {
+        "chain": "ton",
+        "name": "Tonviewer",
+        "url": "https://tonviewer.com/transaction/{tx_hash}",
+        "token_url": "https://tonviewer.com/{token_address}"
+      },
+      {
+        "chain": "eth",
+        "name": "Blockscout",
+        "url": "https://eth.blockscout.com/tx/{tx_hash}",
+        "token_url": "https://eth.blockscout.com/token/{token_address}"
+      },
+      {
+        "chain": "btc",
+        "name": "Mempool",
+        "url": "https://mempool.space/tx/{tx_hash}"
+      },
+      {
+        "chain": "bsc",
+        "name": "BscScan",
+        "url": "https://bscscan.com/tx/{tx_hash}",
+        "token_url": "https://bscscan.com/token/{token_address}"
+      },
+      {
+        "chain": "arb",
+        "name": "Blockscout",
+        "url": "https://arbitrum.blockscout.com/tx/{tx_hash}",
+        "token_url": "https://arbitrum.blockscout.com/token/{token_address}"
+      },
+      {
+        "chain": "base",
+        "name": "Blockscout",
+        "url": "https://base.blockscout.com/tx/{tx_hash}",
+        "token_url": "https://base.blockscout.com/token/{token_address}"
+      },
+      {
+        "chain": "tron",
+        "name": "Tronscan",
+        "url": "https://tronscan.org/#/transaction/{tx_hash}",
+        "token_url": "https://tronscan.org/#/token20/{token_address}"
+      }
+    ],
     "default_wallet_version": "v5R1",
     "mercuryoSecret": "yMd6dkP9SVip98Nw",
     "batteryHost": "https://battery.tonkeeper.com",

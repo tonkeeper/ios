@@ -42,13 +42,27 @@ public final class TonConnectAssembly {
         )
     }
 
+    private weak var _tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore?
+    public var tonConnectConnectionMetadataStore: TonConnectConnectionMetadataStore {
+        if let tonConnectConnectionMetadataStore = _tonConnectConnectionMetadataStore {
+            return tonConnectConnectionMetadataStore
+        } else {
+            let tonConnectConnectionMetadataStore = TonConnectConnectionMetadataStore(
+                vault: coreAssembly.sharedFileSystemVault()
+            )
+            _tonConnectConnectionMetadataStore = tonConnectConnectionMetadataStore
+            return tonConnectConnectionMetadataStore
+        }
+    }
+
     private weak var _tonConnectAppsStore: TonConnectAppsStore?
     public var tonConnectAppsStore: TonConnectAppsStore {
         if let tonConnectAppsStore = _tonConnectAppsStore {
             return tonConnectAppsStore
         } else {
             let tonConnectAppsStore = TonConnectAppsStore(
-                tonConnectService: tonConnectService()
+                tonConnectService: tonConnectService(),
+                connectionMetadataStore: tonConnectConnectionMetadataStore
             )
             _tonConnectAppsStore = tonConnectAppsStore
             return tonConnectAppsStore

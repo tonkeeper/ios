@@ -1,6 +1,7 @@
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKLocalize
 import TKUIKit
 import TonSwift
 import TonTransport
@@ -16,42 +17,61 @@ struct AddWalletModule {
 
     func createAddWalletCoordinator(
         options: [AddWalletOption],
-        router: ViewControllerRouter
+        router: ViewControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
     ) -> AddWalletCoordinator {
         return AddWalletCoordinator(
             router: router,
             options: options,
             configurationAssembly: dependencies.configurationAssembly,
-            walletAddController: dependencies.walletsUpdateAssembly.walletAddController(),
-            createWalletCoordinatorProvider: { router in
-                createCreateWalletCoordinator(router: router)
+            multichainSupportedChains: dependencies.multichainAssembly.supportedChains,
+            walletAddController: dependencies.walletsUpdateAssembly.walletAddController(
+                multichainAssembly: dependencies.multichainAssembly
+            ),
+            analyticsProvider: dependencies.coreAssembly.analyticsProvider,
+            analyticsContext: analyticsContext,
+            createWalletCoordinatorProvider: { router, mode in
+                createCreateWalletCoordinator(router: router, mode: mode, analyticsContext: analyticsContext)
             },
             importWalletCoordinatorProvider: { router, network in
-                createImportWalletCoordinator(router: router, network: network)
+                createImportWalletCoordinator(router: router, network: network, analyticsContext: analyticsContext)
             },
             importWatchOnlyWalletCoordinatorProvider: { router in
-                createImportWatchOnlyWalletCoordinator(router: router)
+                createImportWatchOnlyWalletCoordinator(router: router, analyticsContext: analyticsContext)
             }, pairSignerCoordinatorProvider: { router in
-                createPairSignerCoordinator(router: router)
+                createPairSignerCoordinator(router: router, analyticsContext: analyticsContext)
             }, pairLedgerCoordinatorProvider: { router in
-                createLedgerPairCoordinator(router: router)
+                createLedgerPairCoordinator(router: router, analyticsContext: analyticsContext)
             },
             pairKeystoneCoordinatorProvider: { router in
-                createPairKeystoneCoordinator(router: router)
+                createPairKeystoneCoordinator(router: router, analyticsContext: analyticsContext)
             }
         )
     }
 
-    func createCreateWalletCoordinator(router: ViewControllerRouter) -> CreateWalletCoordinator {
+    func createCreateWalletCoordinator(
+        router: ViewControllerRouter,
+        mode: CreateWalletCoordinator.Mode = .regular,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> CreateWalletCoordinator {
+        let mode = dependencies.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
+            ? mode
+            : .regular
         return CreateWalletCoordinator(
             router: router,
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
             walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             hasPasscodeChecker: DefaultHasPasscodeChecker(
                 mnemonicsAccess: dependencies.walletsUpdateAssembly.secureAssembly.mnemonicAccess,
                 keeperInfoRepository: dependencies.walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository()
             ),
             storesAssembly: dependencies.storesAssembly,
+            configurationAssembly: dependencies.configurationAssembly,
+            coreAssembly: dependencies.coreAssembly,
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+            mode: mode,
+            analyticsContext: analyticsContext,
             customizeWalletModule: {
                 self.createCustomizeWalletModule(
                     name: nil,
@@ -74,20 +94,18 @@ struct AddWalletModule {
             wallet: wallet,
             securityStore: dependencies.storesAssembly.securityStore,
             mnemonicAccess: dependencies.walletsUpdateAssembly.secureAssembly.mnemonicAccess,
-            addController: dependencies.walletsUpdateAssembly.walletAddController(),
+            addController: dependencies.walletsUpdateAssembly.walletAddController(
+                multichainAssembly: dependencies.multichainAssembly
+            ),
             analyticsProvider: dependencies.coreAssembly.analyticsProvider
         )
     }
 
-    func createImportWalletCoordinator(router: NavigationControllerRouter, network: Network) -> ImportWalletCoordinator {
-        let brokenTronWalletAnalyticsTracker = BrokenTronWalletAnalyticsCounter(
-            walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
-            analyticsProvider: dependencies.coreAssembly.analyticsProvider
-        )
-        let mnemonicDerivationAnalyticsTracker = MnemonicDerivationAnalyticsCounter(
-            walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
-            analyticsProvider: dependencies.coreAssembly.analyticsProvider
-        )
+    func createImportWalletCoordinator(
+        router: NavigationControllerRouter,
+        network: Network,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> ImportWalletCoordinator {
         return ImportWalletCoordinator(
             router: router,
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
@@ -97,16 +115,10 @@ struct AddWalletModule {
                 mnemonicsAccess: dependencies.walletsUpdateAssembly.secureAssembly.mnemonicAccess,
                 keeperInfoRepository: dependencies.walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository()
             ),
+            multichainAssembly: dependencies.multichainAssembly,
             configurationAssembly: dependencies.configurationAssembly,
             network: network,
-            checkImportedWalletsForAnalytics: { mnemonic, revisions in
-                await brokenTronWalletAnalyticsTracker.checkImportedMnemonics(words: mnemonic.mnemonicWords)
-                await mnemonicDerivationAnalyticsTracker.checkImportedWallets(
-                    mnemonic: mnemonic,
-                    revisions: revisions,
-                    network: network
-                )
-            },
+            analyticsContext: analyticsContext,
             customizeWalletModule: {
                 self.createCustomizeWalletModule(
                     name: nil,
@@ -123,9 +135,9 @@ struct AddWalletModule {
         tintColor: WalletTintColor? = nil,
         icon: WalletIcon? = nil,
         configurator: CustomizeWalletViewModelConfigurator
-    ) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
+    ) -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void> {
         return CustomizeWalletAssembly.module(
-            name: name,
+            name: name ?? suggestedWalletName(),
             tintColor: tintColor,
             icon: icon,
             configurator: configurator
@@ -178,24 +190,34 @@ struct AddWalletModule {
         )
     }
 
-    func createPairSignerCoordinator(router: NavigationControllerRouter) -> PairSignerCoordinator {
+    func createPairSignerCoordinator(
+        router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> PairSignerCoordinator {
         PairSignerCoordinator(
             scannerAssembly: dependencies.scannerAssembly,
             walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             coreAssembly: dependencies.coreAssembly,
             router: router,
+            analyticsContext: analyticsContext,
             publicKeyImportCoordinatorProvider: { router, publicKey, name in
                 self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
             }
         )
     }
 
-    func createPairKeystoneCoordinator(router: NavigationControllerRouter) -> PairKeystoneCoordinator {
+    func createPairKeystoneCoordinator(
+        router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> PairKeystoneCoordinator {
         PairKeystoneCoordinator(
             scannerAssembly: dependencies.scannerAssembly,
             walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             coreAssembly: dependencies.coreAssembly,
             router: router,
+            analyticsContext: analyticsContext,
             keystoneImportCoordinatorProvider: { router, publicKey, xfp, path, name in
                 self.createKeystoneImportCoordinator(publicKey: publicKey, xfp: xfp, path: path, name: name, router: router)
             }
@@ -205,14 +227,17 @@ struct AddWalletModule {
     func createPairSignerDeeplinkCoordinator(
         publicKey: TonSwift.PublicKey,
         name: String,
-        router: NavigationControllerRouter
+        router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
     ) -> PairSignerDeeplinkCoordinator {
         PairSignerDeeplinkCoordinator(
             publicKey: publicKey,
             name: name,
             walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             coreAssembly: dependencies.coreAssembly,
             router: router,
+            analyticsContext: analyticsContext,
             publicKeyImportCoordinatorProvider: { router, publicKey, name in
                 self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
             }
@@ -242,11 +267,16 @@ struct AddWalletModule {
         )
     }
 
-    func createLedgerPairCoordinator(router: ViewControllerRouter) -> PairLedgerCoordinator {
+    func createLedgerPairCoordinator(
+        router: ViewControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> PairLedgerCoordinator {
         PairLedgerCoordinator(
             walletUpdateAssembly: dependencies.walletsUpdateAssembly,
             coreAssembly: dependencies.coreAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             router: router,
+            analyticsContext: analyticsContext,
             ledgerImportCoordinatorProvider: { router, accounts, activeWalletModels, name in
                 self.createLedgerImportCoordinator(accounts: accounts, activeWalletModels: activeWalletModels, name: name, router: router)
             }
@@ -255,11 +285,16 @@ struct AddWalletModule {
 }
 
 private extension AddWalletModule {
-    func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
+    func createImportWatchOnlyWalletCoordinator(
+        router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext
+    ) -> ImportWatchOnlyWalletCoordinator {
         return ImportWatchOnlyWalletCoordinator(
             router: router,
             analyticsProvider: dependencies.coreAssembly.analyticsProvider,
             walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
+            analyticsContext: analyticsContext,
             customizeWalletModule: { name in
                 self.createCustomizeWalletModule(
                     name: name,
@@ -272,11 +307,31 @@ private extension AddWalletModule {
     }
 }
 
+private extension AddWalletModule {
+    func suggestedWalletName() -> String {
+        DefaultWalletName.suggest(
+            base: TKLocales.CustomizeWallet.defaultWalletName,
+            existingLabels: dependencies.storesAssembly.walletsStore.wallets.map(\.metaData.label)
+        )
+    }
+}
+
+extension AddWalletModule {
+    func makeWalletFlowAnalyticsContext(from: AddWalletSource) -> WalletFlowAnalyticsContext {
+        WalletFlowAnalyticsContext(
+            from: from,
+            multichainEnabled: dependencies.configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
+        )
+    }
+}
+
 extension AddWalletModule {
     struct Dependencies {
         let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
         let storesAssembly: KeeperCore.StoresAssembly
         let coreAssembly: TKCore.CoreAssembly
+        let keeperCoreMainAssembly: KeeperCore.MainAssembly
+        let multichainAssembly: MultichainAssembly
         let scannerAssembly: KeeperCore.ScannerAssembly
         let configurationAssembly: ConfigurationAssembly
 
@@ -284,12 +339,16 @@ extension AddWalletModule {
             walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
             storesAssembly: KeeperCore.StoresAssembly,
             coreAssembly: TKCore.CoreAssembly,
+            keeperCoreMainAssembly: KeeperCore.MainAssembly,
+            multichainAssembly: MultichainAssembly,
             scannerAssembly: KeeperCore.ScannerAssembly,
             configurationAssembly: ConfigurationAssembly
         ) {
             self.walletsUpdateAssembly = walletsUpdateAssembly
             self.storesAssembly = storesAssembly
             self.coreAssembly = coreAssembly
+            self.keeperCoreMainAssembly = keeperCoreMainAssembly
+            self.multichainAssembly = multichainAssembly
             self.scannerAssembly = scannerAssembly
             self.configurationAssembly = configurationAssembly
         }

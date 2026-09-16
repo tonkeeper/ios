@@ -116,12 +116,12 @@ private final class TronUSDTFeeOptionListItemView: UIView, ConfigurableView {
             iconContainerView.backgroundColor = .clear
             batteryIconView.isHidden = true
             iconImageView.isHidden = false
-            iconImageView.image = .App.Currency.Vector.ton.withRenderingMode(.alwaysOriginal)
+            iconImageView.image = .TKUIKit.Icons.Size44.currencyTon.withRenderingMode(.alwaysOriginal)
         case .trx:
             iconContainerView.backgroundColor = .clear
             batteryIconView.isHidden = true
             iconImageView.isHidden = false
-            iconImageView.image = .App.Currency.Vector.trc20.withRenderingMode(.alwaysOriginal)
+            iconImageView.image = .TKUIKit.Icons.Size44.currencyTrc20.withRenderingMode(.alwaysOriginal)
         }
     }
 

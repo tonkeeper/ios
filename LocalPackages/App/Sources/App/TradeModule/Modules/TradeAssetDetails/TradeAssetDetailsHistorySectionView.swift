@@ -56,10 +56,6 @@ struct TradeAssetDetailsHistorySectionView: View {
     }
 }
 
-private extension TradeAssetDetailsHistorySectionView {
-    enum Layout {
-        static let headerSpacing: CGFloat = 16
-        static let horizontalPadding: CGFloat = 16
-        static let headerBottomPadding: CGFloat = 12
-    }
+private enum Layout {
+    static let horizontalPadding: CGFloat = 16
 }

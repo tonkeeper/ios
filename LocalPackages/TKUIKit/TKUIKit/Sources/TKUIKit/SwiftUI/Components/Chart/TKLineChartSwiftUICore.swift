@@ -7,6 +7,8 @@ final class TKLineChartRenderer: ObservableObject {
         var mode: TKLineChartCanvasView.ChartMode
         var smoothing: CGFloat
         var style: TKLineChartCanvasView.VisualStyle
+        var appearance: TKLineChartCanvasView.Appearance
+        var trend: LineChartTrend
         var animatedYValues: AnimatableChartVector
         var points: [NormalizedChartPoint]
 
@@ -14,39 +16,40 @@ final class TKLineChartRenderer: ObservableObject {
             mode: .linear,
             smoothing: 0,
             style: .active,
+            appearance: .standard,
+            trend: .upOrFlat,
             animatedYValues: .zero,
             points: []
         )
     }
 
-    @Published fileprivate var renderModel: RenderModel = .empty
+    @Published private(set) var renderModel: RenderModel = .empty
     @Published fileprivate var selectedIndex: Int?
     @Published fileprivate var isDragging = false
+
+    init(chartData: TKLineChartCanvasView.ChartData? = nil) {
+        if let chartData {
+            setChartData(chartData)
+        }
+    }
 
     var didSelectValue: ((Int) -> Void)?
     var didDeselectValue: (() -> Void)?
     var didStartDragging: (() -> Void)?
     var didEndDragging: (() -> Void)?
-    var hasChartData: Bool {
-        !renderModel.points.isEmpty
-    }
-
-    var isSelecting: Bool {
-        isDragging
-    }
-
     func setChartData(_ chartData: TKLineChartCanvasView.ChartData) {
         let points = LineChartPointNormalizer.normalize(chartData.coordinates)
-        let sampledYValues = LineChartPointSampler.sample(
-            points: points,
-            mode: chartData.mode,
-            sampleCount: SampleConfiguration.sampleCount
+        let areaMaskModel = LineChartAreaMaskModel(
+            chartData: chartData,
+            points: points
         )
         let model = RenderModel(
-            mode: chartData.mode,
-            smoothing: chartData.smoothing.resolvedTension,
+            mode: areaMaskModel.mode,
+            smoothing: areaMaskModel.smoothing,
             style: chartData.style,
-            animatedYValues: AnimatableChartVector(values: sampledYValues),
+            appearance: chartData.appearance,
+            trend: LineChartTrendResolver.trend(for: chartData.coordinates),
+            animatedYValues: areaMaskModel.yValues,
             points: points
         )
 
@@ -134,29 +137,37 @@ final class TKLineChartRenderer: ObservableObject {
 
 @MainActor
 struct TKLineChartContentView: View {
+    @Environment(\.tkPalette) private var palette
+
     @ObservedObject var renderer: TKLineChartRenderer
+    let selectionGuideHeight: CGFloat?
+    let showsSelectionIndicator: Bool
 
     var body: some View {
         GeometryReader { geometry in
             let plotRect = renderer.plotRect(in: geometry.size)
-            let style = renderer.renderModel.style
+            let renderModel = renderer.renderModel
+            let guideHeight = ChartSelectionGuideLayout.height(
+                requestedHeight: selectionGuideHeight,
+                plotHeight: plotRect.height
+            )
             ZStack(alignment: .topLeading) {
                 ChartAreaFillView(
-                    yValues: renderer.renderModel.animatedYValues,
-                    mode: renderer.renderModel.mode,
-                    smoothing: renderer.renderModel.smoothing,
-                    style: style
+                    yValues: renderModel.animatedYValues,
+                    mode: renderModel.mode,
+                    smoothing: renderModel.smoothing,
+                    fillGradient: renderModel.fillGradient(palette)
                 )
                 .frame(width: plotRect.width, height: plotRect.height)
                 .offset(x: plotRect.minX, y: plotRect.minY)
 
                 AnimatedChartLineShape(
-                    yValues: renderer.renderModel.animatedYValues,
-                    mode: renderer.renderModel.mode,
-                    smoothing: renderer.renderModel.smoothing
+                    yValues: renderModel.animatedYValues,
+                    mode: renderModel.mode,
+                    smoothing: renderModel.smoothing
                 )
                 .stroke(
-                    Color(uiColor: style.lineColor),
+                    renderModel.lineColor(palette),
                     style: StrokeStyle(
                         lineWidth: 2,
                         lineCap: .round,
@@ -166,36 +177,12 @@ struct TKLineChartContentView: View {
                 .frame(width: plotRect.width, height: plotRect.height)
                 .offset(x: plotRect.minX, y: plotRect.minY)
 
-                if style.allowsSelection, let selectedPoint = renderer.selectedPoint(in: geometry.size) {
-                    Rectangle()
-                        .fill(Color(uiColor: style.lineColor))
-                        .frame(width: SelectionIndicatorStyle.lineWidth, height: plotRect.height)
-                        .offset(
-                            x: selectedPoint.x - SelectionIndicatorStyle.lineWidth / 2,
-                            y: plotRect.minY
-                        )
-
-                    Circle()
-                        .fill(Color(uiColor: style.lineColor).opacity(SelectionIndicatorStyle.outerCircleOpacity))
-                        .frame(
-                            width: SelectionIndicatorStyle.outerCircleDiameter,
-                            height: SelectionIndicatorStyle.outerCircleDiameter
-                        )
-                        .offset(
-                            x: selectedPoint.x - SelectionIndicatorStyle.outerCircleDiameter / 2,
-                            y: selectedPoint.y - SelectionIndicatorStyle.outerCircleDiameter / 2
-                        )
-
-                    Circle()
-                        .fill(Color(uiColor: style.lineColor))
-                        .frame(
-                            width: SelectionIndicatorStyle.innerCircleDiameter,
-                            height: SelectionIndicatorStyle.innerCircleDiameter
-                        )
-                        .offset(
-                            x: selectedPoint.x - SelectionIndicatorStyle.innerCircleDiameter / 2,
-                            y: selectedPoint.y - SelectionIndicatorStyle.innerCircleDiameter / 2
-                        )
+                if showsSelectionIndicator {
+                    ChartSelectionIndicatorView(
+                        renderer: renderer,
+                        chartSize: geometry.size,
+                        guideHeight: guideHeight
+                    )
                 }
             }
         }
@@ -203,52 +190,176 @@ struct TKLineChartContentView: View {
     }
 }
 
+struct ChartSelectionIndicatorView: View {
+    @Environment(\.tkPalette) private var palette
+    @ObservedObject var renderer: TKLineChartRenderer
+    let chartSize: CGSize
+    let guideHeight: CGFloat
+
+    var body: some View {
+        let renderModel = renderer.renderModel
+        let guideHeight = max(guideHeight, 0)
+        if renderModel.style.allowsSelection, let selectedPoint = renderer.selectedPoint(in: chartSize) {
+            if renderModel.appearance == .trend {
+                Path { path in
+                    path.move(to: CGPoint(x: selectedPoint.x, y: 0))
+                    path.addLine(to: CGPoint(x: selectedPoint.x, y: guideHeight))
+                }
+                .stroke(
+                    palette.icon.primary,
+                    style: StrokeStyle(
+                        lineWidth: SelectionIndicatorStyle.lineWidth,
+                        dash: [SelectionIndicatorStyle.dashLength]
+                    )
+                )
+
+                Circle()
+                    .fill(.iconPrimary.opacity(SelectionIndicatorStyle.outerCircleOpacity))
+                    .frame(
+                        width: SelectionIndicatorStyle.trendOuterCircleDiameter,
+                        height: SelectionIndicatorStyle.trendOuterCircleDiameter
+                    )
+                    .offset(
+                        x: selectedPoint.x - SelectionIndicatorStyle.trendOuterCircleDiameter / 2,
+                        y: selectedPoint.y - SelectionIndicatorStyle.trendOuterCircleDiameter / 2
+                    )
+
+                Circle()
+                    .fill(.iconPrimary)
+                    .frame(
+                        width: SelectionIndicatorStyle.trendInnerCircleDiameter,
+                        height: SelectionIndicatorStyle.trendInnerCircleDiameter
+                    )
+                    .offset(
+                        x: selectedPoint.x - SelectionIndicatorStyle.trendInnerCircleDiameter / 2,
+                        y: selectedPoint.y - SelectionIndicatorStyle.trendInnerCircleDiameter / 2
+                    )
+            } else {
+                Rectangle()
+                    .fill(renderModel.lineColor(palette))
+                    .frame(width: SelectionIndicatorStyle.lineWidth, height: guideHeight)
+                    .offset(
+                        x: selectedPoint.x - SelectionIndicatorStyle.lineWidth / 2,
+                        y: 0
+                    )
+
+                Circle()
+                    .fill(renderModel.lineColor(palette).opacity(SelectionIndicatorStyle.outerCircleOpacity))
+                    .frame(
+                        width: SelectionIndicatorStyle.standardOuterCircleDiameter,
+                        height: SelectionIndicatorStyle.standardOuterCircleDiameter
+                    )
+                    .offset(
+                        x: selectedPoint.x - SelectionIndicatorStyle.standardOuterCircleDiameter / 2,
+                        y: selectedPoint.y - SelectionIndicatorStyle.standardOuterCircleDiameter / 2
+                    )
+
+                Circle()
+                    .fill(renderModel.lineColor(palette))
+                    .frame(
+                        width: SelectionIndicatorStyle.standardInnerCircleDiameter,
+                        height: SelectionIndicatorStyle.standardInnerCircleDiameter
+                    )
+                    .offset(
+                        x: selectedPoint.x - SelectionIndicatorStyle.standardInnerCircleDiameter / 2,
+                        y: selectedPoint.y - SelectionIndicatorStyle.standardInnerCircleDiameter / 2
+                    )
+            }
+        }
+    }
+}
+
+enum ChartSelectionGuideLayout {
+    static func height(requestedHeight: CGFloat?, plotHeight: CGFloat) -> CGFloat {
+        max(requestedHeight ?? plotHeight, 0)
+    }
+}
+
 private struct ChartAreaFillView: View {
     var yValues: AnimatableChartVector
     let mode: TKLineChartCanvasView.ChartMode
     let smoothing: CGFloat
-    let style: TKLineChartCanvasView.VisualStyle
+    let fillGradient: Gradient
 
     var body: some View {
         Rectangle()
             .fill(
                 LinearGradient(
-                    gradient: style.fillGradient,
+                    gradient: fillGradient,
                     startPoint: .top,
                     endPoint: .bottom
                 )
                 .opacity(0.24)
             )
             .mask {
-                AnimatedChartAreaShape(
+                ChartAreaMaskView(
                     yValues: yValues,
                     mode: mode,
                     smoothing: smoothing
                 )
-                .fill(.white)
             }
+    }
+}
+
+private struct ChartAreaMaskView: View {
+    var yValues: AnimatableChartVector
+    let mode: TKLineChartCanvasView.ChartMode
+    let smoothing: CGFloat
+
+    var body: some View {
+        AnimatedChartAreaShape(
+            yValues: yValues,
+            mode: mode,
+            smoothing: smoothing
+        )
+        .fill(.white)
+    }
+}
+
+struct ChartExtendedAreaMaskView: View {
+    var yValues: AnimatableChartVector
+    let mode: TKLineChartCanvasView.ChartMode
+    let smoothing: CGFloat
+    let chartHeight: CGFloat
+
+    var body: some View {
+        AnimatedExtendedChartAreaShape(
+            yValues: yValues,
+            mode: mode,
+            smoothing: smoothing,
+            chartHeight: chartHeight
+        )
+        .fill(.white)
     }
 }
 
 private enum SelectionIndicatorStyle {
     static let lineWidth: CGFloat = 1
-    static let outerCircleDiameter: CGFloat = 40
-    static let innerCircleDiameter: CGFloat = 16
+    static let dashLength: CGFloat = 3
+    static let standardOuterCircleDiameter: CGFloat = 40
+    static let standardInnerCircleDiameter: CGFloat = 16
+    static let trendOuterCircleDiameter: CGFloat = 24
+    static let trendInnerCircleDiameter: CGFloat = 8
     static let outerCircleOpacity: CGFloat = 0.24
 }
 
-private extension TKLineChartCanvasView.VisualStyle {
-    var lineColor: UIColor {
-        switch self {
-        case .active:
-            return .Accent.blue
-        case .skeleton:
-            return .Background.contentTint
-        }
+extension TKLineChartRenderer.RenderModel {
+    func lineColor(_ palette: TKPalette) -> Color {
+        LineChartColorResolver.color(
+            style: style,
+            appearance: appearance,
+            trend: trend,
+            palette: palette
+        )
     }
 
-    var fillGradient: Gradient {
-        let color = Color(uiColor: lineColor)
+    func substrateGridLineColor(_ palette: TKPalette) -> Color? {
+        guard appearance == .trend else { return nil }
+        return lineColor(palette)
+    }
+
+    func fillGradient(_ palette: TKPalette) -> Gradient {
+        let color = lineColor(palette)
         return Gradient(
             stops: [
                 Gradient.Stop(color: color, location: 0),
@@ -277,9 +388,74 @@ private enum SampleConfiguration {
     static let animationDuration = 0.15
 }
 
+struct LineChartAreaMaskModel {
+    let yValues: AnimatableChartVector
+    let mode: TKLineChartCanvasView.ChartMode
+    let smoothing: CGFloat
+
+    init(
+        chartData: TKLineChartCanvasView.ChartData,
+        points: [NormalizedChartPoint]
+    ) {
+        mode = chartData.mode
+        smoothing = chartData.smoothing.resolvedTension
+        yValues = AnimatableChartVector(
+            values: LineChartPointSampler.sample(
+                points: points,
+                mode: chartData.mode,
+                sampleCount: SampleConfiguration.sampleCount
+            )
+        )
+    }
+}
+
 struct NormalizedChartPoint: Equatable {
     let sourceIndex: Int
     let point: CGPoint
+}
+
+enum LineChartTrend: Equatable {
+    case down
+    case upOrFlat
+}
+
+enum LineChartTrendResolver {
+    static func trend(for coordinates: [Coordinate]) -> LineChartTrend {
+        guard
+            let firstSample = coordinates.min(by: { $0.x < $1.x }),
+            let lastSample = coordinates.max(by: { $0.x < $1.x })
+        else {
+            return .upOrFlat
+        }
+
+        return firstSample.y > lastSample.y ? .down : .upOrFlat
+    }
+}
+
+enum LineChartColorResolver {
+    static func color(
+        style: TKLineChartCanvasView.VisualStyle,
+        appearance: TKLineChartCanvasView.Appearance,
+        trend: LineChartTrend,
+        palette: TKPalette
+    ) -> Color {
+        switch style {
+        case .active:
+            switch appearance {
+            case .standard:
+                return palette.accent.blue
+            case .trend:
+                switch trend {
+                case .down:
+                    return palette.accent.red
+                case .upOrFlat:
+                    return palette.accent.green
+                }
+            }
+        case .skeleton:
+            return palette.background.contentTint
+        }
+    }
 }
 
 enum LineChartPointNormalizer {
@@ -639,6 +815,56 @@ private struct AnimatedChartAreaShape: Shape {
     }
 }
 
+private struct AnimatedExtendedChartAreaShape: Shape {
+    var yValues: AnimatableChartVector
+    let mode: TKLineChartCanvasView.ChartMode
+    let smoothing: CGFloat
+    let chartHeight: CGFloat
+
+    var animatableData: AnimatableChartVector {
+        get { yValues }
+        set { yValues = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let layout = ChartExtendedAreaMaskLayout.layout(
+            in: rect,
+            chartHeight: chartHeight
+        )
+        return ChartPathBuilder.areaPath(
+            in: layout.chartRect,
+            yValues: yValues.values,
+            mode: mode,
+            smoothing: smoothing,
+            closingY: layout.outputRect.maxY
+        )
+    }
+}
+
+struct ChartExtendedAreaMaskLayout: Equatable {
+    let chartRect: CGRect
+    let outputRect: CGRect
+
+    static func layout(in rect: CGRect, chartHeight: CGFloat) -> ChartExtendedAreaMaskLayout {
+        let outputRect = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: max(rect.width, 0),
+            height: max(rect.height, 0)
+        )
+        let chartRect = CGRect(
+            x: rect.minX,
+            y: rect.minY,
+            width: max(rect.width, 0),
+            height: max(chartHeight, 0)
+        )
+        return ChartExtendedAreaMaskLayout(
+            chartRect: chartRect,
+            outputRect: outputRect
+        )
+    }
+}
+
 private enum ChartPathBuilder {
     static func linePath(
         in rect: CGRect,
@@ -666,14 +892,16 @@ private enum ChartPathBuilder {
         in rect: CGRect,
         yValues: [CGFloat],
         mode: TKLineChartCanvasView.ChartMode,
-        smoothing: CGFloat
+        smoothing: CGFloat,
+        closingY: CGFloat? = nil
     ) -> Path {
         let points = buildPoints(in: rect, yValues: yValues)
         guard let first = points.first, let last = points.last else { return Path() }
 
+        let closingY = closingY ?? rect.maxY
         var path = linePath(in: rect, yValues: yValues, mode: mode, smoothing: smoothing)
-        path.addLine(to: CGPoint(x: last.x, y: rect.maxY))
-        path.addLine(to: CGPoint(x: first.x, y: rect.maxY))
+        path.addLine(to: CGPoint(x: last.x, y: closingY))
+        path.addLine(to: CGPoint(x: first.x, y: closingY))
         path.closeSubpath()
         return path
     }

@@ -14,18 +14,6 @@ public struct TokenInfo: Decodable {
         case name
     }
 
-    public init(
-        symbol: String,
-        address: Address,
-        decimals: Int,
-        name: String
-    ) {
-        self.symbol = symbol
-        self.address = address
-        self.decimals = decimals
-        self.name = name
-    }
-
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         symbol = try container.decode(String.self, forKey: .symbol)

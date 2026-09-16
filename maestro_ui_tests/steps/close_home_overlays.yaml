@@ -1,0 +1,21 @@
+appId: com.jbig.tonkeeper
+---
+# Stories popup and home banners block scrolling and are UI the tests don't need.
+- tapOn:
+    id: stories_close
+    optional: true
+- waitForAnimationToEnd:
+    timeout: 3000
+# Cap times so a stuck banner close loop cannot hang the suite.
+- repeat:
+    times: 10
+    while:
+      visible:
+        id: home_banner_close
+    commands:
+      - tapOn:
+          id: home_banner_close
+          index: 0
+      - waitForAnimationToEnd:
+          timeout: 1000
+- runFlow: dismiss_tooltips.yaml

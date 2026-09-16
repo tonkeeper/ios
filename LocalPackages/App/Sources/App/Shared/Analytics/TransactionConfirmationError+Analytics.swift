@@ -11,6 +11,11 @@ extension TransactionConfirmationError: AnalyticsError {
             return "Failed to calculate fee"
         case .failedToSendTransaction:
             return "Failed to send transaction"
+        case let .multichainTransactionFailure(failure):
+            if case .emulationFailure = failure {
+                return "Failed to calculate fee"
+            }
+            return "Multichain transaction failed"
         case .failedToSign:
             return "Failed to sign transaction"
         case .cancelledByUser:
@@ -23,6 +28,11 @@ extension TransactionConfirmationError: AnalyticsError {
         case .failedToCalculateFee:
             return 1
         case .failedToSendTransaction:
+            return 2
+        case let .multichainTransactionFailure(failure):
+            if case .emulationFailure = failure {
+                return 1
+            }
             return 2
         case .failedToSign:
             return 3

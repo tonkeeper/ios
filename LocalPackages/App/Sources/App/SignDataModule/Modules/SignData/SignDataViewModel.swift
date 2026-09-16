@@ -12,14 +12,13 @@ import WalletExtensions
 protocol SignDataModuleOutput: AnyObject {
     var didRequireSign: ((TonConnect.SignDataRequest, String, Wallet) async throws(SignDataSignError) -> SignedDataResult?)? { get set }
     var didStartConfirm: (() -> Void)? { get set }
-    var didFail: ((Swift.Error) -> Void)? { get set }
     var didCancelAttempt: (() -> Void)? { get set }
     var didCancel: (() -> Void)? { get set }
     var didConfirm: (() -> Void)? { get set }
 }
 
 @MainActor
-public protocol SignDataModuleInput: AnyObject {
+protocol SignDataModuleInput: AnyObject {
     func cancel()
 }
 
@@ -27,9 +26,6 @@ public protocol SignDataModuleInput: AnyObject {
 protocol SignDataViewModel: AnyObject {
     var didUpdateHeader: ((TKBottomSheetHeaderConfiguration) -> Void)? { get set }
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
-
-    var didTapCopy: ((String?) -> Void)? { get set }
-    var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
 
     func viewDidLoad()
 }
@@ -55,9 +51,6 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
 
     var didUpdateHeader: ((TKBottomSheetHeaderConfiguration) -> Void)?
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
-
-    var didTapCopy: ((String?) -> Void)?
-    var showToast: ((ToastPresenter.Configuration) -> Void)?
 
     enum ConfirmationState {
         case idle
@@ -173,20 +166,23 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
     }
 
     private func createHeaderConfiguration() -> TKBottomSheetHeaderConfiguration {
-        let subtitle = Text(TKLocales.SignData.title)
-            .foregroundColor(Color(uiColor: .Text.secondary))
-            + Text(" · ")
-            .foregroundColor(Color(uiColor: .Text.tertiary))
-            + Text("\(TKLocales.ConfirmSend.wallet): ")
-            .foregroundColor(Color(uiColor: .Text.secondary))
-            + wallet.bottomSheetHeaderText()
+        let wallet = wallet
+        let subtitle: (TKPalette) -> Text = { palette in
+            Text(TKLocales.SignData.title)
+                .foregroundColor(palette.text.secondary)
+                + Text(" · ")
+                .foregroundColor(palette.text.tertiary)
+                + Text("\(TKLocales.ConfirmSend.wallet): ")
+                .foregroundColor(palette.text.secondary)
+                + wallet.bottomSheetHeaderText(palette: palette)
+        }
 
         return TKBottomSheetHeaderConfiguration(
             title: .text(
                 title: .init(
                     dappUrl,
                     textStyle: .h3,
-                    foregroundColor: .Text.primary
+                    foregroundColor: .textPrimary
                 ),
                 subtitle: .init(
                     text: subtitle,
@@ -204,8 +200,7 @@ final class SignDataViewModelImplementation: SignDataViewModel, SignDataModuleOu
     }
 
     func copyButtonAction(text: String) {
-        didTapCopy?(text)
-        showToast?(wallet.copyToastConfiguration())
+        Pasteboard.copy(value: text, toast: wallet.copyToastConfiguration())
     }
 
     private func requireSign() async throws(SignDataSignError) -> SignedDataResult? {

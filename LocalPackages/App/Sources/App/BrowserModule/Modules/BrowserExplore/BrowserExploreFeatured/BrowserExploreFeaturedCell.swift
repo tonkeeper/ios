@@ -18,9 +18,9 @@ final class BrowserExploreFeaturedCell: UICollectionViewCell, ReusableView, Conf
     override func layoutSubviews() {
         super.layoutSubviews()
         listView.frame = CGRect(
-            x: .padding,
-            y: bounds.height - .listItemHeight - .padding,
-            width: bounds.width - .padding * 2,
+            x: .leftPadding,
+            y: bounds.height - .listItemHeight - .bottomBadding,
+            width: bounds.width - .leftPadding * 2,
             height: .listItemHeight
         )
     }
@@ -65,6 +65,7 @@ private extension BrowserExploreFeaturedCell {
 }
 
 private extension CGFloat {
-    static let padding: CGFloat = 16
+    static let leftPadding: CGFloat = 16
+    static let bottomBadding: CGFloat = 8
     static let listItemHeight: CGFloat = 52
 }

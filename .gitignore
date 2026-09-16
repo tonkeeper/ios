@@ -14,9 +14,10 @@ xcuserdata/
 .build
 
 ## Codex generated skill artifacts
-.codex/skills/tk-impact-analysis/reports/
+.agents/skills/tk-impact-analysis/reports/
 build/
 DerivedData/
+worktrees/
 *.moved-aside
 *.pbxuser
 !default.pbxuser
@@ -38,11 +39,13 @@ DerivedData/
 ## Firebase config
 Tonkeeper/Resources/Firebase/
 
-## Generated dev plist (from Info.plist)
-Tonkeeper/Resources/Info-Dev.plist
-
 ## Modules
 Modules/Package.resolved
 LocalPackages/**/Package.resolved
 
 .build
+__pycache__/
+
+## Locally generated sourcekit-lsp config (machine-specific SDK paths)
+.sourcekit-lsp/
+.reports/

@@ -15,8 +15,7 @@ struct StakingDepositInputAPYAssembly {
         let viewController = StakingDepositInputAPYViewController(
             wallet: wallet,
             stakingPool: stakingPool,
-            stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-            balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+            balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
 

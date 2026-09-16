@@ -8,143 +8,83 @@ enum TradeShelfViewContent {
         itemsCount: Int
     )
     case content(
-        shelf: TradeViewModel.ShelfViewData,
-        onOpenSeeAll: (TradeViewModel.ShelfViewData.GridViewData) -> Void,
-        onOpenAsset: (TradeViewModel.AssetViewData) -> Void
+        shelf: TradeShelfViewData,
+        onOpenSeeAll: (TradeShelfGridViewData) -> Void,
+        onOpenAsset: (TradeShelfAssetViewData) -> Void
     )
 }
 
 struct TradeShelfView: View {
     let content: TradeShelfViewContent
+    let multichainEnabled: Bool
+    let selectedGroupID: String?
     let selectedGridID: String?
+    let onSelectGroup: (String) -> Void
     let onSelectGrid: (String) -> Void
-
-    private struct SkeletonAssetItem: Identifiable {
-        let id: Int
-    }
 
     init(
         content: TradeShelfViewContent,
+        multichainEnabled: Bool = false,
+        selectedGroupID: String? = nil,
         selectedGridID: String? = nil,
+        onSelectGroup: @escaping (String) -> Void = { _ in },
         onSelectGrid: @escaping (String) -> Void = { _ in }
     ) {
         self.content = content
+        self.multichainEnabled = multichainEnabled
+        self.selectedGroupID = selectedGroupID
         self.selectedGridID = selectedGridID
+        self.onSelectGroup = onSelectGroup
         self.onSelectGrid = onSelectGrid
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ListTitleView(
-                config: listTitleConfig
+            TradeShelfTitleView(
+                content: content,
+                multichainEnabled: multichainEnabled,
+                onSelectGroup: onSelectGroup,
+                selectedGroupForShelf: selectedGroup(for:),
+                selectedGridForShelf: selectedGrid(for:)
             )
-            grid
+            TradeShelfContentView(
+                content: content,
+                onSelectGrid: onSelectGrid,
+                selectedGroupForShelf: selectedGroup(for:),
+                selectedGridForShelf: selectedGrid(for:)
+            )
         }
         .padding(.horizontal, Layout.horizontalPadding)
-    }
-
-    private var listTitleConfig: ListTitleView.Config {
-        switch content {
-        case .skeleton:
-            .shimmer
-        case let .content(shelf, onOpenSeeAll, _):
-            .text(
-                shelf.title,
-                accessory: {
-                    if let selectedGrid = selectedGrid(for: shelf), selectedGrid.seeAllEnabled {
-                        ListTitleView.Accessory(
-                            title: TKLocales.Trade.AssetDetails.Common.seeAll,
-                            action: {
-                                onOpenSeeAll(selectedGrid)
-                            }
-                        )
-                    } else {
-                        nil
-                    }
-                }()
-            )
-        }
-    }
-
-    @ViewBuilder private var grid: some View {
-        switch content {
-        case let .skeleton(_, itemsCount):
-            AssetsGridView(
-                items: .constant((0 ..< itemsCount).map(SkeletonAssetItem.init)),
-                itemByModel: { _ in
-                    AssetItemView(content: .shimmer, action: {})
-                },
-                header: {
-                    gridHeader
-                }
-            )
-        case let .content(shelf, _, onOpenAsset):
-            let selectedGrid = selectedGrid(for: shelf)
-            if let selectedGrid {
-                AssetsGridView(
-                    items: .constant(selectedGrid.items),
-                    itemByModel: { item in
-                        AssetItemView(
-                            symbol: item.symbol,
-                            imageSource: item.iconImageSource,
-                            changeText: item.changeText,
-                            changeColor: Color(uiColor: item.changeColor),
-                            action: {
-                                onOpenAsset(item)
-                            }
-                        )
-                        .id(item.id)
-                    },
-                    header: {
-                        gridHeader
-                    }
-                )
-            }
-        }
-    }
-
-    @ViewBuilder private var gridHeader: some View {
-        switch content {
-        case let .skeleton(hasHeader, _):
-            if hasHeader {
-                paddedHeader(
-                    content: SegmentedControlShimmer()
-                )
-            }
-        case let .content(shelf, _, _):
-            if shelf.grids.count > 1 {
-                paddedHeader(
-                    content: SegmentedControl(
-                        segments: shelf.grids.map {
-                            .init(id: $0.id, title: $0.name)
-                        },
-                        initialSelection: selectedGrid(for: shelf)?.id ?? shelf.grids[0].id
-                    ) { selectedGridID in
-                        onSelectGrid(selectedGridID)
-                    }
-                )
-            }
-        }
-    }
-
-    private func paddedHeader(content: some View) -> some View {
-        content
-            .padding(.horizontal, Layout.headerHorizontalPadding)
-            .padding(.bottom, Layout.headerBottomPadding)
     }
 }
 
 private extension TradeShelfView {
     enum Layout {
         static let horizontalPadding: CGFloat = 16
-        static let headerBottomPadding: CGFloat = 8
-        static let headerHorizontalPadding: CGFloat = 8
     }
 
-    func selectedGrid(for shelf: TradeViewModel.ShelfViewData) -> TradeViewModel.ShelfViewData.GridViewData? {
-        guard let selectedGridID else {
-            return shelf.grids.first
+    func selectedGroup(
+        for shelf: TradeShelfViewData
+    ) -> TradeShelfGroupViewData? {
+        guard let selectedGroupID else {
+            return shelf.groups.first
         }
-        return shelf.grids.first(where: { $0.id == selectedGridID }) ?? shelf.grids.first
+        return shelf.groups.first {
+            $0.id == selectedGroupID
+        } ?? shelf.groups.first
+    }
+
+    func selectedGrid(
+        for shelf: TradeShelfViewData
+    ) -> TradeShelfGridViewData? {
+        guard let selectedGroup = selectedGroup(for: shelf) else {
+            return nil
+        }
+        guard let selectedGridID else {
+            return selectedGroup.grids.first
+        }
+        return selectedGroup.grids.first {
+            $0.id == selectedGridID
+        } ?? selectedGroup.grids.first
     }
 }

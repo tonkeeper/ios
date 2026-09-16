@@ -50,6 +50,7 @@ private extension StakingListViewController {
             )
         )
         customView.collectionView.setCollectionViewLayout(layout, animated: false)
+        customView.collectionView.accessibilityIdentifier = "staking_pool_picker_list"
         customView.collectionView.delegate = self
     }
 

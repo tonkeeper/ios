@@ -1,13 +1,31 @@
 appId: com.jbig.tonkeeper
 ---
-- runScript: ../../scripts/utils/formatter.js
+# Wallet UI can lag behind API; refetch + assert up to 3 times (initial + 2 retries).
+# On the new main screen the crypto list can start below the fold (banners + "Finish setting up"
+# push it down), so scroll to the TON balance row instead of asserting in place.
+# NOTE: leaves the screen scrolled to the asset list; scroll back up if the next step needs the header.
+- retry:
+    maxRetries: 2
+    commands:
+      - runScript: ../../scripts/utils/formatter.js
 
-- runScript:
-    file: ../../scripts/api/v2/accounts/getAddressInfo.js
-    env:
-      addr: ${WALLET_WITH_MONEY_ADDR}
-      auth_token: ${auth}
+      - runScript:
+          file: ../../scripts/api/v2/accounts/getAddressInfo.js
+          env:
+            addr: ${WALLET_WITH_MONEY_ADDR}
+            auth_token: ${auth}
 
-- evalScript: ${output.screenTonValue = output.formatter.formatTon(output.balance)}
+      - evalScript: ${output.screenTonValue = output.formatter.formatTon(output.balance)}
 
-- assertVisible: ${output.screenTonValue}
+      # Reset to the top so a retry doesn't keep scrolling past the list.
+      - scrollUntilVisible:
+          element:
+            id: wallet_battery
+          direction: UP
+          timeout: 10000
+          optional: true
+
+      - scrollUntilVisible:
+          element: ${output.screenTonValue}
+          direction: DOWN
+          timeout: 30000

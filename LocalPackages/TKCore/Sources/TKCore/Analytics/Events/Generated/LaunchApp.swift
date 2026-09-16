@@ -26,22 +26,36 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
         case dark = "dark"
         case light = "light"
     }
+    public enum PushPermission: String, Codable, CaseIterable {
+        case granted = "granted"
+        case denied = "denied"
+        case notRequested = "not_requested"
+        case unsupported = "unsupported"
+    }
     public var eventName: String = "launch_app"
     /** The app theme selected by the user at launch. */
     public var theme: Theme?
     /** The app icon selected by the user at launch. */
     public var appIcon: AppIcon?
+    /** Number of wallets currently added in the app. */
+    public var walletsCount: Int?
+    /** Push opt-in status at launch, read before anything can prompt for it: `granted` — a notification can be delivered, `denied` — refused or switched off, `not_requested` — the user has not been asked yet, `unsupported` — the surface cannot receive push at all.  */
+    public var pushPermission: PushPermission?
 
-    public init(eventName: String = "launch_app", theme: Theme? = nil, appIcon: AppIcon? = nil) {
+    public init(eventName: String = "launch_app", theme: Theme? = nil, appIcon: AppIcon? = nil, walletsCount: Int? = nil, pushPermission: PushPermission? = nil) {
         self.eventName = eventName
         self.theme = theme
         self.appIcon = appIcon
+        self.walletsCount = walletsCount
+        self.pushPermission = pushPermission
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case theme
         case appIcon = "app_icon"
+        case walletsCount = "wallets_count"
+        case pushPermission = "push_permission"
     }
 
     // Encodable protocol methods
@@ -51,6 +65,8 @@ public struct LaunchApp: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encodeIfPresent(theme, forKey: .theme)
         try container.encodeIfPresent(appIcon, forKey: .appIcon)
+        try container.encodeIfPresent(walletsCount, forKey: .walletsCount)
+        try container.encodeIfPresent(pushPermission, forKey: .pushPermission)
     }
 }
 

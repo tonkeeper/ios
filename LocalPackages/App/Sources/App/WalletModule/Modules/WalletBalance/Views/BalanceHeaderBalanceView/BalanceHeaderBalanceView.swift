@@ -1,11 +1,12 @@
 import SnapKit
+import SwiftUI
 import TKUIKit
 import UIKit
 
 final class BalanceHeaderBalanceView: UIView, ConfigurableView {
-    private let amountView = BalanceHeaderBalanceAmountView()
-    private let statusView = BalanceHeaderBalanceStatusView()
-    private let stackView = UIStackView()
+    private let hostingView = SwiftUIHostingView()
+    private let store = BalanceHeaderBalanceViewStore()
+    private var walletIdentifier: String?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -18,35 +19,87 @@ final class BalanceHeaderBalanceView: UIView, ConfigurableView {
     }
 
     struct Model {
-        let amountViewConfiguration: BalanceHeaderBalanceAmountView.Configuration
-        let statusViewConfiguration: BalanceHeaderBalanceStatusView.Configuration
+        let walletIdentifier: String
+        let config: BalanceViewConfig
+        let balanceAction: (() -> Void)?
+        let addressAction: (() -> Void)?
+        let batteryAction: (() -> Void)?
+        let backupAction: (() -> Void)?
+
+        init(
+            walletIdentifier: String,
+            config: BalanceViewConfig,
+            balanceAction: (() -> Void)? = nil,
+            addressAction: (() -> Void)? = nil,
+            batteryAction: (() -> Void)? = nil,
+            backupAction: (() -> Void)? = nil
+        ) {
+            self.walletIdentifier = walletIdentifier
+            self.config = config
+            self.balanceAction = balanceAction
+            self.addressAction = addressAction
+            self.batteryAction = batteryAction
+            self.backupAction = backupAction
+        }
     }
 
     func configure(model: Model) {
-        amountView.configuration = model.amountViewConfiguration
-        statusView.configuration = model.statusViewConfiguration
+        let animatesAmountUpdates = walletIdentifier.map { $0 == model.walletIdentifier } ?? false
+        walletIdentifier = model.walletIdentifier
+        store.state = BalanceHeaderBalanceViewState(
+            model: model,
+            animatesAmountUpdates: animatesAmountUpdates
+        )
     }
 }
 
 private extension BalanceHeaderBalanceView {
     func setup() {
-        stackView.axis = .vertical
-        stackView.addArrangedSubview(amountView)
-        stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(4)))
-        stackView.addArrangedSubview(statusView)
-        stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(8)))
+        hostingView.setContent {
+            BalanceHeaderBalanceContentView(store: store)
+        }
 
-        addSubview(stackView)
+        addSubview(hostingView)
         setupConstraints()
     }
 
     func setupConstraints() {
-        stackView.snp.makeConstraints { make in
-            make.edges.equalTo(self).inset(UIEdgeInsets.stackViewPadding)
+        snp.makeConstraints { make in
+            make.height.equalTo(BalanceSwiftUIView.height)
+        }
+
+        hostingView.snp.makeConstraints { make in
+            make.edges.equalTo(self)
         }
     }
 }
 
-private extension UIEdgeInsets {
-    static var stackViewPadding = UIEdgeInsets(top: 28, left: 16, bottom: 16, right: 16)
+private final class BalanceHeaderBalanceViewStore: ObservableObject {
+    @Published var state = BalanceHeaderBalanceViewState(
+        model: BalanceHeaderBalanceView.Model(
+            walletIdentifier: "",
+            config: .shimmer
+        ),
+        animatesAmountUpdates: false
+    )
+}
+
+private struct BalanceHeaderBalanceViewState {
+    let model: BalanceHeaderBalanceView.Model
+    let animatesAmountUpdates: Bool
+}
+
+private struct BalanceHeaderBalanceContentView: View {
+    @ObservedObject var store: BalanceHeaderBalanceViewStore
+
+    var body: some View {
+        BalanceSwiftUIView(
+            config: store.state.model.config,
+            animatesAmountUpdates: store.state.animatesAmountUpdates,
+            balanceAction: store.state.model.balanceAction,
+            addressAction: store.state.model.addressAction,
+            batteryAction: store.state.model.batteryAction,
+            backupAction: store.state.model.backupAction
+        )
+    }
 }

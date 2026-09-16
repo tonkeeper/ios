@@ -9,7 +9,6 @@ public enum USDe {
 }
 
 public enum StakedUSDe {
-    public static let address = JettonMasterAddress.tsUSDe
     public static let fractionDigits: Int = 6
     public static let symbol = "USDe"
     public static let name = "Staked USDe"

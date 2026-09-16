@@ -155,6 +155,10 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
                 return true
             case (_, .tronUSDT):
                 return false
+            case (.tronTRX, _):
+                return true
+            case (_, .tronTRX):
+                return false
             case (.ethena, _):
                 return true
             case (_, .ethena):
@@ -195,6 +199,8 @@ public final class ManagedBalanceStore: Store<ManagedBalanceStore.Event, Managed
             currency: balance.currency,
             date: balance.date,
             isManagable: (balance.jettonItems.count + balance.stakingItems.count) > 0
+                || (balance.tronUSDTItem?.amount ?? 0) > 0
+                || (balance.tronTRXItem?.amount ?? 0) > 0
         )
 
         switch balanceState {

@@ -9,7 +9,15 @@ public struct TradingMarketItem: Equatable, Identifiable, Sendable {
     public var imageURL: URL?
     public var price: Decimal?
     public var change24hPercent: Decimal?
-    public var isUnverified: Bool
+    public var verification: TradingVerification
+
+    public var isUnverified: Bool {
+        verification.isUnverified
+    }
+
+    public var isTrusted: Bool {
+        verification.isTrusted
+    }
 }
 
 extension TradingMarketItem {
@@ -22,7 +30,7 @@ extension TradingMarketItem {
             imageURL: URL(string: item.asset.image_url),
             price: item.metrics.price.decimalValue,
             change24hPercent: item.metrics.change_24h_percent.decimalValue,
-            isUnverified: item.asset.verification != .whitelist
+            verification: TradingVerification(api: item.asset.verification)
         )
     }
 }
@@ -36,8 +44,8 @@ private extension String {
 extension Components.Schemas.AssetType {
     var asCategory: TradingAssetCategory {
         switch self {
-        case .asset:
-            .crypto
+        case .asset, .commodities, .perpetuals:
+            .tokens
         case .stocks:
             .stocks
         case .etfs:

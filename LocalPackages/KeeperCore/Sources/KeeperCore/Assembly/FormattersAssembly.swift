@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 public final class FormattersAssembly {
     public let amountFormatter: AmountFormatter = {

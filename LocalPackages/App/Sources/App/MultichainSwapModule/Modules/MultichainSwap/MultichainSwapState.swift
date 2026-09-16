@@ -1,0 +1,110 @@
+import Foundation
+import KeeperCore
+
+enum MultichainSwapQuoteState: Equatable {
+    case idle
+    case loading
+    case ready
+    case expired
+    case failed
+}
+
+enum MultichainSwapValidationState: Equatable {
+    case emptyAmount
+    case invalidAmount
+    case insufficientBalance
+    case missingAddress
+    case routeUnavailable
+    case valid
+}
+
+enum MultichainSwapAmountInputMode: Equatable {
+    case crypto
+    case fiat
+
+    var toggled: MultichainSwapAmountInputMode {
+        switch self {
+        case .crypto:
+            return .fiat
+        case .fiat:
+            return .crypto
+        }
+    }
+}
+
+enum MultichainSwapViewModelState {
+    case shimmer
+    case error
+    case loaded(MultichainSwapLoadedState)
+}
+
+struct MultichainSwapInputs {
+    private(set) var sendAmount: String
+    var sendAmountInputMode: MultichainSwapAmountInputMode
+    /// The receive amount is always stored as crypto text; fiat mode only changes
+    /// how the receive card renders it.
+    var receiveAmount: String
+    var receiveAmountInputMode: MultichainSwapAmountInputMode
+    private(set) var sendAsset: MultichainAsset
+    /// Set only by the Max control and cleared by every other change to the amount or the asset
+    /// being sold, so a rounded fiat round trip or a provider-normalized quote cannot lose it.
+    private(set) var isMaxSend: Bool
+    var receiveAsset: MultichainAsset
+    var slippage: MultichainSwapSlippage?
+    /// USD → display-currency rate derived at the initial assets load.
+    let usdFiatRate: Decimal?
+
+    init(initialAssets: MultichainSwapInitialAssets) {
+        self.sendAmount = ""
+        self.sendAmountInputMode = .crypto
+        self.receiveAmount = ""
+        self.receiveAmountInputMode = .crypto
+        self.sendAsset = initialAssets.sendAsset
+        self.isMaxSend = false
+        self.receiveAsset = initialAssets.receiveAsset
+        self.slippage = initialAssets.slippage
+        self.usdFiatRate = initialAssets.usdFiatRate
+    }
+
+    func settingSendAmount(_ amount: String, isMax: Bool = false) -> MultichainSwapInputs {
+        var inputs = self
+        inputs.sendAmount = amount
+        inputs.isMaxSend = isMax
+        return inputs
+    }
+
+    func settingSendAsset(_ asset: MultichainAsset) -> MultichainSwapInputs {
+        var inputs = self
+        inputs.sendAsset = asset
+        inputs.isMaxSend = false
+        return inputs
+    }
+}
+
+struct MultichainSwapLoadedState {
+    let sendAmount: String
+    let sendAmountInputMode: MultichainSwapAmountInputMode
+    /// Display text of the receive card's primary amount: crypto text in crypto
+    /// mode, converted fiat text in fiat mode.
+    let receiveAmount: String
+    let receiveAmountInputMode: MultichainSwapAmountInputMode
+    /// Currency symbols pinned as non-removable prefixes of the amount fields
+    /// while the corresponding card is in fiat input mode.
+    let sendAmountFiatSymbol: String?
+    let receiveAmountFiatSymbol: String?
+    let sendAsset: MultichainAsset
+    let receiveAsset: MultichainAsset
+    let slippage: MultichainSwapSlippage?
+    let sendCardRateText: String?
+    let receiveCardRateText: String?
+    let validationState: MultichainSwapValidationState
+    let quote: MultichainSwapQuoteSnapshot
+
+    var shouldShowReceiveQuoteShimmer: Bool {
+        quote.quoteState == .loading && receiveAmount.isEmpty
+    }
+
+    var isReceiveQuoteUnavailable: Bool {
+        quote.quoteState == .failed && receiveAmount.isEmpty
+    }
+}

@@ -1,20 +1,7 @@
 appId: com.jbig.tonkeeper
 ---
-- extendedWaitUntil:
-    visible: "Import existing wallet"
-    timeout: 45000
+- runFlow: mnemonic/import_wallet_paste_retry.yaml
 
-- tapOn: Import existing wallet
-
-- extendedWaitUntil:
-    visible: "Existing Wallet"
-    timeout: 30000
-
-- tapOn: Existing Wallet
-
-- runFlow: "mnemonic/24key_words.yaml"
-
-- assertVisible: Create passcode
 - repeat:
     times: 4
     commands:
@@ -25,6 +12,8 @@ appId: com.jbig.tonkeeper
     times: 4
     commands:
       - tapOn: ${PASSWORD_KEY}
+
+- runFlow: skip_notifications_onboarding.yaml
 
 - tapOn:
     text: Continue

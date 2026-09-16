@@ -77,33 +77,47 @@ public extension Wallet {
         )
     }
 
-    func balanceTagConfigurations() -> [TKTagView.Configuration] {
-        [revisionTagConfiguration(), balanceKindTagConfiguration()].compactMap { $0 }
-    }
-
     func listTagConfigurations() -> [TKTagView.Configuration] {
         [revisionTagConfiguration(), listTagConfiguration()].compactMap { $0 }
     }
 
-    func balanceKindTagConfiguration() -> TKTagView.Configuration? {
-        let color: UIColor? = {
+    func balanceTagSwiftUIConfigurations() -> [TKTagSwiftUIViewConfig] {
+        [revisionTagSwiftUIConfiguration(), balanceKindTagSwiftUIConfiguration()].compactMap { $0 }
+    }
+
+    func listTagSwiftUIConfigurations() -> [TKTagSwiftUIViewConfig] {
+        [revisionTagSwiftUIConfiguration(), listTagSwiftUIConfiguration()].compactMap { $0 }
+    }
+
+    func balanceKindTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
+        let accent: TKColor? = {
             switch kind {
             case .regular:
-                network == .mainnet ? nil : .Accent.orange
+                network == .mainnet ? nil : .accentOrange
             case .lockup:
                 nil
             case .watchonly:
-                .Accent.orange
+                .accentOrange
             case .signer:
-                .Accent.purple
+                .accentPurple
             case .ledger:
-                .Accent.green
+                .accentGreen
             case .keystone:
-                .Accent.purple
+                .accentPurple
             }
         }()
-        guard let kindTag, let color else { return nil }
-        return .accentTag(text: kindTag, color: color)
+        guard let kindTag, let accent else { return nil }
+        return .accentTag(text: kindTag, accent: accent)
+    }
+
+    func revisionTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
+        guard let revisionTag else { return nil }
+        return .accentTag(text: revisionTag, accent: .accentGreen)
+    }
+
+    func listTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
+        guard let tag = kindTag else { return nil }
+        return .tag(text: tag)
     }
 
     func revisionTagConfiguration() -> TKTagView.Configuration? {
@@ -111,43 +125,25 @@ public extension Wallet {
         return .accentTag(text: revisionTag, color: .Accent.green)
     }
 
-    func receiveTagConfiguration() -> TKTagView.Configuration? {
+    func receiveTagSwiftUIConfiguration() -> TKTagSwiftUIViewConfig? {
         guard let tag = kindTag else { return nil }
 
-        let textColor: UIColor
-        let backgroundColor: UIColor
-
+        let style: TKTagSwiftUIViewConfig.Style
         switch kind {
         case .regular:
             if network == .mainnet {
                 return nil
             }
-            textColor = .black
-            backgroundColor = .Accent.orange
+            style = .custom(textColor: .constantBlack, backgroundColor: .accentOrange, borderColor: .clear)
         case .lockup:
             return nil
         case .watchonly:
-            textColor = .black
-            backgroundColor = .Accent.orange
-        case .signer:
-            textColor = .Accent.purple
-            backgroundColor = .Accent.purple.withAlphaComponent(0.16)
-        case .ledger:
-            textColor = .Accent.purple
-            backgroundColor = .Accent.purple.withAlphaComponent(0.16)
-        case .keystone:
-            textColor = .Accent.purple
-            backgroundColor = .Accent.purple.withAlphaComponent(0.16)
+            style = .custom(textColor: .constantBlack, backgroundColor: .accentOrange, borderColor: .clear)
+        case .signer, .ledger, .keystone:
+            style = .accent(.accentPurple)
         }
 
-        return TKTagView.Configuration(
-            text: tag,
-            textColor: textColor,
-            textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
-            backgroundColor: backgroundColor,
-            borderColor: .clear,
-            backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-        )
+        return TKTagSwiftUIViewConfig(text: tag, style: style)
     }
 
     func listTagConfiguration() -> TKTagView.Configuration? {

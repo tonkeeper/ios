@@ -5,7 +5,7 @@ import UIKit
 public final class TKBottomSheetHeaderView: UIView {
     private var configuration: TKBottomSheetHeaderConfiguration?
     private var closeAction: () -> Void = {}
-    private var hostingController: UIHostingController<AnyView>?
+    private var hostingController: TKHostingController<AnyView>?
 
     override public init(frame: CGRect) {
         super.init(frame: frame)
@@ -41,12 +41,30 @@ public final class TKBottomSheetHeaderView: UIView {
         updateHostingControllerParent()
     }
 
+    /// `ModalCardHeader` reserves room for its accessory buttons from geometry it reads while
+    /// rendering, so a multiline title only reports its final height once laid out that wide. Callers
+    /// that need an exact height therefore render first and measure after.
+    ///
+    /// Kept out of `systemLayoutSizeFitting`: Auto Layout invokes that from inside a layout pass, and
+    /// a sizing query that mutates layout is how measurement turns into a layout loop.
+    func renderContent(forWidth width: CGFloat) {
+        guard width > 0, width.isFinite,
+              abs(bounds.width - width) > .widthTolerance else { return }
+
+        frame.size.width = width
+        setNeedsLayout()
+        layoutIfNeeded()
+    }
+
+    /// Auto Layout cannot answer this: the hosting view is pinned to this view's edges, so the engine
+    /// resolves the SwiftUI content against the current frame width and reports a height for it
+    /// instead of for `targetSize`. Ask SwiftUI directly.
     override public func systemLayoutSizeFitting(
         _ targetSize: CGSize,
         withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority,
         verticalFittingPriority: UILayoutPriority
     ) -> CGSize {
-        guard let hostingView = hostingController?.view else {
+        guard let hostingController else {
             return super.systemLayoutSizeFitting(
                 targetSize,
                 withHorizontalFittingPriority: horizontalFittingPriority,
@@ -66,22 +84,12 @@ public final class TKBottomSheetHeaderView: UIView {
             return UIScreen.main.bounds.width
         }()
 
-        hostingView.translatesAutoresizingMaskIntoConstraints = false
-        hostingView.setNeedsLayout()
-        hostingView.layoutIfNeeded()
-
-        let widthConstraint = hostingView.widthAnchor.constraint(equalToConstant: fittingWidth)
-        widthConstraint.isActive = true
-
-        let fittingSize = hostingView.systemLayoutSizeFitting(
-            CGSize(
+        let fittingSize = hostingController.sizeThatFits(
+            in: CGSize(
                 width: fittingWidth,
-                height: UIView.layoutFittingCompressedSize.height
-            ),
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel
+                height: .greatestFiniteMagnitude
+            )
         )
-        widthConstraint.isActive = false
 
         return CGSize(
             width: fittingWidth,
@@ -93,7 +101,7 @@ public final class TKBottomSheetHeaderView: UIView {
 private extension TKBottomSheetHeaderView {
     func setupHostingController() {
         backgroundColor = .clear
-        let hostingController = UIHostingController(rootView: AnyView(EmptyView()))
+        let hostingController = TKHostingController(content: AnyView(EmptyView()))
         hostingController.view.backgroundColor = .clear
         if #available(iOS 16.4, *) {
             hostingController.safeAreaRegions = []
@@ -104,7 +112,7 @@ private extension TKBottomSheetHeaderView {
     }
 
     func updateRootView() {
-        hostingController?.rootView = AnyView(
+        hostingController?.content = AnyView(
             TKBottomSheetHeaderContentView(
                 configuration: configuration ?? .init(title: .empty),
                 closeAction: closeAction
@@ -164,4 +172,10 @@ private extension TKBottomSheetHeaderView {
         }
         return nil
     }
+}
+
+private extension CGFloat {
+    /// Sub-pixel width changes cannot move a line break, so ignore them and keep `renderContent`
+    /// idempotent against float drift.
+    static let widthTolerance: CGFloat = 0.5
 }

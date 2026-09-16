@@ -1,0 +1,27 @@
+appId: com.jbig.tonkeeper
+---
+# Menu items are snapshotted at tap time; "Hide in Wallet" needs asset visibility
+# loaded from network/cache. CI is slower than local, so wait for balance UI first.
+- extendedWaitUntil:
+    visible:
+      id: trade_asset_details_menu
+    timeout: 120000
+- extendedWaitUntil:
+    visible: Your balance
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 5000
+- retry:
+    maxRetries: 5
+    commands:
+      - hideKeyboard
+      - waitForAnimationToEnd:
+          timeout: 2000
+      - tapOn:
+          id: trade_asset_details_menu
+          waitToSettleTimeoutMs: 5000
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: Hide in Wallet
+          timeout: 25000

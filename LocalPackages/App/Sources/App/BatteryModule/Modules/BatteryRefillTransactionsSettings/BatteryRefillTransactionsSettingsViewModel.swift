@@ -19,8 +19,6 @@ final class BatteryRefillTransactionsSettingsViewModelImplementation: BatteryRef
     // MARK: - BatteryRefillTransactionsSettingsViewModel
 
     var didUpdateSnapshot: ((BatteryRefillTransactionsSettings.Snapshot) -> Void)?
-    var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
-
     func viewDidLoad() {
         if let wallet = try? walletsStore.activeWallet {
             let batterySettings = wallet.batterySettings

@@ -6,13 +6,6 @@ import TKUIKit
 import UIKit
 
 struct WalletBalanceListMapper {
-    private let dateComponentsFormatter: DateComponentsFormatter = {
-        let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = [.hour, .minute, .second]
-        formatter.zeroFormattingBehavior = .pad
-        return formatter
-    }()
-
     private let stakingMapper: WalletBalanceListStakingMapper
     private let amountFormatter: AmountFormatter
     private let balanceItemMapper: BalanceItemMapper
@@ -98,6 +91,18 @@ struct WalletBalanceListMapper {
         return WalletBalanceListCell.Configuration(
             walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
                 listItemContentViewConfiguration: balanceItemMapper.mapTronUSDTItem(item: item, isSecure: isSecure, isPinned: isPinned),
+                commentViewConfiguration: nil
+            )
+        )
+    }
+
+    func mapTronTRXItem(
+        _ item: ProcessedBalanceTronTRXItem,
+        isSecure: Bool
+    ) -> WalletBalanceListCell.Configuration {
+        return WalletBalanceListCell.Configuration(
+            walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+                listItemContentViewConfiguration: balanceItemMapper.mapTronTRXItem(item: item, isSecure: isSecure),
                 commentViewConfiguration: nil
             )
         )
@@ -234,8 +239,6 @@ private extension CGFloat {
 }
 
 extension String {
-    static let secureModeValueShort = "* * *"
-    static let secureModeValueLong = "* * * *"
     static let faceID = TKLocales.SettingsListSecurityConfigurator.faceId
     static let touchID = TKLocales.SettingsListSecurityConfigurator.touchId
 }

@@ -1,0 +1,44 @@
+# Selects an asset in the multichain token picker by searching for it.
+# Params: SEARCH_QUERY (text typed into search), ASSET_ID (token_picker_asset_<chain>_<symbol>),
+# CHAIN_ID (optional, token_picker_chain_<chain>) — the chain tab under the search field.
+# Pass CHAIN_ID whenever the same ticker exists on several chains or the on-chain title
+# differs from the query (TON USD₮ vs the typed "USDT"): the tab narrows the list to one
+# chain, so the row is reachable without scrolling past same-symbol assets.
+appId: com.jbig.tonkeeper
+env:
+  CHAIN_ID: ""
+---
+- extendedWaitUntil:
+    visible:
+      id: token_picker_search
+    timeout: 6000
+
+# Filter first, then search: the tab keeps the typed query, but starting from a narrowed
+# list avoids matching a same-ticker asset on another chain while results settle.
+- runFlow:
+    when:
+      true: ${CHAIN_ID !== ""}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: ${CHAIN_ID}
+          timeout: 6000
+      - tapOn:
+          id: ${CHAIN_ID}
+      - waitForAnimationToEnd:
+          timeout: 600
+
+- tapOn:
+    id: token_picker_search
+- inputText: ${SEARCH_QUERY}
+
+# No hideKeyboard: the picker keeps the system keyboard up and iOS gives Maestro no
+# dismiss action for it. Filtered rows stay above the keyboard, so the tap works as is.
+- extendedWaitUntil:
+    visible:
+      id: ${ASSET_ID}
+    timeout: 6000
+- tapOn:
+    id: ${ASSET_ID}
+- waitForAnimationToEnd:
+    timeout: 1000

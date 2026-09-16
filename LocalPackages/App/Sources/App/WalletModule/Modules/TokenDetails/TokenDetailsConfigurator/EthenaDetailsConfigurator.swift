@@ -116,7 +116,7 @@ final class EthenaDetailsConfigurator: TokenDetailsConfigurator {
         return TokenDetailsModel(
             title: USDe.symbol,
             caption: nil,
-            image: .image(.App.Currency.Size64.usde),
+            image: .image(.TKUIKit.Icons.Size64.currencyUsde),
             network: .none,
             tokenAmount: tokenAmount,
             convertedAmount: convertedAmount,
@@ -310,7 +310,7 @@ final class EthenaDetailsConfigurator: TokenDetailsConfigurator {
         return TKListItemContentView.Configuration(
             iconViewConfiguration: TKListItemIconView.Configuration(
                 content: .image(TKImageView.Model(
-                    image: .image(.App.Currency.Size44.usde),
+                    image: .image(.TKUIKit.Icons.Size44.currencyUsde),
                     size: .size(CGSize(width: 44, height: 44)),
                     corners: .circle
                 )),
@@ -320,7 +320,7 @@ final class EthenaDetailsConfigurator: TokenDetailsConfigurator {
                 size: CGSize(width: 44, height: 44),
                 badge: TKListItemIconView.Configuration.Badge(
                     configuration: TKListItemBadgeView.Configuration(
-                        item: .image(.image(.App.Currency.Vector.ethena)),
+                        item: .image(.image(.TKUIKit.Icons.Size44.currencyEthena)),
                         size: .small
                     ),
                     position: .bottomRight

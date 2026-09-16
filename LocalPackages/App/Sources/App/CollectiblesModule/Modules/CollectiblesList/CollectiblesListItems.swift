@@ -1,16 +1,13 @@
+import SwiftUI
+import TKUIKit
 import UIKit
 
-enum CollectiblesList {
-    enum SnapshotSection: Hashable {
-        case all
-        case empty
-    }
-
-    enum SnapshotItem: Hashable {
-        case nft(identifier: String)
-        case empty
-    }
-
-    typealias DataSource = UICollectionViewDiffableDataSource<SnapshotSection, SnapshotItem>
-    typealias Snapshot = NSDiffableDataSourceSnapshot<SnapshotSection, SnapshotItem>
+struct CollectiblesListItem: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let subtitleColor: TKColor
+    let imageSource: NFTImageViewImageSource
+    let isSecureMode: Bool
+    let isOnSale: Bool
 }

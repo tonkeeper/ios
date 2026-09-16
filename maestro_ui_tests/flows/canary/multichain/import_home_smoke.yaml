@@ -1,0 +1,16 @@
+# Canary for the multichain cluster: one import-to-home pass that gates the
+# shard matrix in CI. When wallet setup is broken app-wide, every shard would
+# burn its full timeout budget on the same failure — fail here once instead.
+# Not part of any shard: config.yaml globs do not cover flows/canary/**.
+appId: com.jbig.tonkeeper
+---
+- launchApp:
+    clearState: true
+
+- runFlow: "../../../steps/import_wallet_multichain.yaml"
+
+- runFlow: "../../../steps/close_home_overlays.yaml"
+
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000

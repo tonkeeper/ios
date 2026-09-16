@@ -6,16 +6,24 @@ struct WalletContainerAssembly {
     private init() {}
     static func module(
         walletBalanceModule: WalletBalanceModule,
-        walletsStore: WalletsStore,
-        configuration: Configuration
+        walletsStore: WalletsStore
+    ) -> MVVMModule<WalletContainerViewController, WalletContainerModuleOutput, Void> {
+        module(
+            walletBalanceViewController: walletBalanceModule.view,
+            walletsStore: walletsStore
+        )
+    }
+
+    static func module(
+        walletBalanceViewController: WalletContainerBalanceViewController,
+        walletsStore: WalletsStore
     ) -> MVVMModule<WalletContainerViewController, WalletContainerModuleOutput, Void> {
         let viewModel = WalletContainerViewModelImplementation(
-            walletsStore: walletsStore,
-            configuration: configuration
+            walletsStore: walletsStore
         )
         let viewController = WalletContainerViewController(
             viewModel: viewModel,
-            walletBalanceViewController: walletBalanceModule.view
+            walletBalanceViewController: walletBalanceViewController
         )
         return .init(view: viewController, output: viewModel, input: ())
     }

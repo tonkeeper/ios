@@ -1,24 +1,47 @@
+import AppUI
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKLogging
 import TKUIKit
 import UIKit
+
+enum SettingsPurchasesSection: Hashable {
+    case visible
+    case hidden
+    case spam
+
+    var id: String {
+        switch self {
+        case .visible:
+            "visible"
+        case .hidden:
+            "hidden"
+        case .spam:
+            "spam"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .visible:
+            TKLocales.Settings.Purchases.Sections.visible
+        case .hidden:
+            TKLocales.Settings.Purchases.Sections.hidden
+        case .spam:
+            TKLocales.Settings.Purchases.Sections.spam
+        }
+    }
+}
 
 protocol SettingsPurchasesModuleOutput: AnyObject {
     var didOpenTonviewer: ((URL) -> Void)? { get set }
 }
 
 protocol SettingsPurchasesViewModel: AnyObject {
-    var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
-    var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)? { get set }
-    var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)? { get set }
-    var didHideDetails: (() -> Void)? { get set }
-    var didCopyItem: ((String?) -> Void)? { get set }
+    var didUpdateState: ((SettingsPurchasesScreenState) -> Void)? { get set }
 
     func viewDidLoad()
-    func getItemCellModel(identifier: String) -> SettingsPurchasesItemCell.Model?
-    func sectionFooterModel(section: SettingsPurchasesViewController.Section) -> SettingsPurchasesSectionButtonView.Model?
-    func didTapItem(identifier: String)
 }
 
 final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel, SettingsPurchasesModuleOutput {
@@ -33,64 +56,30 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
         case expanded
     }
 
+    private enum ItemState {
+        case visible
+        case hidden
+        case spam
+    }
+
     var didOpenTonviewer: ((URL) -> Void)?
 
-    var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
-    var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)?
-    var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)?
-    var didHideDetails: (() -> Void)?
-    var didCopyItem: ((String?) -> Void)?
+    var didUpdateState: ((SettingsPurchasesScreenState) -> Void)?
 
     func viewDidLoad() {
-        let title: String
-        switch mode {
-        case .spam:
-            title = TKLocales.Collectibles.spamButton
-        case .all:
-            title = TKLocales.Collectibles.title
-        }
-        didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: title))
-
         model.didUpdate = { [weak self] event in
             DispatchQueue.main.async {
                 switch event {
-                case let .didUpdateItems(state):
-                    self?.state = state
-                case let .didUpdateManagementState(state):
-                    self?.state = state
+                case let .didUpdateItems(state), let .didUpdateManagementState(state):
+                    self?.update(state: state)
                 }
             }
         }
-        let state = model.state
-        self.state = state
+        update(state: model.state)
     }
 
-    func getItemCellModel(identifier: String) -> SettingsPurchasesItemCell.Model? {
-        itemCellModels[identifier]
-    }
-
-    func sectionFooterModel(section: SettingsPurchasesViewController.Section) -> SettingsPurchasesSectionButtonView.Model? {
-        footerModels[section]
-    }
-
-    func didTapItem(identifier: String) {
-        itemCellModels[identifier]?.tapHandler?()
-    }
-
-    private var state: SettingsPurchasesModel.State? {
-        didSet {
-            guard let state else { return }
-            didUpdateState(state)
-        }
-    }
-
-    private var itemCellModels = [String: SettingsPurchasesItemCell.Model]()
-    private var footerModels = [SettingsPurchasesViewController.Section: SettingsPurchasesSectionButtonView.Model]()
-    private var sectionStates = [SettingsPurchasesViewController.Section: SectionState]()
-
-    // MARK: - Image Loading
-
-    private let imageLoader = ImageLoader()
+    private var sectionStates = [SettingsPurchasesSection: SectionState]()
+    private var detailsPresentation: PurchasesManagementDetailsPresentation?
 
     private let model: SettingsPurchasesModel
     private let mode: SettingsPurchasesMode
@@ -111,142 +100,58 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
 }
 
 private extension SettingsPurchasesViewModelImplementation {
-    func didUpdateState(_ state: SettingsPurchasesModel.State) {
-        handleState(state)
-    }
-
-    func handleState(_ state: SettingsPurchasesModel.State) {
-        var cellModels = [String: SettingsPurchasesItemCell.Model]()
-        var footerModels = [SettingsPurchasesViewController.Section: SettingsPurchasesSectionButtonView.Model]()
-
-        switch mode {
-        case .all:
-            for visibleItem in state.visible {
-                let itemData = createItemData(item: visibleItem, collectionNfts: state.collectionNfts)
-                let model = mapRegularItem(
-                    title: itemData.title,
-                    subtitle: itemData.subtitle,
-                    image: .urlImage(itemData.imageURL),
-                    controlModel: SettingsPurchasesItemControl.Model(
-                        action: .minus,
-                        tapClosure: { [model] in
-                            model.hideItem(visibleItem)
-                        }
-                    ),
-                    tapHandler: {
-                        [weak self] in
-                        guard let self else { return }
-                        let configuration = createDetailsConfiguration(
-                            item: visibleItem,
-                            collectionNfts: state.collectionNfts,
-                            itemState: .visible
-                        )
-                        didOpenDetails?(configuration)
-                    }
-                )
-                cellModels[visibleItem.id] = model
-            }
-            footerModels[.visible] = createFooterModelIfNeeded(items: state.visible, section: .visible)
-
-            for hiddenItem in state.hidden {
-                let itemData = createItemData(item: hiddenItem, collectionNfts: state.collectionNfts)
-                let model = mapRegularItem(
-                    title: itemData.title,
-                    subtitle: itemData.subtitle,
-                    image: .urlImage(itemData.imageURL),
-                    controlModel: SettingsPurchasesItemControl.Model(
-                        action: .plus,
-                        tapClosure: { [model] in
-                            model.showItem(hiddenItem)
-                        }
-                    ),
-                    tapHandler: {
-                        [weak self] in
-                        guard let self else { return }
-                        let configuration = createDetailsConfiguration(
-                            item: hiddenItem,
-                            collectionNfts: state.collectionNfts,
-                            itemState: .hidden
-                        )
-                        didOpenDetails?(configuration)
-                    }
-                )
-                cellModels[hiddenItem.id] = model
-            }
-            footerModels[.hidden] = createFooterModelIfNeeded(items: state.hidden, section: .hidden)
-        case .spam:
-            break
-        }
-
-        for visibleItem in state.spam {
-            let itemData = createItemData(item: visibleItem, collectionNfts: state.collectionNfts)
-            let model = mapRegularItem(
-                title: itemData.title,
-                subtitle: itemData.subtitle,
-                image: .urlImage(itemData.imageURL),
-                controlModel: nil,
-                accessory: .chevron,
-                tapHandler: {
-                    [weak self] in
-                    guard let self else { return }
-                    let configuration = createDetailsConfiguration(
-                        item: visibleItem,
-                        collectionNfts: state.collectionNfts,
-                        itemState: .spam
-                    )
-                    didOpenDetails?(configuration)
+    func update(state: SettingsPurchasesModel.State) {
+        didUpdateState?(
+            SettingsPurchasesScreenState(
+                title: title,
+                sections: createSections(state),
+                details: detailsPresentation,
+                onDismissDetails: { [weak self] in
+                    self?.hideDetails()
                 }
             )
-            cellModels[visibleItem.id] = model
-        }
-
-        cellModels[Constants.allSpamItemIdentifier] = mapRegularItem(
-            title: "All spam",
-            subtitle: "\(state.blacklistedCount) \(TKLocales.Settings.Purchases.Token.tokenCount(count: state.blacklistedCount))",
-            image: .image(.App.Images.Size44.exclamationMark),
-            controlModel: nil,
-            accessory: .chevron,
-            tapHandler: { [weak self, tonviewerURLBuilder, wallet] in
-                guard let url = try? tonviewerURLBuilder.buildURL(
-                    context: .accountCollectibles(address: wallet.address), network: wallet.network
-                ) else { return }
-                self?.didOpenTonviewer?(url)
-            }
         )
-
-        footerModels[.spam] = createFooterModelIfNeeded(items: state.spam, section: .spam)
-
-        let snapshot = createSnapshot(state)
-
-        self.itemCellModels = cellModels
-        self.footerModels = footerModels
-        self.didUpdateSnapshot?(snapshot)
     }
 
-    func createSnapshot(_ state: SettingsPurchasesModel.State) -> SettingsPurchasesViewController.Snapshot {
-        var snapshot = SettingsPurchasesViewController.Snapshot()
+    func hideDetails() {
+        guard detailsPresentation != nil else { return }
+        detailsPresentation = nil
+        update(state: model.state)
+    }
+
+    var title: String {
+        switch mode {
+        case .spam:
+            TKLocales.Collectibles.spamButton
+        case .all:
+            TKLocales.Collectibles.title
+        }
+    }
+
+    func createSections(_ state: SettingsPurchasesModel.State) -> [SettingsPurchasesScreenState.Section] {
+        var sections = [SettingsPurchasesScreenState.Section]()
 
         switch mode {
         case .all:
             if !state.visible.isEmpty {
-                snapshot.appendSections([.visible])
-                snapshot.appendItems(
-                    createSnapshotItems(
+                sections.append(
+                    createSection(
+                        section: .visible,
                         items: state.visible,
-                        section: .visible
-                    ),
-                    toSection: .visible
+                        itemState: .visible,
+                        state: state
+                    )
                 )
             }
 
             if !state.hidden.isEmpty {
-                snapshot.appendSections([.hidden])
-                snapshot.appendItems(
-                    createSnapshotItems(
+                sections.append(
+                    createSection(
+                        section: .hidden,
                         items: state.hidden,
-                        section: .hidden
-                    ),
-                    toSection: .hidden
+                        itemState: .hidden,
+                        state: state
+                    )
                 )
             }
         case .spam:
@@ -254,218 +159,176 @@ private extension SettingsPurchasesViewModelImplementation {
         }
 
         let hasSpam = !state.spam.isEmpty || state.blacklistedCount > 0
-        let hasBlacklisted = state.blacklistedCount > 0
         if hasSpam {
-            snapshot.appendSections([.spam])
-            snapshot.appendItems(
-                createSnapshotItems(
-                    items: state.spam,
-                    section: .spam
-                ),
-                toSection: .spam
+            var spamItems = createItems(
+                items: state.spam,
+                section: .spam,
+                itemState: .spam,
+                state: state
             )
-            if hasBlacklisted {
-                snapshot.appendItems(
-                    [Constants.allSpamItemIdentifier],
-                    toSection: .spam
+            if state.blacklistedCount > 0 {
+                spamItems.append(createAllSpamItem(state: state))
+            }
+            sections.append(
+                SettingsPurchasesScreenState.Section(
+                    id: SettingsPurchasesSection.spam.id,
+                    title: SettingsPurchasesSection.spam.title,
+                    items: spamItems,
+                    showAllButton: createShowAllButtonIfNeeded(items: state.spam, section: .spam)
+                )
+            )
+        }
+
+        return sections
+    }
+
+    private func createSection(
+        section: SettingsPurchasesSection,
+        items: [SettingsPurchasesModel.Item],
+        itemState: ItemState,
+        state: SettingsPurchasesModel.State
+    ) -> SettingsPurchasesScreenState.Section {
+        SettingsPurchasesScreenState.Section(
+            id: section.id,
+            title: section.title,
+            items: createItems(
+                items: items,
+                section: section,
+                itemState: itemState,
+                state: state
+            ),
+            showAllButton: createShowAllButtonIfNeeded(items: items, section: section)
+        )
+    }
+
+    private func createItems(
+        items: [SettingsPurchasesModel.Item],
+        section: SettingsPurchasesSection,
+        itemState: ItemState,
+        state: SettingsPurchasesModel.State
+    ) -> [SettingsPurchasesScreenState.Item] {
+        collapsedItemsIfNeeded(items: items, section: section)
+            .map { item in
+                createItem(
+                    item: item,
+                    itemState: itemState,
+                    state: state
                 )
             }
-        }
-
-        if #available(iOS 15.0, *) {
-            snapshot.reconfigureItems(snapshot.itemIdentifiers)
-        } else {
-            snapshot.reloadItems(snapshot.itemIdentifiers)
-        }
-
-        return snapshot
     }
 
-    func createSnapshotItems(
+    func collapsedItemsIfNeeded(
         items: [SettingsPurchasesModel.Item],
-        section: SettingsPurchasesViewController.Section
-    ) -> [String] {
-        let items = items.count > 4
-            ? sectionStates[section] == .expanded ? items : Array(items.prefix(4))
-            : items
-        return items.map {
-            $0.id
+        section: SettingsPurchasesSection
+    ) -> [SettingsPurchasesModel.Item] {
+        guard items.count > Constants.collapsedItemsCount,
+              sectionStates[section] != .expanded
+        else {
+            return items
         }
+        return Array(items.prefix(Constants.collapsedItemsCount))
     }
 
-    func createFooterModelIfNeeded(
+    func createShowAllButtonIfNeeded(
         items: [SettingsPurchasesModel.Item],
-        section: SettingsPurchasesViewController.Section
-    ) -> SettingsPurchasesSectionButtonView.Model? {
-        guard items.count > 4, sectionStates[section] != .expanded else {
+        section: SettingsPurchasesSection
+    ) -> SettingsPurchasesScreenState.ShowAllButton? {
+        guard items.count > Constants.collapsedItemsCount,
+              sectionStates[section] != .expanded
+        else {
             return nil
         }
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .small)
-        buttonConfiguration.action = { [weak self] in
-            self?.sectionStates[section] = .expanded
-            self?.state = self?.model.state
-        }
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.showAll))
-        return SettingsPurchasesSectionButtonView.Model(buttonConfiguration: buttonConfiguration)
-    }
-
-    private enum ItemState {
-        case visible
-        case hidden
-        case spam
-    }
-
-    private func createDetailsConfiguration(
-        item: SettingsPurchasesModel.Item,
-        collectionNfts: [NFTCollection: [NFT]],
-        itemState: ItemState
-    ) -> PurchasesManagementDetailsViewController.Configuration {
-        let title: String
-        let buttonTitle: String
-        let listItems: [SettingsPurchasesDetailsListItemView.Model]
-
-        switch item {
-        case let .single(nft):
-            title = TKLocales.Settings.Purchases.Details.Title.singleToken
-            buttonTitle = {
-                switch itemState {
-                case .visible:
-                    TKLocales.Settings.Purchases.Details.Button.hideToken
-                case .hidden:
-                    TKLocales.Settings.Purchases.Details.Button.showToken
-                case .spam:
-                    if model.isMarkedAsSpam(item: item) {
-                        TKLocales.Settings.Purchases.Details.Button.notSpam
-                    } else {
-                        TKLocales.Settings.Purchases.Details.Button.showToken
-                    }
-                }
-            }()
-            listItems = [
-                SettingsPurchasesDetailsListItemView.Model(
-                    title: TKLocales.Settings.Purchases.Details.Items.tokenId,
-                    caption: nft.address.toShortString(bounceable: true),
-                    image: TKImageView.Model(
-                        image: .image(.TKUIKit.Icons.Size16.copy),
-                        tintColor: .Icon.secondary,
-                        size: .auto,
-                        corners: .none
-                    ),
-                    isHighlightable: true,
-                    copyValue: nft.address.toString(bounceable: true)
-                ),
-            ]
-        case let .collection(collection):
-            title = TKLocales.Settings.Purchases.Details.Title.collection
-            buttonTitle = {
-                switch itemState {
-                case .visible:
-                    TKLocales.Settings.Purchases.Details.Button.hideCollection
-                case .hidden:
-                    TKLocales.Settings.Purchases.Details.Button.showCollection
-                case .spam:
-                    if model.isMarkedAsSpam(item: item) {
-                        TKLocales.Settings.Purchases.Details.Button.notSpam
-                    } else {
-                        TKLocales.Settings.Purchases.Details.Button.showCollection
-                    }
-                }
-            }()
-            listItems = [
-                SettingsPurchasesDetailsListItemView.Model(
-                    title: TKLocales.Settings.Purchases.Details.Items.name,
-                    caption: collection.notEmptyName,
-                    image: TKImageView.Model(
-                        image: .urlImage(collectionNfts[collection]?.first?.preview.size500),
-                        size: .size(CGSize(width: 40, height: 40)),
-                        corners: .cornerRadius(cornerRadius: 8)
-                    ),
-                    isHighlightable: false,
-                    copyValue: nil
-                ),
-                SettingsPurchasesDetailsListItemView.Model(
-                    title: TKLocales.Settings.Purchases.Details.Items.collectionId,
-                    caption: collection.address.toShortString(bounceable: true),
-                    image: TKImageView.Model(
-                        image: .image(.TKUIKit.Icons.Size16.copy),
-                        tintColor: .Icon.secondary,
-                        size: .auto,
-                        corners: .none
-                    ),
-                    isHighlightable: true,
-                    copyValue: collection.address.toString(bounceable: true)
-                ),
-            ]
-        }
-
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-        buttonConfiguration.content.title = .plainString(buttonTitle)
-        buttonConfiguration.action = { [weak self] in
-            switch itemState {
-            case .visible:
-                self?.model.hideItem(item)
-            case .hidden, .spam:
-                self?.model.showItem(item)
+        return SettingsPurchasesScreenState.ShowAllButton(
+            title: TKLocales.List.showAll,
+            action: { [weak self] in
+                guard let self else { return }
+                sectionStates[section] = .expanded
+                update(state: model.state)
             }
-            self?.didHideDetails?()
-        }
-
-        return PurchasesManagementDetailsViewController.Configuration(
-            title: title,
-            listConfiguration: TKListContainerView.Configuration(
-                items: listItems,
-                copyToastConfiguration: .copied
-            ),
-            buttonConfiguration: buttonConfiguration
         )
     }
 
-    func mapRegularItem(
-        title: String,
-        subtitle: String,
-        image: TKImage,
-        controlModel: SettingsPurchasesItemControl.Model?,
-        accessory: TKListItemAccessory? = nil,
-        tapHandler: (() -> Void)?
-    ) -> SettingsPurchasesItemCell.Model {
-        let listItemConfiguration = TKListItemContentView.Configuration(
-            iconViewConfiguration: TKListItemIconView.Configuration(
-                content: .image(
-                    TKImageView.Model(
-                        image: image,
-                        tintColor: nil,
-                        size: .size(CGSize(width: 44, height: 44)),
-                        corners: .cornerRadius(cornerRadius: 8)
+    private func createItem(
+        item: SettingsPurchasesModel.Item,
+        itemState: ItemState,
+        state: SettingsPurchasesModel.State
+    ) -> SettingsPurchasesScreenState.Item {
+        let itemData = createItemData(item: item, collectionNfts: state.collectionNfts)
+        return SettingsPurchasesScreenState.Item(
+            id: item.id,
+            image: .url(itemData.imageURL),
+            title: itemData.title,
+            subtitle: itemData.subtitle,
+            control: createControl(item: item, itemState: itemState),
+            showsChevron: itemState == .spam,
+            action: { [weak self] in
+                guard let self else { return }
+                detailsPresentation = PurchasesManagementDetailsPresentation(
+                    id: item.id,
+                    state: createDetailsState(
+                        item: item,
+                        collectionNfts: state.collectionNfts,
+                        itemState: itemState
                     )
-                ),
-                alignment: .center,
-                cornerRadius: 8,
-                backgroundColor: .clear,
-                size: CGSize(width: 44, height: 44)
-            ),
-            textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                titleViewConfiguration: TKListItemTitleView.Configuration(
-                    title: title
-                ),
-                captionViewsConfigurations: [TKListItemTextView.Configuration(
-                    text: subtitle,
-                    color: .Text.secondary,
-                    textStyle: .body2,
-                    alignment: .left,
-                    lineBreakMode: .byTruncatingTail
-                )]
-            )
-        )
-
-        return SettingsPurchasesItemCell.Model(
-            controlModel: controlModel,
-            listItemConfiguration: listItemConfiguration,
-            accessory: accessory,
-            tapHandler: tapHandler
+                )
+                update(state: model.state)
+            }
         )
     }
 
-    private func createItemData(item: SettingsPurchasesModel.Item, collectionNfts: [NFTCollection: [NFT]]) -> ItemData {
+    private func createControl(
+        item: SettingsPurchasesModel.Item,
+        itemState: ItemState
+    ) -> SettingsPurchasesScreenState.Item.Control? {
+        switch itemState {
+        case .visible:
+            SettingsPurchasesScreenState.Item.Control(
+                kind: .hide,
+                action: { [model] in
+                    model.hideItem(item)
+                }
+            )
+        case .hidden:
+            SettingsPurchasesScreenState.Item.Control(
+                kind: .show,
+                action: { [model] in
+                    model.showItem(item)
+                }
+            )
+        case .spam:
+            nil
+        }
+    }
+
+    func createAllSpamItem(
+        state: SettingsPurchasesModel.State
+    ) -> SettingsPurchasesScreenState.Item {
+        SettingsPurchasesScreenState.Item(
+            id: Constants.allSpamItemIdentifier,
+            image: .icon(.TKUIKit.Icons.Size44.exclamationMark),
+            title: "All spam",
+            subtitle: "\(state.blacklistedCount) \(TKLocales.Settings.Purchases.Token.tokenCount(count: state.blacklistedCount))",
+            showsChevron: true,
+            action: { [weak self, tonviewerURLBuilder, wallet] in
+                do {
+                    guard let url = try tonviewerURLBuilder.buildURL(
+                        context: .accountCollectibles(address: wallet.address),
+                        network: wallet.network
+                    ) else {
+                        return
+                    }
+                    self?.didOpenTonviewer?(url)
+                } catch {
+                    Log.w("SettingsPurchases: failed to build all spam tonviewer url, error: \(error)")
+                }
+            }
+        )
+    }
+
+    private func createItemData(
+        item: SettingsPurchasesModel.Item,
+        collectionNfts: [NFTCollection: [NFT]]
+    ) -> ItemData {
         let title: String
         let subtitle: String
         let imageURL: URL?
@@ -486,8 +349,100 @@ private extension SettingsPurchasesViewModelImplementation {
             imageURL: imageURL
         )
     }
+
+    private func createDetailsState(
+        item: SettingsPurchasesModel.Item,
+        collectionNfts: [NFTCollection: [NFT]],
+        itemState: ItemState
+    ) -> PurchasesManagementDetailsViewState {
+        let title: String
+        let items: [PurchasesManagementDetailsViewState.Item]
+
+        switch item {
+        case let .single(nft):
+            title = TKLocales.Settings.Purchases.Details.Title.singleToken
+            items = [
+                PurchasesManagementDetailsViewState.Item(
+                    id: Constants.tokenIdItemIdentifier,
+                    title: TKLocales.Settings.Purchases.Details.Items.tokenId,
+                    value: nft.address.toShortString(bounceable: true),
+                    accessory: .copy,
+                    copyValue: nft.address.toString(bounceable: true)
+                ),
+            ]
+        case let .collection(collection):
+            title = TKLocales.Settings.Purchases.Details.Title.collection
+            items = [
+                PurchasesManagementDetailsViewState.Item(
+                    id: Constants.nameItemIdentifier,
+                    title: TKLocales.Settings.Purchases.Details.Items.name,
+                    value: collection.notEmptyName ?? TKLocales.Settings.Purchases.Token.unnamedCollection,
+                    accessory: .image(collectionNfts[collection]?.first?.preview.size500)
+                ),
+                PurchasesManagementDetailsViewState.Item(
+                    id: Constants.collectionIdItemIdentifier,
+                    title: TKLocales.Settings.Purchases.Details.Items.collectionId,
+                    value: collection.address.toShortString(bounceable: true),
+                    accessory: .copy,
+                    copyValue: collection.address.toString(bounceable: true)
+                ),
+            ]
+        }
+
+        return PurchasesManagementDetailsViewState(
+            title: title,
+            items: items,
+            button: PurchasesManagementDetailsViewState.Button(
+                title: createDetailsButtonTitle(item: item, itemState: itemState),
+                action: { [weak self] in
+                    guard let self else { return }
+                    switch itemState {
+                    case .visible:
+                        model.hideItem(item)
+                    case .hidden, .spam:
+                        model.showItem(item)
+                    }
+                    hideDetails()
+                }
+            )
+        )
+    }
+
+    private func createDetailsButtonTitle(
+        item: SettingsPurchasesModel.Item,
+        itemState: ItemState
+    ) -> String {
+        switch item {
+        case .single:
+            switch itemState {
+            case .visible:
+                TKLocales.Settings.Purchases.Details.Button.hideToken
+            case .hidden:
+                TKLocales.Settings.Purchases.Details.Button.showToken
+            case .spam:
+                model.isMarkedAsSpam(item: item)
+                    ? TKLocales.Settings.Purchases.Details.Button.notSpam
+                    : TKLocales.Settings.Purchases.Details.Button.showToken
+            }
+        case .collection:
+            switch itemState {
+            case .visible:
+                TKLocales.Settings.Purchases.Details.Button.hideCollection
+            case .hidden:
+                TKLocales.Settings.Purchases.Details.Button.showCollection
+            case .spam:
+                model.isMarkedAsSpam(item: item)
+                    ? TKLocales.Settings.Purchases.Details.Button.notSpam
+                    : TKLocales.Settings.Purchases.Details.Button.showCollection
+            }
+        }
+    }
 }
 
 private enum Constants {
+    static let collapsedItemsCount: Int = 4
     static let allSpamItemIdentifier: String = "allSpamItemIdentifier"
+    static let tokenIdItemIdentifier: String = "tokenId"
+    static let nameItemIdentifier: String = "name"
+    static let collectionIdItemIdentifier: String = "collectionId"
 }

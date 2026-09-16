@@ -23,6 +23,7 @@ public struct ConvertedBalance: Codable, Equatable {
     public let jettonsBalance: [ConvertedJettonBalance]
     public let stackingBalance: [ConvertedStakingBalance]
     public let tronUSDT: ConvertedBalanceTronUSDTItem?
+    public let tronTRX: ConvertedBalanceTronTRXItem?
     public let batteryBalance: BatteryBalance?
 }
 
@@ -62,6 +63,13 @@ public struct ConvertedStakingBalance: Codable, Equatable {
 }
 
 public struct ConvertedBalanceTronUSDTItem: Equatable, Codable {
+    public let amount: BigUInt
+    public let converted: Decimal
+    public let price: Decimal
+    public let diff: String?
+}
+
+public struct ConvertedBalanceTronTRXItem: Equatable, Codable {
     public let amount: BigUInt
     public let converted: Decimal
     public let price: Decimal

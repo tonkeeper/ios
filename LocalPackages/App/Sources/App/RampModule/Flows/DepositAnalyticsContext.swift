@@ -172,7 +172,17 @@ extension DepositFlowContext {
     }
 
     func makeDepositContinueToRampProvider() -> DepositContinueToRampProvider? {
-        guard let addFundsOption, let buyAsset, let sellAsset, let paymentMethod, let providerName, let amount, let txId else { return nil }
+        guard
+            let addFundsOption,
+            let buyAsset,
+            let sellAsset,
+            let paymentMethod,
+            let providerName,
+            let amount,
+            let txId
+        else {
+            return nil
+        }
         return DepositContinueToRampProvider(
             from: source,
             addFundsOption: addFundsOption,

@@ -1,15 +1,10 @@
 import Aptabase
 import Foundation
 
-public enum EventKey: String {
-    case clickDapp = "click_dapp"
-    case importWallet = "import_wallet"
-    case importWatchOnly = "import_watch_only"
-    case generateWallet = "generate_wallet"
+public enum EventKey: String, CaseIterable {
     case deleteWallet = "delete_wallet"
     case resetWallet = "reset_wallet"
-    case openBrowser = "browser_open"
-    case dappSharingCopy = "dapp_sharing_copy"
+    case sensitiveContentScreenshot = "sensitive_content_screenshot"
 
     case storyOpen = "story_open"
     case storyPageView = "story_page_view"
@@ -17,10 +12,6 @@ public enum EventKey: String {
 
     case onrampOpen = "onramp_open"
     case onrampClick = "onramp_click"
-
-    public var parameters: [String: Any] {
-        [:]
-    }
 
     public var key: String {
         rawValue
@@ -40,22 +31,26 @@ public struct AnalyticsProvider {
     private let services: [AnalyticsService]
     private let firebaseService: FirebaseAnalyticsService
     private let uniqueIdProvider: UniqueIdProvider
+    private let deviceIdProvider: () -> String?
     private let appInfoProvider: AppInfoProvider
-    private let storeCountryCodeCache: StoreCountryCodeCache
+    private let keysCountryCodeProvider: KeysCountryCodeProvider
 
     public init(
         analyticsServices: [AnalyticsService],
         uniqueIdProvider: UniqueIdProvider,
-        appInfoProvider: AppInfoProvider
+        deviceIdProvider: @escaping () -> String? = { nil },
+        appInfoProvider: AppInfoProvider,
+        keysCountryCodeProvider: KeysCountryCodeProvider
     ) {
         self.services = analyticsServices
         self.firebaseService = FirebaseAnalyticsService()
         self.uniqueIdProvider = uniqueIdProvider
+        self.deviceIdProvider = deviceIdProvider
         self.appInfoProvider = appInfoProvider
-        self.storeCountryCodeCache = StoreCountryCodeCache(appInfoProvider: appInfoProvider)
+        self.keysCountryCodeProvider = keysCountryCodeProvider
     }
 
-    public func log(_ event: Encodable, featureFlags: String? = nil) {
+    public func log(_ event: Encodable) {
         guard var dict = event.asDictionary() else {
             return
         }
@@ -64,7 +59,7 @@ public struct AnalyticsProvider {
             return
         }
 
-        self.log(name: name, args: dict, featureFlags: featureFlags)
+        self.log(name: name, args: dict)
     }
 
     public func log(eventKey: EventKey, args: [String: Any] = [:]) {
@@ -77,15 +72,15 @@ public struct AnalyticsProvider {
 
     private func log(
         name: String,
-        args: [String: Any] = [:],
-        featureFlags: String? = nil
+        args: [String: Any] = [:]
     ) {
         let baseEvent = AnalyticsEventMobileNative(
             firebaseUserId: uniqueIdProvider.uniqueDeviceId.uuidString,
+            deviceId: deviceIdProvider(),
             platform: .iosNative,
-            storeCountryCode: storeCountryCodeCache.value,
+            storeCountryCode: appInfoProvider.cachedStoreCountryCode?.uppercased(),
             deviceCountryCode: appInfoProvider.deviceCountryCode?.uppercased(),
-            featureFlags: featureFlags
+            keysCountryCode: keysCountryCodeProvider.keysCountryCode
         )
         log(name: name, args: args, baseEvent: baseEvent)
     }
@@ -96,33 +91,14 @@ public struct AnalyticsProvider {
         baseEvent: AnalyticsEventMobileNative
     ) {
         let baseParameters = baseEvent.asDictionary() ?? [:]
-        let allParameters = args.reduce(into: baseParameters) { result, element in
-            result[element.key] = element.value
-        }
+        let allParameters = AnalyticsLimits.sanitizeKeys(
+            args.reduce(into: baseParameters) { result, element in
+                result[element.key] = element.value
+            }
+        )
         for service in services {
             service.logEvent(name: name, args: allParameters)
         }
-    }
-
-    public enum ClickDappEventFrom: String {
-        case banner
-        case browser
-        case browserConnected = "browser_connected"
-    }
-
-    public func logClickDappEvent(
-        name: String,
-        url: String,
-        from: ClickDappEventFrom
-    ) {
-        log(
-            eventKey: .clickDapp,
-            args: [
-                "name": name,
-                "url": url,
-                "from": from.rawValue,
-            ]
-        )
     }
 
     public func logSwapCompleted() {
@@ -196,30 +172,6 @@ public extension AnalyticsEventLegacy {
                 "type": "native",
             ])
         }
-    }
-}
-
-private final class StoreCountryCodeCache: @unchecked Sendable {
-    private let lock = NSLock()
-    private var cached: String?
-
-    var value: String? {
-        lock.lock()
-        defer { lock.unlock() }
-        return cached
-    }
-
-    init(appInfoProvider: AppInfoProvider) {
-        Task { [weak self] in
-            let code = await appInfoProvider.storeCountryCode?.uppercased()
-            self?.store(code)
-        }
-    }
-
-    private func store(_ code: String?) {
-        lock.lock()
-        defer { lock.unlock() }
-        cached = code
     }
 }
 

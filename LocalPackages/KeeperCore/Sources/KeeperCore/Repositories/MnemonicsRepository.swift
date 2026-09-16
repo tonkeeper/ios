@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCoreComponents
+import TKKeychain
 
 public protocol MnemonicsRepository {
     func hasMnemonics() -> Bool
@@ -28,6 +29,27 @@ public protocol MnemonicsRepository {
     func savePassword(_ password: String) throws
     func getPassword() throws -> String
     func deletePassword() throws
+
+    /// Non-interactive probe of the biometry-protected password item, to tell an
+    /// invalidated enrolled set apart from a plain absent item.
+    func probeBiometryAccess() -> TKKeychainBiometryAccess
+    /// Whether the password item already uses `biometryCurrentSet`; `false` means a
+    /// legacy `biometryAny` item still needs the one-time migration.
+    func isBiometryItemMigrated() -> Bool
+}
+
+public extension MnemonicsRepository {
+    /// Conservative defaults for repositories that don't expose a
+    /// biometryCurrentSet password item (e.g. the RN vault): treat as
+    /// indeterminate / already-migrated so the recovery + lazy-migration paths
+    /// stay inert. `MnemonicsVault` overrides both with real implementations.
+    func probeBiometryAccess() -> TKKeychainBiometryAccess {
+        .indeterminate
+    }
+
+    func isBiometryItemMigrated() -> Bool {
+        true
+    }
 }
 
 extension RNMnemonicsVault: MnemonicsRepository {

@@ -3,20 +3,6 @@ import Foundation
 import TonAPI
 import TonSwift
 
-public enum SignRawEmulationResult {
-    case success(SignRawEmulation)
-    case failed
-
-    public var transactionType: TransferType {
-        switch self {
-        case let .success(signRawEmulation):
-            return signRawEmulation.transferType
-        case .failed:
-            return .default
-        }
-    }
-}
-
 public struct SignRawEmulation {
     public struct Risk {
         public struct Jetton {
@@ -106,8 +92,9 @@ public final class SignRawController {
             resultHandler?.didFail(error: .certain(error))
             throw .certain(error)
         }
+        let bocs: SignedTransactions
         do {
-            let boc = try await transferService.sendTransaction(
+            bocs = try await transferService.sendTransaction(
                 wallet: wallet,
                 transfer: transfer,
                 transferType: transactionType,
@@ -118,7 +105,6 @@ public final class SignRawController {
                     return await signTransactions(transferData: transferData, wallet: wallet)
                 }
             )
-            resultHandler?.didConfirm(boc: boc)
         } catch {
             let typedError = error
 
@@ -130,6 +116,12 @@ public final class SignRawController {
             resultHandler?.didFail(error: typedError)
             throw typedError
         }
+        guard let boc = bocs.first else {
+            let error = TransferError.nothingToSend
+            resultHandler?.didFail(error: .certain(error))
+            throw .certain(error)
+        }
+        resultHandler?.didConfirm(boc: boc)
     }
 
     public func cancel() {
@@ -190,7 +182,7 @@ public final class SignRawController {
 
     private func handleRisk(risk: TonAPI.Risk) -> SignRawEmulation.Risk {
         SignRawEmulation.Risk(
-            ton: UInt64(risk.ton),
+            ton: UInt64(risk.gram),
             jettons: risk.jettons.compactMap {
                 try? SignRawEmulation.Risk.Jetton(
                     walletAddress: Address.parse($0.walletAddress.address),

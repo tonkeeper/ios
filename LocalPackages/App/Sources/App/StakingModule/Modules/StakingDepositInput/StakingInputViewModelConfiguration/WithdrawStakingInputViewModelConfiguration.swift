@@ -44,7 +44,7 @@ final class WithdrawStakingInputViewModelConfiguration: StakingInputViewModelCon
 
     func getStakingConfirmationItem() -> StakingConfirmationItem? {
         StakingConfirmationItem(
-            operation: .withdraw(stakingPool),
+            operation: .withdraw(stakingPool, isCollect: false),
             amount: inputAmount
         )
     }

@@ -5,12 +5,13 @@ struct ChartTopPriceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(config.priceText)
-                .textStyle(config.textStyle)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .foregroundStyle(Color(uiColor: .Text.secondary))
-                .padding(Layout.priceTextContentInsets)
+            ChartPriceText(
+                priceText: config.priceText,
+                textStyle: config.textStyle
+            )
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(Layout.priceTextContentInsets)
             Spacer(minLength: 0)
         }
         .frame(height: Layout.height)

@@ -1,8 +1,6 @@
 import SwiftUI
 
-public struct WalletBalanceUpdatesSwiftUIViewPreviews: View {
-    public init() {}
-
+struct WalletBalanceUpdatesSwiftUIViewPreviews: View {
     private let configs: [PreviewConfig] = [
         PreviewConfig(
             title: "All updates",
@@ -26,22 +24,20 @@ public struct WalletBalanceUpdatesSwiftUIViewPreviews: View {
         ),
     ]
 
-    public var body: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             ForEach(configs, id: \.self) { previewConfig in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(previewConfig.title)
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
 
                     WalletBalanceUpdatesSwiftUIView(config: previewConfig.config)
                 }
             }
         }
         .padding(.all, 16)
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
     }
 }
 
@@ -54,4 +50,5 @@ private extension WalletBalanceUpdatesSwiftUIViewPreviews {
 
 #Preview {
     WalletBalanceUpdatesSwiftUIViewPreviews()
+        .tkThemed()
 }

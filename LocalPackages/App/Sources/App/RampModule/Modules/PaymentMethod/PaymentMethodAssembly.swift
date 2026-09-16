@@ -12,7 +12,8 @@ struct PaymentMethodAssembly {
         isTRC20Available: Bool,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         initialDeeplink: RampDeeplinkParameters?,
-        fiatCurrency: RemoteCurrency?
+        fiatCurrency: RemoteCurrency?,
+        walletId: String?
     ) -> MVVMModule<PaymentMethodViewController, PaymentMethodModuleOutput, PaymentMethodModuleInput> {
         let onRampService = keeperCoreMainAssembly.servicesAssembly.onRampService()
         let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
@@ -28,7 +29,8 @@ struct PaymentMethodAssembly {
             currenciesService: currenciesService,
             configuration: configuration,
             initialDeeplink: initialDeeplink,
-            fiatCurrency: fiatCurrency
+            fiatCurrency: fiatCurrency,
+            walletId: walletId
         )
         let viewController = PaymentMethodViewController(viewModel: viewModel)
         return MVVMModule(view: viewController, output: viewModel, input: viewModel)

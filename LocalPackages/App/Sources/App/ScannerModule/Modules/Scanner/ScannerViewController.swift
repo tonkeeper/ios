@@ -52,7 +52,7 @@ private extension ScannerViewController {
 
         let swipeDownButton = QRScannerSwipeDownButton()
         swipeDownButton.addTarget(self, action: #selector(didTapSwipeDownButton), for: .touchUpInside)
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeDownButton)
+        navigationItem.leftBarButtonItem = .customView(swipeDownButton, pinnedTo: .leading)
         swipeDownButton.sizeToFit()
 
         customView.galleryButton.addTarget(self, action: #selector(didTapGalleryButton), for: .touchUpInside)
@@ -78,7 +78,7 @@ private extension ScannerViewController {
             guard let self = self else { return }
             switch state {
             case .permissionDenied:
-                let viewController = UIHostingController(rootView: NoCameraPermissionView(buttonHandler: { [weak self] in
+                let viewController = TKHostingController(content: NoCameraPermissionView(buttonHandler: { [weak self] in
                     self?.viewModel.didTapSettingsButton()
                 }))
                 addChild(viewController)

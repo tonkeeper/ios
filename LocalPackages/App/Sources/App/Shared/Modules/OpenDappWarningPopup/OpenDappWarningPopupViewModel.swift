@@ -5,7 +5,7 @@ import TKUIKit
 import UIKit
 
 @MainActor
-public protocol OpenDappWarningPopupModuleOutput: AnyObject {
+protocol OpenDappWarningPopupModuleOutput: AnyObject {
     var didTapOpen: ((_ url: URL, _ title: String) -> Void)? { get set }
 }
 

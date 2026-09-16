@@ -1,7 +1,9 @@
 import KeeperCore
 import TKCoordinator
 import TKCore
+import TKFeatureFlags
 import TKLocalize
+import TKLogging
 import TKScreenKit
 import TKUIKit
 import TonSwift
@@ -15,14 +17,17 @@ public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRou
 
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let analyticsController: DappBrowserAnalyticsController
 
-    public init(
+    init(
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
-        keeperCoreMainAssembly: KeeperCore.MainAssembly
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        analyticsController: DappBrowserAnalyticsController
     ) {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.analyticsController = analyticsController
         super.init(router: router)
         router.rootViewController.tabBarItem.title = TKLocales.Tabs.browser
         router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.explore
@@ -35,22 +40,30 @@ public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRou
     func openExplore() {
         browserInput?.openExplore()
     }
+
+    func selectExploreNetworkFilter(_ chain: MultichainChain) {
+        browserInput?.selectExploreNetworkFilter(chain)
+    }
 }
 
 private extension BrowserCoordinator {
     func openBrowser() {
-        let module = BrowserAssembly.module(keeperCoreAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
+        let module = BrowserAssembly.module(
+            keeperCoreAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            analyticsController: analyticsController
+        )
 
         module.output.didTapSearch = { [weak self] in
             self?.openSearch()
         }
 
-        module.output.didSelectCategory = { [weak self] category in
-            self?.openCategory(category)
+        module.output.didSelectCategory = { [weak self] category, selectedChain in
+            self?.openCategory(category, selectedChain: selectedChain)
         }
 
-        module.output.didSelectDapp = { [weak self, unowned router] dapp in
-            self?.openDapp(dapp, fromViewController: router.rootViewController)
+        module.output.didSelectDapp = { [weak self, unowned router] request in
+            self?.openDapp(request, fromViewController: router.rootViewController)
         }
 
         module.output.didOpenDeeplink = { [weak self] deeplink in
@@ -62,11 +75,33 @@ private extension BrowserCoordinator {
         router.push(viewController: module.view, animated: false)
     }
 
-    func openCategory(_ category: PopularAppsCategory) {
-        let module = BrowserCategoryAssembly.module(category: category)
+    func openCategory(_ category: PopularAppsCategory, selectedChain: MultichainChain?) {
+        if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) {
+            let module = BrowserCategoryMultichainAssembly.module(
+                category: category,
+                walletStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+                supportedChains: keeperCoreMainAssembly.multichainAssembly.supportedChains,
+                initialChain: selectedChain
+            )
 
-        module.output.didSelectDapp = { [weak self, unowned router] dapp in
-            self?.openDapp(dapp, fromViewController: router.rootViewController)
+            module.output.didSelectDapp = { [weak self, unowned router] intent in
+                self?.openDapp(intent, fromViewController: router.rootViewController)
+            }
+
+            module.output.didTapSearch = { [weak self] in
+                self?.openSearch()
+            }
+
+            router.push(viewController: module.view)
+            return
+        }
+
+        let module = BrowserCategoryAssembly.module(
+            category: category
+        )
+
+        module.output.didSelectDapp = { [weak self, unowned router] intent in
+            self?.openDapp(intent, fromViewController: router.rootViewController)
         }
 
         module.output.didTapSearch = { [weak self] in
@@ -78,11 +113,21 @@ private extension BrowserCoordinator {
         router.push(viewController: module.view)
     }
 
-    func openDapp(_ dapp: Dapp, fromViewController: UIViewController) {
+    func openDapp(_ intent: DappOpenIntent, fromViewController: UIViewController) {
+        guard let request = analyticsController.openRequest(from: intent) else {
+            return Log.e("failed to create dapp open request from intent", extraInfo: [
+                "url": intent.description,
+            ])
+        }
+        openDapp(request, fromViewController: fromViewController)
+    }
+
+    func openDapp(_ request: DappOpenRequest, fromViewController: UIViewController) {
         let router = ViewControllerRouter(rootViewController: fromViewController)
         let coordinator = DappCoordinator(
             router: router,
-            dapp: dapp,
+            dapp: request.dapp,
+            analyticsSession: request.analyticsSession,
             isSilentConnect: false,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -106,11 +151,19 @@ private extension BrowserCoordinator {
     }
 
     func openSearch() {
-        let module = BrowserSearchAssembly.module(keeperCoreAssembly: keeperCoreMainAssembly)
+        let module = BrowserSearchAssembly.module(
+            keeperCoreAssembly: keeperCoreMainAssembly
+        )
         let navigationController = TKNavigationController(rootViewController: module.view)
         navigationController.configureDefaultAppearance()
-        module.output.didSelectDapp = { [weak self, unowned navigationController] dapp in
-            self?.openDapp(dapp, fromViewController: navigationController)
+        module.output.didSelectDapp = { [weak self, unowned navigationController] request in
+            self?.openDapp(request, fromViewController: navigationController)
+        }
+        module.output.didUpdateSearchTarget = { [weak self] targetURL in
+            self?.analyticsController.searchInputTargetChanged(targetURL)
+        }
+        module.output.didSelectSearchResult = { [weak self] url in
+            self?.analyticsController.logSearchClick(url: url)
         }
 
         navigationController.modalTransitionStyle = .crossDissolve
@@ -119,7 +172,14 @@ private extension BrowserCoordinator {
     }
 }
 
-public extension BrowserCoordinator {
+extension BrowserCoordinator {
+    func logBrowserOpen(from: DappBrowserOpenSource) {
+        analyticsController.logBrowserOpen(
+            from: from,
+            tab: browserInput?.selectedBrowserTab ?? .explore
+        )
+    }
+
     @MainActor
     func openDefi() {
         let browserController = keeperCoreMainAssembly.browserExploreController()
@@ -127,6 +187,6 @@ public extension BrowserCoordinator {
         guard let defiCategory = try? browserController.getCachedPopularApps(lang: lang).defiCategory else {
             return
         }
-        openCategory(defiCategory)
+        openCategory(defiCategory, selectedChain: nil)
     }
 }

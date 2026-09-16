@@ -1,15 +1,13 @@
 import KeeperCore
 import SnapKit
-import TKCore
 import TKUIKit
 import UIKit
 
 final class BrowserExploreFeaturedView: UIView {
     var didSelectApp: ((Dapp) -> Void)?
+    var didSelectPopularApp: ((PopularApp) -> Void)?
 
     // MARK: - Image Loader
-
-    private let imageLoader = ImageLoader()
 
     var dapps = [PopularApp]() {
         didSet {
@@ -57,6 +55,12 @@ final class BrowserExploreFeaturedView: UIView {
     private var indexOfCellBeforeDragging = 0
     private var slideshowTask: Task<Void, Never>?
 
+    private enum Layout {
+        static let cellSpacing: CGFloat = 8
+        static let neighborPeek: CGFloat = 8
+        static let itemHorizontalInset = cellSpacing / 2
+    }
+
     func createLayout() -> UICollectionViewLayout {
         let configuration = UICollectionViewCompositionalLayoutConfiguration()
         configuration.scrollDirection = .horizontal
@@ -69,7 +73,12 @@ final class BrowserExploreFeaturedView: UIView {
                 heightDimension: .absolute(environment.container.effectiveContentSize.height)
             )
             let item = NSCollectionLayoutItem(layoutSize: itemSize)
-            item.contentInsets = .init(top: 0, leading: 4, bottom: 0, trailing: 4)
+            item.contentInsets = .init(
+                top: 0,
+                leading: Layout.itemHorizontalInset,
+                bottom: 0,
+                trailing: Layout.itemHorizontalInset
+            )
 
             let groupSize = NSCollectionLayoutSize(
                 widthDimension: .absolute(self.calculateItemSize(width: width)),
@@ -84,8 +93,7 @@ final class BrowserExploreFeaturedView: UIView {
     }
 
     func calculateItemSize(width: CGFloat) -> CGFloat {
-        let itemInset: CGFloat = 8
-        return width - itemInset * 4
+        width - Layout.cellSpacing - Layout.neighborPeek * 2
     }
 
     override init(frame: CGRect) {
@@ -140,14 +148,6 @@ private extension BrowserExploreFeaturedView {
         let index = Int(round(proportionalOffset)) + offset
         let numberOfItems = collectionView.numberOfItems(inSection: 0)
         return max(0, min(numberOfItems - 1, index))
-    }
-
-    var indexOfLeftSignificantCell: Int {
-        Int.numberOfAdditionalItems / 2 * self.dapps.count
-    }
-
-    var indexOfRightSignificantCell: Int {
-        indexOfLeftSignificantCell + self.dapps.count - 1
     }
 
     func startSlideShowTask() {
@@ -223,6 +223,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
         if didUseSwipeToSkipCell {
             let snapToIndex = indexOfCellBeforeDragging + (hasEnoughVelocityToSlideToTheNextCell ? 1 : -1)
             let toValue = calculateItemSize(width: collectionView.bounds.width) * CGFloat(snapToIndex)
+            let centeredOffset = centeredItemOffset(width: collectionView.bounds.width)
 
             UIView.animate(
                 withDuration: 0.5,
@@ -231,7 +232,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
                 initialSpringVelocity: velocity.x,
                 options: .allowUserInteraction,
                 animations: {
-                    scrollView.contentOffset = CGPoint(x: toValue - 16, y: 0)
+                    scrollView.contentOffset = CGPoint(x: toValue - centeredOffset, y: 0)
                     scrollView.layoutIfNeeded()
                 },
                 completion: nil
@@ -241,6 +242,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
             let indexPath = IndexPath(row: indexOfMostVisibleCell, section: 0)
             safeCollectionViewScroll(at: indexPath, at: .centeredHorizontally, animated: true)
         }
+    }
+
+    func centeredItemOffset(width: CGFloat) -> CGFloat {
+        (width - calculateItemSize(width: width)) / 2
     }
 
     func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
@@ -270,9 +275,9 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
         }
     }
 
-    func mapDapp(_ dapp: PopularApp) -> BrowserExploreFeaturedCell.Model {
+    func mapDapp(_ popularApp: PopularApp) -> BrowserExploreFeaturedCell.Model {
         let textColor: UIColor
-        if let itemTextColor = dapp.textColor {
+        if let itemTextColor = popularApp.textColor {
             textColor = UIColor(hex: itemTextColor)
         } else {
             textColor = .Constant.white
@@ -282,7 +287,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
             iconViewConfiguration: TKListItemIconView.Configuration(
                 content: .image(
                     TKImageView.Model(
-                        image: .urlImage(dapp.icon),
+                        image: .urlImage(popularApp.icon),
                         tintColor: .clear,
                         size: .size(CGSize(width: 44, height: 44)),
                         corners: .cornerRadius(cornerRadius: 12)
@@ -295,10 +300,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
             ),
             textContentViewConfiguration: TKListItemTextContentView.Configuration(
                 titleViewConfiguration: TKListItemTitleView.Configuration(
-                    title: dapp.name
+                    title: popularApp.name
                 ),
                 captionViewsConfigurations: [TKListItemTextView.Configuration(
-                    text: dapp.description,
+                    text: popularApp.description,
                     color: textColor.withAlphaComponent(0.76),
                     textStyle: .body3Alternate,
                     numberOfLines: 2
@@ -308,13 +313,18 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
 
         return BrowserExploreFeaturedCell.Model(
             posterImageModel: TKImageView.Model(
-                image: .urlImage(dapp.poster),
+                image: .urlImage(popularApp.poster),
                 tintColor: .clear,
                 size: .none
             ),
             listConfiguration: listConfiguration,
             tapClosure: { [weak self] in
-                guard let dapp = Dapp(popularApp: dapp) else { return }
+                if let didSelectPopularApp = self?.didSelectPopularApp {
+                    didSelectPopularApp(popularApp)
+                    return
+                }
+
+                guard let dapp = Dapp(popularApp: popularApp) else { return }
                 self?.didSelectApp?(dapp)
             }
         )

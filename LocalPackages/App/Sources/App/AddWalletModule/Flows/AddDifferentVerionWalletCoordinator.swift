@@ -5,9 +5,9 @@ import TKScreenKit
 import TKUIKit
 import UIKit
 
-public final class AddDifferentVersionWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didAddedWallet: (() -> Void)?
+final class AddDifferentVersionWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didAddedWallet: (() -> Void)?
 
     private let revisionToAdd: WalletContractVersion
     private let wallet: Wallet
@@ -34,7 +34,7 @@ public final class AddDifferentVersionWalletCoordinator: RouterCoordinator<ViewC
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openConfirmPasscode()
     }
 }
@@ -49,6 +49,7 @@ private extension AddDifferentVersionWalletCoordinator {
             parentRouter: self.router,
             mnemonicAccess: mnemonicAccess,
             securityStore: securityStore,
+            analyticsProvider: analyticsProvider,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
@@ -76,6 +77,5 @@ private extension AddDifferentVersionWalletCoordinator {
 
     func importWallet(passcode: String) async throws {
         try await addController.addWalletRevision(wallet: wallet, revision: revisionToAdd, passcode: passcode)
-        self.analyticsProvider.log(eventKey: .importWallet)
     }
 }

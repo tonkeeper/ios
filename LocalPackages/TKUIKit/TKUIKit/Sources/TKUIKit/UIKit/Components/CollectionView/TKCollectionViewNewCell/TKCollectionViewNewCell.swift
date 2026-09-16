@@ -1,9 +1,6 @@
 import UIKit
 
-public protocol OrderConfigurableCell: UICollectionViewCell {
-    var isFirstInSection: (IndexPath) -> Bool { get set }
-    var isLastInSection: (IndexPath) -> Bool { get set }
-}
+protocol OrderConfigurableCell: UICollectionViewCell {}
 
 open class TKCollectionViewNewCell: UICollectionViewCell, OrderConfigurableCell, ReusableView {
     public var isFirstInSection: ((IndexPath) -> Bool) = { _ in false }
@@ -16,18 +13,6 @@ open class TKCollectionViewNewCell: UICollectionViewCell, OrderConfigurableCell,
 
     public var contentViewPadding: UIEdgeInsets = .zero {
         didSet { didUpdateContentViewPadding() }
-    }
-
-    public var accessoryViews = [UIView]() {
-        didSet { didUpdateAccessoryViews() }
-    }
-
-    public var selectionAccessoryViews = [UIView]() {
-        didSet { didUpdateSelectionAccessoryViews() }
-    }
-
-    public var editingAccessoryViews = [UIView]() {
-        didSet { didUpdateEditingAccessoryViews() }
     }
 
     public var isSeparatorVisible: Bool = true {
@@ -201,20 +186,6 @@ private extension TKCollectionViewNewCell {
         )
     }
 
-    func layoutAccessoryContainer() {
-        guard !accessoryContainer.arrangedSubviews.isEmpty else { return }
-        let sizeFitting = accessoryContainer.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize)
-        let size = CGSize(width: sizeFitting.width, height: contentView.bounds.height)
-        let origin = CGPoint(
-            x: contentView.bounds.width - sizeFitting.width,
-            y: contentView.bounds.height / 2 - size.height / 2
-        )
-        accessoryContainer.frame = CGRect(
-            origin: origin,
-            size: size
-        )
-    }
-
     func layoutContentContainer() {
         switch (configurationState.isEditing, configurationState.isSelected) {
         case (true, _):
@@ -243,33 +214,6 @@ private extension TKCollectionViewNewCell {
 
     func didUpdateContentViewPadding() {
         setNeedsLayout()
-    }
-
-    func didUpdateAccessoryViews() {
-        accessoryContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for accessoryView in accessoryViews {
-            accessoryContainer.addArrangedSubview(accessoryView)
-        }
-        layoutAccessoryContainer()
-        layoutContentContainer()
-    }
-
-    func didUpdateSelectionAccessoryViews() {
-        selectionAccessoryContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for selectionAccessoryView in selectionAccessoryViews {
-            selectionAccessoryContainer.addArrangedSubview(selectionAccessoryView)
-        }
-        layoutSelectionAccessoryContainer()
-        layoutContentContainer()
-    }
-
-    func didUpdateEditingAccessoryViews() {
-        editingAccessoryContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        for editingAccessoryView in editingAccessoryViews {
-            editingAccessoryContainer.addArrangedSubview(editingAccessoryView)
-        }
-        layoutEditingAccessoryContainer()
-        layoutContentContainer()
     }
 
     func updateSeparatorVisibility() {

@@ -21,7 +21,7 @@ struct PaymentMethodPlaceholderOverlayRootView: View {
             ))
         case .emptyNoCashForCurrency:
             PlaceholderView(config: PlaceholderView.Config(
-                image: .TKUIKit.Icons.Size28.creditCard,
+                lottieResource: .creditCard,
                 title: TKLocales.Ramp.PaymentMethod.noCashMethodsTitle,
                 subtitle: TKLocales.Ramp.PaymentMethod.noCashMethodsSubtitle
             ))

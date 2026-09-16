@@ -6,19 +6,18 @@ struct WalletBalanceCryptoAssetsSectionHeaderView: View {
     let canManage: Bool
     let onTapOpenAssets: () -> Void
     let onTapManage: () -> Void
-
     var body: some View {
         HStack(alignment: .center, spacing: 0) {
             Button(action: onTapOpenAssets) {
                 HStack(spacing: 2) {
-                    Text(TKLocales.Trade.Assets.Categories.crypto)
+                    Text(TKLocales.Trade.Assets.title)
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
+                        .foregroundStyle(.textPrimary)
+                    SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight
                         .resizable()
                         .scaledToFit()
                         .frame(width: 16, height: 16)
-                        .foregroundStyle(Color(uiColor: .Icon.secondary))
+                        .foregroundStyle(.iconSecondary)
                 }
             }
             .buttonStyle(.plain)
@@ -30,17 +29,17 @@ struct WalletBalanceCryptoAssetsSectionHeaderView: View {
                     HStack(spacing: 6) {
                         Text(TKLocales.WalletBalanceList.ManageButton.title)
                             .textStyle(.label2)
-                            .foregroundStyle(Color(uiColor: .Text.secondary))
-                        SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.sliders)
+                            .foregroundStyle(.textSecondary)
+                        SwiftUI.Image.TKUIKit.Icons.Size16.sliders
                             .resizable()
                             .scaledToFit()
                             .frame(width: 16, height: 16)
-                            .foregroundStyle(Color(uiColor: .Icon.secondary))
+                            .foregroundStyle(.iconSecondary)
                     }
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(.vertical, 12)
+        .padding(.vertical, 10)
     }
 }

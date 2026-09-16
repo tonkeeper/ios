@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-struct HistoryListLoaderPagination {
+struct HistoryListLoaderPagination: Sendable {
     let tonEventsBeforeLt: Int64?
     let tronEventsMaxTimestamp: Int64?
     let tonHasMore: Bool

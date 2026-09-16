@@ -15,7 +15,6 @@ struct IconButtonModelMapper {
 extension KeeperCore.IconButton {
     var image: UIImage {
         switch self {
-        case .buySell: return .TKUIKit.Icons.Size28.usd
         case .receive: return .TKUIKit.Icons.Size28.arrowDownOutline
         case .scan: return .TKUIKit.Icons.Size28.qrViewFinderThin
         case .send: return .TKUIKit.Icons.Size28.arrowUpOutline
@@ -26,7 +25,6 @@ extension KeeperCore.IconButton {
 
     var title: String {
         switch self {
-        case .buySell: return TKLocales.WalletButtons.buy
         case .receive: return TKLocales.WalletButtons.receive
         case .scan: return TKLocales.WalletButtons.scan
         case .send: return TKLocales.WalletButtons.send

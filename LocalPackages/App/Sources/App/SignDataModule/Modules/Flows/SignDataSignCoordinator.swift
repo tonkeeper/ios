@@ -17,10 +17,6 @@ enum SignDataSignError: Swift.Error {
 }
 
 final class SignDataSignCoordinator: RouterCoordinator<ViewControllerRouter> {
-    enum ExtenalSignError: Swift.Error {
-        case cancelled
-    }
-
     enum Result {
         case signed(SignedDataResult)
         case failed(SignDataSignError)
@@ -30,8 +26,6 @@ final class SignDataSignCoordinator: RouterCoordinator<ViewControllerRouter> {
     var didFail: ((SignDataSignError) -> Void)?
     var didSign: ((SignedDataResult) -> Void)?
     var didCancel: (() -> Void)?
-
-    var externalSignHandler: ((Data?) -> Void)?
 
     private let wallet: Wallet
     private let dappUrl: String
@@ -60,7 +54,7 @@ final class SignDataSignCoordinator: RouterCoordinator<ViewControllerRouter> {
     }
 
     func handleSign(parentCoordinator: Coordinator) async -> Result {
-        return await Task<SignDataSignCoordinator.Result, Never> { @MainActor in
+        return await Task<SignDataSignCoordinator.Result, Never> { @MainActor [self] in
             return await withCheckedContinuation { [weak parentCoordinator] (continuation: CheckedContinuation<SignDataSignCoordinator.Result, Never>) in
                 didSign = { [weak parentCoordinator, weak self] in
                     continuation.resume(returning: .signed($0))
@@ -103,6 +97,7 @@ private extension SignDataSignCoordinator {
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },

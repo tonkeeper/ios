@@ -1,0 +1,42 @@
+appId: com.jbig.tonkeeper
+---
+# Import + paste mnemonic, up to 3 attempts. Success = "Create passcode" screen.
+# Simulator pasteboard is filled once on CI (simulator_pbcopy_phrase.sh in run_maestro, before this test).
+# Retries only relaunch the app; pbcopy is not run again. Paste is only used here until passcode setup.
+#
+# Attempt 1 skips relaunch: launch_app_ensure_wallet already opened the import screen. Relaunching
+# here kills the XCTest-attached process and Maestro reports a false "App crashed" before automation
+# reconnects to the new PID. Retries (attempt > 1) relaunch + wait so XCTest can attach again.
+- evalScript: ${output.importAttempt = 0; output.importPasteOk = false}
+
+- repeat:
+    while:
+      true: ${output.importAttempt < 3 && !output.importPasteOk}
+    commands:
+      - evalScript: ${output.importAttempt = output.importAttempt + 1}
+      - runFlow:
+          when:
+            true: ${output.importAttempt > 1}
+          commands:
+            - launchApp:
+                stopApp: true
+            - waitForAnimationToEnd:
+                timeout: 10000
+      - extendedWaitUntil:
+          visible: "Import existing wallet"
+          timeout: 45000
+      - tapOn: Import existing wallet
+      - extendedWaitUntil:
+          visible: "Existing Wallet"
+          timeout: 30000
+      - tapOn: Existing Wallet
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - runFlow: 24key_words.yaml
+      - runFlow:
+          when:
+            visible: Create passcode
+          commands:
+            - evalScript: ${output.importPasteOk = true}
+
+- assertVisible: Create passcode

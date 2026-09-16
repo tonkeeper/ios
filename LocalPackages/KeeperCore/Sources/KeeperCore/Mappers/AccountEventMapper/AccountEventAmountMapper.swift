@@ -5,14 +5,6 @@ public enum AccountEventActionAmountMapperActionType {
     case income
     case outcome
     case none
-
-    var sign: String {
-        switch self {
-        case .income: return "\(String.Symbol.plus)\(String.Symbol.shortSpace)"
-        case .outcome: return "\(String.Symbol.minus)\(String.Symbol.shortSpace)"
-        case .none: return ""
-        }
-    }
 }
 
 public protocol AccountEventAmountMapper {
@@ -31,14 +23,14 @@ public protocol AccountEventAmountMapper {
     ) -> String
 }
 
-public struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
+struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
     private let amountFormatter: AmountFormatter
 
-    public init(amountFormatter: AmountFormatter) {
+    init(amountFormatter: AmountFormatter) {
         self.amountFormatter = amountFormatter
     }
 
-    public func mapAmount(
+    func mapAmount(
         amount: BigUInt,
         fractionDigits: Int,
         type: AccountEventActionAmountMapperActionType,
@@ -52,7 +44,7 @@ public struct SignedAccountEventAmountMapper: AccountEventAmountMapper {
         )
     }
 
-    public func mapAmount(
+    func mapAmount(
         amount: BigUInt,
         fractionDigits: Int,
         type: AccountEventActionAmountMapperActionType,

@@ -9,18 +9,18 @@ public protocol SearchEngineServiceProtocol {
     func parseMetaFrom(url: URL) async -> SearchEngineTitle?
 }
 
-public final class SearchEngineService: SearchEngineServiceProtocol {
+final class SearchEngineService: SearchEngineServiceProtocol {
     struct DuckSuggestModel: Codable {
         let phrase: String
     }
 
     private let session: URLSession
 
-    public init(session: URLSession) {
+    init(session: URLSession) {
         self.session = session
     }
 
-    public func loadSuggestions(searchText: String, searchEngine: SearchEngine) async throws -> [String] {
+    func loadSuggestions(searchText: String, searchEngine: SearchEngine) async throws -> [String] {
         switch searchEngine {
         case .duckduckgo:
             try await fetchDuckSuggestions(searchText: searchText)
@@ -29,7 +29,7 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
         }
     }
 
-    public func composeSearchURL(input: String, searchEngine: SearchEngine) -> URL? {
+    func composeSearchURL(input: String, searchEngine: SearchEngine) -> URL? {
         switch searchEngine {
         case .duckduckgo:
             return URL(string: "https://duckduckgo.com/?q=\(input)")
@@ -72,7 +72,7 @@ public final class SearchEngineService: SearchEngineServiceProtocol {
     }
 
     @MainActor
-    public func parseMetaFrom(url: URL) async -> SearchEngineTitle? {
+    func parseMetaFrom(url: URL) async -> SearchEngineTitle? {
         let provider = LPMetadataProvider()
         do {
             let meta = try await provider.startFetchingMetadata(for: url)

@@ -1,0 +1,62 @@
+# Wallet list → unverified token (RAVE or KII) → asset details banner → info popup.
+# Color of the orange "Unverified token" subtitle is not assertable via Maestro selectors.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+# Unverified tokens live behind the collapsed "More assets" section.
+- runFlow: "../../../steps/wallet/expand_more_assets.yaml"
+
+- scrollUntilVisible:
+    element: "RAVE|KII"
+    direction: DOWN
+    centerElement: true
+    timeout: 120000
+
+- evalScript: ${output.unverifiedTicker = ''}
+- runFlow:
+    when:
+      visible: RAVE
+    commands:
+      - evalScript: ${output.unverifiedTicker = 'RAVE'}
+- runFlow:
+    when:
+      true: ${output.unverifiedTicker === ''}
+    commands:
+      - evalScript: ${output.unverifiedTicker = 'KII'}
+
+- assertVisible:
+    text: Unverified token
+    below: ${output.unverifiedTicker}
+- tapOn: ${output.unverifiedTicker}
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "This asset is an Unverified Token"
+    timeout: 60000
+- assertVisible: "This asset is an Unverified Token"
+
+# The asset screen shows the "Add to favorites" tooltip on first open, and its dismiss
+# control swallows the next tap anywhere on screen.
+- runFlow: "../../../steps/dismiss_tooltips.yaml"
+
+- tapOn: "This asset is an Unverified Token"
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: Unverified token
+    timeout: 15000
+- assertVisible: Unverified token
+- assertVisible: "This token looks suspicious for one or more of the following reasons:"
+- tapOn: OK
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- assertVisible: "This asset is an Unverified Token"

@@ -1,6 +1,0 @@
-appId: com.jbig.tonkeeper
----
-- launchApp:
-    clearState: true
-
-- runFlow: "../../steps/create_new_wallet.yaml"

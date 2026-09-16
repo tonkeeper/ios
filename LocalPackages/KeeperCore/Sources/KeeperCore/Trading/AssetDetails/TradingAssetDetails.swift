@@ -6,11 +6,13 @@ import TKTradingAPI
 public struct TradingAssetDetails: Equatable, Sendable {
     public var id: String
     public var assetInfo: TradingAssetInfo
+    public var capabilities: Set<TradingAssetCapability>
     public var aboutParagraph: String
     public var overview: [TradingAssetMetric]
     public var tradingActivity: TradingAssetTradingActivity?
     public var links: [TradingAssetLink]
     public var primaryActionTitle: String
+    public var infoSource: TradingAssetInfoSource
 }
 
 extension TradingAssetDetails {
@@ -34,7 +36,10 @@ extension TradingAssetDetails {
                 changePercent: nil,
                 changeAmount: nil,
                 earnAPY: nil,
-                isUnverified: response.asset.verification != .whitelist
+                verification: TradingVerification(api: response.asset.verification)
+            ),
+            capabilities: Set(
+                (response.capabilities?.capabilities ?? []).compactMap(TradingAssetCapability.init(api:))
             ),
             aboutParagraph: response.sections.about.text
                 ?? response.sections.about.note
@@ -84,8 +89,33 @@ extension TradingAssetDetails {
             links: response.sections.links.enabled ?
                 (response.sections.links.items ?? [])
                 .map(TradingAssetLink.init(response:)) : [],
-            primaryActionTitle: TKLocales.BuySellList.buy
+            primaryActionTitle: TKLocales.BuySellList.buy,
+            infoSource: TradingAssetInfoSource(api: response.info_source)
         )
+    }
+}
+
+extension TradingAssetInfoSource {
+    init(api: Components.Schemas.AssetInfoSource) {
+        self.init(
+            displayedName: api.displayed_name,
+            url: URL(string: api.url)
+        )
+    }
+}
+
+private extension TradingAssetCapability {
+    init?(api: Components.Schemas.AssetCapability) {
+        switch api {
+        case .onramp:
+            self = .onramp
+        case .offramp:
+            self = .offramp
+        case .swap:
+            self = .swap
+        case .p2p:
+            self = .p2p
+        }
     }
 }
 

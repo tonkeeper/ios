@@ -73,6 +73,7 @@ private extension TronUSDTTransferSignCoordinator {
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
@@ -84,15 +85,17 @@ private extension TronUSDTTransferSignCoordinator {
                             wallet: wallet,
                             passcode: passcode
                         )
-                        let privateKey = try TonTron.derivedKeyPair(
-                            tonMnemonic: mnemonic.mnemonicWords,
-                            index: 0,
-                            walletTron: wallet.tron,
-                            defaultUseBip39DerivationForBip39Mnemonics: keeperCoreMainAssembly
-                                .configurationAssembly
-                                .configuration
-                                .featureEnabled(.tronBip39ImportFix)
-                        ).privateKey
+                        let privateKey: TronSwift.PrivateKey
+                        if wallet.isMultichain, mnemonic.type == .bip39 {
+                            let privateKeyData = try keeperCoreMainAssembly.multichainAssembly.chainKitService
+                                .tronPrivateKey(mnemonic: mnemonic.mnemonicWords.joined(separator: " "))
+                            privateKey = TronSwift.PrivateKey(data: privateKeyData, chainCode: Data())
+                        } else {
+                            privateKey = try TonTron.derivedKeyPair(
+                                tonMnemonic: mnemonic.mnemonicWords,
+                                index: 0
+                            ).privateKey
+                        }
                         let signer = Signer()
 
                         let signed = try signer.sign(hash: txID, privateKey: privateKey)

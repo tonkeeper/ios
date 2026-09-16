@@ -40,7 +40,7 @@ enum BrowserCollectionLayout {
         if hasSectionTitle {
             let headerSize = NSCollectionLayoutSize(
                 widthDimension: .fractionalWidth(1.0),
-                heightDimension: .absolute(56)
+                heightDimension: .absolute(48)
             )
             let header = NSCollectionLayoutBoundarySupplementaryItem(
                 layoutSize: headerSize,

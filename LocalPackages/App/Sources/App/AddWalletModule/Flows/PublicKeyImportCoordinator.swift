@@ -6,22 +6,22 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class PublicKeyImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didPrepareForPresent: (() -> Void)?
-    public var didCancel: (() -> Void)?
-    public var didImport: ((_ publicKey: TonSwift.PublicKey, _ revisions: [WalletContractVersion], _ model: CustomizeWalletModel) -> Void)?
+final class PublicKeyImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didPrepareForPresent: (() -> Void)?
+    var didCancel: (() -> Void)?
+    var didImport: ((_ publicKey: TonSwift.PublicKey, _ revisions: [WalletContractVersion], _ model: CustomizeWalletModel) -> Void)?
 
     private let publicKey: TonSwift.PublicKey
     private let name: String?
     private let walletsUpdateAssembly: WalletsUpdateAssembly
-    private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+    private let customizeWalletModule: () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
 
     init(
         publicKey: TonSwift.PublicKey,
         name: String?,
         router: NavigationControllerRouter,
         walletsUpdateAssembly: WalletsUpdateAssembly,
-        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+        customizeWalletModule: @escaping () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     ) {
         self.publicKey = publicKey
         self.name = name
@@ -30,7 +30,7 @@ public final class PublicKeyImportCoordinator: RouterCoordinator<NavigationContr
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         ToastPresenter.showToast(configuration: .loading)
         Task {
             do {
@@ -38,7 +38,7 @@ public final class PublicKeyImportCoordinator: RouterCoordinator<NavigationContr
                 await MainActor.run {
                     ToastPresenter.hideAll()
                     if activeWalletModels.count == 1, activeWalletModels[0].revision == WalletContractVersion.currentVersion {
-                        openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion])
+                        openNotifications(publicKey: publicKey, revisions: [.currentVersion])
                     } else {
                         openChooseWalletToAdd(publicKey: publicKey, activeWalletModels: activeWalletModels)
                     }
@@ -47,7 +47,7 @@ public final class PublicKeyImportCoordinator: RouterCoordinator<NavigationContr
             } catch {
                 await MainActor.run {
                     ToastPresenter.hideAll()
-                    openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion])
+                    openNotifications(publicKey: publicKey, revisions: [.currentVersion])
                     didPrepareForPresent?()
                 }
             }
@@ -73,7 +73,7 @@ private extension PublicKeyImportCoordinator {
 
         module.output.didSelectWallets = { [weak self] wallets in
             let revisions = wallets.map { $0.revision }
-            self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions)
+            self?.openNotifications(publicKey: publicKey, revisions: revisions)
         }
 
         if router.rootViewController.viewControllers.isEmpty {
@@ -92,6 +92,12 @@ private extension PublicKeyImportCoordinator {
         )
     }
 
+    func openNotifications(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion]) {
+        OnboardingNotificationsStep.push(router: router) { [weak self] in
+            self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions)
+        }
+    }
+
     func openCustomizeWallet(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion]) {
         let module = customizeWalletModule()
 
@@ -100,11 +106,11 @@ private extension PublicKeyImportCoordinator {
         }
 
         if router.rootViewController.viewControllers.isEmpty {
-            module.view.setupLeftCloseButton { [weak self] in
+            module.view.setupHeaderLeftCloseButton { [weak self] in
                 self?.didCancel?()
             }
         } else {
-            module.view.setupBackButton()
+            module.view.setupHeaderBackButton()
         }
 
         router.push(viewController: module.view, animated: true)

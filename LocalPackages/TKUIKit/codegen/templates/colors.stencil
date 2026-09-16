@@ -1,0 +1,120 @@
+{% macro swiftName value %}{{value|swiftIdentifier:"pretty"|escapeReservedKeywords}}{% endmacro %}
+{% macro propertySuffix value %}{% if value.name == "TON Blue" %}TonBlue{% else %}{{value.name|swiftIdentifier:"pretty"|escapeReservedKeywords}}{% endif %}{% endmacro %}
+{% macro memberName value %}{% if value.name == "TON Blue" %}tonBlue{% else %}{{value.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}{% endif %}{% endmacro %}
+{% macro flatPropertyName category value %}{{category.name|swiftIdentifier:"pretty"|lowerFirstWord}}{% call propertySuffix value %}{% endmacro %}
+{% macro colorCaseName theme category value %}{{theme.name|swiftIdentifier:"pretty"|lowerFirstWord}}{{category.name|swiftIdentifier:"pretty"}}{{value.name|swiftIdentifier:"pretty"|escapeReservedKeywords}}{% endmacro %}
+{% macro protocolProperties categories %}{% for category in categories %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+    var {% call flatPropertyName category value %}: UIColor { get }
+{% endif %}{% endfor %}{% endfor %}{% endmacro %}
+{% macro manifestCases categories %}{% for theme in categories.first.items.first.items %}{% for category in categories %}{% for value in category.items %}{% for themed in value.items %}{% if themed.name == theme.name %}{% if themed.type == "color" %}
+    case {% call colorCaseName themed category value %} = "{{themed.value}}"
+{% endif %}{% endif %}{% endfor %}{% endfor %}{% endfor %}{% endfor %}{% endmacro %}
+{% macro schemeDeclarations categories %}{% for theme in categories.first.items.first.items %}
+struct {% call swiftName theme.name %}ColorScheme: TKColorScheme {
+{% for category in categories %}{% for value in category.items %}{% for themed in value.items %}{% if themed.name == theme.name %}{% if themed.type == "color" %}
+    var {% call flatPropertyName category value %}: UIColor {
+        TKUIKitGeneratedColorAsset.{% call colorCaseName themed category value %}.uiColor
+    }
+{% endif %}{% endif %}{% endfor %}{% endfor %}{% endfor %}}
+{% endfor %}{% endmacro %}
+{% macro swiftUICategoryProperties category %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+        public let {% call memberName value %}: SwiftUI.Color
+{% endif %}{% endfor %}{% endmacro %}
+{% macro swiftUICategoryAssignments category %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+            {% call memberName value %} = SwiftUI.Color(uiColor: colorScheme.{% call flatPropertyName category value %})
+{% endif %}{% endfor %}{% endmacro %}
+{% macro swiftUIFacade categories %}
+public struct TKPalette: Equatable {
+    public let resolvedTheme: TKResolvedTheme
+{% for category in categories %}
+    public let {{category.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}: {% call swiftName category.name %}
+{% endfor %}
+    init(resolvedTheme: TKResolvedTheme) {
+        self.resolvedTheme = resolvedTheme
+        let colorScheme = resolvedTheme.colorScheme
+{% for category in categories %}
+        {{category.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}} = {% call swiftName category.name %}(colorScheme: colorScheme)
+{% endfor %}
+    }
+
+    public static func == (lhs: TKPalette, rhs: TKPalette) -> Bool {
+        lhs.resolvedTheme == rhs.resolvedTheme
+    }
+{% for category in categories %}
+    public struct {% call swiftName category.name %} {
+{% call swiftUICategoryProperties category %}
+        init(colorScheme: TKColorScheme) {
+{% call swiftUICategoryAssignments category %}
+        }
+    }
+{% endfor %}}
+{% endmacro %}
+{% macro tokenCases categories %}{% for category in categories %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+    case {% call flatPropertyName category value %}
+{% endif %}{% endfor %}{% endfor %}{% endmacro %}
+{% macro tokenDeclaration categories %}
+/// Theme-agnostic reference to a palette color; resolve where rendered.
+/// Internal: the public currency is `TKColor` and its generated statics.
+enum TKColorToken: CaseIterable, Hashable, Sendable {
+{% call tokenCases categories %}}
+
+extension TKPalette {
+    subscript(token: TKColorToken) -> SwiftUI.Color {
+        switch token {
+{% for category in categories %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+        case .{% call flatPropertyName category value %}:
+            {{category.name|swiftIdentifier:"pretty"|lowerFirstWord|escapeReservedKeywords}}.{% call memberName value %}
+{% endif %}{% endfor %}{% endfor %}
+        }
+    }
+}
+
+public extension TKColor {
+{% for category in categories %}{% for value in category.items %}{% if value.items.first.type == "color" %}
+    static var {% call flatPropertyName category value %}: TKColor {
+        .token(.{% call flatPropertyName category value %})
+    }
+{% endif %}{% endfor %}{% endfor %}}
+{% endmacro %}
+{% macro uiKitFacade categories %}
+public extension UIColor {
+{% for category in categories %}
+    enum {% call swiftName category.name %} {
+{% for value in category.items %}{% if value.items.first.type == "color" %}
+        public static let {% call memberName value %} = UIColor {
+            TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).{% call flatPropertyName category value %}
+        }
+{% endif %}{% endfor %}    }
+{% endfor %}}
+{% endmacro %}
+// This file was generated by SwiftGen. Do not edit.
+
+import SwiftUI
+import TKUIKitResources
+import UIKit
+
+{% for catalog in catalogs %}{% for root in catalog.assets %}{% if root.name == "Colors" %}
+public protocol TKColorScheme {
+{% call protocolProperties root.items %}}
+
+enum TKUIKitGeneratedColorAsset: String, CaseIterable {
+{% call manifestCases root.items %}
+
+    var uiColor: UIColor {
+        guard let color = UIColor(
+            named: rawValue,
+            in: TKUIKitResourcesBundle.bundle,
+            compatibleWith: nil
+        ) else {
+            preconditionFailure("Missing generated color asset: \(rawValue)")
+        }
+        return color
+    }
+}
+
+{% call schemeDeclarations root.items %}
+{% call swiftUIFacade root.items %}
+{% call tokenDeclaration root.items %}
+
+{% call uiKitFacade root.items %}
+{% endif %}{% endfor %}{% endfor %}

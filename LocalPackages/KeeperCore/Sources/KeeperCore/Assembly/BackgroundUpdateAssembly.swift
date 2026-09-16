@@ -25,7 +25,6 @@ public final class BackgroundUpdateAssembly {
             ) { [apiAssembly] wallet in
                 WalletBackgroundUpdate(
                     wallet: wallet,
-                    streamingAPIProvider: apiAssembly.streamingAPIProvider,
                     streamingAPIV2Provider: apiAssembly.streamingAPIV2Provider
                 )
             }

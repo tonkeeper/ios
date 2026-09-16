@@ -12,4 +12,11 @@ public enum WalletBalanceState: Equatable {
             return walletBalance
         }
     }
+
+    func needsListRefresh(at date: Date = Date(), freshnessInterval: TimeInterval) -> Bool {
+        guard case let .current(balance) = self else {
+            return true
+        }
+        return date.timeIntervalSince(balance.date) >= freshnessInterval
+    }
 }

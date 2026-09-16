@@ -1,10 +1,19 @@
 import Foundation
+import KeeperCore
 import TKCore
 
 struct AddWalletOptionPickerAssembly {
     private init() {}
-    static func module(options: [AddWalletOption]) -> MVVMModule<AddWalletOptionPickerViewController, AddWalletOptionPickerModuleOutput, Void> {
-        let viewModel = AddWalletOptionPickerViewModelImplementation(options: options)
+
+    @MainActor
+    static func module(
+        options: [AddWalletOption],
+        multichainImportChains: [MultichainChain]
+    ) -> MVVMModule<AddWalletOptionPickerViewController, AddWalletOptionPickerModuleOutput, Void> {
+        let viewModel = AddWalletOptionPickerViewModelImplementation(
+            options: options,
+            multichainImportChains: multichainImportChains
+        )
         let viewController = AddWalletOptionPickerViewController(viewModel: viewModel)
         return .init(view: viewController, output: viewModel, input: ())
     }

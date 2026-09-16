@@ -5,8 +5,10 @@ extension Token {
         switch self {
         case let .ton(tonToken):
             return .ton(.token(tonToken, amount: 0))
-        case .tron(.usdt), .tron(.trx):
+        case .tron(.usdt):
             return .tron(.usdt(amount: 0))
+        case .tron(.trx):
+            return .tron(.trx(amount: 0))
         }
     }
 }

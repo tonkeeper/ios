@@ -133,20 +133,6 @@ private extension UIEdgeInsets {
         right: 32
     )
 
-    static let colorPickerViewContentInsets = UIEdgeInsets(
-        top: 0,
-        left: 32,
-        bottom: 0,
-        right: 32
-    )
-
-    static let emojiPickerViewPadding = UIEdgeInsets(
-        top: 0,
-        left: 27,
-        bottom: 0,
-        right: 27
-    )
-
     static let continueButtonPadding = UIEdgeInsets(
         top: 16,
         left: 32,

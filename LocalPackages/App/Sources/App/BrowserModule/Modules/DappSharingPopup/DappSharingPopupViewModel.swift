@@ -8,7 +8,7 @@ import TronSwift
 import UIKit
 
 @MainActor
-public protocol DappSharingPopupModuleOutput: AnyObject {}
+protocol DappSharingPopupModuleOutput: AnyObject {}
 
 @MainActor
 protocol DappSharingPopupViewModel: AnyObject {
@@ -24,13 +24,16 @@ final class DappSharingPopupViewModelImplementation: DappSharingPopupViewModel, 
 
     private let dapp: Dapp
     private let url: URL
+    private let analyticsSession: DappOpenAnalyticsSession?
 
     init(
         dapp: Dapp,
-        url: URL
+        url: URL,
+        analyticsSession: DappOpenAnalyticsSession?
     ) {
         self.dapp = dapp
         self.url = url
+        self.analyticsSession = analyticsSession
     }
 
     // MARK: - DappSharingPopupViewModel
@@ -43,10 +46,9 @@ final class DappSharingPopupViewModelImplementation: DappSharingPopupViewModel, 
     }
 
     private func prepareContent() {
-        let copyAction = { [url] in
-            UIPasteboard.general.string = url.absoluteString
-            ToastPresenter.showToast(configuration: .copied)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        let copyAction = { [weak self, url] in
+            Pasteboard.copy(value: url.absoluteString)
+            self?.analyticsSession?.logSharingCopy(from: .copyLink)
         }
 
         var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
@@ -60,6 +62,7 @@ final class DappSharingPopupViewModelImplementation: DappSharingPopupViewModel, 
             title: .plainString(TKLocales.Dapp.SharingPopup.Buttons.share)
         )
         shareButtonConfiguration.action = { [weak self, url] in
+            self?.analyticsSession?.logSharingCopy(from: .share)
             self?.didTapShare?(url)
         }
 

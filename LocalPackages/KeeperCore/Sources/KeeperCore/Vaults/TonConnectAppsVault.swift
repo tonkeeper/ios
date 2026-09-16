@@ -4,7 +4,6 @@ import TKKeychain
 import TonSwift
 
 struct TonConnectAppsVault: KeyValueVault {
-    typealias StoreValue = TonConnectApps
     typealias StoreKey = Wallet
 
     private let keychainVault: TKKeychainVault

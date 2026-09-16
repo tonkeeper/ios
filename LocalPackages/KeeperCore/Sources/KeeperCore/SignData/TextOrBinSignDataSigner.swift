@@ -3,14 +3,10 @@ import KeeperCoreSensitive
 import Sodium
 import TonSwift
 
-public struct TextOrBinSignDataSigner: SignDataSigner {
+struct TextOrBinSignDataSigner: SignDataSigner {
     let signDataPayload: TonConnect.SignDataRequest
 
-    public init(signDataPayload: TonConnect.SignDataRequest) {
-        self.signDataPayload = signDataPayload
-    }
-
-    public func sign(
+    func sign(
         wallet: Wallet,
         mnemonicAccess: MnemonicAccess,
         dappUrl: String,
@@ -76,11 +72,19 @@ public struct TextOrBinSignDataSigner: SignDataSigner {
             Data(a)
         }
 
-        guard let ffff = Data(hex: "ffff") else {
-            throw SignDataError.invalidDataEncoding
-        }
-
-        let message = ffff + prefix + addressWorkchainData + addressHash + domainLength + domainData + timestamp + payloadPrefix + payloadLengthData + payload
+        // The same as data1 + data2 + ...
+        let message: Data = [
+            TonConnect.signaturePrefix,
+            prefix,
+            addressWorkchainData,
+            addressHash,
+            domainLength,
+            domainData,
+            timestamp,
+            payloadPrefix,
+            payloadLengthData,
+            payload,
+        ].reduce(into: Data()) { $0.append($1) }
 
         let signatureDataHash = message.sha256()
 

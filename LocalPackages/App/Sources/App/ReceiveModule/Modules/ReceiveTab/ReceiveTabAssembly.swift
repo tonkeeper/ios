@@ -2,19 +2,19 @@ import Foundation
 import KeeperCore
 import TKCore
 import TKLogging
+import TKUIKit
 
 struct ReceiveTabAssembly {
     private init() {}
     static func module(
         token: ReceiveLegacyToken,
         wallet: Wallet,
-        qrCodeGenerator: QRCodeGenerator,
+        qrCodeGenerator: QrCodeMatrixGenerator,
         keeperCoreAssembly: KeeperCore.MainAssembly
     ) -> MVVMModule<ReceiveTabViewController, ReceiveTabModuleOutput, Void> {
         let viewModel = ReceiveTabViewModelImplementation(
             token: token,
             wallet: wallet,
-            walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
             deeplinkGenerator: DeeplinkGenerator(),
             qrCodeGenerator: qrCodeGenerator
         )

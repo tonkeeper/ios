@@ -42,7 +42,7 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
                 )
             }
 
-            openConfirmation(wallet: wallet, item: .init(operation: .withdraw(stakingPoolInfo), amount: withdrawAmount))
+            openConfirmation(wallet: wallet, item: .init(operation: .withdraw(stakingPoolInfo, isCollect: false), amount: withdrawAmount))
         } else {
             openStakingWithdrawInput()
         }

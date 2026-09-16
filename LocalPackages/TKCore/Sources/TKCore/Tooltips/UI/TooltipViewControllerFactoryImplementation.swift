@@ -42,8 +42,29 @@ extension TooltipViewControllerFactoryImplementation: TooltipViewControllerFacto
                     position: direction
                 )
             )
+        case .tradeFavorite:
+            rootView = AnyView(
+                TKTooltipView(
+                    configuration: TKTooltipView.Configuration(
+                        title: TKLocales.Trade.Favorites.tooltip,
+                        badgeTitle: TKLocales.Common.new
+                    ),
+                    position: direction
+                )
+            )
+        case .addMultichainWalletMain, .addMultichainWalletWalletsList:
+            rootView = AnyView(
+                TKTooltipView(
+                    configuration: TKTooltipView.Configuration(
+                        title: TKLocales.tooltipAddMultichainWallet,
+                        badgeTitle: TKLocales.Common.new,
+                        lineLimit: nil
+                    ),
+                    position: direction
+                )
+            )
         }
-        let hostingController = UIHostingController(rootView: rootView)
+        let hostingController = TKHostingController(content: rootView)
         hostingController.view.backgroundColor = .clear
         let size = hostingController.sizeThatFits(
             in: CGSize(

@@ -14,13 +14,14 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         case didDeleteWallet(wallet: Wallet)
         case didDeleteAll
         case didUpdateWalletBatterySettings(wallet: Wallet)
-        case didUpdateWalletTron(wallet: Wallet)
+        case didUpdateWalletMultichain(wallet: Wallet)
     }
 
     public enum State {
         public struct Wallets {
             public let wallets: [Wallet]
             public let activeWallet: Wallet
+            fileprivate let activeWalletSelectionID: UUID
         }
 
         case empty
@@ -45,6 +46,11 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         }
     }
 
+    public struct ActiveWalletSelection: Equatable, Sendable {
+        public let walletID: String
+        public let selectionID: UUID
+    }
+
     public var wallets: [Wallet] {
         state.wallets
     }
@@ -55,10 +61,27 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         }
     }
 
+    public var activeWalletSelection: ActiveWalletSelection {
+        get throws {
+            switch state {
+            case .empty:
+                throw Error.noWallets
+            case let .wallets(state):
+                return ActiveWalletSelection(
+                    walletID: state.activeWallet.id,
+                    selectionID: state.activeWalletSelectionID
+                )
+            }
+        }
+    }
+
     private let keeperInfoStore: KeeperInfoStore
 
     override public func createInitialState() -> State {
-        getState(keeperInfo: keeperInfoStore.getState())
+        getState(
+            keeperInfo: keeperInfoStore.getState(),
+            activeWalletSelectionID: UUID()
+        )
     }
 
     init(keeperInfoStore: KeeperInfoStore) {
@@ -162,8 +185,32 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
         wallet: Wallet,
         tron: WalletTron?
     ) async -> State {
-        return await withCheckedContinuation { continuation in
+        await withCheckedContinuation { continuation in
             setWalletTron(wallet: wallet, tron: tron) { state in
+                continuation.resume(returning: state)
+            }
+        }
+    }
+
+    @discardableResult
+    public func setWalletMultichain(
+        wallet: Wallet,
+        multichain: MultichainWallet?
+    ) async -> State {
+        return await withCheckedContinuation { continuation in
+            setWalletMultichain(wallet: wallet, multichain: multichain) { state in
+                continuation.resume(returning: state)
+            }
+        }
+    }
+
+    @discardableResult
+    public func updateWalletMultichain(
+        wallet: Wallet,
+        transform: @escaping (Wallet) -> MultichainWallet?
+    ) async -> State {
+        return await withCheckedContinuation { continuation in
+            updateWalletMultichain(wallet: wallet, transform: transform) { state in
                 continuation.resume(returning: state)
             }
         }
@@ -191,10 +238,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             )
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] state in
+            updateWalletsState(keeperInfo: keeperInfo, changesActiveWallet: true) { [weak self] state in
                 self?.sendEvent(.didAddWallets(wallets: wallets))
                 self?.sendEvent(.didChangeActiveWallet(from: prevWallet ?? activeWallet, to: activeWallet))
                 completion(state)
@@ -213,10 +257,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             return keeperInfo.updateActiveWallet(wallet)
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] state in
+            updateWalletsState(keeperInfo: keeperInfo, changesActiveWallet: true) { [weak self] state in
                 self?.sendEvent(.didChangeActiveWallet(from: activeWallet ?? wallet, to: wallet))
                 completion(state)
             }
@@ -233,10 +274,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             return keeperInfo.updateWallet(wallet, metaData: metaData).keeperInfo
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] state in
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
                 guard let wallet = state.wallets.first(where: { $0 == wallet }) else { return }
                 self?.sendEvent(.didUpdateWalletMetaData(wallet: wallet))
                 completion(state)
@@ -253,10 +291,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             return keeperInfo.deleteWallet(wallet)
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] state in
+            updateWalletsState(keeperInfo: keeperInfo, changesActiveWallet: true) { [weak self] state in
                 switch state {
                 case .empty:
                     self?.sendEvent(.didDeleteAll)
@@ -274,9 +309,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             nil
         } completion: { [weak self] _ in
             guard let self else { return }
-            updateState { _ in
-                StateUpdate(newState: .empty)
-            } completion: { [weak self] state in
+            updateWalletsState(keeperInfo: nil, changesActiveWallet: true) { [weak self] state in
                 self?.sendEvent(.didDeleteAll)
                 completion(state)
             }
@@ -292,10 +325,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             )
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] _ in
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
                 self?.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
                 completion(state)
             }
@@ -315,11 +345,9 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             )
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] _ in
-                self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
+                let updatedWallet = state.wallets.first(where: { $0.id == wallet.id }) ?? wallet
+                self?.sendEvent(.didUpdateWalletSetupSettings(wallet: updatedWallet))
                 completion(state)
             }
         }
@@ -338,11 +366,9 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             )
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] _ in
-                self?.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
+                let updatedWallet = state.wallets.first(where: { $0.id == wallet.id }) ?? wallet
+                self?.sendEvent(.didUpdateWalletSetupSettings(wallet: updatedWallet))
                 completion(state)
             }
         }
@@ -358,10 +384,7 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             return keeperInfo.updateWallet(wallet, batterySettings: batterySettings).keeperInfo
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] _ in
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
                 self?.sendEvent(.didUpdateWalletBatterySettings(wallet: wallet))
                 completion?(state)
             }
@@ -378,30 +401,101 @@ public final class WalletsStore: Store<WalletsStore.Event, WalletsStore.State> {
             return keeperInfo.updateWallet(wallet, tron: tron).keeperInfo
         } completion: { [weak self] keeperInfo in
             guard let self else { return }
-            let state = self.getState(keeperInfo: keeperInfo)
-            updateState { _ in
-                StateUpdate(newState: state)
-            } completion: { [weak self] _ in
-                guard let wallet = state.wallets.first(where: { $0 == wallet }) else { return }
-                self?.sendEvent(.didUpdateWalletTron(wallet: wallet))
+            updateWalletsState(keeperInfo: keeperInfo) { state in
+                completion?(state)
+            }
+        }
+    }
+
+    /// Multichain state has two independent writers — the addresses enricher and the wallet sync —
+    /// so reading it before the update lets the other one's write land in the gap and be restored
+    /// to its previous value. `transform` runs inside the store update against the stored wallet;
+    /// returning `nil` leaves it untouched, and clearing the state stays `setWalletMultichain`'s job.
+    public func updateWalletMultichain(
+        wallet: Wallet,
+        transform: @escaping (Wallet) -> MultichainWallet?,
+        completion: ((State) -> Void)?
+    ) {
+        keeperInfoStore.updateKeeperInfo { keeperInfo in
+            guard let keeperInfo else { return nil }
+            guard let stored = keeperInfo.wallets.first(where: { $0.id == wallet.id }),
+                  let multichain = transform(stored)
+            else {
+                return keeperInfo
+            }
+            return keeperInfo.updateWallet(stored, multichain: multichain).keeperInfo
+        } completion: { [weak self] keeperInfo in
+            guard let self else { return }
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
+                if let wallet = state.wallets.first(where: { $0 == wallet }) {
+                    self?.sendEvent(.didUpdateWalletMultichain(wallet: wallet))
+                }
+                completion?(state)
+            }
+        }
+    }
+
+    public func setWalletMultichain(
+        wallet: Wallet,
+        multichain: MultichainWallet?,
+        completion: ((State) -> Void)?
+    ) {
+        keeperInfoStore.updateKeeperInfo { keeperInfo in
+            guard let keeperInfo else { return nil }
+            return keeperInfo.updateWallet(wallet, multichain: multichain).keeperInfo
+        } completion: { [weak self] keeperInfo in
+            guard let self else { return }
+            updateWalletsState(keeperInfo: keeperInfo) { [weak self] state in
+                if let wallet = state.wallets.first(where: { $0 == wallet }) {
+                    self?.sendEvent(.didUpdateWalletMultichain(wallet: wallet))
+                }
                 completion?(state)
             }
         }
     }
 
     public func reload(completion: @escaping () -> Void) {
-        updateState { [weak self] _ in
-            guard let self else { return nil }
-            let state = getState(keeperInfo: keeperInfoStore.state)
-            return StateUpdate(newState: state)
-        } completion: {
-            _ in completion()
-        }
+        updateWalletsState(keeperInfo: keeperInfoStore.state) { _ in completion() }
     }
 
-    private func getState(keeperInfo: KeeperInfo?) -> State {
-        if let keeperInfo = keeperInfoStore.getState() {
-            return .wallets(State.Wallets(wallets: keeperInfo.wallets, activeWallet: keeperInfo.currentWallet))
+    private func updateWalletsState(
+        keeperInfo: KeeperInfo?,
+        changesActiveWallet: Bool = false,
+        completion: @escaping (State) -> Void
+    ) {
+        updateState({ [weak self] state in
+            guard let self else { return nil }
+            let selectionID: UUID
+            let newActiveWalletID = keeperInfo?.currentWallet.id
+            let currentActiveWalletID = try? state.activeWallet.id
+            if changesActiveWallet || currentActiveWalletID != newActiveWalletID {
+                selectionID = UUID()
+            } else if case let .wallets(wallets) = state {
+                selectionID = wallets.activeWalletSelectionID
+            } else {
+                selectionID = UUID()
+            }
+            return StateUpdate(
+                newState: getState(
+                    keeperInfo: keeperInfo,
+                    activeWalletSelectionID: selectionID
+                )
+            )
+        }, completion: completion)
+    }
+
+    private func getState(
+        keeperInfo: KeeperInfo?,
+        activeWalletSelectionID: UUID
+    ) -> State {
+        if let keeperInfo {
+            return .wallets(
+                State.Wallets(
+                    wallets: keeperInfo.wallets,
+                    activeWallet: keeperInfo.currentWallet,
+                    activeWalletSelectionID: activeWalletSelectionID
+                )
+            )
         } else {
             return .empty
         }

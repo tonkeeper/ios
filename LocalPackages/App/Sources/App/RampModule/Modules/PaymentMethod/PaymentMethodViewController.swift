@@ -30,7 +30,7 @@ final class PaymentMethodViewController: GenericViewViewController<PaymentMethod
 
     private let viewModel: PaymentMethodViewModelProtocol
     private lazy var dataSource = createDataSource()
-    private var placeholderHostingController: UIHostingController<PaymentMethodPlaceholderOverlayRootView>?
+    private var placeholderHostingController: TKHostingController<PaymentMethodPlaceholderOverlayRootView>?
 
     init(viewModel: PaymentMethodViewModelProtocol) {
         self.viewModel = viewModel
@@ -255,7 +255,7 @@ private extension PaymentMethodViewController {
                 self?.viewModel.retry()
             }
         )
-        let hosting = UIHostingController(rootView: rootView)
+        let hosting = TKHostingController(content: rootView)
         hosting.view.backgroundColor = .clear
         placeholderHostingController = hosting
 

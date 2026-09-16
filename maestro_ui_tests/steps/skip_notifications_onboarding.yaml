@@ -1,0 +1,18 @@
+appId: com.jbig.tonkeeper
+---
+# TK-3331 pushes a push-permission step ("Get instant notifications") after
+# passcode creation in every add-wallet flow whenever the system permission is
+# still undetermined — always the case on a fresh CI simulator. The screen is
+# pushed after an async status check, so wait for it instead of sampling once.
+# Skip keeps the permission undetermined and never triggers the system alert.
+- extendedWaitUntil:
+    visible: "Get instant notifications"
+    timeout: 10000
+    optional: true
+- runFlow:
+    when:
+      visible: "Get instant notifications"
+    commands:
+      - tapOn: Skip
+      - waitForAnimationToEnd:
+          timeout: 3000

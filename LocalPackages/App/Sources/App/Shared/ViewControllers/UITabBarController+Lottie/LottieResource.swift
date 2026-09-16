@@ -14,15 +14,11 @@ extension MainCoordinatorStateManager.State.Tab: LottieResourceConvertible {
     var asLottieResource: LottieResource? {
         switch self {
         case .wallet:
-            .wallet
+            .walletTabItem
         case .trade:
-            .trade
+            .tradeTabItem
         case .browser:
-            .browser
-        case .purchases:
-            .collectibles
-        case .history:
-            nil
+            .browserTabItem
         }
     }
 }

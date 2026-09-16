@@ -10,6 +10,7 @@ final class BatteryRefillHeaderModel {
         enum Charge {
             case notCharged
             case charged(chargesCount: Int, batteryPercent: CGFloat)
+            case refunded(chargesCount: Int)
         }
 
         let isBeta: Bool
@@ -41,30 +42,24 @@ final class BatteryRefillHeaderModel {
     }
 
     func getState() -> State {
+        let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance
+        let chargesCount = batteryBalance.flatMap {
+            batteryCalculation.calculateCharges(tonAmount: $0.balanceDecimalNumber)
+        } ?? 0
+
         let charge: State.Charge
-        if let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance, !batteryBalance.isBalanceZero {
-            let chargesCount = batteryCalculation.calculateCharges(tonAmount: batteryBalance.balanceDecimalNumber) ?? 0
-            charge = .charged(chargesCount: chargesCount, batteryPercent: batteryBalance.batteryState.percents)
-        } else {
+        switch batteryBalance?.batteryState {
+        case let .fill(percents):
+            charge = .charged(chargesCount: chargesCount, batteryPercent: percents)
+        case .negative:
+            charge = .refunded(chargesCount: chargesCount)
+        case .empty, .none:
             charge = .notCharged
         }
 
         return State(
             isBeta: false,
             charge: charge
-        )
-    }
-}
-
-private extension NSDecimalNumberHandler {
-    static var roundBehaviour: NSDecimalNumberHandler {
-        return NSDecimalNumberHandler(
-            roundingMode: .plain,
-            scale: 0,
-            raiseOnExactness: false,
-            raiseOnOverflow: false,
-            raiseOnUnderflow: false,
-            raiseOnDivideByZero: false
         )
     }
 }

@@ -1,0 +1,104 @@
+# Formatting is handled by swiftformat; swiftlint enforces only the custom rules below.
+only_rules:
+  - custom_rules
+
+excluded:
+  - "**/.build"
+  - build
+  - worktrees
+  - .claude
+  - LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Generated
+  - LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Deprecated
+  - LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Generated
+  - LocalPackages/KeeperCore/Packages/TonConnectAPI/Sources/TonConnectAPI
+  - LocalPackages/KeeperCore/Packages/TKTradingAPI/Sources/TKTradingAPI
+  - LocalPackages/KeeperCore/Packages/TKPerpsAPI/Sources/TKPerpsAPI
+  - LocalPackages/KeeperCore/Packages/TKKandelabrAPI/Sources/TKKandelabrAPI
+  - LocalPackages/KeeperCore/Packages/TKTonkeeperAPI/Sources/TKTonkeeperAPI
+  - LocalPackages/KeeperCore/Packages/MultichainAPI/Sources/MultichainAPI
+  - LocalPackages/KeeperCore/Packages/SwapAPI/Sources/SwapAPI
+
+custom_rules:
+  prefer_tk_hosting_controller:
+    name: "Prefer TKHostingController"
+    regex: '\bUIHostingController(<[^(\n]*>)?\('
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+      - string
+    message: "Constructing UIHostingController directly is forbidden; use TKHostingController(content:) instead."
+    severity: warning
+
+  no_uihostingcontroller_subclass:
+    name: "No UIHostingController subclass"
+    # `TKHostingController` is the single sanctioned subclass; its definition file is excluded.
+    regex: '\bclass\s+\w+\s*(<[^{]*>)?\s*:\s*(SwiftUI\.)?UIHostingController\b'
+    excluded: ".*/TKHostingController\\.swift"
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+      - string
+    message: "Subclassing UIHostingController is forbidden; subclass TKHostingController instead."
+    severity: warning
+
+  no_ambiguous_data_hex:
+    name: "No ambiguous Data(hex:)"
+    # Three `Data(hex:)` overloads reach this codebase and two of them decode a malformed string
+    # into plausible-looking bytes instead of failing: `TonSwift` truncates an odd-length string,
+    # `WalletConnectUtils`/`CryptoSwift` are non-failable and yield empty or padded bytes. Which one
+    # wins is decided by overload resolution at the call site. Use `Data(strictHex:)`.
+    regex: '\bData\(hex:'
+    # The APDU response is decoded with an explicit even-length guard; `TonTransport` cannot see
+    # `KeeperCoreComponents`.
+    excluded: ".*/BleTransport\\+Ext\\.swift"
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+      - string
+    message: "Ambiguous Data(hex:) overload; use Data(strictHex:) instead."
+    severity: warning
+
+  no_static_palette_color_in_swiftui:
+    name: "No UIColor palette snapshot in SwiftUI"
+    # `Color(uiColor: .Text.primary)` freezes the palette at construction time and
+    # goes stale on dark<->deepBlue switches. Use TKColor tokens
+    # (`.foregroundStyle(.textPrimary)`) or `@Environment(\.tkPalette)`.
+    regex: 'Color\(uiColor: \.?(UIColor\.)?(Text|Background|Accent|Icon|Separator|Field|Button|TabBar|Constant|Bubble)\.'
+    excluded: ".*Previews?\\.swift"
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+      - string
+    message: "Non-reactive palette snapshot; use TKColor tokens or tkPalette from the environment."
+    severity: warning
+
+  no_over_long_analytics_key:
+    name: "No over-long analytics property key"
+    # Aptabase refuses an event whose property key is over 40 characters, and on `/api/v0/event`
+    # that is a 400 for the whole payload — one long key loses every other property with it.
+    # `AnalyticsLimits` repairs it at runtime; this catches the literal before it ships.
+    # The generated schema models are checked by `make analytics_check` instead: swiftlint
+    # excludes those directories.
+    # Matches the key literal itself rather than the `args:`/`params:` label it usually sits behind,
+    # so a dictionary built in a variable or one holding a subscript is covered too.
+    regex: '"[a-z][a-z0-9_]{40,}"\s*:'
+    excluded_match_kinds:
+      - comment
+      - comment.mark
+      - comment.url
+      - doccomment
+      - doccomment.field
+    message: "Analytics property key is over 40 characters; Aptabase rejects the whole event."
+    severity: warning

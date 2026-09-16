@@ -9,7 +9,11 @@ import UIKit
 import WalletExtensions
 
 public enum SignRawAnalyticsPayload {
-    case send(SignRawSendAnalyticsPayload)
+    case send(
+        SignRawSendAnalyticsPayload,
+        emulation: SignRawEmulation,
+        transferType: TransferType
+    )
     case general(
         emulation: SignRawEmulation,
         transferType: TransferType
@@ -23,19 +27,16 @@ public struct SignRawSendAnalyticsPayload {
         case gasless
     }
 
-    public let assetNetwork: String
-    public let tokenSymbol: String
+    public let asset: String
     public let amount: Double
     public let feePaidIn: FeePaidIn
 
     public init(
-        assetNetwork: String,
-        tokenSymbol: String,
+        asset: String,
         amount: Double,
         feePaidIn: FeePaidIn
     ) {
-        self.assetNetwork = assetNetwork
-        self.tokenSymbol = tokenSymbol
+        self.asset = asset
         self.amount = amount
         self.feePaidIn = feePaidIn
     }
@@ -64,7 +65,7 @@ public protocol SignRawConfirmationModuleInput: AnyObject {
 }
 
 @MainActor
-public protocol SignRawConfirmationViewModel: AnyObject {
+protocol SignRawConfirmationViewModel: AnyObject {
     var didUpdateHeader: ((TKBottomSheetHeaderConfiguration) -> Void)? { get set }
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
 
@@ -72,30 +73,30 @@ public protocol SignRawConfirmationViewModel: AnyObject {
 }
 
 @MainActor
-public final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewModel, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput {
+final class SignRawConfirmationViewModelImplementation: SignRawConfirmationViewModel, SignRawConfirmationModuleOutput, SignRawConfirmationModuleInput {
     // MARK: - SignRawConfirmationModuleOutput
 
-    public var didRequireSign: ((TransferData, Wallet) async throws(SignRawSignFailure) -> SignedTransactions)?
-    public var didConfirm: (() -> Void)?
-    public var didCancelAttempt: (() -> Void)?
-    public var didCancel: (() -> Void)?
-    public var didRequestSendOpen: ((SignRawSendAnalyticsPayload) -> Void)?
-    public var didRequestConfirm: ((SignRawAnalyticsPayload) -> Void)?
-    public var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
-    public var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)?
+    var didRequireSign: ((TransferData, Wallet) async throws(SignRawSignFailure) -> SignedTransactions)?
+    var didConfirm: (() -> Void)?
+    var didCancelAttempt: (() -> Void)?
+    var didCancel: (() -> Void)?
+    var didRequestSendOpen: ((SignRawSendAnalyticsPayload) -> Void)?
+    var didRequestConfirm: ((SignRawAnalyticsPayload) -> Void)?
+    var didRequestShowInfoPopup: ((_ title: String, _ caption: String) -> Void)?
+    var didRequireShowInsufficientPopup: ((_ wallet: Wallet, _ error: InsufficientFundsError) -> Void)?
 
     // MARK: - SignRawConfirmationModuleInput
 
-    public func cancel() {
+    func cancel() {
         signRawController.cancel()
     }
 
     // MARK: - SignRawConfirmationViewModel
 
-    public var didUpdateHeader: ((TKBottomSheetHeaderConfiguration) -> Void)?
-    public var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
+    var didUpdateHeader: ((TKBottomSheetHeaderConfiguration) -> Void)?
+    var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
 
-    public func viewDidLoad() {
+    func viewDidLoad() {
         signRawController.signHandler = { [weak self] transferData, wallet throws(TransactionConfirmationError) in
             guard let self else {
                 throw .cancelledByUser
@@ -205,7 +206,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
                     emulation: emulationResult,
                     transferType: emulationResult.transferType
                 )
-                if case let .send(payload) = makeSendAnalyticsPayload(
+                if case let .send(payload, _, _) = makeSendAnalyticsPayload(
                     emulation: emulationResult,
                     transferType: emulationResult.transferType
                 ) {
@@ -435,16 +436,19 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
     }
 
     private func createHeaderConfiguration() -> TKBottomSheetHeaderConfiguration {
-        let subtitle = Text("\(TKLocales.ConfirmSend.wallet): ")
-            .foregroundColor(Color(uiColor: .Text.secondary))
-            + wallet.bottomSheetHeaderText()
+        let wallet = wallet
+        let subtitle: (TKPalette) -> Text = { palette in
+            Text("\(TKLocales.ConfirmSend.wallet): ")
+                .foregroundColor(palette.text.secondary)
+                + wallet.bottomSheetHeaderText(palette: palette)
+        }
 
         return TKBottomSheetHeaderConfiguration(
             title: .text(
                 title: .init(
                     TKLocales.ConfirmSend.TokenTransfer.title,
                     textStyle: .h3,
-                    foregroundColor: .Text.primary
+                    foregroundColor: .textPrimary
                 ),
                 subtitle: .init(
                     text: subtitle,
@@ -526,8 +530,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
                 decimals: TonInfo.fractionDigits
             )
             sendPayload = SignRawSendAnalyticsPayload(
-                assetNetwork: "ton",
-                tokenSymbol: TonInfo.symbol,
+                asset: Token.ton(.ton).assetId(network: wallet.network),
                 amount: amountValue,
                 feePaidIn: feePaidIn
             )
@@ -536,18 +539,14 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
                 value: transfer.amount,
                 decimals: transfer.jettonInfo.fractionDigits
             )
-            let tokenSymbol = transfer.jettonInfo.symbol ?? transfer.jettonInfo.name
             sendPayload = SignRawSendAnalyticsPayload(
-                assetNetwork: "ton",
-                tokenSymbol: tokenSymbol,
+                asset: AssetId.jetton(address: transfer.jettonInfo.address, network: wallet.network),
                 amount: amountValue,
                 feePaidIn: feePaidIn
             )
-        case .nftItemTransfer:
-            let tokenSymbol = action.preview.name.isEmpty ? "nft" : action.preview.name
+        case let .nftItemTransfer(transfer):
             sendPayload = SignRawSendAnalyticsPayload(
-                assetNetwork: "ton",
-                tokenSymbol: tokenSymbol,
+                asset: AssetId.nft(address: transfer.nftAddress, network: wallet.network),
                 amount: 1,
                 feePaidIn: feePaidIn
             )
@@ -557,7 +556,7 @@ public final class SignRawConfirmationViewModelImplementation: SignRawConfirmati
                 transferType: transferType
             )
         }
-        return .send(sendPayload)
+        return .send(sendPayload, emulation: emulation, transferType: transferType)
     }
 
     private func amountDouble(value: BigUInt, decimals: Int) -> Double {

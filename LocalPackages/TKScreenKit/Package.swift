@@ -23,7 +23,7 @@ let package = Package(
             name: "TKScreenKit",
             dependencies: [
                 .product(name: "SnapKit-Dynamic", package: "SnapKit"),
-                .product(name: "TKUIKitDynamic", package: "TKUIKit"),
+                .product(name: "TKUIKit", package: "TKUIKit"),
                 .product(name: "TKLocalize", package: "TKLocalize"),
                 .product(name: "TKLogging", package: "TKLogging"),
             ],

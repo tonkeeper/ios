@@ -20,10 +20,6 @@ final class SendAmountTextFieldFormatter: NSObject {
         self.inputFormatter.maximumIntegerCharacters = .maximumIntegerDigits
     }
 
-    var groupingSeparator: String? {
-        currencyFormatter.groupingSeparator
-    }
-
     func unformatString(_ string: String?) -> String? {
         AmountInputFormatter.normalizedString(
             string,

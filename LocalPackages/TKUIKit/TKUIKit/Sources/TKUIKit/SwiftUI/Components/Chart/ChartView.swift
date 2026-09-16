@@ -5,12 +5,17 @@ public struct ChartView: View {
     private let config: Config
     private let scenario: Scenario
 
+    @StateObject private var interactionState: TKLineChartInteractionState
+
     public init(
         config: Config,
         scenario: Scenario = .nonInteractive
     ) {
         self.config = config
         self.scenario = scenario
+        self._interactionState = StateObject(
+            wrappedValue: TKLineChartInteractionState(chartData: config.model.chartData)
+        )
     }
 
     public var body: some View {
@@ -24,26 +29,40 @@ public struct ChartView: View {
                 )
             )
 
-            VStack(spacing: 0) {
-                ChartCanvas(
-                    chartData: config.model.chartData,
-                    scenario: scenario
+            ZStack(alignment: .topLeading) {
+                ChartSubstrateGuides(
+                    renderer: interactionState.renderer,
+                    style: config.model.bottom.substrate.style,
+                    chartHeight: Layout.chartHeight
                 )
-                .frame(maxWidth: .infinity)
-                .frame(height: Layout.chartHeight)
+                .frame(height: ChartVerticalGuideLayout.chartAndBottomHeight)
 
-                ChartBottomPriceView(
-                    config: ChartBottomPriceView.Config(
-                        textStyle: Layout.priceTextStyle,
-                        priceText: config.model.bottom.bottomPrice,
-                        leadingDate: config.model.bottom.substrate.leftValue,
-                        middleDate: config.model.bottom.substrate.middleValue
+                VStack(spacing: 0) {
+                    ChartCanvas(
+                        chartData: config.model.chartData,
+                        scenario: scenario,
+                        interactionState: interactionState
                     )
+                    .frame(maxWidth: .infinity)
+                    .frame(height: Layout.chartHeight)
+
+                    ChartBottomPriceView(
+                        config: ChartBottomPriceView.Config(
+                            textStyle: Layout.priceTextStyle,
+                            priceText: config.model.bottom.bottomPrice,
+                            leadingDate: config.model.bottom.substrate.leftValue,
+                            middleDate: config.model.bottom.substrate.middleValue
+                        )
+                    )
+                }
+
+                ChartSelectionGuides(
+                    renderer: interactionState.renderer,
+                    chartHeight: Layout.chartHeight
                 )
+                .frame(height: ChartVerticalGuideLayout.chartAndBottomHeight)
             }
-            .background {
-                ChartSubstrateGridView(style: config.model.bottom.substrate.style)
-            }
+            .frame(height: ChartVerticalGuideLayout.chartAndBottomHeight)
             .modifier(SkeletonPulseModifier(isEnabled: config.model.chartData.style == .skeleton))
 
             if let config = config.model.buttons {
@@ -57,13 +76,13 @@ public struct ChartView: View {
 public extension ChartView {
     typealias Scenario = TKLineChartCanvasView.Scenario
 
-    static func height(showsBottonButtons: Bool) -> CGFloat {
+    static func height(showsBottomButtons: Bool) -> CGFloat {
         [
             ModernChartHeaderView.Layout.height,
             ChartTopPriceView.Layout.height,
             Layout.chartHeight,
             ChartBottomPriceView.Layout.height,
-            showsBottonButtons ? ChartBottomButtonsView.Layout.height : 0,
+            showsBottomButtons ? ChartBottomButtonsView.Layout.height : 0,
         ].reduce(0, +)
     }
 
@@ -164,17 +183,76 @@ extension ChartView {
 private struct ChartCanvas: View {
     let chartData: TKLineChartCanvasView.ChartData
     let scenario: TKLineChartCanvasView.Scenario
+    let interactionState: TKLineChartInteractionState
 
     var body: some View {
         TKLineChartCanvasView(
             chartData: chartData,
-            scenario: scenario
+            scenario: scenario,
+            selectionGuideHeight: nil,
+            interactionState: interactionState,
+            showsSelectionIndicator: false
         )
     }
 }
 
-private struct ChartSubstrateGridView: View {
+private struct ChartSubstrateGuides: View {
+    @Environment(\.tkPalette) private var palette
+
+    @ObservedObject var renderer: TKLineChartRenderer
     let style: TKLineChartCanvasView.VisualStyle
+    let chartHeight: CGFloat
+
+    var body: some View {
+        let renderModel = renderer.renderModel
+        ChartSubstrateGridView(
+            style: style,
+            color: renderModel.substrateGridLineColor(palette)
+        )
+        .mask {
+            ChartExtendedAreaMaskView(
+                yValues: renderModel.animatedYValues,
+                mode: renderModel.mode,
+                smoothing: renderModel.smoothing,
+                chartHeight: chartHeight
+            )
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+private struct ChartSelectionGuides: View {
+    @ObservedObject var renderer: TKLineChartRenderer
+    let chartHeight: CGFloat
+
+    var body: some View {
+        GeometryReader { proxy in
+            ChartSelectionIndicatorView(
+                renderer: renderer,
+                chartSize: CGSize(
+                    width: proxy.size.width,
+                    height: chartHeight
+                ),
+                guideHeight: proxy.size.height
+            )
+        }
+        .allowsHitTesting(false)
+    }
+}
+
+struct ChartSubstrateGridView: View {
+    @Environment(\.tkPalette) private var palette
+
+    let style: TKLineChartCanvasView.VisualStyle
+    let color: Color?
+
+    init(
+        style: TKLineChartCanvasView.VisualStyle,
+        color: Color? = nil
+    ) {
+        self.style = style
+        self.color = color
+    }
 
     var body: some View {
         GeometryReader { proxy in
@@ -185,7 +263,7 @@ private struct ChartSubstrateGridView: View {
             ZStack(alignment: .topLeading) {
                 ForEach(0 ..< lineXPositions.count, id: \.self) { index in
                     Rectangle()
-                        .fill(style.gridLineGradient)
+                        .fill(style.gridLineGradient(color: color, palette: palette))
                         .frame(
                             width: ChartSubstrateGridStyle.lineWidth,
                             height: proxy.size.height
@@ -206,6 +284,19 @@ enum ChartSubstrateGridLayout {
         return (0 ..< lineCount).map { index in
             (offset / 2) + (offset * CGFloat(index))
         }
+    }
+}
+
+enum ChartVerticalGuideLayout {
+    static var chartAndBottomHeight: CGFloat {
+        combinedHeight(
+            chartHeight: ChartView.Layout.chartHeight,
+            bottomHeight: ChartBottomPriceView.Layout.height
+        )
+    }
+
+    static func combinedHeight(chartHeight: CGFloat, bottomHeight: CGFloat) -> CGFloat {
+        chartHeight + bottomHeight
     }
 }
 
@@ -234,17 +325,17 @@ private enum ChartSubstrateGridStyle {
 }
 
 private extension TKLineChartCanvasView.VisualStyle {
-    var gridLineColor: UIColor {
+    func gridLineColor(_ palette: TKPalette) -> Color {
         switch self {
         case .active:
-            return .Accent.blue
+            return palette.separator.chart
         case .skeleton:
-            return .Background.contentTint
+            return palette.background.contentTint
         }
     }
 
-    var gridLineGradient: LinearGradient {
-        let color = Color(uiColor: gridLineColor)
+    func gridLineGradient(color overrideColor: Color? = nil, palette: TKPalette) -> LinearGradient {
+        let color = overrideColor ?? gridLineColor(palette)
         return LinearGradient(
             gradient: Gradient(
                 stops: ChartSubstrateGridStyle.gradientAlphaStops.map { stop in

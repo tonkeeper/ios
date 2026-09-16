@@ -1,8 +1,7 @@
+import Combine
 import Foundation
 import KeeperCore
 import TKLocalize
-import TKUIKit
-import UIKit
 
 @MainActor
 final class MultichainHistoryQueryViewModel: ObservableObject {
@@ -12,12 +11,18 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
     }
 
     struct RowData: Equatable {
-        var items: [MultichainHistoryActivityItem]
-        var nextCursor: String?
-        var hasNextPage: Bool
+        let items: [MultichainHistoryActivityItem]
+        let nextCursor: String?
+        let hasNextPage: Bool
+        let hasLoadedNextPages: Bool
 
         static var initial: RowData {
-            RowData(items: [], nextCursor: nil, hasNextPage: false)
+            RowData(
+                items: [],
+                nextCursor: nil,
+                hasNextPage: false,
+                hasLoadedNextPages: false
+            )
         }
     }
 
@@ -42,6 +47,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
     enum Placeholder: Equatable {
         case empty
+        case filtered
         case error(String?)
     }
 
@@ -56,35 +62,70 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
     private let walletId: String
     private let category: MultichainHistoryCategory
+    private let hideDust: Bool?
     private let multichainService: MultichainService
-    private let signedAmountFormatter: AmountFormatter
     private let dateFormatter: DateFormatter
     private let currentDateProvider: () -> Date
     private let onAddFunds: () -> Void
+    private let rowDataReducer: MultichainHistoryRowDataReducer
+    private let paginationViewModel: MultichainHistoryPaginationViewModel
+    private let nftResolver: MultichainActivityNFTResolver
+
+    private var nftResolutionTask: Task<Void, Never>?
+    private var nftResolutionObservation: AnyCancellable?
 
     init(
         walletId: String,
         category: MultichainHistoryCategory,
+        hidesDustTransactions: Bool = false,
         multichainService: MultichainService,
         amountFormatter: AmountFormatter,
         dateFormatter: DateFormatter,
+        nftResolver: MultichainActivityNFTResolver,
         currentDateProvider: @escaping () -> Date = Date.init,
         onAddFunds: @escaping () -> Void = {}
     ) {
+        let hideDust = hidesDustTransactions && !category.isSpamCategory ? true : nil
         self.walletId = walletId
         self.category = category
+        self.hideDust = hideDust
         self.multichainService = multichainService
-        var signedConfiguration = amountFormatter.config
-        signedConfiguration.signPolicy = .always
-        self.signedAmountFormatter = AmountFormatter(configuration: signedConfiguration)
         self.dateFormatter = dateFormatter
         self.currentDateProvider = currentDateProvider
         self.onAddFunds = onAddFunds
+        self.nftResolver = nftResolver
+
+        let itemMapper = MultichainHistoryActivityItemMapper(
+            amountFormatter: amountFormatter,
+            dateFormatter: dateFormatter,
+            nftProvider: { nftResolver.nft(for: $0) }
+        )
+        self.rowDataReducer = MultichainHistoryRowDataReducer(
+            itemMapper: itemMapper,
+            isSpamCategory: category.isSpamCategory
+        )
+        self.paginationViewModel = MultichainHistoryPaginationViewModel(
+            walletId: walletId,
+            limit: Constants.pageSize,
+            category: category,
+            hideDust: hideDust,
+            multichainService: multichainService
+        )
+        self.nftResolutionObservation = nftResolver.$revision
+            .dropFirst()
+            .sink { [weak self] _ in
+                self?.remapRowData()
+            }
+    }
+
+    deinit {
+        nftResolutionTask?.cancel()
     }
 
     var presentation: Presentation {
         Self.presentation(
             for: state,
+            isDustFiltered: hideDust != nil,
             sectionTitleProvider: sectionTitle(for:),
             currentDate: currentDateProvider(),
             calendar: sectionCalendar
@@ -105,10 +146,12 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
     static func presentation(
         for state: State,
+        isDustFiltered: Bool,
         sectionTitleProvider: (Date) -> String,
         currentDate: Date,
         calendar: Calendar
     ) -> Presentation {
+        let emptyPlaceholder: Placeholder = isDustFiltered ? .filtered : .empty
         switch state {
         case .idle:
             return Presentation(
@@ -135,7 +178,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
                 ),
                 isLoadingMore: false,
                 showsSkeleton: false,
-                placeholder: rowData.items.isEmpty ? .empty : nil
+                placeholder: rowData.items.isEmpty ? emptyPlaceholder : nil
             )
         case let .loaded(rowData):
             return Presentation(
@@ -147,7 +190,7 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
                 ),
                 isLoadingMore: false,
                 showsSkeleton: false,
-                placeholder: rowData.items.isEmpty ? .empty : nil
+                placeholder: rowData.items.isEmpty ? emptyPlaceholder : nil
             )
         case let .loadingMore(rowData, _):
             return Presentation(
@@ -157,9 +200,9 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
                     currentDate: currentDate,
                     calendar: calendar
                 ),
-                isLoadingMore: true,
-                showsSkeleton: rowData == .initial,
-                placeholder: rowData.items.isEmpty ? .empty : nil
+                isLoadingMore: !rowData.items.isEmpty,
+                showsSkeleton: rowData.items.isEmpty,
+                placeholder: nil
             )
         case let .failed(rowData, errorMessage):
             return Presentation(
@@ -179,10 +222,14 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
     func appeared() {
         switch state {
         case .idle:
-            let task = Task {
-                await loadFirstPage(fallbackData: .initial)
-            }
-            state = .refreshing(rowData: .initial, task: task)
+            startFirstPageLoad(fallbackData: .initial)
+        case let .loaded(rowData) where rowData.items.isEmpty && rowData.hasNextPage:
+            state = .loadingMore(
+                rowData: rowData,
+                task: startLoadingNextPage(fallbackData: rowData)
+            )
+        case let .loaded(rowData):
+            scheduleNFTResolution(for: rowData)
         default:
             break
         }
@@ -195,10 +242,11 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             return
         case let .loaded(rowData), let .failed(rowData, _):
             fallbackData = rowData
-        case let .refreshing(rowData, task), let .loadingMore(rowData, task):
-            task.cancel()
+        case let .refreshing(rowData, _), let .loadingMore(rowData, _):
             fallbackData = rowData
         }
+
+        cancelActiveFlows()
 
         if fallbackData == .initial {
             state = .idle
@@ -218,20 +266,17 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
             rowData = .initial
         case let .loaded(data), let .failed(data, _):
             rowData = data
-        case let .refreshing(data, task), let .loadingMore(data, task):
-            task.cancel()
+        case let .refreshing(data, _), let .loadingMore(data, _):
             rowData = data
         }
 
-        let task = Task {
-            await loadFirstPage(fallbackData: rowData)
-        }
-        state = .refreshing(rowData: rowData, task: task)
+        cancelActiveFlows()
+        let task = startFirstPageLoad(fallbackData: rowData)
         await task.value
     }
 
     func loadNextPageIfNeeded(currentItem: MultichainHistoryActivityItem) {
-        guard case let .loaded(rowData) = state else {
+        guard let rowData = paginatableRowData else {
             return
         }
         guard rowData.hasNextPage else {
@@ -248,14 +293,45 @@ final class MultichainHistoryQueryViewModel: ObservableObject {
 
         state = .loadingMore(
             rowData: rowData,
-            task: Task {
-                await loadNextPage(fallbackData: rowData)
-            }
+            task: startLoadingNextPage(fallbackData: rowData)
         )
     }
 }
 
 private extension MultichainHistoryQueryViewModel {
+    var currentRowData: RowData? {
+        switch state {
+        case .idle:
+            return nil
+        case let .refreshing(rowData, _),
+             let .loaded(rowData),
+             let .loadingMore(rowData, _),
+             let .failed(rowData, _):
+            return rowData
+        }
+    }
+
+    var paginatableRowData: RowData? {
+        switch state {
+        case let .loaded(rowData):
+            return rowData
+        case .idle, .refreshing, .loadingMore, .failed:
+            return nil
+        }
+    }
+
+    @discardableResult
+    func startFirstPageLoad(fallbackData: RowData) -> Task<Void, Never> {
+        let task = Task { [weak self] in
+            guard let self else {
+                return
+            }
+            await self.loadFirstPage(fallbackData: fallbackData)
+        }
+        state = .refreshing(rowData: fallbackData, task: task)
+        return task
+    }
+
     func loadFirstPage(fallbackData: RowData) async {
         let page: MultichainWalletActivitiesPage
         do {
@@ -264,10 +340,7 @@ private extension MultichainHistoryQueryViewModel {
             guard !Task.isCancelled, !isCancelled(error) else {
                 return
             }
-            state = .failed(
-                rowData: fallbackData,
-                errorMessage: errorMessage(from: error)
-            )
+            applyFailure(error, fallbackData: fallbackData)
             return
         }
 
@@ -275,267 +348,137 @@ private extension MultichainHistoryQueryViewModel {
             return
         }
 
-        let activities = deduplicated(page.activities)
-        state = .loaded(
-            rowData: RowData(
-                items: activities.map(makeItem),
-                nextCursor: page.nextCursor,
-                hasNextPage: page.nextCursor != nil
-            )
-        )
+        applyFirstPage(page, fallbackData: fallbackData)
+        finishFirstPageLoad()
+        loadNextPageIfStalled(previousItemCount: 0)
     }
 
-    func loadNextPage(fallbackData: RowData) async {
-        let page: MultichainWalletActivitiesPage
-        do {
-            page = try await loadPage(cursor: fallbackData.nextCursor)
-        } catch {
-            guard !Task.isCancelled, !isCancelled(error) else {
-                return
-            }
-            state = .failed(
-                rowData: fallbackData,
-                errorMessage: errorMessage(from: error)
-            )
-            return
-        }
-
-        guard !Task.isCancelled else {
-            return
-        }
-
-        let mergedActivities = deduplicated(
-            fallbackData.items.map(\.activity) + page.activities
+    func applyFirstPage(
+        _ page: MultichainWalletActivitiesPage,
+        fallbackData: RowData
+    ) {
+        let rowData = rowDataReducer.mergingFirstPage(
+            page,
+            currentData: currentRowData ?? fallbackData
         )
-        state = .loaded(
-            rowData: RowData(
-                items: mergedActivities.map(makeItem),
-                nextCursor: page.nextCursor,
-                hasNextPage: page.nextCursor != nil
-            )
+
+        switch state {
+        case let .refreshing(_, task):
+            state = .refreshing(rowData: rowData, task: task)
+        case let .loadingMore(_, task):
+            state = .loadingMore(rowData: rowData, task: task)
+        case .idle, .loaded, .failed:
+            state = .loaded(rowData: rowData)
+        }
+
+        scheduleNFTResolution(for: rowData)
+    }
+
+    func scheduleNFTResolution(for rowData: RowData) {
+        let activities = rowData.items.map(\.activity)
+        guard !activities.isEmpty else {
+            return
+        }
+
+        nftResolutionTask?.cancel()
+        nftResolutionTask = Task { [nftResolver] in
+            await nftResolver.resolve(activities: activities)
+        }
+    }
+
+    func remapRowData() {
+        guard let rowData = currentRowData,
+              let remapped = rowDataReducer.remapping(rowData)
+        else {
+            return
+        }
+
+        switch state {
+        case .idle:
+            break
+        case let .refreshing(_, task):
+            state = .refreshing(rowData: remapped, task: task)
+        case .loaded:
+            state = .loaded(rowData: remapped)
+        case let .loadingMore(_, task):
+            state = .loadingMore(rowData: remapped, task: task)
+        case let .failed(_, errorMessage):
+            state = .failed(rowData: remapped, errorMessage: errorMessage)
+        }
+    }
+
+    func finishFirstPageLoad() {
+        if case let .refreshing(rowData, _) = state {
+            state = .loaded(rowData: rowData)
+        }
+    }
+
+    func startLoadingNextPage(fallbackData: RowData) -> Task<Void, Never> {
+        paginationViewModel.start(
+            cursor: fallbackData.nextCursor,
+            onSuccess: { [weak self] page in
+                self?.applyNextPage(page, fallbackData: fallbackData)
+            },
+            onFailure: { [weak self] error in
+                self?.applyFailure(error, fallbackData: fallbackData)
+            }
         )
     }
 
     func loadPage(cursor: String?) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
-        try await multichainService.getWalletActivities(
+        try await category.fetchActivities(
+            using: multichainService,
             walletId: walletId,
             limit: Constants.pageSize,
             cursor: cursor,
-            chain: category.apiChain,
-            activityType: category.apiActivityType
+            hideDust: hideDust
         )
     }
 
-    func deduplicated(_ activities: [MultichainActivity]) -> [MultichainActivity] {
-        var seen = Set<MultichainActivity>()
-        seen.reserveCapacity(activities.count)
-
-        var result = [MultichainActivity]()
-        result.reserveCapacity(activities.count)
-
-        for activity in activities {
-            guard seen.insert(activity).inserted else {
-                continue
-            }
-            result.append(activity)
-        }
-        return result
+    func applyNextPage(
+        _ page: MultichainWalletActivitiesPage,
+        fallbackData: RowData
+    ) {
+        let baseData = currentRowData ?? fallbackData
+        let rowData = rowDataReducer.mergingNextPage(page, currentData: baseData)
+        state = .loaded(rowData: rowData)
+        scheduleNFTResolution(for: rowData)
+        loadNextPageIfStalled(previousItemCount: baseData.items.count)
     }
 
-    func makeItem(activity: MultichainActivity) -> MultichainHistoryActivityItem {
-        MultichainHistoryActivityItem(
-            id: activity,
-            activity: activity,
-            title: title(for: activity),
-            subtitle: subtitle(for: activity),
-            time: timeString(for: activity.blockTime),
-            icon: icon(for: activity),
-            primaryAmount: primaryAmount(for: activity),
-            secondaryAmount: secondaryAmount(for: activity),
-            status: activity.status
+    func loadNextPageIfStalled(previousItemCount: Int) {
+        guard case let .loaded(rowData) = state else {
+            return
+        }
+        guard rowData.items.count <= previousItemCount, rowData.hasNextPage else {
+            return
+        }
+        state = .loadingMore(
+            rowData: rowData,
+            task: startLoadingNextPage(fallbackData: rowData)
         )
     }
 
-    func title(for activity: MultichainActivity) -> String {
-        switch activity.activityType {
-        case .send:
-            return TKLocales.History.Tab.sent
-        case .receive:
-            return TKLocales.History.Tab.received
-        case .swap:
-            return TKLocales.ActionTypes.Future.swap
-        }
-    }
-
-    func subtitle(for activity: MultichainActivity) -> String? {
-        let address: String?
-        switch activity.direction {
-        case .incoming:
-            address = activity.fromAddress ?? activity.walletAddress
-        case .outgoing:
-            address = activity.toAddress ?? activity.walletAddress
-        case .selfTransfer:
-            address = activity.walletAddress ?? activity.toAddress ?? activity.fromAddress
-        }
-
-        if let address {
-            return address.shortMultichainHistoryAddress
-        }
-
-        return activity.protocolName
-    }
-
-    func icon(for activity: MultichainActivity) -> UIImage {
-        switch activity.activityType {
-        case .send:
-            return .App.Icons.Size28.trayArrowUp
-        case .receive:
-            return .App.Icons.Size28.trayArrowDown
-        case .swap:
-            return .App.Icons.Size28.swapHorizontalAlternative
-        }
-    }
-
-    func primaryAmount(for activity: MultichainActivity) -> MultichainHistoryActivityItem.Amount? {
-        switch activity.activityType {
-        case .send:
-            return amount(
-                rawAmount: activity.outAmount,
-                token: activity.outToken,
-                sign: .negative
-            )
-        case .receive:
-            return amount(
-                rawAmount: activity.inAmount,
-                token: activity.inToken,
-                sign: .positive
-            )
-        case .swap:
-            return amount(
-                rawAmount: activity.inAmount,
-                token: activity.inToken,
-                sign: .positive
-            )
-        }
-    }
-
-    func secondaryAmount(for activity: MultichainActivity) -> MultichainHistoryActivityItem.Amount? {
-        guard activity.activityType == .swap else {
-            return nil
-        }
-
-        return amount(
-            rawAmount: activity.outAmount,
-            token: activity.outToken,
-            sign: .negative
+    func applyFailure(
+        _ error: MultichainServiceError,
+        fallbackData: RowData
+    ) {
+        state = .failed(
+            rowData: currentRowData ?? fallbackData,
+            errorMessage: errorMessage(from: error)
         )
     }
 
-    enum AmountSign {
-        case positive
-        case negative
-    }
-
-    func amount(
-        rawAmount: String?,
-        token: MultichainAssetDetails?,
-        sign: AmountSign
-    ) -> MultichainHistoryActivityItem.Amount? {
-        guard let rawAmount, let token else {
-            return nil
+    func cancelActiveFlows() {
+        switch state {
+        case let .refreshing(_, task), let .loadingMore(_, task):
+            task.cancel()
+        case .idle, .loaded, .failed:
+            break
         }
-
-        let signedAmount = signedDecimal(from: rawAmount, sign: sign)
-        let title: String
-        if let signedAmount {
-            title = signedAmountFormatter.format(
-                decimal: signedAmount,
-                accessory: .tokenSymbol(token.symbol),
-                style: .compact
-            )
-        } else {
-            title = fallbackAmountTitle(
-                rawAmount: rawAmount,
-                token: token,
-                sign: sign
-            )
-        }
-        let chainTitle: String?
-        switch AssetIdComponents(assetId: token.assetId) {
-        case .coin:
-            chainTitle = nil
-        default:
-            chainTitle = token.chain?.symbol
-        }
-        let text = [title, chainTitle]
-            .compactMap { $0 }
-            .joined(separator: " ")
-
-        switch sign {
-        case .positive:
-            return MultichainHistoryActivityItem.Amount(
-                text: text,
-                style: .positive
-            )
-        case .negative:
-            return MultichainHistoryActivityItem.Amount(
-                text: text,
-                style: .negative
-            )
-        }
-    }
-
-    func signedDecimal(
-        from rawAmount: String,
-        sign: AmountSign
-    ) -> Decimal? {
-        guard var decimal = decimalValue(from: rawAmount) else {
-            return nil
-        }
-
-        switch sign {
-        case .positive:
-            decimal = abs(decimal)
-        case .negative:
-            decimal = -abs(decimal)
-        }
-        return decimal
-    }
-
-    func fallbackAmountTitle(
-        rawAmount: String,
-        token: MultichainAssetDetails,
-        sign: AmountSign
-    ) -> String {
-        let signPrefix: String
-        switch sign {
-        case .positive:
-            signPrefix = "+"
-        case .negative:
-            signPrefix = "−"
-        }
-        return "\(signPrefix)\(rawAmount) \(token.symbol)"
-    }
-
-    func decimalValue(from value: String) -> Decimal? {
-        let normalized = value
-            .replacingOccurrences(of: "−", with: "-")
-            .replacingOccurrences(of: ",", with: ".")
-            .filter { "0123456789.+-".contains($0) }
-
-        guard !normalized.isEmpty else {
-            return nil
-        }
-
-        return Decimal(
-            string: normalized,
-            locale: Locale(identifier: "en_US_POSIX")
-        )
-    }
-
-    func timeString(for date: Date) -> String {
-        dateFormatter.dateFormat = "HH:mm"
-        return dateFormatter.string(from: date)
+        paginationViewModel.cancel()
+        nftResolutionTask?.cancel()
+        nftResolutionTask = nil
     }
 
     func sectionTitle(for date: Date) -> String {
@@ -569,13 +512,6 @@ private extension MultichainHistoryQueryViewModel {
         return calendar
     }
 
-    func isCancelled(_ error: MultichainServiceError) -> Bool {
-        if case .cancelled = error {
-            return true
-        }
-        return false
-    }
-
     func errorMessage(from error: MultichainServiceError) -> String? {
         switch error {
         case .cancelled:
@@ -585,6 +521,13 @@ private extension MultichainHistoryQueryViewModel {
         case let .apiError(message):
             return message
         }
+    }
+
+    func isCancelled(_ error: MultichainServiceError) -> Bool {
+        if case .cancelled = error {
+            return true
+        }
+        return false
     }
 }
 
@@ -608,18 +551,20 @@ private extension MultichainHistoryQueryViewModel {
             }
 
             if let sectionIndex = sectionIndexes[sectionDate] {
-                var section = sections[sectionIndex]
-                section = MultichainHistorySection(
+                let section = sections[sectionIndex]
+                sections[sectionIndex] = MultichainHistorySection(
                     id: section.id,
                     title: section.title,
-                    items: section.items + [item]
+                    groups: appending(item: item, to: section.groups)
                 )
-                sections[sectionIndex] = section
             } else {
+                guard let group = MultichainHistoryActivityGroup(items: [item]) else {
+                    continue
+                }
                 let section = MultichainHistorySection(
                     id: sectionDate,
                     title: titleProvider(sectionDate),
-                    items: [item]
+                    groups: [group]
                 )
                 sectionIndexes[sectionDate] = sections.count
                 sections.append(section)
@@ -627,6 +572,29 @@ private extension MultichainHistoryQueryViewModel {
         }
 
         return sections
+    }
+
+    static func appending(
+        item: MultichainHistoryActivityItem,
+        to groups: [MultichainHistoryActivityGroup]
+    ) -> [MultichainHistoryActivityGroup] {
+        var groups = groups
+
+        if let lastGroup = groups.last,
+           let lastItem = lastGroup.items.last,
+           let lastKey = MultichainHistoryEventKey(activity: lastItem.activity),
+           let key = MultichainHistoryEventKey(activity: item.activity),
+           lastKey == key,
+           let mergedGroup = MultichainHistoryActivityGroup(items: lastGroup.items + [item])
+        {
+            groups[groups.count - 1] = mergedGroup
+            return groups
+        }
+
+        if let group = MultichainHistoryActivityGroup(items: [item]) {
+            groups.append(group)
+        }
+        return groups
     }
 
     static func sectionDate(
@@ -646,14 +614,5 @@ private extension MultichainHistoryQueryViewModel {
                 from: date
             )
         )
-    }
-}
-
-private extension String {
-    var shortMultichainHistoryAddress: String {
-        guard count > 14 else {
-            return self
-        }
-        return "\(prefix(4))...\(suffix(4))"
     }
 }

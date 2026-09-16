@@ -2,16 +2,13 @@ import Foundation
 
 final class HistoryListTronUSDTEventsLoader: HistoryListLoader {
     private let historyService: HistoryService
-    private let tonProofTokenService: TonProofTokenService
     private let tronUsdtApi: TronUSDTAPI
 
     init(
         historyService: HistoryService,
-        tonProofTokenService: TonProofTokenService,
         tronUsdtApi: TronUSDTAPI
     ) {
         self.historyService = historyService
-        self.tonProofTokenService = tonProofTokenService
         self.tronUsdtApi = tronUsdtApi
     }
 
@@ -30,10 +27,10 @@ final class HistoryListTronUSDTEventsLoader: HistoryListLoader {
             return HistoryEventsBatch(accountsEvents: exhaustedTon, tronTransactions: [])
         }
         let tronEvents = try await tronUsdtApi.loadAllTronEvents(
+            wallet: wallet,
             events: [],
             address: addresss,
             limit: limit,
-            tonProofToken: tonProofTokenService.getWalletToken(wallet),
             startTimestamp: pagination.tronEventsMaxTimestamp,
             finishTimestamp: nil
         )

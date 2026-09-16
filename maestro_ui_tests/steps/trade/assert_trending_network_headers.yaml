@@ -1,0 +1,33 @@
+# Opens the first 3 Trending shelf cells and asserts NETWORK_HEADER in details
+# (e.g. "Ethereum (ERC20)", "TON (TON)"). Network badges on the shelf have no
+# accessibility labels, so the details header is the reliable chain check.
+# Env: NETWORK_HEADER
+appId: com.jbig.tonkeeper
+---
+- evalScript: ${output.trendingIndex = 0}
+- repeat:
+    while:
+      true: ${output.trendingIndex < 3}
+    commands:
+      - tapOn:
+          text: "[A-Za-z0-9₮]+, .*"
+          below: "Market Cap"
+          above: "Core tokens"
+          index: ${output.trendingIndex}
+      - waitForAnimationToEnd:
+          timeout: 5000
+      - tapOn:
+          id: tooltip
+          optional: true
+      - extendedWaitUntil:
+          visible: ${NETWORK_HEADER}
+          timeout: 30000
+      - assertVisible: ${NETWORK_HEADER}
+      - tapOn:
+          id: trade_asset_details_back
+      - waitForAnimationToEnd:
+          timeout: 3000
+      - extendedWaitUntil:
+          visible: "Core tokens"
+          timeout: 30000
+      - evalScript: ${output.trendingIndex = output.trendingIndex + 1}

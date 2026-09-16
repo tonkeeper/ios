@@ -1,21 +1,28 @@
 import Foundation
 
-struct TronUSDTTransactionConfirmationState {
-    struct Resources {
-        let energy: Int
-        let bandwidth: Int
+public struct TronUSDTTransactionConfirmationState {
+    public struct Resources {
+        public let energy: Int
+        public let bandwidth: Int
 
-        static let empty = Resources(energy: 0, bandwidth: 0)
+        public init(energy: Int, bandwidth: Int) {
+            self.energy = energy
+            self.bandwidth = bandwidth
+        }
+
+        public static let empty = Resources(energy: 0, bandwidth: 0)
     }
 
-    var extraState: TransactionConfirmationModel.ExtraState = .loading
-    var extraOptions: [TransactionConfirmationModel.ExtraOption] = []
-    var availableTypes: [TransactionConfirmationModel.ExtraType] = []
-    var preferredExtraType: TransactionConfirmationModel.ExtraType?
-    var resources: Resources = .empty
-    var tonFeeAddress: String?
+    public var extraState: TransactionConfirmationModel.ExtraState = .loading
+    public var extraOptions: [TransactionConfirmationModel.ExtraOption] = []
+    public var availableTypes: [TransactionConfirmationModel.ExtraType] = []
+    public var preferredExtraType: TransactionConfirmationModel.ExtraType?
+    public var resources: Resources = .empty
+    public var tonFeeAddress: String?
 
-    var selectedExtraType: TransactionConfirmationModel.ExtraType {
+    public init() {}
+
+    public var selectedExtraType: TransactionConfirmationModel.ExtraType {
         if let preferredExtraType, availableTypes.contains(preferredExtraType) {
             return preferredExtraType
         }

@@ -161,7 +161,7 @@ enum TonConnectConnectMapper {
                 TKPopUp.Component.ButtonComponent(buttonConfiguration: primaryButton),
             ]),
             TKPopUp.Component.GroupComponent(
-                padding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+                padding: UIEdgeInsets(top: 0, left: 16, bottom: 3, right: 16),
                 items: [
                     TKPopUp.Component.PlainButtonComponent(buttonConfiguration: footerButtonConfiguration),
                 ]

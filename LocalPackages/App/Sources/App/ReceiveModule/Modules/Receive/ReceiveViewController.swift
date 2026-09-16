@@ -12,7 +12,8 @@ final class ReceiveViewController: GenericViewViewController<ReceiveUiView>, TKB
                 action: { [weak self] _ in
                     self?.viewModel.close()
                 },
-                isEnabled: true
+                isEnabled: true,
+                accessibilityIdentifier: "receive_close"
             ),
             rightButton: nil,
             contentInsets: UIEdgeInsets(
@@ -50,7 +51,7 @@ final class ReceiveViewController: GenericViewViewController<ReceiveUiView>, TKB
         super.viewDidLoad()
         customView.configure(
             network: viewModel.selectedNetwork,
-            qrCodeImage: viewModel.qrCodeImage,
+            qrCodeMatrix: viewModel.qrCodeMatrix,
             onCopy: { [weak viewModel] in
                 viewModel?.copyAddress()
             },
@@ -69,11 +70,11 @@ final class ReceiveViewController: GenericViewViewController<ReceiveUiView>, TKB
 
 private extension ReceiveViewController {
     func setupBindings() {
-        viewModel.$qrCodeImage
-            .sink { [weak self] image in
+        viewModel.$qrCodeMatrix
+            .sink { [weak self, viewModel] matrix in
                 guard let self else { return }
                 customView.updateQRCode(
-                    image: image,
+                    matrix: matrix,
                     network: viewModel.selectedNetwork,
                     onCopy: { [weak viewModel] in
                         viewModel?.copyAddress()
@@ -85,7 +86,7 @@ private extension ReceiveViewController {
 
         viewModel.didRequestShare = { [weak self] address in
             let activityViewController = UIActivityViewController(
-                activityItems: [address.address],
+                activityItems: [address],
                 applicationActivities: nil
             )
             self?.present(activityViewController, animated: true)

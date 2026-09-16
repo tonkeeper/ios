@@ -45,14 +45,6 @@ final class PaymentQRCodeViewController: GenericViewViewController<ReceiveTabVie
         viewModel.viewDidLoad()
     }
 
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
-        customView.qrCodeView.setNeedsLayout()
-        customView.qrCodeView.layoutIfNeeded()
-        viewModel.generateQRCode(size: customView.qrCodeView.qrCodeImageView.frame.size)
-    }
-
     func calculateHeight(withWidth width: CGFloat) -> CGFloat {
         scrollView.contentSize.height
     }
@@ -64,8 +56,8 @@ private extension PaymentQRCodeViewController {
             self?.customView.configure(model: model)
         }
 
-        viewModel.didGenerateQRCode = { [weak self] image in
-            self?.customView.qrCodeView.qrCodeImageView.image = image
+        viewModel.didGenerateQRCode = { [weak self] matrix in
+            self?.customView.qrCodeView.setQrCodeMatrix(matrix)
         }
 
         viewModel.didTapShare = { [weak self] address in
@@ -78,9 +70,7 @@ private extension PaymentQRCodeViewController {
         }
 
         viewModel.didTapCopy = { address in
-            UIPasteboard.general.string = address
-            ToastPresenter.showToast(configuration: .copied)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            Pasteboard.copy(value: address)
         }
     }
 }

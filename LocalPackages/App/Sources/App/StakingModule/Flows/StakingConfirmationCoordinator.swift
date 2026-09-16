@@ -52,12 +52,12 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
                 amount: item.amount,
                 isCollect: false
             )
-        case let .withdraw(stackingPoolInfo):
+        case let .withdraw(stackingPoolInfo, isCollect):
             transactionConfirmationController = keeperCoreMainAssembly.stakingWithdrawTransactionConfirmationController(
                 wallet: wallet,
                 stakingPool: stackingPoolInfo,
                 amount: item.amount,
-                isCollect: false
+                isCollect: isCollect
             )
         }
         let module = TransactionConfirmationAssembly.module(
@@ -108,20 +108,17 @@ final class StakingConfirmationCoordinator: RouterCoordinator<NavigationControll
             redSession = nil
         }
 
-        module.output.didConfirmTransaction = { [weak self] _ in
+        module.output.didConfirmTransaction = { [weak self] model in
             redSession?.finish(
                 outcome: .success,
                 stage: "send"
             )
             redSession = nil
             guard let self else { return }
-            let eventType: TransactionSent.EventType = switch item.operation {
-            case .deposit: .depositStake
-            case let .withdraw(pool): .stakingWithdraw(poolImplementation: pool.implementation.type)
+            let event = TransactionSent(wallet: wallet, model: model, origin: .user)
+            if let event {
+                self.coreAssembly.analyticsProvider.log(event)
             }
-            self.coreAssembly.analyticsProvider.log(
-                TransactionSent(wallet: wallet, eventType: eventType)
-            )
             if case .deposit = item.operation {
                 self.coreAssembly.analyticsProvider.logStakeCompleted()
             }
@@ -152,7 +149,7 @@ private extension StakingConfirmationCoordinator {
         switch item.operation {
         case let .deposit(stackingPoolInfo):
             pool = stackingPoolInfo
-        case let .withdraw(stackingPoolInfo):
+        case let .withdraw(stackingPoolInfo, _):
             pool = stackingPoolInfo
         }
         return [

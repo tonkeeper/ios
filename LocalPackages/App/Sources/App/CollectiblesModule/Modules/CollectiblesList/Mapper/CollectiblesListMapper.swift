@@ -1,55 +1,48 @@
 import KeeperCore
-import TKCore
+import SwiftUI
 import TKLocalize
+import TKUIKit
 import UIKit
 
 struct CollectiblesListMapper {
-    let imageLoader = ImageLoader()
     let walletNftManagementStore: WalletNFTsManagementStore
 
-    func map(nft: NFT, isSecureMode: Bool) -> CollectibleCollectionViewCell.Model {
-        func composeSubtitle() -> String? {
+    func map(nft: NFT, isSecureMode: Bool) -> CollectiblesListItem {
+        let title: String = isSecureMode
+            ? "* * * *"
+            : (nft.name ?? nft.address.toString(bounceable: true))
+        let isUnverified = !isSecureMode
+            && nft.isUnverified
+            && currentLocalState(nft) != .approved
+
+        let subtitle: String = {
             if isSecureMode {
                 return .secureModeValueShort
             }
 
-            if let collection = nft.collection {
-                return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamedCollection : collection.name
-            } else {
+            if isUnverified {
+                return TKLocales.Purchases.unverified
+            }
+
+            guard let collection = nft.collection else {
                 return TKLocales.Purchases.unnamedCollection
             }
-        }
 
-        let title: String = isSecureMode ? "* * * *" : nft.name ?? nft.address.toString(bounceable: true)
+            let name = collection.name
+            if name == nil || name?.isEmpty == true {
+                return TKLocales.Purchases.unnamedCollection
+            }
+            return name ?? TKLocales.Purchases.unnamedCollection
+        }()
 
-        let subtitle: NSAttributedString?
-        if nft.isUnverified {
-            let isManuallyApproved = currentLocalState(nft) == .approved
-            let color: UIColor = isManuallyApproved ? .Text.secondary : .Accent.orange
-            let composedSubtitle: String? = isManuallyApproved ? composeSubtitle() : TKLocales.Purchases.unverified
-            subtitle = composedSubtitle?.withTextStyle(
-                .body3,
-                color: color,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
-            )
-        } else {
-            subtitle = composeSubtitle()?.withTextStyle(
-                .body3,
-                color: .Text.secondary,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
-            )
-        }
-        return CollectibleCollectionViewCell.Model(
-            identifier: nft.address.toRaw(),
-            imageDownloadTask: ImageDownloadTask(closure: { [weak imageLoader] imageView, size, cornerRadius in
-                imageLoader?.loadImage(url: nft.preview.size500, imageView: imageView, size: size, cornerRadius: cornerRadius)
-            }),
+        return CollectiblesListItem(
+            id: nft.address.toRaw(),
             title: title,
             subtitle: subtitle,
-            isOnSale: nft.sale != nil,
-            isBlurVisible: isSecureMode
+            subtitleColor: isUnverified ? .accentOrange : .textSecondary,
+            imageSource: .url(nft.preview.size500),
+            isSecureMode: isSecureMode,
+            isOnSale: nft.sale != nil
         )
     }
 

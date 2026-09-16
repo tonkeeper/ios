@@ -1,0 +1,17 @@
+appId: com.jbig.tonkeeper
+---
+# Explore: open STON.fi from the shelf (popular apps), not search.
+# Expects Browser tab with Explore selected.
+- extendedWaitUntil:
+    visible: "All"
+    timeout: 120000
+
+- scrollUntilVisible:
+    element: "STON.fi"
+    direction: DOWN
+    timeout: 120000
+- tapOn: "STON.fi"
+
+- extendedWaitUntil:
+    visible: "ston.fi"
+    timeout: 120000

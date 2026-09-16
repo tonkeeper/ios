@@ -1,11 +1,14 @@
 import SwiftUI
+import TKUIKit
 import UIKit
 
 final class TradeAssetsListViewController: UIViewController {
-    private let hostingController: UIHostingController<TradeAssetsListView>
+    private let viewModel: TradeAssetsListViewModel
+    private let hostingController: TKHostingController<TradeAssetsListView>
 
     init(viewModel: TradeAssetsListViewModel) {
-        self.hostingController = UIHostingController(rootView: TradeAssetsListView(viewModel: viewModel))
+        self.viewModel = viewModel
+        self.hostingController = TKHostingController(content: TradeAssetsListView(viewModel: viewModel))
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -32,5 +35,19 @@ final class TradeAssetsListViewController: UIViewController {
             hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        navigationController?.setNavigationBarHidden(true, animated: animated)
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        if isMovingFromParent {
+            viewModel.disappeared()
+        }
     }
 }

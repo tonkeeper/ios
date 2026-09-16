@@ -2,9 +2,9 @@ import BigInt
 import Foundation
 import TonSwift
 
-public struct TonTransferBuilder {
+struct TonTransferBuilder {
     private init() {}
-    public static func createWalletTransfer(
+    static func createWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         value: BigUInt,

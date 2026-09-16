@@ -1,3 +1,4 @@
+import TKCore
 import TKUIKit
 import UIKit
 
@@ -8,18 +9,19 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
     typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
 
     private let viewModel: WalletsListViewModel
+    private let tooltipsService: TooltipsService?
+    private let shouldShowAddMultichainWalletTooltip: Bool
+    private let raffleBannerContainerView = WalletsListRaffleBannerContainerView()
+    private var didAttemptAddMultichainWalletTooltip = false
 
-    private lazy var reorderGesture: UIPanGestureRecognizer = {
-        let gesture = UIPanGestureRecognizer(
-            target: self,
-            action: #selector(handleReorderGesture(gesture:))
-        )
-        gesture.isEnabled = false
-        return gesture
-    }()
-
-    init(viewModel: WalletsListViewModel) {
+    init(
+        viewModel: WalletsListViewModel,
+        tooltipsService: TooltipsService? = nil,
+        shouldShowAddMultichainWalletTooltip: Bool = false
+    ) {
         self.viewModel = viewModel
+        self.tooltipsService = tooltipsService
+        self.shouldShowAddMultichainWalletTooltip = shouldShowAddMultichainWalletTooltip
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -51,14 +53,22 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
     private func setup() {
         customView.collectionView.collectionViewLayout = layout
         customView.collectionView.delegate = self
-        customView.collectionView.addGestureRecognizer(reorderGesture)
+        customView.collectionView.register(
+            TKContainerCollectionViewCell.self,
+            forCellWithReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier
+        )
     }
 
     private func setupBindings() {
         viewModel.didUpdateSnapshot = { [weak self] snapshot in
-            self?.dataSource.apply(snapshot, animatingDifferences: false, completion: { [weak self] in
-                self?.didUpdateHeight?()
-                self?.selectWallet()
+            guard let self else { return }
+            let contentOffset = self.customView.collectionView.contentOffset
+            self.dataSource.apply(snapshot, animatingDifferences: false, completion: { [weak self] in
+                guard let self else { return }
+                self.didUpdateHeight?()
+                self.selectWallet()
+                self.restoreContentOffset(contentOffset)
+                self.showAddMultichainWalletTooltipIfNeeded()
             })
         }
 
@@ -72,16 +82,20 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
         }
 
         viewModel.didUpdateHeaderConfiguration = { [weak self] headerConfiguration in
-            self?.headerConfiguration = headerConfiguration
-            self?.didUpdateHeaderConfiguration?(headerConfiguration)
+            guard let self else { return }
+            let contentOffset = self.customView.collectionView.contentOffset
+            self.headerConfiguration = headerConfiguration
+            self.didUpdateHeaderConfiguration?(headerConfiguration)
+            self.restoreContentOffset(contentOffset)
         }
 
         viewModel.didUpdateIsEditing = { [weak self] isEditing in
-            self?.reorderGesture.isEnabled = isEditing
             UIView.animate(withDuration: 0.2) {
                 self?.customView.collectionView.isEditing = isEditing
             }
-            if !isEditing {
+            if isEditing {
+                HintController.dismiss()
+            } else {
                 self?.selectWallet()
             }
         }
@@ -95,6 +109,24 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
         ) {
             [weak self] collectionView, indexPath, itemIdentifier in
             guard let self else { return nil }
+
+            let snapshotSection = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+            if case let .raffleBanner(raffleId) = snapshotSection {
+                let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: TKContainerCollectionViewCell.reuseIdentifier,
+                    for: indexPath
+                )
+                if let raffleBanner = self.viewModel.getRaffleBanner(), raffleBanner.id == raffleId {
+                    self.raffleBannerContainerView.configure(
+                        banner: raffleBanner,
+                        onTap: { [weak self] in self?.viewModel.tapRaffleBanner() },
+                        onDismiss: { [weak self] in self?.viewModel.dismissRaffleBanner() }
+                    )
+                }
+                (cell as? TKContainerCollectionViewCell)?.setContentView(self.raffleBannerContainerView)
+                return cell
+            }
+
             guard let cellConfiguration = self.viewModel.getWalletCellConfiguration(
                 identifier: itemIdentifier.identifier
             ) else { return nil }
@@ -104,7 +136,7 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
                 item: cellConfiguration
             )
             cell.selectionAccessoryViews = itemIdentifier.selectAccessories.map { $0.view }
-            cell.editingAccessoryViews = itemIdentifier.editingAccessories.map { $0.view }
+            cell.editingAccessoryViews = itemIdentifier.editingAccessories.map { $0.view } + [self.makeReorderHandle()]
             return cell
         }
 
@@ -122,14 +154,16 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
                     )
                     view.configuration = footerConfiguration
                     return view
+                case .raffleBanner:
+                    return nil
                 }
             default:
                 return nil
             }
         }
 
-        dataSource.reorderingHandlers.canReorderItem = { [weak self] _ in
-            true
+        dataSource.reorderingHandlers.canReorderItem = { item in
+            !item.isRaffleBanner
         }
 
         dataSource.reorderingHandlers.didReorder = { [weak self] transaction in
@@ -161,26 +195,48 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
                     )
                     sectionLayout.boundarySupplementaryItems.append(footer)
                     return sectionLayout
+                case .raffleBanner:
+                    let itemLayoutSize = NSCollectionLayoutSize(
+                        widthDimension: .fractionalWidth(1.0),
+                        heightDimension: .estimated(Layout.raffleBannerHeight)
+                    )
+                    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
+                    let group = NSCollectionLayoutGroup.horizontal(layoutSize: itemLayoutSize, subitems: [item])
+                    return NSCollectionLayoutSection(group: group)
                 }
             },
             configuration: configuration
         )
     }
 
+    private func makeReorderHandle() -> UIView {
+        let handle = TKListItemIconAccessoryView()
+        handle.configuration = TKListItemIconAccessoryView.Configuration(
+            icon: .TKUIKit.Icons.Size28.reorder,
+            tintColor: .Icon.secondary
+        )
+        let gesture = UILongPressGestureRecognizer(
+            target: self,
+            action: #selector(handleReorderGesture(gesture:))
+        )
+        gesture.minimumPressDuration = 0
+        handle.addGestureRecognizer(gesture)
+        return handle
+    }
+
     @objc
     private func handleReorderGesture(gesture: UIGestureRecognizer) {
         let collectionView = customView.collectionView
+        let location = gesture.location(in: collectionView)
 
         switch gesture.state {
         case .began:
-            guard let selectedIndexPath = collectionView.indexPathForItem(at: gesture.location(in: collectionView)) else {
-                break
-            }
-            collectionView.beginInteractiveMovementForItem(at: selectedIndexPath)
+            guard let indexPath = collectionView.indexPathForItem(at: location) else { break }
+            collectionView.beginInteractiveMovementForItem(at: indexPath)
         case .changed:
-            var location = gesture.location(in: gesture.view!)
-            location.x = collectionView.bounds.width / 2
-            collectionView.updateInteractiveMovementTargetPosition(location)
+            collectionView.updateInteractiveMovementTargetPosition(
+                CGPoint(x: collectionView.bounds.width / 2, y: location.y)
+            )
         case .ended:
             collectionView.endInteractiveMovement()
         default:
@@ -189,22 +245,19 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
     }
 
     private func didReorder(transaction: NSDiffableDataSourceTransaction<WalletsListSection, WalletsListItem>) {
-        var deletes = [Int]()
-        var inserts = [Int]()
-        var moves = [(from: Int, to: Int)]()
+        guard let walletsSectionTransaction = transaction.sectionTransactions.first(where: {
+            if case .wallets = $0.sectionIdentifier {
+                return true
+            }
+            return false
+        }) else {
+            return
+        }
 
-        for update in transaction.difference.inferringMoves() {
-            switch update {
-            case let .remove(offset, _, move):
-                if let move = move {
-                    moves.append((offset, move))
-                } else {
-                    deletes.append(offset)
-                }
-            case let .insert(offset, _, move):
-                if move == nil {
-                    inserts.append(offset)
-                }
+        var moves = [(from: Int, to: Int)]()
+        for update in walletsSectionTransaction.difference.inferringMoves() {
+            if case let .remove(offset, _, .some(move)) = update {
+                moves.append((offset, move))
             }
         }
         for move in moves {
@@ -213,25 +266,96 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
     }
 
     private func selectWallet() {
-        guard let selectedWalletIndex = viewModel.selectedWalletIndex else {
+        guard let selectedWalletIndex = viewModel.selectedWalletIndex,
+              let walletsSectionIndex = dataSource.snapshot().sectionIdentifiers.firstIndex(where: {
+                  if case .wallets = $0 {
+                      return true
+                  }
+                  return false
+              })
+        else {
             return
         }
         customView.collectionView.selectItem(
             at: IndexPath(
                 item: selectedWalletIndex,
-                section: 0
+                section: walletsSectionIndex
             ),
             animated: false,
-            scrollPosition: .centeredVertically
+            scrollPosition: []
         )
+    }
+
+    private func restoreContentOffset(_ contentOffset: CGPoint) {
+        let collectionView = customView.collectionView
+        let maxY = max(collectionView.contentSize.height - collectionView.bounds.height, 0)
+        collectionView.contentOffset = CGPoint(x: contentOffset.x, y: min(contentOffset.y, maxY))
+    }
+
+    private func showAddMultichainWalletTooltipIfNeeded() {
+        guard shouldShowAddMultichainWalletTooltip,
+              !didAttemptAddMultichainWalletTooltip,
+              let tooltipsService,
+              !customView.collectionView.isEditing,
+              let footer = addWalletFooterView()
+        else {
+            return
+        }
+        didAttemptAddMultichainWalletTooltip = true
+
+        customView.collectionView.layoutIfNeeded()
+        tooltipsService.showTooltipIfNeeded(
+            id: .addMultichainWalletWalletsList,
+            sourceView: footer.button,
+            targetActionViews: [footer.button],
+            configuration: HintConfiguration(
+                position: HintPosition(
+                    tailParameters: TKTooltipView.tailParameters,
+                    horizontal: .default,
+                    vertical: .init(absolute: 0),
+                    direction: .topCenter
+                ),
+                maximumWidth: AddMultichainWalletTooltipLayout.maximumWidth,
+                animationStyle: .bouncing
+            ),
+            onTargetAction: { [weak self] in
+                self?.viewModel.didTapAddWallet()
+            }
+        )
+    }
+
+    private func addWalletFooterView() -> TKListCollectionViewButtonFooterView? {
+        guard let walletsSectionIndex = dataSource.snapshot().sectionIdentifiers.firstIndex(where: {
+            if case .wallets = $0 {
+                return true
+            }
+            return false
+        }) else {
+            return nil
+        }
+        return customView.collectionView.supplementaryView(
+            forElementKind: TKListCollectionViewButtonFooterView.elementKind,
+            at: IndexPath(item: 0, section: walletsSectionIndex)
+        ) as? TKListCollectionViewButtonFooterView
     }
 }
 
 extension WalletsListViewController: UICollectionViewDelegate {
+    func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+        guard case .raffleBanner = dataSource.snapshot().sectionIdentifiers[indexPath.section] else { return }
+        viewModel.raffleBannerDidAppear()
+    }
+
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let snapshot = dataSource.snapshot()
         let section = snapshot.sectionIdentifiers[indexPath.section]
         let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
         item.onSelection?()
+    }
+}
+
+private extension WalletsListViewController {
+    enum Layout {
+        static let raffleBannerHeight: CGFloat = 90
     }
 }

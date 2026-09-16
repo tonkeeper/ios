@@ -26,11 +26,6 @@ public final class Configuration {
         }
     }
 
-    public func tonAPISSEEndpoint(network: Network) async -> String {
-        _ = await loadConfigurations()
-        return configuration(for: network).tonAPISSEEndpoint
-    }
-
     public func tonAPISSEEndpointV2(network: Network) async -> String? {
         _ = await loadConfigurations()
         return configuration(for: network).tonAPISSEEndpointV2
@@ -41,10 +36,14 @@ public final class Configuration {
         return configuration(for: network).batteryHost
     }
 
-    public var testnetBatteryHost: String {
-        get async {
-            await loadConfigurations().mainnet.batteryHost
-        }
+    public func multichainHost(network: Network) async -> URL {
+        _ = await loadConfigurations()
+        return configuration(for: network).multichain.domain
+    }
+
+    public func tradingHost(network: Network) async -> URL {
+        _ = await loadConfigurations()
+        return configuration(for: network).trading.domain
     }
 
     public var tonApiV2Key: String {
@@ -102,6 +101,10 @@ public final class Configuration {
         tkAppSettings.isTetraWalletEnabled
     }
 
+    public var lighterAPIEnvironment: LighterAPIEnvironment {
+        tkAppSettings.lighterAPIEnvironment
+    }
+
     public var multichainHelpUrl: URL? {
         configurations.mainnet.multichainHelpUrl
     }
@@ -124,6 +127,10 @@ public final class Configuration {
 
     public func transactionExplorer(network: Network) -> String? {
         configuration(for: network).transactionExplorer
+    }
+
+    public func explorers(network: Network) -> [BootConfiguration.ChainExplorer] {
+        configuration(for: network).explorers
     }
 
     public func batteryMeanFeesDecimaNumber(network: Network) -> NSDecimalNumber? {
@@ -192,7 +199,9 @@ public final class Configuration {
     private var configurations: BootConfigurations {
         get {
             lock.withLock {
-                if let _configurations { return _configurations }
+                if let _configurations {
+                    return _configurations
+                }
                 if let configuration = try? bootConfigurationService.getConfiguration() {
                     _configurations = configuration
                     return configuration
@@ -239,7 +248,25 @@ public final class Configuration {
         configuration(for: network)[keyPath: keyPath]
     }
 
+    public var resolvedFeatureFlags: [FeatureFlag: Bool] {
+        FeatureFlag.allCases.reduce(into: [FeatureFlag: Bool]()) { result, feature in
+            result[feature] = featureEnabled(feature)
+        }
+    }
+
     public func featureEnabled(_ feature: FeatureFlag) -> Bool {
+        switch feature {
+        case .importMultichainEnabled:
+            resolveFeatureFlag(.importMultichainEnabled) || resolveFeatureFlag(.multichainEnabled)
+        default:
+            resolveFeatureFlag(feature)
+        }
+    }
+
+    private func resolveFeatureFlag(_ feature: FeatureFlag) -> Bool {
+        if let devOverride = featureFlags.devOverride(for: feature) {
+            return devOverride
+        }
         if isFeatureFlagDisabledByBootConfiguration(feature) {
             return false
         }
@@ -248,6 +275,8 @@ public final class Configuration {
 
     public func isFeatureFlagDisabledByBootConfiguration(_ feature: FeatureFlag) -> Bool {
         switch feature {
+        case .multichainEnabled, .importMultichainEnabled:
+            !flag(\.multichainEnabled, network: .mainnet)
         default:
             false
         }

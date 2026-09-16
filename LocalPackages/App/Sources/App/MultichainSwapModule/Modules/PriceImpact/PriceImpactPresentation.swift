@@ -1,7 +1,13 @@
 import Foundation
 
+enum PriceImpactPresentationStyle {
+    case warning
+    case danger
+}
+
 @MainActor
 struct PriceImpactPresentation {
+    let style: PriceImpactPresentationStyle
     let title: String
     let subtitle: String
     let description: String

@@ -49,7 +49,8 @@ private extension BalanceHeaderView {
 
     func setupConstraints() {
         stackView.snp.makeConstraints { make in
-            make.edges.equalTo(self)
+            make.top.leading.trailing.equalTo(self)
+            make.bottom.equalTo(self).priority(.high)
         }
     }
 }

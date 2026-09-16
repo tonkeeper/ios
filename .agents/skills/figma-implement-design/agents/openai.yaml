@@ -1,0 +1,14 @@
+interface:
+  display_name: "Figma Implement Design"
+  short_description: "Turn Figma designs into production-ready iOS code"
+  icon_small: "./assets/figma-small.svg"
+  icon_large: "./assets/figma.png"
+  default_prompt: "Use $figma-implement-design to implement this Figma design in the appropriate existing or new owner, reuse project color and text tokens, and compare a rendered preview with the Figma node when the dependency graph supports it."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "figma"
+      description: "Figma MCP server"
+      transport: "streamable_http"
+      url: "https://mcp.figma.com/mcp"

@@ -27,9 +27,9 @@ final class TonConnectConnectHeaderView: UIView, ConfigurableView {
     private let tonImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.backgroundColor = .Background.content
-        imageView.image = .TKUIKit.Images.tonkeeperLogo72
-        imageView.tintColor = .Accent.blue
-        imageView.contentMode = .scaleAspectFit
+        imageView.image = BrandMarks.AppIcon.image
+        imageView.tintColor = BrandMarks.AppIcon.tintColor
+        imageView.contentMode = BrandMarks.AppIcon.contentMode
         imageView.layer.cornerRadius = .imageCornerRadius
         imageView.layer.masksToBounds = true
         return imageView

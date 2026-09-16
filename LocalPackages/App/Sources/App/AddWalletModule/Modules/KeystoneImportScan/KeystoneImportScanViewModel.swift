@@ -1,12 +1,11 @@
 import KeeperCore
 import TKCore
 import TKLocalize
-import TKUIKit
 import TonSwift
 import UIKit
 import URKit
 
-public protocol KeystoneImportScanModuleOutput: AnyObject {
+protocol KeystoneImportScanModuleOutput: AnyObject {
     var didScanQRCode: ((_ publicKey: TonSwift.PublicKey, _ xfp: String?, _ path: String?, _ name: String) -> Void)? { get set }
 }
 
@@ -21,8 +20,6 @@ final class KeystoneImportScanViewModelImplementation: KeystoneImportScanViewMod
     var didScanQRCode: ((TonSwift.PublicKey, String?, String?, String) -> Void)?
 
     // MARK: - KeystoneImportScanViewModel
-
-    var didUpdateOpenSignerButtonContent: ((TKButton.Configuration.Content) -> Void)?
 
     func viewDidLoad() {
         scannerViewModuleOutput.didScanUR = { [weak self] ur in

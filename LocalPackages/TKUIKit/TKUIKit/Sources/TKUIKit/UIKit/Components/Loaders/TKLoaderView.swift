@@ -33,8 +33,6 @@ public final class TKLoaderView: UIView {
     }()
 
     private var isAnimating = false
-    private var observer: NSObject?
-
     public var size: Size {
         didSet {
             invalidateIntrinsicContentSize()

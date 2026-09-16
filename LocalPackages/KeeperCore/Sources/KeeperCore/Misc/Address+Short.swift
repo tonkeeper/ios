@@ -25,3 +25,12 @@ public extension FriendlyAddress {
         return "\(leftPart)...\(rightPart)"
     }
 }
+
+public extension String {
+    func shortenedMiddle(prefix prefixLength: Int = 6, suffix suffixLength: Int = 6) -> String {
+        let hexPrefix = lowercased().hasPrefix("0x") ? String(self.prefix(2)) : ""
+        let body = dropFirst(hexPrefix.count)
+        guard body.count > prefixLength + suffixLength else { return self }
+        return "\(hexPrefix)\(body.prefix(prefixLength))...\(body.suffix(suffixLength))"
+    }
+}

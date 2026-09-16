@@ -7,6 +7,7 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
     private let stackView = UIStackView()
     private let titleLabel = UILabel()
     private let titleValueSpacer = UIView()
+    private let valueStackView = UIStackView()
     private let valueLabel = UILabel()
     private let valueIconImageView = UIImageView()
     private let tapButton = UIButton(type: .system)
@@ -56,7 +57,8 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
         value: String,
         valueColor: UIColor = .Text.primary,
         valueIcon: UIImage? = nil,
-        captionModel: TKPlainButton.Model? = nil
+        captionModel: TKPlainButton.Model? = nil,
+        captionAccessibilityIdentifier: String? = nil
     ) {
         self.title = title
         setValue(value, color: valueColor)
@@ -67,13 +69,22 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
         guard let captionModel else {
             captionButton.isHidden = true
             tapButton.isHidden = true
+            captionButton.accessibilityIdentifier = nil
+            tapButton.accessibilityIdentifier = nil
+            stackView.setCustomSpacing(stackView.spacing, after: titleLabel)
             return
         }
 
+        stackView.setCustomSpacing(
+            captionModel.title == nil ? 4 : stackView.spacing,
+            after: titleLabel
+        )
         captionButton.configure(model: captionModel)
         tapButtonAction = captionModel.action
         captionButton.isHidden = false
         tapButton.isHidden = false
+        captionButton.accessibilityIdentifier = captionAccessibilityIdentifier
+        tapButton.accessibilityIdentifier = captionAccessibilityIdentifier
     }
 
     private func setup() {
@@ -82,6 +93,10 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
         stackView.axis = .horizontal
         stackView.spacing = 6
         stackView.alignment = .center
+
+        valueStackView.axis = .vertical
+        valueStackView.alignment = .trailing
+        valueStackView.spacing = 2
 
         captionButton.isUserInteractionEnabled = false
         valueIconImageView.contentMode = .scaleAspectFit
@@ -95,7 +110,7 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
 
         titleLabel.setContentHuggingPriority(.required, for: .horizontal)
         titleLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-        valueLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        valueStackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
         valueIconImageView.setContentHuggingPriority(.required, for: .horizontal)
         valueIconImageView.setContentCompressionResistancePriority(.required, for: .horizontal)
 
@@ -116,7 +131,8 @@ final class NativeSwapTransactionConfirmationItemView: UIView {
         stackView.addArrangedSubview(titleLabel)
         stackView.addArrangedSubview(captionButton)
         stackView.addArrangedSubview(titleValueSpacer)
-        stackView.addArrangedSubview(valueLabel)
+        stackView.addArrangedSubview(valueStackView)
+        valueStackView.addArrangedSubview(valueLabel)
         stackView.addArrangedSubview(valueIconImageView)
         addSubview(tapButton)
 

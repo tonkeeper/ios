@@ -27,18 +27,6 @@ public final class TKListItemTextAccessoryView: UIView {
             self.padding = padding
             self.menu = menu
         }
-
-        public init(
-            text: NSAttributedString?,
-            numberOfLines: Int,
-            padding: UIEdgeInsets,
-            menu: UIMenu? = nil
-        ) {
-            self.text = text
-            self.numberOfLines = numberOfLines
-            self.padding = padding
-            self.menu = menu
-        }
     }
 
     public var configuration = Configuration(text: "Label", color: .Text.primary, textStyle: .body2) {

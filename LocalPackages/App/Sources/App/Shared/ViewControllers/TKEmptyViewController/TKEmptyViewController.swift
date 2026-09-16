@@ -103,6 +103,4 @@ private extension TKEmptyViewController {
 
 private extension CGFloat {
     static let interButtonsSpace: CGFloat = 12
-    static let titleBottomSpace: CGFloat = 4
-    static let captionBottomSpace: CGFloat = 24
 }

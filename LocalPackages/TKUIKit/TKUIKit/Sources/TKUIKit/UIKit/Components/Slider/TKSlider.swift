@@ -1,10 +1,12 @@
 import SnapKit
 import UIKit
 
+/// UIKit swipe-to-confirm control. SwiftUI screens use `TKSwipeToConfirmView` instead.
 public final class TKSlider: UIView {
     public enum Appearance {
         case standart
         case warning
+        case danger
 
         var dragViewBackgroundColor: UIColor {
             switch self {
@@ -12,6 +14,8 @@ public final class TKSlider: UIView {
                 .Button.primaryBackground
             case .warning:
                 .Accent.orange
+            case .danger:
+                .Accent.red
             }
         }
     }
@@ -74,6 +78,11 @@ public final class TKSlider: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
+    }
+
+    public func reset() {
+        isLocked = false
+        resetDragViewPosition()
     }
 
     @available(*, unavailable)

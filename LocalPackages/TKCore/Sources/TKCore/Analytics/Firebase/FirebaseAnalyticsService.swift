@@ -1,10 +1,10 @@
 import FirebaseAnalytics
 import Foundation
 
-public final class FirebaseAnalyticsService: AnalyticsService {
-    public init() {}
+final class FirebaseAnalyticsService: AnalyticsService {
+    init() {}
 
-    public func logEvent(name: String, args: [String: Any]) {
+    func logEvent(name: String, args: [String: Any]) {
         Analytics.logEvent(name, parameters: args)
     }
 }

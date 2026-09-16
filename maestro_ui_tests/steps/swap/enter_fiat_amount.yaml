@@ -1,0 +1,15 @@
+# Switches Multichain Swap send amount to fiat mode and types FIAT_AMOUNT (e.g. "5").
+appId: com.jbig.tonkeeper
+---
+- extendedWaitUntil:
+    visible:
+      id: swap_send_amount_mode
+    timeout: 3000
+- tapOn:
+    id: swap_send_amount_mode
+- waitForAnimationToEnd:
+    timeout: 2000
+- tapOn:
+    id: swap_send_amount
+- eraseText
+- inputText: ${FIAT_AMOUNT}

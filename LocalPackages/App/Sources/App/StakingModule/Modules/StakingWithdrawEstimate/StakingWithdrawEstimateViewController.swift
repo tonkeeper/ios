@@ -50,7 +50,8 @@ final class StakingWithdrawEstimateViewController: UIViewController {
         containerView.addSubview(label)
 
         containerView.snp.makeConstraints { make in
-            make.edges.equalTo(self.view)
+            make.top.equalTo(self.view).offset(CGFloat.topPadding)
+            make.left.right.bottom.equalTo(self.view)
         }
 
         label.snp.makeConstraints { make in
@@ -100,4 +101,8 @@ final class StakingWithdrawEstimateViewController: UIViewController {
         )
         return dateComponentsFormatter.string(from: components)
     }
+}
+
+private extension CGFloat {
+    static let topPadding: CGFloat = 32
 }

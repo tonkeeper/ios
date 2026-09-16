@@ -1,5 +1,6 @@
 import BigInt
 import KeeperCore
+import TKLocalize
 import TKUIKit
 import UIKit
 
@@ -11,8 +12,6 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingDepos
     func setInputAmount(_ amount: BigUInt) {
         self.inputAmount = amount
     }
-
-    private var balanceItem: BalanceStakingItemModel?
 
     private let stackView = UIStackView()
     private let headerView = TKListTitleView()
@@ -26,20 +25,17 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingDepos
 
     private let wallet: Wallet
     private let stakingPool: StackingPoolInfo
-    private let stakingPoolsStore: StakingPoolsStore
-    private let balanceStore: ConvertedBalanceStore
+    private let balanceStore: ProcessedBalanceStore
     private let amountFormatter: AmountFormatter
 
     init(
         wallet: Wallet,
         stakingPool: StackingPoolInfo,
-        stakingPoolsStore: StakingPoolsStore,
-        balanceStore: ConvertedBalanceStore,
+        balanceStore: ProcessedBalanceStore,
         amountFormatter: AmountFormatter
     ) {
         self.wallet = wallet
         self.stakingPool = stakingPool
-        self.stakingPoolsStore = stakingPoolsStore
         self.balanceStore = balanceStore
         self.amountFormatter = amountFormatter
         super.init(nibName: nil, bundle: nil)
@@ -67,125 +63,77 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingDepos
             make.height.equalTo(48)
         }
 
+        setupBalanceObservation()
         reconfigure()
-    }
-
-    func reconfigure() {
-        func calculateAPY(amount: BigUInt, apy: Decimal) -> (BigUInt, Int) {
-            let apyFractionLength = max(Int16(-apy.exponent), 0)
-            let apyPlain = NSDecimalNumber(decimal: apy)
-                .multiplying(byPowerOf10: apyFractionLength)
-            let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
-
-            let fractionLength = Int(apyFractionLength) + TonInfo.fractionDigits
-            let result = amount / 100 * apyBigInt
-            return (result, fractionLength)
-        }
-
-        guard let balance = balanceStore.getState()[wallet]?.balance else {
-            return
-        }
-
-        guard let balanceItem = createBalanceItem(balance: balance) else {
-            return
-        }
-
-        let afterStakeAPY = calculateAPY(amount: inputAmount + BigUInt(UInt64(balanceItem.info.amount)), apy: stakingPool.apy)
-        let afterStakeAPYFormatted = amountFormatter.format(
-            amount: afterStakeAPY.0,
-            fractionDigits: afterStakeAPY.1,
-            accessory: .tokenSymbol(TonInfo.symbol),
-            isNegative: false,
-            style: .compact
-        )
-
-        let currentAPY = calculateAPY(amount: BigUInt(UInt64(balanceItem.info.amount)), apy: stakingPool.apy)
-        let currentAPYFormatted = amountFormatter.format(
-            amount: currentAPY.0,
-            fractionDigits: currentAPY.1,
-            accessory: .tokenSymbol(TonInfo.symbol),
-            isNegative: false,
-            style: .compact
-        )
-
-        let listModel = StakingDetailsListView.Model(
-            items: [
-                StakingDetailsListView.ItemView.Model(
-                    title: "After stake".withTextStyle(
-                        .body2,
-                        color: .Text.secondary,
-                        alignment: .left,
-                        lineBreakMode: .byTruncatingTail
-                    ),
-                    tag: nil,
-                    value: "≈ \(afterStakeAPYFormatted)".withTextStyle(.body2, color: .Text.primary, alignment: .right, lineBreakMode: .byTruncatingTail)
-                ),
-                StakingDetailsListView.ItemView.Model(
-                    title: "Current".withTextStyle(
-                        .body2,
-                        color: .Text.secondary,
-                        alignment: .left,
-                        lineBreakMode: .byTruncatingTail
-                    ),
-                    tag: nil,
-                    value: "≈ \(currentAPYFormatted)".withTextStyle(.body2, color: .Text.primary, alignment: .right, lineBreakMode: .byTruncatingTail)
-                ),
-            ]
-        )
-
-        self.headerView.configure(model: TKListTitleView.Model(title: "Your APY", textStyle: .label1))
-        self.listView.configure(model: listModel)
     }
 }
 
 private extension StakingDepositInputAPYViewController {
-    func createBalanceItem(balance: ConvertedBalance) -> BalanceStakingItemModel? {
-        if let stakingPoolJetton = balance.jettonsBalance
-            .first(where: { $0.jettonBalance.item.jettonInfo.address == stakingPool.liquidJettonMaster })
-        {
-            var amount: Int64 = 0
-            if let tonRate = stakingPoolJetton.jettonBalance.rates[.GRAM] {
-                let converted = RateConverter().convertToDecimal(
-                    amount: stakingPoolJetton.jettonBalance.quantity,
-                    amountFractionLength: stakingPoolJetton.jettonBalance.item.jettonInfo.fractionDigits,
-                    rate: tonRate
-                )
-                let convertedFractionLength = min(Int16(TonInfo.fractionDigits), max(Int16(-converted.exponent), 0))
-                amount = Int64(
-                    NSDecimalNumber(decimal: converted)
-                        .multiplying(byPowerOf10: convertedFractionLength).doubleValue
-                )
+    func setupBalanceObservation() {
+        balanceStore.addObserver(self) { observer, event in
+            switch event {
+            case let .didUpdateProccessedBalance(wallet):
+                guard wallet == observer.wallet else { return }
+                DispatchQueue.main.async {
+                    observer.reconfigure()
+                }
             }
-
-            let info = AccountStackingInfo(
-                pool: stakingPool.address,
-                amount: amount,
-                pendingDeposit: 0,
-                pendingWithdraw: 0,
-                readyWithdraw: 0
-            )
-
-            return BalanceStakingItemModel(
-                id: info.pool.toRaw(),
-                info: info,
-                poolInfo: stakingPool,
-                currency: balance.currency,
-                converted: stakingPoolJetton.converted,
-                price: stakingPoolJetton.price
-            )
         }
+    }
 
-        if let stakingItem = balance.stackingBalance.first(where: { $0.stackingInfo.pool == stakingPool.address }) {
-            return BalanceStakingItemModel(
-                id: stakingItem.stackingInfo.pool.toRaw(),
-                info: stakingItem.stackingInfo,
-                poolInfo: stakingPool,
-                currency: balance.currency,
-                converted: stakingItem.amountConverted,
-                price: stakingItem.price
+    func reconfigure() {
+        let listModel = StakingDetailsListView.Model(
+            items: [
+                item(
+                    title: TKLocales.StakingDepositInput.afterStake,
+                    profit: stakingPool.annualProfit(for: inputAmount + stakedAmount)
+                ),
+                item(
+                    title: TKLocales.StakingDepositInput.current,
+                    profit: stakingPool.annualProfit(for: stakedAmount)
+                ),
+            ]
+        )
+
+        headerView.configure(
+            model: TKListTitleView.Model(
+                title: TKLocales.StakingDepositInput.yourApy,
+                textStyle: .label1
             )
-        }
+        )
+        listView.configure(model: listModel)
+    }
 
-        return nil
+    var stakedAmount: BigUInt {
+        BigUInt(
+            balanceStore.state[wallet]?.balance.stakingItems
+                .first(where: { $0.info.pool == stakingPool.address })?
+                .info.amount ?? 0
+        )
+    }
+
+    func item(title: String, profit: BigUInt) -> StakingDetailsListView.ItemView.Model {
+        let formatted = amountFormatter.format(
+            amount: profit,
+            fractionDigits: TonInfo.fractionDigits,
+            accessory: .tokenSymbol(TonInfo.symbol),
+            isNegative: false,
+            style: .compact
+        )
+        return StakingDetailsListView.ItemView.Model(
+            title: title.withTextStyle(
+                .body2,
+                color: .Text.secondary,
+                alignment: .left,
+                lineBreakMode: .byTruncatingTail
+            ),
+            tag: nil,
+            value: "≈ \(formatted)".withTextStyle(
+                .body2,
+                color: .Text.primary,
+                alignment: .right,
+                lineBreakMode: .byTruncatingTail
+            )
+        )
     }
 }

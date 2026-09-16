@@ -87,30 +87,7 @@ public struct TransferData {
         }
     }
 
-    public struct Swap {
-        public let minAskAmount: BigUInt
-        public let offerAmount: BigUInt
-        public let jettonToWalletAddress: Address
-        public let jettonFromWalletAddress: Address
-        public let forwardAmount: BigUInt
-        public let attachedAmount: BigUInt
-
-        public init(
-            minAskAmount: BigUInt,
-            offerAmount: BigUInt,
-            jettonToWalletAddress: Address,
-            jettonFromWalletAddress: Address,
-            forwardAmount: BigUInt,
-            attachedAmount: BigUInt
-        ) {
-            self.minAskAmount = minAskAmount
-            self.offerAmount = offerAmount
-            self.jettonToWalletAddress = jettonToWalletAddress
-            self.jettonFromWalletAddress = jettonFromWalletAddress
-            self.forwardAmount = forwardAmount
-            self.attachedAmount = attachedAmount
-        }
-    }
+    public struct Swap {}
 
     public struct TonConnect {
         public struct Payload {

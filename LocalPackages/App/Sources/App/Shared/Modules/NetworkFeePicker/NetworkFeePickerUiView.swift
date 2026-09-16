@@ -2,10 +2,12 @@ import SnapKit
 import UIKit
 
 final class NetworkFeePickerUiView: UIView {
-    let scrollView = UIScrollView()
-    let contentHostingView = SwiftUIHostingView()
+    let categoriesHostingView = SwiftUIHostingView()
 
-    private let contentContainerView = UIView()
+    private let scrollContainerView = UIView()
+    private var activeScrollView: UIScrollView?
+    private var activeScrollViewHasRows = false
+    private var categoriesHeightConstraint: Constraint?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -17,16 +19,66 @@ final class NetworkFeePickerUiView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    override func safeAreaInsetsDidChange() {
-        super.safeAreaInsetsDidChange()
-        updateScrollInsets()
+    func setActiveScrollView(
+        _ scrollView: UIScrollView,
+        hasRows: Bool
+    ) {
+        if activeScrollView !== scrollView {
+            activeScrollView?.removeFromSuperview()
+            activeScrollView = scrollView
+            scrollContainerView.addSubview(scrollView)
+            scrollView.snp.makeConstraints { make in
+                make.top.bottom.equalToSuperview()
+                make.leading.trailing.equalToSuperview().inset(Layout.contentHorizontalInset)
+            }
+        }
+
+        activeScrollViewHasRows = hasRows
+        setNeedsLayout()
     }
 
     func calculateHeight(width: CGFloat) -> CGFloat {
+        let categoriesHeight = updateCategoriesHeight(width: width)
         layoutIfNeeded()
-        scrollView.layoutIfNeeded()
 
-        let contentSize = contentContainerView.systemLayoutSizeFitting(
+        guard let activeScrollView else {
+            return ceil(categoriesHeight)
+        }
+
+        activeScrollView.layoutIfNeeded()
+
+        let contentHeight = activeScrollView.contentSize.height
+            + activeScrollView.contentInset.top
+            + activeScrollView.contentInset.bottom
+
+        return ceil(categoriesHeight + contentHeight)
+    }
+}
+
+private extension NetworkFeePickerUiView {
+    enum Layout {
+        static let contentHorizontalInset: CGFloat = 16
+    }
+
+    func setup() {
+        backgroundColor = .clear
+
+        addSubview(categoriesHostingView)
+        addSubview(scrollContainerView)
+
+        categoriesHostingView.snp.makeConstraints { make in
+            make.top.leading.trailing.equalToSuperview()
+            categoriesHeightConstraint = make.height.equalTo(0).constraint
+        }
+
+        scrollContainerView.snp.makeConstraints { make in
+            make.top.equalTo(categoriesHostingView.snp.bottom)
+            make.leading.trailing.bottom.equalToSuperview()
+        }
+    }
+
+    func updateCategoriesHeight(width: CGFloat) -> CGFloat {
+        let contentSize = categoriesHostingView.systemLayoutSizeFitting(
             CGSize(
                 width: max(width, 1),
                 height: UIView.layoutFittingCompressedSize.height
@@ -35,47 +87,8 @@ final class NetworkFeePickerUiView: UIView {
             verticalFittingPriority: .fittingSizeLevel
         )
 
-        let contentHeight = max(
-            scrollView.contentSize.height,
-            contentSize.height
-        )
-
-        return ceil(contentHeight) + safeAreaInsets.bottom
-    }
-}
-
-private extension NetworkFeePickerUiView {
-    func setup() {
-        backgroundColor = .clear
-
-        scrollView.backgroundColor = .clear
-        scrollView.alwaysBounceVertical = false
-        scrollView.showsVerticalScrollIndicator = false
-        scrollView.contentInsetAdjustmentBehavior = .never
-
-        addSubview(scrollView)
-        scrollView.addSubview(contentContainerView)
-        contentContainerView.addSubview(contentHostingView)
-
-        scrollView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-        }
-
-        contentContainerView.snp.makeConstraints { make in
-            make.edges.equalTo(scrollView.contentLayoutGuide)
-            make.width.equalTo(scrollView.frameLayoutGuide)
-        }
-
-        contentHostingView.snp.makeConstraints { make in
-            make.edges.equalToSuperview()
-        }
-
-        updateScrollInsets()
-    }
-
-    func updateScrollInsets() {
-        let bottomInset = safeAreaInsets.bottom
-        scrollView.contentInset.bottom = bottomInset
-        scrollView.verticalScrollIndicatorInsets.bottom = bottomInset
+        let height = ceil(contentSize.height)
+        categoriesHeightConstraint?.update(offset: height)
+        return height
     }
 }

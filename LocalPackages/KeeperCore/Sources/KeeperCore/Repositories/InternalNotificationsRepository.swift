@@ -1,15 +1,15 @@
 import Foundation
 import KeeperCoreComponents
 
-public struct InternalNotificationsRepository {
+struct InternalNotificationsRepository {
     let fileSystemVault: FileSystemVault<[String], String>
 
-    public func getRemovedNotificationIds() -> [String] {
+    func getRemovedNotificationIds() -> [String] {
         let ids = try? fileSystemVault.loadItem(key: .removedNotificationIds)
         return ids ?? []
     }
 
-    public func appendRemovedNotificationId(_ id: String) {
+    func appendRemovedNotificationId(_ id: String) {
         var ids = getRemovedNotificationIds()
         guard !ids.contains(id) else { return }
         ids.append(id)

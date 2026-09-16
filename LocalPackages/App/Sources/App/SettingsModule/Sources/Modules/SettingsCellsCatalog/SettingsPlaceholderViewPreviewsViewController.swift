@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsPlaceholderViewPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: PlaceholderViewPreviews()
+    private let hostingController = TKHostingController(
+        content: PlaceholderViewPreviews()
     )
 
     override func viewDidLoad() {

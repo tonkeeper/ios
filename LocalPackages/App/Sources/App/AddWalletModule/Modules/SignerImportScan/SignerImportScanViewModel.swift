@@ -5,7 +5,7 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public protocol SignerImportScanModuleOutput: AnyObject {
+protocol SignerImportScanModuleOutput: AnyObject {
     var didScanLinkQRCode: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
 }
 

@@ -28,7 +28,7 @@ extension TokenPicker {
             case .trc20:
                 badge = TKListItemIconView.Configuration.Badge(
                     configuration: TKListItemBadgeView.Configuration(
-                        item: .image(.image(.App.Currency.Vector.trc20)),
+                        item: .image(.image(.TKUIKit.Icons.Size44.currencyTrc20)),
                         size: .small
                     ),
                     position: .bottomRight
@@ -95,7 +95,7 @@ extension TokenPicker {
             case .trc20:
                 badge = TKListItemIconView.Configuration.Badge(
                     configuration: TKListItemBadgeView.Configuration(
-                        item: .image(.image(.App.Currency.Vector.trc20)),
+                        item: .image(.image(.TKUIKit.Icons.Size44.currencyTrc20)),
                         size: .small
                     ),
                     position: .bottomRight

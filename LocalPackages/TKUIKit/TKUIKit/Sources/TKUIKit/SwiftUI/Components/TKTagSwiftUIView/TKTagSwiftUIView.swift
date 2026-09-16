@@ -1,94 +1,60 @@
 import SwiftUI
+import UIKit
 
 public struct TKTagSwiftUIViewConfig: Hashable {
+    public enum Style: Hashable {
+        /// `tkPalette.text.secondary` on `tkPalette.background.contentTint`.
+        case plain
+        /// `tkPalette.text.secondary` with a `tkPalette.background.contentTint` border.
+        case outline
+        /// Accent-tinted text on a translucent accent background.
+        case accent(TKColor)
+        case custom(textColor: TKColor, backgroundColor: TKColor, borderColor: TKColor)
+    }
+
     public var text: String
-    public var textColor: UIColor
+    public var style: Style
     public var textPadding: UIEdgeInsets
-    public var backgroundColor: UIColor
-    public var borderColor: UIColor
     public var backgroundPadding: UIEdgeInsets
 
     public init(
         text: String,
-        textColor: UIColor,
-        textPadding: UIEdgeInsets,
-        backgroundColor: UIColor,
-        borderColor: UIColor,
-        backgroundPadding: UIEdgeInsets
+        style: Style,
+        textPadding: UIEdgeInsets? = nil,
+        backgroundPadding: UIEdgeInsets? = nil
     ) {
         self.text = text.uppercased()
-        self.textColor = textColor
-        self.textPadding = textPadding
-        self.backgroundColor = backgroundColor
-        self.borderColor = borderColor
-        self.backgroundPadding = backgroundPadding
-    }
-
-    public init(tagConfiguration: TKTagView.Configuration) {
-        let textColor: UIColor = {
-            if tagConfiguration.text.length > 0 {
-                return tagConfiguration.text.attribute(
-                    .foregroundColor,
-                    at: 0,
-                    effectiveRange: nil
-                ) as? UIColor ?? .Text.secondary
-            } else {
-                return .Text.secondary
-            }
-        }()
-
-        self.init(
-            text: tagConfiguration.text.string,
-            textColor: textColor,
-            textPadding: tagConfiguration.textPadding,
-            backgroundColor: tagConfiguration.backgroundColor,
-            borderColor: tagConfiguration.borderColor,
-            backgroundPadding: tagConfiguration.backgroundPadding
-        )
+        self.style = style
+        self.textPadding = textPadding ?? Self.textPadding
+        self.backgroundPadding = backgroundPadding ?? Self.backgroundPadding
     }
 
     public static func accentTag(
         text: String,
-        color: UIColor
+        accent: TKColor
     ) -> TKTagSwiftUIViewConfig {
-        TKTagSwiftUIViewConfig(
-            text: text,
-            textColor: color,
-            textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
-            backgroundColor: color.withAlphaComponent(0.16),
-            borderColor: .clear,
-            backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-        )
+        TKTagSwiftUIViewConfig(text: text, style: .accent(accent))
     }
 
     public static func tag(text: String) -> TKTagSwiftUIViewConfig {
-        TKTagSwiftUIViewConfig(
-            text: text,
-            textColor: .Text.secondary,
-            textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
-            backgroundColor: .Background.contentTint,
-            borderColor: .clear,
-            backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-        )
+        TKTagSwiftUIViewConfig(text: text, style: .plain)
     }
 
     public static func outlineTag(text: String) -> TKTagSwiftUIViewConfig {
-        TKTagSwiftUIViewConfig(
-            text: text,
-            textColor: .Text.secondary,
-            textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
-            backgroundColor: .clear,
-            borderColor: .Background.contentTint,
-            backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-        )
+        TKTagSwiftUIViewConfig(text: text, style: .outline)
     }
 
     public static func outlintTag(text: String) -> TKTagSwiftUIViewConfig {
         outlineTag(text: text)
     }
+
+    public static let textPadding = UIEdgeInsets(top: 4, left: 5, bottom: 3, right: 5)
+    public static let backgroundPadding = UIEdgeInsets(top: 0, left: 6, bottom: 1, right: 0)
 }
 
 public struct TKTagSwiftUIView: View {
+    @Environment(\.tkPalette) private var palette
+
     public var config: TKTagSwiftUIViewConfig
 
     public init(config: TKTagSwiftUIViewConfig) {
@@ -98,7 +64,7 @@ public struct TKTagSwiftUIView: View {
     public var body: some View {
         Text(config.text)
             .textStyle(.body4)
-            .foregroundStyle(Color(uiColor: config.textColor))
+            .foregroundStyle(textColor)
             .lineLimit(1)
             .truncationMode(.tail)
             .padding(config.textPadding.edgeInsets)
@@ -107,17 +73,52 @@ public struct TKTagSwiftUIView: View {
                     cornerRadius: Layout.cornerRadius,
                     style: .continuous
                 )
-                .fill(Color(uiColor: config.backgroundColor))
+                .fill(backgroundColor)
                 .overlay(
                     RoundedRectangle(
                         cornerRadius: Layout.cornerRadius,
                         style: .continuous
                     )
-                    .stroke(Color(uiColor: config.borderColor), lineWidth: Layout.borderWidth)
+                    .stroke(borderColor, lineWidth: Layout.borderWidth)
                 )
             )
             .padding(config.backgroundPadding.edgeInsets)
             .fixedSize()
+    }
+
+    private var textColor: Color {
+        switch config.style {
+        case .plain, .outline:
+            palette.text.secondary
+        case let .accent(accent):
+            accent.resolve(palette)
+        case let .custom(textColor, _, _):
+            textColor.resolve(palette)
+        }
+    }
+
+    private var backgroundColor: Color {
+        switch config.style {
+        case .plain:
+            palette.background.contentTint
+        case .outline:
+            .clear
+        case let .accent(accent):
+            accent.opacity(0.16).resolve(palette)
+        case let .custom(_, backgroundColor, _):
+            backgroundColor.resolve(palette)
+        }
+    }
+
+    private var borderColor: Color {
+        switch config.style {
+        case .plain, .accent:
+            .clear
+        case .outline:
+            palette.background.contentTint
+        case let .custom(_, _, borderColor):
+            borderColor.resolve(palette)
+        }
     }
 }
 

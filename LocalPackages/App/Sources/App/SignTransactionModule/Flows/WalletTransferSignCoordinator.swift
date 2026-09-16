@@ -21,10 +21,10 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
         case cancelled
     }
 
-    typealias Result = Swift.Result<[String], WalletTransferSignError>
+    typealias Result = Swift.Result<SignedTransactions, WalletTransferSignError>
 
     var didFail: ((WalletTransferSignError) -> Void)?
-    var didSign: (([String]) -> Void)?
+    var didSign: ((SignedTransactions) -> Void)?
     var didCancel: (() -> Void)?
 
     var externalSignHandler: ((Data?) -> Void)?
@@ -53,7 +53,7 @@ final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRoute
     }
 
     func handleSign(parentCoordinator: Coordinator) async -> Result {
-        return await Task<WalletTransferSignCoordinator.Result, Never> { @MainActor in
+        return await Task<WalletTransferSignCoordinator.Result, Never> { @MainActor [self] in
             return await withCheckedContinuation { [weak parentCoordinator] (continuation: CheckedContinuation<WalletTransferSignCoordinator.Result, Never>) in
                 didSign = { [weak parentCoordinator, weak self] in
                     continuation.resume(returning: .success($0))
@@ -218,7 +218,7 @@ private extension WalletTransferSignCoordinator {
                         ).toBoc().base64EncodedString()
                         signedBocs.append(signedBoc)
                     }
-                    didSign?(signedBocs)
+                    didSign?(SignedTransactions(signedBocs))
                 } catch {
                     self.didCancel?()
                 }
@@ -234,6 +234,7 @@ private extension WalletTransferSignCoordinator {
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider,
             onCancel: { [weak self] in
                 self?.didCancel?()
             },
@@ -257,7 +258,14 @@ private extension WalletTransferSignCoordinator {
                             seqno: transferData.seqno,
                             signer: WalletTransferSecretKeySigner(secretKey: privateKey.data)
                         )
-                        try self.didSign?([signed.toBoc().base64EncodedString()])
+                        let boc = try signed.toBoc().base64EncodedString()
+                        let proof = keeperCoreMainAssembly.multichainAssembly.chainKitService
+                            .batterySendProof(
+                                wallet: wallet,
+                                mnemonic: mnemonic.mnemonicWords.joined(separator: " "),
+                                boc: boc
+                            )
+                        self.didSign?(SignedTransactions(boc: boc, batterySendProof: proof))
                     } catch {
                         self.didFail?(
                             .failedToSign(
@@ -272,7 +280,7 @@ private extension WalletTransferSignCoordinator {
 
     func handleLedgerSign(transactions: [Transaction], ledgerDevice: Wallet.LedgerDevice) async -> LedgerConfirmSignedItem? {
         await withCheckedContinuation { continuation in
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [self] in
                 let confirmItem: LedgerConfirmConfirmItem = transactions.count == 1 ? .transaction(transactions[0]) : .transactions(transactions)
                 let module = LedgerConfirmAssembly.module(
                     confirmItem: confirmItem,

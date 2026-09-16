@@ -8,6 +8,9 @@ public enum Deeplink: Equatable {
         public let amount: BigUInt?
         public let comment: String?
         public let jettonAddress: Address?
+        /// Multichain asset the link pins, in catalog form (`ton/mainnet/coin`). Takes precedence
+        /// over `jettonAddress`, which can only name a TON jetton.
+        public let assetId: String?
         public let expirationTimestamp: Int64?
         public let successReturn: URL?
     }
@@ -21,8 +24,36 @@ public enum Deeplink: Equatable {
         public let expirationTimestamp: Int64?
     }
 
+    /// An ERC-681 transfer request. `chain` is nil when the link carried no `@chain_id`, which
+    /// leaves the network — and therefore the token behind `contract` — undetermined.
+    public struct EvmTransferData: Equatable, Sendable {
+        public enum Asset: Equatable, Sendable {
+            case native
+            case erc20(contract: String)
+        }
+
+        public let recipient: String
+        public let asset: Asset
+        public let chain: MultichainChain?
+        public let amount: BigUInt?
+
+        public init(
+            recipient: String,
+            asset: Asset,
+            chain: MultichainChain?,
+            amount: BigUInt?
+        ) {
+            self.recipient = recipient
+            self.asset = asset
+            self.chain = chain
+            self.amount = amount
+        }
+    }
+
     public enum Transfer: Equatable {
         case sendTransfer(TransferData)
+        case multichainSendTransfer(MultichainRecipientCandidates)
+        case evmSendTransfer(EvmTransferData)
         case signRawTransfer(RawTransferData)
     }
 
@@ -37,10 +68,8 @@ public enum Deeplink: Equatable {
     }
 
     case transfer(Transfer)
-    case buyTon
     case staking
     case pool(Address)
-    case exchange(provider: String?)
     case swap(SwapData)
     case deposit(RampDeeplinkParameters)
     case withdraw(RampDeeplinkParameters)
@@ -48,15 +77,19 @@ public enum Deeplink: Equatable {
     case publish(sign: Data)
     case externalSign(ExternalSignDeeplink)
     case tonconnect(TonConnectPayload)
+    case walletConnect(WalletConnectDeeplink)
     case dapp(URL)
     case battery(Battery)
-    case browser
+    case browser(network: MultichainChain?)
+    case migration
     case trading(gridID: String?)
     case tradeAsset(assetID: String)
     case story(storyId: String)
     case receive
     case backup
+    case addWallet
     case main
+    case raffle
 }
 
 public enum ExternalSignDeeplink: Equatable {

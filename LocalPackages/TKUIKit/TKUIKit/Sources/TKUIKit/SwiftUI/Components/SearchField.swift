@@ -1,12 +1,15 @@
 import SwiftUI
 
 public struct SearchField: View {
+    @Environment(\.tkPalette) private var palette
+
     let contentInsets: EdgeInsets
     let title: String
     @Binding var text: String
     let isFocused: FocusState<Bool>.Binding?
     let allowsTextInput: Bool
     let shimmer: Bool
+    let accessibilityIdentifier: String?
 
     public init(
         insetsModifier: (inout EdgeInsets) -> Void = { _ in },
@@ -14,7 +17,8 @@ public struct SearchField: View {
         text: Binding<String>,
         isFocused: FocusState<Bool>.Binding? = nil,
         allowsTextInput: Bool = true,
-        shimmer: Bool = false
+        shimmer: Bool = false,
+        accessibilityIdentifier: String? = nil
     ) {
         contentInsets = {
             var insets = Layout.edgeInsets
@@ -26,47 +30,51 @@ public struct SearchField: View {
         self.isFocused = isFocused
         self.allowsTextInput = allowsTextInput
         self.shimmer = shimmer
+        self.accessibilityIdentifier = accessibilityIdentifier
     }
 
     public var body: some View {
         HStack(spacing: 12) {
-            SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.magnifyingGlass)
+            SwiftUI.Image.TKUIKit.Icons.Size16.magnifyingGlass
                 .renderingMode(.template)
-                .foregroundStyle(Color(uiColor: .Icon.secondary))
+                .foregroundStyle(.iconSecondary)
 
             if allowsTextInput {
-                TextField("", text: $text, prompt: Text(title).foregroundColor(Color(uiColor: .Text.secondary)))
-                    .font(Font(UIFont.montserratMedium(size: 16)))
-                    .foregroundColor(Color(uiColor: .Text.primary))
+                TextField("", text: $text, prompt: Text(title).foregroundColor(palette.text.secondary))
+                    .font(Font(UIFont.tkRegular(size: 16, features: .text)))
+                    .foregroundStyle(.textPrimary)
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
-                    .tint(Color(uiColor: .Accent.blue))
+                    .tint(.accentBlue)
                     .applyTradeSearchFocus(isFocused)
+                    .accessibilityIdentifier(accessibilityIdentifier)
             } else {
                 Text(text.isEmpty ? title : text)
-                    .font(Font(UIFont.montserratMedium(size: 16)))
+                    .font(Font(UIFont.tkRegular(size: 16, features: .text)))
                     .foregroundStyle(
-                        Color(uiColor: text.isEmpty ? .Text.secondary : .Text.primary)
+                        text.isEmpty ? palette.text.secondary : palette.text.primary
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .accessibilityIdentifier(accessibilityIdentifier)
             }
 
             if allowsTextInput, !text.isEmpty {
                 Button {
                     text = ""
                 } label: {
-                    SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.xmarkCircle)
+                    SwiftUI.Image.TKUIKit.Icons.Size16.xmarkCircle
                         .renderingMode(.template)
-                        .foregroundStyle(Color(uiColor: .Icon.secondary))
+                        .foregroundStyle(.iconSecondary)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(TKTapAnimationButtonStyle())
             }
         }
         .padding(.horizontal, 16)
         .frame(height: 48)
+        .frame(maxWidth: .infinity)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(uiColor: .Background.content))
+                .fill(.backgroundContent)
         )
         .shimmer(shimmer)
         .padding(contentInsets)
@@ -112,7 +120,6 @@ private extension View {
         )
     }
     .padding(.horizontal, 12)
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .debugPreview(background: .page)
+    .tkPreviewTheme(.deepBlue)
 }

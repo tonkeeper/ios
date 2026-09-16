@@ -2,6 +2,7 @@ import Combine
 import Foundation
 import KeeperCore
 import TKLogging
+import TronSwift
 import UIKit
 
 struct TradeAssetDetailsMarketData {
@@ -96,6 +97,11 @@ private extension TradeAssetDetailsMarketDataViewModel {
         case .ton, .tronUsdt:
             rates = try await ratesService.loadRates(
                 jettons: [],
+                currencies: [currency]
+            )
+        case .tronTrx:
+            rates = try await ratesService.loadRates(
+                jettons: [TRX.symbol],
                 currencies: [currency]
             )
         case let .jetton(address):

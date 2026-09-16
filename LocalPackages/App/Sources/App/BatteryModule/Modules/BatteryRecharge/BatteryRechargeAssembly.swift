@@ -11,21 +11,19 @@ struct BatteryRechargeAssembly {
         promocodeStore: BatteryPromocodeStore,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
-    ) -> MVVMModule<BatteryRechargeViewController, BatteryRechargeModuleOutput, BatteryRechargeModuleInput> {
-        let promocodeInput = BatteryPromocodeInputAssembly.module(
+    ) -> MVVMModule<BatteryRechargeHostingViewController, BatteryRechargeModuleOutput, BatteryRechargeModuleInput> {
+        let promocodeViewModel = BatteryPromocodeInputAssembly.module(
             wallet: wallet,
             promocodeStore: promocodeStore,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        let recipientInput = RecipientInputAssembly.module(
+        let recipientViewModel = RecipientInputAssembly.module(
             wallet: wallet,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
-        let amountInput = AmountInputAssembly.module(
+        let amountInputViewModel = AmountInputAssembly.swiftUIModule(
             sourceUnit: token,
             destinationUnit: Currency.USD,
             keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -43,17 +41,17 @@ struct BatteryRechargeAssembly {
                 isGift: isGift
             ),
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-            amountInputModuleInput: amountInput.input,
-            amountInputModuleOutput: amountInput.output,
-            promocodeOutput: promocodeInput.output,
-            recipientInputOutput: recipientInput.output
+            amountInputModuleInput: amountInputViewModel,
+            amountInputModuleOutput: amountInputViewModel,
+            promocodeOutput: promocodeViewModel,
+            recipientInputOutput: recipientViewModel
         )
 
-        let viewController = BatteryRechargeViewController(
+        let viewController = BatteryRechargeHostingViewController(
             viewModel: viewModel,
-            amountInputViewController: amountInput.view,
-            promocodeViewController: promocodeInput.view,
-            recipientViewController: recipientInput.view
+            amountInputViewModel: amountInputViewModel,
+            promocodeViewModel: promocodeViewModel,
+            recipientViewModel: recipientViewModel
         )
 
         return MVVMModule(

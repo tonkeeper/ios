@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "figma": {
+      "url": "https://mcp.figma.com/mcp"
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/mcp"
+    },
+    "maestro": {
+      "command": "scripts/tools/maestro.sh",
+      "args": ["mcp", "--working-dir=maestro_ui_tests"]
+    },
+    "xcode": {
+      "command": "xcrun",
+      "args": ["mcpbridge"]
+    }
+  }
+}

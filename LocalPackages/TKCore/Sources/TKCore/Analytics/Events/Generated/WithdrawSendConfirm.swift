@@ -16,17 +16,17 @@ public struct WithdrawSendConfirm: Codable, JSONEncodable, Hashable {
     public var eventName: String = "withdraw_send_confirm"
     public var from: RampSource
     public var withdrawOption: WithdrawOption
-    /** Carried from withdraw_click_asset */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var sellAsset: String
     /** Carried from withdraw_click_stablecoin */
     public var stablecoinSymbol: String
-    /** Carried from withdraw_click_network */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Carried from withdraw_click_insert_amount_continue */
     public var amount: Float
-    public var feePaidIn: FeePaidIn
+    public var feeAsset: FeeAsset
 
-    public init(eventName: String = "withdraw_send_confirm", from: RampSource, withdrawOption: WithdrawOption, sellAsset: String, stablecoinSymbol: String, buyAsset: String, amount: Float, feePaidIn: FeePaidIn) {
+    public init(eventName: String = "withdraw_send_confirm", from: RampSource, withdrawOption: WithdrawOption, sellAsset: String, stablecoinSymbol: String, buyAsset: String, amount: Float, feeAsset: FeeAsset) {
         self.eventName = eventName
         self.from = from
         self.withdrawOption = withdrawOption
@@ -34,7 +34,7 @@ public struct WithdrawSendConfirm: Codable, JSONEncodable, Hashable {
         self.stablecoinSymbol = stablecoinSymbol
         self.buyAsset = buyAsset
         self.amount = amount
-        self.feePaidIn = feePaidIn
+        self.feeAsset = feeAsset
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
@@ -45,7 +45,7 @@ public struct WithdrawSendConfirm: Codable, JSONEncodable, Hashable {
         case stablecoinSymbol = "stablecoin_symbol"
         case buyAsset = "buy_asset"
         case amount
-        case feePaidIn = "fee_paid_in"
+        case feeAsset = "fee_asset"
     }
 
     // Encodable protocol methods
@@ -59,7 +59,7 @@ public struct WithdrawSendConfirm: Codable, JSONEncodable, Hashable {
         try container.encode(stablecoinSymbol, forKey: .stablecoinSymbol)
         try container.encode(buyAsset, forKey: .buyAsset)
         try container.encode(amount, forKey: .amount)
-        try container.encode(feePaidIn, forKey: .feePaidIn)
+        try container.encode(feeAsset, forKey: .feeAsset)
     }
 }
 

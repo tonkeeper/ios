@@ -101,7 +101,7 @@ private struct WalletBalanceHomeBannersDeckView: View {
 
     var body: some View {
         BannerView(
-            items: viewModel.bannerItems,
+            items: viewModel.state.items,
             onDismiss: { item, remainingCount in
                 viewModel.dismissBanner(item, remainingCount: remainingCount)
             },
@@ -113,7 +113,7 @@ private struct WalletBalanceHomeBannersDeckView: View {
                 viewModel.handleBannerShown(id: item.id)
             }
         )
-        .id(viewModel.bannerItemsRevision)
+        .id(viewModel.state.items.map(\.id))
         .onChange(of: isContentVisible) { isVisible in
             guard isVisible, let id = deferredShownID else { return }
             deferredShownID = nil
@@ -131,8 +131,8 @@ private extension WalletBalanceHomeBannersUIKitView {
 }
 
 enum WalletBalanceHomeBannersLayout {
-    static let singleHeight: CGFloat = 108
-    static let expandedHeight: CGFloat = 118
+    static let singleHeight: CGFloat = 106
+    static let expandedHeight: CGFloat = 116
     static let collapseOffset: CGFloat = 8
     static let animationDuration: TimeInterval = 0.2
     static let animation: Animation = .easeInOut(duration: animationDuration)

@@ -1,23 +1,15 @@
-import SnapKit
+import AppUI
 import TKUIKit
 import UIKit
 
-final class LaunchScreenViewController: UIViewController {
-    override func viewDidLoad() {
-        super.viewDidLoad()
+final class LaunchScreenViewController: TKHostingController<LaunchScreen> {
+    init() {
+        super.init(content: LaunchScreen())
+    }
 
-        view.backgroundColor = .Background.page
-
-        let imageView = UIImageView()
-        imageView.image = UIImage(resource: .icLogo128)
-        imageView.contentMode = .center
-        imageView.tintColor = .Accent.blue
-
-        view.addSubview(imageView)
-
-        imageView.snp.makeConstraints { make in
-            make.centerY.equalTo(view).offset(10)
-            make.centerX.equalTo(view)
-        }
+    @available(*, unavailable)
+    @MainActor
+    dynamic required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
     }
 }

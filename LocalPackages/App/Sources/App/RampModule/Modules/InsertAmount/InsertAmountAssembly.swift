@@ -13,16 +13,76 @@ struct InsertAmountAssembly {
         paymentMethod: OnRampLayoutCashMethod,
         currency: RemoteCurrency,
         wallet: Wallet,
-        onRampLayout: OnRampLayout,
+        onRampLayout _: OnRampLayout,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        analyticsProvider: AnalyticsProvider
+    ) -> MVVMModule<InsertAmountViewController, InsertAmountModuleOutput, InsertAmountModuleInput> {
+        let quoteService = LegacyInsertAmountQuoteService(
+            wallet: wallet,
+            asset: asset,
+            onRampService: keeperCoreMainAssembly.servicesAssembly.onRampService()
+        )
+
+        return makeModule(
+            flow: flow,
+            assetContext: .legacy(asset),
+            paymentMethodContext: InsertAmountPaymentMethodContext(paymentMethod),
+            currency: currency,
+            wallet: wallet,
+            quoteService: quoteService,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            analyticsProvider: analyticsProvider
+        )
+    }
+
+    @MainActor
+    static func multichainModule(
+        flow: RampFlow,
+        asset: MultichainAsset,
+        paymentMethod: OnRampPaymentMethod,
+        assetDetail: OnRampAssetDetail,
+        currency: RemoteCurrency,
+        wallet: Wallet,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        multichainRampService: MultichainRampService,
+        analyticsProvider: AnalyticsProvider
+    ) -> MVVMModule<InsertAmountViewController, InsertAmountModuleOutput, InsertAmountModuleInput> {
+        let quoteService = MultichainInsertAmountQuoteService(
+            wallet: wallet,
+            assetDetail: assetDetail,
+            multichainRampService: multichainRampService,
+            onRampService: keeperCoreMainAssembly.servicesAssembly.onRampService()
+        )
+
+        return makeModule(
+            flow: flow,
+            assetContext: .multichain(asset),
+            paymentMethodContext: InsertAmountPaymentMethodContext(paymentMethod, currencyCode: currency.code),
+            currency: currency,
+            wallet: wallet,
+            quoteService: quoteService,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            analyticsProvider: analyticsProvider
+        )
+    }
+
+    @MainActor
+    private static func makeModule(
+        flow: RampFlow,
+        assetContext: InsertAmountAssetContext,
+        paymentMethodContext: InsertAmountPaymentMethodContext,
+        currency: RemoteCurrency,
+        wallet: Wallet,
+        quoteService: InsertAmountQuoteServicing,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         analyticsProvider: AnalyticsProvider
     ) -> MVVMModule<InsertAmountViewController, InsertAmountModuleOutput, InsertAmountModuleInput> {
         let (sourceUnit, destinationUnit): (any AmountInputUnit, any AmountInputUnit)
         switch flow {
         case .deposit:
-            (sourceUnit, destinationUnit) = (currency, asset)
+            (sourceUnit, destinationUnit) = (currency, assetContext.amountInputUnit)
         case .withdraw:
-            (sourceUnit, destinationUnit) = (asset, currency)
+            (sourceUnit, destinationUnit) = (assetContext.amountInputUnit, currency)
         }
         let amountInput = AmountInputAssembly.module(
             sourceUnit: sourceUnit,
@@ -32,12 +92,12 @@ struct InsertAmountAssembly {
 
         let viewModel = InsertAmountViewModel(
             flow: flow,
-            asset: asset,
-            paymentMethod: paymentMethod,
+            assetContext: assetContext,
+            paymentMethodContext: paymentMethodContext,
             currency: currency,
             wallet: wallet,
             processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
-            onRampService: keeperCoreMainAssembly.servicesAssembly.onRampService(),
+            quoteService: quoteService,
             amountInputModuleInput: amountInput.input,
             amountInputModuleOutput: amountInput.output,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
@@ -50,5 +110,16 @@ struct InsertAmountAssembly {
         )
 
         return MVVMModule(view: viewController, output: viewModel, input: viewModel)
+    }
+}
+
+private extension InsertAmountAssetContext {
+    var amountInputUnit: any AmountInputUnit {
+        switch self {
+        case let .legacy(asset):
+            return asset
+        case let .multichain(asset):
+            return asset
+        }
     }
 }

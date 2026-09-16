@@ -73,7 +73,7 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
                 ),
                 action: onShowUnverifiedTokenInfo
             )
-        } else if jettonItem.jettonInfo.isTonUSDT && wallet.isTronTurnOn {
+        } else if jettonItem.jettonInfo.isTonUSDT && wallet.tron != nil {
             caption = TokenDetailsModel.Caption(
                 text: "TON".withTextStyle(.body2, color: .Text.secondary, alignment: .center)
             )
@@ -83,7 +83,7 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
             title: jettonItem.jettonInfo.name,
             caption: caption,
             image: .urlImage(jettonItem.jettonInfo.imageURL),
-            network: wallet.isTronTurnOn && jettonItem.jettonInfo.isTonUSDT ? .ton : .none,
+            network: wallet.tron != nil && jettonItem.jettonInfo.isTonUSDT ? .ton : .none,
             tokenAmount: tokenAmount,
             convertedAmount: convertedAmount,
             buttons: buttons,

@@ -15,8 +15,8 @@ struct BrowserExploreAssembly {
             browserExploreController: keeperCoreAssembly.browserExploreController(),
             walletStore: keeperCoreAssembly.storesAssembly.walletsStore,
             regionStore: keeperCoreAssembly.storesAssembly.regionStore,
-            analyticsProvider: coreAssembly.analyticsProvider,
-            configuration: keeperCoreAssembly.configurationAssembly.configuration
+            configuration: keeperCoreAssembly.configurationAssembly.configuration,
+            deeplinkParser: keeperCoreAssembly.deeplinkParser
         )
         let viewController = BrowserExploreViewController(
             viewModel: viewModel

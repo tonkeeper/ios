@@ -30,23 +30,40 @@ public final class StoriesPresenter {
         self.configuration = configuration
     }
 
+    /// How a presented story went away — a caller chaining stories advances only after
+    /// natural completion; an explicit close or action ends the chain.
+    public enum DismissReason {
+        case completed
+        case closed
+        case action
+    }
+
+    /// Returns whether the story was actually presented — it is dropped when the app has no
+    /// wallet/scene to present from or stories are switched off remotely, and a caller
+    /// chaining stories has to unwind rather than wait for a dismissal that won't come.
     @MainActor
+    @discardableResult
     public func presentStory(
         story: Story,
         fromViewController: UIViewController,
         fromAnalyticsProperty: String,
         deeplinkAction: @escaping (String) -> Void,
-        urlAction: @escaping (URL) -> Void
-    ) {
-        guard !story.pages.isEmpty else { return }
-        guard let wallet = try? self.walletsStore.activeWallet else { return }
-        guard !configuration.flag(\.storiesDisabled, network: wallet.network) else { return }
-        guard let windowScene = fromViewController.windowScene else { return }
+        urlAction: @escaping (URL) -> Void,
+        onDismiss: ((DismissReason) -> Void)? = nil
+    ) -> Bool {
+        guard !story.pages.isEmpty else { return false }
+        guard let wallet = try? self.walletsStore.activeWallet else { return false }
+        guard !configuration.flag(\.storiesDisabled, network: wallet.network) else { return false }
+        guard let windowScene = fromViewController.windowScene else { return false }
         let window = createWindow(windowScene: windowScene)
         self.window = window
 
         let backgroundURLs = story.pages.compactMap { $0.image }
         ImagePrefetcherService().prefetch(urls: backgroundURLs)
+
+        // Recorded at tap time: `deeplinkAction`/`urlAction` only run in the dismissal
+        // completion, which UIKit invokes after the presentation controller's own callback.
+        var dismissReason = DismissReason.closed
 
         let models: [StoriesPageModel] = story.pages.enumerated().map { [weak self] index, page in
             var button: StoriesPageModel.Button?
@@ -54,6 +71,7 @@ public final class StoriesPresenter {
                 button = StoriesPageModel.Button(
                     title: pageButton.title,
                     action: { [weak self] in
+                        dismissReason = .action
                         switch pageButton.type {
                         case .deeplink:
                             self?.storiesViewController?.dismiss(animated: true, completion: {
@@ -89,6 +107,10 @@ public final class StoriesPresenter {
 
         let storiesViewController = TKStoriesFactory.storiesViewController(models: models)
         storiesViewController.setInitialPage(initialIndex)
+        storiesViewController.didComplete = { [weak storiesViewController] in
+            dismissReason = .completed
+            storiesViewController?.dismiss(animated: true)
+        }
         storiesViewController.didOpen = { [weak self, analyticsProvider] in
             analyticsProvider.log(eventKey: .storyOpen, args: ["story_id": story.id, "from": fromAnalyticsProperty])
             analyticsProvider.log(eventKey: .storyPageView, args: ["story_id": story.id, "page_number": initialIndex + 1])
@@ -109,6 +131,7 @@ public final class StoriesPresenter {
 
         storiesViewController.storiesPresentationController?.didDismiss = { [weak self] in
             self?.window = nil
+            onDismiss?(dismissReason)
         }
 
         window.makeKeyAndVisible()
@@ -119,6 +142,12 @@ public final class StoriesPresenter {
                 self?.storiesService.markStoryShown(storyID: story.id)
             }
         )
+        return true
+    }
+
+    @MainActor
+    public func dismissCurrentStory() {
+        storiesViewController?.dismiss(animated: true)
     }
 
     private func createWindow(windowScene: UIWindowScene) -> UIWindow {

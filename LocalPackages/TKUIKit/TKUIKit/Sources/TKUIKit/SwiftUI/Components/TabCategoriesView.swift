@@ -7,6 +7,7 @@ public struct TabCategoriesView<Selection: Hashable>: View {
     private let initialSelection: Selection
     private let onSelectionChange: (Selection) -> Void
     private let contentInsets: EdgeInsets
+    private let style: TabCategoryView.Style
 
     @State private var selectedItem: Selection
 
@@ -14,6 +15,7 @@ public struct TabCategoriesView<Selection: Hashable>: View {
         items: [Item],
         initialSelection: Selection,
         onSelectionChange: @escaping (Selection) -> Void,
+        style: TabCategoryView.Style = .primary,
         shimmer: Bool = false,
         insetsModifier: (inout EdgeInsets) -> Void = { _ in }
     ) {
@@ -21,6 +23,7 @@ public struct TabCategoriesView<Selection: Hashable>: View {
         self.initialSelection = initialSelection
         self.onSelectionChange = onSelectionChange
         self.shimmer = shimmer
+        self.style = style
         self.contentInsets = {
             var insets = Layout.insets
             insetsModifier(&insets)
@@ -36,7 +39,9 @@ public struct TabCategoriesView<Selection: Hashable>: View {
                     TabCategoryView(
                         title: item.title,
                         image: item.image,
-                        isSelected: item.id == selectedItem
+                        isSelected: item.id == selectedItem,
+                        style: item.style ?? style,
+                        accessibilityIdentifier: item.accessibilityIdentifier
                     ) {
                         if item.isSelectable {
                             selectedItem = item.id
@@ -53,6 +58,8 @@ public struct TabCategoriesView<Selection: Hashable>: View {
             }
             .padding(contentInsets)
         }
+        .tkImmediateButtonPresses()
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -62,17 +69,23 @@ public extension TabCategoriesView {
         public var title: String
         public var image: UIImage?
         public var isSelectable: Bool
+        public var style: TabCategoryView.Style?
+        public var accessibilityIdentifier: String?
 
         public init(
             id: Selection,
             title: String,
             image: UIImage? = nil,
-            isSelectable: Bool = true
+            isSelectable: Bool = true,
+            style: TabCategoryView.Style? = nil,
+            accessibilityIdentifier: String? = nil
         ) {
             self.id = id
             self.title = title
             self.image = image
             self.isSelectable = isSelectable
+            self.style = style
+            self.accessibilityIdentifier = accessibilityIdentifier
         }
     }
 }
@@ -80,7 +93,7 @@ public extension TabCategoriesView {
 extension TabCategoriesView {
     private enum Layout {
         static var itemSpacing: CGFloat {
-            8
+            6
         }
 
         static var insets: EdgeInsets {

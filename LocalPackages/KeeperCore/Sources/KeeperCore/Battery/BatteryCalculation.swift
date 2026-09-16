@@ -19,10 +19,16 @@ public struct BatteryCalculation {
 
     public func calculateCharges(tonAmount: NSDecimalNumber) -> Int? {
         guard let batteryMeanFees = configuration.batteryMeanFeesDecimaNumber(network: .mainnet) else { return nil }
-        let chargesCountDecimal = tonAmount.dividing(by: batteryMeanFees)
-        let chargesCountRounded = chargesCountDecimal.rounding(
+        return Self.roundCharges(tonAmount.dividing(by: batteryMeanFees))
+    }
+
+    /// Charges are rounded away from zero: a fractional remainder still costs a whole charge, and
+    /// a refund deficit reports its full magnitude instead of understating it.
+    static func roundCharges(_ count: NSDecimalNumber) -> Int {
+        let isNegative = count.compare(NSDecimalNumber.zero) == .orderedAscending
+        let rounded = count.rounding(
             accordingToBehavior: NSDecimalNumberHandler(
-                roundingMode: .up,
+                roundingMode: isNegative ? .down : .up,
                 scale: 0,
                 raiseOnExactness: false,
                 raiseOnOverflow: false,
@@ -30,7 +36,13 @@ public struct BatteryCalculation {
                 raiseOnDivideByZero: false
             )
         )
-        return Int(truncating: chargesCountRounded)
+        return Int(truncating: rounded)
+    }
+
+    /// Charges the wallet can spend. A refund can push the service balance below zero, and a
+    /// negative balance buys nothing — it is not a debt any flow may spend against.
+    public func calculateAvailableCharges(balance: BatteryBalance) -> Int? {
+        calculateCharges(tonAmount: balance.balanceDecimalNumber).map { max($0, 0) }
     }
 
     public func calculateSwapsMinimumChargesAmount(network: Network) -> Int? {

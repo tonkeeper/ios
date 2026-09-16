@@ -1,112 +1,74 @@
-import EventSource
 import Foundation
 import TKLogging
-import TonStreamingAPI
 import TonStreamingAPIV2
 
-public final class WalletBackgroundUpdate {
-    @Atomic public var eventClosure: ((BackgroundUpdateEvent) -> Void)?
-    @Atomic public var stateClosure: ((BackgroundUpdateConnectionState) -> Void)?
+protocol WalletBackgroundUpdateRunning: Sendable {
+    func run(
+        stateHandler: @escaping @Sendable (BackgroundUpdateConnectionState) async -> Void,
+        eventHandler: @escaping @Sendable (BackgroundUpdateEvent) async -> Void
+    ) async
+}
 
-    @Atomic public var state: BackgroundUpdateConnectionState = .connecting {
-        didSet {
-            logState(state: state)
-            stateClosure?(state)
-        }
-    }
-
-    @Atomic private var eventId: String?
-    private var task: Task<Void, Never>?
-
-    private let jsonDecoder = JSONDecoder()
+/// Immutable connection runner. A single `run` operation owns connect, consume and retry, so
+/// cancelling its task cancels every stage instead of leaving a detached retry behind.
+final class WalletBackgroundUpdate: WalletBackgroundUpdateRunning, @unchecked Sendable {
+    typealias StateHandler = @Sendable (BackgroundUpdateConnectionState) async -> Void
+    typealias EventHandler = @Sendable (BackgroundUpdateEvent) async -> Void
+    typealias Sleep = (_ delay: TimeInterval) async throws -> Void
 
     private let wallet: Wallet
-    private let streamingAPI: TonStreamingAPI.StreamingAPI?
     private let streamingAPIV2Provider: StreamingAPIV2Provider
+    private let sleep: Sleep
 
     init(
         wallet: Wallet,
-        streamingAPIProvider: StreamingAPIProvider,
-        streamingAPIV2Provider: StreamingAPIV2Provider
+        streamingAPIV2Provider: StreamingAPIV2Provider,
+        sleep: @escaping Sleep = WalletBackgroundUpdate.defaultSleep
     ) {
         self.wallet = wallet
-        self.streamingAPI = streamingAPIProvider.api(wallet.network)
         self.streamingAPIV2Provider = streamingAPIV2Provider
+        self.sleep = sleep
     }
 
-    func start() {
-        self.task?.cancel()
-
-        self.task = makeTask {
-            if let api = await self.streamingAPIV2Provider.api(self.wallet.network) {
-                try await self.startV2(api: api)
-                return true
-            }
-
-            if let api = self.streamingAPI {
-                try await self.startV1(api: api)
-                return true
-            }
-
-            self.state = .connected
-            return false
-        }
-    }
-
-    func stop() {
-        task?.cancel()
-    }
-
-    private func makeTask(
-        operation: @escaping @Sendable () async throws -> Bool
-    ) -> Task<Void, Never> {
-        Task {
+    func run(
+        stateHandler: @escaping StateHandler,
+        eventHandler: @escaping EventHandler
+    ) async {
+        while !Task.isCancelled {
             do {
-                let shouldRestart = try await operation()
-
-                guard shouldRestart else {
+                guard let api = try await streamingAPIV2Provider.api(wallet.network) else {
+                    try Task.checkCancellation()
+                    await emit(.connected, to: stateHandler)
                     return
                 }
-
-                self.state = .disconnected
-
                 try Task.checkCancellation()
-                await MainActor.run {
-                    start()
-                }
+                try await consume(api: api, stateHandler: stateHandler, eventHandler: eventHandler)
+                try Task.checkCancellation()
+                await emit(.disconnected, to: stateHandler)
             } catch {
-                guard !error.isCancelledError else { return }
-                if error.isNoConnectionError {
-                    state = .noConnection
-                } else {
-                    state = .disconnected
-                    try? await Task.sleep(nanoseconds: 3_000_000_000)
-                    await MainActor.run {
-                        self.start()
-                    }
+                guard !Task.isCancelled, !error.isCancelledError else { return }
+                guard !error.isNoConnectionError else {
+                    await emit(.noConnection, to: stateHandler)
+                    return
+                }
+                await emit(.disconnected, to: stateHandler)
+                do {
+                    try await sleep(.retryDelay)
+                } catch {
+                    return
                 }
             }
         }
     }
 
-    private func startV1(api: TonStreamingAPI.StreamingAPI) async throws {
+    private func consume(
+        api: TonStreamingAPIV2.StreamingAPI,
+        stateHandler: @escaping StateHandler,
+        eventHandler: @escaping EventHandler
+    ) async throws {
         let address = try wallet.address
 
-        self.state = .connecting
-
-        let stream = try await api.accountTransactionsStream(account: address.toRaw())
-        try Task.checkCancellation()
-        self.state = .connected
-
-        for try await events in stream {
-            handleReceivedV1Events(events)
-        }
-    }
-
-    private func startV2(api: TonStreamingAPIV2.StreamingAPI) async throws {
-        let address = try wallet.address
-
-        self.state = .connecting
+        await emit(.connecting, to: stateHandler)
 
         let request = TonStreamingAPIV2.SseSubscriptionRequest(
             addresses: [address.toRaw()],
@@ -116,42 +78,21 @@ public final class WalletBackgroundUpdate {
 
         let stream = try await api.stream(sseSubscriptionRequest: request)
         try Task.checkCancellation()
-        self.state = .connected
+        await emit(.connected, to: stateHandler)
 
         for try await payloads in stream {
-            handleReceivedV2Payloads(payloads)
+            try Task.checkCancellation()
+            guard let event = payloads.compactMap(backgroundUpdateEvent).last else { continue }
+            await eventHandler(event)
         }
     }
 
-    private func handleReceivedV1Events(_ events: [EventSource.Event]) {
-        guard let messageEvent = events.last(where: { $0.event == "message" }),
-              let eventId = messageEvent.id,
-              let eventData = messageEvent.data?.data(using: .utf8)
-        else {
-            return
-        }
-
-        self.eventId = eventId
-
-        do {
-            let eventTransaction = try jsonDecoder.decode(EventSource.Transaction.self, from: eventData)
-            let event = BackgroundUpdateEvent(
-                wallet: wallet,
-                lt: eventTransaction.lt,
-                txHash: eventTransaction.txHash
-            )
-            eventClosure?(event)
-        } catch {
-            return
-        }
-    }
-
-    private func handleReceivedV2Payloads(_ payloads: [TonStreamingAPIV2.SseJsonPayload]) {
-        guard let event = payloads.compactMap(backgroundUpdateEvent).last else {
-            return
-        }
-
-        eventClosure?(event)
+    private func emit(
+        _ state: BackgroundUpdateConnectionState,
+        to stateHandler: StateHandler
+    ) async {
+        logState(state: state)
+        await stateHandler(state)
     }
 
     private func backgroundUpdateEvent(
@@ -243,4 +184,14 @@ public final class WalletBackgroundUpdate {
             Log.i("Log 🪵: WalletBackgroundUpdate - \(wallet.label) — no connection")
         }
     }
+}
+
+extension WalletBackgroundUpdate {
+    static let defaultSleep: Sleep = { delay in
+        try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+    }
+}
+
+private extension TimeInterval {
+    static let retryDelay: TimeInterval = 3
 }

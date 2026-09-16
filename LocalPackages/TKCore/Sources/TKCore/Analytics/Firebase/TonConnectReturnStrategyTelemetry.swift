@@ -2,7 +2,7 @@ import FirebaseAnalytics
 import Foundation
 import Network
 
-public protocol TonConnectReturnStrategyLogging {
+protocol TonConnectReturnStrategyLogging {
     func logReturnStrategy(_ returnStrategy: TonConnectReturnStrategy)
 }
 
@@ -15,11 +15,11 @@ public final class FirebaseTonConnectReturnStrategyLogger: TonConnectReturnStrat
     }
 }
 
-public struct TonConnectReturnStrategyEvent: Equatable {
-    public let name: String
-    public let parameters: [String: NSObject]
+struct TonConnectReturnStrategyEvent: Equatable {
+    let name: String
+    let parameters: [String: NSObject]
 
-    public init(_ strategy: TonConnectReturnStrategy) {
+    init(_ strategy: TonConnectReturnStrategy) {
         name = "tc_return_strategy_seen"
 
         parameters = [

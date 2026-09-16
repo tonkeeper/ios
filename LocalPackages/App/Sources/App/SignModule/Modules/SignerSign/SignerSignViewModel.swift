@@ -1,5 +1,4 @@
 import KeeperCore
-import TKCore
 import TKLocalize
 import TKUIKit
 import TonSwift
@@ -35,24 +34,21 @@ final class SignerSignViewModelImplementation: SignerSignViewModel, SignerSignMo
         update()
     }
 
-    func generateQRCodes(width: CGFloat) {
+    func generateQRCodes(width _: CGFloat) {
         createQrCodeTask?.cancel()
         let string = signerSignController.url.absoluteString
         let chunks = string.split(by: 256)
 
         let task = Task {
-            var images = [UIImage]()
+            var matrices = [QrCodeMatrix]()
             for chunk in chunks {
-                guard let image = await self.qrCodeGenerator.generate(
-                    string: chunk,
-                    size: CGSize(width: width, height: width)
-                ) else { continue }
-                images.append(image)
+                guard let matrix = self.qrCodeGenerator.generateMatrix(string: chunk) else { continue }
+                matrices.append(matrix)
             }
-            let result = images
+            let result = matrices
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                self.qrCodeImages = result
+                self.qrCodeMatrices = result
                 self.update()
             }
         }
@@ -62,19 +58,19 @@ final class SignerSignViewModelImplementation: SignerSignViewModel, SignerSignMo
     // MARK: - State
 
     private var createQrCodeTask: Task<Void, Never>?
-    private var qrCodeImages = [UIImage]()
+    private var qrCodeMatrices = [QrCodeMatrix]()
 
     // MARK: - Dependencies
 
     private let signerSignController: SignerSignController
-    private let qrCodeGenerator: QRCodeGenerator
+    private let qrCodeGenerator: QrCodeMatrixGenerator
     private let scannerOutput: ScannerViewModuleOutput
 
     // MARK: - Init
 
     init(
         signerSignController: SignerSignController,
-        qrCodeGenerator: QRCodeGenerator,
+        qrCodeGenerator: QrCodeMatrixGenerator,
         scannerOutput: ScannerViewModuleOutput
     ) {
         self.signerSignController = signerSignController
@@ -118,10 +114,10 @@ private extension SignerSignViewModelImplementation {
                 isLast: false
             ),
             qrCodeModel: TKFancyQRCodeView.Model(
-                images: qrCodeImages,
                 topString: TKLocales.SignerSign.transaction.uppercased(),
                 bottomLeftString: signerSignController.wallet.metaData.label
-            )
+            ),
+            qrCodeMatrices: qrCodeMatrices
         )
     }
 

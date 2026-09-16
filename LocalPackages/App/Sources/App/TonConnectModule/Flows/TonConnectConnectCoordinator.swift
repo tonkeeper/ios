@@ -25,10 +25,10 @@ public protocol TonConnectConnectCoordinatorConnector {
 }
 
 @MainActor
-public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
+struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
     private let tonConnectAppsStore: TonConnectAppsStore
 
-    public func connect(
+    func connect(
         wallet: Wallet,
         parameters: TonConnectParameters,
         manifest: TonConnectManifest,
@@ -43,22 +43,22 @@ public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoo
         )
     }
 
-    public init(tonConnectAppsStore: TonConnectAppsStore) {
+    init(tonConnectAppsStore: TonConnectAppsStore) {
         self.tonConnectAppsStore = tonConnectAppsStore
     }
 }
 
 @MainActor
-public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
+struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
     private let tonConnectAppsStore: TonConnectAppsStore
     private let connectionResponseHandler: (TonConnectAppsStore.ConnectResult) -> Void
 
-    public init(tonConnectAppsStore: TonConnectAppsStore, connectionResponseHandler: @escaping (TonConnectAppsStore.ConnectResult) -> Void) {
+    init(tonConnectAppsStore: TonConnectAppsStore, connectionResponseHandler: @escaping (TonConnectAppsStore.ConnectResult) -> Void) {
         self.tonConnectAppsStore = tonConnectAppsStore
         self.connectionResponseHandler = connectionResponseHandler
     }
 
-    public func connect(
+    func connect(
         wallet: Wallet,
         parameters: TonConnectParameters,
         manifest: TonConnectManifest,
@@ -80,16 +80,16 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
 }
 
 @MainActor
-public final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
-    public enum Flow {
+final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter> {
+    enum Flow {
         case common
         case deeplink
     }
 
-    public var didConnect: (() -> Void)?
-    public var didCancel: (() -> Void)?
-    public var didFail: (() -> Void)?
-    public var didRequestOpeningBrowser: ((_ manifest: TonConnectManifest) -> Void)?
+    var didConnect: (() -> Void)?
+    var didCancel: (() -> Void)?
+    var didFail: (() -> Void)?
+    var didRequestOpeningBrowser: ((_ manifest: TonConnectManifest) -> Void)?
 
     private let connector: TonConnectConnectCoordinatorConnector
     private let parameters: TonConnectParameters
@@ -102,7 +102,7 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter>
 
     private let flow: Flow
 
-    public init(
+    init(
         router: WindowRouter,
         flow: Flow,
         connector: TonConnectConnectCoordinatorConnector,
@@ -124,7 +124,7 @@ public final class TonConnectConnectCoordinator: RouterCoordinator<WindowRouter>
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openTonConnectConnect()
     }
 }
@@ -209,7 +209,7 @@ private extension TonConnectConnectCoordinator {
             )
         }
 
-        module.output.didTapOpenBrowserAndConnect = { [weak bottomSheetViewController] manifest in
+        module.output.didTapOpenBrowserAndConnect = { [weak self, weak bottomSheetViewController] manifest in
             bottomSheetViewController?.dismiss { [weak self] in
                 self?.didRequestOpeningBrowser?(manifest)
                 self?.didCancel?()
@@ -506,7 +506,8 @@ private extension TonConnectConnectCoordinator {
             parentCoordinator: self,
             parentRouter: ViewControllerRouter(rootViewController: fromViewController),
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider
         ) else { throw ConnectError.noPasscode }
 
         let mnemonic = try await keeperCoreMainAssembly.mnemonicAccess.getMnemonic(wallet: wallet, passcode: passcode)
@@ -528,10 +529,7 @@ private extension TonConnectConnectCoordinator {
 
         let module = WalletsListAssembly.module(
             model: model,
-            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-            totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
@@ -553,14 +551,27 @@ private extension TonConnectConnectCoordinator {
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
         )
+        let multichainEnabled = keeperCoreMainAssembly
+            .configurationAssembly
+            .configuration
+            .featureEnabled(.multichainEnabled)
 
         let coordinator = module.createAddWalletCoordinator(
-            options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .importTetra, .signer],
-            router: router
+            options: [
+                multichainEnabled ? .createMultichain : .createRegular,
+                .importRegular,
+                .importWatchOnly,
+                .importTetra,
+                .signer,
+            ],
+            router: router,
+            analyticsContext: module.makeWalletFlowAnalyticsContext(from: .main)
         )
         coordinator.didAddWallets = {
             onAddWallets()

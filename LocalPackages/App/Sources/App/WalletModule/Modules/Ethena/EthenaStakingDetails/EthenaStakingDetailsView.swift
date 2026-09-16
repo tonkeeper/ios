@@ -87,7 +87,3 @@ final class EthenaStakingDetailsView: TKView {
         }
     }
 }
-
-private extension CGFloat {
-    static let contentPadding: CGFloat = 16
-}

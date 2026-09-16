@@ -43,7 +43,7 @@ public actor WalletNFTStore {
     }
 
     private var observers = [WeakWalletNFTStoreObserver]()
-    private var loadingTask: Task<WalletNFTs, Never>?
+    private var loadingTask: Task<WalletNFTs?, Never>?
 
     private nonisolated let wallet: Wallet
     private let repository: WalletNFTsRepository
@@ -101,9 +101,9 @@ public actor WalletNFTStore {
     @discardableResult
     public func loadNFTs() async -> WalletNFTs {
         if let loadingTask {
-            return await loadingTask.value
+            return await loadingTask.value ?? _state.nfts
         } else {
-            let task = Task<WalletNFTs, Never> {
+            let task = Task<WalletNFTs?, Never> {
                 do {
                     let loadedNFTs = try await nftsService.loadAccountNFTs(
                         wallet: wallet,
@@ -114,7 +114,7 @@ public actor WalletNFTStore {
                     )
                     return handleNFTs(loadedNFTs)
                 } catch {
-                    return WalletNFTs(all: [], visible: [], hidden: [], spam: [], blacklistedCount: 0)
+                    return nil
                 }
             }
             self.loadingTask = task
@@ -124,15 +124,15 @@ public actor WalletNFTStore {
                 nfts: _state.nfts
             )
 
-            let nfts = await task.value
+            let loadedNFTs = await task.value
             self.loadingTask = nil
-            if !Task.isCancelled {
-                try? self.repository.save(nfts: nfts, wallet: wallet)
-                _state = State(loadingState: .idle, nfts: nfts)
-            } else {
+            guard !Task.isCancelled, let loadedNFTs else {
                 _state = State(loadingState: .idle, nfts: _state.nfts)
+                return _state.nfts
             }
-            return nfts
+            try? self.repository.save(nfts: loadedNFTs, wallet: wallet)
+            _state = State(loadingState: .idle, nfts: loadedNFTs)
+            return loadedNFTs
         }
     }
 
@@ -142,42 +142,6 @@ public actor WalletNFTStore {
     }
 
     private func handleNFTs(_ nfts: [NFT]) -> WalletNFTs {
-        var visible: [NFT] = []
-        var hidden: [NFT] = []
-        var spam: [NFT] = []
-        var blacklistedCount = 0
-
-        let managementStoreState = nftManagementStore.state
-        for nft in nfts {
-            guard !nft.isHidden else { continue }
-            let state: NFTsManagementState.NFTState?
-            if let collection = nft.collection {
-                state = managementStoreState.nftStates[.collection(collection.address)]
-            } else {
-                state = managementStoreState.nftStates[.singleItem(nft.address)]
-            }
-
-            switch nft.trust {
-            case .blacklist:
-                blacklistedCount += 1
-            case .graylist, .none, .unknown, .whitelist:
-                switch state {
-                case .spam:
-                    spam.append(nft)
-                case .hidden:
-                    hidden.append(nft)
-                default:
-                    visible.append(nft)
-                }
-            }
-        }
-
-        return WalletNFTs(
-            all: nfts,
-            visible: visible,
-            hidden: hidden,
-            spam: spam,
-            blacklistedCount: blacklistedCount
-        )
+        WalletNFTs.grouped(nfts: nfts, managementState: nftManagementStore.state)
     }
 }

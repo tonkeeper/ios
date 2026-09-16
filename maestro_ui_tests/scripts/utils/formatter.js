@@ -3,8 +3,9 @@
  * Uses string math only (no `Number` scaling) so large nano-ton values stay exact.
  * Locale fixed to en-style: '.' decimal separator, ' ' (U+0020) thousands grouping — same as
  * `AmountFormatter.Configuration` grouping + en simulator in CI.
- * Thin space (U+2009) matches `FormattersAssembly` / `String.Symbol.shortSpace` between sign and
- * number and between number and currency symbol.
+ * Sign↔number gap is always the thin space (U+2009) — `AmountFormatter` uses `config.space`
+ * (`FormattersAssembly` sets it to `String.Symbol.shortSpace`). Number↔symbol gap follows
+ * `AmountFormatter.space(for:)`: a regular space for ASCII-Latin symbols (GRAM, tsTON), thin otherwise.
  */
 
 var THIN_SPACE = '\u2009';
@@ -12,6 +13,22 @@ var PLUS_SIGN = '\u002b';
 var MINUS_SIGN = '\u2212';
 var GROUPING_SEPARATOR = ' ';
 var DECIMAL_SEPARATOR = '.';
+var REGULAR_SPACE = ' ';
+
+/**
+ * Mirrors `SimplifiedAmountFormatter.space(for:)`: regular space when the token symbol is
+ * ASCII-Latin-letters only (e.g. NOT, tsTON, USDT), thin space otherwise (e.g. USD₮).
+ */
+function jettonSymbolSeparator(symbol) {
+    return /^[A-Za-z]+$/.test(String(symbol)) ? REGULAR_SPACE : THIN_SPACE;
+}
+
+function nativeTokenDisplayName() {
+    if (typeof NATIVE_TOKEN_SHORT_TEXT !== 'undefined' && NATIVE_TOKEN_SHORT_TEXT) {
+        return String(NATIVE_TOKEN_SHORT_TEXT);
+    }
+    throw new Error('formatter.js: NATIVE_TOKEN_SHORT_TEXT is not set');
+}
 
 var COMPACT_MAX_FRACTION_DIGITS = 2;
 var COMPACT_MAX_SIGNIFICANT_FRACTION_DIGITS = 3;
@@ -69,59 +86,9 @@ function trimTrailingZerosString(str) {
     return result;
 }
 
-function shouldRoundUp(ch) {
-    return ch === '5' || ch === '6' || ch === '7' || ch === '8' || ch === '9';
-}
-
-function roundedDecimalDigits(digits, shouldRound) {
-    if (!shouldRound) {
-        return { digits: digits, overflow: false };
-    }
-    if (digits.length === 0) {
-        return { digits: '', overflow: true };
-    }
-    var rounded = digits.split('');
-    var index = rounded.length - 1;
-    while (true) {
-        if (rounded[index] === '9') {
-            rounded[index] = '0';
-            if (index === 0) {
-                return { digits: '1' + rounded.join(''), overflow: true };
-            }
-            index--;
-        } else {
-            rounded[index] = String.fromCharCode(rounded[index].charCodeAt(0) + 1);
-            return { digits: rounded.join(''), overflow: false };
-        }
-    }
-}
-
-function incrementInteger(integer) {
-    var digits = integer.split('');
-    var index = digits.length - 1;
-    while (true) {
-        if (digits[index] === '9') {
-            digits[index] = '0';
-            if (index === 0) {
-                return '1' + digits.join('');
-            }
-            index--;
-        } else {
-            digits[index] = String.fromCharCode(digits[index].charCodeAt(0) + 1);
-            return digits.join('');
-        }
-    }
-}
-
-function roundedParts(integer, fraction, maxFractionDigits) {
+function truncatedParts(integer, fraction, maxFractionDigits) {
     var fractionEnd = Math.min(maxFractionDigits, fraction.length);
-    var digits = fraction.substring(0, fractionEnd);
-    var shouldRound = fractionEnd < fraction.length && shouldRoundUp(fraction.charAt(fractionEnd));
-    var rounded = roundedDecimalDigits(digits, shouldRound);
-    if (rounded.overflow) {
-        return { integer: incrementInteger(integer), fraction: null };
-    }
-    var trimmed = trimTrailingZerosString(rounded.digits);
+    var trimmed = trimTrailingZerosString(fraction.substring(0, fractionEnd));
     return { integer: integer, fraction: trimmed === '' ? null : trimmed };
 }
 
@@ -136,13 +103,7 @@ function applyCompactLessThanOneRules(fraction) {
     var firstSignificantOffset = i;
     var maximumEndOffset = firstSignificantOffset + COMPACT_MAX_SIGNIFICANT_FRACTION_DIGITS;
     var endIndex = Math.min(maximumEndOffset, fraction.length);
-    var slice = fraction.substring(0, endIndex);
-    var shouldRound = endIndex < fraction.length && shouldRoundUp(fraction.charAt(endIndex));
-    var rounded = roundedDecimalDigits(slice, shouldRound);
-    if (rounded.overflow) {
-        return { integer: '1', fraction: null, isZero: false };
-    }
-    var trimmed = trimTrailingZerosString(rounded.digits);
+    var trimmed = trimTrailingZerosString(fraction.substring(0, endIndex));
     if (trimmed === '') {
         return { integer: '0', fraction: null, isZero: true };
     }
@@ -156,7 +117,7 @@ function applyCompactRules(integer, fraction) {
     if (integer === '0') {
         return applyCompactLessThanOneRules(fraction);
     }
-    var rp = roundedParts(integer, fraction, COMPACT_MAX_FRACTION_DIGITS);
+    var rp = truncatedParts(integer, fraction, COMPACT_MAX_FRACTION_DIGITS);
     return {
         integer: rp.integer,
         fraction: rp.fraction,
@@ -225,8 +186,7 @@ function formatCompactMinorUnits(amount, fractionDigits, opts) {
 
 /**
  * TonAPI `balance` is nanotons (integer). Compact display matches KeeperCore `AmountFormatter`
- * default `.compact` (NOT legacy `Math.floor(amount/1e9 * 100) / 100`, which yields 2.26 for
- * 2265256703 while the app shows 2.27).
+ * default `.compact` truncation rules.
  */
 function formatTon(amount) {
     return formatCompactMinorUnits(amount, 9, {});
@@ -249,30 +209,81 @@ function formatUsdt(amount) {
  */
 function formatHistoryJettonIncomeLine(amount, fractionDigits, symbol) {
     var sym = symbol || 'USD₮';
+    var separator = jettonSymbolSeparator(sym);
     var num = formatCompactMinorUnits(amount, fractionDigits, {
         signPolicy: 'always',
         isNegative: false
     });
     if (num === '0') {
-        return '0' + THIN_SPACE + sym;
+        return '0' + separator + sym;
     }
-    return num + THIN_SPACE + sym;
+    return num + separator + sym;
+}
+
+/**
+ * Signed native token line for history (`SignedAccountEventAmountMapper` + signed `AmountFormatter`, compact).
+ * `isNegative` true for stake deposit outcome; false for completed withdraw stake income.
+ *
+ * Mirrors `AmountFormatter.buildFormattedString`: the sign is `minus/plus + config.space`
+ * where `config.space` is the thin space (U+2009) (`FormattersAssembly`), while the symbol
+ * separator is `space(for:)` — a regular space for ASCII-Latin symbols (e.g. GRAM), thin
+ * otherwise. So "1 GRAM" outcome renders as `−\u20091 GRAM` (thin sign gap, regular symbol gap).
+ */
+function formatSignedCompactTonWithTokenSuffix(amount, isNegative) {
+    var symbol = nativeTokenDisplayName();
+    var symbolSeparator = jettonSymbolSeparator(symbol);
+    var sign = isNegative ? MINUS_SIGN : PLUS_SIGN;
+    var num = formatCompactMinorUnits(amount, 9, { signPolicy: 'none' });
+    return sign + THIN_SPACE + num + symbolSeparator + symbol;
+}
+
+/**
+ * Jetton burn / spend line (`mapJettonBurnAction`): signed compact amount + token symbol.
+ */
+function formatHistoryJettonOutcomeLine(amount, fractionDigits, symbol) {
+    var sym = symbol || 'tsTON';
+    var separator = jettonSymbolSeparator(sym);
+    var num = formatCompactMinorUnits(amount, fractionDigits, {
+        signPolicy: 'always',
+        isNegative: true
+    });
+    if (num === '0') {
+        return MINUS_SIGN + THIN_SPACE + '0' + separator + sym;
+    }
+    return num + separator + sym;
+}
+
+function toExactVisiblePattern(text) {
+    return String(text)
+        .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        .replace(/\u2009/g, '\\u2009');
 }
 
 output.formatter = {
     formatJetton: formatJetton,
     formatTon: formatTon,
     formatUsdt: formatUsdt,
-    formatHistoryJettonIncomeLine: formatHistoryJettonIncomeLine
+    formatHistoryJettonIncomeLine: formatHistoryJettonIncomeLine,
+    formatSignedCompactTonWithTokenSuffix: formatSignedCompactTonWithTokenSuffix,
+    formatHistoryJettonOutcomeLine: formatHistoryJettonOutcomeLine,
+    toExactVisiblePattern: toExactVisiblePattern
 };
 
 (function maestroFormatterSanityCheck() {
     var ton = output.formatter.formatTon(2265256703);
-    if (ton !== '2.27') {
+    if (ton !== '2.26') {
         throw new Error(
-            'formatter.js: formatTon(2265256703) expected "2.27" (Swift compact), got "' +
+            'formatter.js: formatTon(2265256703) expected "2.26" (Swift compact), got "' +
                 ton +
-                '". Legacy float+floor would show 2.26; refresh script / engine.'
+                '". Refresh script / engine.'
+        );
+    }
+    var smallTon = output.formatter.formatTon(4029);
+    if (smallTon !== '0.00000402') {
+        throw new Error(
+            'formatter.js: formatTon(4029) expected "0.00000402" (Swift compact), got "' +
+                smallTon +
+                '". Refresh script / engine.'
         );
     }
 })();

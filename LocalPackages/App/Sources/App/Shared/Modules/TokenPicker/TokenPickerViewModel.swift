@@ -1,7 +1,6 @@
 import BigInt
 import Foundation
 import KeeperCore
-import TKCore
 import TKUIKit
 import TronSwift
 
@@ -39,8 +38,6 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
 
     // MARK: - Image Loading
 
-    private let imageLoader = ImageLoader()
-
     private var lastSearchText = ""
 
     // MARK: - State
@@ -77,7 +74,7 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
 
 private extension TokenPickerViewModelImplementation {
     func didUpdateState(state: TokenPickerModelState?) {
-        syncQueue.async {
+        syncQueue.async { [self] in
             guard let state else {
                 DispatchQueue.main.async {
                     self.didUpdateSnapshot?(TokenPicker.Snapshot())
@@ -101,7 +98,7 @@ private extension TokenPickerViewModelImplementation {
                     case let .balance(showConverted, currency):
                         TokenPicker.mapListBalanceItemConfiguration(
                             title: TonInfo.symbol,
-                            image: .image(.TKCore.Icons.Size44.tonLogo),
+                            image: .image(.TKUIKit.Icons.Size44.tonLogo),
                             tag: nil,
                             caption: {
                                 if isSecureMode {
@@ -124,7 +121,7 @@ private extension TokenPickerViewModelImplementation {
                     case .name:
                         TokenPicker.mapListNameItemConfiguration(
                             title: TonInfo.symbol,
-                            image: .image(.TKCore.Icons.Size44.tonLogo),
+                            image: .image(.TKUIKit.Icons.Size44.tonLogo),
                             tag: nil,
                             caption: TonInfo.name
                         )
@@ -138,7 +135,7 @@ private extension TokenPickerViewModelImplementation {
                         selectionHandler: { [weak self] in
                             guard let self else { return }
 
-                            if case let .ton(ton) = state.selectedToken, case .ton = ton {
+                            if state.selectedToken == .ton(.ton) {
                                 didFinish?()
                             } else {
                                 didSelectToken?(.ton(.ton))
@@ -149,67 +146,64 @@ private extension TokenPickerViewModelImplementation {
                 )
             }
 
-            // Tron USDT
-            if
-                !self.configuration.flag(\.tronDisabled, network: state.wallet.network),
-                let tronUSDTBalance = state.tronUSDTBalance
-            {
-                let tronTitle = TronSwift.USDT.name
-                let tronSymbol = TronSwift.USDT.symbol
-                let tronMatches = searchText.isEmpty ||
-                    tronTitle.lowercased().contains(searchText) ||
-                    tronSymbol.lowercased().contains(searchText)
-                if tronMatches {
+            if !self.configuration.flag(\.tronDisabled, network: state.wallet.network) {
+                for row in state.tronRows {
+                    let matches = searchText.isEmpty ||
+                        row.name.lowercased().contains(searchText) ||
+                        row.symbol.lowercased().contains(searchText)
+                    guard matches else { continue }
+
                     let configuration: TKListItemCell.Configuration = {
                         switch state.mode {
                         case let .balance(showConverted, currency):
                             TokenPicker.mapListBalanceItemConfiguration(
-                                title: TronSwift.USDT.name,
-                                image: .image(.App.Currency.Size44.usdt),
+                                title: row.name,
+                                image: .image(row.image),
                                 tag: nil,
                                 caption: {
                                     if isSecureMode {
                                         return .secureModeValueShort
                                     } else if showConverted, let currency {
                                         return self.amountFormatter.format(
-                                            decimal: tronUSDTBalance.converted,
+                                            decimal: row.converted,
                                             accessory: .fiat(currency),
                                             style: .fiatBalance
                                         )
                                     } else {
                                         return self.amountFormatter.format(
-                                            amount: tronUSDTBalance.amount,
-                                            fractionDigits: USDT.fractionDigits,
-                                            accessory: .tokenSymbol(TronSwift.USDT.symbol)
+                                            amount: row.amount,
+                                            fractionDigits: row.token.fractionDigits,
+                                            accessory: .tokenSymbol(row.symbol)
                                         )
                                     }
                                 }(),
-                                network: .trc20
+                                network: row.network
                             )
                         case .name:
                             TokenPicker.mapListNameItemConfiguration(
-                                title: TronSwift.USDT.symbol,
-                                image: .image(.App.Currency.Size44.usdt),
+                                title: row.symbol,
+                                image: .image(row.image),
                                 tag: nil,
-                                caption: TronSwift.USDT.name
+                                caption: row.name
                             )
                         }
                     }()
-                    let item = TokenPicker.Token(
-                        identifier: TronSwift.USDT.address.base58,
-                        configuration: configuration,
-                        selectionHandler: { [weak self] in
-                            guard let self else { return }
+                    items.append(
+                        TokenPicker.Token(
+                            identifier: row.identifier,
+                            configuration: configuration,
+                            selectionHandler: { [weak self] in
+                                guard let self else { return }
 
-                            if case .tronUSDT = state.selectedToken {
-                                didFinish?()
-                            } else {
-                                didSelectToken?(.tronUSDT)
-                                didFinish?()
+                                if state.selectedToken == row.pickerToken {
+                                    didFinish?()
+                                } else {
+                                    didSelectToken?(row.pickerToken)
+                                    didFinish?()
+                                }
                             }
-                        }
+                        )
                     )
-                    items.append(item)
                 }
             }
 
@@ -250,7 +244,7 @@ private extension TokenPickerViewModelImplementation {
                                         )
                                     }
                                 }(),
-                                network: state.wallet.isTronTurnOn && jettonBalance.jettonBalance.item.jettonInfo.isTonUSDT ? .ton : nil
+                                network: state.wallet.tron != nil && jettonBalance.jettonBalance.item.jettonInfo.isTonUSDT ? .ton : nil
                             )
                         case .name:
                             TokenPicker.mapListNameItemConfiguration(
@@ -290,8 +284,11 @@ private extension TokenPickerViewModelImplementation {
                         $0.identifier == jettonItem.jettonInfo.address.toRaw()
                     })
                 }
-            case .tronUSDT:
-                selectedIndex = items.firstIndex(where: { $0.identifier == TronSwift.USDT.address.base58 })
+            case let .tron(token):
+                let identifier = state.tronRows.first { $0.token == token }?.identifier
+                selectedIndex = identifier.flatMap { identifier in
+                    items.firstIndex { $0.identifier == identifier }
+                }
             }
 
             var snapshot = TokenPicker.Snapshot()

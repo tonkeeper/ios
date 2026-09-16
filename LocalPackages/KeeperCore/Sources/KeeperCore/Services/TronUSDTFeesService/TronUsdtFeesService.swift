@@ -7,7 +7,6 @@ public protocol TronUsdtFeesService: AnyObject {
     func start()
     func stop()
     func refresh(wallet: Wallet) async
-    func refreshActiveWallet() async
     func snapshot(wallet: Wallet, balance: ProcessedBalance?) -> TronUsdtFeesSnapshot?
     func addUpdateObserver<T: AnyObject>(
         _ observer: T,
@@ -139,16 +138,8 @@ final class TronUSDTFeesServiceImplementation: TronUsdtFeesService {
         )
 
         let batteryChargesBalance: Int = {
-            guard
-                let batteryBalance = balance?.batteryBalance,
-                !batteryBalance.isBalanceZero
-            else {
-                return 0
-            }
-
-            return batteryCalculation.calculateCharges(
-                tonAmount: batteryBalance.balanceDecimalNumber
-            ) ?? 0
+            guard let batteryBalance = balance?.batteryBalance else { return 0 }
+            return batteryCalculation.calculateAvailableCharges(balance: batteryBalance) ?? 0
         }()
         let batteryFillPercent = balance?.batteryBalance?.batteryState.percents ?? 0
 
@@ -232,6 +223,7 @@ private extension TronUSDTFeesServiceImplementation {
 
         do {
             let estimate = try await tronUsdtApi.estimateTransferFees(
+                wallet: wallet,
                 address: tronAddress,
                 method: TransferMethod(
                     to: tronAddress,
@@ -275,21 +267,6 @@ private extension TronUSDTFeesServiceImplementation {
         let tonAmount = batteryMeanFees.multiplying(
             by: NSDecimalNumber(value: requiredBatteryCharges)
         )
-        let nanoAmount = tonAmount
-            .multiplying(
-                byPowerOf10: Int16(TonInfo.fractionDigits)
-            )
-            .rounding(
-                accordingToBehavior: NSDecimalNumberHandler(
-                    roundingMode: .up,
-                    scale: 0,
-                    raiseOnExactness: false,
-                    raiseOnOverflow: false,
-                    raiseOnUnderflow: false,
-                    raiseOnDivideByZero: false
-                )
-            )
-
-        return BigUInt(nanoAmount.stringValue) ?? 0
+        return tonAmount.toNanoTonsBigUInt() ?? 0
     }
 }

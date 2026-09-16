@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import TKLogging
 import TonSwift
 
 public protocol BalanceService {
@@ -17,7 +18,6 @@ final class BalanceServiceImplementation: BalanceService {
     private let tronBalanceService: TronBalanceService
     private let batteryService: BatteryService
     private let stackingService: StakingService
-    private let tonProofTokenService: TonProofTokenService
     private let walletBalanceRepository: WalletBalanceRepository
 
     init(
@@ -26,7 +26,6 @@ final class BalanceServiceImplementation: BalanceService {
         tronBalanceService: TronBalanceService,
         batteryService: BatteryService,
         stackingService: StakingService,
-        tonProofTokenService: TonProofTokenService,
         walletBalanceRepository: WalletBalanceRepository
     ) {
         self.tonBalanceService = tonBalanceService
@@ -34,7 +33,6 @@ final class BalanceServiceImplementation: BalanceService {
         self.tronBalanceService = tronBalanceService
         self.batteryService = batteryService
         self.stackingService = stackingService
-        self.tonProofTokenService = tonProofTokenService
         self.walletBalanceRepository = walletBalanceRepository
     }
 
@@ -52,34 +50,31 @@ final class BalanceServiceImplementation: BalanceService {
         let stackingBalanceTask = Task {
             try await stackingService.loadStakingBalance(wallet: wallet)
         }
-        let batteryBalanceTask = Task {
-            try await batteryService.loadBatteryBalance(
-                wallet: wallet,
-                tonProofToken: tonProofTokenService.getWalletToken(wallet)
-            )
+        let batteryBalanceTask: Task<BatteryBalance, Error>?
+        if includingTransferFees {
+            batteryBalanceTask = Task {
+                try await batteryService.loadBatteryBalance(wallet: wallet)
+            }
+        } else {
+            // List / all-wallets refresh uses includingTransferFees: false. Battery is
+            // per-wallet auth but the same /balance?units=ton URL; fetching it for every
+            // wallet in the list duplicated work without affecting list totals.
+            batteryBalanceTask = nil
         }
         let tronBalanceTask = Task<TronBalance?, Never> { [tronBalanceService, walletBalanceRepository] in
-            guard
-                wallet.isTronTurnOn,
-                let address = wallet.tron?.address else { return nil }
+            guard let address = wallet.tron?.address else { return nil }
             do {
-                let rawBalance = try await tronBalanceService.loadBalance(
-                    address: address,
-                    includingTransferFees: includingTransferFees
-                )
-                if includingTransferFees {
-                    return rawBalance
-                } else {
-                    let cachedBalance = try? walletBalanceRepository
-                        .getWalletBalance(wallet: wallet)
-                        .tronBalance
-                    return TronBalance(
-                        amount: rawBalance.amount,
-                        trxAmount: cachedBalance?.trxAmount ?? rawBalance.trxAmount
-                    )
-                }
+                return try await tronBalanceService.loadBalance(address: address)
             } catch {
-                return TronBalance(amount: 0, trxAmount: 0)
+                if !error.isCancelledError {
+                    Log.tron.w("Tron balance load failed", error: error, extraInfo: [
+                        "address": address.base58,
+                    ])
+                }
+                let cachedBalance = try? walletBalanceRepository
+                    .getWalletBalance(wallet: wallet)
+                    .tronBalance
+                return cachedBalance ?? TronBalance(amount: 0, trxAmount: 0)
             }
         }
 
@@ -87,10 +82,16 @@ final class BalanceServiceImplementation: BalanceService {
             let tonBalance = try await tonBalanceTask.value
             let jettonsBalance = try await jettonsBalanceTask.value
             let batteryBalance: BatteryBalance?
-            do {
-                batteryBalance = try await batteryBalanceTask.value
-            } catch {
-                batteryBalance = nil
+            if let batteryBalanceTask {
+                do {
+                    batteryBalance = try await batteryBalanceTask.value
+                } catch {
+                    batteryBalance = nil
+                }
+            } else {
+                batteryBalance = try? walletBalanceRepository
+                    .getWalletBalance(wallet: wallet)
+                    .batteryBalance
             }
 
             let stackingBalance: [AccountStackingInfo]
@@ -125,7 +126,7 @@ final class BalanceServiceImplementation: BalanceService {
             tonBalanceTask.cancel()
             jettonsBalanceTask.cancel()
             stackingBalanceTask.cancel()
-            batteryBalanceTask.cancel()
+            batteryBalanceTask?.cancel()
             tronBalanceTask.cancel()
         })
     }

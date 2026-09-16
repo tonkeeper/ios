@@ -39,6 +39,10 @@ public final class TooltipsAssembly {
 
     public private(set) lazy var tradeTabRepository = TradeTabTooltipRepository()
 
+    public private(set) lazy var favoriteRepository = FavoriteTooltipRepository()
+
+    public private(set) lazy var addMultichainWalletRepository = AddMultichainWalletTooltipRepository()
+
     public private(set) lazy var service: TooltipsService = TooltipsServiceImplementation(
         tooltipControllerFactory: tooltipControllerFactory,
         viewControllerFactory: TooltipViewControllerFactoryImplementation()
@@ -49,6 +53,8 @@ public final class TooltipsAssembly {
         withdrawTooltipRepository: withdrawButtonRepository,
         newHistoryEntryPointTooltipRepository: newHistoryEntryPointRepository,
         tradeTabTooltipRepository: tradeTabRepository,
+        favoriteTooltipRepository: favoriteRepository,
+        addMultichainWalletTooltipRepository: addMultichainWalletRepository,
         calendar: .current
     )
 }

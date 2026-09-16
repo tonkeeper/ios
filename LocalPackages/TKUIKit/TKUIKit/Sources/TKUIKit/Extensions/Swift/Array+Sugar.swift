@@ -17,12 +17,6 @@ public extension Array where Element: Equatable {
         return uniqueElements
     }
 
-    func index(of element: Element) -> Int? {
-        return firstIndex { item -> Bool in
-            return item == element
-        }
-    }
-
     mutating func remove(_ element: Element) {
         if let index = firstIndex(where: { evaluated in
             evaluated == element

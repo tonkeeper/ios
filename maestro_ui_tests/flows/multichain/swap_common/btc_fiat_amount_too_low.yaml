@@ -1,0 +1,54 @@
+# Multichain Swap: BTC send in fiat mode with amount below provider minimum.
+# Expects provider error toast, quote unavailable rate row, and disabled Continue.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 15000
+- extendedWaitUntil:
+    visible: Swap
+    timeout: 180000
+- tapOn: Swap
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible:
+      id: swap_send_token
+    timeout: 30000
+- tapOn:
+    id: swap_send_token
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 30000
+- runFlow:
+    file: "../../../steps/token_picker/select_asset.yaml"
+    env:
+      SEARCH_QUERY: "BTC"
+      ASSET_ID: "token_picker_asset_btc_btc"
+
+- extendedWaitUntil:
+    visible:
+      id: swap_send_amount_mode
+    timeout: 15000
+- tapOn:
+    id: swap_send_amount_mode
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- tapOn:
+    id: swap_send_amount
+- eraseText
+- inputText: "0.1"
+
+- extendedWaitUntil:
+    visible: "insufficient balance for source asset: The specified amount is too low."
+    timeout: 30000
+- assertVisible: "Couldn't get a quote. Change amount"
+- assertVisible:
+    id: swap_continue
+    enabled: false

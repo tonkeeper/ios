@@ -36,7 +36,6 @@ struct SwapDependencies {
     let nativeSwapService: NativeSwapService
     let swapAssetsStore: SwapAssetsStore
     let tradingAssetDetailsService: TradingAssetDetailsService
-    let ratesService: RatesService
     let sendController: SendV3Controller
     let resolveJettonInfo: (Address, Network) async throws -> JettonInfo
 
@@ -47,7 +46,6 @@ struct SwapDependencies {
         self.nativeSwapService = keeperCoreAssembly.servicesAssembly.nativeSwapService()
         self.swapAssetsStore = keeperCoreAssembly.storesAssembly.swapAssetsStore
         self.tradingAssetDetailsService = keeperCoreAssembly.servicesAssembly.assetDetailsService()
-        self.ratesService = keeperCoreAssembly.servicesAssembly.ratesService()
         self.sendController = keeperCoreAssembly.sendV3Controller(wallet: wallet)
         self.resolveJettonInfo = { address, network in
             try await keeperCoreAssembly

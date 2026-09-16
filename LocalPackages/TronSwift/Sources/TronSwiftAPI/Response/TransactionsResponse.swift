@@ -12,18 +12,6 @@ public struct TransactionsResponse: Decodable {
     public let next: String?
     public let fingerprint: String?
 
-    public init(
-        data: [EventTransaction],
-        success: Bool,
-        next: String?,
-        fingerprint: String?
-    ) {
-        self.data = data
-        self.success = success
-        self.next = next
-        self.fingerprint = fingerprint
-    }
-
     enum CodingKeys: CodingKey {
         case data
         case success

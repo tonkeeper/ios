@@ -33,7 +33,7 @@ struct BalanceItemMapper {
         return TKListItemContentView.Configuration(
             iconViewConfiguration: .tonConfiguration(),
             textContentViewConfiguration: createTextContentViewConfiguration(
-                title: TKLocales.BalanceList.TonItem.title,
+                title: TonInfo.symbol,
                 isPinned: isPinned,
                 caption: caption,
                 amount: BigUInt(item.amount),
@@ -104,6 +104,32 @@ struct BalanceItemMapper {
                 convertedAmount: item.converted,
                 currency: item.currency,
                 tags: [.tag(text: TronSwift.USDT.tag)],
+                isSecure: isSecure
+            )
+        )
+    }
+
+    func mapTronTRXItem(
+        item: ProcessedBalanceTronTRXItem,
+        isSecure: Bool = false
+    ) -> TKListItemContentView.Configuration {
+        let caption = createPriceSubtitle(
+            price: item.price,
+            currency: item.currency,
+            diff: item.diff,
+            isUnverified: false
+        )
+        return TKListItemContentView.Configuration(
+            iconViewConfiguration: .tronTRXConfiguration(),
+            textContentViewConfiguration: createTextContentViewConfiguration(
+                title: TronSwift.TRX.symbol,
+                isPinned: false,
+                caption: caption,
+                amount: item.amount,
+                amountFractionDigits: item.fractionalDigits,
+                convertedAmount: item.converted,
+                currency: item.currency,
+                tags: [],
                 isSecure: isSecure
             )
         )

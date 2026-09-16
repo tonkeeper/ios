@@ -21,7 +21,6 @@ protocol PaymentMethodViewModelProtocol: AnyObject {
     var didUpdateSnapshot: ((PaymentMethodViewController.Snapshot) -> Void)? { get set }
     var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
     var currentCurrency: RemoteCurrency? { get }
-    var showsFiatCurrencyPicker: Bool { get }
     var placeholderOverlayKind: PaymentMethodPlaceholderOverlayKind? { get }
 
     func viewDidLoad()
@@ -67,6 +66,7 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
     private let currenciesService: CurrenciesService
     private let configuration: Configuration
     private let initialDeeplink: RampDeeplinkParameters?
+    private let walletId: String?
 
     var currencies: [RemoteCurrency] = []
     var state: LoadState = .loading
@@ -82,7 +82,8 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
         currenciesService: CurrenciesService,
         configuration: Configuration,
         initialDeeplink: RampDeeplinkParameters?,
-        fiatCurrency: RemoteCurrency?
+        fiatCurrency: RemoteCurrency?,
+        walletId: String?
     ) {
         self.flow = flow
         self.asset = asset
@@ -94,6 +95,7 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
         self.configuration = configuration
         self.initialDeeplink = initialDeeplink
         self.currentCurrency = fiatCurrency
+        self.walletId = walletId
     }
 
     func viewDidLoad() {
@@ -167,7 +169,11 @@ final class PaymentMethodViewModelImplementation: PaymentMethodViewModelProtocol
             self.currencies = currencies
 
             let onRampLayout = try await onRampService
-                .getLayout(flow: flow.api, currency: currentCurrency?.code ?? currencyCode)
+                .getLayout(
+                    flow: flow.api,
+                    currency: currentCurrency?.code ?? currencyCode,
+                    walletId: walletId
+                )
                 .filteredByTRC20Availability(isAvailable: isTRC20Available)
             if let item = onRampLayout.items.first(where: { $0.type == rampLayoutItem.type }), let asset = item.assets?.first(where: { $0.symbol == asset.symbol && $0.network == asset.network && $0.networkName == asset.networkName && $0.assetId == asset.assetId }) {
                 self.asset = asset

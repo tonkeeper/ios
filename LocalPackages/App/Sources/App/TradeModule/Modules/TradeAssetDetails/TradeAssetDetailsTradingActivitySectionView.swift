@@ -4,6 +4,7 @@ import TKUIKit
 
 struct TradeAssetDetailsTradingActivitySectionView: View {
     let tradingActivity: TradeAssetDetailsTradingActivityViewData
+    let onOpenURL: (URL) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -28,10 +29,15 @@ struct TradeAssetDetailsTradingActivitySectionView: View {
                 hintText: TKLocales.Trade.AssetDetails.TradingActivity.volumeHint
             )
 
-            Text(TKLocales.Trade.AssetDetails.TradingActivity.attribution)
+            Text(tradingActivity.attributionText)
                 .textStyle(.body3)
-                .foregroundStyle(Color(uiColor: .Text.tertiary))
+                .foregroundStyle(.textTertiary)
+                .tint(.accentBlue)
                 .padding(.top, Layout.attributionTopPadding)
+                .environment(\.openURL, OpenURLAction { url in
+                    onOpenURL(url)
+                    return .handled
+                })
         }
         .padding(.horizontal, Layout.horizontalPadding)
     }
@@ -40,6 +46,6 @@ struct TradeAssetDetailsTradingActivitySectionView: View {
 private extension TradeAssetDetailsTradingActivitySectionView {
     enum Layout {
         static let horizontalPadding: CGFloat = 16
-        static let attributionTopPadding: CGFloat = 13
+        static let attributionTopPadding: CGFloat = 12
     }
 }

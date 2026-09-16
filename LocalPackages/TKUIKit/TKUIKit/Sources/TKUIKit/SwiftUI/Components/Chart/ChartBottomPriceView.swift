@@ -5,12 +5,13 @@ struct ChartBottomPriceView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Text(config.priceText)
-                .textStyle(config.textStyle)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .foregroundStyle(Color(uiColor: .Text.secondary))
-                .padding(Layout.priceTextInsets)
+            ChartPriceText(
+                priceText: config.priceText,
+                textStyle: config.textStyle
+            )
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(Layout.priceTextInsets)
             Spacer(minLength: 0)
         }
         .frame(height: Layout.height)
@@ -18,14 +19,14 @@ struct ChartBottomPriceView: View {
             GeometryReader { proxy in
                 Text(config.leadingDate)
                     .textStyle(config.textStyle)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
                     .offset(
                         x: leftAxisLabelX(in: proxy.size.width),
                         y: axisLabelY(in: proxy.size.height)
                     )
                 Text(config.middleDate)
                     .textStyle(config.textStyle)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
                     .offset(
                         x: middleAxisLabelX(in: proxy.size.width),
                         y: axisLabelY(in: proxy.size.height)
@@ -90,4 +91,5 @@ extension ChartBottomPriceView {
     .showSize()
     .border(.cyan)
     .debugPreview()
+    .tkThemed()
 }

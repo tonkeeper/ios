@@ -2,9 +2,14 @@ import Foundation
 
 final class BootConfigurationAPIAssembly {
     private let appInfoProvider: AppInfoProvider
+    private let requestContextProvider: @Sendable () -> BootConfigurationRequestContext
 
-    init(appInfoProvider: AppInfoProvider) {
+    init(
+        appInfoProvider: AppInfoProvider,
+        requestContextProvider: @escaping @Sendable () -> BootConfigurationRequestContext
+    ) {
         self.appInfoProvider = appInfoProvider
+        self.requestContextProvider = requestContextProvider
     }
 
     var api: BootConfigurationAPI {
@@ -12,7 +17,8 @@ final class BootConfigurationAPIAssembly {
             urlSession: .shared,
             bootHost: apiV1BootURL,
             blockHost: apiV1BlockURL,
-            appInfoProvider: appInfoProvider
+            appInfoProvider: appInfoProvider,
+            requestContextProvider: requestContextProvider
         )
     }
 

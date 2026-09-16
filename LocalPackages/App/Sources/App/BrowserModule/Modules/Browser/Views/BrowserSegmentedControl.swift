@@ -76,26 +76,28 @@ final class BrowserSegmentedControl: UIView, ConfigurableView {
         }
     }
 
-    func selectExploreButton() {
-        guard !exploreButton.isSelected else { return }
+    @discardableResult
+    func selectExploreButton() -> Bool {
+        guard !exploreButton.isSelected else { return false }
         exploreButton.isSelected = true
         connectedButton.isSelected = false
         selectionIndicatorView.snp.remakeConstraints { make in
             make.edges.equalTo(exploreButton)
         }
         animateLayout()
-        exploreButtonTapAction?()
+        return true
     }
 
-    func selectConnectedButton() {
-        guard !connectedButton.isSelected else { return }
+    @discardableResult
+    func selectConnectedButton() -> Bool {
+        guard !connectedButton.isSelected else { return false }
         connectedButton.isSelected = true
         exploreButton.isSelected = false
         selectionIndicatorView.snp.remakeConstraints { make in
             make.edges.equalTo(connectedButton)
         }
         animateLayout()
-        connectedButtonTapAction?()
+        return true
     }
 }
 
@@ -107,11 +109,13 @@ private extension BrowserSegmentedControl {
         exploreButton.isSelected = true
 
         connectedButton.addAction(UIAction(handler: { [weak self] _ in
-            self?.selectConnectedButton()
+            guard let self, selectConnectedButton() else { return }
+            connectedButtonTapAction?()
         }), for: .touchUpInside)
 
         exploreButton.addAction(UIAction(handler: { [weak self] _ in
-            self?.selectExploreButton()
+            guard let self, selectExploreButton() else { return }
+            exploreButtonTapAction?()
         }), for: .touchUpInside)
 
         addSubview(buttonContainer)

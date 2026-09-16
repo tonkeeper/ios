@@ -43,7 +43,6 @@ final class RampPickerView: TKView {
         searchBar.backgroundColor = .Background.page
         searchBar.isBlur = false
         searchBar.placeholder = TKLocales.Ramp.Picker.Search.placeholder
-        searchBar.isCancelButtonOnEdit = true
         searchBar.padding = UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16)
 
         zeroSearchLabel.isHidden = true

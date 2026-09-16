@@ -1,9 +1,10 @@
+import SnapKit
 import TKUIKit
 import UIKit
 
-final class WalletContainerView: UIView, ConfigurableView {
-    let topBarView = WalletContainerTopBarView()
+final class WalletContainerView: UIView {
     let walletBalanceContainerView = UIView()
+    private(set) var topBarView: UIView?
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -15,15 +16,13 @@ final class WalletContainerView: UIView, ConfigurableView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    struct Model {
-        let topBarViewModel: WalletContainerTopBarView.Model
-    }
+    func setTopBarView(_ view: UIView) {
+        topBarView = view
+        addSubview(view)
 
-    func configure(model: Model) {
-        if UIApplication.useSystemBarsAppearance {
-            topBarView.isHidden = true
-        } else {
-            topBarView.configure(model: model.topBarViewModel)
+        view.snp.makeConstraints { make in
+            make.top.left.right.equalTo(self)
+            make.bottom.equalTo(safeAreaLayoutGuide.snp.top).offset(CGFloat.topBarHeight)
         }
     }
 }
@@ -33,24 +32,13 @@ private extension WalletContainerView {
         backgroundColor = .Background.page
 
         addSubview(walletBalanceContainerView)
-        addSubview(topBarView)
 
-        setupConstraints()
+        walletBalanceContainerView.snp.makeConstraints { make in
+            make.edges.equalTo(self)
+        }
     }
+}
 
-    func setupConstraints() {
-        topBarView.translatesAutoresizingMaskIntoConstraints = false
-        walletBalanceContainerView.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            topBarView.topAnchor.constraint(equalTo: topAnchor),
-            topBarView.leftAnchor.constraint(equalTo: leftAnchor),
-            topBarView.rightAnchor.constraint(equalTo: rightAnchor),
-
-            walletBalanceContainerView.topAnchor.constraint(equalTo: topAnchor),
-            walletBalanceContainerView.leftAnchor.constraint(equalTo: leftAnchor),
-            walletBalanceContainerView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            walletBalanceContainerView.rightAnchor.constraint(equalTo: rightAnchor),
-        ])
-    }
+private extension CGFloat {
+    static let topBarHeight: CGFloat = 64
 }

@@ -1,4 +1,6 @@
 import Foundation
+import TKFeatureFlags
+import TKLogging
 import TonSwift
 
 public final class LoadersAssembly {
@@ -9,6 +11,7 @@ public final class LoadersAssembly {
     private let knownAccountsAssembly: KnownAccountsAssembly
     private let tronAssembly: TronUSDTAssembly
     private let configurationAssembly: ConfigurationAssembly
+    private let tkAppSettings: TKAppSettings
 
     init(
         servicesAssembly: ServicesAssembly,
@@ -17,7 +20,8 @@ public final class LoadersAssembly {
         apiAssembly: APIAssembly,
         knownAccountsAssembly: KnownAccountsAssembly,
         tronAssembly: TronUSDTAssembly,
-        configurationAssembly: ConfigurationAssembly
+        configurationAssembly: ConfigurationAssembly,
+        tkAppSettings: TKAppSettings
     ) {
         self.servicesAssembly = servicesAssembly
         self.storesAssembly = storesAssembly
@@ -26,6 +30,7 @@ public final class LoadersAssembly {
         self.knownAccountsAssembly = knownAccountsAssembly
         self.tronAssembly = tronAssembly
         self.configurationAssembly = configurationAssembly
+        self.tkAppSettings = tkAppSettings
     }
 
     private weak var _walletInfoLoader: WalletInfoLoader?
@@ -42,20 +47,6 @@ public final class LoadersAssembly {
         return loader
     }
 
-    private weak var _storiesLoader: StoriesLoader?
-    var storiesLoader: StoriesLoader {
-        if let _storiesLoader {
-            return _storiesLoader
-        }
-        let loader = StoriesLoader(
-            tonkeeperAPI: tonkeeperAPIAssembly.api,
-            configuration: configurationAssembly.configuration,
-            storiesStore: storesAssembly.storiesStore
-        )
-        _storiesLoader = loader
-        return loader
-    }
-
     private weak var _internalNotificationsLoader: InternalNotificationsLoader?
     var internalNotificationsLoader: InternalNotificationsLoader {
         if let _internalNotificationsLoader {
@@ -63,22 +54,38 @@ public final class LoadersAssembly {
         }
         let loader = InternalNotificationsLoader(
             tonkeeperAPI: tonkeeperAPIAssembly.api,
-            notificationsStore: storesAssembly.internalNotificationsStore
+            notificationsStore: storesAssembly.internalNotificationsStore,
+            walletsStore: storesAssembly.walletsStore
         )
         _internalNotificationsLoader = loader
         return loader
     }
 
-    private weak var _homeBannersLoader: HomeBannersLoader?
-    var homeBannersLoader: HomeBannersLoader {
+    private var _homeBannersLoader: HomeBannersLoader?
+    public var homeBannersLoader: HomeBannersLoader {
         if let _homeBannersLoader {
             return _homeBannersLoader
         }
         let loader = HomeBannersLoader(
             tonkeeperAPI: tonkeeperAPIAssembly.api,
-            homeBannersStore: storesAssembly.homeBannersStore
+            homeBannersStore: storesAssembly.homeBannersStore,
+            walletsStore: storesAssembly.walletsStore
         )
         _homeBannersLoader = loader
+        return loader
+    }
+
+    private var _raffleLoader: RaffleLoader?
+    public var raffleLoader: RaffleLoader {
+        if let _raffleLoader {
+            return _raffleLoader
+        }
+        let loader = RaffleLoader(
+            multichainService: servicesAssembly.multichainService(),
+            raffleStore: storesAssembly.raffleStore,
+            appSettings: tkAppSettings
+        )
+        _raffleLoader = loader
         return loader
     }
 
@@ -87,7 +94,6 @@ public final class LoadersAssembly {
             wallet: wallet,
             loader: HistoryListAllEventsLoader(
                 historyService: servicesAssembly.historyService(),
-                tonProofTokenService: servicesAssembly.tonProofTokenService(),
                 tronUsdtApi: tronAssembly.tronUsdtApi
             )
         )
@@ -120,7 +126,6 @@ public final class LoadersAssembly {
             wallet: wallet,
             loader: HistoryListTronUSDTEventsLoader(
                 historyService: servicesAssembly.historyService(),
-                tonProofTokenService: servicesAssembly.tonProofTokenService(),
                 tronUsdtApi: tronAssembly.tronUsdtApi
             )
         )
@@ -142,35 +147,77 @@ public final class LoadersAssembly {
         if let _balanceLoader {
             return _balanceLoader
         }
-        let loader = BalanceLoader(
+        let loader = BalanceLoaderImplementation(
             walletStore: storesAssembly.walletsStore,
             currencyStore: storesAssembly.currencyStore,
             ratesStore: storesAssembly.tonRatesStore,
             ratesService: servicesAssembly.ratesService(),
-            walletStateLoaderProvider: { self.walletBalanceLoaders(wallet: $0) }
+            walletStateLoaderProvider: { self.walletBalanceLoaders(wallet: $0) },
+            makeTotalBalanceLoader: { loadWalletBalance in
+                TotalBalanceLoaderImplementation(
+                    balanceStore: storesAssembly.balanceStore,
+                    multichainPortfolioStore: storesAssembly.multichainPortfolioStore,
+                    loadPortfolioTotal: { [servicesAssembly, storesAssembly] wallet, state, currency in
+                        let requestToken = storesAssembly.multichainPortfolioStore.makeRequestToken()
+                        let hidesDustBalances = storesAssembly.appSettingsStore.getState().hidesDustBalances
+                        do {
+                            let page = try await servicesAssembly.multichainService().getAllWalletAssets(
+                                state: state,
+                                currencies: {
+                                    var codes = [currency.code.lowercased()]
+                                    if currency != .defaultCurrency {
+                                        codes.append(Currency.defaultCurrency.code.lowercased())
+                                    }
+                                    return codes
+                                }(),
+                                capabilities: nil,
+                                chain: nil,
+                                search: nil,
+                                availableOnly: nil,
+                                showHidden: false,
+                                hideDust: hidesDustBalances ? true : nil
+                            )
+                            guard !Task.isCancelled else { return }
+                            storesAssembly.multichainPortfolioStore.setPortfolioTotal(
+                                page.fiatPrice,
+                                wallet: wallet,
+                                hidesDustBalances: hidesDustBalances,
+                                requestToken: requestToken
+                            )
+                        } catch {
+                            Log.w("Multichain: failed to load portfolio total for wallet list: \(error)")
+                        }
+                    },
+                    loadWalletBalance: loadWalletBalance,
+                    hidesDustBalances: { [storesAssembly] in
+                        storesAssembly.appSettingsStore.getState().hidesDustBalances
+                    }
+                )
+            }
         )
         _balanceLoader = loader
         return loader
     }
 
-    private var _walletBalanceLoaders = [Wallet: Weak<WalletBalanceLoader>]()
+    private let walletBalanceLoadersLock = NSLock()
+    private var _walletBalanceLoaders = [Wallet: () -> WalletBalanceLoader?]()
     public func walletBalanceLoaders(wallet: Wallet) -> WalletBalanceLoader {
-        if let weakWrapper = _walletBalanceLoaders[wallet],
-           let store = weakWrapper.value
-        {
+        walletBalanceLoadersLock.withLock {
+            if let store = _walletBalanceLoaders[wallet]?() {
+                return store
+            }
+            let store = WalletBalanceLoaderImplementation(
+                wallet: wallet,
+                balanceStore: storesAssembly.balanceStore,
+                stakingPoolsStore: storesAssembly.stackingPoolsStore,
+                walletNFTSStore: storesAssembly.walletNFTsStore(wallet: wallet, nftService: servicesAssembly.accountNftService()),
+                balanceService: servicesAssembly.balanceService(),
+                stackingService: servicesAssembly.stackingService(),
+                accountNFTService: servicesAssembly.accountNftService()
+            )
+            _walletBalanceLoaders[wallet] = { [weak store] in store }
             return store
         }
-        let store = WalletBalanceLoader(
-            wallet: wallet,
-            balanceStore: storesAssembly.balanceStore,
-            stakingPoolsStore: storesAssembly.stackingPoolsStore,
-            walletNFTSStore: storesAssembly.walletNFTsStore(wallet: wallet, nftService: servicesAssembly.accountNftService()),
-            balanceService: servicesAssembly.balanceService(),
-            stackingService: servicesAssembly.stackingService(),
-            accountNFTService: servicesAssembly.accountNftService()
-        )
-        _walletBalanceLoaders[wallet] = Weak(value: store)
-        return store
     }
 
     public func recipientResolver() -> RecipientResolver {

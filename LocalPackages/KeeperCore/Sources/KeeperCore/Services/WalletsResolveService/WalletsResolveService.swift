@@ -6,7 +6,7 @@ public protocol WalletsResolveService {
     func resolveWallets(by pubkey: TonSwift.PublicKey)
 }
 
-public final class WalletsResolveServiceImplementation: WalletsResolveService {
+final class WalletsResolveServiceImplementation: WalletsResolveService {
     private let apiProvider: APIProvider
     private let firebaseUserIdProvider: () -> String?
 
@@ -15,7 +15,7 @@ public final class WalletsResolveServiceImplementation: WalletsResolveService {
         self.firebaseUserIdProvider = firebaseUserIdProvider
     }
 
-    public func resolveWalletsByPubkey(_ wallets: [Wallet]) {
+    func resolveWalletsByPubkey(_ wallets: [Wallet]) {
         let publicKeys = Self.mainnetPublicKeysHexExcludingWatchOnly(from: wallets)
         guard !publicKeys.isEmpty else { return }
         Task {
@@ -23,7 +23,7 @@ public final class WalletsResolveServiceImplementation: WalletsResolveService {
         }
     }
 
-    public func resolveWallets(by pubkey: TonSwift.PublicKey) {
+    func resolveWallets(by pubkey: TonSwift.PublicKey) {
         Task {
             try? await getWalletsByPubkeysBulk(publicKeys: [pubkey.hexString])
         }

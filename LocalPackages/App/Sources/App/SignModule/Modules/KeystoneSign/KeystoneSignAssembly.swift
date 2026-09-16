@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKUIKit
 import URKit
 
 struct KeystoneSignAssembly {
@@ -17,7 +18,9 @@ struct KeystoneSignAssembly {
                 scannerAssembly: assembly.scannerAssembly()
             )
         ).createScannerModule(
-            configurator: KeystoneSignControllerConfigurator(),
+            configurator: KeystoneSignControllerConfigurator(
+                deeplinkParser: assembly.deeplinkParser
+            ),
             uiConfiguration: ScannerUIConfiguration(
                 title: nil,
                 subtitle: nil,
@@ -27,7 +30,8 @@ struct KeystoneSignAssembly {
 
         let viewModel = KeystoneSignViewModelImplementation(
             keystoneSignController: assembly.keystoneSignController(transaction: transaction, wallet: wallet),
-            qrCodeGenerator: QRCodeGeneratorImplementation(),
+            qrCodeGenerator: assembly.coreAssembly
+                .qrCodeGenerator(persistent: false),
             scannerOutput: scannerModule.output
         )
         let viewController = KeystoneSignViewController(viewModel: viewModel, scannerViewController: scannerModule.view)

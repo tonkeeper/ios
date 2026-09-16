@@ -113,3 +113,18 @@ open class Store<Event, State> {
         didSetInitialState = true
     }
 }
+
+extension Store {
+    func setStateNotifying(
+        _ newState: State,
+        event: @escaping (State) -> Event,
+        beforeNotify: ((State) -> Void)? = nil
+    ) {
+        updateState { _ in
+            StateUpdate(newState: newState)
+        } completion: { [weak self] state in
+            beforeNotify?(state)
+            self?.sendEvent(event(state))
+        }
+    }
+}

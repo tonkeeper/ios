@@ -7,15 +7,15 @@ import TonSwift
 import TonTransport
 import UIKit
 
-public final class LedgerImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didImport: ((_ accounts: [LedgerAccount], _ model: CustomizeWalletModel) -> Void)?
+final class LedgerImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didImport: ((_ accounts: [LedgerAccount], _ model: CustomizeWalletModel) -> Void)?
 
     private let ledgerAccounts: [LedgerAccount]
     private let activeWalletModels: [ActiveWalletModel]
     private let name: String
     private let walletsUpdateAssembly: WalletsUpdateAssembly
-    private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+    private let customizeWalletModule: () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
 
     init(
         ledgerAccounts: [LedgerAccount],
@@ -23,7 +23,7 @@ public final class LedgerImportCoordinator: RouterCoordinator<NavigationControll
         name: String,
         router: NavigationControllerRouter,
         walletsUpdateAssembly: WalletsUpdateAssembly,
-        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+        customizeWalletModule: @escaping () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     ) {
         self.ledgerAccounts = ledgerAccounts
         self.activeWalletModels = activeWalletModels
@@ -33,7 +33,7 @@ public final class LedgerImportCoordinator: RouterCoordinator<NavigationControll
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openChooseWalletToAdd()
     }
 }
@@ -54,7 +54,7 @@ private extension LedgerImportCoordinator {
             guard let self else { return }
             let selectedIds = selectedWalletModels.map { $0.id }
             let selectedLedgerAccounts = self.ledgerAccounts.filter { selectedIds.contains($0.id) }
-            self.openCustomizeWallet(accounts: selectedLedgerAccounts)
+            self.openNotifications(accounts: selectedLedgerAccounts)
         }
 
         if router.rootViewController.viewControllers.isEmpty {
@@ -73,6 +73,12 @@ private extension LedgerImportCoordinator {
         )
     }
 
+    func openNotifications(accounts: [LedgerAccount]) {
+        OnboardingNotificationsStep.push(router: router) { [weak self] in
+            self?.openCustomizeWallet(accounts: accounts)
+        }
+    }
+
     func openCustomizeWallet(accounts: [LedgerAccount]) {
         let module = customizeWalletModule()
 
@@ -82,11 +88,11 @@ private extension LedgerImportCoordinator {
         }
 
         if router.rootViewController.viewControllers.isEmpty {
-            module.view.setupLeftCloseButton { [weak self] in
+            module.view.setupHeaderLeftCloseButton { [weak self] in
                 self?.didCancel?()
             }
         } else {
-            module.view.setupBackButton()
+            module.view.setupHeaderBackButton()
         }
 
         router.push(viewController: module.view, animated: true)

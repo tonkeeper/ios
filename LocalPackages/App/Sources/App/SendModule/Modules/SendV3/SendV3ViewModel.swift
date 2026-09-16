@@ -2,12 +2,13 @@ import BigInt
 import KeeperCore
 import TKCore
 import TKLocalize
+import TKLogging
 import TKUIKit
 import TronSwift
 import UIKit
 
 protocol SendV3ModuleOutput: AnyObject {
-    var didContinueSend: ((SendData) -> Void)? { get set }
+    var didContinueSend: ((LegacySendData) -> Void)? { get set }
     var didTapPicker: ((Wallet, SendV3Item) -> Void)? { get set }
     var didTapScan: (() -> Void)? { get set }
     var didTapClose: (() -> Void)? { get set }
@@ -54,6 +55,7 @@ struct SendV3ViewModelViewState {
         enum Remaining {
             case insufficient
             case remaining(String)
+            case balance(String)
         }
 
         let converted: String
@@ -84,7 +86,7 @@ struct SendV3ViewModelViewState {
 final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, SendV3ModuleInput {
     // MARK: - SendV3ModuleOutput
 
-    var didContinueSend: ((SendData) -> Void)?
+    var didContinueSend: ((LegacySendData) -> Void)?
     var didTapPicker: ((Wallet, SendV3Item) -> Void)?
     var didTapScan: (() -> Void)?
     var didTapClose: (() -> Void)?
@@ -106,6 +108,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
 
     func updateWithToken(_ token: SendV3Item) {
         if case .withdraw = sendInput { return }
+        sendAmountTextFieldFormatter.maximumFractionDigits = token.fractionalDigits
         self.item = token
         lastFiatInputString = nil
         isSwapped = false
@@ -149,7 +152,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         }
     }
 
-    private var recipient: Recipient?
+    private var recipient: LegacyRecipient?
     private var recipientInput = ""
     private var remaining = SendV3Controller.Remaining.remaining("")
     private var converted = ""
@@ -181,7 +184,6 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     private let sendController: SendV3Controller
     private let balanceStore: ConvertedBalanceStore
     private let appSettingsStore: AppSettingsStore
-    private let buySellMethodsService: BuySellMethodsService
     private let onRampService: OnRampService
     private let configuration: Configuration
 
@@ -190,12 +192,11 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     init(
         wallet: Wallet,
         sendInput: SendInput,
-        recipient: Recipient?,
+        recipient: LegacyRecipient?,
         comment: String?,
         sendController: SendV3Controller,
         balanceStore: ConvertedBalanceStore,
         appSettingsStore: AppSettingsStore,
-        buySellMethodsService: BuySellMethodsService,
         onRampService: OnRampService,
         configuration: Configuration
     ) {
@@ -206,7 +207,6 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         self.sendController = sendController
         self.balanceStore = balanceStore
         self.appSettingsStore = appSettingsStore
-        self.buySellMethodsService = buySellMethodsService
         self.onRampService = onRampService
         self.configuration = configuration
 
@@ -290,6 +290,11 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     self.updateViewState()
                 }
             } catch {
+                Log.send.failure(
+                    "recipient resolution failed",
+                    error: error,
+                    extraInfo: ["input": string.pretty.masked]
+                )
                 await MainActor.run {
                     self.recipient = nil
                     self.recipientResolvingTask = nil
@@ -324,11 +329,11 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     item = item.setAmount(amount: tokenAmount)
                 }
             case let .tron(tron):
-                switch tron {
-                case .usdt:
-                    let tokenAmount = sendController.tronUSDTAmountFromCurrencyInput(currencyInput: unformatted)
-                    item = item.setAmount(amount: tokenAmount)
-                }
+                let tokenAmount = sendController.tronAmountFromCurrencyInput(
+                    token: tron.token,
+                    currencyInput: unformatted
+                )
+                item = item.setAmount(amount: tokenAmount)
             }
         } else {
             lastFiatInputString = nil
@@ -377,11 +382,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 item = item.setAmount(amount: maxAmount)
             }
         case let .tron(tron):
-            switch tron {
-            case .usdt:
-                let maxAmount = sendController.getTronUSDTMaximumAmount()
-                item = item.setAmount(amount: maxAmount)
-            }
+            let maxAmount = sendController.getTronMaximumAmount(token: tron.token)
+            item = item.setAmount(amount: maxAmount)
         }
     }
 
@@ -429,21 +431,19 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 }
             }
         case let .tron(tron):
-            switch tron {
-            case .usdt:
-                if isSwapped {
-                    if let lastFiatInputString {
-                        formatted = lastFiatInputString
-                    } else {
-                        formatted = fiatInputString(amount: amount) {
-                            sendController.convertTronUSDTAmountToCurrency(amount, false)
-                        }
-                    }
-                    converted = sendController.convertAmountToInputString(amount: amount, fractionDigits: TronSwift.USDT.fractionDigits, symbol: TronSwift.USDT.symbol)
+            let token = tron.token
+            if isSwapped {
+                if let lastFiatInputString {
+                    formatted = lastFiatInputString
                 } else {
-                    formatted = inputString(amount: amount, fractionDigits: TronSwift.USDT.fractionDigits)
-                    converted = sendController.convertTronUSDTAmountToCurrency(amount)
+                    formatted = fiatInputString(amount: amount) {
+                        sendController.convertTronAmountToCurrency(token: token, amount, false)
+                    }
                 }
+                converted = sendController.convertAmountToInputString(amount: amount, fractionDigits: token.fractionDigits, symbol: token.symbol)
+            } else {
+                formatted = inputString(amount: amount, fractionDigits: token.fractionDigits)
+                converted = sendController.convertTronAmountToCurrency(token: token, amount)
             }
         }
 
@@ -477,7 +477,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     switch token {
                     case .ton:
                         name = TonInfo.symbol
-                        image = .image(.TKCore.Icons.Size44.tonLogo)
+                        image = .image(.TKUIKit.Icons.Size44.tonLogo)
                     case let .jetton(item):
                         name = item.jettonInfo.symbol ?? ""
                         image = .urlImage(item.jettonInfo.imageURL)
@@ -488,8 +488,11 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 switch tron {
                 case .usdt:
                     name = TronSwift.USDT.symbol
-                    image = .image(.App.Currency.Size44.usdt)
+                    image = .image(.TKUIKit.Icons.Size44.currencyUsdt)
                     network = "TRC20"
+                case .trx:
+                    name = TronSwift.TRX.symbol
+                    image = .image(.TKUIKit.Icons.Size44.trxChain)
                 }
             }
         }
@@ -531,19 +534,22 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 }
             }
         case let .tron(tron):
-            switch tron {
-            case let .usdt(amount):
-                isAmountValid = sendController.isTronUSDTAmountAvailableToSend(amount: amount)
-                remaining = sendController.calculateTronUSDTRemaining(amount: amount, isSecure: appSettingsStore.getState().isSecureMode)
-                if isSwapped {
-                    formatted = fiatInputString(amount: amount) {
-                        sendController.convertTronUSDTAmountToCurrency(amount, false)
-                    }
-                    converted = sendController.convertAmountToInputString(amount: amount, fractionDigits: TronSwift.USDT.fractionDigits, symbol: TronSwift.USDT.symbol)
-                } else {
-                    formatted = inputString(amount: amount, fractionDigits: TronSwift.USDT.fractionDigits)
-                    converted = sendController.convertTronUSDTAmountToCurrency(amount)
+            let token = tron.token
+            let amount = tron.amount
+            isAmountValid = sendController.isTronAmountAvailableToSend(token: token, amount: amount)
+            remaining = sendController.calculateTronRemaining(
+                token: token,
+                amount: amount,
+                isSecure: appSettingsStore.getState().isSecureMode
+            )
+            if isSwapped {
+                formatted = fiatInputString(amount: amount) {
+                    sendController.convertTronAmountToCurrency(token: token, amount, false)
                 }
+                converted = sendController.convertAmountToInputString(amount: amount, fractionDigits: token.fractionDigits, symbol: token.symbol)
+            } else {
+                formatted = inputString(amount: amount, fractionDigits: token.fractionDigits)
+                converted = sendController.convertTronAmountToCurrency(token: token, amount)
             }
         }
 
@@ -587,7 +593,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
             case .ton:
                 isRecipientValid = recipient.isTon && !recipient.isScam
                 isRequiredCommentEmpty = recipient.isCommentRequired && comment?.isEmpty != false
-                if !recipient.isTon {
+                if recipient.isTron {
                     let tronDisabled = configuration.flag(\.tronDisabled, network: wallet.network)
                     let tronBalanceIsZero = balanceStore.getState()[wallet]?.balance.tronUSDT?.amount.isZero ?? true
 
@@ -598,12 +604,27 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                     } else {
                         recipientDescription = createIncorrectRecipientTRC20RecipientDescription()
                     }
+                } else if !recipient.isTon {
+                    recipientDescription = createIncorrectRecipientRecipientDescription(
+                        string: TKLocales.Send.invalidAddress
+                    )
                 }
-            case .tron:
+            case let .tron(tron):
                 isRequiredCommentEmpty = false
-                isRecipientValid = recipient.isTron
-                if !recipient.isTron {
+                // TRON rejects a native TRX transfer to the sender's own address.
+                let isSelfSend = tron.token == .trx
+                    && recipient.stringValue == wallet.tron?.address.base58
+                isRecipientValid = recipient.isTron && !isSelfSend
+                if recipient.isTon {
                     recipientDescription = createIncorrectRecipientTonRecipientDescription()
+                } else if !recipient.isTron {
+                    recipientDescription = createIncorrectRecipientRecipientDescription(
+                        string: TKLocales.Send.invalidAddress
+                    )
+                } else if isSelfSend {
+                    recipientDescription = createIncorrectRecipientRecipientDescription(
+                        string: TKLocales.Send.trxSelfSendForbidden
+                    )
                 }
             }
             isRecipientNotEmpty = true
@@ -621,8 +642,17 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         }
 
         if recipientDescription == nil, !isRecipientValid {
+            let selectedChain: MultichainChain
+            switch item {
+            case .ton:
+                selectedChain = .ton
+            case .tron:
+                selectedChain = .tron
+            }
             recipientDescription = createIncorrectRecipientRecipientDescription(
-                string: TKLocales.Send.invalidAddress
+                string: SendMultichainRecipientErrorFormatter.invalidAddressDescription(
+                    selectedChain: selectedChain
+                )
             )
         }
 
@@ -760,10 +790,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 default: return false
                 }
             case let .tron(tron):
-                switch tron {
-                case let .usdt(amount):
-                    return amount == sendController.getTronUSDTMaximumAmount()
-                }
+                return tron.amount == sendController.getTronMaximumAmount(token: tron.token)
             }
         }()
 
@@ -772,7 +799,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
             return
         }
 
-        guard let data = SendData.sendData(
+        guard let data = LegacySendData.make(
             wallet: wallet,
             recipient: recipient,
             item: item,
@@ -807,7 +834,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 )
                 let comment = "Cross-chain withdrawal"
                 let resolvedRecipient = try await sendController.resolveRecipient(input: result.payinAddress)
-                guard let data = SendData.sendData(
+                guard let data = LegacySendData.make(
                     wallet: wallet,
                     recipient: resolvedRecipient,
                     item: item,
@@ -818,6 +845,16 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
                 ) else { return }
                 didContinueSend?(data)
             } catch {
+                Log.send.failure(
+                    "cross-chain withdraw exchange failed",
+                    error: error,
+                    extraInfo: [
+                        "from": sourceAsset.symbol,
+                        "to": exchangeTo.symbol,
+                        "fromNetwork": sourceAsset.network,
+                        "toNetwork": exchangeTo.network,
+                    ]
+                )
                 didShowError?(error.localizedDescription)
             }
         }
@@ -845,6 +882,15 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         ).mutableCopy() as! NSMutableAttributedString
 
         let tronSwapRange = (string as NSString).range(of: tronSwapTitle)
+        guard !tronSwapTitle.isEmpty,
+              tronSwapRange.location != NSNotFound
+        else {
+            return SendV3ViewModelViewState.RecipientDescription(
+                description: result,
+                actionItems: []
+            )
+        }
+
         result.addAttributes(
             [
                 .foregroundColor: UIColor.Accent.blue.cgColor,
@@ -938,45 +984,5 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
             return TKLocales.Ramp.Withdraw.maxAmount("\(max)")
         }
         return nil
-    }
-}
-
-extension SendData {
-    static func sendData(
-        wallet: Wallet,
-        recipient: Recipient?,
-        item: SendV3Item,
-        comment: String?,
-        isMaxAmount: Bool,
-        recipientDisplayAddress: String? = nil,
-        estimatedDurationSeconds: Int? = nil
-    ) -> SendData? {
-        guard let recipient else { return nil }
-        switch item {
-        case let .ton(item):
-            guard let recipient = recipient.tonRecipient else { return nil }
-            return .ton(
-                TonSendData(
-                    wallet: wallet,
-                    recipient: recipient,
-                    item: item,
-                    comment: comment,
-                    isMaxAmount: isMaxAmount,
-                    recipientDisplayAddress: recipientDisplayAddress,
-                    estimatedDurationSeconds: estimatedDurationSeconds
-                )
-            )
-        case let .tron(item):
-            guard let recipient = recipient.tronRecipient else { return nil }
-            return .tron(
-                TronSendData(
-                    wallet: wallet,
-                    recipient: recipient,
-                    item: item,
-                    recipientDisplayAddress: recipientDisplayAddress,
-                    estimatedDurationSeconds: estimatedDurationSeconds
-                )
-            )
-        }
     }
 }

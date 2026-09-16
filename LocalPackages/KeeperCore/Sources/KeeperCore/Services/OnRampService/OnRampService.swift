@@ -1,8 +1,8 @@
 import Foundation
 
 public protocol OnRampService {
-    func getMerchants() async throws -> [OnRampMerchantInfo]
-    func getLayout(flow: String, currency: String?) async throws -> OnRampLayout
+    func getMerchants(walletId: String?) async throws -> [OnRampMerchantInfo]
+    func getLayout(flow: String, currency: String?, walletId: String?) async throws -> OnRampLayout
     func calculate(
         from: String,
         to: String,
@@ -11,7 +11,8 @@ public protocol OnRampService {
         purchaseType: OnRampPurchaseType,
         fromNetwork: String?,
         toNetwork: String?,
-        paymentMethodType: String?
+        paymentMethodType: String?,
+        walletId: String?
     ) async throws -> OnRampCalculateResult
     func createExchange(
         from: String,
@@ -36,25 +37,25 @@ final class OnRampServiceImplementation: OnRampService {
         self.repository = repository
     }
 
-    func getMerchants() async throws -> [OnRampMerchantInfo] {
-        if let cached = try? repository.getMerchants(),
+    func getMerchants(walletId: String?) async throws -> [OnRampMerchantInfo] {
+        if let cached = try? repository.getMerchants(walletId: walletId),
            Date().timeIntervalSince(cached.cachedAt) < onRampCacheTTL
         {
             return cached.data
         }
-        let result = try await onRampAPI.getMerchants()
-        try? repository.saveMerchants(result)
+        let result = try await onRampAPI.getMerchants(walletId: walletId)
+        try? repository.saveMerchants(result, walletId: walletId)
         return result
     }
 
-    func getLayout(flow: String, currency: String?) async throws -> OnRampLayout {
-        if let cached = try? repository.getLayout(flow: flow, currency: currency),
+    func getLayout(flow: String, currency: String?, walletId: String?) async throws -> OnRampLayout {
+        if let cached = try? repository.getLayout(flow: flow, currency: currency, walletId: walletId),
            Date().timeIntervalSince(cached.cachedAt) < onRampCacheTTL
         {
             return cached.data
         }
-        let result = try await onRampAPI.getLayout(flow: flow, currency: currency)
-        try? repository.saveLayout(result, flow: flow, currency: currency)
+        let result = try await onRampAPI.getLayout(flow: flow, currency: currency, walletId: walletId)
+        try? repository.saveLayout(result, flow: flow, currency: currency, walletId: walletId)
         return result
     }
 
@@ -66,7 +67,8 @@ final class OnRampServiceImplementation: OnRampService {
         purchaseType: OnRampPurchaseType,
         fromNetwork: String?,
         toNetwork: String?,
-        paymentMethodType: String?
+        paymentMethodType: String?,
+        walletId: String?
     ) async throws -> OnRampCalculateResult {
         try await onRampAPI.calculate(
             from: from,
@@ -76,7 +78,8 @@ final class OnRampServiceImplementation: OnRampService {
             purchaseType: purchaseType,
             fromNetwork: fromNetwork,
             toNetwork: toNetwork,
-            paymentMethodType: paymentMethodType
+            paymentMethodType: paymentMethodType,
+            walletId: walletId
         )
     }
 

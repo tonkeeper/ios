@@ -39,6 +39,8 @@ protocol DappMessageHandler {
 }
 
 final class DefaultDappMessageHandler: DappMessageHandler {
+    private static let voidResponse = Data("{}".utf8)
+
     var connect: ((Int, TonConnectRequestPayload, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
     var reconnect: ((Dapp, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
     var disconnect: ((Dapp) -> Void)?
@@ -100,13 +102,24 @@ final class DefaultDappMessageHandler: DappMessageHandler {
                 sendTransaction?(dapp, sendTransactionRequest, sendCompletion)
             case let .signData(signDataRequest):
                 signData?(dapp, signDataRequest, sendCompletion)
+            case let .disconnect(disconnectRequest):
+                disconnect?(dapp)
+                let response = TonConnect.SendResponse.success(.init(id: disconnectRequest.id))
+                if let data = try? JSONEncoder().encode(response) {
+                    sendCompletion(.response(data))
+                } else {
+                    sendCompletion(.error(.unknownError))
+                }
             }
         case .lockOrientation:
             toggleLandscape?(false)
+            completion(.success(Self.voidResponse))
         case .unlockOrientation:
             toggleLandscape?(true)
+            completion(.success(Self.voidResponse))
         case .disconnect:
             disconnect?(dapp)
+            completion(.success(Self.voidResponse))
         }
     }
 

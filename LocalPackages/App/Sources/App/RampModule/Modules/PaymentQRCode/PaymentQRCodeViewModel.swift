@@ -1,5 +1,4 @@
 import Foundation
-import TKCore
 import TKLocalize
 import TKUIKit
 import UIKit
@@ -10,47 +9,45 @@ protocol PaymentQRCodeModuleOutput: AnyObject {
 
 protocol PaymentQRCodeViewModelProtocol: AnyObject {
     var didUpdateModel: ((ReceiveTabView.Model) -> Void)? { get set }
-    var didGenerateQRCode: ((UIImage?) -> Void)? { get set }
+    var didGenerateQRCode: ((QrCodeMatrix?) -> Void)? { get set }
     var didTapShare: ((String) -> Void)? { get set }
     var didTapCopy: ((String) -> Void)? { get set }
 
     func viewDidLoad()
-    func generateQRCode(size: CGSize)
     func didTapCloseButton()
 }
 
 final class PaymentQRCodeViewModel: PaymentQRCodeViewModelProtocol, PaymentQRCodeModuleOutput {
     var didUpdateModel: ((ReceiveTabView.Model) -> Void)?
-    var didGenerateQRCode: ((UIImage?) -> Void)?
+    var didGenerateQRCode: ((QrCodeMatrix?) -> Void)?
     var didTapShare: ((String) -> Void)?
     var didTapCopy: ((String) -> Void)?
     var didTapClose: (() -> Void)?
 
     private let data: PaymentQRCodeData
-    private let qrCodeGenerator: QRCodeGenerator
-
-    private var qrCodeGenerateTask: Task<Void, Never>?
+    private let qrCodeGenerationController: QrCodeMatrixGenerationController
 
     init(
         data: PaymentQRCodeData,
-        qrCodeGenerator: QRCodeGenerator
+        qrCodeGenerator: QrCodeMatrixGenerator
     ) {
         self.data = data
-        self.qrCodeGenerator = qrCodeGenerator
+        self.qrCodeGenerationController = QrCodeMatrixGenerationController(
+            qrCodeGenerator: qrCodeGenerator,
+            centerCutoutSize: Constants.qrCodeCenterCutoutSize
+        )
     }
 
     func viewDidLoad() {
         updateModel()
+        generateQRCode()
     }
 
-    func generateQRCode(size: CGSize) {
-        qrCodeGenerateTask?.cancel()
-        qrCodeGenerateTask = Task {
-            let image = await qrCodeGenerator.generate(string: data.address, size: size)
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                didGenerateQRCode?(image)
-            }
+    func generateQRCode() {
+        qrCodeGenerationController.generate(
+            payload: data.address
+        ) { [weak self] matrix in
+            self?.didGenerateQRCode?(matrix)
         }
     }
 
@@ -60,6 +57,10 @@ final class PaymentQRCodeViewModel: PaymentQRCodeViewModelProtocol, PaymentQRCod
 }
 
 private extension PaymentQRCodeViewModel {
+    enum Constants {
+        static let qrCodeCenterCutoutSize = CGSize(width: 72, height: 72)
+    }
+
     func updateModel() {
         let model = ReceiveTabView.Model(
             titleDescriptionModel: .init(
@@ -72,41 +73,10 @@ private extension PaymentQRCodeViewModel {
                 guard let self else { return }
                 self.didTapCopy?(self.data.address)
             },
-            iconConfiguration: makeIconConfiguration(),
+            avatarImageSource: .url(data.iconURL),
             tag: nil
         )
         didUpdateModel?(model)
-    }
-
-    func makeIconConfiguration() -> TKListItemIconView.Configuration {
-        guard let iconURL = data.iconURL else { return .default }
-
-        let image = TKImageView.Model(
-            image: .urlImage(iconURL),
-            size: .size(CGSize(width: 44, height: 44)),
-            corners: .circle
-        )
-
-        let badge: TKListItemIconView.Configuration.Badge?
-        if let networkIconURL = data.networkIconURL {
-            badge = TKListItemIconView.Configuration.Badge(
-                configuration: TKListItemBadgeView.Configuration(
-                    item: .image(.urlImage(networkIconURL)),
-                    size: .medium,
-                    backgroundColor: .Constant.white
-                ),
-                position: .bottomRight
-            )
-        } else {
-            badge = nil
-        }
-
-        return TKListItemIconView.Configuration(
-            content: .image(image),
-            alignment: .center,
-            size: CGSize(width: 44, height: 44),
-            badge: badge
-        )
     }
 
     func makeButtonsConfiguration() -> ReceiveButtonsView.Model {

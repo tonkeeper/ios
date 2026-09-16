@@ -1,0 +1,31 @@
+appId: com.jbig.tonkeeper
+---
+- runScript:
+    file: ../../scripts/api/v2/accounts/getLastSentJettonTransferEvent.js
+    env:
+      addr: ${WALLET_WITH_MONEY_ADDR}
+      auth_token: ${auth}
+      expectedSymbol: ${expectedSymbol}
+      expectedAmount: ${expectedAmount}
+
+- runScript: ../../scripts/utils/formatter.js
+
+- evalScript: ${output.lastSentJettonPrimaryLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonOutcomeLine(output.lastSentJettonTransferPrimary.amount, output.lastSentJettonTransferPrimary.jetton.decimals, output.lastSentJettonTransferPrimary.jetton.symbol))}
+- evalScript: ${output.lastSentJettonFeeLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonOutcomeLine(output.lastSentJettonTransferFee.amount, output.lastSentJettonTransferFee.jetton.decimals, output.lastSentJettonTransferFee.jetton.symbol))}
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 120000
+
+- scrollUntilVisible:
+    element: ${output.lastSentJettonPrimaryLine}
+    direction: DOWN
+    timeout: 120000
+- assertVisible: ${output.lastSentJettonPrimaryLine}
+
+- scrollUntilVisible:
+    element: ${output.lastSentJettonFeeLine}
+    direction: DOWN
+    timeout: 120000
+- assertVisible: ${output.lastSentJettonFeeLine}
+- assertVisible: "Call: TonkeeperRelayerFee"

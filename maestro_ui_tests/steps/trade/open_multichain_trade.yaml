@@ -1,0 +1,19 @@
+# Opens Trade on a multichain wallet.
+appId: com.jbig.tonkeeper
+---
+- runFlow: ../launch_app_ensure_multichain_wallet.yaml
+- extendedWaitUntil:
+    visible: Trade
+    timeout: 60000
+- runFlow:
+    when:
+      notVisible: Trade
+    commands:
+      - stopApp
+      - runFlow: ../launch_app_ensure_multichain_wallet.yaml
+- tapOn: Trade
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: "Search by ticker or name"
+    timeout: 60000

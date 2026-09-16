@@ -1,4 +1,4 @@
-import DisconnectDappToast
+import AppUI
 import TKCoordinator
 import TKLocalize
 import TKUIKit
@@ -104,7 +104,8 @@ private extension BrowserConnectedViewController {
             guard let self = self else { return nil }
 
             let snapshot = dataSource.snapshot()
-            let section = snapshot.sectionIdentifiers[sectionIndex]
+            guard let section = snapshot.sectionIdentifiers[safe: sectionIndex] else { return nil }
+
             switch section {
             case .apps:
                 return appsSectionLayout(

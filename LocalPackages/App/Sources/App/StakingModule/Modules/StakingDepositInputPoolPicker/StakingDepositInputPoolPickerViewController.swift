@@ -79,10 +79,12 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
         super.viewDidLoad()
 
         view.addSubview(listItemButton)
+        listItemButton.accessibilityIdentifier = "staking_deposit_pool_picker"
 
         listItemButton.isCornerRadius = true
         listItemButton.snp.makeConstraints { make in
-            make.edges.equalTo(self.view)
+            make.top.equalTo(self.view).offset(CGFloat.topPadding)
+            make.left.right.bottom.equalTo(self.view)
         }
 
         reconfigure()
@@ -94,16 +96,7 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
             return
         }
         listItemButton.isHidden = false
-        let profit: BigUInt = {
-            let apy = selectedStakingPool.apy
-            let apyFractionLength = max(Int(-apy.exponent), 0)
-            let apyPlain = NSDecimalNumber(decimal: apy).multiplying(byPowerOf10: Int16(apyFractionLength))
-            let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
-
-            let scalingFactor = BigUInt(100) * BigUInt(10).power(apyFractionLength)
-
-            return inputAmount * apyBigInt / scalingFactor
-        }()
+        let profit = selectedStakingPool.annualProfit(for: inputAmount)
         let isMostProfitable = (stakingPoolsStore.state[wallet] ?? []).profitablePools.contains(where: { $0.address == selectedStakingPool.address })
 
         let configuration = mapStakingPoolItem(
@@ -250,6 +243,10 @@ private extension StakingDepositInputPoolPickerViewController {
             )
         )
     }
+}
+
+private extension CGFloat {
+    static let topPadding: CGFloat = 32
 }
 
 private extension String {

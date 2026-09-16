@@ -22,6 +22,10 @@ public final class RootAssembly {
     public let secureAssembly: SecureAssembly
     public let transactionsManagementAssembly: TransactionsManagementAssembly
     public let tronUSDTAssembly: TronUSDTAssembly
+    private let multichainAssembly: MultichainAssembly
+    private let tradingAssembly: TradingAssembly
+    private let deeplinkParser: DeeplinkParser
+    private let walletConnectAssembly: WalletConnectAssembly
 
     init(
         appInfoProvider: AppInfoProvider,
@@ -44,7 +48,11 @@ public final class RootAssembly {
         rnAssembly: RNAssembly,
         secureAssembly: SecureAssembly,
         transactionsManagementAssembly: TransactionsManagementAssembly,
-        tronUSDTAssembly: TronUSDTAssembly
+        tronUSDTAssembly: TronUSDTAssembly,
+        multichainAssembly: MultichainAssembly,
+        tradingAssembly: TradingAssembly,
+        deeplinkParser: DeeplinkParser,
+        walletConnectAssembly: WalletConnectAssembly
     ) {
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
@@ -67,6 +75,10 @@ public final class RootAssembly {
         self.secureAssembly = secureAssembly
         self.transactionsManagementAssembly = transactionsManagementAssembly
         self.tronUSDTAssembly = tronUSDTAssembly
+        self.multichainAssembly = multichainAssembly
+        self.tradingAssembly = tradingAssembly
+        self.deeplinkParser = deeplinkParser
+        self.walletConnectAssembly = walletConnectAssembly
     }
 
     private var _rootController: RootController?
@@ -76,9 +88,8 @@ public final class RootAssembly {
         } else {
             let rootController = RootController(
                 configuration: configurationAssembly.configuration,
-                deeplinkParser: DeeplinkParser(),
+                deeplinkParser: deeplinkParser,
                 keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
-                buySellProvider: buySellAssembly.buySellProvider,
                 knownAccountsProvider: knownAccountsAssembly.knownAccountsProvider
             )
             self._rootController = rootController
@@ -89,7 +100,8 @@ public final class RootAssembly {
     public func onboardingAssembly() -> OnboardingAssembly {
         OnboardingAssembly(
             walletsUpdateAssembly: walletsUpdateAssembly,
-            storesAssembly: storesAssembly
+            storesAssembly: storesAssembly,
+            deeplinkParser: deeplinkParser
         )
     }
 
@@ -131,7 +143,11 @@ public final class RootAssembly {
             rnAssembly: rnAssembly,
             featureFlags: featureFlags,
             transactionsManagementAssembly: transactionsManagementAssembly,
-            tronUSDTAssembly: tronUSDTAssembly
+            tronUSDTAssembly: tronUSDTAssembly,
+            multichainAssembly: multichainAssembly,
+            tradingAssembly: tradingAssembly,
+            deeplinkParser: deeplinkParser,
+            walletConnectAssembly: walletConnectAssembly
         )
     }
 }
