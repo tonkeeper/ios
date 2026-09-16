@@ -55,6 +55,8 @@ extension AccountEvent {
                     actionType = try .jettonBurn(.init(jettonBurn: jettonBurn))
                 } else if let smartContractExec = action.smartContractExec {
                     actionType = try .smartContractExec(.init(smartContractExec: smartContractExec))
+                } else if let buyXTR = action.buyXTR {
+                    actionType = try .buyXTR(.init(buyXTR: buyXTR))
                 } else if let domainRenew = action.domainRenew {
                     actionType = try .domainRenew(.init(domainRenew: domainRenew))
                 } else {
@@ -75,6 +77,7 @@ extension AccountEventAction.SimplePreview {
         self.name = simplePreview.name
         self.description = simplePreview.description
         self.value = simplePreview.value
+        self.fiatValue = simplePreview.fiatValue
 
         var image: URL?
         if let actionImage = simplePreview.actionImage {
@@ -262,20 +265,13 @@ extension AccountEventAction.WithdrawStakeRequest {
     }
 }
 
-extension AccountEventAction.RecoverStake {
-    init(recoverStake: TonAPI.ElectionsRecoverStakeAction) throws {
-        self.amount = recoverStake.amount
-        self.staker = try WalletAccount(accountAddress: recoverStake.staker)
-    }
-}
-
 extension AccountEventAction.JettonSwap {
     init(jettonSwap: TonAPI.JettonSwapAction) throws {
         self.dex = jettonSwap.dex
         self.amountIn = BigUInt(stringLiteral: jettonSwap.amountIn)
         self.amountOut = BigUInt(stringLiteral: jettonSwap.amountOut)
-        self.tonIn = jettonSwap.tonIn
-        self.tonOut = jettonSwap.tonOut
+        self.tonIn = jettonSwap.gramIn ?? jettonSwap.tonIn
+        self.tonOut = jettonSwap.gramOut ?? jettonSwap.tonOut
         self.user = try WalletAccount(accountAddress: jettonSwap.userWallet)
         self.router = try WalletAccount(accountAddress: jettonSwap.router)
         if let jettonMasterIn = jettonSwap.jettonMasterIn {
@@ -313,7 +309,7 @@ extension AccountEventAction.SmartContractExec {
     init(smartContractExec: TonAPI.SmartContractAction) throws {
         self.executor = try WalletAccount(accountAddress: smartContractExec.executor)
         self.contract = try WalletAccount(accountAddress: smartContractExec.contract)
-        self.tonAttached = smartContractExec.tonAttached
+        self.tonAttached = smartContractExec.gramAttached
         self.operation = smartContractExec.operation
         self.payload = smartContractExec.payload
     }
@@ -324,6 +320,13 @@ extension AccountEventAction.DomainRenew {
         self.domain = domainRenew.domain
         self.contractAddress = domainRenew.contractAddress
         self.renewer = try WalletAccount(accountAddress: domainRenew.renewer)
+    }
+}
+
+extension AccountEventAction.BuyXTR {
+    init(buyXTR: TonAPI.BuyXTRAction) throws {
+        self.recipient = try WalletAccount(accountAddress: buyXTR.recipient)
+        self.amount = Int64(buyXTR.amount) ?? 0
     }
 }
 

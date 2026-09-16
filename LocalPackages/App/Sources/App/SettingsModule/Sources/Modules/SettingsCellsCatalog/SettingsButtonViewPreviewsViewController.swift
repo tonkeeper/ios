@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsButtonViewPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: ButtonViewPreviews()
+    private let hostingController = TKHostingController(
+        content: ButtonViewPreviews()
     )
 
     override func viewDidLoad() {

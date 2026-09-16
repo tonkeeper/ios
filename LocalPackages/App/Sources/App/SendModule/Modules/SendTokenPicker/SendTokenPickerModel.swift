@@ -7,7 +7,7 @@ final class SendTokenPickerModel: TokenPickerModel {
 
     enum PickerToken {
         case ton(TonToken)
-        case tronUSDT
+        case tron(TronToken)
     }
 
     private let wallet: Wallet
@@ -54,8 +54,8 @@ private extension SendTokenPickerModel {
             switch self.selectedToken {
             case let .ton(token):
                 return .ton(token)
-            case .tronUSDT:
-                return .tronUSDT
+            case let .tron(token):
+                return .tron(token)
             }
         }()
 
@@ -64,6 +64,7 @@ private extension SendTokenPickerModel {
             tonBalance: balance.tonBalance,
             jettonBalances: balance.jettonsBalance.filter { !$0.jettonBalance.quantity.isZero },
             tronUSDTBalance: balance.tronUSDT,
+            tronTRXBalance: balance.tronTRX,
             selectedToken: selectedToken,
             scrollToSelected: scrollToSelected,
             mode: .balance(showConverted: false)

@@ -8,11 +8,17 @@ import TonSwift
 import UIKit
 
 final class TradeCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    /// Raw deeplink dispatch, forwarded to `MainCoordinator.handleDeeplink`.
+    var didRequestDeeplinkHandling: ((String) -> Void)?
+    var didRequestOpenMigration: ((@escaping () -> Void) -> Void)?
+
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let tradeAssetDetailsHotWindow: TradeAssetDetailsHotWindow
     private let analyticsProvider: AnalyticsProvider
     private let amountFormatter: AmountFormatter
     private let shelvesService: TradingShelvesService
+    private let favoriteAssetsService: TradingFavoriteAssetsService
     private let assetsListService: TradingAssetsListService
     private let assetDetailsService: TradingAssetDetailsService
     private let balanceService: BalanceService
@@ -20,7 +26,7 @@ final class TradeCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private let jettonService: JettonService
     private let currencyStore: CurrencyStore
     private let signedAmountFormatter: AmountFormatter
-    private let chartViewStateProvider: (String) -> TokenChartViewState?
+    private let chartViewStateProvider: (Wallet, String) -> TokenChartViewState?
     private let output: TradeModule.CoordinatorOutput
     private weak var shelvesViewController: TradeViewController?
 
@@ -28,8 +34,10 @@ final class TradeCoordinator: RouterCoordinator<NavigationControllerRouter> {
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        tradeAssetDetailsHotWindow: TradeAssetDetailsHotWindow,
         jettonService: JettonService,
         shelvesService: TradingShelvesService,
+        favoriteAssetsService: TradingFavoriteAssetsService,
         assetsListService: TradingAssetsListService,
         assetDetailsService: TradingAssetDetailsService,
         balanceService: BalanceService,
@@ -37,15 +45,17 @@ final class TradeCoordinator: RouterCoordinator<NavigationControllerRouter> {
         currencyStore: CurrencyStore,
         amountFormatter: AmountFormatter,
         signedAmountFormatter: AmountFormatter,
-        chartViewStateProvider: @escaping (String) -> TokenChartViewState?,
+        chartViewStateProvider: @escaping (Wallet, String) -> TokenChartViewState?,
         output: TradeModule.CoordinatorOutput
     ) {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.tradeAssetDetailsHotWindow = tradeAssetDetailsHotWindow
         self.analyticsProvider = coreAssembly.analyticsProvider
         self.amountFormatter = amountFormatter
         self.signedAmountFormatter = signedAmountFormatter
         self.shelvesService = shelvesService
+        self.favoriteAssetsService = favoriteAssetsService
         self.assetsListService = assetsListService
         self.assetDetailsService = assetDetailsService
         self.jettonService = jettonService
@@ -76,33 +86,59 @@ extension TradeCoordinator {
     func openShelves(
         tradeFlowAnalyticsSource: TradeFlowAnalyticsSource
     ) {
+        let perpsShelfMarketsLoader: (() async throws -> [PerpsMarketSummary])?
+        if output.onOpenPerpsMarket != nil {
+            let marketsRepository = keeperCoreMainAssembly.perpsAssembly.marketsRepository
+            perpsShelfMarketsLoader = {
+                try await marketsRepository.markets(
+                    query: nil,
+                    sort: .volume,
+                    cursor: nil,
+                    pageSize: PerpsMarketsRepository.minimumPageSize
+                ).items
+            }
+        } else {
+            perpsShelfMarketsLoader = nil
+        }
+
         let viewModel = TradeViewModel(
             analyticsProvider: analyticsProvider,
             analyticsSource: tradeFlowAnalyticsSource,
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             shelvesService: shelvesService,
-            amountFormatter: amountFormatter,
+            favoriteAssetsService: favoriteAssetsService,
+            perpsShelfMarketsLoader: perpsShelfMarketsLoader,
+            raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
+            isMysteryRaffleEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
             signedAmountFormatter: signedAmountFormatter,
-            onOpenAssetList: { [weak self] category in
+            onOpenAssetList: { [weak self] category, initialCatalogSearchSort in
                 guard let self else { return }
                 openAssetList(
                     initialCategory: category,
+                    initialCatalogSearchSort: initialCatalogSearchSort,
                     tradeFlowAnalyticsSource: tradeFlowAnalyticsSource
                 )
             },
-            onOpenAssetDetails: { [weak self] asset in
+            onOpenPerps: output.onOpenPerps.map { onOpenPerps in
+                { [weak self] in
+                    onOpenPerps(self?.router.rootViewController)
+                }
+            },
+            onOpenPerpsMarket: output.onOpenPerpsMarket.map { onOpenPerpsMarket in
+                { [weak self] marketID in
+                    onOpenPerpsMarket(marketID, self?.router.rootViewController)
+                }
+            },
+            onOpenAssetDetails: { [weak self] preview in
                 guard let self else { return }
                 self.openAssetDetails(
-                    preview: self.makePreviewContext(
-                        assetID: asset.id,
-                        assetCategory: asset.category,
-                        title: asset.name,
-                        imageURL: asset.imageURL,
-                        symbol: asset.symbol,
-                        isUnverified: asset.isUnverified
-                    ),
+                    preview: preview,
                     on: self.router.rootViewController,
                     source: .tradeScreen
                 )
+            },
+            onOpenRaffle: { [weak self] in
+                self?.openMysteryRaffle()
             }
         )
         let viewController = TradeViewController(viewModel: viewModel)
@@ -110,15 +146,44 @@ extension TradeCoordinator {
         router.push(viewController: viewController, animated: false)
     }
 
+    func openMysteryRaffle() {
+        MysteryRaffleCoordinator.presentCurrent(
+            from: self,
+            rootViewController: router.rootViewController,
+            source: .trade,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            presentedFromBanner: true,
+            openDeeplink: { [weak self] in self?.didRequestDeeplinkHandling?($0) },
+            openMigration: { [weak self] onFinish in
+                self?.didRequestOpenMigration?(onFinish) ?? onFinish()
+            }
+        )
+    }
+
     func openAssetList(
         initialCategory: TradingAssetCategory,
+        initialCatalogSearchSort: MultichainAssetSearchSort = .marketCap,
         tradeFlowAnalyticsSource: TradeFlowAnalyticsSource,
-        on presentingViewController: UIViewController? = nil
+        on targetNavigationController: UINavigationController? = nil
     ) {
-        let navigationController = TKNavigationController()
-        navigationController.configureTransparentAppearance()
-        navigationController.setNavigationBarHidden(true, animated: false)
-        navigationController.modalPresentationStyle = .fullScreen
+        let navigationController = (targetNavigationController ?? router.rootViewController)
+            .tabBarHostNavigationController
+
+        if let wallet = activeWallet(),
+           let multichainState = wallet.multichainWalletState
+        {
+            openMultichainAssetList(
+                initialCategory: initialCategory,
+                initialCatalogSearchSort: initialCatalogSearchSort,
+                tradeFlowAnalyticsSource: tradeFlowAnalyticsSource,
+                wallet: wallet,
+                multichainState: multichainState,
+                on: navigationController
+            )
+            return
+        }
+
         let assetDetailsSource = tradeFlowAnalyticsSource.assetViewSource
 
         let viewController = TradeAssetsListViewController(
@@ -129,8 +194,8 @@ extension TradeCoordinator {
                 amountFormatter: amountFormatter,
                 signedAmountFormatter: signedAmountFormatter,
                 selectedCategory: initialCategory,
-                onClose: { [weak navigationController] in
-                    navigationController?.dismiss(animated: true)
+                onBack: { [weak navigationController] in
+                    navigationController?.popViewController(animated: true)
                 },
                 onOpenAssetDetails: { [weak self, weak navigationController] asset in
                     guard let self else { return }
@@ -141,7 +206,9 @@ extension TradeCoordinator {
                             title: asset.subtitle,
                             imageURL: asset.imageURL,
                             symbol: asset.symbol,
-                            isUnverified: asset.isUnverified
+                            change24hPercent: nil,
+                            isUnverified: asset.isUnverified,
+                            isTrusted: asset.isTrusted
                         ),
                         on: navigationController,
                         source: assetDetailsSource
@@ -149,8 +216,53 @@ extension TradeCoordinator {
                 }
             )
         )
-        navigationController.setViewControllers([viewController], animated: false)
-        presentAssetList(navigationController, on: presentingViewController)
+        navigationController.pushViewController(viewController, animated: true)
+    }
+
+    func openMultichainAssetList(
+        initialCategory: TradingAssetCategory,
+        initialCatalogSearchSort: MultichainAssetSearchSort,
+        tradeFlowAnalyticsSource: TradeFlowAnalyticsSource,
+        wallet: Wallet,
+        multichainState: MultichainWalletState,
+        on navigationController: UINavigationController
+    ) {
+        let model = SendTokenV2PickerModel(
+            multichainState: multichainState,
+            displayMode: .includingMarketData,
+            searchBehavior: .catalog,
+            multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
+            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+            initialCatalogSearchSort: initialCatalogSearchSort
+        )
+        let module = TokenPickerV2Assembly.module(
+            title: assetListTitle(for: initialCategory),
+            wallet: wallet,
+            model: model,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            ignoresSafeArea: false,
+            presentation: .pushed,
+            headerStyle: .push,
+            onBack: { [weak navigationController] in
+                navigationController?.popViewController(animated: true)
+            }
+        )
+
+        let assetDetailsSource = tradeFlowAnalyticsSource.assetViewSource
+        module.output.didSelectAsset = { [weak self, weak navigationController] asset in
+            guard let self else { return }
+            self.openAssetDetails(
+                preview: TradeItemsMapper.previewContext(for: asset),
+                on: navigationController,
+                source: assetDetailsSource
+            )
+        }
+
+        module.output.didFinish = { [weak navigationController] in
+            navigationController?.popViewController(animated: true)
+        }
+
+        navigationController.pushViewController(module.view, animated: true)
     }
 
     func openAssetDetails(
@@ -161,15 +273,110 @@ extension TradeCoordinator {
         guard let wallet = activeWallet() else {
             return
         }
-        let isRootTradeNavigation = navigationController === router.rootViewController
+        let navigationController = (navigationController ?? router.rootViewController)
+            .tabBarHostNavigationController
         let typedAssetId = TradingAssetToken(assetId: preview.assetID)
+        let multichainAssetBalanceProvider = keeperCoreMainAssembly
+            .multichainAssembly
+            .multichainAssetBalanceProvider
+        let convertedBalanceStore = keeperCoreMainAssembly
+            .storesAssembly
+            .convertedBalanceStore
+        let isMultichainTransferSupported: (MultichainAsset) -> Bool = { [keeperCoreMainAssembly] asset in
+            keeperCoreMainAssembly.multichainAssembly.chainKitService.isTransferSupported(asset: asset)
+        }
+        let multichainState = wallet.multichainWalletState
+        let visibilityChangesController = multichainState.map { _ in
+            keeperCoreMainAssembly.visibilityChangesController
+        }
+        let balanceSource = TradeAssetDetailsBalanceSource(
+            typedAssetId: typedAssetId,
+            wallet: wallet
+        )
+        // TRC20 transfers are paid for out of TRX, battery charges or GRAM, none of which the
+        // asset catalog knows about; only a legacy wallet spends them through this screen.
+        let tronFeesViewModel: TradeAssetDetailsTronFeesViewModel? = switch balanceSource {
+        case .legacyStore(.tronUsdt):
+            TradeAssetDetailsTronFeesViewModel(
+                wallet: wallet,
+                feesService: keeperCoreMainAssembly.servicesAssembly.tronUSDTFeesService,
+                balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
+            )
+        default:
+            nil
+        }
+        let balanceViewModel: any TradeAssetDetailsBalanceViewModeling = switch balanceSource {
+        case let .legacyStore(token):
+            TradeAssetDetailsStoreBalanceViewModel(
+                wallet: wallet,
+                assetID: preview.assetID,
+                typedAssetId: token,
+                balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                convertedBalanceStore: convertedBalanceStore,
+                multichainAssetBalanceProvider: multichainAssetBalanceProvider
+            )
+        case .multichain:
+            TradeAssetDetailsMultichainBalanceViewModel(
+                wallet: wallet,
+                assetID: preview.assetID,
+                multichainAssetBalanceProvider: multichainAssetBalanceProvider,
+                balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                hotWindow: tradeAssetDetailsHotWindow,
+                currencyProvider: { [currencyStore] in
+                    currencyStore.state
+                },
+                isMultichainTransferSupported: isMultichainTransferSupported
+            )
+        }
+
+        let historySource: TradeAssetDetailsViewModel.HistorySource
+        if let multichainState {
+            historySource = .multichain(
+                TradeAssetDetailsMultichainHistoryViewModel(
+                    walletId: multichainState.walletId,
+                    assetId: preview.assetID,
+                    multichainState: multichainState,
+                    multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
+                    amountFormatter: amountFormatter,
+                    dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+                )
+            )
+        } else {
+            historySource = .legacy(
+                TradeAssetDetailsHistoryViewModel(
+                    wallet: wallet,
+                    typedAssetId: typedAssetId,
+                    historyService: keeperCoreMainAssembly.servicesAssembly.historyService(),
+                    tronUSDTHistoryService: keeperCoreMainAssembly.servicesAssembly.tronUSDTHistoryService(),
+                    tronUsdtApi: keeperCoreMainAssembly.servicesAssembly.tronUsdtApi(),
+                    accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
+                    dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+                    signedAmountFormatter: signedAmountFormatter,
+                    walletNFTsManagementStoreProvider: { [keeperCoreMainAssembly] wallet in
+                        keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
+                    },
+                    backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate
+                )
+            )
+        }
 
         let viewController = TradeAssetDetailsViewController(
             viewModel: TradeAssetDetailsViewModel(
+                multichainState: multichainState,
                 preview: preview,
+                isSwapDisabled: keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.isSwapDisable, network: wallet.network),
                 analyticsProvider: analyticsProvider,
                 analyticsSource: source,
+                favoriteAssetsService: favoriteAssetsService,
+                tooltipsService: coreAssembly.tooltipsAssembly.service,
                 assetDetailsService: assetDetailsService,
+                visibilityChangesController: visibilityChangesController,
+                explorerProvider: MultichainAssetExplorerProvider(
+                    explorersProvider: { [keeperCoreMainAssembly] in
+                        keeperCoreMainAssembly.configurationAssembly.configuration.explorers(network: wallet.network)
+                    }
+                ),
+                appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
                 currencyStore: currencyStore,
                 amountFormatter: amountFormatter,
                 signedAmountFormatter: signedAmountFormatter,
@@ -190,27 +397,9 @@ extension TradeCoordinator {
                     amountFormatter: amountFormatter,
                     signedAmountFormatter: signedAmountFormatter
                 ),
-                balanceViewModel: TradeAssetDetailsBalanceViewModel(
-                    wallet: wallet,
-                    typedAssetId: typedAssetId,
-                    balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                    convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
-                ),
-                historyViewModel: TradeAssetDetailsHistoryViewModel(
-                    wallet: wallet,
-                    typedAssetId: typedAssetId,
-                    historyService: keeperCoreMainAssembly.servicesAssembly.historyService(),
-                    tronUSDTHistoryService: keeperCoreMainAssembly.servicesAssembly.tronUSDTHistoryService(),
-                    tronUsdtApi: keeperCoreMainAssembly.servicesAssembly.tronUsdtApi(),
-                    tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
-                    accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
-                    dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
-                    signedAmountFormatter: signedAmountFormatter,
-                    walletNFTsManagementStoreProvider: { [keeperCoreMainAssembly] wallet in
-                        keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
-                    },
-                    backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate
-                ),
+                balanceViewModel: balanceViewModel,
+                historySource: historySource,
+                tronFeesViewModel: tronFeesViewModel,
                 tonStakingAPYProvider: { [keeperCoreMainAssembly] in
                     let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
                     guard !configuration.flag(\.stakingDisabled, network: wallet.network) else {
@@ -226,7 +415,7 @@ extension TradeCoordinator {
                     guard let self else { return }
                     output.onOpenUrl(url, navigationController)
                 },
-                chartStateProvider: chartViewStateProvider,
+                chartState: chartViewStateProvider(wallet, preview.assetID),
                 onOpenHistory: { [weak self, weak navigationController] context in
                     guard let self else { return }
                     openAssetHistory(
@@ -238,21 +427,25 @@ extension TradeCoordinator {
                     guard let self else { return }
                     output.onOpenHistoryEvent(selection, navigationController)
                 },
+                onOpenMultichainHistory: { [weak self, weak navigationController] multichainState, assetId in
+                    guard let self else { return }
+                    openMultichainAssetHistory(
+                        multichainState: multichainState,
+                        assetId: assetId,
+                        on: navigationController
+                    )
+                },
                 onBuy: { [weak self, weak navigationController] assetInfo in
                     guard let wallet = self?.activeWallet() else {
                         return
                     }
                     Task { @MainActor [weak self] in
-                        guard
-                            let self,
-                            let token = await token(for: assetInfo, wallet: wallet)
-                        else {
+                        guard let self else {
                             return
                         }
                         await openTradeAssetSwap(
                             wallet: wallet,
-                            token: token,
-                            tokenCategory: assetInfo.category,
+                            assetInfo: assetInfo,
                             direction: .buy,
                             navigationController: navigationController
                         )
@@ -263,33 +456,49 @@ extension TradeCoordinator {
                         return
                     }
                     Task { @MainActor [weak self] in
-                        guard
-                            let self,
-                            let token = await token(for: assetInfo, wallet: wallet)
-                        else {
+                        guard let self else {
                             return
                         }
                         await openTradeAssetSwap(
                             wallet: wallet,
-                            token: token,
-                            tokenCategory: assetInfo.category,
+                            assetInfo: assetInfo,
                             direction: .sell,
                             navigationController: navigationController
                         )
                     }
                 },
-                onSend: { [weak self, weak navigationController] assetInfo in
-                    guard let wallet = self?.activeWallet() else {
+                onSend: { [weak self, weak navigationController] assetInfo, resolvedAsset in
+                    guard let self, let wallet = activeWallet() else {
+                        return
+                    }
+                    if wallet.isMultichain,
+                       case let .multichain(multichainState) = wallet.multichain,
+                       let resolvedAsset,
+                       let sendInput = multichainSendInput(asset: resolvedAsset)
+                    {
+                        output.onSendMultichain(wallet, multichainState, sendInput, navigationController)
                         return
                     }
                     Task { @MainActor [weak self] in
-                        guard
-                            let self,
-                            let token = await token(for: assetInfo, wallet: wallet)
-                        else {
+                        guard let self else {
                             return
                         }
-                        output.onSend(wallet, token, navigationController)
+                        if wallet.isMultichain, case let .multichain(multichainState) = wallet.multichain {
+                            guard let sendInput = await multichainSendInput(
+                                multichainState: multichainState,
+                                assetId: assetInfo.assetId
+                            ) else {
+                                ToastPresenter.showToast(
+                                    configuration: ToastPresenter.Configuration(
+                                        title: TKLocales.Trade.Assets.Errors.load
+                                    )
+                                )
+                                return
+                            }
+                            output.onSendMultichain(wallet, multichainState, sendInput, navigationController)
+                        } else if let token = await token(for: assetInfo, wallet: wallet) {
+                            output.onSend(wallet, token.sendV3Item, navigationController)
+                        }
                     }
                 },
                 onReceive: { [weak self, weak navigationController] assetInfo in
@@ -297,14 +506,43 @@ extension TradeCoordinator {
                         return
                     }
                     Task { @MainActor [weak self] in
-                        guard
-                            let self,
-                            let token = await token(for: assetInfo, wallet: wallet)
-                        else {
+                        guard let self else {
                             return
                         }
-                        output.onReceive([token], wallet, navigationController)
+                        if wallet.isMultichain, case let .multichain(multichainState) = wallet.multichain {
+                            guard let address = multichainReceiveAddress(
+                                for: assetInfo,
+                                multichainState: multichainState,
+                                wallet: wallet
+                            ) else {
+                                ToastPresenter.showToast(
+                                    configuration: ToastPresenter.Configuration(
+                                        title: TKLocales.Trade.Assets.Errors.load
+                                    )
+                                )
+                                return
+                            }
+                            output.onReceiveMultichain(wallet, address, navigationController)
+                        } else if let token = await token(for: assetInfo, wallet: wallet) {
+                            output.onReceive(token, wallet, navigationController)
+                        }
                     }
+                },
+                onSellToCard: { [weak self, weak navigationController] assetInfo, resolvedAsset in
+                    self?.openSellToCard(
+                        assetInfo: assetInfo,
+                        resolvedAsset: resolvedAsset,
+                        navigationController: navigationController
+                    )
+                },
+                onCashBuy: { [weak self, weak navigationController] assetInfo in
+                    self?.openCashBuy(
+                        assetInfo: assetInfo,
+                        navigationController: navigationController
+                    )
+                },
+                onTronFees: { [output, wallet] snapshot, trigger in
+                    output.onTronUsdtFees(wallet, snapshot, trigger)
                 },
                 onOpenStaking: { [output] in
                     output.onOpenStaking(wallet)
@@ -316,23 +554,22 @@ extension TradeCoordinator {
                 onOpenUnverifiedTokenInfo: { [output, weak navigationController] in
                     output.onOpenUnverifiedTokenInfoPopup(navigationController)
                 },
-                onBack: { [weak self, weak navigationController] in
-                    if isRootTradeNavigation {
-                        self?.router.pop(animated: true)
-                    } else {
-                        navigationController?.popViewController(animated: true)
+                onOpenVerifiedTokenInfo: { [output, weak navigationController] in
+                    output.onOpenVerifiedTokenInfoPopup(navigationController)
+                },
+                onAssetVisibilityChanged: { [keeperCoreMainAssembly, wallet] in
+                    let balanceLoader = keeperCoreMainAssembly.loadersAssembly.balanceLoader
+                    Task {
+                        await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
                     }
+                },
+                onBack: { [weak navigationController] in
+                    navigationController?.popViewController(animated: true)
                 }
             )
         )
 
-        viewController.hidesBottomBarWhenPushed = isRootTradeNavigation
-
-        if isRootTradeNavigation {
-            router.push(viewController: viewController, animated: true)
-        } else {
-            navigationController?.pushViewController(viewController, animated: true)
-        }
+        navigationController.pushViewController(viewController, animated: true)
     }
 
     func openAssetDetails(
@@ -350,26 +587,15 @@ extension TradeCoordinator {
         context: TradeAssetHistoryContext,
         on navigationController: UINavigationController?
     ) {
-        let presentingNavigationController = navigationController ?? router.rootViewController
+        let presentingNavigationController = (navigationController ?? router.rootViewController)
+            .tabBarHostNavigationController
         let module = historyListModule(for: context)
 
         module.view.title = TKLocales.Trade.AssetDetails.History.title
         module.view.navigationItem.largeTitleDisplayMode = .never
         module.view.adjustsContentTopPaddingToNavigationBar = true
 
-        let modalNavigationController = TKNavigationController(rootViewController: module.view)
-        module.view.setupRightCloseButton { [weak modalNavigationController] in
-            modalNavigationController?.dismiss(animated: true)
-        }
-        modalNavigationController.configureDefaultAppearance(separatorHidden: true)
-        modalNavigationController.navigationBar.prefersLargeTitles = false
-        if #available(iOS 15.0, *) {
-            modalNavigationController.navigationBar.scrollEdgeAppearance = modalNavigationController.navigationBar.standardAppearance
-        }
-        modalNavigationController.setNavigationBarHidden(false, animated: false)
-        modalNavigationController.modalPresentationStyle = .automatic
-
-        module.output.didSelectEvent = { [weak self] event in
+        module.output.didSelectEvent = { [weak self, weak presentingNavigationController] event in
             guard let self else {
                 return
             }
@@ -377,63 +603,195 @@ extension TradeCoordinator {
             case let .tonEvent(event):
                 output.onOpenHistoryEvent(
                     .ton(wallet: wallet(for: context), event: event),
-                    modalNavigationController
+                    presentingNavigationController
                 )
             case let .tronEvent(event):
                 output.onOpenHistoryEvent(
                     .tron(wallet: wallet(for: context), event: event),
-                    modalNavigationController
+                    presentingNavigationController
                 )
             }
         }
 
-        presentingNavigationController.present(modalNavigationController, animated: true)
+        presentingNavigationController.setNavigationBarHidden(false, animated: true)
+        presentingNavigationController.pushViewController(module.view, animated: true)
+    }
+
+    func openMultichainAssetHistory(
+        multichainState: MultichainWalletState,
+        assetId: String,
+        on navigationController: UINavigationController?
+    ) {
+        let presentingNavigationController = (navigationController ?? router.rootViewController)
+            .tabBarHostNavigationController
+        let appSettingsStore = keeperCoreMainAssembly.storesAssembly.appSettingsStore
+        let viewModel = MultichainHistoryViewModelImplementation(
+            multichainState: multichainState,
+            assetId: assetId,
+            hidesDustTransactions: appSettingsStore.getState().hidesDustTransactions,
+            multichainService: keeperCoreMainAssembly.servicesAssembly.multichainService(),
+            realtimeManager: keeperCoreMainAssembly.multichainAssembly.realtimeManager,
+            reachabilityTracker: coreAssembly.reachabilityTracker,
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+            dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
+            nftResolver: MultichainActivityNFTResolver(
+                nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
+                network: activeWallet()?.network ?? .mainnet
+            )
+        )
+        viewModel.persistHistoryFilters(to: appSettingsStore)
+        let viewController = MultichainHistoryViewController(
+            viewModel: viewModel,
+            onClose: { [weak presentingNavigationController] in
+                presentingNavigationController?.popViewController(animated: true)
+            },
+            onOpenTransaction: { [output, weak presentingNavigationController] url, _ in
+                output.onOpenUrl(url, presentingNavigationController)
+            }
+        )
+        viewController.navigationItem.hidesBackButton = true
+        presentingNavigationController.pushViewController(viewController, animated: true)
     }
 }
 
 private extension TradeCoordinator {
-    func presentAssetList(
-        _ navigationController: UINavigationController,
-        on presentingViewController: UIViewController?
-    ) {
-        if let presentingViewController {
-            presentingViewController.topPresentedViewController().present(navigationController, animated: true)
-        } else {
-            router.present(navigationController)
-        }
-    }
-
     func makePreviewContext(
         assetID: String,
         assetCategory: TradingAssetCategory?,
         title: String,
         imageURL: URL?,
         symbol: String,
-        isUnverified: Bool?
+        change24hPercent: Decimal?,
+        isUnverified: Bool?,
+        isTrusted: Bool?
     ) -> TradeAssetDetailsViewModel.PreviewContext {
-        .init(
+        TradeAssetDetailsViewModel.PreviewContext(
             assetID: assetID,
             assetCategory: assetCategory,
             title: title,
             imageURL: imageURL,
-            isUnverified: isUnverified
+            symbol: symbol,
+            change24hPercent: change24hPercent,
+            isUnverified: isUnverified,
+            isTrusted: isTrusted
         )
     }
 
     func makePreviewContext(assetID: String) -> TradeAssetDetailsViewModel.PreviewContext {
-        return .init(
-            assetID: assetID,
-            assetCategory: TradingAssetCategory(assetID: assetID),
-            title: nil,
-            imageURL: nil,
-            isUnverified: nil
+        TradeAssetDetailsViewModel.PreviewContext(
+            assetID: assetID
         )
+    }
+
+    func assetListTitle(for category: TradingAssetCategory) -> String {
+        switch category {
+        case .all, .tokens:
+            TKLocales.Trade.Assets.title
+        case .stocks:
+            TKLocales.Trade.Assets.Categories.stocks
+        case .etfs:
+            TKLocales.Trade.Assets.Categories.etfs
+        }
     }
 }
 
 private extension TradeCoordinator {
+    func openSellToCard(
+        assetInfo: TradingAssetInfo,
+        resolvedAsset: MultichainAsset?,
+        navigationController: UINavigationController?
+    ) {
+        guard
+            let wallet = activeWallet(),
+            wallet.isMultichain
+        else {
+            return
+        }
+        output.onSellToCard(wallet, assetInfo, resolvedAsset, navigationController)
+    }
+
+    func openCashBuy(
+        assetInfo: TradingAssetInfo,
+        navigationController: UINavigationController?
+    ) {
+        guard
+            let wallet = activeWallet(),
+            wallet.isMultichain
+        else {
+            return
+        }
+        output.onCashBuy(wallet, assetInfo, navigationController)
+    }
+
     func activeWallet() -> Wallet? {
         try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet
+    }
+
+    func multichainSendInput(
+        multichainState: MultichainWalletState,
+        assetId: String
+    ) async -> MultichainSendInput? {
+        let assetResolver = MultichainSendAssetResolver(
+            multichainAssetBalanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
+            assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService()
+        )
+        guard let asset = await assetResolver.resolveAsset(for: assetId, multichainState: multichainState) else {
+            return nil
+        }
+        return multichainSendInput(asset: asset)
+    }
+
+    func multichainSendInput(asset: MultichainAsset) -> MultichainSendInput? {
+        guard keeperCoreMainAssembly.multichainAssembly.chainKitService.isTransferSupported(asset: asset) else {
+            return nil
+        }
+        return MultichainSendInput(item: MultichainSendItem(asset: asset, amount: 0))
+    }
+
+    func multichainReceiveAddress(
+        for assetInfo: TradingAssetInfo,
+        multichainState: MultichainWalletState,
+        wallet: Wallet
+    ) -> ReceiveAddressPreview? {
+        guard
+            let components = AssetIdComponents(assetId: assetInfo.assetId),
+            let chain = MultichainChain(assetIdChain: components.chain),
+            let walletAddress = multichainState.walletAddress(
+                for: chain,
+                preferredType: wallet.preferredMultichainAddressType(for: chain)
+            )
+        else {
+            return nil
+        }
+
+        switch components {
+        case .coin:
+            return ReceiveAddressPreview(address: walletAddress)
+        case let .asset(_, _, _, contractAddress):
+            let qrPayload: String
+            if chain == .ton,
+               let jettonAddress = try? AnyAddress(rawAddress: contractAddress).address,
+               let deeplink = try? DeeplinkGenerator().generateTransferDeeplink(
+                   with: walletAddress.address,
+                   jettonAddress: jettonAddress
+               )
+            {
+                qrPayload = deeplink
+            } else {
+                qrPayload = walletAddress.address
+            }
+
+            return ReceiveAddressPreview(
+                address: walletAddress,
+                qrPayload: qrPayload,
+                asset: ReceiveAddressPreview.Asset(
+                    address: contractAddress,
+                    name: assetInfo.title,
+                    symbol: assetInfo.symbol,
+                    icon: .url(assetInfo.imageURL)
+                )
+            )
+        }
     }
 
     func token(for assetInfo: TradingAssetInfo, wallet: Wallet) async -> Token? {
@@ -446,6 +804,8 @@ private extension TradeCoordinator {
             return .ton(.ton)
         case .tronUsdt:
             return .tron(.usdt)
+        case .tronTrx:
+            return .tron(.trx)
         case let .jetton(address):
             if let walletBalance = try? balanceService.getBalance(wallet: wallet),
                let jettonItem = walletBalance.balance.jettonsBalance.first(where: {
@@ -525,24 +885,57 @@ private extension TradeCoordinator {
     }
 
     func openTokenizedAssetInfoPopup(kind: TokenizedAssetInfoKind) {
-        AssetInfoPopupPresenter.presentTokenized(
+        PopupContentPresenter.presentTokenized(
             kind: kind,
             from: router.rootViewController.topPresentedViewController()
-        )
-    }
-
-    private func getPasscode() async -> String? {
-        await PasscodeInputCoordinator.getPasscode(
-            parentCoordinator: self,
-            parentRouter: router,
-            mnemonicAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
         )
     }
 
     private enum TradeAssetSwapDirection {
         case buy
         case sell
+
+        var multichainSwapInitialSelectionSide: MultichainSwapInitialAssetSelection.Side {
+            switch self {
+            case .buy:
+                return .receive
+            case .sell:
+                return .send
+            }
+        }
+    }
+
+    private func openTradeAssetSwap(
+        wallet: Wallet,
+        assetInfo: TradingAssetInfo,
+        direction: TradeAssetSwapDirection,
+        navigationController: UINavigationController?
+    ) async {
+        if wallet.isMultichain, case .multichain = wallet.multichain {
+            output.onSwap(
+                .multichain(
+                    MultichainSwapInitialAssetSelection(
+                        assetId: assetInfo.assetId,
+                        side: direction.multichainSwapInitialSelectionSide
+                    )
+                ),
+                wallet,
+                navigationController
+            )
+            return
+        }
+
+        guard let token = await token(for: assetInfo, wallet: wallet) else {
+            return
+        }
+
+        await openTradeAssetSwap(
+            wallet: wallet,
+            token: token,
+            tokenCategory: assetInfo.category,
+            direction: direction,
+            navigationController: navigationController
+        )
     }
 
     private func openTradeAssetSwap(
@@ -576,13 +969,13 @@ private extension TradeCoordinator {
                 case .buy:
                     fromToken = usdt
                     toToken = .ton
-                    fromCategory = .crypto
-                    toCategory = .crypto
+                    fromCategory = .tokens
+                    toCategory = .tokens
                 case .sell:
                     fromToken = .ton
                     toToken = usdt
-                    fromCategory = .crypto
-                    toCategory = .crypto
+                    fromCategory = .tokens
+                    toCategory = .tokens
                 }
             case let .jetton(item):
                 let counterpartToken: TonToken
@@ -603,13 +996,13 @@ private extension TradeCoordinator {
                 case .buy:
                     fromToken = counterpartToken
                     toToken = .jetton(item)
-                    fromCategory = .crypto
+                    fromCategory = .tokens
                     toCategory = tokenCategory
                 case .sell:
                     fromToken = .jetton(item)
                     toToken = counterpartToken
                     fromCategory = tokenCategory
-                    toCategory = .crypto
+                    toCategory = .tokens
                 }
             }
             output.onSwap(
@@ -637,7 +1030,7 @@ private extension TradingAssetCategory {
         switch self {
         case .stocks, .etfs:
             return true
-        case .all, .crypto:
+        case .all, .tokens:
             return false
         }
     }

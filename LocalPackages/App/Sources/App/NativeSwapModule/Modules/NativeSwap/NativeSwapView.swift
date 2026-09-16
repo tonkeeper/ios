@@ -23,7 +23,6 @@ final class NativeSwapView: UIView {
     let navigationBar = TKUINavigationBar()
     let titleView = TKUINavigationBarTitleView()
 
-    private let titleSpacerView = UIView()
     private let sendView = NativeSwapSendView()
     private let receiveView = NativeSwapReceiveView()
     private let swapContainerView = UIView()
@@ -33,9 +32,12 @@ final class NativeSwapView: UIView {
     private let rateBALabel = UILabel()
     private let continueButton = TKButton()
     private let processView = TKProcessContainerView()
-    private lazy var privacyInfoHostingController: UIHostingController<NativeSwapPrivacyInfoView> = {
-        let hostingController = UIHostingController(rootView: NativeSwapPrivacyInfoView())
+    private lazy var privacyInfoHostingController: TKHostingController<NativeSwapPrivacyInfoView> = {
+        let hostingController = TKHostingController(content: NativeSwapPrivacyInfoView())
         hostingController.view.backgroundColor = .clear
+        if #available(iOS 16.4, *) {
+            hostingController.safeAreaRegions = []
+        }
         return hostingController
     }()
 
@@ -207,6 +209,7 @@ final class NativeSwapView: UIView {
             self?.didTapContinue?()
         }
         continueButton.configuration = continueButtonConfiguration
+        continueButton.accessibilityIdentifier = "native_swap_continue"
     }
 
     private func setupConstraints() {
@@ -263,7 +266,7 @@ final class NativeSwapView: UIView {
 
         privacyInfoHostingController.view.snp.makeConstraints {
             $0.left.right.equalTo(self).inset(16)
-            $0.bottom.equalTo(continueButton.snp.top).inset(-16)
+            $0.bottom.equalTo(continueButton.snp.top).inset(-15)
         }
     }
 
@@ -307,7 +310,7 @@ final class NativeSwapView: UIView {
     }
 
     private func updatePrivacyInfoView() {
-        privacyInfoHostingController.rootView = NativeSwapPrivacyInfoView(onURLTap: didTapURL)
+        privacyInfoHostingController.content = NativeSwapPrivacyInfoView(onURLTap: didTapURL)
     }
 
     @objc

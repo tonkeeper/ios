@@ -8,6 +8,7 @@ enum WalletBalance {
         case banners
         case cryptoAssetsHeader(canManage: Bool)
         case balance(BalanceItemsSection)
+        case collectibles
         case setup(SetupSection)
         case notifications(NotificationSection)
     }
@@ -17,6 +18,8 @@ enum WalletBalance {
         case banners
         case cryptoAssetsHeader
         case listItem(ListItem)
+        case moreAssets
+        case collectibles
         case notificationItem(NotificationItem)
     }
 

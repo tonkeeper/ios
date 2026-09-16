@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TonSwift
+import TronSwift
 
 extension Rates {
     func rate(
@@ -13,6 +14,12 @@ extension Rates {
             values = ton
         case .tronUsdt:
             values = usdt
+        case .tronTrx:
+            values = jettonRates
+                .first {
+                    $0.key.caseInsensitiveCompare(TRX.symbol) == .orderedSame
+                }?
+                .value ?? []
         case let .jetton(address):
             if address == JettonMasterAddress.tonUSDT {
                 values = usdt

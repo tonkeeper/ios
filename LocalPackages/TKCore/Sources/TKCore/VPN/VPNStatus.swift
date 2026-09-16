@@ -1,11 +1,11 @@
 import CFNetwork
 import Foundation
 
-public enum VPNStatus {
+enum VPNStatus {
     /// Keep this heuristic conservative to avoid flagging system tunnels like Wi-Fi calling.
     static let vpnInterfaceMarkers = ["ppp", "tap", "tun", "utun"]
 
-    public static func isVPNConnected() -> Bool {
+    static func isVPNConnected() -> Bool {
         guard
             let proxySettings = CFNetworkCopySystemProxySettings()?.takeRetainedValue() as? [String: Any],
             let scoped = proxySettings["__SCOPED__"] as? [String: Any]

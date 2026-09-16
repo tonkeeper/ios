@@ -12,6 +12,7 @@ public struct AccountEventAction: Codable, Sendable {
         public let description: String
         public let image: URL?
         public let value: String?
+        public let fiatValue: String?
         public let valueImage: URL?
         public let accounts: [WalletAccount]
     }
@@ -34,6 +35,7 @@ public struct AccountEventAction: Codable, Sendable {
         case jettonBurn(JettonBurn)
         case smartContractExec(SmartContractExec)
         case domainRenew(DomainRenew)
+        case buyXTR(BuyXTR)
         case unknown
     }
 
@@ -143,11 +145,6 @@ public struct AccountEventAction: Codable, Sendable {
         public let stakeMeta: TokenAmount?
     }
 
-    public struct RecoverStake: Codable {
-        public let amount: Int64
-        public let staker: WalletAccount
-    }
-
     public struct JettonSwap: Codable {
         public let dex: String
         public let amountIn: BigUInt
@@ -186,6 +183,11 @@ public struct AccountEventAction: Codable, Sendable {
         public let domain: String
         public let contractAddress: String
         public let renewer: WalletAccount
+    }
+
+    public struct BuyXTR: Codable {
+        public let recipient: WalletAccount
+        public let amount: Int64
     }
 
     public struct Price: Codable {

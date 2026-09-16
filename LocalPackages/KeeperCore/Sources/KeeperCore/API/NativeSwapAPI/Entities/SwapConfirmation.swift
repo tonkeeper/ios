@@ -4,6 +4,10 @@ import TonSwift
 
 public enum NativeSwapConstants {
     public static let tonFeeReserve = BigUInt(1_000_000_000)
+
+    public static var tonFeeReserveWholeUnits: BigUInt {
+        tonFeeReserve / BigUInt(10).power(TonInfo.fractionDigits)
+    }
 }
 
 public struct SwapConfirmation: Decodable {
@@ -18,32 +22,6 @@ public struct SwapConfirmation: Decodable {
     public let estimatedGasConsumption: String
     public let slippage: Int
     public let valueDifferenceBps: Int?
-
-    public init(
-        messages: [SwapConfirmation.Message],
-        quoteId: String,
-        resolverName: String,
-        askUnits: String,
-        bidUnits: String,
-        protocolFeeUnits: String,
-        tradeStartDeadline: String,
-        gasBudget: String,
-        estimatedGasConsumption: String,
-        slippage: Int,
-        valueDifferenceBps: Int?
-    ) {
-        self.messages = messages
-        self.quoteId = quoteId
-        self.resolverName = resolverName
-        self.askUnits = askUnits
-        self.bidUnits = bidUnits
-        self.protocolFeeUnits = protocolFeeUnits
-        self.tradeStartDeadline = tradeStartDeadline
-        self.gasBudget = gasBudget
-        self.estimatedGasConsumption = estimatedGasConsumption
-        self.slippage = slippage
-        self.valueDifferenceBps = valueDifferenceBps
-    }
 
     public struct Message: Decodable {
         public let targetAddress: AnyAddress
@@ -69,15 +47,11 @@ public struct SwapConfirmation: Decodable {
 
             payload = try container.decode(String.self, forKey: .payload)
         }
+    }
+}
 
-        public init(
-            targetAddress: AnyAddress,
-            sendAmount: String,
-            payload: String
-        ) {
-            self.targetAddress = targetAddress
-            self.sendAmount = sendAmount
-            self.payload = payload
-        }
+public extension SwapConfirmation {
+    var requiredGasAmount: BigUInt {
+        max(BigUInt(gasBudget) ?? 0, BigUInt(estimatedGasConsumption) ?? 0)
     }
 }

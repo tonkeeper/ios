@@ -42,53 +42,84 @@ public struct TransactionCellContent: Sendable, Equatable {
 
 public extension TransactionCellContent {
     struct Icon: Sendable, Equatable {
+        public enum Badge: Sendable, Equatable {
+            case loader
+        }
+
+        public enum RenderingMode: Sendable, Equatable {
+            case template
+            case original
+        }
+
         public var image: UIImage
-        public var tintColor: Color
-        public var backgroundColor: Color
+        public var renderingMode: RenderingMode
+        public var tint: TKColor
+        public var backgroundColor: TKColor
+        public var badge: Badge?
 
         public init(
             image: UIImage,
-            tintColor: Color,
-            backgroundColor: Color = Color(uiColor: .Background.contentTint)
+            renderingMode: RenderingMode = .template,
+            tint: TKColor = .iconSecondary,
+            backgroundColor: TKColor = .backgroundContentTint,
+            badge: Badge? = nil
         ) {
             self.image = image
-            self.tintColor = tintColor
+            self.renderingMode = renderingMode
+            self.tint = tint
             self.backgroundColor = backgroundColor
-        }
-
-        public static var received: Icon {
-            Icon(
-                image: .TKUIKit.Icons.Size28.trayArrowDown,
-                tintColor: Color(uiColor: .Icon.secondary)
-            )
+            self.badge = badge
         }
 
         public static var sent: Icon {
-            Icon(
-                image: .TKUIKit.Icons.Size28.trayArrowUp,
-                tintColor: Color(uiColor: .Icon.secondary)
-            )
+            Icon(image: .TKUIKit.Icons.Size28.trayArrowUp)
         }
 
-        public static var pending: Icon {
-            Icon(
-                image: .TKUIKit.Icons.Size28.clockOutline,
-                tintColor: Color(uiColor: .Accent.orange)
-            )
+        public static var failed: Icon {
+            Icon(image: .TKUIKit.Icons.Size28.exclamationmarkCircle)
+        }
+    }
+}
+
+private extension TransactionCellContent.Icon {
+    var swiftUIRenderingMode: Image.TemplateRenderingMode {
+        switch renderingMode {
+        case .template:
+            .template
+        case .original:
+            .original
         }
     }
 }
 
 public extension TransactionCellContent {
     struct Amount: Sendable, Equatable {
-        public var title: String
+        public struct Span: Sendable, Equatable {
+            public var text: String
+            /// `nil` — colored by the amount `style`.
+            public var color: TKColor?
+
+            public init(text: String, color: TKColor? = nil) {
+                self.text = text
+                self.color = color
+            }
+        }
+
+        public var spans: [Span]
         public var style: AmountStyle
 
         public init(
             title: String,
             style: AmountStyle
         ) {
-            self.title = title
+            self.init(spans: [Span(text: title)], style: style)
+        }
+
+        public init(
+            spans: [Span],
+            style: AmountStyle
+        ) {
+            self.spans = spans
             self.style = style
         }
     }
@@ -125,18 +156,45 @@ public extension TransactionCellContent {
 
 public extension TransactionCellContent {
     struct Accessory: Sendable, Equatable {
-        public var text: String
+        public struct Span: Sendable, Equatable {
+            public var text: String
+            /// `nil` — colored by the accessory `color`.
+            public var color: TKColor?
+
+            public init(text: String, color: TKColor? = nil) {
+                self.text = text
+                self.color = color
+            }
+        }
+
+        public var spans: [Span]
         public var textStyle: TKTextStyle
-        public var color: Color
+        public var color: TKColor
 
         public init(
             text: String,
             textStyle: TKTextStyle = .body2,
-            color: Color = Color(uiColor: .Text.secondary)
+            color: TKColor = .textSecondary
         ) {
-            self.text = text
+            self.init(
+                spans: [Span(text: text)],
+                textStyle: textStyle,
+                color: color
+            )
+        }
+
+        public init(
+            spans: [Span],
+            textStyle: TKTextStyle = .body2,
+            color: TKColor = .textSecondary
+        ) {
+            self.spans = spans
             self.textStyle = textStyle
             self.color = color
+        }
+
+        public static var stub: Accessory {
+            Accessory(text: "")
         }
     }
 }
@@ -144,11 +202,11 @@ public extension TransactionCellContent {
 public extension TransactionCellContent {
     struct DetailsTitle: Sendable, Equatable {
         public var text: String
-        public var color: Color
+        public var color: TKColor
 
         public init(
             text: String,
-            color: Color = Color(uiColor: .Text.secondary)
+            color: TKColor = .textSecondary
         ) {
             self.text = text
             self.color = color
@@ -158,12 +216,12 @@ public extension TransactionCellContent {
     struct DetailsAccessory: Sendable, Equatable {
         public var text: String
         public var textStyle: TKTextStyle
-        public var color: Color
+        public var color: TKColor
 
         public init(
             text: String,
             textStyle: TKTextStyle = .body2,
-            color: Color = Color(uiColor: .Text.secondary)
+            color: TKColor = .textSecondary
         ) {
             self.text = text
             self.textStyle = textStyle
@@ -190,22 +248,22 @@ public extension TransactionCellContent {
 
     struct NftPreview: Sendable, Equatable {
         public var id: NftId
-        public var image: UIImage
+        public var imageSource: AssetAvatarViewImageSource
         public var title: String
         public var subtitle: String
-        public var subtitleColor: Color
+        public var subtitleColor: TKColor
         public var isVerified: Bool
 
         public init(
             id: NftId,
-            image: UIImage,
+            imageSource: AssetAvatarViewImageSource,
             title: String,
             subtitle: String,
-            subtitleColor: Color = Color(uiColor: .Text.secondary),
+            subtitleColor: TKColor = .textSecondary,
             isVerified: Bool
         ) {
             self.id = id
-            self.image = image
+            self.imageSource = imageSource
             self.title = title
             self.subtitle = subtitle
             self.subtitleColor = subtitleColor
@@ -238,6 +296,8 @@ public extension TransactionCellContent {
 }
 
 public struct TransactionCell: View {
+    @Environment(\.tkPalette) private var palette
+
     public var config: TransactionCellConfig
     public var onTap: () -> Void
     public var onTapNft: (TransactionCellContent.NftId) -> Void
@@ -267,7 +327,6 @@ public struct TransactionCell: View {
                             width: Layout.iconSize,
                             height: Layout.iconSize
                         )
-                        .clipShape(Circle())
                 }
             },
             center: {
@@ -313,6 +372,9 @@ public struct TransactionCell: View {
 
     enum Layout {
         static let iconSize: CGFloat = 44
+        static let badgeSize: CGFloat = 18
+        static let badgeOffset: CGFloat = -6
+        static let badgeBorderWidth: CGFloat = 2
         static let centerTopPadding: CGFloat = 2
         static let detailRowTopPadding: CGFloat = 3
         static let supplementaryTopInset: CGFloat = 8
@@ -327,15 +389,69 @@ extension TransactionCell {
     private var leadingContent: some View {
         switch config {
         case .shimmer:
-            ShimmerSwiftUIView()
+            ShimmerSwiftUIView(
+                config: ShimmerSwiftUIView.Config(
+                    color: .backgroundContentTint,
+                    cornerRadius: .capsule
+                )
+            )
         case let .content(content):
-            ZStack(alignment: .center) {
+            ZStack(alignment: .topLeading) {
+                Circle()
+                    .fill(content.icon.backgroundColor)
+
                 Image(uiImage: content.icon.image)
-                    .renderingMode(.template)
-                    .foregroundStyle(content.icon.tintColor)
+                    .renderingMode(content.icon.swiftUIRenderingMode)
+                    .foregroundStyle(content.icon.tint)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                if let badge = content.icon.badge {
+                    badgeView(badge)
+                        .offset(
+                            x: Layout.badgeOffset,
+                            y: Layout.badgeOffset
+                        )
+                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(content.icon.backgroundColor)
+        }
+    }
+
+    @ViewBuilder
+    private func badgeView(_ badge: TransactionCellContent.Icon.Badge) -> some View {
+        switch badge {
+        case .loader:
+            let totalSize = Layout.badgeSize + Layout.badgeBorderWidth * 2
+            ZStack(alignment: .center) {
+                Circle()
+                    .fill(.backgroundContent)
+                    .frame(
+                        width: totalSize,
+                        height: totalSize
+                    )
+                Circle()
+                    .fill(.backgroundContentTint)
+                    .frame(
+                        width: Layout.badgeSize,
+                        height: Layout.badgeSize
+                    )
+                CircularLoader(
+                    mode: .indeterminate,
+                    preset: .custom(
+                        CircularLoaderConfiguration(
+                            lineWidth: 2,
+                            progressColor: palette.icon.secondary,
+                            trackColor: palette.icon.secondary.opacity(0.32),
+                            size: CGSize(width: 10, height: 10),
+                            contentPadding: 0
+                        )
+                    )
+                )
+            }
+            .frame(
+                width: totalSize,
+                height: totalSize
+            )
         }
     }
 }
@@ -352,32 +468,41 @@ extension TransactionCell {
                 .init(
                     title: content.title,
                     value: CellCenterPrimaryRow.ValueConfig(
-                        title: content.amount.title,
-                        color: Color(uiColor: amountColor)
+                        title: amountTitle(content.amount),
+                        appliesColor: false
                     )
                 )
             )
         }
     }
 
-    private var amountColor: UIColor {
+    private func amountTitle(_ amount: TransactionCellContent.Amount) -> AttributedString {
+        let styleColor = amountColor
+        return amount.spans.reduce(into: AttributedString()) { result, span in
+            var part = AttributedString(span.text)
+            part.foregroundColor = (span.color ?? styleColor).resolve(palette)
+            result += part
+        }
+    }
+
+    private var amountColor: TKColor {
         switch config {
         case .shimmer:
-            .Text.primary
+            .textPrimary
         case let .content(content):
             switch content.amount.style {
             case .primary:
-                .Text.primary
+                .textPrimary
             case .positive:
-                .Accent.green
+                .accentGreen
             case .negative:
-                .Accent.red
+                .accentRed
             case .secondary:
-                .Text.secondary
+                .textSecondary
             case .tertiary:
-                .Text.tertiary
+                .textTertiary
             case .warning:
-                .Accent.orange
+                .accentOrange
             }
         }
     }
@@ -399,7 +524,7 @@ extension TransactionCell {
                         truncationMode: .middle
                     ),
                     accessory: CellCenterSecondaryRow.AccessoryConfig(
-                        title: content.accessory.text,
+                        title: accessoryTitle(content.accessory),
                         textStyle: content.accessory.textStyle,
                         color: content.accessory.color
                     )
@@ -408,16 +533,24 @@ extension TransactionCell {
         }
     }
 
-    private var secondaryRowSubtitleText: UIColor {
+    private func accessoryTitle(_ accessory: TransactionCellContent.Accessory) -> AttributedString {
+        accessory.spans.reduce(into: AttributedString()) { result, span in
+            var part = AttributedString(span.text)
+            part.foregroundColor = (span.color ?? accessory.color).resolve(palette)
+            result += part
+        }
+    }
+
+    private var secondaryRowSubtitleText: TKColor {
         switch config {
         case .shimmer:
-            .Text.secondary
+            .textSecondary
         case let .content(content):
             switch content.subtitle.style {
             case .primary:
-                .Text.secondary
+                .textSecondary
             case .disabled:
-                .Text.tertiary
+                .textTertiary
             }
         }
     }
@@ -454,10 +587,9 @@ extension TransactionCell {
     private enum NftPreviewLayout {
         static let imageSize: CGFloat = 64
         static let cornerRadius: CGFloat = 12
-        static let previewTopPadding: CGFloat = 1
-        static let textSpacing: CGFloat = 2
+        static let textSpacing: CGFloat = -1
         static let horizontalPadding: CGFloat = 12
-        static let verticalPadding: CGFloat = 7
+        static let verticalPadding: CGFloat = 6
         static let verificationSpacing: CGFloat = 4
         static let verificationIconSize: CGFloat = 16
     }
@@ -468,24 +600,27 @@ extension TransactionCell {
         } label: {
             nftPreviewContent(preview)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(TKTapAnimationButtonStyle())
     }
 
     func nftPreviewContent(_ preview: TransactionCellContent.NftPreview) -> some View {
         HStack(spacing: 0) {
-            Image(uiImage: preview.image)
-                .resizable()
-                .scaledToFill()
-                .frame(
-                    width: NftPreviewLayout.imageSize,
-                    height: NftPreviewLayout.imageSize
-                )
-                .clipped()
+            AssetAvatarView(
+                imageSource: preview.imageSource,
+                configuration: AssetAvatarView.Configuration(
+                    imageSize: NftPreviewLayout.imageSize,
+                    chainIconSize: 0,
+                    chainIconPadding: 0,
+                    chainIconOffsetX: 0,
+                    chainIconOffsetY: 0
+                ),
+                shape: .rectangle()
+            )
 
             VStack(alignment: .leading, spacing: NftPreviewLayout.textSpacing) {
                 Text(preview.title)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
                     .lineLimit(1)
 
                 HStack(spacing: NftPreviewLayout.verificationSpacing) {
@@ -495,9 +630,9 @@ extension TransactionCell {
                         .lineLimit(1)
 
                     if preview.isVerified {
-                        Image(uiImage: .TKUIKit.Icons.Size16.verification)
+                        SwiftUI.Image.TKUIKit.Icons.Size16.verification
                             .renderingMode(.template)
-                            .foregroundStyle(Color(uiColor: .Icon.secondary))
+                            .foregroundStyle(.iconSecondary)
                             .frame(
                                 width: NftPreviewLayout.verificationIconSize,
                                 height: NftPreviewLayout.verificationIconSize
@@ -509,7 +644,7 @@ extension TransactionCell {
             .padding(.top, NftPreviewLayout.verticalPadding)
             .padding(.bottom, NftPreviewLayout.verticalPadding)
         }
-        .background(Color(uiColor: .Background.contentTint))
+        .background(.backgroundContentTint)
         .clipShape(
             RoundedRectangle(
                 cornerRadius: NftPreviewLayout.cornerRadius,
@@ -527,14 +662,14 @@ extension TransactionCell {
         static let compactCornerRadius: CGFloat = 18
         static let regularCornerRadius: CGFloat = 12
         static let horizontalPadding: CGFloat = 12
-        static let topPadding: CGFloat = 9
-        static let bottomPadding: CGFloat = 10
+        static let topPadding: CGFloat = 8
+        static let bottomPadding: CGFloat = 9
     }
 
     private func message(_ content: TransactionCellContent.Message) -> some View {
         Text(content.text)
             .textStyle(.body2)
-            .foregroundStyle(Color(uiColor: .Text.primary))
+            .foregroundStyle(.textPrimary)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.horizontal, MessageLayout.horizontalPadding)
@@ -545,7 +680,7 @@ extension TransactionCell {
                     cornerRadius: messageCornerRadius(for: content.style),
                     style: .continuous
                 )
-                .fill(Color(uiColor: .Background.contentTint))
+                .fill(.backgroundContentTint)
             )
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, Layout.supplementaryTopInset)
@@ -610,7 +745,7 @@ extension TransactionCell {
 //            amountStyle: AmountStyle = .primary,
 //            dateText: String,
 //            secondaryAccessoryTextStyle: TKTextStyle = .body2,
-//            secondaryAccessoryColor: Color = Color(uiColor: .Text.secondary),
+//            secondaryAccessoryColor: Color = palette.text.secondary,
 //            detailRow: DetailRow? = nil,
 //            nftPreview: NFTPreview? = nil,
 //            messages: [MessageBubble] = [],

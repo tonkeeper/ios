@@ -12,7 +12,7 @@ private struct RowsListSeparatorModifier: ViewModifier {
                     VStack {
                         Spacer(minLength: 0)
                         Rectangle()
-                            .fill(Color(uiColor: .Separator.common))
+                            .fill(.separatorCommon)
                             .frame(height: TKUIKit.Constants.separatorWidth)
                             .padding(.leading, leadingInset)
                     }

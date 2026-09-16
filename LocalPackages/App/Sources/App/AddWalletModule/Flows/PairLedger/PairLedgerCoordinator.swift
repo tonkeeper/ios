@@ -7,27 +7,33 @@ import TonSwift
 import TonTransport
 import UIKit
 
-public final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didPaired: (() -> Void)?
+final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didPaired: (() -> Void)?
 
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let multichainAssembly: MultichainAssembly
+    private let analyticsContext: WalletFlowAnalyticsContext
     private let ledgerImportCoordinatorProvider: (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String) -> LedgerImportCoordinator
 
     init(
         walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
         coreAssembly: TKCore.CoreAssembly,
+        multichainAssembly: MultichainAssembly,
         router: ViewControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext,
         ledgerImportCoordinatorProvider: @escaping (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String) -> LedgerImportCoordinator
     ) {
         self.walletUpdateAssembly = walletUpdateAssembly
         self.coreAssembly = coreAssembly
+        self.multichainAssembly = multichainAssembly
+        self.analyticsContext = analyticsContext
         self.ledgerImportCoordinatorProvider = ledgerImportCoordinatorProvider
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openConnectLedger()
     }
 }
@@ -107,7 +113,7 @@ private extension PairLedgerCoordinator {
             self?.removeChild(coordinator)
         }
 
-        coordinator.didImport = { [weak self] accounts, model in
+        coordinator.didImport = { [weak self, weak navigationController] accounts, model in
             guard let self else { return }
             Task {
                 do {
@@ -117,13 +123,34 @@ private extension PairLedgerCoordinator {
                         deviceProductName: deviceProductName,
                         model: model
                     )
+                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
+                        walletMode: .single,
+                        walletSource: .ledger,
+                        from: self.analyticsContext.from
+                    )
                     await MainActor.run {
-                        self.didPaired?()
+                        guard let navigationController, navigationController.presentingViewController != nil else {
+                            self.didPaired?()
+                            return
+                        }
+                        navigationController.dismiss(animated: true) {
+                            self.didPaired?()
+                        }
                     }
                 } catch {
                     Log.e("pair ledger: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
+                    self.coreAssembly.analyticsProvider.logWalletImportError(
+                        walletMode: .single,
+                        walletSource: .ledger,
+                        from: self.analyticsContext.from,
+                        error: error
+                    )
+                    await MainActor.run {
+                        ToastPresenter.showToast(configuration: .failed)
+                        self.didCancel?()
+                    }
                 }
             }
         }
@@ -139,7 +166,9 @@ private extension PairLedgerCoordinator {
         deviceProductName: String,
         model: CustomizeWalletModel
     ) async throws {
-        let addController = walletUpdateAssembly.walletAddController()
+        let addController = walletUpdateAssembly.walletAddController(
+            multichainAssembly: multichainAssembly
+        )
         let metaData = WalletMetaData(
             label: model.name,
             tintColor: model.tintColor,

@@ -54,7 +54,7 @@ public final class CookiesController {
     }
 
     private func clearCurrentCookieSession(_ cookies: [HTTPCookie]) async {
-        await cookies.asyncForEach { cookie in
+        await cookies.asyncNonThrowingForEach { cookie in
             await MainActor.run {
                 WKWebsiteDataStore.default().httpCookieStore.delete(cookie)
             }
@@ -63,7 +63,7 @@ public final class CookiesController {
 
     private func restoreCookieSession(wallet: Wallet) async {
         let localCookies = cookiesService.fetchLocalCookies(for: wallet)
-        await localCookies.asyncForEach {
+        await localCookies.asyncNonThrowingForEach {
             guard let cookie = $0.asHttpCookie else {
                 return
             }
@@ -81,7 +81,7 @@ public final class CookiesController {
     private func deleteApp(app: TonConnectApp, wallet: Wallet) {
         Task {
             let cookies = await fetchAllCookies()
-            await cookies.asyncForEach { cookie in
+            await cookies.asyncNonThrowingForEach { cookie in
                 guard app.manifest.host.contains(cookie.domain) else {
                     return
                 }

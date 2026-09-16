@@ -121,20 +121,22 @@ class DappWalletKitViewModel: DappViewModelImplementation {
 
     init(
         dapp: Dapp,
+        analyticsSession: DappOpenAnalyticsSession,
         messageHandler: any DappMessageHandler,
         wallet: Wallet?,
-        analyticsProvider: AnalyticsProvider,
         walletKit: TONWalletKit,
-        eventsHandler: any TONBridgeEventsHandler
+        eventsHandler: any TONBridgeEventsHandler,
+        explorerURLMatcher: BlockchainExplorerURLMatcher
     ) {
         self.walletKit = walletKit
         self.eventsHandler = eventsHandler
 
         super.init(
             dapp: dapp,
+            analyticsSession: analyticsSession,
             messageHandler: messageHandler,
             wallet: wallet,
-            analyticsProvider: analyticsProvider
+            explorerURLMatcher: explorerURLMatcher
         )
         do {
             try walletKit.add(eventsHandler: eventsHandler)

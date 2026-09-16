@@ -8,6 +8,8 @@ import UIKit
 protocol TokenPickerV2ModuleOutput: AnyObject {
     var didFinish: (() -> Void)? { get set }
     var didSelectAsset: ((MultichainAsset) -> Void)? { get set }
+    var didDismiss: (() -> Void)? { get set }
+    func finishAssetSelection(shouldClose: Bool)
 }
 
 @MainActor
@@ -18,6 +20,7 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
 
     var didFinish: (() -> Void)?
     var didSelectAsset: ((MultichainAsset) -> Void)?
+    var didDismiss: (() -> Void)?
     var onCatalogSortOverlayStateChanged: (() -> Void)?
 
     @Published var searchText = ""
@@ -26,6 +29,11 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     @Published private(set) var currentQueryViewModel: TokenPickerV2QueryViewModel?
     @Published private(set) var showsCatalogSortControl = false
     @Published private(set) var catalogSearchSort: MultichainAssetSearchSort = .marketCap
+    @Published private(set) var isAwaitingAssetSelection = false
+
+    let headerTitle: String
+    let headerStyle: TokenPickerV2HeaderStyle
+    let onBack: (() -> Void)?
 
     var catalogSortButtonTitle: String {
         Self.catalogSortTitle(for: catalogSearchSort)
@@ -34,30 +42,46 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     private let tokenPickerModel: any TokenPickerV2Model
     private let amountFormatter: AmountFormatter
     private let currencyStore: CurrencyStore
+    private let presentation: TokenPickerV2Presentation
+    private let waitsForSelectionCompletion: Bool
 
     private var categoryViewModels = [TokenPickerV2ChainFilter: TokenPickerV2CategoryViewModel]()
     private var activateQueryTask: Task<Void, Never>?
+    private(set) var loadFiltersTask: Task<Void, Never>?
     private var hasLoaded = false
+    private var hasDisappeared = false
 
     init(
+        headerTitle: String,
         tokenPickerModel: any TokenPickerV2Model,
         amountFormatter: AmountFormatter,
-        currencyStore: CurrencyStore
+        currencyStore: CurrencyStore,
+        presentation: TokenPickerV2Presentation = .modal,
+        headerStyle: TokenPickerV2HeaderStyle = .modal,
+        waitsForSelectionCompletion: Bool = false,
+        onBack: (() -> Void)? = nil
     ) {
+        self.headerTitle = headerTitle
+        self.headerStyle = headerStyle
         self.tokenPickerModel = tokenPickerModel
         self.amountFormatter = amountFormatter
         self.currencyStore = currencyStore
+        self.presentation = presentation
+        self.waitsForSelectionCompletion = waitsForSelectionCompletion
+        self.onBack = onBack
     }
 
     func viewDidLoad() {
-        guard let state = tokenPickerModel.initialState() else {
-            return
-        }
-
-        apply(state: state)
+        apply(state: tokenPickerModel.initialState)
         syncCatalogSortState()
-        hasLoaded = true
-        activateCurrentQuery()
+        loadFiltersTask = Task { [weak self] in
+            await self?.refreshFiltersIfNeeded()
+            guard let self, !Task.isCancelled, !self.hasDisappeared else {
+                return
+            }
+            self.hasLoaded = true
+            self.activateCurrentQuery()
+        }
     }
 
     func selectCatalogSort(_ sort: MultichainAssetSearchSort) {
@@ -71,9 +95,8 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
         tokenPickerModel.setCatalogSearchSort(sort)
         syncCatalogSortState()
 
-        Task {
-            await currentQueryViewModel?.refresh()
-        }
+        categoryViewModels.values.forEach { $0.invalidateCachedQueries() }
+        activateCurrentQuery()
     }
 
     func search(text: String) {
@@ -95,9 +118,6 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
 
         cancelActivateQueryTask()
         selectedChainFilter = filter
-        if !searchText.isEmpty {
-            searchText = ""
-        }
 
         guard hasLoaded else {
             return
@@ -106,22 +126,83 @@ final class TokenPickerV2ViewModelImplementation: ObservableObject, TokenPickerV
     }
 
     func selectRow(_ id: String) {
-        guard let asset = currentQueryViewModel?.item(withID: id)?.asset else {
+        guard !isAwaitingAssetSelection,
+              let asset = currentQueryViewModel?.item(withID: id)?.asset,
+              let didSelectAsset
+        else {
             return
         }
 
-        didSelectAsset?(asset)
-        didFinish?()
+        if waitsForSelectionCompletion {
+            isAwaitingAssetSelection = true
+        }
+        didSelectAsset(asset)
+        guard !waitsForSelectionCompletion else {
+            return
+        }
+        if presentation.closesOnSelection {
+            close()
+        }
+    }
+
+    func finishAssetSelection(shouldClose: Bool) {
+        guard waitsForSelectionCompletion, !hasDisappeared else {
+            return
+        }
+
+        isAwaitingAssetSelection = false
+        if shouldClose {
+            close()
+        }
     }
 
     func close() {
+        disappeared()
+        didFinish?()
+    }
+
+    func back() {
+        disappeared()
+        onBack?()
+    }
+
+    func disappeared() {
+        guard !hasDisappeared else {
+            return
+        }
+
+        hasDisappeared = true
+        cancelLoadFiltersTask()
         cancelActivateQueryTask()
         categoryViewModels.values.forEach { $0.disappeared() }
-        didFinish?()
+        didDismiss?()
     }
 }
 
 private extension TokenPickerV2ViewModelImplementation {
+    func refreshFiltersIfNeeded() async {
+        do {
+            guard let filters = try await tokenPickerModel.loadFilters() else {
+                return
+            }
+            guard !Task.isCancelled, !hasDisappeared else {
+                return
+            }
+            let initialFilter = filters.contains(selectedChainFilter)
+                ? selectedChainFilter
+                : (filters.first ?? .all)
+            apply(
+                state: TokenPickerV2ModelState(
+                    filters: filters,
+                    displayMode: tokenPickerModel.initialState.displayMode,
+                    initialFilter: initialFilter
+                )
+            )
+        } catch {
+            // Keep initial tabs; asset loading still proceeds.
+        }
+    }
+
     func syncCatalogSortState() {
         showsCatalogSortControl = tokenPickerModel.showsCatalogSortControl
         catalogSearchSort = tokenPickerModel.catalogSearchSort
@@ -134,6 +215,10 @@ private extension TokenPickerV2ViewModelImplementation {
             return TKLocales.TokensPicker.Sort.marketCap
         case .volume:
             return TKLocales.TokensPicker.Sort.volume
+        case .priceDiffAsc:
+            return TKLocales.TokensPicker.Sort.topLosers
+        case .priceDiffDesc:
+            return TKLocales.TokensPicker.Sort.topGainers
         }
     }
 
@@ -143,6 +228,8 @@ private extension TokenPickerV2ViewModelImplementation {
     }
 
     func apply(state: TokenPickerV2ModelState) {
+        cancelActivateQueryTask()
+        categoryViewModels.values.forEach { $0.disappeared() }
         categoryViewModels.removeAll()
 
         tabs = makeTabs(filters: state.filters)
@@ -161,7 +248,7 @@ private extension TokenPickerV2ViewModelImplementation {
             }
         )
         if !state.filters.contains(selectedChainFilter) {
-            selectedChainFilter = .all
+            selectedChainFilter = state.initialFilter
         }
         currentQueryViewModel = categoryViewModels[selectedChainFilter]?.queryViewModel(for: normalizedSearchText)
     }
@@ -235,6 +322,11 @@ private extension TokenPickerV2ViewModelImplementation {
         activateQueryTask?.cancel()
         activateQueryTask = nil
     }
+
+    func cancelLoadFiltersTask() {
+        loadFiltersTask?.cancel()
+        loadFiltersTask = nil
+    }
 }
 
 struct TokenPickerV2TabModel: Identifiable, Hashable {
@@ -256,6 +348,15 @@ extension TokenPickerV2ChainFilter {
             return true
         case let .chain(expectedChain):
             return expectedChain == chain
+        }
+    }
+
+    var accessibilityIdentifier: String {
+        switch self {
+        case .all:
+            return "token_picker_chain_all"
+        case let .chain(chain):
+            return "token_picker_chain_\(chain.rawValue)"
         }
     }
 }

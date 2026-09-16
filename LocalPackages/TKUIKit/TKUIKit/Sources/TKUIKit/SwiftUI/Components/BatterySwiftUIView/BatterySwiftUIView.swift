@@ -13,6 +13,8 @@ public struct BatterySwiftUIViewConfig: Hashable {
         case fill(CGFloat)
         case emptyTinted
         case empty
+        /// Charges taken back by a refund left the service balance below zero.
+        case negative
     }
 
     public struct Padding: Hashable {
@@ -52,6 +54,8 @@ public struct BatterySwiftUIViewConfig: Hashable {
 }
 
 public struct BatterySwiftUIView: View {
+    @Environment(\.tkPalette) private var palette
+
     public var config: BatterySwiftUIViewConfig
 
     public init(config: BatterySwiftUIViewConfig) {
@@ -95,7 +99,7 @@ private extension BatterySwiftUIView {
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(Color(uiColor: config.state.flashColor))
+                .foregroundStyle(config.state.flashColor(palette))
                 .frame(
                     width: config.size.flashSize.width,
                     height: config.size.flashSize.height
@@ -114,7 +118,7 @@ private extension BatterySwiftUIView {
                 cornerRadius: config.size.fillCornerRadius,
                 style: .continuous
             )
-            .fill(Color(uiColor: config.state.fillColor))
+            .fill(config.state.fillColor(palette))
             .frame(height: fillHeight)
             .opacity(config.state.fillOpacity)
             .padding(.leading, config.size.fillInsets.leading)
@@ -132,7 +136,7 @@ private extension BatterySwiftUIView {
         switch config.state {
         case let .fill(fill):
             config.size.fillMaximumHeight * min(1, max(fill, 0.2))
-        case .emptyTinted, .empty:
+        case .emptyTinted, .empty, .negative:
             0
         }
     }
@@ -142,15 +146,15 @@ private extension BatterySwiftUIViewConfig.Size {
     var bodyImage: UIImage {
         switch self {
         case .size24:
-            .TKUIKit.Images.Battery.batteryBody24
+            .TKUIKit.Icons.Size24.batteryBody
         case .size34:
-            .TKUIKit.Images.Battery.batteryBody34
+            .TKUIKit.Icons.Size34.batteryBody
         case .size44:
-            .TKUIKit.Images.Battery.batteryBody44
+            .TKUIKit.Icons.Size44.batteryBody
         case .size52:
-            .TKUIKit.Images.Battery.batteryBody52
+            .TKUIKit.Icons.Size52.batteryBody
         case .size128:
-            .TKUIKit.Images.Battery.batteryBody128
+            .TKUIKit.Icons.Size128.batteryBody
         }
     }
 
@@ -174,13 +178,13 @@ private extension BatterySwiftUIViewConfig.Size {
         case .size24:
             nil
         case .size34:
-            .TKUIKit.Icons.Vector.flash
+            .TKUIKit.Icons.Size16.batteryFlash
         case .size44:
-            .TKUIKit.Icons.Vector.flash
+            .TKUIKit.Icons.Size16.batteryFlash
         case .size52:
             nil
         case .size128:
-            .TKUIKit.Icons.Vector.flash
+            .TKUIKit.Icons.Size16.batteryFlash
         }
     }
 
@@ -250,19 +254,21 @@ private extension BatterySwiftUIViewConfig.State {
         switch self {
         case .fill:
             0
-        case .emptyTinted, .empty:
+        case .emptyTinted, .empty, .negative:
             1
         }
     }
 
-    var flashColor: UIColor {
+    func flashColor(_ palette: TKPalette) -> Color {
         switch self {
         case .fill:
             .clear
         case .emptyTinted:
-            .Accent.blue
+            palette.accent.blue
         case .empty:
-            .Icon.secondary
+            palette.icon.secondary
+        case .negative:
+            palette.accent.red
         }
     }
 
@@ -270,17 +276,17 @@ private extension BatterySwiftUIViewConfig.State {
         switch self {
         case .fill:
             1
-        case .emptyTinted, .empty:
+        case .emptyTinted, .empty, .negative:
             0
         }
     }
 
-    var fillColor: UIColor {
+    func fillColor(_ palette: TKPalette) -> Color {
         switch self {
         case let .fill(fill):
-            fill <= 0.1 ? .Accent.orange : .Accent.blue
-        case .emptyTinted, .empty:
-            .Accent.orange
+            fill <= 0.1 ? palette.accent.orange : palette.accent.blue
+        case .emptyTinted, .empty, .negative:
+            palette.accent.orange
         }
     }
 }

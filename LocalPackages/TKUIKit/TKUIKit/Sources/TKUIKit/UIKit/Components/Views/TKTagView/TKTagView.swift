@@ -11,10 +11,10 @@ public final class TKTagView: UIView {
         public init(
             text: String,
             textColor: UIColor,
-            textPadding: UIEdgeInsets,
+            textPadding: UIEdgeInsets? = nil,
             backgroundColor: UIColor,
             borderColor: UIColor,
-            backgroundPadding: UIEdgeInsets
+            backgroundPadding: UIEdgeInsets? = nil
         ) {
             self.text = text.uppercased().withTextStyle(
                 .body4,
@@ -22,10 +22,10 @@ public final class TKTagView: UIView {
                 alignment: .center,
                 lineBreakMode: .byTruncatingTail
             )
-            self.textPadding = textPadding
+            self.textPadding = textPadding ?? Self.textPadding
             self.backgroundColor = backgroundColor
             self.borderColor = borderColor
-            self.backgroundPadding = backgroundPadding
+            self.backgroundPadding = backgroundPadding ?? Self.backgroundPadding
         }
 
         public static func accentTag(
@@ -35,10 +35,8 @@ public final class TKTagView: UIView {
             Configuration(
                 text: text,
                 textColor: color,
-                textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
                 backgroundColor: color.withAlphaComponent(0.16),
-                borderColor: .clear,
-                backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
+                borderColor: .clear
             )
         }
 
@@ -46,10 +44,8 @@ public final class TKTagView: UIView {
             Configuration(
                 text: text,
                 textColor: .Text.secondary,
-                textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
                 backgroundColor: .Background.contentTint,
-                borderColor: .clear,
-                backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
+                borderColor: .clear
             )
         }
 
@@ -57,12 +53,13 @@ public final class TKTagView: UIView {
             Configuration(
                 text: text,
                 textColor: .Text.secondary,
-                textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
                 backgroundColor: .clear,
-                borderColor: .Background.contentTint,
-                backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
+                borderColor: .Background.contentTint
             )
         }
+
+        public static let textPadding = UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5)
+        public static let backgroundPadding = UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
     }
 
     public var configuration: Configuration = .outlintTag(text: "Tag") {

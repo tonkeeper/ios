@@ -2,10 +2,10 @@ import BigInt
 import Foundation
 import TonSwift
 
-public struct ChangeDNSRecordTransferBuilder {
+struct ChangeDNSRecordTransferBuilder {
     private init() {}
 
-    public static func createLinkDNSWalletTransfer(
+    static func createLinkDNSWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         nftAddress: Address,
@@ -32,7 +32,7 @@ public struct ChangeDNSRecordTransferBuilder {
         )
     }
 
-    public static func createRenewDNSWalletTransfer(
+    static func createRenewDNSWalletTransfer(
         wallet: Wallet,
         seqno: UInt64,
         nftAddress: Address,

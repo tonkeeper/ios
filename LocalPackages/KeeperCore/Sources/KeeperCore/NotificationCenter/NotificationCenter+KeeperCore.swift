@@ -29,3 +29,8 @@ public extension Notification {
 public extension Notification.Name {
     static var transactionSendNotification = Notification.Name("TransactionSendNotification")
 }
+
+public extension Notification {
+    /// Set when the sent asset has no feed in this wallet, leaving a history screen nothing to show.
+    static let transactionSendWithoutHistoryKey = "transactionSendWithoutHistory"
+}

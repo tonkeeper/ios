@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKUIKit
 
 struct SignerSignAssembly {
     private init() {}
@@ -16,7 +17,9 @@ struct SignerSignAssembly {
                 scannerAssembly: assembly.scannerAssembly()
             )
         ).createScannerModule(
-            configurator: SignerSignControllerConfigurator(),
+            configurator: SignerSignControllerConfigurator(
+                deeplinkParser: assembly.deeplinkParser
+            ),
             uiConfiguration: ScannerUIConfiguration(
                 title: nil,
                 subtitle: nil,
@@ -26,7 +29,8 @@ struct SignerSignAssembly {
 
         let viewModel = SignerSignViewModelImplementation(
             signerSignController: assembly.signerSignController(url: url, wallet: wallet),
-            qrCodeGenerator: QRCodeGeneratorImplementation(),
+            qrCodeGenerator: assembly.coreAssembly
+                .qrCodeGenerator(persistent: false),
             scannerOutput: scannerModule.output
         )
         let viewController = SignerSignViewController(viewModel: viewModel, scannerViewController: scannerModule.view)

@@ -31,7 +31,7 @@ extension LedgerBluetoothView {
             baseImageView.contentMode = .center
             windowImageView.contentMode = .center
 
-            baseImageView.image = .Ledger.deviceBase
+            baseImageView.image = .TKUIKit.Artwork.Ledger.deviceBase
 
             didUpdateState()
 
@@ -50,11 +50,11 @@ extension LedgerBluetoothView {
         private func didUpdateState() {
             switch state {
             case .disconnected:
-                windowImageView.image = .Ledger.deviceWindowDisconnected
+                windowImageView.image = .TKUIKit.Artwork.Ledger.deviceWindowDisconnected
             case .review:
-                windowImageView.image = .Ledger.deviceWindowReview
+                windowImageView.image = .TKUIKit.Artwork.Ledger.deviceWindowReview
             case .ready:
-                windowImageView.image = .Ledger.deviceWindowReady
+                windowImageView.image = .TKUIKit.Artwork.Ledger.deviceWindowReady
             }
         }
 
@@ -89,7 +89,7 @@ final class LedgerBluetoothView: TKView, ConfigurableView {
         super.setup()
 
         bluetoothView.contentMode = .center
-        bluetoothView.image = .Ledger.bluetooth
+        bluetoothView.image = .TKUIKit.Artwork.Ledger.bluetooth
 
         addSubview(bluetoothView)
         addSubview(deviceView)

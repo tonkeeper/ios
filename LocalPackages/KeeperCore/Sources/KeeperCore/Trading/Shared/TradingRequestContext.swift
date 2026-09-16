@@ -9,6 +9,19 @@ struct TradingRequestContext: Equatable, Sendable {
     let deviceCountryCode: String?
     let timezoneIdentifier: String
     let isVPNActive: Bool?
+
+    func withCurrency(_ currency: Currency) -> TradingRequestContext {
+        TradingRequestContext(
+            currency: currency,
+            language: language,
+            userAgent: userAgent,
+            storeCountryCode: storeCountryCode,
+            simCountryCode: simCountryCode,
+            deviceCountryCode: deviceCountryCode,
+            timezoneIdentifier: timezoneIdentifier,
+            isVPNActive: isVPNActive
+        )
+    }
 }
 
 protocol TradingRequestContextProvider {

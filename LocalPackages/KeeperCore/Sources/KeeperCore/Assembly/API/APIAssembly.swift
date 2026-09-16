@@ -7,14 +7,50 @@ import StreamURLSessionTransport
 import SwapAPI
 import TonAPI
 import TonConnectAPI
-import TonStreamingAPI
 import TonStreamingAPIV2
 
 public final class APIAssembly {
     let configurationAssembly: ConfigurationAssembly
+    /// Exchange operations carry it as the typed `F` header they declare, so the swap client
+    /// leaves it to the API layer instead of stamping every request from a middleware.
+    let firebaseUserIdProvider: @Sendable () -> String?
 
-    init(configurationAssembly: ConfigurationAssembly) {
+    /// One session per timeout profile, shared by every client on it. Not `lazy`: these are read
+    /// from concurrent tasks and `lazy var` is not atomic, so a first access from two threads would
+    /// build two sessions and release one from under a live task.
+    private let urlSession: URLSession
+
+    /// An SSE connection idles between events, so minutes rather than the ordinary 60 s.
+    /// `timeoutIntervalForResource` keeps its 7-day default: it cannot be overridden per request.
+    private let streamingUrlSession: URLSession
+
+    /// SSE, so the body has to be consumed incrementally.
+    private let streamingTransport: StreamURLSessionTransport
+
+    private let apiTransport: URLSessionTransport
+
+    init(
+        configurationAssembly: ConfigurationAssembly,
+        firebaseUserIdProvider: @escaping @Sendable () -> String? = { nil }
+    ) {
         self.configurationAssembly = configurationAssembly
+        // An empty id is not something the backend can key on, and the header this replaced
+        // never carried one.
+        self.firebaseUserIdProvider = { firebaseUserIdProvider()?.nilIfEmpty }
+
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForRequest = 60
+        configuration.timeoutIntervalForResource = 60
+        let urlSession = URLSession(configuration: configuration)
+
+        let streamingConfiguration = URLSessionConfiguration.default
+        streamingConfiguration.timeoutIntervalForRequest = 300
+        let streamingUrlSession = URLSession(configuration: streamingConfiguration)
+
+        self.urlSession = urlSession
+        self.streamingUrlSession = streamingUrlSession
+        apiTransport = URLSessionTransport(urlSession: urlSession)
+        streamingTransport = StreamURLSessionTransport(urlSession: streamingUrlSession)
     }
 
     // MARK: - Internal
@@ -31,27 +67,21 @@ public final class APIAssembly {
 
     lazy var api: API = API(
         hostProvider: tonApiHostProvider,
-        urlSession: URLSession(
-            configuration: urlSessionConfiguration
-        ),
+        urlSession: urlSession,
         configuration: configurationAssembly.configuration,
         requestCreationQueue: apiRequestCreationQueue
     )
 
     lazy var testnetAPI: API = API(
         hostProvider: testnetTonApiHostProvider,
-        urlSession: URLSession(
-            configuration: urlSessionConfiguration
-        ),
+        urlSession: urlSession,
         configuration: configurationAssembly.configuration,
         requestCreationQueue: apiRequestCreationQueue
     )
 
     lazy var tetraAPI: API = API(
         hostProvider: tetraTonApiHostProvider,
-        urlSession: URLSession(
-            configuration: urlSessionConfiguration
-        ),
+        urlSession: urlSession,
         configuration: configurationAssembly.configuration,
         requestCreationQueue: apiRequestCreationQueue
     )
@@ -72,16 +102,6 @@ public final class APIAssembly {
         TetraAPIHostProvider(configuration: configurationAssembly.configuration)
     }
 
-    var streamingAPIProvider: StreamingAPIProvider {
-        StreamingAPIProvider { [streamingAPI, testnetStreamingAPI] network in
-            switch network {
-            case .mainnet: return streamingAPI
-            case .testnet: return testnetStreamingAPI
-            case .tetra: return nil
-            }
-        }
-    }
-
     var streamingAPIV2Provider: StreamingAPIV2Provider {
         StreamingAPIV2Provider { [streamingAPIV2Task, testnetStreamingAPIV2Task] network in
             switch network {
@@ -92,28 +112,8 @@ public final class APIAssembly {
         }
     }
 
-    private func makeStreamingAPI(for network: Network) -> TonStreamingAPI.StreamingAPI {
-        let configuration = configurationAssembly.configuration
-        return TonStreamingAPI.StreamingAPI(
-            configuration: streamingUrlSessionConfiguration,
-            hostProvider: { [streamingAPIURL] in
-                guard let url = await URL(string: configuration.tonAPISSEEndpoint(network: network)) else {
-                    return streamingAPIURL
-                }
-                return url
-            },
-            tokenProvider: {
-                await configuration.tonApiV2Key
-            }
-        )
-    }
-
     private func makeStreamingAPIV2(for network: Network) async -> TonStreamingAPIV2.StreamingAPI? {
         let configuration = configurationAssembly.configuration
-        guard configuration.featureEnabled(.streamingApiV2Enabled) else {
-            return nil
-        }
-
         guard let endpoint = await configuration.tonAPISSEEndpointV2(network: network),
               !endpoint.isEmpty,
               let host = URL(string: endpoint)
@@ -122,7 +122,7 @@ public final class APIAssembly {
         }
 
         return TonStreamingAPIV2.StreamingAPI(
-            configuration: streamingUrlSessionConfiguration,
+            urlSession: streamingUrlSession,
             hostProvider: {
                 host
             },
@@ -131,10 +131,6 @@ public final class APIAssembly {
             }
         )
     }
-
-    private lazy var streamingAPI: TonStreamingAPI.StreamingAPI = makeStreamingAPI(for: .mainnet)
-
-    private lazy var testnetStreamingAPI: TonStreamingAPI.StreamingAPI = makeStreamingAPI(for: .testnet)
 
     private lazy var streamingAPIV2Task: Task<TonStreamingAPIV2.StreamingAPI?, Never> = Task {
         await makeStreamingAPIV2(for: .mainnet)
@@ -155,20 +151,91 @@ public final class APIAssembly {
             ?? swapAPIURL
         return SwapAPI.Client(
             serverURL: url,
-            transport: swapAPITransport,
-            middlewares: [
+            transport: apiTransport,
+            middlewares: .logged([
                 UserAgentHeaderMiddleware(userAgent: userAgent),
-            ]
+            ])
         )
     }
 
-    func multichainAPIClient(userAgent: String? = nil) -> MultichainAPI.Client {
+    func multichainAPIClient(userAgent: String? = nil) async -> MultichainAPI.Client {
         MultichainAPI.Client(
-            serverURL: multichainAPIURL,
-            transport: multichainAPITransport,
-            middlewares: [
+            serverURL: await configurationAssembly.configuration.multichainHost(network: .mainnet),
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
+            transport: apiTransport,
+            middlewares: .logged([
                 UserAgentHeaderMiddleware(userAgent: userAgent),
-            ]
+                FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+            ])
+        )
+    }
+
+    /// Client for operations that inherit the spec's top-level `deviceJWT` requirement.
+    func deviceSessionMultichainAPIClient(
+        deviceAuth: DeviceAuthProviding,
+        userAgent: String? = nil
+    ) async -> MultichainAPI.Client {
+        MultichainAPI.Client(
+            serverURL: await configurationAssembly.configuration.multichainHost(network: .mainnet),
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
+            transport: apiTransport,
+            middlewares: .logged([
+                UserAgentHeaderMiddleware(userAgent: userAgent),
+                FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+                DeviceSessionMiddleware(deviceAuth: deviceAuth),
+            ])
+        )
+    }
+
+    /// Client for the operations the spec guards with `security: deviceJWT`. Built per call so
+    /// the token is the one the caller resolved, which is also what lets a 401 be retried with
+    /// a fresh token instead of replaying a spent `HTTPBody`.
+    func deviceAuthMultichainAPIClient(deviceJWT: String, userAgent: String? = nil) async -> MultichainAPI.Client {
+        MultichainAPI.Client(
+            serverURL: await configurationAssembly.configuration.multichainHost(network: .mainnet),
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
+            transport: apiTransport,
+            middlewares: .logged([
+                UserAgentHeaderMiddleware(userAgent: userAgent),
+                FirebaseUserIdHeaderMiddleware(
+                    firebaseUserIdProvider: firebaseUserIdProvider,
+                    operationIDs: [MultichainAPI.Operations.getDeviceBindings.id]
+                ),
+                BearerTokenMiddleware(token: deviceJWT),
+            ])
+        )
+    }
+
+    /// Client for the operations the spec guards with `deviceJWT` + `walletAuth` + `xWalletId`.
+    /// Built per call for the same reason as the device-auth one, and because the wallet token is
+    /// only valid for the device token it signs.
+    func walletAuthMultichainAPIClient(
+        deviceJWT: String?,
+        walletId: String,
+        walletAuthToken: String?,
+        recovery: MultichainWalletAuthDependencies,
+        userAgent: String? = nil
+    ) async -> MultichainAPI.Client {
+        var middlewares: [any ClientMiddleware] = [
+            UserAgentHeaderMiddleware(userAgent: userAgent),
+            FirebaseUserIdHeaderMiddleware(firebaseUserIdProvider: firebaseUserIdProvider),
+        ]
+        // Without a session these operations go out exactly as they did before wallet auth existed,
+        // rather than with an empty bearer the backend would have to reject. Recovery is last so
+        // it is innermost and can replace the credentials the stack above just applied.
+        middlewares.append(
+            contentsOf: WalletAuthClientMiddlewares.make(
+                deviceJWT: deviceJWT,
+                walletId: walletId,
+                walletAuthToken: walletAuthToken,
+                recovery: recovery
+            )
+        )
+        return MultichainAPI.Client(
+            serverURL: await configurationAssembly.configuration.multichainHost(network: .mainnet),
+            configuration: OpenAPIRuntime.Configuration(dateTranscoder: MultichainDateTranscoder()),
+            transport: apiTransport,
+            middlewares: .logged(middlewares)
         )
     }
 
@@ -189,7 +256,7 @@ public final class APIAssembly {
             let tonConnectAPIClient = TonConnectAPI.Client(
                 serverURL: (URL(string: tonConnectBridge) ?? tonConnectURL).appendingPathComponent("bridge"),
                 transport: streamingTransport,
-                middlewares: []
+                middlewares: .logged()
             )
             await tonConnectAPIClientWrapper.setApiClient(tonConnectAPIClient: tonConnectAPIClient)
             return tonConnectAPIClient
@@ -197,38 +264,6 @@ public final class APIAssembly {
     }
 
     // MARK: - Private
-
-    private lazy var streamingTransport: StreamURLSessionTransport = StreamURLSessionTransport(urlSessionConfiguration: streamingUrlSessionConfiguration)
-
-    private lazy var swapAPITransport: StreamURLSessionTransport = StreamURLSessionTransport(urlSessionConfiguration: urlSessionConfiguration)
-
-    private lazy var multichainAPITransport: StreamURLSessionTransport = StreamURLSessionTransport(urlSessionConfiguration: urlSessionConfiguration)
-
-    private var urlSessionConfiguration: URLSessionConfiguration {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = 60
-        configuration.timeoutIntervalForResource = 60
-        return configuration
-    }
-
-    private var streamingUrlSessionConfiguration: URLSessionConfiguration {
-        let configuration = URLSessionConfiguration.default
-        configuration.timeoutIntervalForRequest = TimeInterval(Int.max)
-        configuration.timeoutIntervalForResource = TimeInterval(Int.max)
-        return configuration
-    }
-
-    var tonAPIURL: URL {
-        URL(string: "https://keeper.tonapi.io")!
-    }
-
-    var streamingAPIURL: URL {
-        URL(string: "https://rt.tonapi.io")!
-    }
-
-    var testnetTonAPIURL: URL {
-        URL(string: "https://testnet.tonapi.io")!
-    }
 
     var tonConnectURL: URL {
         URL(string: "https://bridge.tonapi.io")!
@@ -240,11 +275,6 @@ public final class APIAssembly {
 
     var tonConnectBridgeURL: URL {
         URL(string: "https://bridge.tonapi.io/bridge")!
-    }
-
-    private var multichainAPIURL: URL {
-        // TODO: - [Multichain] change to prod url
-        URL(string: "https://multi-dev.tonkeeper.com")!
     }
 }
 

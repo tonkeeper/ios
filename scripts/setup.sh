@@ -2,9 +2,12 @@
 set -e
 
 cd "$(git rev-parse --show-toplevel)"
-sh ./scripts/hooks/setup_hooks.sh
 
-git clone git@github.com:tonkeeper/ios_keys.git ./ios_keys
-rm -rf ./Tonkeeper/Resources/Firebase
-cp -R ./ios_keys/Firebase ./Tonkeeper/Resources/Firebase
-rm -rf ios_keys
+./scripts/tools/install_toolchain.sh
+sh ./scripts/hooks/setup_hooks.sh
+store="$(sh ./scripts/xcode_derived_data.sh)"
+if [ -n "$store" ]; then
+	sh ./scripts/provision_spm_deps.sh "$store"
+fi
+
+sh ./scripts/firebase/provision_firebase.sh

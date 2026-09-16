@@ -1,36 +1,32 @@
 import Foundation
+import TKLogging
 
-actor HomeBannersLoader {
-    private var taskInProgress: Task<Void, Never>?
-
-    private let tonkeeperAPI: TonkeeperAPI
-    private let homeBannersStore: HomeBannersStore
+public final class HomeBannersLoader {
+    private let loader: WalletScopedLoader<[HomeBanner]?>
 
     init(
         tonkeeperAPI: TonkeeperAPI,
-        homeBannersStore: HomeBannersStore
+        homeBannersStore: HomeBannersStore,
+        walletsStore: WalletsStore
     ) {
-        self.tonkeeperAPI = tonkeeperAPI
-        self.homeBannersStore = homeBannersStore
+        loader = WalletScopedLoader(
+            walletsStore: walletsStore,
+            fetch: { walletId in
+                do {
+                    return try await tonkeeperAPI.loadBanners(walletId: walletId)
+                } catch {
+                    Log.w("Failed to load home banners for wallet \(walletId ?? "none"): \(error)")
+                    return nil
+                }
+            },
+            apply: { walletId, banners in
+                guard let banners else { return }
+                await homeBannersStore.setBanners(banners, forWalletId: walletId)
+            }
+        )
     }
 
-    nonisolated func loadBanners() {
-        Task {
-            await loadBanners()
-        }
-    }
-
-    private func loadBanners() async {
-        if let taskInProgress {
-            taskInProgress.cancel()
-            self.taskInProgress = nil
-        }
-
-        let task = Task {
-            guard let banners = try? await tonkeeperAPI.loadBanners() else { return }
-            guard !Task.isCancelled else { return }
-            await homeBannersStore.setBanners(banners)
-        }
-        self.taskInProgress = task
+    public func loadBanners(scope: WalletScope, force: Bool) async {
+        await loader.reload(scope: scope, force: force)
     }
 }

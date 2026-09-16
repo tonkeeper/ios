@@ -9,18 +9,24 @@ public struct FeePickerCellContent {
     public var leading: Leading
     public var title: String
     public var subtitle: String?
-    public var badge: Badge?
+    public var isDisabled: Bool
+    public var subtitleActionTitle: String?
+    public var isSelected: Bool
 
     public init(
         leading: Leading,
         title: String,
         subtitle: String? = nil,
-        badge: Badge? = nil
+        isDisabled: Bool = false,
+        subtitleActionTitle: String? = nil,
+        isSelected: Bool = false
     ) {
         self.leading = leading
         self.title = title
         self.subtitle = subtitle
-        self.badge = badge
+        self.isDisabled = isDisabled
+        self.subtitleActionTitle = subtitleActionTitle
+        self.isSelected = isSelected
     }
 }
 
@@ -29,25 +35,9 @@ public extension FeePickerCellContent {
         case assetAvatar(imageSource: AssetAvatarViewImageSource)
         case icon(
             image: UIImage,
-            tintColor: UIColor,
-            backgroundColor: UIColor
+            tintColor: TKColor,
+            backgroundColor: TKColor
         )
-    }
-
-    struct Badge {
-        public var text: String
-        public var foreground: UIColor
-        public var background: UIColor
-
-        public init(
-            text: String,
-            foreground: UIColor,
-            background: UIColor
-        ) {
-            self.text = text
-            self.foreground = foreground
-            self.background = background
-        }
     }
 }
 
@@ -80,6 +70,9 @@ public struct FeePickerCell: View {
             },
             center: {
                 centerView
+            },
+            trailing: {
+                trailingView
             }
         )
         .allowsHitTesting(isHitTestingAllowed)
@@ -119,10 +112,11 @@ private extension FeePickerCell {
             switch content.leading {
             case let .assetAvatar(imageSource):
                 AssetAvatarView(imageSource: imageSource)
+                    .opacity(content.isDisabled ? 0.48 : 1)
             case let .icon(image, tintColor, backgroundColor):
                 ZStack {
                     Circle()
-                        .fill(Color(uiColor: backgroundColor))
+                        .fill(backgroundColor)
                         .frame(
                             width: Layout.iconContainerSize,
                             height: Layout.iconContainerSize
@@ -132,12 +126,13 @@ private extension FeePickerCell {
                         .renderingMode(.template)
                         .resizable()
                         .scaledToFit()
-                        .foregroundStyle(Color(uiColor: tintColor))
+                        .foregroundStyle(tintColor)
                         .frame(
                             width: Layout.iconSize,
                             height: Layout.iconSize
                         )
                 }
+                .opacity(content.isDisabled ? 0.48 : 1)
             }
         }
     }
@@ -162,14 +157,9 @@ private extension FeePickerCell {
                         config: primaryRowConfig(content)
                     )
                 } secondaryRow: {
-                    CellCenterSecondaryRow(
-                        config: .content(
-                            .init(
-                                value: .init(
-                                    title: subtitle
-                                )
-                            )
-                        )
+                    subtitleView(
+                        subtitle: subtitle,
+                        actionTitle: content.subtitleActionTitle
                     )
                 }
             } else {
@@ -182,21 +172,63 @@ private extension FeePickerCell {
         }
     }
 
+    @ViewBuilder
+    var trailingView: some View {
+        switch config {
+        case .shimmer:
+            EmptyView()
+        case let .content(content):
+            if content.isSelected {
+                CellTrailingAccessory(
+                    config: .init(
+                        color: .accentBlue,
+                        icon: SwiftUI.Image.TKUIKit.Icons.Size28.donemarkOutline
+                    )
+                )
+            }
+        }
+    }
+
     func primaryRowConfig(_ content: FeePickerCellContent) -> CellCenterPrimaryRow.Config {
         .content(
             .init(
-                title: content.title,
-                tags: content.badge.map { badge in
-                    [TKTagSwiftUIViewConfig(
-                        text: badge.text,
-                        textColor: badge.foreground,
-                        textPadding: UIEdgeInsets(top: 2.5, left: 5, bottom: 3.5, right: 5),
-                        backgroundColor: badge.background,
-                        borderColor: .clear,
-                        backgroundPadding: UIEdgeInsets(top: 0, left: 6, bottom: 0, right: 0)
-                    )]
-                }
+                title: .init(
+                    text: content.title,
+                    color: content.isDisabled ? .textSecondary : .textPrimary
+                )
             )
         )
+    }
+
+    @ViewBuilder
+    func subtitleView(
+        subtitle: String,
+        actionTitle: String?
+    ) -> some View {
+        if let actionTitle {
+            HStack(spacing: 0) {
+                Text(subtitle)
+                    .textStyle(.body2)
+                    .foregroundStyle(.textSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                Text(" · ")
+                    .textStyle(.body2)
+                    .foregroundStyle(.textSecondary)
+                Text(actionTitle)
+                    .textStyle(.body2)
+                    .foregroundStyle(.accentBlue)
+            }
+        } else {
+            CellCenterSecondaryRow(
+                config: .content(
+                    .init(
+                        value: .init(
+                            title: subtitle
+                        )
+                    )
+                )
+            )
+        }
     }
 }

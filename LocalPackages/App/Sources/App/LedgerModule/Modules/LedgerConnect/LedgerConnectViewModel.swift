@@ -121,7 +121,9 @@ private extension LedgerConnectViewModelImplementation {
             guard let self else { return }
             self.bleTransport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
                 Log.w("Log: Ledger disconnected, isClosed: \(self.isClosed)")
-                if self.isClosed { return }
+                if self.isClosed {
+                    return
+                }
 
                 self.pollTonAppTask?.cancel()
                 self.accountsTask?.cancel()
@@ -207,7 +209,7 @@ private extension LedgerConnectViewModelImplementation {
             do {
                 var accounts: [LedgerAccount] = []
 
-                for index in 0 ..< 10 {
+                for index in 0 ..< 20 {
                     try Task.checkCancellation()
                     let account = try await tonTransport.getAccount(path: AccountPath(index: index))
                     accounts.append(account)

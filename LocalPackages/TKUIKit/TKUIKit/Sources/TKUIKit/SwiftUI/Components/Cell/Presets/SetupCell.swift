@@ -1,16 +1,18 @@
 import SwiftUI
 
 public struct SetupCellContent: Sendable, Equatable {
-    public var icon: Icon
+    public var icon: Icon?
     public var title: String
+    public var titleTextStyle: TKTextStyle
     public var titleLineLimit: Int?
     public var subtitle: Subtitle?
     public var accessory: Accessory
     public var showsDivider: Bool
 
     public init(
-        icon: Icon,
+        icon: Icon?,
         title: String,
+        titleTextStyle: TKTextStyle = .body2,
         titleLineLimit: Int? = nil,
         subtitle: Subtitle? = nil,
         accessory: Accessory,
@@ -18,6 +20,7 @@ public struct SetupCellContent: Sendable, Equatable {
     ) {
         self.icon = icon
         self.title = title
+        self.titleTextStyle = titleTextStyle
         self.titleLineLimit = titleLineLimit
         self.subtitle = subtitle
         self.accessory = accessory
@@ -28,13 +31,13 @@ public struct SetupCellContent: Sendable, Equatable {
 public extension SetupCellContent {
     struct Icon: Sendable, Equatable {
         public var image: UIImage
-        public var tintColor: Color
-        public var backgroundColor: Color
+        public var tintColor: TKColor
+        public var backgroundColor: TKColor
 
         public init(
             image: UIImage,
-            tintColor: Color,
-            backgroundColor: Color
+            tintColor: TKColor,
+            backgroundColor: TKColor
         ) {
             self.image = image
             self.tintColor = tintColor
@@ -46,13 +49,13 @@ public extension SetupCellContent {
 public extension SetupCellContent {
     struct Subtitle: Sendable, Equatable {
         public var text: String
-        public var color: Color
+        public var color: TKColor
         public var textStyle: TKTextStyle
         public var lineLimit: Int?
 
         public init(
             text: String,
-            color: Color = Color(uiColor: .Text.secondary),
+            color: TKColor = .textSecondary,
             textStyle: TKTextStyle = .body2,
             lineLimit: Int? = 2
         ) {
@@ -104,11 +107,14 @@ public struct SetupCell: View {
         Cell(
             config: Cell.Config(
                 showsDivider: content.showsDivider,
+                haptic: haptic,
                 action: action
             ),
             leading: {
-                CellAssetLeading {
-                    SetupCellIconView(icon: content.icon)
+                if let icon = content.icon {
+                    CellAssetLeading {
+                        SetupCellIconView(icon: icon)
+                    }
                 }
             },
             center: {
@@ -128,6 +134,13 @@ public struct SetupCell: View {
 }
 
 private extension SetupCell {
+    var haptic: TKTapAnimationHaptic {
+        if case .toggle = content.accessory {
+            return .light
+        }
+        return .none
+    }
+
     var action: (() -> Void)? {
         if case let .toggle(toggle) = content.accessory, !toggle.isEnabled {
             return nil
@@ -147,8 +160,8 @@ private extension SetupCell {
     @ViewBuilder
     var titleView: some View {
         let text = Text(content.title)
-            .textStyle(.body2)
-            .foregroundStyle(Color(uiColor: .Text.primary))
+            .textStyle(content.titleTextStyle)
+            .foregroundStyle(.textPrimary)
             .fixedSize(horizontal: false, vertical: true)
 
         if let titleLineLimit = content.titleLineLimit {
@@ -180,8 +193,8 @@ private extension SetupCell {
         case .chevron:
             CellTrailingAccessory(
                 config: CellTrailingAccessory.Config(
-                    color: .Icon.tertiary,
-                    icon: Image(uiImage: .TKUIKit.Icons.Size16.chevronRight),
+                    color: .iconTertiary,
+                    icon: SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight,
                     iconSize: 16
                 )
             )
@@ -224,7 +237,7 @@ private struct SetupCellToggleAccessory: View {
                 .frame(width: Layout.trackWidth, height: Layout.trackHeight)
 
             Circle()
-                .fill(Color(uiColor: .Background.content))
+                .fill(.constantWhite)
                 .frame(width: Layout.thumbSize, height: Layout.thumbSize)
                 .padding(Layout.thumbInset)
                 .shadow(
@@ -238,10 +251,10 @@ private struct SetupCellToggleAccessory: View {
         .padding(Layout.insets)
     }
 
-    private var trackColor: Color {
+    private var trackColor: TKColor {
         toggle.isOn
-            ? Color(uiColor: .Accent.blue)
-            : Color(uiColor: .Background.contentTint)
+            ? .accentBlue
+            : .buttonTertiaryBackground
     }
 }
 

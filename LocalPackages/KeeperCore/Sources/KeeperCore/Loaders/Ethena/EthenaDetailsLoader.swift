@@ -25,7 +25,8 @@ public actor EthenaStakingLoader {
         case .idle:
             let task = Task<EthenaStakingResponse, Error> {
                 let response = try await api.getEthenaStakingDetails(
-                    address: wallet.address.toFriendly(testOnly: wallet.network == .testnet, bounceable: false).toString()
+                    address: wallet.address.toFriendly(testOnly: wallet.network == .testnet, bounceable: false).toString(),
+                    walletId: wallet.multichainWalletState?.walletId
                 )
                 self.state = .response(response)
                 return response
@@ -37,7 +38,8 @@ public actor EthenaStakingLoader {
             if reload {
                 let task = Task<EthenaStakingResponse, Error> {
                     let response = try await api.getEthenaStakingDetails(
-                        address: wallet.address.toFriendly(testOnly: wallet.network == .testnet, bounceable: false).toString()
+                        address: wallet.address.toFriendly(testOnly: wallet.network == .testnet, bounceable: false).toString(),
+                        walletId: wallet.multichainWalletState?.walletId
                     )
                     self.state = .response(response)
                     return response

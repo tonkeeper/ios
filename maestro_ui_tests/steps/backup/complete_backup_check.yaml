@@ -1,0 +1,38 @@
+appId: com.jbig.tonkeeper
+---
+# Backup check: 3 random phrase positions, 3 options each — tap the correct word per row.
+# Requires output.captured[0..23] from the recovery phrase screen (1-based index → captured[i - 1]).
+- tapOn: "Check Backup"
+- extendedWaitUntil:
+    visible: "Backup check"
+    timeout: 10000
+- extendedWaitUntil:
+    visible: "Let's see if you've got everything right.*"
+    timeout: 10000
+- copyTextFrom:
+    text: "Let's see if you've got everything right.*"
+
+- evalScript: ${output.captionText = maestro.copiedText.trim()}
+- runScript:
+    file: ../../scripts/utils/parse_backup_check_caption.js
+- assertTrue:
+    condition: ${output.indices.length == 3}
+    label: "Expected 3 word positions in caption, got '${output.captionText}'"
+- evalScript: ${output.row = 0}
+- repeat:
+    while:
+      true: ${output.row < 3}
+    commands:
+      - evalScript: ${output.position = output.indices[output.row]}
+      - evalScript: ${output.expectedWord = output.captured[output.position - 1]}
+      - assertTrue:
+          condition: ${output.expectedWord != null && output.expectedWord.length > 0}
+          label: "No captured word for phrase position ${output.position} (row ${output.row})"
+      - tapOn: ${output.expectedWord}
+      - waitForAnimationToEnd:
+          timeout: 1000
+      - evalScript: ${output.row = output.row + 1}
+- tapOn: "Done"
+- extendedWaitUntil:
+    notVisible: "Backup check"
+    timeout: 10000

@@ -9,37 +9,42 @@ import TKUIKit
 import TONWalletKit
 import UIKit
 
-enum DidRequireSignError: Swift.Error {
-    case unknown
-}
-
 @MainActor
 final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
     var didHandleDeeplink: ((_ deeplink: Deeplink) -> Void)?
 
     private let dapp: Dapp
+    private let analyticsSession: DappOpenAnalyticsSession
     private let isSilentConnect: Bool
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let explorerURLMatcher: BlockchainExplorerURLMatcher
 
     var didRequestOpenBuySell: ((_ wallet: Wallet, _ isInternalPurchasing: Bool) -> Void)?
 
     init(
         router: ViewControllerRouter,
         dapp: Dapp,
+        analyticsSession: DappOpenAnalyticsSession,
         isSilentConnect: Bool,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) {
         self.dapp = dapp
+        self.analyticsSession = analyticsSession
         self.isSilentConnect = isSilentConnect
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.explorerURLMatcher = BlockchainExplorerURLMatcher(
+            configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+        )
 
         super.init(router: router)
     }
 
     override func start() {
+        analyticsSession.logClick()
+
         if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.walletKitEnabled) {
             openWalletKitDappModule(dapp)
         } else {
@@ -54,14 +59,16 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         let walletKit = keeperCoreMainAssembly.tonWalletKitAssembly.tonWalletKit
         let module = DappWalletKitAssembly.module(
             dapp: dapp,
-            analyticsProvider: coreAssembly.analyticsProvider,
+            analyticsSession: analyticsSession,
             deeplinkHandler: { [weak self] deeplink in
                 self?.didHandleDeeplink?(deeplink)
             },
+            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
             messageHandler: messageHandler,
             wallet: wallet,
             walletKit: walletKit,
-            eventsHandler: eventsHandler
+            eventsHandler: eventsHandler,
+            explorerURLMatcher: explorerURLMatcher
         )
 
         messageHandler.fetch = { [weak self] url, params, completion in
@@ -183,7 +190,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
 
         module.view.modalPresentationStyle = .fullScreen
-        router.rootViewController.topPresentedViewController().present(module.view, animated: true)
+        router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
     }
 
     private func openDappModule(_ dapp: Dapp) {
@@ -191,12 +198,14 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         let messageHandler = DefaultDappMessageHandler()
         let module = DappAssembly.module(
             dapp: dapp,
-            analyticsProvider: coreAssembly.analyticsProvider,
+            analyticsSession: analyticsSession,
             deeplinkHandler: { deeplink in
                 self.didHandleDeeplink?(deeplink)
             },
+            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
             messageHandler: messageHandler,
-            wallet: wallet
+            wallet: wallet,
+            explorerURLMatcher: explorerURLMatcher
         )
 
         // kinda kludge for case with different manifestUrl and app.url to show domain correctly on SignData bottomsheet
@@ -306,7 +315,7 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
         }
 
         module.view.modalPresentationStyle = .fullScreen
-        router.rootViewController.topPresentedViewController().present(module.view, animated: true)
+        router.rootViewController.modalPresentationSourceViewController().present(module.view, animated: true)
     }
 
     private func performConnect(
@@ -327,7 +336,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
                 let parameters = TonConnectParameters(
                     version: .v2,
                     clientId: UUID().uuidString,
-                    requestPayload: payload
+                    requestPayload: payload,
+                    source: .dapp
                 )
                 trace.setValue(manifest.url.absoluteString, forAttribute: "manifest")
                 await MainActor.run {
@@ -491,6 +501,8 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
             ),
             sendFrom: .tonconnectLocal,
             appId: appId,
+            initiatedBy: .tonconnectLocal,
+            dappUrl: dapp.url.host,
             redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
                 operation: .confirmTransaction,
@@ -571,9 +583,9 @@ final class DappCoordinator: RouterCoordinator<ViewControllerRouter> {
 
     func openSharingSheet(app: Dapp, url: URL) {
         let module = DappSharingPopupAssembly.module(
-            dapp: dapp,
+            dapp: app,
             url: url,
-            keeperCoreAssembly: keeperCoreMainAssembly
+            analyticsSession: analyticsSession
         )
 
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

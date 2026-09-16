@@ -25,8 +25,10 @@ protocol NativeSwapTransactionConfirmationViewModel: AnyObject {
     var didTapPop: (() -> Void)? { get set }
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)? { get set }
-    var didRequestSlippageInfo: (() -> Void)? { get set }
-    var didRequestValueDifferenceInfo: (() -> Void)? { get set }
+    var didRequestSlippageInfo: ((UIView) -> Void)? { get set }
+    var didRequestValueDifferenceInfo: ((UIView) -> Void)? { get set }
+    var didRequestTemporaryReserveInfo: ((String, UIView) -> Void)? { get set }
+    var didRequestBatteryTemporaryReserveInfo: ((String, UIView) -> Void)? { get set }
 
     func viewDidLoad()
     func viewDidAppear()
@@ -40,8 +42,10 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     var didTapPop: (() -> Void)?
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)?
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)?
-    var didRequestSlippageInfo: (() -> Void)?
-    var didRequestValueDifferenceInfo: (() -> Void)?
+    var didRequestSlippageInfo: ((UIView) -> Void)?
+    var didRequestValueDifferenceInfo: ((UIView) -> Void)?
+    var didRequestTemporaryReserveInfo: ((String, UIView) -> Void)?
+    var didRequestBatteryTemporaryReserveInfo: ((String, UIView) -> Void)?
     var didProduceInsufficientFundsError: ((InsufficientFundsError) -> Void)?
     var didProduceTonSwapInsufficientFeeError: ((_ requiredFee: BigUInt, _ balance: BigUInt) -> Void)?
 
@@ -64,12 +68,13 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
 
     private let wallet: Wallet
     private let confirmationController: TransactionConfirmationController
+    private let pendingTransactionsService: PendingTransactionsService
     private let sendController: SendV3Controller
     private let amountFormatter: AmountFormatter
     private let fundsValidator: InsufficientFundsValidator
     private let currencyStore: CurrencyStore
-    private let ratesService: RatesService
     private let nativeSwapService: NativeSwapService
+    private let batteryCalculation: BatteryCalculation
     private let configurationAssembly: ConfigurationAssembly
     private let configuration: Configuration
     private let analyticsProvider: AnalyticsProvider
@@ -77,20 +82,19 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     private var model: NativeSwapTransactionConfirmationModel
 
     private var updateTask: Task<Void, Never>?
-    private var fetchConfirmationTask: Task<Void, Error>?
-    private var updateTimer: DispatchSourceTimer?
     private var confirmTask: Task<Void, Never>?
 
     init(
         wallet: Wallet,
         sendController: SendV3Controller,
         confirmationController: TransactionConfirmationController,
+        pendingTransactionsService: PendingTransactionsService,
         model: NativeSwapTransactionConfirmationModel,
         amountFormatter: AmountFormatter,
         fundsValidator: InsufficientFundsValidator,
         currencyStore: CurrencyStore,
-        ratesService: RatesService,
         nativeSwapService: NativeSwapService,
+        batteryCalculation: BatteryCalculation,
         configurationAssembly: ConfigurationAssembly,
         configuration: Configuration,
         analyticsProvider: AnalyticsProvider
@@ -98,12 +102,13 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         self.wallet = wallet
         self.sendController = sendController
         self.confirmationController = confirmationController
+        self.pendingTransactionsService = pendingTransactionsService
         self.model = model
         self.amountFormatter = amountFormatter
         self.fundsValidator = fundsValidator
         self.currencyStore = currencyStore
-        self.ratesService = ratesService
         self.nativeSwapService = nativeSwapService
+        self.batteryCalculation = batteryCalculation
         self.configurationAssembly = configurationAssembly
         self.configuration = configuration
         self.analyticsProvider = analyticsProvider
@@ -225,38 +230,37 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
     }
 
     func makeContentItem(transaction: TransactionConfirmationModel) -> TKPopUp.Item {
-        let approximateSymbol = TKLocales.Common.Numbers.approximate
         var extraType: TransactionConfirmationModel.ExtraType = .default
-        var feeValueFormatted = ""
 
         switch transaction.extraState {
         case .loading:
             break
         case let .extra(extra):
             switch extra.value {
-            case let .battery(charges, _):
-                if let charges {
-                    extraType = .battery
-                    feeValueFormatted = "\(charges) \(TKLocales.Battery.Refill.chargesCount(count: charges))"
-                }
-            case let .default(amount):
+            case .battery:
+                extraType = .battery
+            case .default:
                 extraType = .default
-                feeValueFormatted = amountFormatter.format(
-                    amount: amount,
-                    fractionDigits: TonInfo.fractionDigits,
-                    accessory: .tokenSymbol(TonInfo.symbol)
-                )
-            case let .gasless(token, amount):
+            case let .gasless(token, _):
                 extraType = .gasless(token: token)
-                feeValueFormatted = amountFormatter.format(
-                    amount: amount,
-                    fractionDigits: token.fractionDigits,
-                    accessory: .tokenSymbol(token.symbol ?? token.name)
-                )
+            case let .multichain(token, _):
+                extraType = .multichain(token: token)
             }
         case .none:
-            feeValueFormatted = "-"
+            break
         }
+
+        let feeValueFormatted = formatApproximateValue(
+            formatExtraAmount(
+                model.confirmation.estimatedGasConsumption,
+                extraType: extraType
+            )
+        )
+        let reserveValue = formatExtraAmount(
+            model.confirmation.gasBudget,
+            extraType: extraType
+        )
+        let reserveValueFormatted = formatApproximateValue(reserveValue)
 
         let tradeStartDeadline: Date? = {
             guard let timestamp = Double(model.confirmation.tradeStartDeadline) else { return nil }
@@ -270,6 +274,15 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
 
             return date
         }()
+
+        let reserveInfoAction: (UIView) -> Void = { [weak self] sourceView in
+            switch extraType {
+            case .battery:
+                self?.didRequestBatteryTemporaryReserveInfo?(reserveValue, sourceView)
+            case .default, .gasless, .multichain:
+                self?.didRequestTemporaryReserveInfo?(reserveValue, sourceView)
+            }
+        }
 
         let valueDifferenceConfiguration: NativeSwapTransactionConfirmationContainerView.Configuration.Item? = {
             guard let percentage = getValueDifferencePercentage() else { return nil }
@@ -296,7 +309,12 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 fee: NativeSwapTransactionConfirmationContainerView
                     .Configuration.Item(
                         title: TKLocales.NativeSwap.Screen.Confirm.Field.fee,
-                        value: "\(approximateSymbol) \(feeValueFormatted)"
+                        value: feeValueFormatted
+                    ),
+                reserve: NativeSwapTransactionConfirmationContainerView
+                    .Configuration.Item(
+                        title: TKLocales.NativeSwap.Screen.Confirm.Field.temporaryReserve,
+                        value: reserveValueFormatted
                     ),
 
                 provider: NativeSwapTransactionConfirmationContainerView
@@ -323,12 +341,13 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                         case .default: TKLocales.ExtraType.ton
                         case .battery: TKLocales.ExtraType.battery
                         case let .gasless(token): token.symbol ?? token.name
+                        case let .multichain(token): token.symbol
                         }
 
                         let leftIcon = switch extraType {
                         case .default:
                             TKImageView.Model(
-                                image: .image(.TKCore.Icons.Size44.tonLogo),
+                                image: .image(.TKUIKit.Icons.Size44.tonLogo),
                                 tintColor: nil,
                                 corners: .circle
                             )
@@ -341,6 +360,16 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                         case let .gasless(token):
                             TKImageView.Model(
                                 image: .urlImage(token.imageURL),
+                                tintColor: nil,
+                                corners: .circle
+                            )
+                        case let .multichain(token):
+                            TKImageView.Model(
+                                image: AssetIdResolver.tkImageSource(
+                                    for: token.assetId,
+                                    imageUrl: URL(string: token.image),
+                                    multichainEnabled: true
+                                ).image,
                                 tintColor: nil,
                                 corners: .circle
                             )
@@ -370,16 +399,17 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                         selectedIndex: selectedIndex
                     )
                 },
-                didTapSlippageInfo: { [weak self] in
+                didTapSlippageInfo: { [weak self] sourceView in
                     guard let self else { return }
-                    self.didRequestSlippageInfo?()
+                    self.didRequestSlippageInfo?(sourceView)
                 },
                 didTapValueDifferenceInfo: valueDifferenceConfiguration != nil
-                    ? { [weak self] in
+                    ? { [weak self] sourceView in
                         guard let self else { return }
-                        self.didRequestValueDifferenceInfo?()
+                        self.didRequestValueDifferenceInfo?(sourceView)
                     }
                     : nil,
+                didTapReserveInfo: reserveInfoAction,
                 tradeStartDeadline: tradeStartDeadline,
                 didTimerFinished: { [weak self] in
                     self?.didTapPop?()
@@ -577,7 +607,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         let result = await self.confirmationController.sendTransaction()
 
         switch result {
-        case .success:
+        case let .success(sendResult):
+            await pendingTransactionsService.record(sendResult, wallet: self.wallet)
             return .success
         case let .failure(error):
             if case .cancelledByUser = error {
@@ -594,6 +625,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             text = "Failed to calculate fee"
         case let .failedToSendTransaction(message):
             text = message ?? "Failed to send transaction"
+        case let .multichainTransactionFailure(failure):
+            text = failure.transactionConfirmationUserMessage
         case .failedToSign:
             text = "Failed to sign"
         case .cancelledByUser:
@@ -614,9 +647,7 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
             return nil
         }
 
-        let requiredFee = BigUInt(model.confirmation.gasBudget)
-            ?? BigUInt(exactly: transaction.totalFee)
-            ?? 0
+        let requiredFee = model.confirmation.requiredGasAmount
         let balance = sendController.getMaximumAmount(token: .ton)
         let transferAmount = transaction.amount?.value ?? model.fromAmount
 
@@ -686,6 +717,8 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
                 return "ton"
             case .gasless:
                 return "ton"
+            case let .multichain(token, _):
+                return token.symbol
             }
 
         default:
@@ -699,6 +732,48 @@ final class NativeSwapTransactionConfirmationViewModelImplementation: NativeSwap
         }
 
         return nil
+    }
+
+    private func formatTonAmount(_ amountString: String) -> String {
+        guard let amount = BigUInt(amountString) else { return "-" }
+
+        return amountFormatter.format(
+            amount: amount,
+            fractionDigits: TonInfo.fractionDigits,
+            accessory: .tokenSymbol(TonInfo.symbol)
+        )
+    }
+
+    private func formatExtraAmount(
+        _ amountString: String,
+        extraType: TransactionConfirmationModel.ExtraType
+    ) -> String {
+        switch extraType {
+        case .battery:
+            return formatBatteryCharges(amountString)
+        case .default, .gasless, .multichain:
+            return formatTonAmount(amountString)
+        }
+    }
+
+    private func formatBatteryCharges(_ amountString: String) -> String {
+        guard let amount = BigUInt(amountString) else { return "-" }
+
+        let tonAmount = NSDecimalNumber.fromBigUInt(
+            value: amount,
+            decimals: TonInfo.fractionDigits
+        )
+        guard let charges = batteryCalculation.calculateCharges(tonAmount: tonAmount) else {
+            return "-"
+        }
+
+        return "\(charges) \(TKLocales.Battery.Refill.chargesCount(count: charges))"
+    }
+
+    private func formatApproximateValue(_ value: String) -> String {
+        guard value != "-" else { return value }
+
+        return "\(TKLocales.Common.Numbers.approximate) \(value)"
     }
 
     private func getValueDifferenceFormattedValue(percentage: Decimal) -> String {

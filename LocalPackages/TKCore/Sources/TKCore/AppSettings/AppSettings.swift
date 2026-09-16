@@ -38,21 +38,43 @@ public final class AppSettings {
         }
     }
 
-    public var isSecureMode: Bool {
-        get {
-            userDefaults.bool(forKey: .isSecureModeKey)
-        }
-        set {
-            userDefaults.setValue(newValue, forKey: .isSecureModeKey)
-        }
-    }
-
     public var fcmToken: String? {
         get {
             userDefaults.string(forKey: .fcmToken)
         }
         set {
             userDefaults.setValue(newValue, forKey: .fcmToken)
+        }
+    }
+
+    /// Last multichain push state accepted by the backend: the token and the full wallet id
+    /// set. `nil` wallet ids means "never synced", so a device that has no notifications on
+    /// never has to authenticate just to send an empty subscription.
+    public var multichainPushToken: String? {
+        get {
+            userDefaults.string(forKey: .multichainPushToken)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .multichainPushToken)
+        }
+    }
+
+    /// Device the push subscription below belongs to: a rotated device id invalidates it.
+    public var multichainPushDeviceId: String? {
+        get {
+            userDefaults.string(forKey: .multichainPushDeviceId)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .multichainPushDeviceId)
+        }
+    }
+
+    public var multichainPushWalletIds: [String]? {
+        get {
+            userDefaults.stringArray(forKey: .multichainPushWalletIds)
+        }
+        set {
+            userDefaults.setValue(newValue, forKey: .multichainPushWalletIds)
         }
     }
 
@@ -77,15 +99,6 @@ public final class AppSettings {
         }
     }
 
-    public var isSupportPopUpShown: Bool {
-        get {
-            userDefaults.bool(forKey: .supportPopUpShownKey)
-        }
-        set {
-            userDefaults.setValue(newValue, forKey: .supportPopUpShownKey)
-        }
-    }
-
     public let dappHostWhiteList: [String] = ["dapp.aeon.xyz"]
 }
 
@@ -93,11 +106,10 @@ private extension String {
     static let buySellItemDoNotShowKey = "buy_sell_item_do_not_show_warning"
     static let dappOpenWarningDoNotShowKey = "dapp_open_warning_do_not_show_key"
     static let decryptCommentDoNotShowKey = "decrypt_comment_do_not_show_warning"
-    static let isSecureModeKey = "is_secure_mode"
-    static let selectedCountryCode = "selected_country_code"
     static let fcmToken = "fcm_token"
+    static let multichainPushToken = "multichain_push_token"
+    static let multichainPushDeviceId = "multichain_push_device_id"
+    static let multichainPushWalletIds = "multichain_push_wallet_ids"
     static let addressCopyCount = "address_copy_count"
-    static let didMigrateTonConnectAppVaultKey = "did_migrate_ton_connect_apps_vault"
     static let firstLaunchTimestamp = "first_launch_timestamp"
-    static let supportPopUpShownKey = "support_popup_shown_key"
 }

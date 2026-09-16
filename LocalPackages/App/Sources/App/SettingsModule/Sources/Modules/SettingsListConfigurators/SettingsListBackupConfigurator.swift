@@ -1,5 +1,6 @@
 import BigInt
 import KeeperCore
+import SwiftUI
 import TKLocalize
 import TKUIKit
 import UIKit
@@ -8,7 +9,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     var didTapShowRecoveryPhrase: (() -> Void)?
     var didTapBackupManually: (() -> Void)?
 
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var didUpdateState: ((SettingsListState) -> Void)?
 
@@ -91,9 +92,9 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
         } else {
             items.append(.button(createBackupManuallyItem(state: state)))
         }
-        return SettingsListSection.listItems(SettingsListItemsSection(
+        return .items(SettingsListItemsSection(
             items: items,
-            headerConfiguration: SettingsListSectionHeaderView.Configuration(
+            header: SettingsListSectionHeader(
                 title: TKLocales.Backup.Information.title,
                 caption: TKLocales.Backup.Information.subtitle
             )
@@ -102,9 +103,8 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
 
     private func createShowRecoveryPhraseSection() -> SettingsListSection? {
         guard wallet.setupSettings.backupDate != nil else { return nil }
-        let items: [SettingsListItemsSectionItem] = [.listItem(createShowRecoveryPhraseItem())]
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: items
+        return .items(SettingsListItemsSection(
+            items: [.listItem(createShowRecoveryPhraseItem())]
         ))
     }
 
@@ -116,8 +116,8 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
             state: state,
             processedBalanceTonItem: processedBalanceTonItem
         ) else { return nil }
-        return SettingsListSection.listItems(SettingsListItemsSection(
-            items: [.notificationBanner(item)]
+        return .items(SettingsListItemsSection(
+            items: [.banner(item)]
         ))
     }
 
@@ -126,85 +126,50 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
         dateFormatter.timeStyle = .short
         let caption = dateFormatter.string(from: date)
 
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                iconViewConfiguration: TKListItemIconView.Configuration(
-                    content: .image(
-                        TKImageView.Model(
-                            image: .image(.App.Icons.Size28.donemark),
-                            tintColor: .white,
-                            size: .auto,
-                            corners: .none
-                        )
-                    ),
-                    alignment: .center,
-                    cornerRadius: 22,
-                    backgroundColor: .Accent.green,
-                    size: CGSize(width: 44, height: 44)
-                ),
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Backup.Done.title
-                    ),
-                    captionViewsConfigurations: [TKListItemTextView.Configuration(
-                        text: caption,
-                        color: .Text.secondary,
-                        textStyle: .body2
-                    )]
-                )
-            )
-        )
-
         return SettingsListItem(
             id: .backupDoneItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            icon: .image(
+                SettingsListItemImageIcon(
+                    image: SwiftUI.Image.TKUIKit.Icons.Size28.donemark,
+                    tintColor: .fixed(.white),
+                    backgroundColor: .accentGreen,
+                    imageSize: CGSize(width: 28, height: 28)
+                )
+            ),
+            title: SettingsListItemTitle(TKLocales.Backup.Done.title),
+            captions: [SettingsListItemCaption(caption)],
             accessory: .chevron,
-            onSelection: { [weak self] _ in
+            onTap: { [weak self] _ in
                 self?.didTapBackupManually?()
             }
         )
     }
 
-    private func createBackupManuallyItem(state: BalanceBackupWarningCheck.State) -> SettingsButtonListItem {
-        var buttonConfiguration: TKButton.Configuration
+    private func createBackupManuallyItem(state: BalanceBackupWarningCheck.State) -> SettingsListButtonItem {
+        let appearance: ButtonView.Appearance
         switch state {
         case .error, .warning:
-            buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+            appearance = .primary
         case .none:
-            buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+            appearance = .secondary
         }
 
-        buttonConfiguration.content = TKButton.Configuration.Content(
-            title: .plainString(TKLocales.Backup.Manually.button)
-        )
-        buttonConfiguration.action = { [didTapBackupManually] in
-            didTapBackupManually?()
-        }
-
-        return SettingsButtonListItem(
+        return SettingsListButtonItem(
             id: .backupManualyItemIdentifier,
-            cellConfiguration: TKButtonCollectionViewCell.Configuration(
-                buttonConfiguration: buttonConfiguration
-            )
+            title: TKLocales.Backup.Manually.button,
+            appearance: appearance,
+            action: { [weak self] in
+                self?.didTapBackupManually?()
+            }
         )
     }
 
     private func createShowRecoveryPhraseItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Backup.ShowPhrase.title
-                    )
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .showRecoveryPhraseItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Backup.ShowPhrase.title),
+            accessory: .icon(.TKUIKit.Icons.Size28.key, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 self?.didTapShowRecoveryPhrase?()
             }
         )
@@ -213,7 +178,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     private func createBackupNotificationWarning(
         state: BalanceBackupWarningCheck.State,
         processedBalanceTonItem: ProcessedBalanceTonItem?
-    ) -> SettingsNotificationBannerListItem? {
+    ) -> SettingsListBannerItem? {
         let convertedAmount: String = {
             guard let processedBalanceTonItem else {
                 return ""
@@ -225,24 +190,20 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
             )
         }()
 
-        let appearance: NotificationBannerView.Model.Appearance
+        let bannerState: NotificationBanner.State
         switch state {
         case .none: return nil
         case .error:
-            appearance = .accentRed
+            bannerState = .accentRed
         case .warning:
-            appearance = .accentYellow
+            bannerState = .accentOrange
         }
-        return SettingsNotificationBannerListItem(
+        return SettingsListBannerItem(
             id: .backupNotificationWarningIdentifier,
-            cellConfiguration: NotificationBannerCell.Configuration(
-                bannerViewConfiguration: NotificationBannerView.Model(
-                    title: nil,
-                    caption: TKLocales.Backup.Balance.warning(convertedAmount),
-                    appearance: appearance,
-                    actionButton: nil,
-                    closeButton: nil
-                )
+            content: NotificationBannerContent(
+                title: nil,
+                description: TKLocales.Backup.Balance.warning(convertedAmount),
+                state: bannerState
             )
         )
     }

@@ -1,0 +1,109 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- extendedWaitUntil:
+    visible: Add Funds
+    timeout: 60000
+- tapOn: Add Funds
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: Receive tokens
+    timeout: 30000
+- tapOn: Receive tokens
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: Receiving address
+    timeout: 30000
+- tapOn: "For all network tokens"
+
+
+# Shortened addresses on the picker for all 7 networks
+- assertVisible: TON
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: TON
+- assertVisible: TRON
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: TRON
+- assertVisible: Ethereum
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: Ethereum
+- assertVisible: Base
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: Base
+- assertVisible: Bitcoin
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: Bitcoin
+- assertVisible: Arbitrum
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: Arbitrum
+- assertVisible: BSC
+- assertVisible:
+    text: ".*\\.\\.\\..*"
+    below: BSC
+
+# Maestro matches text as a regex, so the parentheses around each ticker are escaped.
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: TON
+      INDEX: "0"
+      ADDRESS_TITLE: Your TON address
+      DISCLAIMER: "Send only Gram \\(GRAM\\) and tokens in TON network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: TRON
+      INDEX: "1"
+      ADDRESS_TITLE: Your TRON address
+      DISCLAIMER: "Send only TRON \\(TRC20\\) and tokens in TRON network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: Ethereum
+      INDEX: "2"
+      ADDRESS_TITLE: Your Ethereum address
+      DISCLAIMER: "Send only Ethereum \\(ERC20\\) and tokens in Ethereum network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: Bitcoin
+      INDEX: "3"
+      ADDRESS_TITLE: Your Bitcoin address
+      DISCLAIMER: "Send only Bitcoin \\(BTC\\) and tokens in Bitcoin network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: Base
+      INDEX: "4"
+      ADDRESS_TITLE: Your Base address
+      DISCLAIMER: "Send only Base \\(ERC20\\) and tokens in Base network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: BSC
+      INDEX: "5"
+      ADDRESS_TITLE: Your BSC address
+      DISCLAIMER: "Send only BNB Smart Chain \\(BEP20\\) and tokens in BNB Smart Chain network to this address, or you might lose your funds."
+
+- runFlow:
+    file: "../../../steps/recieve_modal/assert_multichain_network.yaml"
+    env:
+      NETWORK_NAME: Arbitrum
+      INDEX: "6"
+      ADDRESS_TITLE: Your Arbitrum address
+      DISCLAIMER: "Send only Arbitrum \\(ERC20\\) and tokens in Arbitrum network to this address, or you might lose your funds."

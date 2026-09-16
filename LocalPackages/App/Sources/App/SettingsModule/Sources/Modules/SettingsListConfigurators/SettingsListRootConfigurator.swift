@@ -1,13 +1,13 @@
 import KeeperCore
+import SwiftUI
 import TKCore
 import TKFeatureFlags
 import TKLocalize
 import TKUIKit
-import TronSwift
 import UIKit
+import WalletExtensions
 
 final class SettingsListRootConfigurator: SettingsListConfigurator {
-    var didRequirePasscode: (() async -> String?)?
     var didTapEditWallet: ((Wallet) -> Void)?
     var didTapCurrencySettings: (() -> Void)?
     var didTapSecuritySettings: (() -> Void)?
@@ -23,24 +23,20 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     ) -> Void)?
     var didTapSignOutRegularWallet: ((Wallet) -> Void)?
     var didTapDeleteRegularWallet: ((Wallet) -> Void)?
-    var didTapLogout: (() -> Void)?
     var didDeleteWallet: (() -> Void)?
     var didTapNotifications: ((Wallet) -> Void)?
     var didTapW5Wallet: ((Wallet) -> Void)?
     var didTapV4Wallet: ((Wallet) -> Void)?
     var didTapBattery: ((Wallet) -> Void)?
     var didTapConnectedApps: ((Wallet) -> Void)?
+    var didTapMigration: ((Wallet) -> Void)?
 
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var didUpdateState: ((SettingsListState) -> Void)?
 
     var title: String {
         TKLocales.Settings.title
-    }
-
-    var isSelectable: Bool {
-        false
     }
 
     func getInitialState() -> SettingsListState {
@@ -58,9 +54,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     private let configuration: Configuration
     private let walletDeleteController: WalletDeleteController
     private let anaylticsProvider: AnalyticsProvider
-    private let tronWalletConfigurator: TronWalletConfigurator
-    private let usdtTronBalanceLoader: SettingsUSDTTronBalanceLoader
     private let walletNotificationStore: WalletNotificationStore
+    private let settingsRepository: SettingsRepository
 
     // MARK: - Init
 
@@ -74,9 +69,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         configuration: Configuration,
         walletDeleteController: WalletDeleteController,
         anaylticsProvider: AnalyticsProvider,
-        tronWalletConfigurator: TronWalletConfigurator,
-        tronBalanceService: TronBalanceService,
-        walletNotificationStore: WalletNotificationStore
+        walletNotificationStore: WalletNotificationStore,
+        settingsRepository: SettingsRepository
     ) {
         self.wallet = wallet
         self.walletsStore = walletsStore
@@ -87,16 +81,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         self.configuration = configuration
         self.walletDeleteController = walletDeleteController
         self.anaylticsProvider = anaylticsProvider
-        self.tronWalletConfigurator = tronWalletConfigurator
-        self.usdtTronBalanceLoader = SettingsUSDTTronBalanceLoader(
-            tronBalanceService: tronBalanceService,
-            address: wallet.tron?.address
-        )
         self.walletNotificationStore = walletNotificationStore
-        self.usdtTronBalanceLoader.didUpdateBalance = { [weak self] in
-            guard let self else { return }
-            self.didUpdateState?(self.createState())
-        }
+        self.settingsRepository = settingsRepository
         walletsStore.addObserver(self) { observer, event in
             switch event {
             case let .didUpdateWalletMetaData(wallet):
@@ -109,16 +95,30 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                 DispatchQueue.main.async {
                     observer.wallet = wallet
                 }
-            case let .didUpdateWalletTron(wallet):
+            case let .didUpdateWalletMultichain(wallet):
                 DispatchQueue.main.async {
-                    guard wallet == observer.wallet else { return }
-                    observer.wallet = wallet
+                    if wallet == observer.wallet {
+                        observer.wallet = wallet
+                    }
+                    let state = observer.createState()
+                    observer.didUpdateState?(state)
+                }
+            case let .didAddWallets(wallets):
+                DispatchQueue.main.async {
+                    guard wallets.contains(where: { observer.isWalletRelevantForMigrationUpdate($0) }) else {
+                        return
+                    }
+                    let state = observer.createState()
+                    observer.didUpdateState?(state)
+                }
+            case .didChangeActiveWallet:
+                DispatchQueue.main.async {
                     let state = observer.createState()
                     observer.didUpdateState?(state)
                 }
             case let .didDeleteWallet(wallet):
                 DispatchQueue.main.async {
-                    if wallet == self.wallet {
+                    if wallet == observer.wallet {
                         observer.didDeleteWallet?()
                     } else {
                         let state = observer.createState()
@@ -159,11 +159,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         var sections = [SettingsListSection]()
 
         sections.append(createWalletEditSection())
+        if let migrationSection = createMigrationSection() {
+            sections.append(migrationSection)
+        }
         if let walletSettingsSection = createWalletSettingsSection(configuration: configuration) {
             sections.append(walletSettingsSection)
-        }
-        if let usdtTronSection = createUSDTTronSection() {
-            sections.append(usdtTronSection)
         }
         if let appSettingsSection = createAppSettingsSection() {
             sections.append(appSettingsSection)
@@ -178,13 +178,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createWalletEditSection() -> SettingsListSection {
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: [
-                    .listItem(createWalletItem()),
-                ]
-            )
-        )
+        .items(SettingsListItemsSection(items: [.listItem(createWalletItem())]))
+    }
+
+    private func createMigrationSection() -> SettingsListSection? {
+        guard shouldShowMigrationSection else { return nil }
+        return .items(SettingsListItemsSection(items: [.listItem(createMigrationItem())]))
     }
 
     private func createWalletSettingsSection(configuration: Configuration) -> SettingsListSection? {
@@ -210,11 +209,20 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
         guard !items.isEmpty else { return nil }
 
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: items
-            )
+        return .items(SettingsListItemsSection(items: items))
+    }
+
+    private var shouldShowMigrationSection: Bool {
+        WalletMigrationVisibility.shouldShowMigrationSection(
+            wallet: wallet,
+            wallets: walletsStore.wallets,
+            multichainEnabled: configuration.featureEnabled(.multichainEnabled),
+            migrationEnabled: configuration.featureEnabled(.migrationEnabled)
         )
+    }
+
+    private func isWalletRelevantForMigrationUpdate(_ wallet: Wallet) -> Bool {
+        wallet == self.wallet || WalletMigrationVisibility.isLegacyTonWallet(wallet)
     }
 
     private func createAppSettingsSection() -> SettingsListSection? {
@@ -228,11 +236,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
         guard !items.isEmpty else { return nil }
 
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: items.map(SettingsListItemsSectionItem.listItem)
-            )
-        )
+        return .items(SettingsListItemsSection(items: items.map(SettingsListItemsSectionItem.listItem)))
     }
 
     private func createSupportSection() -> SettingsListSection {
@@ -247,59 +251,71 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             items.append(deleteItem)
         }
         items.append(createLegalItem())
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: items.map(SettingsListItemsSectionItem.listItem)
-            )
-        )
+        return .items(SettingsListItemsSection(items: items.map(SettingsListItemsSectionItem.listItem)))
     }
 
     private func createLogoutSection() -> SettingsListSection {
-        let items = [
-            createSignOutWalletItem(),
-        ]
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: items.map(SettingsListItemsSectionItem.listItem)
-            )
-        )
+        .items(SettingsListItemsSection(items: [.listItem(createSignOutWalletItem())]))
     }
 
     private func createAppInformationSection() -> SettingsListSection {
-        let configuration = SettingsAppInformationCell.Configuration(
-            appName: InfoProvider.appName(),
-            version: "Version \(InfoProvider.appVersion())(\(InfoProvider.buildVersion()))"
+        .appInformation(
+            SettingsListAppInformation(
+                appName: InfoProvider.appName(),
+                version: "Version \(InfoProvider.appVersion())(\(InfoProvider.buildVersion()))"
+            )
         )
-        return SettingsListSection.appInformation(configuration)
     }
 
     private func createWalletItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                iconViewConfiguration: wallet.listItemIconViewConfiguration,
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: wallet.label,
-                        tags: wallet.listTagConfigurations()
-                    ),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(
-                            text: TKLocales.Settings.Items.setupWalletDescription,
-                            color: .Text.secondary,
-                            textStyle: .body2
-                        ),
-                    ]
+        let icon: SettingsListItemIcon? = {
+            let backgroundColor = TKColor.fixed(Color(uiColor: wallet.tintColor.uiColor))
+            switch wallet.icon {
+            case let .emoji(emoji):
+                return .emoji(emoji, backgroundColor: backgroundColor)
+            case let .icon(image):
+                return .image(
+                    SettingsListItemImageIcon(
+                        image: image.swiftUIImage,
+                        tintColor: .fixed(.white),
+                        backgroundColor: backgroundColor
+                    )
                 )
-            )
-        )
+            }
+        }()
+        // A multichain wallet spans several chains, so no single TON contract revision describes it.
+        let tags: [TKTagSwiftUIViewConfig] = wallet.isMultichain
+            ? []
+            : wallet.listTagSwiftUIConfigurations()
         return SettingsListItem(
             id: .walletIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .chevron
-        ) { [weak self] _ in
-            guard let self else { return }
-            self.didTapEditWallet?(self.wallet)
-        }
+            icon: icon,
+            title: SettingsListItemTitle(wallet.label),
+            tags: tags,
+            captions: [SettingsListItemCaption(TKLocales.Settings.Items.setupWalletDescription)],
+            accessory: .chevron,
+            onTap: { [weak self] _ in
+                guard let self else { return }
+                self.didTapEditWallet?(self.wallet)
+            }
+        )
+    }
+
+    private func createMigrationItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .migrationItemIdentifier,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.migration),
+            redDotColor: settingsRepository.didOpenWalletMigration ? nil : .accentBlue,
+            captions: [SettingsListItemCaption(TKLocales.Settings.Items.migrationDescription)],
+            accessory: .icon(.TKUIKit.Icons.Size28.trayArrowDown, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
+                guard let self else { return }
+                var settingsRepository = self.settingsRepository
+                settingsRepository.didOpenWalletMigration = true
+                self.didUpdateState?(self.createState())
+                self.didTapMigration?(self.wallet)
+            }
+        )
     }
 
     private func createBackupItem() -> SettingsListItem? {
@@ -307,36 +323,13 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             return nil
         }
 
-        let title = TKLocales.Settings.Items.backup
-            .withTextStyle(
-                .label1,
-                color: .Text.primary,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
-            )
-        let resultAttributedString = NSMutableAttributedString(attributedString: title)
-
         let isBackupNotificationVisible = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
-        if isBackupNotificationVisible {
-            resultAttributedString.append(NSAttributedString(string: " "))
-            let attachment = NSTextAttachment(image: .TKUIKit.Icons.Size12.redDot)
-            let attachmentString = NSAttributedString(attachment: attachment)
-            resultAttributedString.append(attachmentString)
-        }
-        let titleViewConfiguration = TKListItemTitleView.Configuration(title: resultAttributedString, numberOfLines: 1)
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: titleViewConfiguration
-                )
-            )
-        )
-
         return SettingsListItem(
             id: .backupItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.backup),
+            redDotColor: isBackupNotificationVisible ? .accentRed : nil,
+            accessory: .icon(.TKUIKit.Icons.Size28.key, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 self.didTapBackup?(wallet)
             }
@@ -345,25 +338,17 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     private func createCurrencyItem() -> SettingsListItem {
         let currency = currencyStore.getState()
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.currency)
-                )
-            )
-        )
         return SettingsListItem(
             id: .currencyItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.currency),
             accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
+                SettingsListItemTextAccessory(
                     text: currency.code,
-                    color: .Accent.blue,
+                    color: .accentBlue,
                     textStyle: .label1
                 )
             ),
-            onSelection: {
-                [weak self] _ in
+            onTap: { [weak self] _ in
                 self?.didTapCurrencySettings?()
             }
         )
@@ -380,19 +365,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             }
         }()
         guard !isW5Added else { return nil }
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.walletW5)
-                )
-            )
-        )
         return SettingsListItem(
             id: .walletW5ItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.wallet, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.walletW5),
+            accessory: .icon(.TKUIKit.Icons.Size28.wallet, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 didTapW5Wallet?(wallet)
             }
@@ -410,19 +387,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             }
         }()
         guard !isV4R2Added else { return nil }
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.walletV4R2)
-                )
-            )
-        )
         return SettingsListItem(
             id: .walletV4ItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.wallet, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.walletV4R2),
+            accessory: .icon(.TKUIKit.Icons.Size28.wallet, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 didTapV4Wallet?(wallet)
             }
@@ -433,45 +402,29 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         let hasMnemonics = mnemonicsAccess.hasMnemonics()
         let hasRegularWallet = walletsStore.wallets.contains(where: { $0.kind == .regular })
         guard hasMnemonics, hasRegularWallet else { return nil }
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.security)
-                )
-            )
-        )
         return SettingsListItem(
             id: .securityItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.lock, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.security),
+            accessory: .icon(.TKUIKit.Icons.Size28.lock, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 self?.didTapSecuritySettings?()
             }
         )
     }
 
     private func createSearchItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.search)
-                )
-            )
-        )
-
         let searchEngine = appSettingsStore.state.searchEngine
         return SettingsListItem(
             id: .searchItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.search),
             accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
+                SettingsListItemTextAccessory(
                     text: searchEngine.rawValue,
-                    color: .Accent.blue,
+                    color: .accentBlue,
                     textStyle: .label1
                 )
             ),
-            onSelection: { [weak self] view in
+            onTap: { [weak self] view in
                 guard let self, let view else { return }
 
                 let items = SearchEngine.allCases.map { item in
@@ -498,74 +451,45 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     private func createLanguageItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.language)
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .languageItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.language),
             accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
+                SettingsListItemTextAccessory(
                     text: TKLocales.language,
-                    color: .Accent.blue,
+                    color: .accentBlue,
                     textStyle: .label1
                 )
             ),
-            onSelection: { [weak self] _ in
-                guard let self else { return }
-
-                self.didTapLanguage?()
+            onTap: { [weak self] _ in
+                self?.didTapLanguage?()
             }
         )
     }
 
     private func createConnectedAppsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.connectedApps)
-                )
-            )
-        )
-        let iconConfiguration = TKListItemIconAccessoryView.Configuration(
-            icon: .TKUIKit.Icons.Size28.connectedApps,
-            tintColor: .Accent.blue
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .connectedAppsIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(iconConfiguration),
-            onSelection: { [weak self, wallet] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.connectedApps),
+            accessory: .icon(.TKUIKit.Icons.Size28.connectedApps, tintColor: .accentBlue),
+            onTap: { [weak self, wallet] _ in
                 self?.didTapConnectedApps?(wallet)
             }
         )
     }
 
     private func createThemeItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.theme)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .themeItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle(TKLocales.Settings.Items.theme),
             accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
+                SettingsListItemTextAccessory(
                     text: TKThemeManager.shared.theme.title,
-                    color: .Accent.blue,
+                    color: .accentBlue,
                     textStyle: .label1
                 )
             ),
-            onSelection: { view in
+            onTap: { view in
                 guard let view else { return }
                 let items = TKTheme.allCases.map { theme in
                     TKPopupMenuItem(
@@ -590,19 +514,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     func createFAQItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.faq)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .FAQItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.question, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self, configuration] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.faq),
+            accessory: .icon(.TKUIKit.Icons.Size28.question, tintColor: .accentBlue),
+            onTap: { [weak self, configuration] _ in
                 guard let self else { return }
                 Task {
                     guard let contactUsURL = configuration
@@ -619,19 +535,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     func createSupportItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.support)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .supportItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.support),
+            accessory: .icon(.TKUIKit.Icons.Size28.telegram, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 didTapSupport?()
             }
@@ -639,19 +547,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     func createNewsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.tkNews)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .tonkeeperNewsItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Icon.secondary)),
-            onSelection: {
-                [weak self, configuration] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.tkNews),
+            accessory: .icon(.TKUIKit.Icons.Size28.telegram, tintColor: .iconSecondary),
+            onTap: { [weak self, configuration] _ in
                 guard let self else { return }
                 Task {
                     guard let contactUsURL = configuration
@@ -668,19 +568,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     func createContactUsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.contactUs)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .contactUsItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.messageBubble, tintColor: .Icon.secondary)),
-            onSelection: {
-                [weak self, configuration] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.contactUs),
+            accessory: .icon(.TKUIKit.Icons.Size28.messageBubble, tintColor: .iconSecondary),
+            onTap: { [weak self, configuration] _ in
                 guard let self else { return }
                 Task {
                     guard let contactUsURL = configuration
@@ -697,55 +589,36 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
 
     func createRateItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.rate(InfoProvider.appName()))
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .rateItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.star, tintColor: .Icon.secondary)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.rate(InfoProvider.appName())),
+            accessory: .icon(.TKUIKit.Icons.Size28.star, tintColor: .iconSecondary),
+            onTap: { [weak self] _ in
                 self?.inAppReviewService.requestReviewManual()
             }
         )
     }
 
     func createLegalItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.legal)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .legalItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.doc, tintColor: .Icon.secondary)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.legal),
+            accessory: .icon(.TKUIKit.Icons.Size28.doc, tintColor: .iconSecondary),
+            onTap: { [weak self] _ in
                 self?.didTapLegal?()
             }
         )
     }
 
     func createSignOutWalletItem() -> SettingsListItem {
-        let title: NSAttributedString
+        let title: SettingsListItemTitle
         let action: () -> Void
 
         let isWatchOnly = wallet.kind == .watchonly
         if isWatchOnly {
-            title = TKLocales.Settings.Items.deleteWatchOnly.withTextStyle(
-                .label1,
-                color: .Text.primary
-            )
+            title = SettingsListItemTitle(TKLocales.Settings.Items.deleteWatchOnly)
         } else {
-            title = createSignOutWalletNameTitle(wallet: wallet)
+            title = createSignOutWalletTitle(wallet: wallet)
         }
 
         let hasSeedPhrase = wallet.kind == .regular
@@ -755,11 +628,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
                 self.didTapSignOutRegularWallet?(self.wallet)
             }
         } else {
-            action = {
+            action = { [weak self] in
+                guard let self else { return }
                 let actions = [
                     UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
                         guard let self else { return }
-                        Task {
+                        Task { [self] in
                             await self.walletNotificationStore.setNotificationIsOn(false, wallet: self.wallet)
                             await self.walletDeleteController.deleteWallet(wallet: self.wallet)
                             await MainActor.run {
@@ -779,21 +653,11 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
             }
         }
 
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 1)
-                )
-            )
-        )
         return SettingsListItem(
             id: .signOutIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(
-                icon: .TKUIKit.Icons.Size28.door,
-                tintColor: .Accent.blue
-            )),
-            onSelection: { _ in
+            title: title,
+            accessory: .icon(.TKUIKit.Icons.Size28.door, tintColor: .accentBlue),
+            onTap: { _ in
                 action()
             }
         )
@@ -801,73 +665,36 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     private func createDeleteWalletItem() -> SettingsListItem? {
         guard wallet.kind == .regular else { return nil }
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Settings.Items.deleteAccount.withTextStyle(
-                            .label1,
-                            color: .Text.primary
-                        ),
-                        numberOfLines: 1
-                    )
-                )
-            )
-        )
         return SettingsListItem(
             id: .deleteAccountIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(
-                icon: .TKUIKit.Icons.Size28.trashBin,
-                tintColor: .Icon.secondary
-            )),
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.deleteAccount),
+            accessory: .icon(.TKUIKit.Icons.Size28.trashBin, tintColor: .iconSecondary),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 self.didTapDeleteRegularWallet?(self.wallet)
             }
         )
     }
 
-    private func createSignOutWalletNameTitle(wallet: Wallet) -> NSAttributedString {
-        let walletName = wallet.iconWithName(
-            attributes: TKTextStyle.label1.getAttributes(
-                color: .Text.primary,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
-            ),
-            iconColor: .Icon.primary,
-            iconSide: 20
-        )
-
-        let delete = TKLocales.Settings.Items.signOutAccount
-            .withTextStyle(
-                .label1,
-                color: .Text.primary,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
-            )
-        let result = NSMutableAttributedString(attributedString: delete)
-        result.append(walletName)
-        return result
+    private func createSignOutWalletTitle(wallet: Wallet) -> SettingsListItemTitle {
+        switch wallet.icon {
+        case let .emoji(emoji):
+            SettingsListItemTitle("\(TKLocales.Settings.Items.signOutAccount)\(emoji) \(wallet.label)")
+        case let .icon(image):
+            SettingsListItemTitle(parts: [
+                .text(TKLocales.Settings.Items.signOutAccount),
+                .icon(image.swiftUIImage),
+                .text(" \(wallet.label)"),
+            ])
+        }
     }
 
     private func createNotificationsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.notifications)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .notificationsIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(
-                icon: .TKUIKit.Icons.Size28.notification,
-                tintColor: .Accent.blue
-            )),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.notifications),
+            accessory: .icon(.TKUIKit.Icons.Size28.notification, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 self.didTapNotifications?(self.wallet)
             }
@@ -876,94 +703,18 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 
     private func createBatteryItem(isBeta: Bool) -> SettingsListItem? {
         guard wallet.kind == .regular else { return nil }
-        var tags = [TKTagView.Configuration]()
+        var tags = [TKTagSwiftUIViewConfig]()
         if isBeta {
-            tags.append(TKTagView.Configuration.tag(text: "BETA"))
+            tags.append(.tag(text: "BETA"))
         }
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TKLocales.Settings.Items.battery,
-                        tags: tags
-                    )
-                )
-            )
-        )
         return SettingsListItem(
             id: .batteryIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.battery, tintColor: .Accent.blue)),
-            onSelection: {
-                [weak self] _ in
+            title: SettingsListItemTitle(TKLocales.Settings.Items.battery),
+            tags: tags,
+            accessory: .icon(.TKUIKit.Icons.Size28.battery, tintColor: .accentBlue),
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 self.didTapBattery?(wallet)
-            }
-        )
-    }
-
-    private func createUSDTTronSection() -> SettingsListSection? {
-        guard wallet.isTronAvailable else {
-            return nil
-        }
-        let tronDisabled = configuration.flag(\.tronDisabled, network: wallet.network)
-
-        if !wallet.isTronTurnOn, tronDisabled, !usdtTronBalanceLoader.hasPositiveBalance() {
-            return nil
-        }
-        return SettingsListSection.listItems(
-            SettingsListItemsSection(
-                items: [
-                    .listItem(createUSDTTronItem()),
-                ]
-            )
-        )
-    }
-
-    private func createUSDTTronItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: TronSwift.USDT.symbol,
-                        tags: [.tag(text: TronSwift.USDT.tag)]
-                    ),
-                    captionViewsConfigurations: [TKListItemTextView.Configuration(
-                        text: TKLocales.Settings.Trc20.description,
-                        color: .Text.secondary,
-                        textStyle: .body2,
-                        numberOfLines: 0
-                    )]
-                )
-            )
-        )
-
-        let isTronOn = wallet.isTronTurnOn
-        let action: (Bool) -> Void = { [weak self] isOn in
-            Task { [weak self] in
-                guard let self else { return }
-                if isOn, let passcodeProvider = didRequirePasscode {
-                    try? await tronWalletConfigurator.turnOn(wallet: wallet, passcodeProvider: passcodeProvider)
-                    return
-                }
-                await tronWalletConfigurator.turnOff(wallet: wallet)
-            }
-        }
-
-        return SettingsListItem(
-            id: .usdtTronItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
-                    isOn: isTronOn,
-                    isEnable: true,
-                    action: { isEnabled in
-                        action(isEnabled)
-                    }
-                )
-            ),
-            onSelection: { _ in
-                action(!isTronOn)
             }
         )
     }
@@ -987,9 +738,8 @@ private extension String {
     static let legalItemIdentifier = "LegalItem"
     static let signOutIdentifier = "SignOutIdentifier"
     static let deleteAccountIdentifier = "DeleteAccountItem"
-    static let logoutIdentifier = "LogoutItem"
     static let notificationsIdentifier = "Notifications item"
     static let batteryIdentifier = "Battery item"
     static let connectedAppsIdentifier = "ConnectedAppsItem"
-    static let usdtTronItemIdentifier = "usdtTronItemIdentifier"
+    static let migrationItemIdentifier = "migrationItemIdentifier"
 }

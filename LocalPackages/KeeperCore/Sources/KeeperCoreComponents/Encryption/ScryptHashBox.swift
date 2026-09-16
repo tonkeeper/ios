@@ -3,10 +3,16 @@ import CryptoSwift
 import Foundation
 import TweetNacl
 
-public struct ScryptHashBox {
+struct ScryptHashBox {
+    enum Error: Swift.Error {
+        case malformedHex
+    }
+
+    private static let nonceLength = 24
+
     private init() {}
 
-    public static func encrypt(
+    static func encrypt(
         data: Data,
         salt: [UInt8],
         N: Int,
@@ -34,7 +40,7 @@ public struct ScryptHashBox {
         return secretBox.toHexString()
     }
 
-    public static func decrypt(
+    static func decrypt(
         string: String,
         salt: String,
         N: Int,
@@ -43,21 +49,25 @@ public struct ScryptHashBox {
         password: String,
         dkLen: Int
     ) async throws -> Data {
+        guard let saltData = Data(strictHex: salt), saltData.count >= nonceLength,
+              let boxData = Data(strictHex: string)
+        else {
+            throw Error.malformedHex
+        }
+
         let passwordHash = try Data(Scrypt(
             password: [UInt8](password.utf8),
-            salt: [UInt8](Data(hex: salt)),
+            salt: [UInt8](saltData),
             dkLen: dkLen,
             N: N,
             r: r,
             p: p
         ).calculate())
 
-        let nonce = Data([UInt8](Data(hex: salt))[0 ..< 24])
-
         return try TweetNacl.NaclSecretBox.open(
-            box: Data(hex: string),
-            nonce: nonce,
-            key: Data(passwordHash)
+            box: boxData,
+            nonce: Data(saltData.prefix(nonceLength)),
+            key: passwordHash
         )
     }
 }

@@ -1,7 +1,6 @@
 import Foundation
 import KeeperCore
 import TKLocalize
-import TKUIKit
 import UIKit
 
 enum MultichainHistoryChainFilter: Hashable {
@@ -23,6 +22,7 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
     case send
     case receive
     case swap
+    case spam
 
     var title: String {
         switch self {
@@ -34,12 +34,14 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
             return TKLocales.History.Tab.received
         case .swap:
             return TKLocales.ActionTypes.Future.swap
+        case .spam:
+            return TKLocales.History.Tab.spam
         }
     }
 
     var apiActivityType: MultichainActivityType? {
         switch self {
-        case .all:
+        case .all, .spam:
             return nil
         case .send:
             return .send
@@ -51,16 +53,52 @@ enum MultichainHistoryTypeFilter: Hashable, CaseIterable {
     }
 }
 
-struct MultichainHistoryCategory: Hashable {
-    let chainFilter: MultichainHistoryChainFilter
-    let typeFilter: MultichainHistoryTypeFilter
+enum MultichainHistoryCategory: Hashable {
+    case chain(chainFilter: MultichainHistoryChainFilter, typeFilter: MultichainHistoryTypeFilter)
+    case asset(assetId: String, typeFilter: MultichainHistoryTypeFilter)
 
-    var apiChain: MultichainChain? {
-        chainFilter.apiChain
+    var typeFilter: MultichainHistoryTypeFilter {
+        switch self {
+        case let .chain(_, typeFilter), let .asset(_, typeFilter):
+            return typeFilter
+        }
+    }
+}
+
+extension MultichainHistoryCategory {
+    var isSpamCategory: Bool {
+        typeFilter == .spam
     }
 
-    var apiActivityType: MultichainActivityType? {
-        typeFilter.apiActivityType
+    func fetchActivities(
+        using service: MultichainService,
+        walletId: String,
+        limit: Int,
+        cursor: String?,
+        hideDust: Bool?
+    ) async throws(MultichainServiceError) -> MultichainWalletActivitiesPage {
+        switch self {
+        case let .chain(chainFilter, typeFilter):
+            return try await service.getWalletActivities(
+                walletId: walletId,
+                limit: limit,
+                cursor: cursor,
+                chain: chainFilter.apiChain,
+                assetId: nil,
+                activityType: typeFilter.apiActivityType,
+                hideDust: hideDust
+            )
+        case let .asset(assetId, typeFilter):
+            return try await service.getWalletActivities(
+                walletId: walletId,
+                limit: limit,
+                cursor: cursor,
+                chain: nil,
+                assetId: assetId,
+                activityType: typeFilter.apiActivityType,
+                hideDust: hideDust
+            )
+        }
     }
 }
 
@@ -83,7 +121,52 @@ struct MultichainHistoryTypeFilterItem: Identifiable, Equatable {
     let isSelected: Bool
 }
 
+struct MultichainHistoryActivityIdentity: Hashable {
+    let txIds: [String]
+    let activityType: MultichainActivityType
+    let direction: MultichainActivityDirection
+    let fromChain: MultichainChain
+    let toChain: MultichainChain
+    let walletAddress: String?
+    let fromAddress: String?
+    let toAddress: String?
+    let outTokenAssetId: String?
+    let inTokenAssetId: String?
+    let outAmount: String?
+    let inAmount: String?
+
+    init(activity: MultichainActivity) {
+        self.txIds = Self.normalizedTxIds(activity.txIds)
+        self.activityType = activity.activityType
+        self.direction = activity.direction
+        self.fromChain = activity.fromChain
+        self.toChain = activity.toChain
+        self.walletAddress = activity.walletAddress
+        self.fromAddress = activity.fromAddress
+        self.toAddress = activity.toAddress
+        self.outTokenAssetId = activity.outToken?.assetId
+        self.inTokenAssetId = activity.inToken?.assetId
+        self.outAmount = activity.outAmount
+        self.inAmount = activity.inAmount
+    }
+}
+
+private extension MultichainHistoryActivityIdentity {
+    static func normalizedTxIds(_ txIds: [String]) -> [String] {
+        Array(
+            Set(
+                txIds
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+            )
+        )
+        .sorted()
+    }
+}
+
 struct MultichainHistoryActivityItem: Identifiable, Equatable {
+    typealias ID = MultichainHistoryActivityIdentity
+
     struct Amount: Equatable {
         enum Style: Equatable {
             case primary
@@ -92,53 +175,77 @@ struct MultichainHistoryActivityItem: Identifiable, Equatable {
         }
 
         let text: String
+        let chainTitle: String?
         let style: Style
     }
 
-    let id: MultichainActivity
+    let id: ID
     let activity: MultichainActivity
     let title: String
     let subtitle: String?
+    let comment: String?
     let time: String
     let icon: UIImage
     let primaryAmount: Amount?
     let secondaryAmount: Amount?
     let status: MultichainActivityStatus
+    let nft: MultichainActivityNFT?
 
     static func == (lhs: MultichainHistoryActivityItem, rhs: MultichainHistoryActivityItem) -> Bool {
         lhs.id == rhs.id
             && lhs.activity == rhs.activity
             && lhs.title == rhs.title
             && lhs.subtitle == rhs.subtitle
+            && lhs.comment == rhs.comment
             && lhs.time == rhs.time
             && lhs.primaryAmount == rhs.primaryAmount
             && lhs.secondaryAmount == rhs.secondaryAmount
             && lhs.status == rhs.status
+            && lhs.nft == rhs.nft
+    }
+}
+
+struct MultichainHistoryEventKey: Hashable {
+    let tonEventLt: Int64
+    let walletAddress: String?
+
+    init?(activity: MultichainActivity) {
+        guard let tonEventLt = activity.tonEventLt else {
+            return nil
+        }
+        self.tonEventLt = tonEventLt
+        self.walletAddress = activity.walletAddress
+    }
+}
+
+private extension MultichainActivity {
+    var tonEventLt: Int64? {
+        guard fromChain == .ton, toChain == .ton else {
+            return nil
+        }
+        return blockNumber
+    }
+}
+
+struct MultichainHistoryActivityGroup: Identifiable, Equatable {
+    let id: MultichainHistoryActivityItem.ID
+    let items: [MultichainHistoryActivityItem]
+
+    init?(items: [MultichainHistoryActivityItem]) {
+        guard let first = items.first else {
+            return nil
+        }
+        self.id = first.id
+        self.items = items
     }
 }
 
 struct MultichainHistorySection: Identifiable, Equatable {
     let id: Date
     let title: String
-    let items: [MultichainHistoryActivityItem]
-}
+    let groups: [MultichainHistoryActivityGroup]
 
-extension Wallet {
-    var multichainHistoryChainFilters: [MultichainHistoryChainFilter] {
-        guard case let .addresses(addresses) = multichain else {
-            return [.all]
-        }
-
-        var filters: [MultichainHistoryChainFilter] = [.all]
-        var seenChains = Set<MultichainChain>()
-
-        for address in addresses {
-            guard seenChains.insert(address.chain).inserted else {
-                continue
-            }
-            filters.append(.chain(address.chain))
-        }
-
-        return filters
+    var items: [MultichainHistoryActivityItem] {
+        groups.flatMap(\.items)
     }
 }

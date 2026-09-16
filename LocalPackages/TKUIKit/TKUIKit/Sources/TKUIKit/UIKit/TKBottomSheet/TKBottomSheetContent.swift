@@ -10,11 +10,6 @@ public protocol TKBottomSheetContentViewController: UIViewController {
     func calculateHeight(withWidth width: CGFloat) -> CGFloat
 }
 
-public protocol TKBottomSheetSwiftUIHeaderContentViewController: TKBottomSheetContentViewController {
-    var headerConfiguration: TKBottomSheetHeaderConfiguration? { get }
-    var didUpdateHeaderConfiguration: ((TKBottomSheetHeaderConfiguration?) -> Void)? { get set }
-}
-
 public protocol TKBottomSheetScrollContentViewController: TKBottomSheetContentViewController {
     var scrollView: UIScrollView { get }
 }

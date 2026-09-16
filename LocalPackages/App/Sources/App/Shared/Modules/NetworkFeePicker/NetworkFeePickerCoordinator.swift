@@ -4,10 +4,12 @@ import TKUIKit
 
 final class NetworkFeePickerCoordinator: RouterCoordinator<NavigationControllerRouter> {
     private weak var bottomSheetViewController: TKBottomSheetViewController?
+    private var isSelectingItem = false
 
     func start(
         presentation: NetworkFeePickerPresentation
     ) {
+        isSelectingItem = false
         let module = makeModule(
             presentation: presentation
         )
@@ -16,8 +18,23 @@ final class NetworkFeePickerCoordinator: RouterCoordinator<NavigationControllerR
         )
         self.bottomSheetViewController = bottomSheetViewController
 
-        module.output.didSelectItem = { [presentation] item, category in
-            presentation.didSelectItem(item, category)
+        module.output.didSelectItem = { [weak self, presentation, weak bottomSheetViewController] item, category in
+            guard !item.isDisabled || item.actionTitle != nil,
+                  let self,
+                  !self.isSelectingItem
+            else {
+                return
+            }
+            self.isSelectingItem = true
+            guard let bottomSheetViewController else {
+                self.isSelectingItem = false
+                presentation.didSelectItem(item, category)
+                return
+            }
+            bottomSheetViewController.dismiss { [weak self] in
+                self?.isSelectingItem = false
+                presentation.didSelectItem(item, category)
+            }
         }
         module.output.didRequestClose = { [weak bottomSheetViewController] in
             bottomSheetViewController?.dismiss()

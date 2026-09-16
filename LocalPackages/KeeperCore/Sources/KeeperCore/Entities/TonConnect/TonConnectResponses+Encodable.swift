@@ -2,18 +2,6 @@ import Foundation
 import TonSwift
 import TweetNacl
 
-public extension TonConnect.ConnectEvent {
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.singleValueContainer()
-        switch self {
-        case let .success(success):
-            try container.encode(success)
-        case let .error(error):
-            try container.encode(error)
-        }
-    }
-}
-
 public extension TonConnect.ConnectItemReply {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
@@ -110,12 +98,10 @@ public extension TonConnect.TonProofItemReplySuccess.Proof {
 
         let signatureMessageData = signature.signatureData.data()
         let signatureMessage = signatureMessageData.sha256()
-        guard let prefixData = Data(hex: "ffff"),
-              let tonConnectData = "ton-connect".data(using: .utf8)
-        else {
+        guard let tonConnectData = "ton-connect".data(using: .utf8) else {
             return
         }
-        let signatureData = (prefixData + tonConnectData + signatureMessage).sha256()
+        let signatureData = (TonConnect.signaturePrefix + tonConnectData + signatureMessage).sha256()
         let signature = try TweetNacl.NaclSign.signDetached(
             message: signatureData,
             secretKey: privateKey.data
@@ -149,9 +135,8 @@ public extension TonConnect.Signature {
     func signature() throws -> Data {
         let signatureMessageData = signatureData.data()
         let signatureMessage = signatureMessageData.sha256()
-        let prefixData: Data = Data(hex: "ffff")
         let tonConnectData = "ton-connect".data(using: .utf8) ?? Data()
-        let signatureDataHash = (prefixData + tonConnectData + signatureMessage).sha256()
+        let signatureDataHash = (TonConnect.signaturePrefix + tonConnectData + signatureMessage).sha256()
         return try TweetNacl.NaclSign.signDetached(
             message: signatureDataHash,
             secretKey: privateKey.data

@@ -1,3 +1,4 @@
+import AppUI
 import KeeperCore
 import TKCoordinator
 import TKCore
@@ -24,34 +25,25 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     }
 
     override func start() {
-        openWarning()
+        openSafetyCheck()
     }
 
-    func openWarning() {
-        let viewController = BackupWarningViewController()
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-
-        viewController.didTapContinue = { [weak bottomSheetViewController, weak self] in
-            bottomSheetViewController?.dismiss(completion: {
-                self?.openPasscodeInput()
-            })
+    func openSafetyCheck() {
+        let bottomSheetViewController = PopupContentPresenter.present(
+            from: router.rootViewController
+        ) { dismisser in
+            BackupSafetyCheckView(
+                onContinue: { [weak self] in
+                    dismisser.dismiss {
+                        self?.openPasscodeInput()
+                    }
+                }
+            )
         }
 
-        viewController.didTapCancel = { [weak bottomSheetViewController, weak self] in
-            bottomSheetViewController?.dismiss(completion: {
-                self?.didFinish?(self)
-            })
+        bottomSheetViewController.didClose = { [weak self] _ in
+            self?.didFinish?(self)
         }
-
-        bottomSheetViewController.didClose = { [weak self] isInteractivly in
-            guard !isInteractivly else {
-                self?.didFinish?(self)
-                return
-            }
-            self?.openPasscodeInput()
-        }
-
-        bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
 
     func openPasscodeInput() {
@@ -60,6 +52,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
             securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider,
             onCancel: { [weak self] in
                 self?.didFinish?(self)
             },
@@ -109,7 +102,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
             self?.openTRC20RecoveryPhrase(tonPhrase: phrase, navigationController: navigationController)
         }
 
-        module.viewController.setupLeftCloseButton { [weak self, weak navigationController] in
+        module.viewController.setupHeaderCloseButton { [weak self, weak navigationController] in
             navigationController?.dismiss(animated: true, completion: {
                 self?.didFinish?(self)
             })
@@ -119,33 +112,16 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     }
 
     func openTRC20RecoveryPhrase(tonPhrase: [String], navigationController: UINavigationController) {
-        let tronBip39ImportFixEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.tronBip39ImportFix)
-
-        let useBip39DerivationForBip39Mnemonics: Bool
-        do {
-            useBip39DerivationForBip39Mnemonics = try TonTron.resolvedUseBip39DerivationForWalletTron(
-                tonMnemonic: tonPhrase,
-                walletTron: wallet.tron,
-                defaultUseBip39DerivationForBip39Mnemonics: tronBip39ImportFixEnabled
-            )
-        } catch {
-            Log.w("failed to determine tron mnemonic derivation type due to error: \(error.localizedDescription)")
-            useBip39DerivationForBip39Mnemonics = tronBip39ImportFixEnabled
-        }
         let provider = SettingsTRC20RecoveryPhraseProvider(
             wallet: wallet,
-            tonMnemonic: tonPhrase,
-            useBip39DerivationForBip39Mnemonics: useBip39DerivationForBip39Mnemonics
+            tonMnemonic: tonPhrase
         )
 
         let module = TKRecoveryPhraseAssembly.module(
             provider: provider
         )
 
-        module.viewController.setupBackButton()
+        module.viewController.setupHeaderBackButton()
 
         navigationController.pushViewController(module.viewController, animated: true)
     }

@@ -54,6 +54,15 @@ public final class ConnectedAppsStore: Store<ConnectedAppsStore.Event, [TonConne
         update()
     }
 
+    public func deleteAppSession(_ app: TonConnectApp) {
+        guard let wallet = try? walletsStore.activeWallet else {
+            return
+        }
+
+        tonConnectAppsStore.deleteConnectedAppSession(wallet: wallet, app: app)
+        update()
+    }
+
     private func update() {
         updateState { [weak self] _ in
             guard let self else {

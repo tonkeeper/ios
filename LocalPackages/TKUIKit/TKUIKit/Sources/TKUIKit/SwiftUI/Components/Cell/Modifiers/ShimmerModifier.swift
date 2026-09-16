@@ -1,10 +1,10 @@
 import SwiftUI
 
-public struct ShimmerModifier: ViewModifier {
+struct ShimmerModifier: ViewModifier {
     private let enabled: Bool
     private let config: ShimmerSwiftUIView.Config
 
-    public init(
+    init(
         enabled: Bool,
         config: ShimmerSwiftUIView.Config
     ) {
@@ -12,7 +12,7 @@ public struct ShimmerModifier: ViewModifier {
         self.config = config
     }
 
-    public func body(content: Content) -> some View {
+    func body(content: Content) -> some View {
         content
             .opacity(enabled ? 0 : 1)
             .overlay {

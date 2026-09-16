@@ -1,0 +1,17 @@
+appId: com.jbig.tonkeeper
+---
+- launchApp:
+    clearState: true
+
+- runFlow: "../../../steps/import_wallet_multichain.yaml"
+
+- runFlow: "../../../steps/close_home_overlays.yaml"
+
+- assertVisible: "BTC"
+- assertVisible: "ETH"
+- scrollUntilVisible:
+    element: "More assets"
+- assertVisible: "More assets"
+- tapOn: "More assets"
+- scrollUntilVisible:
+    element: "TRX"

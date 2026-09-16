@@ -10,98 +10,95 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Sent when any blockchain transaction is submitted */
+/** Sent once when any blockchain transaction is submitted, on any supported chain (TON, TRON, BTC, EVM: Ethereum / Base / Arbitrum / Polygon / BNB Chain, Solana). This is the single cross-cutting \&quot;transaction submitted\&quot; signal and is emitted in addition to any flow-specific event — e.g. send_success remains a separate send-flow event and is NOT replaced by transaction_sent. Chain and network are NOT separate fields: they are carried inside &#x60;asset&#x60; (and &#x60;to_asset&#x60;) in chain/network/type[/addr] format. The structure mirrors the client Transaction model: &#x60;category&#x60; is the top-level transaction kind and &#x60;category_detail&#x60; is the variant within it. &#x60;initiated_by&#x60; says who asked for the transaction — the user inside the wallet, or an external dapp over TON Connect, WalletConnect, or an injected EVM provider. It makes transaction_sent self-sufficient: dapp-driven volume no longer has to be inferred by correlating with tc_send_success / send_success on user + timestamp.  */
 public struct TransactionSent: Codable, JSONEncodable, Hashable {
 
-    public enum EventType: String, Codable, CaseIterable {
-        case tonTransfer = "TonTransfer"
-        case extraCurrencyTransfer = "ExtraCurrencyTransfer"
-        case contractDeploy = "ContractDeploy"
-        case jettonTransfer = "JettonTransfer"
-        case flawedJettonTransfer = "FlawedJettonTransfer"
-        case jettonBurn = "JettonBurn"
-        case jettonMint = "JettonMint"
-        case nftItemTransfer = "NftItemTransfer"
-        case subscribe = "Subscribe"
-        case unSubscribe = "UnSubscribe"
-        case auctionBid = "AuctionBid"
-        case nftPurchase = "NftPurchase"
-        case depositStake = "DepositStake"
-        case withdrawStake = "WithdrawStake"
-        case withdrawStakeRequest = "WithdrawStakeRequest"
-        case electionsDepositStake = "ElectionsDepositStake"
-        case electionsRecoverStake = "ElectionsRecoverStake"
-        case jettonSwap = "JettonSwap"
-        case smartContractExec = "SmartContractExec"
-        case domainRenew = "DomainRenew"
-        case purchase = "Purchase"
-        case addExtension = "AddExtension"
-        case removeExtension = "RemoveExtension"
-        case setSignatureAllowedAction = "SetSignatureAllowedAction"
-        case gasRelay = "GasRelay"
-        case depositTokenStake = "DepositTokenStake"
-        case withdrawTokenStakeRequest = "WithdrawTokenStakeRequest"
-        case liquidityDeposit = "LiquidityDeposit"
-        case unknown = "Unknown"
+    public enum Category: String, Codable, CaseIterable {
+        case transfer = "transfer"
+        case swap = "swap"
+        case call = "call"
+        case staking = "staking"
     }
-    public enum WalletInterface: String, Codable, CaseIterable {
-        case v3r1 = "v3R1"
-        case v3r2 = "v3R2"
-        case v4r1 = "v4R1"
-        case v4r2 = "v4R2"
-        case v5beta = "v5Beta"
-        case v5r1 = "v5R1"
-        case sigwit = "sigwit"
-        case taproot = "taproot"
-    }
-    public enum WalletChain: String, Codable, CaseIterable {
-        case multi = "multi"
-        case single = "single"
-    }
-    public enum WalletNetwork: String, Codable, CaseIterable {
-        case testnet = "testnet"
-        case mainnet = "mainnet"
-    }
-    public enum WalletSource: String, Codable, CaseIterable {
-        case ledger = "ledger"
-        case keystone = "keystone"
-        case signer = "signer"
-        case mnemonic = "mnemonic"
-        case privatekey = "privatekey"
-        case watchonly = "watchonly"
+    public enum CategoryDetail: String, Codable, CaseIterable {
+        case coin = "coin"
+        case token = "token"
+        case nft = "nft"
+        case onchain = "onchain"
+        case crossChain = "cross_chain"
+        case domainRenew = "domain_renew"
+        case subscription = "subscription"
+        case multisig = "multisig"
+        case deploy = "deploy"
+        case unknown = "unknown"
+        case stake = "stake"
+        case unstake = "unstake"
+        case claim = "claim"
+        case restake = "restake"
+        case compound = "compound"
     }
     public var eventName: String = "transaction_sent"
-    /** Type of blockchain transaction. The list can change, see https://github.com/tonkeeper/opentonapi/blob/c8aaa99c99827f4a8158a8345b518c3b84fbd958/api/openapi.yml#L6099 */
-    public var eventType: EventType
-    /** Wallet / address interface variant for the account that submitted the transaction (e.g. TON contract versions, Bitcoin script types). Omit or null when unknown. */
-    public var walletInterface: WalletInterface?
-    /** Multichain vs single-chain wallet mode. */
-    public var walletChain: WalletChain
-    /** Chain identifier when needed (e.g. single-chain / signer-chain flows); null when not applicable. */
-    public var walletChainId: String?
-    /** Whether the wallet targets testnet or mainnet (multichain or single-chain). */
-    public var walletNetwork: WalletNetwork
-    /** How the account is backed (keys / watch-only). */
+    /** Top-level transaction kind (mirrors the client Transaction sealed type):  - transfer: a coin / token / NFT transfer - swap: an asset swap (on-chain or cross-chain) - call: a generic smart-contract call - staking: a staking operation (the specific op is in category_detail)  */
+    public var category: Category
+    /** Variant within `category` (required). The allowed value depends on `category`:  - transfer → coin | token | nft - swap     → onchain | cross_chain   (cross_chain when `asset` and `to_asset` are on different chains) - call     → domain_renew | subscription | multisig | deploy | unknown - staking  → stake | unstake | claim | restake | compound  `restake` and `compound` are not reachable on the native clients: their staking UI offers stake, unstake and collect only — pooled and liquid alike — so their absence there is a missing operation, not a decline in restaking, and must not be read as one. They stay in the enum for clients that do offer the operation; instrument them if the operation ever ships.  */
+    public var categoryDetail: CategoryDetail
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
+    public var asset: String
+    /** Human-readable amount, already normalized by the asset's decimals (e.g. 1.5 for 1.5 TON, 0.00012 for BTC) — NOT the raw on-chain integer. May be 0 (e.g. for some contract calls).  */
+    public var amount: Float
+    public var feeAsset: FeeAsset
+    public var walletInterface: WalletInterface
     public var walletSource: WalletSource
+    public var walletMode: WalletMode
+    public var initiatedBy: InitiatedBy
+    /** Optional. app_id value passed from backend, same as app_id in dapp_* events. Set when initiated_by is a dapp origin AND the dapp is in the catalog (arbitrary websites have no app_id — use dapp_url for those).  */
+    public var appId: String?
+    /** URL domain only, without private information */
+    public var dappUrl: String?
+    /** Optional. True when the user chose to move the entire balance (applies to transfer / swap / stake / unstake).  */
+    public var isMax: Bool?
+    /** Optional, swap only. The destination asset in chain/network/type[/addr] format. A cross-chain swap is when its chain differs from `asset`'s chain (in which case category_detail = cross_chain).  */
+    public var toAsset: String?
+    /** Optional, staking only. Validator / pool identifier the operation targets. */
+    public var stakingProvider: String?
+    /** Optional, staking only. True for liquid staking, false for native staking. */
+    public var isLiquid: Bool?
 
-    public init(eventName: String = "transaction_sent", eventType: EventType, walletInterface: WalletInterface? = nil, walletChain: WalletChain, walletChainId: String? = nil, walletNetwork: WalletNetwork, walletSource: WalletSource) {
+    public init(eventName: String = "transaction_sent", category: Category, categoryDetail: CategoryDetail, asset: String, amount: Float, feeAsset: FeeAsset, walletInterface: WalletInterface, walletSource: WalletSource, walletMode: WalletMode, initiatedBy: InitiatedBy, appId: String? = nil, dappUrl: String? = nil, isMax: Bool? = nil, toAsset: String? = nil, stakingProvider: String? = nil, isLiquid: Bool? = nil) {
         self.eventName = eventName
-        self.eventType = eventType
+        self.category = category
+        self.categoryDetail = categoryDetail
+        self.asset = asset
+        self.amount = amount
+        self.feeAsset = feeAsset
         self.walletInterface = walletInterface
-        self.walletChain = walletChain
-        self.walletChainId = walletChainId
-        self.walletNetwork = walletNetwork
         self.walletSource = walletSource
+        self.walletMode = walletMode
+        self.initiatedBy = initiatedBy
+        self.appId = appId
+        self.dappUrl = dappUrl
+        self.isMax = isMax
+        self.toAsset = toAsset
+        self.stakingProvider = stakingProvider
+        self.isLiquid = isLiquid
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
-        case eventType = "event_type"
+        case category
+        case categoryDetail = "category_detail"
+        case asset
+        case amount
+        case feeAsset = "fee_asset"
         case walletInterface = "wallet_interface"
-        case walletChain = "wallet_chain"
-        case walletChainId = "wallet_chain_id"
-        case walletNetwork = "wallet_network"
         case walletSource = "wallet_source"
+        case walletMode = "wallet_mode"
+        case initiatedBy = "initiated_by"
+        case appId = "app_id"
+        case dappUrl = "dapp_url"
+        case isMax = "is_max"
+        case toAsset = "to_asset"
+        case stakingProvider = "staking_provider"
+        case isLiquid = "is_liquid"
     }
 
     // Encodable protocol methods
@@ -109,12 +106,21 @@ public struct TransactionSent: Codable, JSONEncodable, Hashable {
     public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(eventName, forKey: .eventName)
-        try container.encode(eventType, forKey: .eventType)
-        try container.encodeIfPresent(walletInterface, forKey: .walletInterface)
-        try container.encode(walletChain, forKey: .walletChain)
-        try container.encodeIfPresent(walletChainId, forKey: .walletChainId)
-        try container.encode(walletNetwork, forKey: .walletNetwork)
+        try container.encode(category, forKey: .category)
+        try container.encode(categoryDetail, forKey: .categoryDetail)
+        try container.encode(asset, forKey: .asset)
+        try container.encode(amount, forKey: .amount)
+        try container.encode(feeAsset, forKey: .feeAsset)
+        try container.encode(walletInterface, forKey: .walletInterface)
         try container.encode(walletSource, forKey: .walletSource)
+        try container.encode(walletMode, forKey: .walletMode)
+        try container.encode(initiatedBy, forKey: .initiatedBy)
+        try container.encodeIfPresent(appId, forKey: .appId)
+        try container.encodeIfPresent(dappUrl, forKey: .dappUrl)
+        try container.encodeIfPresent(isMax, forKey: .isMax)
+        try container.encodeIfPresent(toAsset, forKey: .toAsset)
+        try container.encodeIfPresent(stakingProvider, forKey: .stakingProvider)
+        try container.encodeIfPresent(isLiquid, forKey: .isLiquid)
     }
 }
 

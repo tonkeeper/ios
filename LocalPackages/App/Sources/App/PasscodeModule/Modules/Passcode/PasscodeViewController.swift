@@ -58,12 +58,18 @@ private extension PasscodeViewController {
 }
 
 extension PasscodeViewController {
+    /// Dims and disables the keypad while the passcode input is locked out (TK-1472).
+    func setKeyboardEnabled(_ isEnabled: Bool) {
+        customView.keyboardView.isUserInteractionEnabled = isEnabled
+        customView.keyboardView.alpha = isEnabled ? 1.0 : 0.32
+    }
+
     func setupLogoutButton(title: String?, _ action: @escaping (() -> Void)) {
         let button = TKUIHeaderTitleIconButton()
         button.configure(
             model: TKUIButtonTitleIconContentView.Model(title: title)
         )
         button.addTapAction(action)
-        navigationItem.rightBarButtonItem = UIBarButtonItem(customView: button)
+        navigationItem.rightBarButtonItem = .customView(button, pinnedTo: .trailing)
     }
 }

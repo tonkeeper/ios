@@ -1,0 +1,799 @@
+No internet: Orange "No connection" text appears in place of the address. It disappears when the internet is back.
+The default localization language depends on the device language.
+
+On the "Create a new wallet or add an existing one" screen, there is a link to Tonkeeper ToU.
+[SECTION] Create/Import wallet [AddWalletModule, OnboardingModule]
+    [SECTION] Create wallet [AddWalletModule, CustomizeWallet]
+        It is required to set a four-digit PIN code
+        [SECTION] Back up [BackupModule]
+            The Continue button starts the backup flow
+            On the "Recovery phrase" screen, all 24 words with their numbers are always fully visible
+            [SECTION] Continue button leads and opens the screen for verification of three words [BackupModule]
+                Three random words from 24 are requested
+                Until all fields are filled correctly, the "Continue" button is disabled
+                When switching between the "Recovery phrase" and "Backup Check" screens, the key values stay unchanged
+                When returning to the seed phrase screen, the entered words are cleared
+                While on the "Backup Check" screen, it is not possible to swipe and "peek" the seed phrase
+            The Later button skips Back up
+        Wallet can be customized (name, icon, color)
+        By default, the name is "Wallet", the color is "dark gray", and the icon is "wallet"
+        After passing all steps -> wallet W5 is created -> the main screen opens
+        The Finish setting up block is displayed
+        Wallet initialization happens together with the first outgoing transaction
+
+    [SECTION] Import TON wallet [AddWalletModule]
+        Can enter a secret key of 24 or 12 words
+        By default 24 words are selected
+        Suggestions above the keyboard when entering a word
+        Can paste all words as a list
+        If the user pastes 24 words into the screen for 12 words, the error Incorrect phrase appears
+        Validation of fields when moving to the next field
+        The Continue button is inactive if at least one field has a validation error / the word is entered incorrectly (not from TON dictionary)
+        The error for multi-account mnemonic is shown: "Please use Tonkeeper Desktop ..."
+        The "Choose wallets" screen appears with all wallet versions that have funds + W5 always
+        If there are no funds on old versions, the "Choose wallets" screen is skipped
+        It is required to set a four-digit PIN
+        Wallet can be customized (name, icon, color)
+        The Finish setting up block is displayed (without the item "backup")
+
+    [SECTION] Import TRON wallet [AddWalletModule, TronSwift]
+        Can enter a secret key of 12 words (the flow is similar to the TON import flow)
+
+    [SECTION] Watch only [AddWalletModule, WatchOnlyWalletAddressInput]
+        Can add a wallet by address or DNS
+        On the main screen, only the "Add funds" button is available. Inside, only Receive tokens; all onramps are hidden
+        There is a Watch only badge in the wallet list, on the Receive screen
+        When copying the address, the toast color is orange
+        Battery and Back up are hidden
+
+    [SECTION] Testnet [AddWalletModule, MainModule]
+        Can be added by seed phrase
+        On the main screen, only the "Withdraw" and "Deposit" buttons are available. Inside, only send/receive; all onramps are hidden
+        There is a Testnet badge in the wallet list
+        When copying the address, the toast color is orange
+        Transactions are sent in the Testnet network
+        There is a check if a Mainnet address is entered
+
+    [SECTION] Signer [AddWalletModule, MainModule, SignModule]
+        Can connect Signer and Tonkeeper on one device via deeplink
+        Can connect Signer and Tonkeeper on different devices via QR
+        There is a Signer badge next to the address on the main screen, in the wallet list, on the Receive screen
+        Battery, Back up, generation of TRON address are hidden
+        For onramps/exchange deposit/withdraw USDT TRC20 is hidden (since the address cannot be passed)
+        Can send TON, jetton, and NFT transactions (fee in TON)
+        Can connect to a dApp without tonproof and sign a TON Connect transaction
+        Can make a native swap omniston (Swap button on the main screen)
+        Can confirm deposit/withdraw from staking
+        Can extend/link DNS, TG Username
+
+    [SECTION] Ledger [AddWalletModule, MainModule, LedgerModule]
+        Connects via Bluetooth
+        By default generates 10 addresses
+        There is a Ledger badge next to the address on the main screen, in the wallet list, on the Receive screen
+        Battery, Back up, Gasless, generation of TRON address are hidden
+        For onramps/exchange deposit/withdraw USDT TRC20 is hidden (since the address cannot be passed)
+        Can send TON, jetton, and NFT transactions (fee in TON)
+        Can connect to a dApp with tonproof and sign a TON Connect transaction
+        Can make a native swap omniston (Swap button on the main screen)
+        Can confirm deposit/withdraw from staking
+        Can extend/link DNS, TG Username
+
+    [SECTION] Keystone [AddWalletModule, MainModule, SignModule]
+        Connects via QR
+        There is a Keystone badge next to the address on the main screen, in the wallet list, on the Receive screen
+        Battery, Back up, Gasless, generation of TRON address are hidden
+        For onramps/exchange deposit/withdraw USDT TRC20 is hidden (since the address cannot be passed)
+        Can send TON, jetton, and NFT transactions (fee in TON)
+        Can connect to a dApp with tonproof and sign a TON Connect transaction
+        Can make a native swap omniston (Swap button on the main screen)
+        Can confirm deposit/withdraw from staking
+        Can extend DNS, TG Username
+
+    [SECTION] Tetra [AddWalletModule, MainModule]
+        In the dev menu, it is possible to enable Tetra L2
+        On the Add wallet screen, the option Import Tetra L2 wallet appears
+        The wallet is successfully imported by 24 words (TON seed phrase)
+        The wallet is successfully imported by 12 words (TON seed phrase)
+        The address is currently displayed as UQ from TON Mainnet (for now, Tetra does not have its own addresses)
+        It is possible to bridge TON from Mainnet to Tetra
+        It is possible to bridge TON back from Tetra to Mainnet
+        The TON rate is fetched from https://tetra.tonapi.io/v2/rates?tokens=ton&currencies=usd [not done yet on iOS]
+        There are TETRA badges on the main screen, in the Add wallet list, on the Receive screen
+        All extra functionality is hidden by flags in /keys
+            Battery flags.disable_battery
+            Swap disable_swap
+            Onramps (button Buy TON) disable_exchange_methods
+            Staking disable_staking
+            Stories on the main screen disable_stories
+            Ethena (USDe) should not appear by default in the assets list on the main screen disable_usde
+            Collectibles (NFT) are hidden, or it is acceptable to leave the same placeholder as when there are none on the balance disable_nfts
+            Promoted dApps in the browser disable_dapps
+        In transaction history, the address format is UQ/EQ
+        The link to the transaction leads to tetra.tonviewer.com
+
+    When adding or creating each additional wallet, the app asks for PIN code / biometrics
+
+[SECTION] Finish setting up block [OnboardingModule, BackupModule, SettingsModule]
+    User created a wallet: Back up (if it was not completed during onboarding), Notifications, Biometrics
+    User imported a wallet: Notifications, Biometrics, Done button
+    If the user made a backup, the Done button appears
+    When notifications or biometrics are enabled, the toggles change state
+    The state of toggles on the Finish setting up screen matches the states of the same toggles in settings
+    If the user has completed all three items (backup, notifications enabled, biometrics enabled), the block disappears by itself [bug]
+
+[SECTION] Backup Screen [BackupModule, SettingsBackup]
+    Entry point: Onboarding, Finish Setting up block, or Settings
+    [SECTION] User who did not make a backup [BackupModule]
+        The button Back Up Manually is displayed
+        A red dot on the settings icon and "Backup" until the user makes a backup
+    [SECTION] User who made a backup [BackupModule]
+        The buttons Manual Backup On {{date&time}} and Show recovery phrase are displayed
+    Tapping any button opens the Attention screen
+    Tapping Continue requests password / biometrics
+    Back Up Manually -> Shows seed phrase -> Offers to enter three random words from the seed phrase -> Button state changes to Manual Backup On with the current date
+    Manual Backup On -> works the same way as Back Up Manually
+    Show recovery phrase -> shows seed phrase and Copy button
+    [SECTION] If USDT TRC20 is enabled -> there is a button Export TRC20 Wallet [BackupModule, TronSwift]
+        There is a warning that this key is only for TRC20
+        The key can be copied
+    [SECTION] User with funds on balance + without backup [BackupModule, BalanceBackupWarningCheck, WalletModule]
+        Color the balance on the main screen: from 2 TON -> orange, from 20 TON -> red
+        Show an information icon that leads to the Backup screen
+        On the Backup screen, a colored block with an explanation is shown: the color matches the amount color
+
+[SECTION] Confirmation of saved seed phrase [SettingsModule, SettingsDeleteWarning, BackupModule]
+    Settings -> "Log out of wallet"
+    Block "I have a backup" with checkbox
+    "Make backup" leads to Backup screen
+    Button "Log out"/"Delete" becomes active when the checkbox is checked
+    For wallets without a seed phrase (signer, keystone, watch only), only the "Delete" button is shown, without a checkbox
+
+[SECTION] Wallet Screen [WalletModule, WalletContainer, WalletBalance]
+    The correct total amount of all funds in fiat is displayed (taking into account staking)
+    The wallet address is displayed, it can be copied
+    [SECTION] Tokens list [WalletBalance, TokenDetails]
+        At the top of the list: Toncoin, USDT (TON), USDe, then Staked, if something is staked
+        The list of tokens is sorted by balance and by the verified flag
+        All tokens must display icon, name, ticker, and amount
+        If there is a rate: current rate, increase/decrease, conversion to fiat
+        Orange label for Unverified tokens
+        
+        [SECTION] Token screen [TokenDetails, TradeModule]
+            The name, icon, price delta, and earn APY are specified correctly
+            There is a token price chart
+                The currency rate chart is displayed
+                The user can tap the chart and move the point with the date along the chart. At the same time, the value and the value change will change for the day selected by the user, and the "price" will change to the selected date
+                The default rate change interval is 1 month
+                The rate change interval selected by the user must be preserved even after exiting the app
+                There is a stub when there is no internet [not done yet]
+            Balance and history filtered by token (if any)
+            Then About, Overview, Trading activity, 24h trading activity, Links
+            Tooltips in Overview work correctly
+            Buy/Sell button -> opens Swap Omniston inside Tonkeeper
+            The selected token is immediately passed into swap
+            The three-dots button
+                Send -> opens the send flow
+                Receive -> opens the token receive screen with a QR code
+            If the token is not on the balance, then only the Buy and Receive buttons are available
+            Tokenized Stock token has blue informational text with i
+            Tokenized ETFs token has blue informational text with i
+            Unverified tokens have orange informational text with i (Android; also for scam tokens)
+            Tapping i opens a bottom sheet with an explanation of what kind of token this is
+            
+        [SECTION] Unverified token (Works for all tokens with the flag "verification": “none”) [TokenDetails, ManageTokens, HistoryEventDetails]
+            On all screens (Wallet, History, Manage tokens, transaction details) - the orange label Unverified token is displayed
+            On the token screen the orange text Unverified token is displayed and next to it the icon ( i )
+            Tapping "Unverified token ( i )" on the token screen opens the explanation bottom sheet
+
+    [SECTION] Send TON [SendModule, SendV3, TransactionConfirmation]
+        ctrl+c / ctrl+v works in all fields
+        All send flow screens can be closed with swipe down; back and close buttons work correctly
+
+    [SECTION] Send screen [SendV3]
+        [SECTION] Address [RecipientInput]
+            Can enter [TON wallet address] OR [DNS] OR [TG USERNAME]
+            The buttons "Paste", "Clear field" work
+            Validation works if the address field is filled incorrectly
+            Validation works for address of another network, including from mainnet to testnet and vice versa
+        [SECTION] Amount [AmountInput]
+            [SECTION] Currency selection [AmountInput, CurrencyPickerButton]
+                By default the currency TON is displayed
+                If the entry point was the token screen, the selected token is displayed for sending
+                It is possible to change the sending currency on the amount input screen
+                Reset the amount when switching the token if it was previously entered
+                
+            [SECTION] Field "Amount" [AmountInput]
+                It is possible to enter integer and fractional numbers in the send amount input field. It is possible to enter a maximum of 26 digits in total for the fractional and integer parts (taking into account the separator). At the same time after the decimal point maximum as many digits as the token decimals (TON = 9, USDT = 6)
+                Validation error when entering > current balance
+                It is possible to enter the whole balance by pressing "Maximum" or manually
+                The value "Available:" decreases after entering the amount
+                It is possible to specify the amount in fiat, there is a swap button for switching
+                On tap on "Continue", the transaction confirmation screen opens
+        The "Continue" button is not active until the field "Address or name" and "Amount" are filled
+        [SECTION] Comment [SendV3]
+            It is possible to enter letters/numbers/special characters/emojis
+            There is no limit on the number of characters in the comment
+            If the transfer is made to an exchange address - an orange warning is displayed, it is not possible to proceed to the next screen
+
+    [SECTION] Confirm transaction screen [TransactionConfirmation, SignTransactionModule]
+        The name of the wallet from which you send is displayed
+        If the transfer is via DNS or TG Username - the field "Recipient" with the name is displayed
+        For tokens - the send amount is specified in tokens, the fee in tons
+        For all amounts the conversion to fiat is displayed
+        The recipient address, transfer amount and fee are displayed
+        The address and the recipient name (DNS / TG Username) can be copied
+        After tapping "Confirm", the confirmation screen by PIN code or biometrics opens
+        If "Send all" was specified, before entering the PIN code a warning appears "Are you sure you want to send all your balance?". The send amount + fee = the total balance amount
+        After entering the PIN code or biometrics the History screen opens (similarly for other transactions)
+
+    [SECTION] Send USDT TRC20 [SendModule, TronSwift, BatteryModule]
+        It is possible to enter/scan/paste a TRON wallet address
+        It is possible to send only USDT TRC20 there; the flow is similar to sending TON
+        USDT TRC20 can be sent for battery, TON and TRX
+        [SECTION] If funds are available for fees [SendModule, TronSwift]
+            On the USDT TRC20 screen, the row "N Transfers available" is shown. The number of transfers is calculated correctly.
+        [SECTION] If funds are not available for fees [SendModule, TronSwift, InsufficientFundsModule, TopUpCoordinator]
+            On the TRC20 screen, the banner "Not enough TRX to cover fees" is shown
+            The Top up button opens the "Blockchain Fees" screen
+                Available fee payment methods are listed: Battery, TON, TRX
+                The values in "Balance:" and "Required:" are shown correctly
+                Battery -> opens the battery screen
+                TON -> opens the Receive Toncoin screen
+                TRX -> opens the Receive Tron TRX screen
+            The Send button opens the Not enough funds to cover transactions fees screen
+        [SECTION] Attempt to send TON tokens to a TRON address [SendModule, RecipientInput]
+            When attempting to send USDT TON to a TRON address -> the address is highlighted in red; warning with a suggestion to change c2c TON-TRON to Letsexchange; sending is blocked
+            When attempting to send other TON tokens -> the address is highlighted in red; red warning that the address is on the TRON network; sending is blocked
+        [SECTION] Attempt to send USDT TRC20 to a TON address [SendModule, RecipientInput]
+            When attempting to send USDT TRC20 to a TON address -> the address is highlighted in red; warning with a suggestion to change c2c TRON-TON to Letsexchange; sending is blocked
+
+    [SECTION] Not enough funds on balance to perform action / transaction [InsufficientFundsModule, BuyModule, BatteryModule]
+        The bottom sheet "Not enough funds" is displayed
+        The placeholder correctly indicates how much funds are required and the current balance
+        The gray button "Buy TON" opens the bottom sheet "Buy TON" with a list of available exchanges
+        The gray button "Buy {{token ticker}}" opens the DeFi section in the browser
+
+    [SECTION] Server status [SendModule, TKCore]
+        Before sending a transaction, the application requests tonapi v2/status
+        If rest_online=false or indexing_latency>= 271 sec, the transaction cannot be sent -> the error "Sending error, try again later" / "Ошибка отправки. Попробуйте позже" appears
+
+    [SECTION] Scaled UI tokens [KeeperCore, WalletModule, WalletBalance, TokenDetails, SendModule, SendV3, AmountInput, HistoryModule, HistoryEventDetails, NativeSwapModule]
+        The scaled_ui jetton balance is displayed scaled: balance * numerator / denominator
+        When sending the jetton, the user enters a scaled amount, but the unscaled amount is sent on-chain
+        History shows the scaled amount
+            in token-specific history
+            in general history
+
+    [SECTION] Swap Screen. Omniston [NativeSwapModule, NativeSwap]
+        [SECTION] Entry point [NativeSwapModule, MainCoordinator, TokenDetails]
+            Button Swap on the main -> pass TON into the field Send / USDT(TON) into the field Receive
+            Button Swap on the token screen -> pass the token into the field Send / TON into the field Receive
+            Button Swap on the USDT TRC20 screen -> for now still opens LetsExchange
+            Button Swap on the USDe screen -> pass USDe into the field Send / USDT(TON) into the field Receive
+            Button Swap on the tsUSDe screen -> pass tsUSDe into the field Send / USDe into the field Receive
+
+    [SECTION] Swap screen [NativeSwap, AmountInput]
+        It is possible to enter an amount into the fields Send/Receive
+        The approximate (≈) sign is always in the Receive field, regardless of where the value was entered
+        While waiting for a response from Omniston -> the Continue button is disabled; the shown rate is gray with animation
+        As soon as a response is received -> the Continue button becomes active; the rate from Omniston is shown in white as usual
+        [SECTION] On tap on Continue [NativeSwap, NativeSwapTransactionConfirmation]
+            In any case, the value from the Send field is passed
+            The client unsubscribes from receiving new swap events
+        In the Send input, Remaining: N TON / Осталось: N TON is shown instead of the Balance field
+        The switch between Send/Receive completely swaps them (amount + token)
+
+    [SECTION] Token selection [TokenPicker]
+        All tokens are shown as one list on the screen, nothing is collapsed
+        For Send: the token balance is shown next to each token; sorting is TON first, then by balance from highest to lowest
+        For Receive: the full token name is shown next to each token; sorting is as returned by the backend
+        A checkmark near the currently selected token + scroll to this token
+        [SECTION] Search by token works [TokenPicker]
+            Until search starts, show the full list of tokens
+            Search starts from one symbol
+            Placeholder if nothing is found
+        The approximate exchange rate is displayed (two lines)
+        The disclaimer on ston.fi is displayed
+
+    [SECTION] Confirm Swap screen [NativeSwapTransactionConfirmation, TransactionConfirmation]
+        Tapping the back button returns to the Swap screen; all entered data is saved
+        Tapping the Send/Receive fields returns to the Swap screen, with focus on the field that was tapped
+        Tapping the information icon and title shows a toast with explanatory text (currently for slippage)
+        Tapping Edit on Fee shows the fee selector (TON / battery). The text Edit is always blue
+        "minimum received" and "price impact" are not yet from the backend; we rely only on what is returned now
+        Slider for confirmation
+        There is a timer that shows how much time is left to sign the transaction (provider offer expires)
+        After this time expires -> automatically returns to the previous screen
+        After confirmation: standard success screen, then redirect to general history or token-specific history (depending on entry point)
+
+    [SECTION] Add Funds [BuyModule, RampModule, ReceiveModule, Receive, ReceiveTab]
+        [SECTION] Receive tokens [ReceiveModule, Receive, ReceiveTab]
+            Opens the Your address screen
+            It is possible to switch tabs between TON and TRC20 addresses
+            If there is no TRC20 on the balance, then on the first switch to the TRC20 tab, it suggests enabling it
+            The network address is shown correctly
+            In the QR code a deeplink with the correct address is embedded
+                ton://transfer/{{address}} for TON
+                {{address}} for TRON
+                ton://transfer/{{address}}&jetton={{jetton_master}} for other TON tokens (available from the token screen)
+            It is possible to copy the address by tapping on QR, address or Copy
+            It is possible to share the address in Telegram
+
+    [SECTION] Buy with Google Pay [BuyModule, RampModule]
+        Buy with Google Pay if region != RU
+        Buy with P2P Market if region = RU
+        Hide if region = IR
+        P2P is not available in countries from the list in the attachment
+
+    [SECTION] Choose asset [BuyModule, RampModule]
+        Search works correctly
+        TON, USDT TON or USDT TRC20 are available for deposit
+
+    [SECTION] Payment Method [BuyModule, RampModule]
+        By default, the Tonkeeper currency is selected
+        Available methods are listed (Google Pay, P2P, PayPal, etc)
+        It is possible to change the currency -> available methods change
+
+    [SECTION] All payment methods except P2P open the screen Enter Amount [BuyModule, RampModule]
+        By default, the minimum amount in fiat is set
+        Fiat <-> crypto switch is not implemented yet
+        By default BEST provider is selected
+        On tap on provider the provider selection screen opens
+        It is possible to switch to another provider if available
+        Other providers with a higher minimum amount are shown (highlighted in orange)
+        On tap on a provider with a higher minimum amount, the minimum amount is automatically filled into the input and the provider changes
+        The rate is displayed correctly
+        There is validation if the entered amount is less than minimum
+        There is validation if the entered amount is greater than maximum
+        Before proceeding to the onramp and P2P, there is a legal bottom sheet
+        It is possible to skip the legal bottom sheet by checking "Do not show again"
+        The amount, fiat–crypto pair, address, and payment method are passed into the onramp
+
+    P2P leads to Wallet P2P Express
+    In Wallet P2P Express the amount and fiat-crypto pair are passed
+
+    [SECTION] Buy TON with Crypto [BuyModule, RampModule]
+        On the Payment method screen, the list of available assets is displayed (the list is limited to the most popular)
+        After selecting an asset the screen Send {{asset}} opens
+        Send {{asset}} / Receive {{asset}} are displayed correctly
+        The rate is displayed correctly
+        The network address where assets are sent is displayed correctly
+        The address can be copied
+        It is possible to scan the address from QR code
+        It is possible to share in Telegram
+        min, max amount, network, set, arrival time are correctly indicated
+        There is a link to ToU Changelly
+        The button Go to Main opens the main Tonkeeper screen
+        Purchase of TON happens at the specified Changelly rate
+
+    [SECTION] Buy USDT with Stablecoins [BuyModule, RampModule]
+        [SECTION] Screen Choose assets [BuyModule, RampModule]
+            Search works
+            It is possible to select USDT TON
+            It is possible to select USDT TRC20
+            Payment method (DAI, USDT, USDC)
+
+    [SECTION] Choose network [BuyModule, RampModule]
+        The screen Send {{asset}} works similarly to this screen in the section "Buy TON with Crypto"
+        Purchase of Stablecoins always happens 1:1 without commission
+
+    [SECTION] Withdraw [BuyModule, RampModule]
+        [SECTION] Send tokens to another TON/TRON wallet [BuyModule, RampModule]
+            The flow Send TON/USDT TRC20 opens
+
+    [SECTION] Sell to card [BuyModule, RampModule]
+        [SECTION] Asset to withdraw [BuyModule, RampModule]
+            Search works
+            TON, USDT TON, or USDT TRC20 are available for withdrawal
+
+    [SECTION] Receive method [BuyModule, RampModule]
+        By default, preferred_currency from the backend is selected, with a fallback to the Tonkeeper app fiat currency
+        Available withdrawal methods for this currency are displayed
+        It is possible to change the currency
+        When changing the currency the available withdrawal methods are updated
+
+    Enter amount works the same way as Enter amount in Add Funds
+    Provider selection works the same way as in the Add Funds flow
+    There is a legal bottom sheet before opening the onramp and P2P
+    The amount, fiat–crypto pair, address, and payment method are passed into the onramp
+
+    P2P directly leads to Wallet P2P Express
+    In Wallet P2P Express the amount and fiat-crypto pair are passed
+
+    [SECTION] Withdraw USDT on other networks [BuyModule, RampModule]
+        The flow works the same way as Add Funds
+
+    [SECTION] Stake Screen [StakingModule, StakingList, StakingPoolDetails]
+        Entry point: Wallet screen → Stake
+        The stake screen and pool selection are displayed
+        By default the most profitable staking is selected
+        There is validation for minimum deposit amount
+        There is validation for available balance
+        The Continue button is disabled until a valid amount is entered
+
+    [SECTION] Pool selection [StakingList, StakingDepositInputPoolPicker]
+        Tapping staking selection allows choosing any available pool (Liquid - Tonstakers; Other - TON Whales, TON Nominators)
+        The label MAX APY is displayed on the most profitable pool
+        The minimum deposit amount is specified
+
+    [SECTION] Tonstakers [StakingPoolDetails, StakingBalanceDetails]
+        Feature: after sending a TON deposit, an equivalent amount of tsTON tokens arrives on the balance
+        [SECTION] tsTON can be sent/swapped like a regular token [StakingPoolDetails, SendModule, NativeSwapModule]
+            From the pool screen → tsTON
+            Regular send flow → select tsTON in the token list
+
+    [SECTION] Ton Whales and TON Nominators [StakingList, StakingPoolDetails]
+        Whales: by default only Tonkeeper Queue#1 and Tonkeeper Queue#2 are displayed
+        Other Whales pools are displayed only if there are funds there
+        TON Nominators: by default all available pools
+        Sorted by APY
+
+    [SECTION] Pool screen [StakingPoolDetails, StakingBalanceDetails]
+        Entry point: Main screen → asset list if there is active staking
+        [SECTION] Deposit [StakingDepositInput, StakingConfirmationCoordinator]
+            Tonstakers: minimum 2.2 TON (staking is possible from 1 TON; 1.2 TON must remain on the balance to cover fees) [checks for 1.2 TON fee are not implemented yet]
+            Whales: minimum 50 TON
+            TON Nominators: minimum 10 001 TON depending on pool conditions
+        The value of staked funds is displayed in TON and fiat next to the pool name (in the token list, on the pool screen)
+        For deposit requests on Nominators, the text comment "d" is set
+        [SECTION] Withdraw request [StakingWithdrawEstimate, StakingUnstakeCoordinator]
+            Information about the next cycle is displayed, time updates in real time
+            It is possible to request withdrawal of part or all funds (TON Whales; Tonstakers)
+            From Nominators, only a full withdrawal is possible
+            For withdrawal requests on Nominators, the text comment "w" is set
+            [SECTION] Withdrawal goes into status "Pending withdraw" [StakingBalanceDetails, StakingUnstakeCoordinator]
+                On the main screen, a label with the withdrawal amount in TON and a timer is displayed (except Tonstakers)
+                On the pool screen, a label with the withdrawal amount and the information "after the end of the cycle" is displayed
+        [SECTION] Withdraw ready [StakingBalanceDetails]
+            Tonstakers -> TON automatically arrives on balance
+            Ton Whales and TON Nominators -> Label "Withdraw ready" -> withdrawal is completed successfully
+
+[SECTION] Ethena [WalletModule, EthenaDetailsConfigurator, EthenaStakingDetails, TokenDetails]
+    The USDe row is shown on the main screen even if the USDe balance is 0
+    [SECTION] USDe screen [TokenDetails, EthenaDetailsConfigurator]
+        The Send, Receive, and Swap buttons work correctly
+        Deposit&Stake "Open" button opens ethena.ston.fi
+        Correct balance for USDe, Staked USDe
+    [SECTION] Staked USDe screen [EthenaStakingDetails]
+        Stake/Unstake is also available through the dApp ethena.ston.fi
+        The USDe and tsUSDe balances are shown correctly
+    [SECTION] UK/US restricted regions [WalletModule, TKFeatureFlags]
+        Ethena is fully hidden if there is no USDe, Staked USDe, or tsUSDe on the balance
+        If the balance is positive, Ethena is shown
+
+[SECTION] Hidden amounts [WalletModule, HistoryModule, CollectiblesModule]
+    Enabled by tapping on the total balance on the main screen
+    All balances, amounts in history, fiat conversions, NFT names are replaced with ***
+    NFT icons are blurred
+
+[SECTION] Manage tokens/NFT [WalletModule, CollectiblesModule]
+    Token management:
+        On the main screen and in token management we display tokens with the flag "verification": "whitelist", "graylist" or "none"
+        Tokens with "verification": "blacklist" are hidden on the main screen, but displayed in History with the label SPAM and ticker SCAM
+        Only tokens with the flags "verification": "whitelist" and "graylist" are included in the total balance
+        Tokens can be hidden/shown by tapping on the eye icon
+        Tokens can be pinned and the position of pinned tokens can be changed
+        TON is always first and is not hidden
+
+    [SECTION] NFT management [CollectiblesModule, NFTDetailsManageNFT]
+        Display NFTs with the flag trust: whitelist/graylist/none on the Collectibles screen
+        NFTs with the flag trust: blacklist are always hidden
+        Hidden NFTs (that the user hid manually) and Spam NFTs (that the user marked as spam) are displayed ONLY on the "Manage NFT" screen
+
+[SECTION] Scam / Spam [HistoryModule, CollectiblesModule, Spam]
+    NFTs can be reported
+    [SECTION] For "trust": "none" on the NFT screen [CollectiblesModule, NFTDetailsManageNFT]
+        Orange button Report -> NFT disappears from the list
+        Gray button "This is not spam" -> NFT remains in the list
+        For trust: whitelist, reporting is not possible
+    [SECTION] It is possible to report an incoming transaction in history from transaction details or from the three dots menu [HistoryModule, Spam, HistoryEventDetails]
+        Transactions less than 0.03 TON with a comment
+        Token with value < 0.03 TON or without value with a comment
+        Unverified NFT with a comment
+        When a transaction is marked as spam, a report is sent to the backend
+        The transaction is moved to the Spam folder
+        It is possible to restore the transaction from the Spam folder
+        For watch-only wallets, the Report button is hidden
+
+[SECTION] Trading UI screen [TokenDetails, TradeModule]
+    Entry point: Trade button on the tab bar
+    When Trading UI is enabled for the first time, the blue tooltip "NEW Trade US Stocks & ETFs" appears
+    Tokens are divided into categories (Most traded, Real world assets, Core tokens)
+    There is a Today’s top movers category, where you can view the most profitable and most unprofitable tokens
+    Global asset search works
+    There is a placeholder if nothing is found "Not Found"
+    There is a placeholder if an error occurred "Something went wrong"
+    Filters work correctly (All, tokens, stocks, ETFs)
+    In each group, 6 assets are visible, the rest are hidden under the See all button
+    
+[SECTION] History Screen [HistoryModule, HistoryContainer, HistoryList]
+    Entry point: on the main screen, at the top next to Settings
+    For a user without transactions, a placeholder with the buttons "Buy" and "Receive" is displayed
+    If the history spans less than a month, transactions are grouped by day; if longer, by month; if longer still, by year
+    All old TON and TRON transactions are loaded
+    All related transactions are split into blocks, like on tonapi.io
+    All transactions appear in history in the background: first the transaction is pending (with loader), then it changes to completed (without loader)
+    Transactions display icon, amount, ticker, sender/receiver address, comment
+    It is possible to filter history by Received or Sent
+    The filter resets after re-entering the app or by the All button
+    Next to the filters there is a Spam folder. It contains all spam transactions from the backend plus those marked as spam by the user
+
+    [SECTION] Transaction bottom sheet (Transaction details) [HistoryEventDetails]
+        The amount, fiat conversion, date/time of the transaction are displayed
+        Sender/receiver, fee + fiat conversion, comment are displayed
+        All fields can be copied
+        Tapping "Transaction {{hash}}" or using the three dots menu opens the current transaction in tonviewer.com
+    Tapping an NFT image in history or details opens the NFT screen
+    Spam transactions have a SPAM badge, the comment is hidden, the NFT icon is hidden
+    For failed transactions an error icon (!) is displayed, the label "Failed", NFT content is hidden
+
+[SECTION] Browser Screen [BrowserModule, Browser]
+    [SECTION] Tab Explore [BrowserExplore, BrowserCategory]
+        A carousel of banners is displayed; it scrolls automatically and manually; tapping a banner opens the service
+        A list of recommended services is displayed, each recommendation block can be expanded by the All button
+    [SECTION] Tab Connected [BrowserConnected]
+        Connected services are displayed: it is possible to open the service / disconnect
+        There is a placeholder if there are no Connected dApps
+    [SECTION] Internal browser [Browser, Dapp]
+        Vertical scroll works correctly
+        Navigation between service pages works correctly
+        Redirect to telegram works correctly
+    [SECTION] Search/Address bar [BrowserSearch]
+        Search queries open in the search engine selected in Settings (google or duckduckgo)
+        Entered links open
+    [SECTION] App sharing [BrowserModule, Dapp, DappSharingPopup, OpenDappWarningPopup]
+        Entry point: Browser -> page with URL -> three dots
+        Tapping Share opens the bottom sheet "Share {{DApp Name}}"
+            The link button copies a deeplink in the format https://app.tonkeeper.com/dapp/**safe-encoded-url**
+            The "Copy Link" button copies the same deeplink
+            The "Share" button opens system sharing and sends the same deeplink
+        When opening such a deeplink
+            From a DApp on the whitelist (list of promoted DApps) -> the link opens immediately in the in-app browser
+            From a DApp not on the whitelist (not on the whitelist or blacklist) -> a bottom sheet is shown with the warning "You are opening an external app"
+                The "Open" button -> opens the DApp in the in-app browser
+                The "Don't show again" checkbox disables repeat warnings when opening this domain for the current wallet
+        For Tonviewer and Tronscan services, keep the regular link (as it is now). Tapping Share opens system sharing immediately.
+    
+
+[SECTION] Collectibles Screen [CollectiblesModule, CollectiblesContainer, CollectiblesList]
+    The list of NFTs is displayed correctly, with all images
+    NFTs are sorted by last interaction
+    [SECTION] NFT Screen [NFTDetails, NFTDetailsManageNFT]
+        Name, image, description
+        Lottie animation works, if present
+        Approved NFT collections have a checkmark icon next to the name
+        Button "Collapse"
+        Button "Send"
+        Three dots -> "Open in Tonviewer"
+        Three dots -> "Hide collection"
+        Three dots -> "Burn" for Unverified NFT -> sends to "zero" address
+        The NFT send flow works similarly to sending TON
+
+    [SECTION] Programmable NFT [NFTDetails]
+        Descriptions longer than two lines are collapsed under More
+        No more than 5 additional buttons are displayed
+        If the collection is not verified — an alert is shown on each tap on buttons
+        On tap on a button the link embedded in the button opens in the internal browser
+
+    [SECTION] DNS [DNSModule, NFTDetails]
+        On the Collectibles screen an image with the DNS address is displayed
+        On the DNS NFT screen there is a programmable button Manage -> opens dns.tonkeeper.com
+        [SECTION] Domain linking [LinkDNSConfirmation, DNSModule]
+            If no address is linked to DNS, the button Link domain is displayed
+            On tap on Link button, a confirmation bottom sheet is shown
+            The address is successfully linked
+            If an address is linked, the button Linked with UQ... is displayed
+            On tap on Linked with, a bottom sheet for unlinking the address from DNS is shown
+            The address is successfully unlinked
+        [SECTION] Domain renewal [DNSModule]
+            [SECTION] Renewal of one domain [DNSModule]
+                It is possible to renew the domain for 1 year (366 days)
+                On the renewal button the correct date "Renew until %plus 1 year from current date%" is displayed
+                Under the button it is correctly indicated in how many days DNS ownership expires
+
+    [SECTION] TG Username [DNSModule, CollectiblesModule]
+        In the general NFT list an image with telegram icon, name @name and name.t.me is displayed
+        Linking of TG Username address works similarly to DNS > Link domain flow
+        On the TG Username NFT screen there is a programmable button Manage -> opens dns.tonkeeper.com
+
+    [SECTION] NFT on sale/auction [NFTDetails, PurchasesManagementDetails]
+        NFTs on sale or at auction are marked with the badge ON SALE in the NFT grid
+        Buttons Send, Link, Renew are not active
+        There is a text explanation that the NFT is on sale
+
+[SECTION] Settings Screen [SettingsModule, SettingsList]
+    [SECTION] Security [SettingsListConfigurators, PasscodeModule]
+        Use Face ID, Touch ID on/off
+        Lock screen -> enable/disable login to the app by PIN/biometrics
+        Change PIN code -> old PIN code will no longer work
+
+    [SECTION] USDT TRC20 toggle [SettingsListConfigurators]
+        Toggle enables/disables display of USDT TRC20 in the wallet (balance, address, secret key)
+        By default toggle is off for new wallets and for imported wallets without USDT TRC20 balance
+        If a wallet with USDT TRC20 balance is imported -> show toggle so it can be enabled
+
+    [SECTION] Primary currency [SettingsListConfigurators, SettingsListCurrencyPickerConfigurator]
+        Current currency is displayed
+        Opens a new screen with a list of currencies
+        Change currency -> changes everywhere (main screen, send amount screen, TON balance, chart)
+
+    Rate app -> opens store
+    [SECTION] Support -> opens “Need Help?” [SupportPopupModule]
+        Ask on Telegram -> opens the @tonkeeper Telegram bot
+        Contact by email -> opens a mail draft to support@tonkeeper.com
+
+    Tonkeeper news -> RU/EN locale (@tonkeeper_ru / @tonkeeper_news)
+    Write to team -> opens mail app with prefilled support email (support@tonkeeper.com)
+    Legal documents
+    Delete account -> works as logout from wallet
+
+[SECTION] Push notifications [SettingsModule, PushNotification]
+    [SECTION] Receiving [PushNotification]
+        Push for TON (minimum transaction amount for receiving push notification 1 TON)
+        Push for tokens
+        Push for NFT
+    [SECTION] Sending [PushNotification]
+        Push for TON (any amount)
+    Transaction from a connected dApp (waiting for signing)
+    [SECTION] Notifications screen [PushNotification, SettingsListNotificationsConfigurator]
+        It is possible to disable subscription from the backend for push notifications (does not affect device permission)
+        If permission is disabled on the device, the toggle is disabled; a yellow block suggests opening settings to enable permission
+        When permission is enabled, the toggle becomes active and the yellow block disappears
+
+[SECTION] Ton Connect 2.0 [TonConnectModule, BrowserModule, Dapp, SignDataModule]
+    [SECTION] Connection to service [TonConnectConnect, BrowserModule]
+        Through in-app browser
+        Through mobile web
+        Through TWA
+        Through desktop web
+        Connection works via universal QR/deeplink (tc://) and tonkeeper link
+        After connection, the service icon appears in Browser -> Connected section
+        It does not disconnect after a page refresh or when the app is closed and reopened
+
+    [SECTION] Work with a service [TonConnectModule, Dapp, TransactionConfirmation]
+        Action confirmation works from the in-app browser
+        Action confirmation works from mobile web (deeplink redirect to the app + automatic opening of the transaction bottom sheet)
+        Action confirmation works from TWA (deeplink redirect to the app + automatic opening of the transaction bottom sheet)
+        Action confirmation works from desktop web (automatic opening of the bottom sheet in the open app)
+        Also verify that when a new bottom sheet with a transaction or login appears, the previous one is dismissed
+
+    [SECTION] Disconnect [TonConnectModule, DisconnectDappToast]
+        When disconnecting, the dApp bridge connection is closed [bug filed]
+        [SECTION] Disconnect from dApp [DisconnectDappToast]
+            The connected dApp icon disappears from the browser page (if it was the only connection)
+        [SECTION] Disconnect from the Browser tab [BrowserConnected, DisconnectDappToast]
+            Disconnect by long tap on the browser icon in Connected
+            Disconnect suggestion if the user rejected a transaction from this service
+
+[SECTION] Risk field [TonConnectModule, TransactionConfirmation]
+    At the bottom of the sheet, show how much money in total the user will send after completing this action
+    If the amount is more than 20% of the user's total balance, color this text yellow
+    Tapping "i" shows an explanation
+    Also verify Risk for Jettons
+
+[SECTION] Battery flow [BatteryModule, WalletModule]
+    [SECTION] Main screen [WalletBalance, BatteryModule]
+        [SECTION] Show the battery icon to the right of total balance [WalletBalance, Battery]
+            If there are no charges: lightning bolt inside
+            If there are charges: battery fill level shows the amount of charges from 0% to 100%
+            ≈10% and below - fill color is yellow
+        [SECTION] Battery and top-up screen [BatteryRefill, BatteryRecharge]
+            [SECTION] Entry points [BatteryModule, InsufficientFundsModule]
+                Battery on the main screen
+                Settings
+                "Recharge battery" button on the "Not enough funds" bottom sheet
+            The current battery fill level from 0% to 100% is displayed
+            [SECTION] Manage actions paid by battery [BatteryRefillSupportedTransactions, BatteryRefillTransactionsSettings]
+                If battery balance = 0, the list of Supported actions can be viewed
+                If the battery is charged, sending via battery can be enabled / disabled for supported actions
+                The price in charges is shown for each action and is correct
+            [SECTION] In-App Purchase [BatteryRecharge]
+                Tapping the Buy button initiates an in-app purchase
+                [SECTION] Purchase completed [BatteryRecharge]
+                    Toast "Your battery is charged" appears
+                    Stay on the battery screen, show the updated balance in charges + battery fills smoothly
+                    Show the same battery charge on the main screen
+                    Restore purchases works and shows the "Purchases restored" toast
+        [SECTION] Sending via battery [BatteryModule, SendModule, NativeSwapModule]
+            [SECTION] Currently supported: [BatteryModule, SendModule, NativeSwapModule]
+                NFT sending
+                Token sending
+                Swap inside Tonkeeper. Only token-to-ton and token-to-token
+            On the send confirmation screen, it is indicated that the fee payment "Will be paid by battery"
+            V4: Incoming transaction from battery.ton -> Outgoing transaction is sent -> Remaining charges are returned to the battery (excess)
+            W5: Same behavior, but all within one block of transactions
+        [SECTION] "Not enough funds" bottom sheet [InsufficientFundsModule, BatteryModule]
+            Appears if there is not enough TON on the balance for the action and the battery is not charged
+            If battery payment is possible for the action, there is a "Recharge battery" button -> opens the battery screen with purchase options
+            There is always a "Buy TON" button -> leads to the Buy TON screen
+        [SECTION] Top up battery with crypto [BatteryRefill, BatteryTokenPicker]
+            You can top up the battery by sending USDT | NOT | DOGS | JUSDT | CATI | HMSTR | tsTON | TON to the battery.ton address
+            You can charge the battery of another wallet if you specify an EQ/UQ address in the comment
+            [SECTION] Or through the interface on the battery screen [BatteryRefill, BatteryTokenPicker]
+                Crypto sorting: USDT is always first, TON is last, the rest as returned by the backend
+                [SECTION] Shows the option to charge with crypto [BatteryTokenPicker]
+                    TON and USDT always
+                    The rest: only if there is a balance
+                There are pricing packages with fixed amounts (small, medium, large)
+                An arbitrary amount can be entered
+                The reserve amount is taken into account on the first top-up [not done]
+                For "charge on credit", there is a minimum top-up amount validation [bug]
+                When charging the battery with tokens (not TON), credit is given for the transaction, but not when the battery is discharged below zero
+                You can charge the battery of another wallet - "Battery as a gift"
+                If charging to a TON network address (EQ/UQ/DNS), verify the expected behavior
+                You can view all purchases through the Charge History button
+                A crypto purchase refund can be made within 14 days
+            When the battery is discharged to 0, the wallet automatically switches to sending from the TON balance
+        [SECTION] Applying a referral promo code [BatteryPromocodeInput]
+            A promo code can be entered / pasted into the "Promo code" input
+            You can open a deeplink / QR with a promo code and it will be filled in
+            If the promo is valid -> a green check icon appears next to it
+            A valid promo code is preserved when reopening the screen / the app
+            If the promo is invalid -> error toast + field is highlighted red -> promo is not preserved when reopening the screen
+            [SECTION] Promo is attached to the purchase [BatteryPromocodeInput, BatteryRecharge]
+                If the charge is by crypto, the promo is passed in the transaction. It is now a binary payload instead of a comment
+                If it is an IAP purchase, the post method contains an additional promo field
+        
+        [SECTION] Gasless flow [SendModule, BatteryModule, InsufficientFundsModule]
+            You can send USDT | NOT | DOGS | BOLT | TON and other tokens and pay the fee with those same tokens
+            If the battery is charged, it is offered as the first payment method
+            [SECTION] If the battery is NOT charged [SendModule, InsufficientFundsModule]
+                And if there is TON on the balance, you can choose to send via TON or gasless
+                And if there is no TON on the balance, it immediately suggests sending via gasless
+                And if there is no TON on the balance AND not enough tokens for gasless, it shows the Not enough funds bottom sheet
+            Gasless also works correctly when sending the full balance (MAX)
+        
+            [SECTION] Stories [Stories, TKStories, AllUpdates]
+                [SECTION] Can open stories from the backend [Stories, TKStories, MainCoordinatorStoriesController]
+                    On app start
+                    From the main screen -> promo row
+                    By deeplink https://app.tonkeeper.com/story/{{story_id}}
+        
+            [SECTION] QR code scanning [ScannerModule, Scanner]
+                [SECTION] You can scan a QR code with an address or deeplink [Scanner]
+                    with the device camera
+                    from the main screen
+                    from the send flow
+                If there is no permission, show a placeholder requesting permission on the device
+        
+        [SECTION] Deeplinks [AppModule, MainModule, OnboardingModule]
+            Test the dApp: https://mois-ilya.github.io/ton-wallet-deeplinks/#/tests
+        
+        [SECTION] Appearance [SettingsModule, TKUIKit]
+            You can choose a theme: Deep blue, Dark, Light, System
+            Deep blue is the default
+        
+        [SECTION] Widget [TonkeeperWidget, BalanceWidget, RateWidget]
+            TODO
+        
+        [SECTION] Regional restrictions [BuyModule, BrowserExplore, SettingsModule]
+            Verify that regional flags work correctly
+            
+        [SECTION] Subscriptions v1 [WalletModule, WalletBalance]
+            For subscriptions_v1, show a warning banner on the main screen with a prompt to disable the subscription and the "Open Tonkeeper Web" button
+        
+
+# Unmapped code modules backlog for future regression coverage.
+# Sorted by latest git update date, newest first. Ignored by tk-impact-analysis.
+[MODULE_GAP] TradeModule updated 2026-04-20 path=LocalPackages/App/Sources/App/TradeModule
+[MODULE_GAP] TKScreenKit updated 2026-04-20 path=LocalPackages/TKScreenKit
+[MODULE_GAP] TKLocalize updated 2026-04-20 path=LocalPackages/TKLocalize
+[MODULE_GAP] Resources updated 2026-04-20 path=LocalPackages/AppModules/Resources
+[MODULE_GAP] Mapping updated 2026-04-20 path=LocalPackages/AppModules/Mapping
+[MODULE_GAP] KeeperCore updated 2026-04-20 path=LocalPackages/KeeperCore
+[MODULE_GAP] WebSwapModule updated 2026-04-13 path=LocalPackages/App/Sources/App/WebSwapModule
+[MODULE_GAP] WalletExtensions updated 2026-04-06 path=LocalPackages/AppModules/WalletExtensions
+[MODULE_GAP] SignRaw updated 2026-04-06 path=LocalPackages/AppModules/SignRaw
+[MODULE_GAP] TKLogging updated 2026-03-31 path=LocalPackages/TKLogging
+[MODULE_GAP] SignDataModule updated 2026-03-31 path=LocalPackages/App/Sources/App/SignDataModule
+[MODULE_GAP] P2PExpressModule updated 2026-03-31 path=LocalPackages/App/Sources/App/P2PExpressModule
+[MODULE_GAP] Ledger updated 2026-03-31 path=LocalPackages/Ledger
+[MODULE_GAP] UIComponents updated 2026-03-13 path=LocalPackages/AppModules/UIComponents
+[MODULE_GAP] Core updated 2026-03-13 path=LocalPackages/AppModules/Core
+[MODULE_GAP] SignModule updated 2026-03-05 path=LocalPackages/App/Sources/App/SignModule
+[MODULE_GAP] TKCoordinator updated 2026-02-17 path=LocalPackages/TKCoordinator
+[MODULE_GAP] TKQRCode updated 2026-02-16 path=LocalPackages/TKQRCode
+[MODULE_GAP] TKLottieWebView updated 2026-02-16 path=LocalPackages/TKLottieWebView
+[MODULE_GAP] TKKeychain updated 2026-02-16 path=LocalPackages/TKKeychain
+[MODULE_GAP] TKAppInfo updated 2026-02-16 path=LocalPackages/TKAppInfo
+

@@ -21,20 +21,21 @@ protocol NetworkFeePickerModuleOutput: AnyObject {
 }
 
 @MainActor
-protocol NetworkFeePickerModuleInput: AnyObject {
-    func reload()
-}
+protocol NetworkFeePickerModuleInput: AnyObject {}
 
 struct NetworkFeePickerConfiguration {
     let title: String
     let subtitle: String?
+    let skeletonItemCount: Int
 
     init(
         title: String,
-        subtitle: String? = nil
+        subtitle: String? = nil,
+        skeletonItemCount: Int = 2
     ) {
         self.title = title
         self.subtitle = subtitle
+        self.skeletonItemCount = skeletonItemCount
     }
 }
 
@@ -46,14 +47,6 @@ enum NetworkFeePickerContent {
 struct NetworkFeePickerCategoriesContent {
     let categories: [NetworkFeePickerCategory]
     let selectedCategoryID: NetworkFeePickerCategory.ID?
-
-    init(
-        categories: [NetworkFeePickerCategory],
-        selectedCategoryID: NetworkFeePickerCategory.ID? = nil
-    ) {
-        self.categories = categories
-        self.selectedCategoryID = selectedCategoryID
-    }
 }
 
 struct NetworkFeePickerCategory: Identifiable {
@@ -61,18 +54,6 @@ struct NetworkFeePickerCategory: Identifiable {
     let title: String
     let icon: UIImage?
     let dataSource: any NetworkFeePickerItemsDataSource
-
-    init(
-        id: String,
-        title: String,
-        icon: UIImage? = nil,
-        dataSource: any NetworkFeePickerItemsDataSource
-    ) {
-        self.id = id
-        self.title = title
-        self.icon = icon
-        self.dataSource = dataSource
-    }
 }
 
 struct NetworkFeePickerItem: Identifiable {
@@ -80,8 +61,8 @@ struct NetworkFeePickerItem: Identifiable {
         case assetAvatar(imageSource: AssetAvatarViewImageSource)
         case icon(
             image: UIImage,
-            tintColor: UIColor,
-            backgroundColor: UIColor
+            tintColor: TKColor,
+            backgroundColor: TKColor
         )
     }
 
@@ -90,29 +71,27 @@ struct NetworkFeePickerItem: Identifiable {
         case titled(title: String, subtitle: String)
     }
 
-    enum Badge {
-        case accent(
-            text: String,
-            foreground: UIColor,
-            background: UIColor
-        )
-    }
-
     let id: String
     let leading: Leading
     let text: Text
-    let badge: Badge?
+    let isDisabled: Bool
+    let actionTitle: String?
+    let isSelected: Bool
 
     init(
         id: String,
         leading: Leading,
         text: Text,
-        badge: Badge? = nil
+        isDisabled: Bool = false,
+        actionTitle: String? = nil,
+        isSelected: Bool = false
     ) {
         self.id = id
         self.leading = leading
         self.text = text
-        self.badge = badge
+        self.isDisabled = isDisabled
+        self.actionTitle = actionTitle
+        self.isSelected = isSelected
     }
 }
 
@@ -125,11 +104,6 @@ enum NetworkFeePickerViewState {
     case list(
         NetworkFeePickerItemsDataSource
     )
-}
-
-enum NetworkFeePickerItemsState {
-    case loading
-    case content([NetworkFeePickerItem])
 }
 
 @MainActor
@@ -195,9 +169,9 @@ final class NetworkFeePickerViewModelImplementation:
             ),
             rightButton: .close(),
             contentInsets: UIEdgeInsets(
-                top: 19,
+                top: 16,
                 left: 16,
-                bottom: 19,
+                bottom: 16,
                 right: 16
             )
         )
@@ -234,11 +208,6 @@ final class NetworkFeePickerViewModelImplementation:
         }
     }
 
-    func close() {
-        contentTask?.cancel()
-        didRequestClose?()
-    }
-
     func selectCategory(_ categoryID: NetworkFeePickerCategory.ID) {
         guard
             case let .categories(categories, selectedCategoryID) = viewState,
@@ -255,7 +224,6 @@ final class NetworkFeePickerViewModelImplementation:
 
     func selectItem(_ item: NetworkFeePickerItem) {
         didSelectItem?(item, selectedCategory)
-        didRequestClose?()
     }
 }
 

@@ -1,5 +1,6 @@
 import BigInt
 import Foundation
+import KeeperCoreComponents
 import TKLogging
 import TonConnectAPI
 import TonSwift
@@ -35,7 +36,13 @@ public protocol TonConnectService {
         manifest: TonConnectManifest,
         keeperVersion: String
     ) throws -> TonConnect.ConnectEventSuccess
-    func storeConnectedApp(wallet: Wallet, sessionCrypto: TonConnectSessionCrypto, parameters: TonConnectParameters, manifest: TonConnectManifest, connectionType: TonConnectApp.ConnectionType) throws
+    func storeConnectedApp(
+        wallet: Wallet,
+        sessionCrypto: TonConnectSessionCrypto,
+        parameters: TonConnectParameters,
+        manifest: TonConnectManifest,
+        connectionType: TonConnectApp.ConnectionType
+    ) throws
     func confirmConnectionRequest(
         body: String,
         sessionCrypto: TonConnectSessionCrypto,
@@ -43,6 +50,7 @@ public protocol TonConnectService {
     ) async throws
     func getConnectedApps(forWallet wallet: Wallet) throws -> TonConnectApps
     func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws
+    func disconnectApp(_ clientId: String, wallet: Wallet) throws
     func disconnectApp(_ idx: Int, wallet: Wallet) throws
 
     func cancelRequest(
@@ -64,6 +72,11 @@ public protocol TonConnectService {
     func confirmSignRequest(
         signed: SignedDataResult,
         appRequest: TonConnect.SignDataRequest,
+        app: TonConnectApp
+    ) async throws
+
+    func confirmDisconnectRequest(
+        appRequest: TonConnect.DisconnectRequest,
         app: TonConnectApp
     ) async throws
 
@@ -154,7 +167,7 @@ final class TonConnectServiceImplementation: TonConnectService {
         sessionCrypto: TonConnectSessionCrypto
     ) throws -> String {
         let responseData = try JSONEncoder().encode(successResponse)
-        guard let receiverPublicKey = Data(hex: parameters.clientId) else {
+        guard let receiverPublicKey = Data(strictHex: parameters.clientId) else {
             throw TonConnectServiceError.incorrectClientId
         }
         let response = try sessionCrypto.encrypt(
@@ -209,6 +222,12 @@ final class TonConnectServiceImplementation: TonConnectService {
     func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws {
         let apps = try getConnectedApps(forWallet: wallet)
         let updatedApps = apps.removeApp(app)
+        try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
+    }
+
+    func disconnectApp(_ clientId: String, wallet: Wallet) throws {
+        let apps = try getConnectedApps(forWallet: wallet)
+        let updatedApps = apps.removeApp(clientId: clientId)
         try tonConnectAppsVault.saveValue(updatedApps, for: wallet)
     }
 
@@ -275,6 +294,25 @@ final class TonConnectServiceImplementation: TonConnectService {
             .buildSendTransactionResponseSuccess(
                 sessionCrypto: sessionCrypto,
                 boc: boc,
+                id: appRequest.id,
+                clientId: app.clientId
+            )
+
+        _ = try await tonConnectBridgeAPIClientProvider.tonConnectBridgerAPIClient().message(
+            query: .init(
+                client_id: sessionCrypto.sessionId,
+                to: app.clientId,
+                ttl: 300
+            ),
+            body: .plainText(.init(stringLiteral: body))
+        )
+    }
+
+    func confirmDisconnectRequest(appRequest: TonConnect.DisconnectRequest, app: TonConnectApp) async throws {
+        let sessionCrypto = try TonConnectSessionCrypto(privateKey: app.keyPair.privateKey)
+        let body = try TonConnectResponseBuilder
+            .buildDisconnectResponseSuccess(
+                sessionCrypto: sessionCrypto,
                 id: appRequest.id,
                 clientId: app.clientId
             )

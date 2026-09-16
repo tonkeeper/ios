@@ -218,7 +218,6 @@ private extension TonConnectHeaderWalletAnimationView {
 }
 
 private extension CGFloat {
-    static let imageCornerRadius: CGFloat = 20
     static let separatorWidth: CGFloat = 2
     static let separatorHeigth: CGFloat = 32
 }

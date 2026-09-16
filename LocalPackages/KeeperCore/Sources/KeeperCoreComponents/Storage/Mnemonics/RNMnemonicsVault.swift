@@ -109,8 +109,7 @@ public struct RNMnemonicsVault {
     }
 
     public func savePassword(_ password: String) throws {
-        let query = getPasswordQuery()
-        try keychainVault.set(password, query: query)
+        try keychainVault.recreateItem(password, query: getPasswordQuery())
     }
 
     public func getPassword() throws -> String {
@@ -166,7 +165,7 @@ private extension RNMnemonicsVault {
         return TKKeychainQuery(
             item: .genericPassword(service: .passwordVaultKey, account: .passwordKey),
             accessGroup: nil,
-            biometry: .any,
+            biometry: .current,
             accessible: .whenUnlockedThisDeviceOnly
         )
     }

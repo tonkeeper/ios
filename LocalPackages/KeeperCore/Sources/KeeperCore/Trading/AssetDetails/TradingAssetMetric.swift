@@ -45,15 +45,6 @@ public extension TradingAssetMetric {
         }
     }
 
-    var value: String {
-        switch self {
-        case let .circulatingSupply(value),
-             let .totalSupply(value),
-             let .marketCap(value, _, _):
-            return value
-        }
-    }
-
     var secondaryValue: String? {
         switch self {
         case let .marketCap(_, secondaryValue, _):
@@ -67,15 +58,6 @@ public extension TradingAssetMetric {
         switch self {
         case let .marketCap(_, _, secondaryValueIsPositive):
             return secondaryValueIsPositive
-        case .circulatingSupply, .totalSupply:
-            return false
-        }
-    }
-
-    var showsInfoIcon: Bool {
-        switch self {
-        case .marketCap:
-            return true
         case .circulatingSupply, .totalSupply:
             return false
         }

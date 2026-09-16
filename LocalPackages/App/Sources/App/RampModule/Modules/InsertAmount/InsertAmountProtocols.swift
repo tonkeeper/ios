@@ -32,12 +32,10 @@ protocol InsertAmountViewModelProtocol: AnyObject {
     var didUpdateButton: ((TKButton.Configuration) -> Void)? { get set }
     var didUpdateProviderView: ((InsertAmountProviderViewState) -> Void)? { get set }
     var didUpdateProviderViewHidden: ((Bool) -> Void)? { get set }
-    var didUpdateAmountError: ((String?) -> Void)? { get set }
     var didShowError: ((String) -> Void)? { get set }
 
     func viewDidLoad()
     func didTapBackButton()
     func didTapCloseButton()
-    func didTapContinueButton()
     func didTapProviderView()
 }

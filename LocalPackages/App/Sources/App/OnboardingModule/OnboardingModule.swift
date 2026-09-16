@@ -4,13 +4,13 @@ import TKCore
 import TKUIKit
 
 @MainActor
-public struct OnboardingModule {
+struct OnboardingModule {
     private let dependencies: Dependencies
-    public init(dependencies: Dependencies) {
+    init(dependencies: Dependencies) {
         self.dependencies = dependencies
     }
 
-    public func createOnboardingCoordinator() -> OnboardingCoordinator {
+    func createOnboardingCoordinator() -> OnboardingCoordinator {
         let navigationController = TKNavigationController()
         navigationController.configureTransparentAppearance()
 
@@ -18,24 +18,32 @@ public struct OnboardingModule {
             router: NavigationControllerRouter(rootViewController: navigationController),
             coreAssembly: dependencies.coreAssembly,
             keeperCoreOnboardingAssembly: dependencies.keeperCoreOnboardingAssembly,
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+            multichainAssembly: dependencies.multichainAssembly,
             configurationAssembly: dependencies.configurationAssembly
         )
     }
 }
 
-public extension OnboardingModule {
+extension OnboardingModule {
     struct Dependencies {
         let coreAssembly: TKCore.CoreAssembly
         let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
+        let keeperCoreMainAssembly: KeeperCore.MainAssembly
+        let multichainAssembly: MultichainAssembly
         let configurationAssembly: ConfigurationAssembly
 
-        public init(
+        init(
             coreAssembly: TKCore.CoreAssembly,
             keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly,
+            keeperCoreMainAssembly: KeeperCore.MainAssembly,
+            multichainAssembly: MultichainAssembly,
             configurationAssembly: ConfigurationAssembly
         ) {
             self.coreAssembly = coreAssembly
             self.keeperCoreOnboardingAssembly = keeperCoreOnboardingAssembly
+            self.keeperCoreMainAssembly = keeperCoreMainAssembly
+            self.multichainAssembly = multichainAssembly
             self.configurationAssembly = configurationAssembly
         }
     }

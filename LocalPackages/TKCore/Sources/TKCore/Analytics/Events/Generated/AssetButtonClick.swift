@@ -20,7 +20,7 @@ public struct AssetButtonClick: Codable, JSONEncodable, Hashable {
         case receive = "receive"
     }
     public var eventName: String = "asset_button_click"
-    /** Which action button the user tapped */
+    /** Which action button the user tapped:  - buy: opens the native swap flow (asset as buy target), emitting   swap_open and, on completion, swap_success - sell: opens the native swap flow (asset as sell source), emitting   swap_open and, on completion, swap_success - send: opens the send flow - receive: opens the receive screen  */
     public var button: Button
     /** Asset on which the action was triggered, in chain/network/type format: ton/mainnet/coin, ton/mainnet/jetton/{addr}  */
     public var asset: String

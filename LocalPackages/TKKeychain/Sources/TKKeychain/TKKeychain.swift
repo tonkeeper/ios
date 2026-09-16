@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 
 public enum TKKeychainAccessible {
     case whenUnlocked
@@ -23,21 +24,24 @@ public enum TKKeychainAccessible {
     }
 }
 
-public enum TKKeychainAttributeKey: Hashable {
-    case valueData
-
-    var key: String {
-        switch self {
-        case .valueData:
-            kSecClass as String
-        }
-    }
-}
-
 public enum TKKeychainBiometry {
     case none
-    case any
     case current
+}
+
+/// Non-interactive probe of a biometry-protected item's access control.
+/// Distinguishes an invalidated enrolled set from a plain absent item, which a
+/// bare presence check cannot: an invalidated `biometryCurrentSet` item is hidden
+/// from an attribute-only read (reports `errSecItemNotFound`) yet still exists.
+public enum TKKeychainBiometryAccess {
+    /// Access control still satisfiable — a real read would prompt for biometry.
+    case accessible
+    /// Enrolled biometric set changed — the access control can no longer be met.
+    case invalidated
+    /// No such item.
+    case missing
+    /// Unexpected keychain error; be conservative.
+    case indeterminate
 }
 
 public enum TKKeychainItem {
@@ -50,7 +54,11 @@ public struct TKKeychainQuery {
     public let biometry: TKKeychainBiometry
     public let accessible: TKKeychainAccessible
 
-    var query: [CFString: AnyObject] {
+    /// Search attributes only. Protection attributes (`kSecAttrAccessible`,
+    /// `kSecAttrAccessControl`) are creation-time and must not participate in
+    /// matching, so items written with an older access control (e.g. biometryAny)
+    /// stay readable and deletable.
+    var searchQuery: [CFString: AnyObject] {
         var query = [CFString: AnyObject]()
         switch item {
         case let .genericPassword(service, account):
@@ -65,17 +73,15 @@ public struct TKKeychainQuery {
             query[kSecAttrAccessGroup] = accessGroup as AnyObject
         }
 
+        return query
+    }
+
+    var addQuery: [CFString: AnyObject] {
+        var query = searchQuery
+
         switch biometry {
         case .none:
             query[kSecAttrAccessible] = accessible.keychainKey
-        case .any:
-            let accessOptions = SecAccessControlCreateWithFlags(
-                kCFAllocatorDefault,
-                accessible.keychainKey,
-                SecAccessControlCreateFlags.biometryAny,
-                nil
-            )
-            query[kSecAttrAccessControl] = accessOptions
         case .current:
             let accessOptions = SecAccessControlCreateWithFlags(
                 kCFAllocatorDefault,
@@ -112,7 +118,7 @@ public struct TKKeychainAttributes {
     }
 }
 
-public enum TKKeychainStatus {
+enum TKKeychainStatus {
     case success
     case failure(TKKeychainError)
 
@@ -143,6 +149,8 @@ public enum TKKeychainError: Swift.Error {
 
 public protocol TKKeychain {
     func add(data: Data, query: TKKeychainQuery) throws
+    func exists(query: TKKeychainQuery) throws -> Bool
+    func biometricAccessState(query: TKKeychainQuery) -> TKKeychainBiometryAccess
     func get(query: TKKeychainQuery) throws -> Data?
     func update(query: TKKeychainQuery, attributes: TKKeychainAttributes) throws
     func delete(query: TKKeychainQuery) throws
@@ -152,7 +160,7 @@ public final class TKKeychainImplementation: TKKeychain {
     public init() {}
 
     public func add(data: Data, query: TKKeychainQuery) throws {
-        var query = query.query
+        var query = query.addQuery
         query[kSecValueData] = data as AnyObject
 
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -165,8 +173,74 @@ public final class TKKeychainImplementation: TKKeychain {
         }
     }
 
+    public func exists(query queryInput: TKKeychainQuery) throws -> Bool {
+        var query = queryInput.searchQuery
+        query[kSecMatchLimit] = kSecMatchLimitOne
+        query[kSecReturnAttributes] = kCFBooleanTrue
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        query[kSecUseAuthenticationContext] = context
+
+        var result: AnyObject?
+        let status = withUnsafeMutablePointer(to: &result) {
+            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+        }
+
+        switch status {
+        case errSecSuccess, errSecInteractionNotAllowed, errSecAuthFailed:
+            // errSecAuthFailed: a present item whose access control can no longer
+            // be satisfied. NOTE: this is the Simulator behavior — on a real
+            // device an invalidated biometryCurrentSet item instead returns
+            // errSecItemNotFound (see `biometricAccessState`), so this branch does
+            // not catch the device case. `hasPassword` therefore reports false for
+            // an invalidated item on device; recovery does not depend on it (it
+            // keys off `biometricAccessState` plus the biometry-migrated marker),
+            // so this is safe.
+            return true
+        case errSecItemNotFound:
+            return false
+        default:
+            throw TKKeychainError(status: status)
+        }
+    }
+
+    public func biometricAccessState(query queryInput: TKKeychainQuery) -> TKKeychainBiometryAccess {
+        var query = queryInput.searchQuery
+        query[kSecMatchLimit] = kSecMatchLimitOne
+        // A data read forces access-control evaluation without prompting
+        // (`interactionNotAllowed`): a still-valid item reports
+        // `errSecInteractionNotAllowed` (→ .accessible). An invalidated
+        // `biometryCurrentSet` item reports `errSecAuthFailed` (→ .invalidated) on
+        // the Simulator, but `errSecItemNotFound` (→ .missing) on a real device —
+        // there it is indistinguishable from a truly absent item by status alone.
+        // That `.missing`-vs-absent ambiguity is resolved one layer up in
+        // `MnemonicAccess.biometryAccessProbe()` via the non-biometry `hasMnemonics()`.
+        query[kSecReturnData] = kCFBooleanTrue
+        let context = LAContext()
+        context.interactionNotAllowed = true
+        query[kSecUseAuthenticationContext] = context
+
+        var result: AnyObject?
+        let status = withUnsafeMutablePointer(to: &result) {
+            SecItemCopyMatching(query as CFDictionary, UnsafeMutablePointer($0))
+        }
+
+        let state: TKKeychainBiometryAccess
+        switch status {
+        case errSecSuccess, errSecInteractionNotAllowed:
+            state = .accessible
+        case errSecAuthFailed:
+            state = .invalidated
+        case errSecItemNotFound:
+            state = .missing
+        default:
+            state = .indeterminate
+        }
+        return state
+    }
+
     public func get(query: TKKeychainQuery) throws -> Data? {
-        var query = query.query
+        var query = query.searchQuery
         query[kSecMatchLimit] = kSecMatchLimitOne
         query[kSecReturnData] = kCFBooleanTrue
 
@@ -186,7 +260,7 @@ public final class TKKeychainImplementation: TKKeychain {
 
     public func update(query: TKKeychainQuery, attributes: TKKeychainAttributes) throws {
         let status = SecItemUpdate(
-            query.query as CFDictionary,
+            query.searchQuery as CFDictionary,
             attributes.attributes as CFDictionary
         )
 
@@ -200,7 +274,7 @@ public final class TKKeychainImplementation: TKKeychain {
     }
 
     public func delete(query: TKKeychainQuery) throws {
-        let query = query.query
+        let query = query.searchQuery
         let status = SecItemDelete(query as CFDictionary)
 
         let keychainStatus = TKKeychainStatus(status: status)

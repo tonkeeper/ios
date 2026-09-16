@@ -1,5 +1,6 @@
 import KeeperCore
 import TKCore
+import TKUIKit
 import UIKit
 
 struct TonConnectConnectAssembly {
@@ -30,6 +31,15 @@ struct TonConnectConnectAssembly {
             isSafeMode: isSafeMode
         )
         let viewController = TonConnectConnectViewController(viewModel: viewModel)
+        viewController.headerConfiguration = TKBottomSheetHeaderConfiguration(
+            title: .empty,
+            contentInsets: UIEdgeInsets(
+                top: 16,
+                left: 16,
+                bottom: 0,
+                right: 16
+            )
+        )
         return .init(view: viewController, output: viewModel, input: viewModel)
     }
 }

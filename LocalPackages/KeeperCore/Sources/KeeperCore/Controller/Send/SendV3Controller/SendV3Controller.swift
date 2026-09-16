@@ -18,6 +18,7 @@ public final class SendV3Controller {
     private let recipientResolver: RecipientResolver
     private let amountFormatter: AmountFormatter
     private let rateConverter: RateConverter
+    private let multichainAssetBalanceProvider: MultichainAssetBalanceProvider
 
     init(
         wallet: Wallet,
@@ -27,6 +28,7 @@ public final class SendV3Controller {
         currencyStore: CurrencyStore,
         recipientResolver: RecipientResolver,
         amountFormatter: AmountFormatter,
+        multichainAssetBalanceProvider: MultichainAssetBalanceProvider,
         rateConverter: RateConverter = RateConverter()
     ) {
         self.wallet = wallet
@@ -37,10 +39,14 @@ public final class SendV3Controller {
         self.recipientResolver = recipientResolver
         self.amountFormatter = amountFormatter
         self.rateConverter = rateConverter
+        self.multichainAssetBalanceProvider = multichainAssetBalanceProvider
     }
 
-    public func resolveRecipient(input: String) async throws -> Recipient {
-        try await recipientResolver.resolverRecipient(string: input, network: wallet.network)
+    public func resolveRecipient(input: String) async throws -> LegacyRecipient {
+        try await recipientResolver.resolverRecipient(
+            string: input,
+            network: wallet.network
+        )
     }
 
     public func convertInputStringToAmount(
@@ -84,11 +90,9 @@ public final class SendV3Controller {
         }
     }
 
-    public func isTronUSDTAmountAvailableToSend(amount: BigUInt) -> Bool {
-        guard let balance = balanceStore.state[wallet]?.balance else { return false }
-        guard let tronUSDTBalance = balance.tronUSDT else { return false }
-
-        return tronUSDTBalance.amount >= amount
+    public func isTronAmountAvailableToSend(token: TronToken, amount: BigUInt) -> Bool {
+        guard let balance = tronBalance(token: token) else { return false }
+        return balance >= amount
     }
 
     public func convertTokenAmountToCurrency(
@@ -128,18 +132,50 @@ public final class SendV3Controller {
         }
     }
 
-    public func convertTronUSDTAmountToCurrency(
+    public func convertTronAmountToCurrency(
+        token: TronToken,
         _ amount: BigUInt,
         _ showCurrency: Bool = true
     ) -> String {
+        guard let rate = tronRate(token: token) else { return "" }
         let currency = currencyStore.state
-        guard let rate = tonRatesStore.state.usdtRates.first(where: { $0.currency == currency }) else { return "" }
-        let converted = rateConverter.convert(amount: amount, amountFractionLength: TronSwift.USDT.fractionDigits, rate: rate)
+        let converted = rateConverter.convert(amount: amount, amountFractionLength: token.fractionDigits, rate: rate)
         let formatted = amountFormatter.format(
             amount: converted.amount,
             fractionDigits: converted.fractionLength
         )
         return showCurrency ? "\(formatted) \(currency)" : "\(formatted)"
+    }
+
+    public func convertMultichainAmountToCurrency(
+        asset: MultichainAsset,
+        amount: BigUInt,
+        showCurrency: Bool = true
+    ) -> String {
+        let currency = currencyStore.state
+        let price = asset.price.prices[currency.code]
+            ?? asset.price.prices[currency.code.lowercased()]
+            ?? asset.price.prices[currency.code.uppercased()]
+        guard let price else {
+            return ""
+        }
+
+        let rate = Rates.Rate(
+            currency: currency,
+            rate: Decimal(price),
+            diff24h: nil
+        )
+        let converted = rateConverter.convert(
+            amount: amount,
+            amountFractionLength: asset.asset.decimals,
+            rate: rate
+        )
+        // Use the fiat accessory so UI shows a symbol instead of appending the currency code.
+        return amountFormatter.format(
+            amount: converted.amount,
+            fractionDigits: converted.fractionLength,
+            accessory: showCurrency ? .fiat(currency) : .none
+        )
     }
 
     public func calculateRemaining(token: TonToken, tokenAmount: BigUInt, isSecure: Bool) -> Remaining {
@@ -166,17 +202,87 @@ public final class SendV3Controller {
         )
     }
 
-    public func calculateTronUSDTRemaining(amount: BigUInt, isSecure: Bool) -> Remaining {
-        guard let balance = balanceStore.state[wallet]?.balance.tronUSDT else {
+    public func calculateTronRemaining(token: TronToken, amount: BigUInt, isSecure: Bool) -> Remaining {
+        guard let balance = tronBalance(token: token) else {
             return .insufficient
         }
         return calculateRemaining(
             amount: amount,
-            balance: balance.amount,
-            fractionalDigits: TronSwift.USDT.fractionDigits,
-            symbol: TronSwift.USDT.symbol,
+            balance: balance,
+            fractionalDigits: token.fractionDigits,
+            symbol: token.symbol,
             isSecure: isSecure
         )
+    }
+
+    public func formatMultichainBalance(
+        asset: MultichainAsset,
+        isSecure: Bool
+    ) -> String {
+        if isSecure {
+            return .secureModeValue
+        }
+        return amountFormatter.format(
+            amount: asset.balance,
+            fractionDigits: asset.asset.decimals,
+            accessory: asset.asset.symbol.isEmpty ? .none : .tokenSymbol(asset.asset.symbol)
+        )
+    }
+
+    public func multichainTokenAmountFromCurrencyInput(
+        asset: MultichainAsset,
+        currencyInput: String
+    ) -> BigUInt {
+        let normalizedInput = AmountInputFormatter.normalizedString(
+            currencyInput,
+            decimalSeparator: "."
+        ) ?? ""
+        let decimalValue = Decimal(string: normalizedInput, locale: Locale(identifier: "en_US_POSIX")) ?? 0
+        return convertFiatToMultichainTokenAmountWithCorrection(
+            asset: asset,
+            fiatValue: decimalValue
+        )
+    }
+
+    public func convertFiatToMultichainTokenAmountWithCorrection(
+        asset: MultichainAsset,
+        fiatValue: Decimal
+    ) -> BigUInt {
+        let currency = currencyStore.state
+        let price = asset.price.prices[currency.code]
+            ?? asset.price.prices[currency.code.lowercased()]
+            ?? asset.price.prices[currency.code.uppercased()]
+        guard let price, price > 0 else { return 0 }
+
+        let rate = Decimal(price)
+        let fractionDigits = asset.asset.decimals
+        let multiplier = pow(10, fractionDigits)
+        let tokenAmountDecimal = (fiatValue / rate) * multiplier
+        let accordingToBehavior = NSDecimalNumberHandler(
+            roundingMode: .down,
+            scale: 0,
+            raiseOnExactness: false,
+            raiseOnOverflow: false,
+            raiseOnUnderflow: false,
+            raiseOnDivideByZero: false
+        )
+        var tokenAmount = BigUInt((tokenAmountDecimal as NSDecimalNumber).rounding(accordingToBehavior: accordingToBehavior).stringValue) ?? 0
+
+        let maxTokenAmount = asset.balance
+        let maxFiatValue = (Decimal(string: maxTokenAmount.description) ?? 0) / multiplier * rate
+        let isFiatValueWithinBalance = fiatValue <= maxFiatValue
+
+        if isFiatValueWithinBalance, tokenAmount >= maxTokenAmount {
+            return maxTokenAmount
+        }
+
+        while !isFiatValueWithinBalance || tokenAmount < maxTokenAmount {
+            let fiatBack = (Decimal(string: tokenAmount.description) ?? 0) / multiplier * rate
+            if fiatBack >= fiatValue { break }
+            tokenAmount += 1
+        }
+
+        return tokenAmount
     }
 
     private func calculateRemaining(
@@ -221,11 +327,31 @@ public final class SendV3Controller {
         }
     }
 
-    public func getTronUSDTMaximumAmount() -> BigUInt {
-        guard let balance = balanceStore.state[wallet]?.balance.tronUSDT else {
-            return .zero
+    public func getTronMaximumAmount(token: TronToken) -> BigUInt {
+        tronBalance(token: token) ?? .zero
+    }
+
+    private func tronBalance(token: TronToken) -> BigUInt? {
+        guard let balance = balanceStore.state[wallet]?.balance else { return nil }
+        switch token {
+        case .usdt:
+            return balance.tronUSDT?.amount
+        case .trx:
+            return balance.tronTRX?.amount
         }
-        return balance.amount
+    }
+
+    private func tronRate(token: TronToken) -> Rates.Rate? {
+        let currency = currencyStore.state
+        let rates = switch token {
+        case .usdt:
+            tonRatesStore.state.usdtRates
+        case .trx:
+            tonRatesStore.state.jettonRates
+                .first { $0.key.caseInsensitiveCompare(TronSwift.TRX.symbol) == .orderedSame }?
+                .value ?? []
+        }
+        return rates.first { $0.currency == currency }
     }
 
     public func getCurrency() -> Currency {
@@ -279,26 +405,29 @@ public final class SendV3Controller {
         )
         var tokenAmount = BigUInt((tokenAmountDecimal as NSDecimalNumber).rounding(accordingToBehavior: accordingToBehavior).stringValue) ?? 0
 
-        while true {
+        if let maxTokenAmount, tokenAmount >= maxTokenAmount {
+            return maxTokenAmount
+        }
+
+        while maxTokenAmount.map({ tokenAmount < $0 }) ?? true {
             let fiatBack = (Decimal(string: tokenAmount.description) ?? 0) / multiplier * rate
             if fiatBack >= fiatValue { break }
             tokenAmount += 1
-            if let maxTokenAmount, tokenAmount > maxTokenAmount { break }
         }
 
         return tokenAmount
     }
 
-    public func convertCurrencyToTronUSDTAmountWithCorrection(
+    public func convertCurrencyToTronAmountWithCorrection(
+        token: TronToken,
         currencyValue: Decimal,
         maxTokenAmount: BigUInt? = nil
     ) -> BigUInt {
-        let currency = currencyStore.state
-        let rate = tonRatesStore.state.usdtRates.first(where: { $0.currency == currency })?.rate
+        let rate = tronRate(token: token)?.rate
 
         guard let rate, rate > 0 else { return 0 }
 
-        let fractionDigits = TronSwift.USDT.fractionDigits
+        let fractionDigits = token.fractionDigits
         let multiplier = pow(10, fractionDigits)
         let tokenAmountDecimal = (currencyValue / rate) * multiplier
         let accordingToBehavior = NSDecimalNumberHandler(
@@ -311,11 +440,14 @@ public final class SendV3Controller {
         )
         var tokenAmount = BigUInt((tokenAmountDecimal as NSDecimalNumber).rounding(accordingToBehavior: accordingToBehavior).stringValue) ?? 0
 
-        while true {
+        if let maxTokenAmount, tokenAmount >= maxTokenAmount {
+            return maxTokenAmount
+        }
+
+        while maxTokenAmount.map({ tokenAmount < $0 }) ?? true {
             let fiatBack = (Decimal(string: tokenAmount.description) ?? 0) / multiplier * rate
             if fiatBack >= currencyValue { break }
             tokenAmount += 1
-            if let maxTokenAmount, tokenAmount > maxTokenAmount { break }
         }
         return tokenAmount
     }
@@ -337,16 +469,16 @@ public final class SendV3Controller {
         )
     }
 
-    public func tronUSDTAmountFromCurrencyInput(currencyInput: String) -> BigUInt {
+    public func tronAmountFromCurrencyInput(token: TronToken, currencyInput: String) -> BigUInt {
         let normalizedInput = AmountInputFormatter.normalizedString(
             currencyInput,
             decimalSeparator: "."
         ) ?? ""
         let decimalValue = Decimal(string: normalizedInput, locale: Locale(identifier: "en_US_POSIX")) ?? 0
-        let maxTokenAmount = getTronUSDTMaximumAmount()
-        return convertCurrencyToTronUSDTAmountWithCorrection(
+        return convertCurrencyToTronAmountWithCorrection(
+            token: token,
             currencyValue: decimalValue,
-            maxTokenAmount: maxTokenAmount
+            maxTokenAmount: getTronMaximumAmount(token: token)
         )
     }
 
@@ -359,9 +491,6 @@ public final class SendV3Controller {
 }
 
 private extension String {
-    static let groupSeparator = Locale.current.groupingSeparator
-    static let fractionalSeparator = Locale.current.decimalSeparator
-
     var containsOnlyAsciiCharacters: Bool {
         let pattern = "^[\\x20-\\x7E]*$"
         do {

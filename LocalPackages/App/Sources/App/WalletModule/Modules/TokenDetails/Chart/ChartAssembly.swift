@@ -6,11 +6,12 @@ struct ChartAssembly {
     private init() {}
     static func module(
         token: Token,
+        wallet: Wallet,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) -> MVVMModule<ChartViewController, ChartModuleOutput, Void> {
         module(
-            chartController: keeperCoreMainAssembly.chartV2Controller(token: token),
+            chartController: keeperCoreMainAssembly.chartV2Controller(token: token, wallet: wallet),
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )

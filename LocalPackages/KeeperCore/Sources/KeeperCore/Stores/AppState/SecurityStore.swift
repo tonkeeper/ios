@@ -4,9 +4,16 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
     public struct State {
         public let isBiometryEnable: Bool
         public let isLockScreen: Bool
+        public let failedPasscodeAttempts: Int
+        public let passcodeLockoutEndDate: Date?
 
         static var defaultState: State {
-            State(isBiometryEnable: false, isLockScreen: false)
+            State(
+                isBiometryEnable: false,
+                isLockScreen: false,
+                failedPasscodeAttempts: 0,
+                passcodeLockoutEndDate: nil
+            )
         }
 
         static func state(keeperInfo: KeeperInfo?) -> State {
@@ -15,7 +22,9 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
             }
             return State(
                 isBiometryEnable: keeperInfo.securitySettings.isBiometryEnabled,
-                isLockScreen: keeperInfo.securitySettings.isLockScreen
+                isLockScreen: keeperInfo.securitySettings.isLockScreen,
+                failedPasscodeAttempts: keeperInfo.securitySettings.failedPasscodeAttempts,
+                passcodeLockoutEndDate: keeperInfo.securitySettings.passcodeLockoutEndDate
             )
         }
     }
@@ -23,6 +32,7 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
     public enum Event {
         case didUpdateIsBiometryEnabled(isBiometryEnable: Bool)
         case didUpdateIsLockScreen(isLockScreen: Bool)
+        case didUpdatePasscodeBruteForce(failedAttempts: Int, lockoutEndDate: Date?)
     }
 
     private let keeperInfoStore: KeeperInfoStore
@@ -49,6 +59,18 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
     public func setIsLockScreen(_ isLockScreen: Bool) async -> State {
         return await withCheckedContinuation { continuation in
             setIsLockScreen(isLockScreen) { state in
+                continuation.resume(returning: state)
+            }
+        }
+    }
+
+    @discardableResult
+    public func setPasscodeBruteForce(
+        failedAttempts: Int,
+        lockoutEndDate: Date?
+    ) async -> State {
+        return await withCheckedContinuation { continuation in
+            setPasscodeBruteForce(failedAttempts: failedAttempts, lockoutEndDate: lockoutEndDate) { state in
                 continuation.resume(returning: state)
             }
         }
@@ -85,6 +107,28 @@ public final class SecurityStore: Store<SecurityStore.Event, SecurityStore.State
                 StateUpdate(newState: state)
             } completion: { [weak self] state in
                 self?.sendEvent(.didUpdateIsLockScreen(isLockScreen: isLockScreen))
+                completion(state)
+            }
+        }
+    }
+
+    public func setPasscodeBruteForce(
+        failedAttempts: Int,
+        lockoutEndDate: Date?,
+        completion: @escaping (State) -> Void
+    ) {
+        keeperInfoStore.updateKeeperInfo { keeperInfo in
+            keeperInfo?.updatePasscodeBruteForce(failedAttempts: failedAttempts, lockoutEndDate: lockoutEndDate)
+        } completion: { [weak self] keeperInfo in
+            guard let self else { return }
+            let state = State.state(keeperInfo: keeperInfo)
+            updateState { _ in
+                StateUpdate(newState: state)
+            } completion: { [weak self] state in
+                self?.sendEvent(.didUpdatePasscodeBruteForce(
+                    failedAttempts: failedAttempts,
+                    lockoutEndDate: lockoutEndDate
+                ))
                 completion(state)
             }
         }

@@ -2,19 +2,26 @@ import KeeperCore
 import TKCoordinator
 import TKCore
 import TKLocalize
+import TKLogging
 import TKScreenKit
 import TKUIKit
 import TonSwift
 import UIKit
 
-public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    enum PresentationStyle: Equatable {
+        case modal
+        case pushed
+    }
+
     var didClose: (() -> Void)?
     var didPerformTransaction: (() -> Void)?
     var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
     var didRequestDeeplinkHandling: ((_ deeplink: Deeplink) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
+    var didRequestDepositTon: (() -> Void)?
 
-    private weak var sendTokenCoordinator: SendTokenCoordinator?
+    private weak var sendTokenCoordinator: SendCoordinator?
     private weak var linkDNSCoordinator: LinkDNSCoordinator?
     private weak var renewDNSCoordinator: RenewDNSCoordinator?
 
@@ -22,26 +29,46 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
     private let wallet: Wallet
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let presentationStyle: PresentationStyle
 
-    public init(
+    convenience init(
         router: NavigationControllerRouter,
         nft: NFT,
         wallet: Wallet,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly
     ) {
+        self.init(
+            router: router,
+            nft: nft,
+            wallet: wallet,
+            coreAssembly: coreAssembly,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            presentationStyle: .modal
+        )
+    }
+
+    init(
+        router: NavigationControllerRouter,
+        nft: NFT,
+        wallet: Wallet,
+        coreAssembly: TKCore.CoreAssembly,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        presentationStyle: PresentationStyle
+    ) {
         self.nft = nft
         self.wallet = wallet
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.presentationStyle = presentationStyle
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openDetails()
     }
 
-    public func handleTonkeeperDeeplink(deeplink: Deeplink) -> Bool {
+    func handleTonkeeperDeeplink(deeplink: Deeplink) -> Bool {
         switch deeplink {
         case let .publish(model):
             if let sendTokenCoordinator = sendTokenCoordinator {
@@ -64,11 +91,11 @@ private extension CollectiblesDetailsCoordinator {
         let module = NFTDetailsAssembly.module(
             wallet: wallet,
             nft: nft,
-            keeperCoreMainAssembly: keeperCoreMainAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            navigationButton: presentationStyle.navigationButton
         )
-
         module.output.didClose = { [weak self] in
-            self?.didClose?()
+            self?.close()
         }
 
         module.output.didTapTransfer = { [weak self] _, nft in
@@ -108,12 +135,12 @@ private extension CollectiblesDetailsCoordinator {
                 parentRouter: self.router,
                 mnemonicAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
                 securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+                analyticsProvider: self.coreAssembly.analyticsProvider,
                 onCancel: {},
-                onInput: { passcode in
-                    Task {
-                        let deeplinkParser = DeeplinkParser()
-
-                        if let deeplink = try? deeplinkParser.parse(string: url.absoluteString) {
+                onInput: { [weak self] passcode in
+                    guard let self else { return }
+                    Task { @MainActor [self] in
+                        if let deeplink = try? self.keeperCoreMainAssembly.deeplinkParser.parse(string: url.absoluteString) {
                             await MainActor.run {
                                 self.didRequestDeeplinkHandling?(deeplink)
                             }
@@ -126,17 +153,25 @@ private extension CollectiblesDetailsCoordinator {
                             nft: self.nft,
                             mnemonicAccess: self.keeperCoreMainAssembly.secureAssembly.mnemonicAccess
                         )
-                        guard let composedURL = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode) else {
+                        let showServiceUnavailable = {
                             await MainActor.run {
                                 let configuration = ToastPresenter.Configuration(title: TKLocales.Toast.serviceUnavailable)
                                 ToastPresenter.showToast(configuration: configuration)
                             }
-
-                            return
                         }
-
+                        let composedUrl: URL?
+                        do {
+                            composedUrl = try await proofProvider.composeTonNFTProofURL(baseURL: url, passcode: passcode)
+                        } catch {
+                            Log.w("failed to get ton nft proof url due to error: \(error)")
+                            return await showServiceUnavailable()
+                        }
+                        guard let composedUrl else {
+                            Log.w("failed to get ton nft proof url - not found")
+                            return await showServiceUnavailable()
+                        }
                         await MainActor.run {
-                            self.didOpenDapp?(composedURL, nil)
+                            self.didOpenDapp?(composedUrl, nil)
                         }
                     }
                 }
@@ -170,7 +205,7 @@ private extension CollectiblesDetailsCoordinator {
             DispatchQueue.main.async {
                 let configuration = ToastPresenter.Configuration(title: toastTitle)
                 ToastPresenter.showToast(configuration: configuration)
-                self.didClose?()
+                self.close()
             }
         }
 
@@ -193,14 +228,29 @@ private extension CollectiblesDetailsCoordinator {
             DispatchQueue.main.async {
                 let configuration = ToastPresenter.Configuration(title: toastTitle)
                 ToastPresenter.showToast(configuration: configuration)
-                self.didClose?()
+                self.close()
             }
         }
 
-        router.push(viewController: module.view)
+        router.push(
+            viewController: module.view,
+            onPopClosures: { [weak self] in
+                guard self?.presentationStyle == .pushed else { return }
+                self?.didClose?()
+            }
+        )
     }
 
-    func openTransfer(nft: NFT, recipient: Recipient? = nil) {
+    func close() {
+        switch presentationStyle {
+        case .modal:
+            didClose?()
+        case .pushed:
+            router.pop()
+        }
+    }
+
+    func openTransfer(nft: NFT, recipient: LegacyRecipient? = nil) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
 
@@ -218,16 +268,19 @@ private extension CollectiblesDetailsCoordinator {
         )
 
         sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
-            self?.sendTokenCoordinator = nil
+            guard let self else {
+                return
+            }
+            self.sendTokenCoordinator = nil
             navigationController?.dismiss(animated: true)
-            self?.didPerformTransaction?()
-            self?.removeChild($0)
+            self.removeChild($0)
+            self.didPerformTransaction?()
         }
 
         sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             self?.router.dismiss(animated: true) {
                 self?.didRequestOpenBuySell?(isInternalPurchasing)
-                self?.didClose?()
+                self?.close()
             }
         }
 
@@ -288,7 +341,7 @@ private extension CollectiblesDetailsCoordinator {
 
                         let configuration = ToastPresenter.Configuration(title: toastTitle)
                         ToastPresenter.showToast(configuration: configuration)
-                        self?.didClose?()
+                        self?.close()
                     }
                 }
             }
@@ -338,6 +391,14 @@ private extension CollectiblesDetailsCoordinator {
     }
 
     func openLinkDomain(wallet: Wallet, nft: NFT) {
+        openDNSLink(wallet: wallet, nft: nft, flow: .link)
+    }
+
+    func openUnlinkDomain(wallet: Wallet, nft: NFT) {
+        openDNSLink(wallet: wallet, nft: nft, flow: .unlink)
+    }
+
+    func openDNSLink(wallet: Wallet, nft: NFT, flow: LinkDNSCoordinator.Flow) {
         guard let windowScene = UIApplication.keyWindowScene else { return }
         let window = TKWindow(windowScene: windowScene)
 
@@ -350,7 +411,7 @@ private extension CollectiblesDetailsCoordinator {
             window: window,
             wallet: wallet,
             nft: nft,
-            flow: .link
+            flow: flow
         )
 
         coordinator.didCancel = { [weak self, weak coordinator] in
@@ -359,37 +420,21 @@ private extension CollectiblesDetailsCoordinator {
         }
 
         coordinator.didFinish = { [weak self] in
-            self?.didPerformTransaction?()
-            self?.router.dismiss()
-            self?.removeChild($0)
+            guard let self else {
+                return
+            }
+            self.router.dismiss()
+            self.removeChild($0)
+            self.close()
+            self.didPerformTransaction?()
         }
 
-        linkDNSCoordinator = coordinator
-
-        addChild(coordinator)
-        coordinator.start()
-    }
-
-    func openUnlinkDomain(wallet: Wallet, nft: NFT) {
-        guard let windowScene = UIApplication.keyWindowScene else { return }
-        let window = TKWindow(windowScene: windowScene)
-
-        let coordinator = DNSModule(
-            dependencies: DNSModule.Dependencies(
-                coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
-            )
-        ).createLinkDNSCoordinator(window: window, wallet: wallet, nft: nft, flow: .unlink)
-
-        coordinator.didCancel = { [weak self, weak coordinator] in
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-        }
-
-        coordinator.didFinish = { [weak self] in
-            self?.didPerformTransaction?()
-            self?.router.dismiss()
-            self?.removeChild($0)
+        coordinator.didRequestDepositTon = { [weak self, weak coordinator] in
+            guard let self else { return }
+            if let coordinator {
+                removeChild(coordinator)
+            }
+            didRequestDepositTon?()
         }
 
         linkDNSCoordinator = coordinator
@@ -419,9 +464,10 @@ private extension CollectiblesDetailsCoordinator {
         }
 
         coordinator.didFinish = { [weak self] in
-            self?.didPerformTransaction?()
-            self?.router.dismiss()
-            self?.removeChild($0)
+            guard let self else { return }
+            self.router.dismiss()
+            self.removeChild($0)
+            self.didPerformTransaction?()
         }
 
         renewDNSCoordinator = coordinator
@@ -433,4 +479,15 @@ private extension CollectiblesDetailsCoordinator {
 
 private extension FriendlyAddress {
     static var burnAddress: FriendlyAddress? = try? FriendlyAddress(string: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
+}
+
+private extension CollectiblesDetailsCoordinator.PresentationStyle {
+    var navigationButton: NFTDetailsNavigationButton {
+        switch self {
+        case .modal:
+            return .swipeDown
+        case .pushed:
+            return .back
+        }
+    }
 }

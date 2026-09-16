@@ -20,6 +20,11 @@ public extension TonConnectAppsStore {
         let responses = connectEventSuccessResponse.payload.items.compactMap {
             $0.connectionResponse()
         }
+        setPendingConnectionSource(
+            parameters.source,
+            clientId: parameters.clientId,
+            manifestURL: parameters.requestPayload.manifestUrl
+        )
         try await request.approve(walletId: wallet.walletKitIdentifier, response: responses.first)
         await MainActor.run {
             notifyObservers(event: .didUpdateApps)

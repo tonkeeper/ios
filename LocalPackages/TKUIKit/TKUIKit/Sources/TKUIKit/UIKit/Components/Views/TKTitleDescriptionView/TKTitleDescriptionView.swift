@@ -53,12 +53,6 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
         return stackView
     }()
 
-    private var stackViewTopAnchor: NSLayoutConstraint?
-    private var stackViewLeftAnchor: NSLayoutConstraint?
-    private var stackViewBottomAnchor: NSLayoutConstraint?
-    private var stackViewRightAnchor: NSLayoutConstraint?
-    private var stackViewWidthAnchor: NSLayoutConstraint?
-
     public init(size: Size) {
         self.size = size
         super.init(frame: .zero)

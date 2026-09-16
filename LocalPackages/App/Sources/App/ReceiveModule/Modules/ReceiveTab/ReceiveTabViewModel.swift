@@ -11,20 +11,10 @@ protocol ReceiveTabModuleOutput: AnyObject {}
 
 protocol ReceiveTabViewModel: AnyObject {
     var didUpdateModel: ((ReceiveTabView.Model) -> Void)? { get set }
-    var didGenerateQRCode: ((UIImage?) -> Void)? { get set }
+    var didGenerateQRCode: ((QrCodeMatrix?) -> Void)? { get set }
     var didTapShare: ((String?) -> Void)? { get set }
-    var didTapCopy: ((String?) -> Void)? { get set }
-    var didUpdateSegmentedControl: ((BuySellListSegmentedControl.Model?) -> Void)? { get set }
-
-    var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
 
     func viewDidLoad()
-    func generateQRCode(size: CGSize)
-}
-
-enum ReceiveItem {
-    case tonToken(TonToken)
-    case tron
 }
 
 final class ReceiveTabViewModelImplementation: ReceiveTabViewModel, ReceiveTabModuleOutput {
@@ -33,94 +23,76 @@ final class ReceiveTabViewModelImplementation: ReceiveTabViewModel, ReceiveTabMo
     // MARK: - ReceiveTabViewModel
 
     var didUpdateModel: ((ReceiveTabView.Model) -> Void)?
-    var didGenerateQRCode: ((UIImage?) -> Void)?
+    var didGenerateQRCode: ((QrCodeMatrix?) -> Void)?
     var didTapShare: ((String?) -> Void)?
-    var didTapCopy: ((String?) -> Void)?
-    var didUpdateSegmentedControl: ((BuySellListSegmentedControl.Model?) -> Void)?
-
-    var showToast: ((ToastPresenter.Configuration) -> Void)?
 
     func viewDidLoad() {
-        walletsStore.addObserver(self) { observer, event in
-            switch event {
-            case let .didUpdateWalletTron(wallet):
-                DispatchQueue.main.async {
-                    guard wallet == observer.wallet else { return }
-                    observer.wallet = wallet
-                    observer.update()
-                }
-            default: break
-            }
-        }
-
         update()
     }
 
-    func generateQRCode(size: CGSize) {
-        qrCodeGenerateTask?.cancel()
-        qrCodeGenerateTask = Task {
-            let qrCodeString: String
-            switch token {
-            case let .ton(token):
-                let jettonAddress: TonSwift.Address?
-                switch token {
-                case .ton:
-                    jettonAddress = nil
-                case let .jetton(jettonItem):
-                    jettonAddress = jettonItem.jettonInfo.address
-                }
-
-                do {
-                    qrCodeString = try deeplinkGenerator.generateTransferDeeplink(
-                        with: wallet.friendlyAddress.toString(),
-                        jettonAddress: jettonAddress
-                    )
-                } catch {
-                    qrCodeString = ""
-                }
-            case .tron:
-                qrCodeString = wallet.tron?.address.base58 ?? ""
-            }
-
-            let image = await qrCodeGenerator.generate(
-                string: qrCodeString,
-                size: size
-            )
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                didGenerateQRCode?(image)
-            }
+    func generateQRCode() {
+        let qrCodeString = makeQRCodePayload()
+        qrCodeGenerationController.generate(
+            payload: qrCodeString
+        ) { [weak self] matrix in
+            self?.didGenerateQRCode?(matrix)
         }
     }
-
-    private var qrCodeGenerateTask: Task<Void, Never>?
 
     // MARK: - Dependencies
 
     private let token: ReceiveLegacyToken
-    private var wallet: Wallet
-    private let walletsStore: WalletsStore
+    private let wallet: Wallet
     private let deeplinkGenerator: DeeplinkGenerator
-    private let qrCodeGenerator: QRCodeGenerator
+    private let qrCodeGenerationController: QrCodeMatrixGenerationController
 
     init(
         token: ReceiveLegacyToken,
         wallet: Wallet,
-        walletsStore: WalletsStore,
         deeplinkGenerator: DeeplinkGenerator,
-        qrCodeGenerator: QRCodeGenerator
+        qrCodeGenerator: QrCodeMatrixGenerator
     ) {
         self.token = token
         self.wallet = wallet
-        self.walletsStore = walletsStore
         self.deeplinkGenerator = deeplinkGenerator
-        self.qrCodeGenerator = qrCodeGenerator
+        self.qrCodeGenerationController = QrCodeMatrixGenerationController(
+            qrCodeGenerator: qrCodeGenerator,
+            centerCutoutSize: Constants.qrCodeCenterCutoutSize
+        )
     }
 }
 
 private extension ReceiveTabViewModelImplementation {
+    enum Constants {
+        static let qrCodeCenterCutoutSize = CGSize(width: 72, height: 72)
+    }
+
+    func makeQRCodePayload() -> String {
+        switch token {
+        case let .ton(token):
+            let jettonAddress: TonSwift.Address?
+            switch token {
+            case .ton:
+                jettonAddress = nil
+            case let .jetton(jettonItem):
+                jettonAddress = jettonItem.jettonInfo.address
+            }
+
+            do {
+                return try deeplinkGenerator.generateTransferDeeplink(
+                    with: wallet.friendlyAddress.toString(),
+                    jettonAddress: jettonAddress
+                )
+            } catch {
+                return ""
+            }
+        case .tron:
+            return wallet.tron?.address.base58 ?? ""
+        }
+    }
+
     func createModel(
-        icon: TKListItemIconView.Configuration,
+        avatarImageSource: AssetAvatarViewImageSource,
         description: String,
         walletAddress: String?
     ) -> ReceiveTabView.Model {
@@ -162,15 +134,14 @@ private extension ReceiveTabViewModelImplementation {
             addressButtonAction: { [weak self] in
                 self?.copyButtonAction()
             },
-            iconConfiguration: icon,
-            tag: wallet.receiveTagConfiguration()
+            avatarImageSource: avatarImageSource,
+            tag: wallet.receiveTagSwiftUIConfiguration()
         )
     }
 
     func copyButtonAction() {
         guard let address = getAddress() else { return }
-        didTapCopy?(address)
-        showToast?(wallet.copyToastConfiguration())
+        Pasteboard.copy(value: address, toast: wallet.copyToastConfiguration())
     }
 
     func getAddress() -> String? {
@@ -183,7 +154,7 @@ private extension ReceiveTabViewModelImplementation {
     }
 
     func update() {
-        let icon: TKListItemIconView.Configuration
+        let avatarImageSource: AssetAvatarViewImageSource
         let description: String
         let walletAddress: String?
 
@@ -194,44 +165,15 @@ private extension ReceiveTabViewModelImplementation {
             switch token {
             case .ton:
                 descriptionTokenName = "\(TonInfo.name)"
-                icon = TKListItemIconView.Configuration(
-                    content: .image(
-                        .init(
-                            image: .image(.TKUIKit.Icons.Size44.tonChain),
-                            size: .size(CGSize(width: 44, height: 44)),
-                            corners: .circle
-                        )
-                    ),
-                    alignment: .center,
-                    size: CGSize(width: 44, height: 44),
-                    badge: nil
-                )
+                avatarImageSource = .image(.TKUIKit.Icons.Size44.tonChain)
             case let .jetton(jettonItem):
                 descriptionTokenName = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
 
-                var badge: TKListItemIconView.Configuration.Badge?
-                if jettonItem.jettonInfo.isTonUSDT, wallet.isTronTurnOn {
-                    badge = TKListItemIconView.Configuration.Badge(
-                        configuration: TKListItemBadgeView.Configuration(
-                            item: .image(.image(.TKUIKit.Icons.Size20.tonChain)),
-                            size: .medium,
-                            backgroundColor: .Constant.white
-                        ),
-                        position: .bottomRight
-                    )
-                }
-
-                icon = TKListItemIconView.Configuration(
-                    content: .image(
-                        .init(
-                            image: .urlImage(jettonItem.jettonInfo.imageURL),
-                            size: .size(CGSize(width: 44, height: 44)),
-                            corners: .circle
-                        )
-                    ),
-                    alignment: .center,
-                    size: CGSize(width: 44, height: 44),
-                    badge: badge
+                avatarImageSource = .url(
+                    jettonItem.jettonInfo.imageURL,
+                    chainIcon: jettonItem.jettonInfo.isTonUSDT && wallet.tron != nil
+                        ? .TKUIKit.Icons.Size20.tonChain
+                        : nil
                 )
             }
 
@@ -239,50 +181,25 @@ private extension ReceiveTabViewModelImplementation {
         case let .tron(tronToken):
             switch tronToken {
             case .usdt:
-                icon = TKListItemIconView.Configuration(
-                    content: .image(
-                        .init(
-                            image: .image(.App.Currency.Size44.usdt),
-                            size: .size(CGSize(width: 44, height: 44)),
-                            corners: .circle
-                        )
-                    ),
-                    alignment: .center,
-                    size: CGSize(width: 44, height: 44),
-                    badge: TKListItemIconView.Configuration.Badge(
-                        configuration: TKListItemBadgeView.Configuration(
-                            item: .image(.image(.App.Currency.Vector.trc20)),
-                            size: .medium,
-                            backgroundColor: .Constant.white
-                        ),
-                        position: .bottomRight
-                    )
+                avatarImageSource = .image(
+                    .TKUIKit.Icons.Size44.currencyUsdt,
+                    chainIcon: .TKUIKit.Icons.Size44.currencyTrc20
                 )
                 description = TKLocales.Receive.Trc20.description
                 walletAddress = wallet.tron?.address.base58
             case .trx:
-                icon = TKListItemIconView.Configuration(
-                    content: .image(
-                        .init(
-                            image: .image(.App.Currency.Vector.trc20),
-                            size: .size(CGSize(width: 44, height: 44)),
-                            corners: .circle
-                        )
-                    ),
-                    alignment: .center,
-                    size: CGSize(width: 44, height: 44),
-                    badge: nil
-                )
+                avatarImageSource = .image(.TKUIKit.Icons.Size44.currencyTrc20)
                 description = TKLocales.Receive.Trx.description
                 walletAddress = wallet.tron?.address.base58
             }
         }
 
         let model = createModel(
-            icon: icon,
+            avatarImageSource: avatarImageSource,
             description: description,
             walletAddress: walletAddress
         )
         didUpdateModel?(model)
+        generateQRCode()
     }
 }

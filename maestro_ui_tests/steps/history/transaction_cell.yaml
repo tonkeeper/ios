@@ -1,11 +1,14 @@
 appId: com.jbig.tonkeeper
 ---
 - assertVisible: Sent
-- assertVisible: "\u2212\u20090.001\u2009TON"
+- assertVisible: ${"− 0.001 " + NATIVE_TOKEN_SHORT_TEXT}
+# History cells use 4…4 (toShort / MultichainAddressFormatter), not confirmation 6…6.
 - runScript:
     file: ../../scripts/utils/short_addr.js
     env:
       addr: ${RECIEVE_WALLET}
+      prefixLength: "4"
+      suffixLength: "4"
 - assertVisible: ${output.shortAddrRecieve}
 
 - runFlow: ../../service/history/find_last_ton_transaction.yaml

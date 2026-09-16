@@ -60,7 +60,9 @@ final class KeystoneSignViewController: GenericViewViewController<KeystoneSignVi
 
 private extension KeystoneSignViewController {
     func setup() {
+        addChild(scannerViewController)
         customView.embedScannerView(scannerViewController.view)
+        scannerViewController.didMove(toParent: self)
     }
 
     func setupBindings() {

@@ -14,15 +14,21 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         if preferredExtraType == .default {
             return .default
         } else {
-            if let address = confirmation.messages.first?.targetAddress {
-                return .battery(excessAddress: address.address)
-            } else {
+            do {
+                return try .battery(excessAddress: wallet.address)
+            } catch {
                 return .default
             }
         }
     }
 
-    @Atomic private var extraState: TransactionConfirmationModel.ExtraState
+    private var extraState: TransactionConfirmationModel.ExtraState {
+        let value: TransactionConfirmationModel.ExtraValue = switch preferredExtraType {
+        case .battery: .battery(charges: nil, excess: nil)
+        case .default, .gasless, .multichain: .default(amount: confirmation.requiredGasAmount)
+        }
+        return .extra(TransactionConfirmationModel.Extra(value: value, kind: .fee))
+    }
 
     private let wallet: Wallet
     private var confirmation: SwapConfirmation
@@ -33,7 +39,6 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
     private let tonConnectService: TonConnectService
     private let balanceService: BalanceService
     private let settingsRepository: SettingsRepository
-    private let batteryCalculation: BatteryCalculation
 
     init(
         wallet: Wallet,
@@ -44,8 +49,7 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         transferService: TransferService,
         tonConnectService: TonConnectService,
         balanceService: BalanceService,
-        settingsRepository: SettingsRepository,
-        batteryCalculation: BatteryCalculation
+        settingsRepository: SettingsRepository
     ) {
         self.wallet = wallet
         self.confirmation = confirmation
@@ -56,13 +60,6 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         self.tonConnectService = tonConnectService
         self.balanceService = balanceService
         self.settingsRepository = settingsRepository
-        self.batteryCalculation = batteryCalculation
-        self.extraState = .extra(
-            TransactionConfirmationModel.Extra(
-                value: .default(amount: BigUInt(confirmation.gasBudget) ?? 0),
-                kind: .fee
-            )
-        )
 
         setBatteryPrefferedExtraTypeIfNeeded()
     }
@@ -78,7 +75,7 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
             comment: nil,
             availableExtraTypes: availableTypes,
             isMax: getIsMaxAmount(),
-            totalFee: BigInt(confirmation.gasBudget) ?? 0
+            totalFee: BigInt(confirmation.requiredGasAmount)
         )
     }
 
@@ -105,9 +102,9 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         return .success(())
     }
 
-    public func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+    public func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         do {
-            try await transferService.sendTransaction(
+            let broadcastedTransactions = try await transferService.sendTransaction(
                 wallet: wallet,
                 transfer: nativeSwapTransfer(),
                 transferType: transferType,
@@ -118,7 +115,18 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
                     return await signedTransactions(transferData: transferData)
                 }
             )
-            return .success(())
+            return .success(
+                .ton(
+                    wallet: wallet,
+                    signedTransactions: broadcastedTransactions,
+                    activityType: .swap(
+                        MultichainPendingTransaction.SwapDetails(
+                            fromAssetId: fromToken.assetId(network: wallet.network),
+                            toAssetId: toToken.assetId(network: wallet.network)
+                        )
+                    )
+                )
+            )
         } catch {
             switch error {
             case let .firstOption(transferError):
@@ -160,27 +168,12 @@ public final class NativeSwapTransactionConfirmationController: TransactionConfi
         switch extraType {
         case .default:
             transferSettings.jettonTransfer = .default
-            extraState = .extra(
-                TransactionConfirmationModel.Extra(
-                    value: .default(
-                        amount: BigUInt(confirmation.gasBudget) ?? 0
-                    ),
-                    kind: .fee
-                )
-            )
         case .battery:
             transferSettings.jettonTransfer = .battery
-            extraState = .extra(
-                TransactionConfirmationModel.Extra(
-                    value: .battery(
-                        charges: batteryCalculation.calculateCharges(tonAmount: BigUInt(confirmation.gasBudget) ?? 0),
-                        excess: nil
-                    ),
-                    kind: .fee
-                )
-            )
         case .gasless:
             transferSettings.jettonTransfer = .gasless
+        case .multichain:
+            return
         }
 
         try? settingsRepository.setTransferSettings(

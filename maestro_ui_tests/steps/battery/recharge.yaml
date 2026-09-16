@@ -1,0 +1,32 @@
+appId: com.jbig.tonkeeper
+---
+
+- scrollUntilVisible:
+    element:
+      id: wallet_battery
+    direction: UP
+    timeout: 20000
+- tapOn:
+    id: wallet_battery
+
+- scrollUntilVisible:
+    element: "Recharge with USD₮"
+    timeout: 20000
+
+- tapOn: "Recharge with USD₮"
+- tapOn:
+    id: "radio"
+    index: 2
+- tapOn: "Continue"
+
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../../../steps/password/enter_password.yaml
+
+- tapOn:
+    id: "history_back_button"
+

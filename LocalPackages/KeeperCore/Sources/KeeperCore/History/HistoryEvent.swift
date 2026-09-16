@@ -1,7 +1,7 @@
 import Foundation
 import TronSwift
 
-public enum HistoryEvent: Codable {
+public enum HistoryEvent: Codable, Sendable {
     case tonAccountEvent(AccountEvent)
     case tronEvent(TronTransaction)
 

@@ -10,6 +10,7 @@ struct WalletBalanceAssembly {
     private init() {}
     @MainActor
     static func module(
+        wallet: Wallet,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
     ) -> WalletBalanceModule {
@@ -28,13 +29,15 @@ struct WalletBalanceAssembly {
             signedAmountFormatter: keeperCoreMainAssembly.formattersAssembly.signedAmountFormatter,
             currencyProvider: { keeperCoreMainAssembly.storesAssembly.currencyStore.state }
         )
-        let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
-            homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
-            deeplinkParser: DeeplinkParser(),
-            analyticsProvider: coreAssembly.analyticsProvider
+        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+        let collectiblesViewModel = WalletBalanceMultichainCollectiblesViewModel(
+            storesAssembly: keeperCoreMainAssembly.storesAssembly,
+            accountNftService: keeperCoreMainAssembly.servicesAssembly.accountNftService(),
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
         )
 
         let viewModel = WalletBalanceViewModelImplementation(
+            wallet: wallet,
             balanceListModel: WalletBalanceBalanceModel(
                 walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
                 balanceStore: keeperCoreMainAssembly.storesAssembly.managedBalanceStore,
@@ -45,22 +48,38 @@ struct WalletBalanceAssembly {
             balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
             setupModel: WalletBalanceSetupModel(
                 walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+                processedBalanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
                 securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
                 walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
                 mnemonicsAccess: keeperCoreMainAssembly.secureAssembly.mnemonicAccess,
-                configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+                configuration: configuration
             ),
-            totalBalanceModel: WalletTotalBalanceModel(
-                walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-                totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-                appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-                backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
-                balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-                updateQueue: queue
-            ),
+            makeHeaderViewModel: { wallet in
+                WalletBalanceHeaderViewModel(
+                    wallet: wallet,
+                    totalBalanceModel: WalletTotalBalanceModel(
+                        wallet: wallet,
+                        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+                        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+                        backgroundUpdate: keeperCoreMainAssembly.backgroundUpdateAssembly.backgroundUpdate,
+                        balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                        updateQueue: queue
+                    ),
+                    balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+                    walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+                    appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+                    appSettings: coreAssembly.appSettings,
+                    headerMapper: WalletBalanceHeaderMapper(
+                        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                        dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+                    ),
+                    configuration: configuration,
+                    tooltipsService: coreAssembly.tooltipsAssembly.service
+                )
+            },
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,
-            configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
+            configuration: configuration,
             appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
             listMapper:
             WalletBalanceListMapper(
@@ -83,19 +102,23 @@ struct WalletBalanceAssembly {
                     tradeAssetDetailsValueFormatter.earnApyValueFormatter(value)
                 }
             ),
-            headerMapper: WalletBalanceHeaderMapper(
-                amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-                dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
-            ),
             urlOpener: coreAssembly.urlOpener(),
-            appSettings: coreAssembly.appSettings,
-            tooltipsService: coreAssembly.tooltipsAssembly.service,
-            homeBannersViewModel: homeBannersViewModel
+            collectiblesViewModel: collectiblesViewModel,
+            makeHomeBannersViewModel: { wallet in
+                let homeBannersViewModel = WalletBalanceHomeBannersViewModel(
+                    wallet: wallet,
+                    homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
+                    homeBannersLoader: keeperCoreMainAssembly.loadersAssembly.homeBannersLoader,
+                    deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
+                    analyticsProvider: coreAssembly.analyticsProvider
+                )
+                homeBannersViewModel.onOpenLink = { url in
+                    coreAssembly.urlOpener().open(url: url)
+                }
+                return homeBannersViewModel
+            }
         )
         viewModel.bindBannersSectionVisibility()
-        homeBannersViewModel.onOpenLink = { url in
-            coreAssembly.urlOpener().open(url: url)
-        }
         let viewController = WalletBalanceViewController(
             viewModel: viewModel,
             tooltipsService: coreAssembly.tooltipsAssembly.service

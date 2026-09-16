@@ -194,6 +194,14 @@ final class TKPopupMenuItemView: UIControl, ConfigurableView {
         accessoryStackView.isHidden = (!showSelectionMark && model.icon == nil)
         alpha = model.isEnabled ? 1 : 0.9
 
+        isAccessibilityElement = true
+        accessibilityTraits = model.isEnabled ? .button : [.button, .notEnabled]
+        accessibilityLabel = model.title.string
+        titleLabel.isAccessibilityElement = false
+        valueLabel.isAccessibilityElement = false
+        descriptionLabel.isAccessibilityElement = false
+        footerTextLabel.isAccessibilityElement = false
+
         setNeedsLayout()
         invalidateIntrinsicContentSize()
     }

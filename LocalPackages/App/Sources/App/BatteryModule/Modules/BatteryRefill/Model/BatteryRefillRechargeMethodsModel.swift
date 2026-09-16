@@ -42,10 +42,6 @@ final class BatteryRefillRechargeMethodsModel {
 
     private var rechargeMethods = [RechargeMethodItem]()
     private var loadingTask: Task<Void, Never>?
-    private var isLoading: Bool {
-        loadingTask == nil
-    }
-
     private let wallet: Wallet
     private let rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider
     private let configuration: Configuration

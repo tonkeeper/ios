@@ -17,4 +17,16 @@ struct AmountInputAssembly {
         let viewController = AmountInputViewController(viewModel: viewModel)
         return .init(view: viewController, output: viewModel, input: viewModel)
     }
+
+    static func swiftUIModule(
+        sourceUnit: AmountInputUnit,
+        destinationUnit: AmountInputUnit,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly
+    ) -> AmountInputSwiftUIViewModel {
+        AmountInputSwiftUIViewModel(
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+            sourceUnit: sourceUnit,
+            destinationUnit: destinationUnit
+        )
+    }
 }

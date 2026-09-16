@@ -84,4 +84,17 @@ public struct Wallet: Codable, Hashable {
         self.tron = try container.decodeIfPresent(WalletTron.self, forKey: .tron)
         self.multichain = try container.decodeIfPresent(MultichainWallet.self, forKey: .multichain)
     }
+
+    enum CodingKeys: String, CodingKey {
+        case id
+        case identity
+        case metaData
+        case setupSettings
+        case notificationSettings
+        case backupSettings
+        case addressBook
+        case batterySettings
+        case tron
+        case multichain = "multichain_v5"
+    }
 }

@@ -11,10 +11,21 @@ public enum Transfer {
     case nativeSwap(SwapConfirmation)
     case signRaw(SignRawRequest, forceRelayer: Bool)
     case renewDNS(nft: NFT)
+    case multichainSwap(SignRawRequest)
+
+    /// An aggregator's swap payload already names the address its unspent TON returns to. Rewriting
+    /// that to the relayer's excess address — which every other relayed transfer does — would hand
+    /// the refund of a third-party swap to whoever paid its gas.
+    var keepsPayloadExcessAddress: Bool {
+        guard case .multichainSwap = self else {
+            return false
+        }
+        return true
+    }
 
     public var messagesCount: Int {
         switch self {
-        case let .stonfiSwap(request):
+        case let .stonfiSwap(request), let .multichainSwap(request):
             return request.messages.count
         case let .signRaw(request, _):
             return request.messages.count

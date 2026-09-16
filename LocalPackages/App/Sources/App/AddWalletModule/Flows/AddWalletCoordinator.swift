@@ -1,19 +1,23 @@
 import KeeperCore
 import TKCoordinator
+import TKCore
 import TKFeatureFlags
 import TKUIKit
 import UIKit
 
-public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didAddWallets: (() -> Void)?
+final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didAddWallets: (() -> Void)?
 
     private var pairSignerCoordinator: PairSignerCoordinator?
 
     private let options: [AddWalletOption]
     private let configurationAssembly: ConfigurationAssembly
+    private let multichainSupportedChains: [MultichainChain]
     private let walletAddController: WalletAddController
-    private let createWalletCoordinatorProvider: (ViewControllerRouter) -> CreateWalletCoordinator
+    private let analyticsProvider: AnalyticsProvider
+    private let analyticsContext: WalletFlowAnalyticsContext
+    private let createWalletCoordinatorProvider: (ViewControllerRouter, CreateWalletCoordinator.Mode) -> CreateWalletCoordinator
     private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ network: Network) -> ImportWalletCoordinator
     private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
     private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
@@ -24,8 +28,11 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
         router: ViewControllerRouter,
         options: [AddWalletOption],
         configurationAssembly: ConfigurationAssembly,
+        multichainSupportedChains: [MultichainChain],
         walletAddController: WalletAddController,
-        createWalletCoordinatorProvider: @escaping (ViewControllerRouter) -> CreateWalletCoordinator,
+        analyticsProvider: AnalyticsProvider,
+        analyticsContext: WalletFlowAnalyticsContext,
+        createWalletCoordinatorProvider: @escaping (ViewControllerRouter, CreateWalletCoordinator.Mode) -> CreateWalletCoordinator,
         importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ network: Network) -> ImportWalletCoordinator,
         importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
         pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator,
@@ -33,7 +40,10 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
         pairKeystoneCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairKeystoneCoordinator
     ) {
         self.configurationAssembly = configurationAssembly
+        self.multichainSupportedChains = multichainSupportedChains
         self.walletAddController = walletAddController
+        self.analyticsProvider = analyticsProvider
+        self.analyticsContext = analyticsContext
         self.options = Self.filterOptions(options, configurationAssembly: configurationAssembly)
         self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
         self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
@@ -44,11 +54,11 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openAddWalletOptionPicker()
     }
 
-    override public func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
         guard let tonkeeperDeeplink = deeplink as? Deeplink else { return false }
 
         switch tonkeeperDeeplink {
@@ -66,41 +76,70 @@ private extension AddWalletCoordinator {
         _ options: [AddWalletOption],
         configurationAssembly: ConfigurationAssembly
     ) -> [AddWalletOption] {
-        guard !configurationAssembly.configuration.isTetraWalletEnabled else { return options }
-        return options.filter { $0 != .importTetra }
+        options
+            .map { option in
+                switch option {
+                case .createMultichain where !configurationAssembly.configuration.featureEnabled(.multichainEnabled):
+                    return .createRegular
+                default:
+                    return option
+                }
+            }
+            .filter { option in
+                switch option {
+                case .importTetra where !configurationAssembly.configuration.isTetraWalletEnabled:
+                    return false
+                default:
+                    return true
+                }
+            }
+            .unique
     }
 
     func openAddWalletOptionPicker() {
+        analyticsProvider.log(AddWalletMenuView(from: analyticsContext.from))
         let module = AddWalletOptionPickerAssembly.module(
-            options: options
+            options: options,
+            multichainImportChains: configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
+                ? multichainSupportedChains
+                : []
         )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
 
-        module.output.didSelectOption = { [weak self, unowned bottomSheetViewController] option in
-            bottomSheetViewController.dismiss {
+        module.output.didSelectOption = { [weak self, weak viewController = module.view] option in
+            viewController?.dismissFromCoordinator(animated: true) {
                 self?.handleSelectedOption(option)
             }
         }
 
-        bottomSheetViewController.didClose = { [weak self] interactivly in
-            if interactivly {
+        module.output.didRequestClose = { [weak self, weak viewController = module.view] in
+            guard let viewController else {
+                self?.didCancel?()
+                return
+            }
+
+            viewController.dismissFromCoordinator(animated: true) {
                 self?.didCancel?()
             }
         }
 
-        bottomSheetViewController.present(fromViewController: router.rootViewController)
+        module.view.didDismissInteractively = { [weak self] in
+            self?.didCancel?()
+        }
+
+        router.rootViewController.topPresentedViewController().present(module.view, animated: true)
     }
 
     func handleSelectedOption(_ option: AddWalletOption) {
+        logImportStarted(for: option)
         switch option {
         case .createRegular:
             openCreateRegularWallet(router: router)
+        case .createMultichain:
+            openCreateMultichainWallet(router: router)
         case .importRegular:
             openAddWallet(network: .mainnet)
         case .importWatchOnly:
             openAddWatchOnlyWallet()
-        case .importTestnet:
-            openAddWallet(network: .testnet)
         case .importTetra:
             openAddWallet(network: .tetra)
         case .signer:
@@ -112,14 +151,64 @@ private extension AddWalletCoordinator {
         }
     }
 
+    func logImportStarted(for option: AddWalletOption) {
+        let walletSource: WalletSource
+        let walletMode: WalletMode
+
+        switch option {
+        case .createRegular, .createMultichain, .importRegular, .importTetra:
+            return
+        case .importWatchOnly:
+            walletSource = .watchonly
+            walletMode = .single
+        case .signer:
+            walletSource = .signer
+            walletMode = .single
+        case .keystone:
+            walletSource = .keystone
+            walletMode = .single
+        case .ledger:
+            walletSource = .ledger
+            walletMode = .single
+        }
+
+        analyticsProvider.logWalletImportStarted(
+            walletMode: walletMode,
+            walletSource: walletSource,
+            from: analyticsContext.from
+        )
+    }
+
+    func openCreateMultichainWallet(router: ViewControllerRouter) {
+        guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
+            return openCreateRegularWallet(router: router)
+        }
+        openCreateWallet(router: router, mode: .multichain)
+    }
+
     func openCreateRegularWallet(router: ViewControllerRouter) {
+        openCreateWallet(router: router, mode: .regular)
+    }
+
+    func openCreateWallet(
+        router: ViewControllerRouter,
+        mode: CreateWalletCoordinator.Mode
+    ) {
         let coordinator = createWalletCoordinatorProvider(
-            router
+            router,
+            mode
         )
 
         coordinator.didCancel = { [weak self, weak coordinator] in
             self?.removeChild(coordinator)
             self?.didCancel?()
+        }
+
+        coordinator.didRequestBack = { [weak self, weak coordinator] in
+            self?.router.dismiss(animated: true) { [weak self, weak coordinator] in
+                self?.removeChild(coordinator)
+                self?.openAddWalletOptionPicker()
+            }
         }
 
         coordinator.didCreateWallet = { [weak self, weak coordinator] in
@@ -275,9 +364,7 @@ private extension AddWalletCoordinator {
         }
 
         coordinator.didPaired = { [weak self, weak coordinator] in
-            self?.router.dismiss(animated: true) {
-                self?.didAddWallets?()
-            }
+            self?.didAddWallets?()
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }

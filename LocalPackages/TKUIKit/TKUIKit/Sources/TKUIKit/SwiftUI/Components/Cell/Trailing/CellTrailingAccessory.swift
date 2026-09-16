@@ -16,10 +16,8 @@ public struct CellTrailingAccessory: View {
                 width: config.iconSize,
                 height: config.iconSize
             )
-            .foregroundStyle(
-                Color(uiColor: config.color)
-            )
-            .padding(Layout.insets)
+            .foregroundStyle(config.color)
+            .padding(config.contentInsets)
     }
 }
 
@@ -36,18 +34,25 @@ extension CellTrailingAccessory {
 
 public extension CellTrailingAccessory {
     struct Config {
-        public var color: UIColor
+        public var color: TKColor
         public var iconSize: CGFloat
         public var icon: Image
+        public var contentInsets: EdgeInsets
 
         public init(
-            color: UIColor,
+            color: TKColor,
             icon: Image,
-            iconSize: CGFloat = 28
+            iconSize: CGFloat = 28,
+            contentInsetsModifier: (inout EdgeInsets) -> Void = { _ in }
         ) {
             self.color = color
             self.icon = icon
             self.iconSize = iconSize
+            self.contentInsets = {
+                var insets = Layout.insets
+                contentInsetsModifier(&insets)
+                return insets
+            }()
         }
     }
 }

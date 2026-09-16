@@ -10,12 +10,11 @@ struct BatteryRefillAssembly {
         rechargeMethodsProvider: BatteryCryptoRechargeMethodsProvider,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly
-    ) -> MVVMModule<BatteryRefillViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
-        let promocodeInput = BatteryPromocodeInputAssembly.module(
+    ) -> MVVMModule<BatteryRefillHostingViewController, BatteryRefillModuleOutput, BatteryRefillModuleInput> {
+        let promocodeViewModel = BatteryPromocodeInputAssembly.module(
             wallet: wallet,
             promocodeStore: promocodeStore,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
+            keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
         let viewModel = BatteryRefillViewModelImplementation(
@@ -23,7 +22,6 @@ struct BatteryRefillAssembly {
             inAppPurchaseModel: BatteryRefillIAPModel(
                 wallet: wallet,
                 batteryService: keeperCoreMainAssembly.batteryAssembly.batteryService(),
-                tonProofService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
                 balanceStore: keeperCoreMainAssembly.storesAssembly.balanceStore,
                 configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
                 tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
@@ -42,12 +40,16 @@ struct BatteryRefillAssembly {
             tonProofTokenService: keeperCoreMainAssembly.servicesAssembly.tonProofTokenService(),
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-            promocodeOutput: promocodeInput.output
+            promocodeOutput: promocodeViewModel
         )
 
-        let viewController = BatteryRefillViewController(
+        viewModel.endPromocodeEditing = { [weak promocodeViewModel] in
+            promocodeViewModel?.endEditing()
+        }
+
+        let viewController = BatteryRefillHostingViewController(
             viewModel: viewModel,
-            promocodeViewController: promocodeInput.view
+            promocodeViewModel: promocodeViewModel
         )
 
         return MVVMModule(

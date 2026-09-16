@@ -9,23 +9,23 @@ final class LegacyReceiveCoordinator<V: UIViewController>: RouterCoordinator<Con
     var didClose: (() -> Void)?
 
     private let tokens: [ReceiveLegacyToken]
+    private let initialToken: ReceiveLegacyToken?
     private let wallet: Wallet
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-    private let passcodeProvider: (() async -> String?)?
     private let didDisplayToken: ((Token) -> Void)?
 
     init(
         router: ContainerViewControllerRouter<V>,
         tokens: [ReceiveLegacyToken],
+        initialToken: ReceiveLegacyToken? = nil,
         wallet: Wallet,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
-        passcodeProvider: (() async -> String?)?,
         didDisplayToken: ((Token) -> Void)?
     ) {
         self.tokens = tokens
+        self.initialToken = initialToken
         self.wallet = wallet
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
-        self.passcodeProvider = passcodeProvider
         self.didDisplayToken = didDisplayToken
         super.init(router: router)
     }
@@ -36,7 +36,12 @@ final class LegacyReceiveCoordinator<V: UIViewController>: RouterCoordinator<Con
             rootViewController: module.view
         )
         navigationController.setNavigationBarHidden(true, animated: false)
-        router.presentOverTopPresented(navigationController)
+        router.presentOverTopPresented(
+            navigationController,
+            onDismiss: { [weak self] in
+                self?.didClose?()
+            }
+        )
     }
 }
 
@@ -45,30 +50,20 @@ extension LegacyReceiveCoordinator {
         tokens: [ReceiveLegacyToken],
         wallet: Wallet
     ) -> MVVMModule<UIViewController, ReceiveModuleOutput, ReceiveModuleInput> {
-        weak var weakModel: ReceiveLegacyViewModelImplementation?
         let keeperCoreMainAssembly = keeperCoreMainAssembly
         let viewModel = ReceiveLegacyViewModelImplementation(
             tokens: tokens,
-            wallet: wallet,
-            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            didSelectInactiveTRC20: { [weak self] wallet in
-                self?.openReceiveTRC20Popup(
-                    wallet: wallet,
-                    enableCompletion: {
-                        weakModel?.selectToken(token: .tron(.usdt))
-                    }
-                )
-            },
+            initialToken: initialToken,
             tokenModuleViewControllerProvider: { receiveItem in
                 ReceiveTabAssembly.module(
                     token: receiveItem,
                     wallet: wallet,
-                    qrCodeGenerator: QRCodeGeneratorImplementation(),
+                    qrCodeGenerator: keeperCoreMainAssembly.coreAssembly
+                        .qrCodeGenerator(persistent: true),
                     keeperCoreAssembly: keeperCoreMainAssembly
                 ).view
             }
         )
-        weakModel = viewModel
         let didDisplayToken = self.didDisplayToken
         viewModel.didDisplayToken = { token in
             didDisplayToken?(token.token)
@@ -82,30 +77,5 @@ extension LegacyReceiveCoordinator {
             output: viewModel,
             input: viewModel
         )
-    }
-
-    private func openReceiveTRC20Popup(
-        wallet: Wallet,
-        enableCompletion: @escaping () -> Void
-    ) {
-        guard let passcodeProvider else {
-            return
-        }
-
-        let module = ReceiveTRC20PopupAssembly.module(
-            wallet: wallet,
-            keeperCoreAssembly: keeperCoreMainAssembly,
-            passcodeProvider: passcodeProvider
-        )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-        bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-
-        module.output.didFinish = { [weak bottomSheetViewController] in
-            bottomSheetViewController?.dismiss()
-        }
-
-        module.output.didEnable = {
-            enableCompletion()
-        }
     }
 }

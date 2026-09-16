@@ -6,6 +6,7 @@ public struct BatterySwiftUIViewPreviews: View {
     private let sections: [Section] = [
         Section(title: "Empty", state: .empty),
         Section(title: "Empty tinted", state: .emptyTinted),
+        Section(title: "Negative", state: .negative),
         Section(title: "10%", state: .fill(0.1)),
         Section(title: "50%", state: .fill(0.5)),
         Section(title: "100%", state: .fill(1)),
@@ -26,7 +27,7 @@ public struct BatterySwiftUIViewPreviews: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(section.title)
                             .textStyle(.label1)
-                            .foregroundStyle(Color(uiColor: .Text.primary))
+                            .foregroundStyle(.textPrimary)
 
                         HStack(alignment: .bottom, spacing: 20) {
                             ForEach(sizes, id: \.self) { size in
@@ -52,6 +53,7 @@ public struct BatterySwiftUIViewPreviews: View {
             }
             .padding(.all, 16)
         }
+        .tkImmediateButtonPresses()
         .debugPreview()
     }
 }
@@ -63,6 +65,7 @@ private extension BatterySwiftUIViewPreviews {
     }
 }
 
-#Preview {
+#Preview("Deep Blue") {
     BatterySwiftUIViewPreviews()
+        .tkPreviewTheme(.deepBlue)
 }

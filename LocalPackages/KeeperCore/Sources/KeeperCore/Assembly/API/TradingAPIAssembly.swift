@@ -13,7 +13,9 @@ final class TradingAPIAssembly {
     )
 
     private var tradingAPIHostProvider: APIHostProvider {
-        TradingApiHostProvider()
+        TradingApiHostProvider(
+            configuration: configurationAssembly.configuration
+        )
     }
 
     private var urlSessionConfiguration: URLSessionConfiguration {

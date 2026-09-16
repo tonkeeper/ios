@@ -1,0 +1,67 @@
+#!/bin/sh
+# Runs after a checkout (branch switch, clone, or `git worktree add`):
+#   - regenerates the gitignored, machine-specific .sourcekit-lsp/config.json.
+#     Without it, sourcekit-lsp indexes the LocalPackages modules for the host and
+#     reports phantom errors such as "no such module 'UIKit'".
+#   - when the working tree is new, configures and seeds its SwiftPM stores and
+#     copies in the gitignored Firebase config, so a first build started outside
+#     `make` — Xcode GUI, bare `xcodebuild` — neither pays a full resolve nor fails
+#     the "Firebase plist" build phase. The `make` targets do both on their own.
+# Best-effort: never block or fail the checkout.
+set -e
+
+repo_root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+[ -n "${repo_root}" ] || exit 0
+
+# The main working tree's copy of a script stands in when this tree is on a branch
+# that predates it. --git-common-dir points at the shared `.git`; its parent is the
+# main working tree. Nothing here may fail: a non-zero exit from this hook makes
+# `git switch` and `git worktree add` report failure.
+common_git_dir="$(git rev-parse --git-common-dir 2>/dev/null || true)"
+main_root=""
+[ -z "$common_git_dir" ] || main_root="$(cd "$common_git_dir/.." 2>/dev/null && pwd || true)"
+script_for() {
+	if [ -f "$repo_root/scripts/$1" ]; then
+		printf '%s\n' "$repo_root/scripts/$1"
+	elif [ -n "$main_root" ] && [ "$main_root" != "$repo_root" ] && [ -f "$main_root/scripts/$1" ]; then
+		printf '%s\n' "$main_root/scripts/$1"
+	fi
+	return 0
+}
+
+# No stand-in for this one: it takes its repo root from $0, so the main tree's copy
+# would regenerate the main tree's config and leave this tree without one.
+if [ -x "${repo_root}/scripts/gen_sourcekit_lsp_config.sh" ]; then
+	"${repo_root}/scripts/gen_sourcekit_lsp_config.sh" >/dev/null 2>&1 || true
+fi
+
+# A null previous HEAD means this working tree just got its working copy — a clone or
+# `git worktree add` — which is the only checkout that starts without a store. $3 is
+# 1 for a branch checkout, 0 for a file checkout.
+case "$1" in
+*[!0]*) exit 0 ;;
+esac
+[ "${3:-1}" = "1" ] || exit 0
+
+seed="$(script_for provision_spm_deps.sh)"
+firebase="$(script_for firebase/provision_firebase.sh)"
+xcode_dd="$(script_for xcode_derived_data.sh)"
+
+# Seeding is fast but not free, and the GUI store path has to be read from per-user
+# workspace settings, so none of it runs in the checkout's way.
+(
+	cd "$repo_root" || exit 0
+	if [ -n "$seed" ]; then
+		nohup sh "$seed" build/SourcePackages >/dev/null 2>&1 &
+	fi
+	if [ -n "$firebase" ]; then
+		FIREBASE_LOCAL_ONLY=1 nohup sh "$firebase" >/dev/null 2>&1 &
+	fi
+	if [ -n "$xcode_dd" ]; then
+		store="$(sh "$xcode_dd" 2>/dev/null || true)"
+		if [ -n "$store" ] && [ -n "$seed" ]; then
+			nohup sh "$seed" "$store" >/dev/null 2>&1 &
+		fi
+	fi
+) >/dev/null 2>&1 &
+exit 0

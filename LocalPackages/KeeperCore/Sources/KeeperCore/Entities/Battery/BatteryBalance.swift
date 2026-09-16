@@ -22,6 +22,12 @@ public struct BatteryBalance: Codable, Equatable {
         balanceDecimalNumber == NSDecimalNumber.zero
     }
 
+    /// A store refund can take back more charges than the wallet had left, so the service balance
+    /// goes below zero until the customer tops it up again.
+    public var isBalanceNegative: Bool {
+        balanceDecimalNumber.compare(NSDecimalNumber.zero) == .orderedAscending
+    }
+
     public init(balance: String, reserved: String) {
         self.balance = balance
         self.reserved = reserved

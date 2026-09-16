@@ -62,5 +62,4 @@ public struct UniqueIdProvider {
 private extension String {
     static let user_defaults_unique_install_id_key = "tkcore_unique_install_id"
     static let keychain_unique_device_id_service = "unique_device_id_service"
-    static let keychain_unique_device_id_account = "unique_device_id"
 }

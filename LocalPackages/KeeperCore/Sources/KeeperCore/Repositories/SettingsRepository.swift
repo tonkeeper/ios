@@ -26,30 +26,21 @@ public struct SettingsRepository {
         }
     }
 
-    public var didMigrateV2: Bool {
+    public var didOpenWalletMigration: Bool {
         get {
-            settingsVault.value(key: .didMigrateV2) ?? false
+            settingsVault.value(key: .didOpenWalletMigration) ?? false
         }
         set {
-            settingsVault.setValue(newValue, key: .didMigrateV2)
+            settingsVault.setValue(newValue, key: .didOpenWalletMigration)
         }
     }
 
-    public var didMigrateV3: Bool {
+    public var didMigrateLegacyTronWalletsV1: Bool {
         get {
-            settingsVault.value(key: .didMigrateV3) ?? false
+            settingsVault.value(key: .didMigrateLegacyTronWalletsV1) ?? false
         }
         set {
-            settingsVault.setValue(newValue, key: .didMigrateV3)
-        }
-    }
-
-    public var didMigrateRN: Bool {
-        get {
-            settingsVault.value(key: .didMigrateRN) ?? false
-        }
-        set {
-            settingsVault.setValue(newValue, key: .didMigrateRN)
+            settingsVault.setValue(newValue, key: .didMigrateLegacyTronWalletsV1)
         }
     }
 
@@ -91,8 +82,8 @@ public struct SettingsRepository {
     }
 }
 
-public enum SettingsKey: String, CustomStringConvertible {
-    public var description: String {
+enum SettingsKey: String, CustomStringConvertible {
+    var description: String {
         rawValue
     }
 
@@ -101,5 +92,7 @@ public enum SettingsKey: String, CustomStringConvertible {
     case didMigrateV2
     case didMigrateV3
     case didMigrateRN
+    case didOpenWalletMigration
+    case didMigrateLegacyTronWalletsV1
     case transferSettings
 }

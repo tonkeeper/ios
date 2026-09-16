@@ -6,30 +6,36 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class PairKeystoneCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didPaired: (() -> Void)?
+final class PairKeystoneCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didPaired: (() -> Void)?
 
     private let scannerAssembly: KeeperCore.ScannerAssembly
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+    private let multichainAssembly: MultichainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let analyticsContext: WalletFlowAnalyticsContext
     private let keystoneImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String?, String?, String) -> KeystoneImportCoordinator
 
     init(
         scannerAssembly: KeeperCore.ScannerAssembly,
         walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+        multichainAssembly: MultichainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext,
         keystoneImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String?, String?, String) -> KeystoneImportCoordinator
     ) {
         self.scannerAssembly = scannerAssembly
         self.walletUpdateAssembly = walletUpdateAssembly
+        self.multichainAssembly = multichainAssembly
         self.coreAssembly = coreAssembly
+        self.analyticsContext = analyticsContext
         self.keystoneImportCoordinatorProvider = keystoneImportCoordinatorProvider
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openScanner()
     }
 }
@@ -80,6 +86,11 @@ private extension PairKeystoneCoordinator {
                         revisions: revisions,
                         model: model
                     )
+                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
+                        walletMode: .single,
+                        walletSource: .keystone,
+                        from: self.analyticsContext.from
+                    )
                     await MainActor.run {
                         self.didPaired?()
                     }
@@ -87,6 +98,12 @@ private extension PairKeystoneCoordinator {
                     Log.e("keystone: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
+                    self.coreAssembly.analyticsProvider.logWalletImportError(
+                        walletMode: .single,
+                        walletSource: .keystone,
+                        from: self.analyticsContext.from,
+                        error: error
+                    )
                 }
             }
         }
@@ -102,7 +119,9 @@ private extension PairKeystoneCoordinator {
         revisions: [WalletContractVersion],
         model: CustomizeWalletModel
     ) async throws {
-        let addController = walletUpdateAssembly.walletAddController()
+        let addController = walletUpdateAssembly.walletAddController(
+            multichainAssembly: multichainAssembly
+        )
         let metaData = WalletMetaData(
             label: model.name,
             tintColor: model.tintColor,

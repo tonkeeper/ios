@@ -13,11 +13,4 @@ public final class MappersAssembly {
             amountFormatter: formattersAssembly.signedAmountFormatter
         )
     }
-
-    public var confirmationAccountEventMapper: AccountEventMapper {
-        AccountEventMapper(
-            dateFormatter: formattersAssembly.dateFormatter,
-            amountFormatter: formattersAssembly.amountFormatter
-        )
-    }
 }

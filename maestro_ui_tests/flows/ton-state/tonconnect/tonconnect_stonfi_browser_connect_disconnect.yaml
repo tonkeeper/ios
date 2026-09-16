@@ -1,0 +1,55 @@
+# regress_EN: Ton Connect 2.0 + Browser — connect STON.fi from in-app browser, verify UI, disconnect from Connected, reconnect.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_wallet.yaml"
+- runFlow: "../../../steps/browser/open_browser_tab.yaml"
+
+- runFlow: "../../../steps/browser/open_stonfi_from_explore_shelf.yaml"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn: 
+    text: "Confirm and agree"
+    optional: true
+- tapOn: "Connect"
+- tapOn: "Ton Connect Connect"
+- extendedWaitUntil:
+    visible: "Allow Notifications"
+    timeout: 60000
+- tapOn:
+    text: "Connect wallet"
+    index: 1
+
+- runFlow:
+    when:
+      visible: Enter passcode
+    file: ../../../steps/password/enter_password.yaml
+
+- tapOn:
+    id: close
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn: Connected
+- extendedWaitUntil:
+    visible: "STON.fi"
+    timeout: 30000
+
+- longPressOn: "STON.fi"
+- extendedWaitUntil:
+    visible: Disconnect
+    timeout: 15000
+- tapOn:
+    text: Disconnect
+
+- extendedWaitUntil:
+    visible: "Connected apps will\u00a0be\u00a0shown\u00a0here"
+    timeout: 30000
+
+- tapOn: Explore
+- waitForAnimationToEnd:
+    timeout: 3000
+- runFlow: "../../../steps/browser/open_stonfi_from_explore_shelf.yaml"
+- waitForAnimationToEnd:
+    timeout: 5000
+- assertVisible: "Connect"

@@ -4,18 +4,18 @@ import Punycode
 import Sodium
 import TonSwift
 
-public struct CellSignDataSigner: SignDataSigner {
-    public enum Error: Swift.Error {
+struct CellSignDataSigner: SignDataSigner {
+    enum Error: Swift.Error {
         case incorrectDomain(String)
     }
 
     let signDataPayload: TonConnect.SignDataRequest
 
-    public init(_ signDataPayload: TonConnect.SignDataRequest) {
+    init(_ signDataPayload: TonConnect.SignDataRequest) {
         self.signDataPayload = signDataPayload
     }
 
-    public func sign(
+    func sign(
         wallet: Wallet,
         mnemonicAccess: MnemonicAccess,
         dappUrl: String,

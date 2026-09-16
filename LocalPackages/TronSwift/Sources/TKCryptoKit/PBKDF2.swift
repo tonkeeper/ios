@@ -4,13 +4,6 @@ import Foundation
 public enum PBKDF2 {
     enum Algorithm {
         case sha512
-
-        var algorithm: CCPseudoRandomAlgorithm {
-            switch self {
-            case .sha512:
-                return CCPBKDFAlgorithm(kCCPRFHmacAlgSHA512)
-            }
-        }
     }
 
     public static func sha512(

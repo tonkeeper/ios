@@ -1,5 +1,4 @@
 import Kingfisher
-import TKUIKit
 import UIKit
 
 public final class ImageLoader {
@@ -25,26 +24,5 @@ public final class ImageLoader {
         options.append(.processor(processor))
 
         return imageView.kf.setImage(with: url, options: options)
-    }
-}
-
-public class ImageDownloadTask: TKUIKit.ImageDownloadTask {
-    let closure: (UIImageView, CGSize?, CGFloat?) -> Kingfisher.DownloadTask?
-    var downloadTask: Kingfisher.DownloadTask?
-
-    public init(closure: @escaping (UIImageView, CGSize?, CGFloat?) -> Kingfisher.DownloadTask?) {
-        self.closure = closure
-    }
-
-    public func start(
-        imageView: UIImageView,
-        size: CGSize? = nil,
-        cornerRadius: CGFloat? = nil
-    ) {
-        self.downloadTask = closure(imageView, size, cornerRadius)
-    }
-
-    public func cancel() {
-        self.downloadTask?.cancel()
     }
 }

@@ -11,13 +11,13 @@ import TonSwift
 import TweetNacl
 import UIKit
 
-public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    var passcodeProvider: (() async -> String?)?
+final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didOpenTonEventDetails: ((_ wallet: Wallet, _ event: AccountEventDetailsEvent, _ network: Network) -> Void)?
     var didOpenTronEventDetails: ((_ wallet: Wallet, _ event: TronTransaction, _ network: Network) -> Void)?
     var didDecryptComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload, _ eventId: String) -> Void)?
     var didOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
-    var didOpenBuySellItem: ((_ url: URL, _ fromViewController: UIViewController) -> Void)?
+    var didTapAddFunds: ((_ wallet: Wallet) -> Void)?
+    var didRequestDepositTon: ((_ wallet: Wallet) -> Void)?
 
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -36,11 +36,9 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
         self.recipientResolver = recipientResolver
         self.presentationStyle = presentationStyle
         super.init(router: router)
-        router.rootViewController.tabBarItem.title = TKLocales.Tabs.history
-        router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.clock
     }
 
-    override public func start() {
+    override func start() {
         openHistory()
     }
 }
@@ -69,7 +67,7 @@ private extension HistoryCoordinator {
                                 title: TKLocales.History.Placeholder.Buttons.buy,
                                 action: { [weak self] in
                                     guard let self else { return }
-                                    self.openBuy(wallet: wallet)
+                                    self.didTapAddFunds?(wallet)
                                 }
                             ))
                         }
@@ -177,7 +175,7 @@ private extension HistoryCoordinator {
         guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
 
         var tokens: [Token] = [.ton(.ton)]
-        if wallet.isTronAvailable {
+        if wallet.tron != nil {
             tokens.append(.tron(.usdt))
         }
 
@@ -190,32 +188,10 @@ private extension HistoryCoordinator {
         .createReceiveCoordinator(
             router: router,
             tokens: tokens,
-            wallet: wallet,
-            passcodeProvider: passcodeProvider
+            wallet: wallet
         )
 
         coordinator.didClose = { [weak self, weak coordinator] in
-            self?.removeChild(coordinator)
-        }
-
-        addChild(coordinator)
-        coordinator.start()
-    }
-
-    func openBuy(wallet: Wallet) {
-        guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else { return }
-        let coordinator = BuyCoordinator(
-            wallet: wallet,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly,
-            router: ViewControllerRouter(rootViewController: self.router.rootViewController)
-        )
-
-        coordinator.didOpenItem = { [weak self] url, fromViewController in
-            self?.didOpenBuySellItem?(url, fromViewController)
-        }
-
-        coordinator.didClose = { [weak coordinator, weak self] in
             self?.removeChild(coordinator)
         }
 
@@ -276,6 +252,10 @@ private extension HistoryCoordinator {
                 navigationController?.dismiss(animated: true)
                 guard let coordinator else { return }
                 self?.removeChild(coordinator)
+            }
+
+            coordinator.didRequestDepositTon = { [weak self] in
+                self?.didRequestDepositTon?(wallet)
             }
 
             coordinator.start()

@@ -36,15 +36,6 @@ final class BatteryRechargeModel {
                 true
             }
         }
-
-        var batteryPercent: CGFloat {
-            switch self {
-            case let .prefilled(prefilled):
-                return prefilled.batteryPercent
-            case .custom:
-                return 0
-            }
-        }
     }
 
     var didUpdateOptionItems: (() -> Void)?
@@ -304,17 +295,6 @@ private extension NSDecimalNumberHandler {
         return NSDecimalNumberHandler(
             roundingMode: .plain,
             scale: 20,
-            raiseOnExactness: false,
-            raiseOnOverflow: false,
-            raiseOnUnderflow: false,
-            raiseOnDivideByZero: false
-        )
-    }
-
-    static var roundBehaviour: NSDecimalNumberHandler {
-        return NSDecimalNumberHandler(
-            roundingMode: .plain,
-            scale: 2,
             raiseOnExactness: false,
             raiseOnOverflow: false,
             raiseOnUnderflow: false,

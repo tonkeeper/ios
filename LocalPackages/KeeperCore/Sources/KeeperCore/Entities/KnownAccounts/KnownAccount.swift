@@ -1,11 +1,11 @@
 import Foundation
 import TonSwift
 
-public struct KnownAccount: Codable {
-    public let address: Address
-    public let name: String
-    public let requireMemo: Bool
-    public let imageUrl: URL?
+struct KnownAccount: Codable {
+    let address: Address
+    let name: String
+    let requireMemo: Bool
+    let imageUrl: URL?
 
     enum CodingKeys: String, CodingKey {
         case address
@@ -14,7 +14,7 @@ public struct KnownAccount: Codable {
         case imageUrl = "image"
     }
 
-    public init(from decoder: Decoder) throws {
+    init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let addressString = try container.decode(String.self, forKey: .address)
         self.address = try Address.parse(addressString)
@@ -23,7 +23,7 @@ public struct KnownAccount: Codable {
         self.imageUrl = try container.decodeIfPresent(URL.self, forKey: .imageUrl)
     }
 
-    public func encode(to encoder: Encoder) throws {
+    func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         let addressString = address.toRaw()
         try container.encode(addressString, forKey: .address)

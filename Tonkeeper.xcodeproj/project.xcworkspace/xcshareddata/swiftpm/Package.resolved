@@ -1,5 +1,5 @@
 {
-  "originHash" : "135c6f68174a031d20c60965e1a1bc612123adb6436b65d7a22be4a942876f7f",
+  "originHash" : "bd6bcba5be16201e90ebf3e8d05b0b8d65223b49ed04f80150210a0916a551fa",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -33,8 +33,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/app-check.git",
       "state" : {
-        "revision" : "61b85103a1aeed8218f17c794687781505fbbef5",
-        "version" : "11.2.0"
+        "revision" : "bb4002485ff867768dec13bf904a2ddb050bd1b1",
+        "version" : "11.3.0"
       }
     },
     {
@@ -51,8 +51,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/battery-api-swift",
       "state" : {
-        "revision" : "74483223690d3ddcc5008d6725ed868e6e2b3f94",
-        "version" : "3.0.0"
+        "revision" : "c696bad79fc26e4129d0a7418b13833fed4cb78a",
+        "version" : "4.0.1"
       }
     },
     {
@@ -60,8 +60,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/BlockchainCommons/BCSwiftDCBOR",
       "state" : {
-        "revision" : "b517aec0d29c7096d8d99872c0274eff95b2c33f",
-        "version" : "1.0.7"
+        "revision" : "21efa67ada2f22a6c277e1961f1059bb376e9b1a",
+        "version" : "2.0.2"
       }
     },
     {
@@ -69,8 +69,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/blockchaincommons/BCSwiftFloat16",
       "state" : {
-        "revision" : "71f380285d88a876f9cdf4e34e2e9e77d7ca4aef",
-        "version" : "1.0.0"
+        "revision" : "a27f3935a7b1db715713eda67369b02feade2ded",
+        "version" : "2.0.0"
       }
     },
     {
@@ -89,6 +89,33 @@
       "state" : {
         "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
         "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "centrifuge-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/centrifugal/centrifuge-swift",
+      "state" : {
+        "revision" : "31fa7af7f3efa0540eec9c7ea74b079256f358d3",
+        "version" : "0.9.0"
+      }
+    },
+    {
+      "identity" : "chainkit-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/chainkit-swift",
+      "state" : {
+        "revision" : "a5ec52eb2a2dd7c912c5f39e3074f8aa4cf8d34c",
+        "version" : "0.1.26"
+      }
+    },
+    {
+      "identity" : "cocoalumberjack",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/CocoaLumberjack/CocoaLumberjack.git",
+      "state" : {
+        "revision" : "c5f2ed4d219866117e135cf648180dc7b66739d3",
+        "version" : "3.9.1"
       }
     },
     {
@@ -149,8 +176,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/grpc-binary.git",
       "state" : {
-        "revision" : "cc0001a0cf963aa40501d9c2b181e7fc9fd8ec71",
-        "version" : "1.69.0"
+        "revision" : "75b31c842f664a0f46a2e590a570e370249fd8f6",
+        "version" : "1.69.1"
       }
     },
     {
@@ -158,8 +185,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/gtm-session-fetcher.git",
       "state" : {
-        "revision" : "c0ac7575d70050c2973ba2318bd5af47f8e8153a",
-        "version" : "5.3.0"
+        "revision" : "724a52eea6329b7e12d3ad8300d76ca9f3895fcc",
+        "version" : "5.3.1"
       }
     },
     {
@@ -221,8 +248,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/nanopb.git",
       "state" : {
-        "revision" : "b7e1104502eca3a213b46303391ca4d3bc8ddec1",
-        "version" : "2.30910.0"
+        "revision" : "3851d94a41890dea16dc3db34caf60e585cb4163",
+        "version" : "2.30910.1"
       }
     },
     {
@@ -230,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/promises.git",
       "state" : {
-        "revision" : "540318ecedd63d883069ae7f1ed811a2df00b6ac",
-        "version" : "2.4.0"
+        "revision" : "f4a19a3c313dc2616c70bb49d29a799fb16be837",
+        "version" : "2.4.1"
       }
     },
     {
@@ -239,7 +266,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/PunycodeSwift",
       "state" : {
-        "revision" : "30a462bdb4398ea835a3585472229e0d74b36ba5"
+        "revision" : "f3b5715ce6ea4c1a5518cdf77ed7f6b9b24ca0ed",
+        "version" : "3.0.1"
+      }
+    },
+    {
+      "identity" : "qrcode",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/WalletConnect/QRCode",
+      "state" : {
+        "revision" : "263f280d2c8144adfb0b6676109846cfc8dd552b",
+        "version" : "14.3.1"
+      }
+    },
+    {
+      "identity" : "reown-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/reown-com/reown-swift.git",
+      "state" : {
+        "revision" : "9b4fed39b09e9d202888d04da41e0daf50777ea1",
+        "version" : "2.2.9"
       }
     },
     {
@@ -252,12 +298,11 @@
       }
     },
     {
-      "identity" : "swift-collections",
+      "identity" : "svgkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/wolfmcnally/swift-collections",
+      "location" : "https://github.com/SVGKit/SVGKit.git",
       "state" : {
-        "revision" : "11433b688df0e0b8c3deee56c30294ed63d929eb",
-        "version" : "1.1.4"
+        "revision" : "9b573a08e7698149de1a0ed576f22f68f5a0e30b"
       }
     },
     {
@@ -265,17 +310,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
       "state" : {
-        "revision" : "a0a57e949a8903563aba4615869310c0ebf14c03",
-        "version" : "1.4.0"
+        "revision" : "db774a277f60063a32d854f2980299caf06da041",
+        "version" : "1.6.0"
+      }
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log",
+      "state" : {
+        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
+        "version" : "1.15.0"
       }
     },
     {
       "identity" : "swift-numberkit",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/wolfmcnally/swift-numberkit.git",
+      "location" : "https://github.com/objecthub/swift-numberkit.git",
       "state" : {
-        "revision" : "34a26297c200489779929b7fd7d4d30b63e87e69",
-        "version" : "2.4.3"
+        "revision" : "6182110549aa7cf614cb6fff3d6142e65be9b602",
+        "version" : "2.6.1"
       }
     },
     {
@@ -285,6 +339,24 @@
       "state" : {
         "revision" : "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
         "version" : "0.3.6"
+      }
+    },
+    {
+      "identity" : "swift-protobuf",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-protobuf",
+      "state" : {
+        "revision" : "55d7a1cc5666b85c13464aea1c4b4a90feccb4c8",
+        "version" : "1.38.1"
+      }
+    },
+    {
+      "identity" : "swift-qrcode-generator",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dagronf/swift-qrcode-generator",
+      "state" : {
+        "revision" : "5ca09b6a2ad190f94aa3d6ddef45b187f8c0343b",
+        "version" : "1.0.3"
       }
     },
     {
@@ -305,12 +377,30 @@
       }
     },
     {
+      "identity" : "swiftimagereadwrite",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/dagronf/SwiftImageReadWrite",
+      "state" : {
+        "revision" : "5596407d1cf61b953b8e658fa8636a471df3c509",
+        "version" : "1.1.6"
+      }
+    },
+    {
+      "identity" : "swiftsortedcollections",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wolfmcnally/SwiftSortedCollections",
+      "state" : {
+        "revision" : "dd6c8e0eaef987e55a35c056d185144a7c71fc19",
+        "version" : "0.1.0"
+      }
+    },
+    {
       "identity" : "ton-api-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "57cf2a0c8aef447352cf3a68eac1c476db379a94",
-        "version" : "0.7.3"
+        "revision" : "716f7491aaa909bd4bcea23b1bd02f18e7de3e3c",
+        "version" : "0.8.0"
       }
     },
     {
@@ -336,8 +426,26 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/URKit",
       "state" : {
-        "revision" : "4ad94f2550d6c6ae5daeb283b2168471f0d665dd",
-        "version" : "16.0.0"
+        "revision" : "3adeee757bb4f10a932838e36c288e10b6734b95",
+        "version" : "16.0.1"
+      }
+    },
+    {
+      "identity" : "wallet-mobile-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MobileWalletProtocol/wallet-mobile-sdk",
+      "state" : {
+        "revision" : "4293df51d3500b8e876ca4bf0d7548adf097569a",
+        "version" : "1.1.2"
+      }
+    },
+    {
+      "identity" : "yttrium",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/reown-com/yttrium",
+      "state" : {
+        "revision" : "083e30289e343b80f8b171fcadcabb71dd967bf2",
+        "version" : "0.10.52"
       }
     }
   ],

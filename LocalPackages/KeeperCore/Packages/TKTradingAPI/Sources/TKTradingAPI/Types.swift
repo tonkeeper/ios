@@ -19,6 +19,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/trading/shelves/config`.
     /// - Remark: Generated from `#/paths//api/v1/trading/shelves/config/get(getShelvesConfig)`.
     func getShelvesConfig(_ input: Operations.getShelvesConfig.Input) async throws -> Operations.getShelvesConfig.Output
+    /// Конфиг полок для трейд-вкладки V2
+    ///
+    /// Клиент дергает при открытии Trade tab (и может периодически обновлять). Сервер возвращает список полок в нужном порядке и с правилами, которые сервер же применит на выдаче контента полок. Клиент не принимает решения: порядок/лимит/видимость — это всё backend. Geo-ограничения применяются здесь же, чтобы клиент не гадал, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/shelves/config`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)`.
+    func getShelvesConfigV2(_ input: Operations.getShelvesConfigV2.Input) async throws -> Operations.getShelvesConfigV2.Output
     /// Каталог ассетов (infinite scroll) + фильтры
     ///
     /// Основной экран "Assets" и результаты поиска. Сервер сортирует и фильтрует. Клиент передает tab/type, query, cursor. Сервер возвращает items и next_cursor. Если filter недоступен у провайдера, сервер не падает, а возвращает warnings и fallback.
@@ -27,6 +35,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/trading/assets`.
     /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)`.
     func getAssetsCatalog(_ input: Operations.getAssetsCatalog.Input) async throws -> Operations.getAssetsCatalog.Output
+    /// Каталог ассетов (infinite scroll) + фильтры
+    ///
+    /// Основной экран "Assets" и результаты поиска. Сервер сортирует и фильтрует. Клиент передает tab/type, query, cursor. Сервер возвращает items и next_cursor. Если filter недоступен у провайдера, сервер не падает, а возвращает warnings и fallback.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)`.
+    func getAssetsCatalogV2(_ input: Operations.getAssetsCatalogV2.Input) async throws -> Operations.getAssetsCatalogV2.Output
     /// Детали ассета для экрана ассета
     ///
     /// Сервер возвращает секции, которые надо показать на экране, и данные для этих секций. Это важно: для разных типов активов секции могут отличаться (например у stocks/RWA скрываем overview/activity, оставляем about company). Клиент не должен сам решать, что показывать.
@@ -35,6 +51,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/trading/assets/{assetId}/details`.
     /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)`.
     func getAssetDetails(_ input: Operations.getAssetDetails.Input) async throws -> Operations.getAssetDetails.Output
+    /// Детали ассета для экрана ассета
+    ///
+    /// Сервер возвращает секции, которые надо показать на экране, и данные для этих секций. Это важно: для разных типов активов секции могут отличаться (например у stocks/RWA скрываем overview/activity, оставляем about company). Клиент не должен сам решать, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/details`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)`.
+    func getAssetDetailsV2(_ input: Operations.getAssetDetailsV2.Input) async throws -> Operations.getAssetDetailsV2.Output
     /// График цен для ассета
     ///
     /// Сервер возвращает график цен для ассета.
@@ -43,6 +67,14 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/trading/assets/{assetId}/charts`.
     /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)`.
     func getAssetCharts(_ input: Operations.getAssetCharts.Input) async throws -> Operations.getAssetCharts.Output
+    /// График цен для ассета
+    ///
+    /// Сервер возвращает график цен для ассета.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/charts`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)`.
+    func getAssetChartsV2(_ input: Operations.getAssetChartsV2.Input) async throws -> Operations.getAssetChartsV2.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -63,6 +95,22 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Конфиг полок для трейд-вкладки V2
+    ///
+    /// Клиент дергает при открытии Trade tab (и может периодически обновлять). Сервер возвращает список полок в нужном порядке и с правилами, которые сервер же применит на выдаче контента полок. Клиент не принимает решения: порядок/лимит/видимость — это всё backend. Geo-ограничения применяются здесь же, чтобы клиент не гадал, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/shelves/config`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)`.
+    public func getShelvesConfigV2(
+        query: Operations.getShelvesConfigV2.Input.Query = .init(),
+        headers: Operations.getShelvesConfigV2.Input.Headers = .init()
+    ) async throws -> Operations.getShelvesConfigV2.Output {
+        try await getShelvesConfigV2(Operations.getShelvesConfigV2.Input(
+            query: query,
+            headers: headers
+        ))
+    }
     /// Каталог ассетов (infinite scroll) + фильтры
     ///
     /// Основной экран "Assets" и результаты поиска. Сервер сортирует и фильтрует. Клиент передает tab/type, query, cursor. Сервер возвращает items и next_cursor. Если filter недоступен у провайдера, сервер не падает, а возвращает warnings и fallback.
@@ -75,6 +123,22 @@ extension APIProtocol {
         headers: Operations.getAssetsCatalog.Input.Headers = .init()
     ) async throws -> Operations.getAssetsCatalog.Output {
         try await getAssetsCatalog(Operations.getAssetsCatalog.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Каталог ассетов (infinite scroll) + фильтры
+    ///
+    /// Основной экран "Assets" и результаты поиска. Сервер сортирует и фильтрует. Клиент передает tab/type, query, cursor. Сервер возвращает items и next_cursor. Если filter недоступен у провайдера, сервер не падает, а возвращает warnings и fallback.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)`.
+    public func getAssetsCatalogV2(
+        query: Operations.getAssetsCatalogV2.Input.Query = .init(),
+        headers: Operations.getAssetsCatalogV2.Input.Headers = .init()
+    ) async throws -> Operations.getAssetsCatalogV2.Output {
+        try await getAssetsCatalogV2(Operations.getAssetsCatalogV2.Input(
             query: query,
             headers: headers
         ))
@@ -97,6 +161,24 @@ extension APIProtocol {
             headers: headers
         ))
     }
+    /// Детали ассета для экрана ассета
+    ///
+    /// Сервер возвращает секции, которые надо показать на экране, и данные для этих секций. Это важно: для разных типов активов секции могут отличаться (например у stocks/RWA скрываем overview/activity, оставляем about company). Клиент не должен сам решать, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/details`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)`.
+    public func getAssetDetailsV2(
+        path: Operations.getAssetDetailsV2.Input.Path,
+        query: Operations.getAssetDetailsV2.Input.Query = .init(),
+        headers: Operations.getAssetDetailsV2.Input.Headers = .init()
+    ) async throws -> Operations.getAssetDetailsV2.Output {
+        try await getAssetDetailsV2(Operations.getAssetDetailsV2.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
     /// График цен для ассета
     ///
     /// Сервер возвращает график цен для ассета.
@@ -110,6 +192,24 @@ extension APIProtocol {
         headers: Operations.getAssetCharts.Input.Headers = .init()
     ) async throws -> Operations.getAssetCharts.Output {
         try await getAssetCharts(Operations.getAssetCharts.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// График цен для ассета
+    ///
+    /// Сервер возвращает график цен для ассета.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/charts`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)`.
+    public func getAssetChartsV2(
+        path: Operations.getAssetChartsV2.Input.Path,
+        query: Operations.getAssetChartsV2.Input.Query = .init(),
+        headers: Operations.getAssetChartsV2.Input.Headers = .init()
+    ) async throws -> Operations.getAssetChartsV2.Output {
+        try await getAssetChartsV2(Operations.getAssetChartsV2.Input(
             path: path,
             query: query,
             headers: headers
@@ -148,6 +248,11 @@ public enum Components {
             case most_traded = "most_traded"
             case core = "core"
             case rwa = "rwa"
+            case market_cap = "market_cap"
+            case volume = "volume"
+            case commodities = "commodities"
+            case stocks = "stocks"
+            case etfs = "etfs"
         }
         /// Тип разметки полки.
         ///
@@ -156,7 +261,8 @@ public enum Components {
             case grid = "grid"
             case list = "list"
         }
-        /// Табы на экране Assets.
+        /// Табы на экране Assets. Актуальные значения: all, tokens, perpetuals. all — все активы (perp-рынки только при show_perps=true); tokens — все активы кроме perp-рынков; perpetuals — только perp-рынки (lighter/...). stocks/etfs/commodities оставлены для обратной совместимости и работают как раньше; новые клиенты вместо них используют tab=all|tokens вместе с filter.
+        ///
         ///
         /// - Remark: Generated from `#/components/schemas/AssetsTab`.
         @frozen public enum AssetsTab: String, Codable, Hashable, Sendable {
@@ -164,14 +270,18 @@ public enum Components {
             case tokens = "tokens"
             case stocks = "stocks"
             case etfs = "etfs"
+            case commodities = "commodities"
+            case perpetuals = "perpetuals"
         }
-        /// По чему сортировать каталог.
+        /// По чему сортировать каталог. По умолчанию market_cap. open_interest_usd доступен только при tab=perpetuals, иначе 400.
         ///
         /// - Remark: Generated from `#/components/schemas/AssetsSort`.
         @frozen public enum AssetsSort: String, Codable, Hashable, Sendable {
             case volume_24h = "volume_24h"
             case market_cap = "market_cap"
             case price_24h = "price_24h"
+            case volume = "volume"
+            case open_interest_usd = "open_interest_usd"
         }
         /// В каком порядке сортировать каталог.
         ///
@@ -180,13 +290,16 @@ public enum Components {
             case desc = "desc"
             case asc = "asc"
         }
-        /// Предвыбранные фильтры (переходы из полок).
+        /// Фильтр по типу актива внутри таба. all — без фильтра (по умолчанию); tokens — только крипто-токены (type=crypto); stocks — токенизированные акции; etfs — токенизированные ETF; commodities — активы с type=commodities (perp-рынки на золото, нефть и т.п.) плюс pin-лист секции commodities (спотовые токены на золото, серебро, нефть). Тип perp-рынков берётся из tokenlist Lighter, так что фильтры работают и на tab=perpetuals.
+        ///
         ///
         /// - Remark: Generated from `#/components/schemas/AssetsFilter`.
         @frozen public enum AssetsFilter: String, Codable, Hashable, Sendable {
-            case gainers = "gainers"
-            case losers = "losers"
-            case most_traded = "most_traded"
+            case all = "all"
+            case tokens = "tokens"
+            case stocks = "stocks"
+            case etfs = "etfs"
+            case commodities = "commodities"
         }
         /// Типы ссылок у ассетов.
         ///
@@ -231,9 +344,72 @@ public enum Components {
                 case generated_at
             }
         }
+        /// - Remark: Generated from `#/components/schemas/ShelvesConfigResponseV2`.
+        public struct ShelvesConfigResponseV2: Codable, Hashable, Sendable {
+            /// Список групп полок в том порядке, в котором клиент должен их отрисовать. Полка может быть выключена сервером (enabled=false).
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/ShelvesConfigResponseV2/groups`.
+            public var groups: [Components.Schemas.MultichainShelfGroup]
+            /// Когда сервер сгенерировал конфиг.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ShelvesConfigResponseV2/generated_at`.
+            public var generated_at: Foundation.Date
+            /// Creates a new `ShelvesConfigResponseV2`.
+            ///
+            /// - Parameters:
+            ///   - groups: Список групп полок в том порядке, в котором клиент должен их отрисовать. Полка может быть выключена сервером (enabled=false).
+            ///   - generated_at: Когда сервер сгенерировал конфиг.
+            public init(
+                groups: [Components.Schemas.MultichainShelfGroup],
+                generated_at: Foundation.Date
+            ) {
+                self.groups = groups
+                self.generated_at = generated_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case groups
+                case generated_at
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/MultichainShelfGroup`.
+        public struct MultichainShelfGroup: Codable, Hashable, Sendable {
+            /// Айди группы.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MultichainShelfGroup/id`.
+            public var id: Swift.String
+            /// Имя мультичейн группы.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MultichainShelfGroup/name`.
+            public var name: Swift.String
+            /// Группы мультичейна
+            ///
+            /// - Remark: Generated from `#/components/schemas/MultichainShelfGroup/groups`.
+            public var groups: [Components.Schemas.ShelfGroup]
+            /// Creates a new `MultichainShelfGroup`.
+            ///
+            /// - Parameters:
+            ///   - id: Айди группы.
+            ///   - name: Имя мультичейн группы.
+            ///   - groups: Группы мультичейна
+            public init(
+                id: Swift.String,
+                name: Swift.String,
+                groups: [Components.Schemas.ShelfGroup]
+            ) {
+                self.id = id
+                self.name = name
+                self.groups = groups
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case name
+                case groups
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/ShelfGroup`.
         public struct ShelfGroup: Codable, Hashable, Sendable {
-            /// Имя группы.
+            /// Имя группы. (в контексте мультичейн группы - имя сети)
             ///
             /// - Remark: Generated from `#/components/schemas/ShelfGroup/name`.
             public var name: Swift.String
@@ -244,7 +420,7 @@ public enum Components {
             /// Creates a new `ShelfGroup`.
             ///
             /// - Parameters:
-            ///   - name: Имя группы.
+            ///   - name: Имя группы. (в контексте мультичейн группы - имя сети)
             ///   - items: Элементы группы.
             public init(
                 name: Swift.String,
@@ -480,11 +656,13 @@ public enum Components {
             /// Ассет скам или нет
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRef/is_scam`.
+            @available(*, deprecated)
             public var is_scam: Swift.Bool
             /// Усовершенствованная версия is_scam
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRef/verification`.
             @frozen public enum verificationPayload: String, Codable, Hashable, Sendable {
+                case trusted = "trusted"
                 case whitelist = "whitelist"
                 case none = "none"
                 case blacklist = "blacklist"
@@ -493,6 +671,13 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRef/verification`.
             public var verification: Components.Schemas.AssetRef.verificationPayload
+            /// Айди связанного spot-ассета, у которого заимствованы метаданные (например для perp-рынка lighter/... это ассет с тем же тикером). Отсутствует, если связи нет.
+            ///
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetRef/reference_id`.
+            public var reference_id: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/AssetRef/perps`.
+            public var perps: Components.Schemas.PerpMarket?
             /// Creates a new `AssetRef`.
             ///
             /// - Parameters:
@@ -505,6 +690,8 @@ public enum Components {
             ///   - image_url: URL иконки/логотипа.
             ///   - is_scam: Ассет скам или нет
             ///   - verification: Усовершенствованная версия is_scam
+            ///   - reference_id: Айди связанного spot-ассета, у которого заимствованы метаданные (например для perp-рынка lighter/... это ассет с тем же тикером). Отсутствует, если связи нет.
+            ///   - perps:
             public init(
                 asset_type: Components.Schemas.AssetType,
                 id: Swift.String,
@@ -514,7 +701,9 @@ public enum Components {
                 trust_score: Swift.Int,
                 image_url: Swift.String,
                 is_scam: Swift.Bool,
-                verification: Components.Schemas.AssetRef.verificationPayload
+                verification: Components.Schemas.AssetRef.verificationPayload,
+                reference_id: Swift.String? = nil,
+                perps: Components.Schemas.PerpMarket? = nil
             ) {
                 self.asset_type = asset_type
                 self.id = id
@@ -525,6 +714,8 @@ public enum Components {
                 self.image_url = image_url
                 self.is_scam = is_scam
                 self.verification = verification
+                self.reference_id = reference_id
+                self.perps = perps
             }
             public enum CodingKeys: String, CodingKey {
                 case asset_type
@@ -536,6 +727,8 @@ public enum Components {
                 case image_url
                 case is_scam
                 case verification
+                case reference_id
+                case perps
             }
         }
         /// - Remark: Generated from `#/components/schemas/AssetRefSummary`.
@@ -569,11 +762,13 @@ public enum Components {
             /// Ассет скам или нет
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRefSummary/is_scam`.
+            @available(*, deprecated)
             public var is_scam: Swift.Bool
             /// Усовершенствованная версия is_scam
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRefSummary/verification`.
             @frozen public enum verificationPayload: String, Codable, Hashable, Sendable {
+                case trusted = "trusted"
                 case whitelist = "whitelist"
                 case none = "none"
                 case blacklist = "blacklist"
@@ -582,6 +777,10 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/AssetRefSummary/verification`.
             public var verification: Components.Schemas.AssetRefSummary.verificationPayload
+            /// Leverage для отображения и плеча.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetRefSummary/leverage`.
+            public var leverage: Swift.Int?
             /// Creates a new `AssetRefSummary`.
             ///
             /// - Parameters:
@@ -594,6 +793,7 @@ public enum Components {
             ///   - image_url: URL иконки/логотипа.
             ///   - is_scam: Ассет скам или нет
             ///   - verification: Усовершенствованная версия is_scam
+            ///   - leverage: Leverage для отображения и плеча.
             public init(
                 asset_type: Components.Schemas.AssetType,
                 id: Swift.String,
@@ -603,7 +803,8 @@ public enum Components {
                 trust_score: Swift.Int,
                 image_url: Swift.String,
                 is_scam: Swift.Bool,
-                verification: Components.Schemas.AssetRefSummary.verificationPayload
+                verification: Components.Schemas.AssetRefSummary.verificationPayload,
+                leverage: Swift.Int? = nil
             ) {
                 self.asset_type = asset_type
                 self.id = id
@@ -614,6 +815,7 @@ public enum Components {
                 self.image_url = image_url
                 self.is_scam = is_scam
                 self.verification = verification
+                self.leverage = leverage
             }
             public enum CodingKeys: String, CodingKey {
                 case asset_type
@@ -625,15 +827,18 @@ public enum Components {
                 case image_url
                 case is_scam
                 case verification
+                case leverage
             }
         }
-        /// Тип ассета
+        /// Тип ассета. commodities сейчас выставляется только perp-рынкам (золото, нефть, ...), спотовые товарные токены остаются asset.
         ///
         /// - Remark: Generated from `#/components/schemas/AssetType`.
         @frozen public enum AssetType: String, Codable, Hashable, Sendable {
             case asset = "asset"
             case stocks = "stocks"
             case etfs = "etfs"
+            case commodities = "commodities"
+            case perpetuals = "perpetuals"
         }
         /// Ссылка на ресурсы ассета.
         ///
@@ -730,6 +935,14 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/schemas/MarketMetricsSummary`.
         public struct MarketMetricsSummary: Codable, Hashable, Sendable {
+            /// Объем торгов
+            ///
+            /// - Remark: Generated from `#/components/schemas/MarketMetricsSummary/volume`.
+            public var volume: Swift.String
+            /// Рыночная капитализация в USD (decimal string). Отсутствует, если неизвестна.
+            ///
+            /// - Remark: Generated from `#/components/schemas/MarketMetricsSummary/market_cap`.
+            public var market_cap: Swift.String?
             /// Цена.
             ///
             /// - Remark: Generated from `#/components/schemas/MarketMetricsSummary/price`.
@@ -749,22 +962,30 @@ public enum Components {
             /// Creates a new `MarketMetricsSummary`.
             ///
             /// - Parameters:
+            ///   - volume: Объем торгов
+            ///   - market_cap: Рыночная капитализация в USD (decimal string). Отсутствует, если неизвестна.
             ///   - price: Цена.
             ///   - change_24h_percent: Изменение за 24ч в процентах.
             ///   - provider: Какой провайдер отдал метрики (для дебага/наблюдаемости).
             ///   - as_of: Timestamp, когда метрика была актуальна у провайдера.
             public init(
+                volume: Swift.String,
+                market_cap: Swift.String? = nil,
                 price: Swift.String,
                 change_24h_percent: Swift.String,
                 provider: Swift.String,
                 as_of: Foundation.Date
             ) {
+                self.volume = volume
+                self.market_cap = market_cap
                 self.price = price
                 self.change_24h_percent = change_24h_percent
                 self.provider = provider
                 self.as_of = as_of
             }
             public enum CodingKeys: String, CodingKey {
+                case volume
+                case market_cap
                 case price
                 case change_24h_percent
                 case provider
@@ -777,8 +998,12 @@ public enum Components {
             public var asset: Components.Schemas.AssetRef
             /// - Remark: Generated from `#/components/schemas/AssetDetailsResponse/sections`.
             public var sections: Components.Schemas.AssetSections
+            /// - Remark: Generated from `#/components/schemas/AssetDetailsResponse/capabilities`.
+            public var capabilities: Components.Schemas.AssetCapabilities?
             /// - Remark: Generated from `#/components/schemas/AssetDetailsResponse/data_freshness_sec`.
             public var data_freshness_sec: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/AssetDetailsResponse/info_source`.
+            public var info_source: Components.Schemas.AssetInfoSource
             /// - Remark: Generated from `#/components/schemas/AssetDetailsResponse/warnings`.
             public var warnings: [Components.Schemas.Warning]?
             /// Creates a new `AssetDetailsResponse`.
@@ -786,24 +1011,281 @@ public enum Components {
             /// - Parameters:
             ///   - asset:
             ///   - sections:
+            ///   - capabilities:
             ///   - data_freshness_sec:
+            ///   - info_source:
             ///   - warnings:
             public init(
                 asset: Components.Schemas.AssetRef,
                 sections: Components.Schemas.AssetSections,
+                capabilities: Components.Schemas.AssetCapabilities? = nil,
                 data_freshness_sec: Swift.Int,
+                info_source: Components.Schemas.AssetInfoSource,
                 warnings: [Components.Schemas.Warning]? = nil
             ) {
                 self.asset = asset
                 self.sections = sections
+                self.capabilities = capabilities
                 self.data_freshness_sec = data_freshness_sec
+                self.info_source = info_source
                 self.warnings = warnings
             }
             public enum CodingKeys: String, CodingKey {
                 case asset
                 case sections
+                case capabilities
                 case data_freshness_sec
+                case info_source
                 case warnings
+            }
+        }
+        /// Perpetual market data for p/<protocol>/... assets (Lighter), present only for them. Mirrors the tk-perps /screens/markets Market object field for field, served from a 2-second snapshot of the exchange. Monetary/price/size fields are human-unit decimal strings in USD (not converted to the requested currency); the *_decimals fields tell the client how to scale them back into integer units when building/signing a tx.
+        ///
+        ///
+        /// - Remark: Generated from `#/components/schemas/PerpMarket`.
+        public struct PerpMarket: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/market_index`.
+            public var market_index: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/symbol`.
+            public var symbol: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/base_asset`.
+            public var base_asset: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/quote_asset`.
+            public var quote_asset: Swift.String
+            /// Market trading status (e.g. active, inactive).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/status`.
+            public var status: Swift.String
+            /// Number of decimal places used to scale prices for signing.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/price_decimals`.
+            public var price_decimals: Swift.Int
+            /// Number of decimal places used to scale base sizes for signing.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/size_decimals`.
+            public var size_decimals: Swift.Int
+            /// Minimum price increment, human-unit decimal string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/tick_size`.
+            public var tick_size: Swift.String
+            /// Minimum base size increment, human-unit decimal string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/step_size`.
+            public var step_size: Swift.String
+            /// Minimum order size in base units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/min_size_base`.
+            public var min_size_base: Swift.String
+            /// Maximum order size in base units; empty when the exchange publishes none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/max_size_base`.
+            public var max_size_base: Swift.String
+            /// Minimum order notional in quote units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/min_size_quote`.
+            public var min_size_quote: Swift.String
+            /// Maximum order notional in quote units.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/max_size_quote`.
+            public var max_size_quote: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/max_leverage`.
+            public var max_leverage: Swift.Int
+            /// Maker fee as a percentage string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/maker_fee_pct`.
+            public var maker_fee_pct: Swift.String
+            /// Taker fee as a percentage string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/taker_fee_pct`.
+            public var taker_fee_pct: Swift.String
+            /// Initial margin fraction in basis points (1/10000).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/initial_margin_fraction`.
+            public var initial_margin_fraction: Swift.Int
+            /// Maintenance margin fraction in basis points (1/10000).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/maintenance_margin_fraction`.
+            public var maintenance_margin_fraction: Swift.Int
+            /// Closeout margin fraction in basis points (1/10000).
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/closeout_margin_fraction`.
+            public var closeout_margin_fraction: Swift.Int
+            /// Current hourly funding rate, decimal string. Absent when the exchange reports none.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/funding_rate_hourly`.
+            public var funding_rate_hourly: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/next_funding_at`.
+            public var next_funding_at: Foundation.Date?
+            /// Open interest as reported by the exchange, decimal string.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/open_interest_usd`.
+            public var open_interest_usd: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/volume_24h_usd`.
+            public var volume_24h_usd: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/last_price`.
+            public var last_price: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/index_price`.
+            public var index_price: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/mark_price`.
+            public var mark_price: Swift.String
+            /// 24h price change in percent.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/price_change_24h`.
+            public var price_change_24h: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/high_24h`.
+            public var high_24h: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PerpMarket/low_24h`.
+            public var low_24h: Swift.String
+            /// Creates a new `PerpMarket`.
+            ///
+            /// - Parameters:
+            ///   - market_index:
+            ///   - symbol:
+            ///   - base_asset:
+            ///   - quote_asset:
+            ///   - status: Market trading status (e.g. active, inactive).
+            ///   - price_decimals: Number of decimal places used to scale prices for signing.
+            ///   - size_decimals: Number of decimal places used to scale base sizes for signing.
+            ///   - tick_size: Minimum price increment, human-unit decimal string.
+            ///   - step_size: Minimum base size increment, human-unit decimal string.
+            ///   - min_size_base: Minimum order size in base units.
+            ///   - max_size_base: Maximum order size in base units; empty when the exchange publishes none.
+            ///   - min_size_quote: Minimum order notional in quote units.
+            ///   - max_size_quote: Maximum order notional in quote units.
+            ///   - max_leverage:
+            ///   - maker_fee_pct: Maker fee as a percentage string.
+            ///   - taker_fee_pct: Taker fee as a percentage string.
+            ///   - initial_margin_fraction: Initial margin fraction in basis points (1/10000).
+            ///   - maintenance_margin_fraction: Maintenance margin fraction in basis points (1/10000).
+            ///   - closeout_margin_fraction: Closeout margin fraction in basis points (1/10000).
+            ///   - funding_rate_hourly: Current hourly funding rate, decimal string. Absent when the exchange reports none.
+            ///   - next_funding_at:
+            ///   - open_interest_usd: Open interest as reported by the exchange, decimal string.
+            ///   - volume_24h_usd:
+            ///   - last_price:
+            ///   - index_price:
+            ///   - mark_price:
+            ///   - price_change_24h: 24h price change in percent.
+            ///   - high_24h:
+            ///   - low_24h:
+            public init(
+                market_index: Swift.Int,
+                symbol: Swift.String,
+                base_asset: Swift.String,
+                quote_asset: Swift.String,
+                status: Swift.String,
+                price_decimals: Swift.Int,
+                size_decimals: Swift.Int,
+                tick_size: Swift.String,
+                step_size: Swift.String,
+                min_size_base: Swift.String,
+                max_size_base: Swift.String,
+                min_size_quote: Swift.String,
+                max_size_quote: Swift.String,
+                max_leverage: Swift.Int,
+                maker_fee_pct: Swift.String,
+                taker_fee_pct: Swift.String,
+                initial_margin_fraction: Swift.Int,
+                maintenance_margin_fraction: Swift.Int,
+                closeout_margin_fraction: Swift.Int,
+                funding_rate_hourly: Swift.String? = nil,
+                next_funding_at: Foundation.Date? = nil,
+                open_interest_usd: Swift.String,
+                volume_24h_usd: Swift.String,
+                last_price: Swift.String,
+                index_price: Swift.String,
+                mark_price: Swift.String,
+                price_change_24h: Swift.String,
+                high_24h: Swift.String,
+                low_24h: Swift.String
+            ) {
+                self.market_index = market_index
+                self.symbol = symbol
+                self.base_asset = base_asset
+                self.quote_asset = quote_asset
+                self.status = status
+                self.price_decimals = price_decimals
+                self.size_decimals = size_decimals
+                self.tick_size = tick_size
+                self.step_size = step_size
+                self.min_size_base = min_size_base
+                self.max_size_base = max_size_base
+                self.min_size_quote = min_size_quote
+                self.max_size_quote = max_size_quote
+                self.max_leverage = max_leverage
+                self.maker_fee_pct = maker_fee_pct
+                self.taker_fee_pct = taker_fee_pct
+                self.initial_margin_fraction = initial_margin_fraction
+                self.maintenance_margin_fraction = maintenance_margin_fraction
+                self.closeout_margin_fraction = closeout_margin_fraction
+                self.funding_rate_hourly = funding_rate_hourly
+                self.next_funding_at = next_funding_at
+                self.open_interest_usd = open_interest_usd
+                self.volume_24h_usd = volume_24h_usd
+                self.last_price = last_price
+                self.index_price = index_price
+                self.mark_price = mark_price
+                self.price_change_24h = price_change_24h
+                self.high_24h = high_24h
+                self.low_24h = low_24h
+            }
+            public enum CodingKeys: String, CodingKey {
+                case market_index
+                case symbol
+                case base_asset
+                case quote_asset
+                case status
+                case price_decimals
+                case size_decimals
+                case tick_size
+                case step_size
+                case min_size_base
+                case max_size_base
+                case min_size_quote
+                case max_size_quote
+                case max_leverage
+                case maker_fee_pct
+                case taker_fee_pct
+                case initial_margin_fraction
+                case maintenance_margin_fraction
+                case closeout_margin_fraction
+                case funding_rate_hourly
+                case next_funding_at
+                case open_interest_usd
+                case volume_24h_usd
+                case last_price
+                case index_price
+                case mark_price
+                case price_change_24h
+                case high_24h
+                case low_24h
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetInfoSource`.
+        public struct AssetInfoSource: Codable, Hashable, Sendable {
+            /// Название источника для подписи под данными ассета.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfoSource/displayed_name`.
+            public var displayed_name: Swift.String
+            /// Ссылка на страницу .
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfoSource/url`.
+            public var url: Swift.String
+            /// Creates a new `AssetInfoSource`.
+            ///
+            /// - Parameters:
+            ///   - displayed_name: Название источника для подписи под данными ассета.
+            ///   - url: Ссылка на страницу .
+            public init(
+                displayed_name: Swift.String,
+                url: Swift.String
+            ) {
+                self.displayed_name = displayed_name
+                self.url = url
+            }
+            public enum CodingKeys: String, CodingKey {
+                case displayed_name
+                case url
             }
         }
         /// Секции экрана ассета. Важно: сервер определяет enabled/disabled для каждой секции в зависимости от типа ассета и правил (например stocks/RWA).
@@ -1013,6 +1495,131 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/schemas/ChartPoints`.
         public typealias ChartPoints = [[Swift.Double]]
+        /// Capability flag. Clients must tolerate unknown values added later
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetCapability`.
+        @frozen public enum AssetCapability: String, Codable, Hashable, Sendable {
+            case onramp = "onramp"
+            case offramp = "offramp"
+            case swap = "swap"
+            case p2p = "p2p"
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityMerchants`.
+        public struct AssetCapabilityMerchants: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityMerchants/merchants`.
+            public var merchants: [Components.Schemas.ExchangeMerchantSlug]?
+            /// Creates a new `AssetCapabilityMerchants`.
+            ///
+            /// - Parameters:
+            ///   - merchants:
+            public init(merchants: [Components.Schemas.ExchangeMerchantSlug]? = nil) {
+                self.merchants = merchants
+            }
+            public enum CodingKeys: String, CodingKey {
+                case merchants
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ExchangeMerchantSlug`.
+        @frozen public enum ExchangeMerchantSlug: String, Codable, Hashable, Sendable {
+            case mercuryo = "mercuryo"
+            case transak = "transak"
+            case moonpay = "moonpay"
+            case avanchange = "avanchange"
+            case changelly = "changelly"
+            case wallet = "wallet"
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityAggregators`.
+        public struct AssetCapabilityAggregators: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityAggregators/aggregators`.
+            public var aggregators: [Swift.String]?
+            /// Creates a new `AssetCapabilityAggregators`.
+            ///
+            /// - Parameters:
+            ///   - aggregators:
+            public init(aggregators: [Swift.String]? = nil) {
+                self.aggregators = aggregators
+            }
+            public enum CodingKeys: String, CodingKey {
+                case aggregators
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityP2PInfo`.
+        public struct AssetCapabilityP2PInfo: Codable, Hashable, Sendable {
+            /// P2P symbol matched against this asset (e.g. `TON`, `USDT`)
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityP2PInfo/symbol`.
+            public var symbol: Swift.String?
+            /// Creates a new `AssetCapabilityP2PInfo`.
+            ///
+            /// - Parameters:
+            ///   - symbol: P2P symbol matched against this asset (e.g. `TON`, `USDT`)
+            public init(symbol: Swift.String? = nil) {
+                self.symbol = symbol
+            }
+            public enum CodingKeys: String, CodingKey {
+                case symbol
+            }
+        }
+        /// Per-capability extra info. Keys appear only when meaningful for the listed capability
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails`.
+        public struct AssetCapabilityDetails: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/onramp`.
+            public var onramp: Components.Schemas.AssetCapabilityMerchants?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/offramp`.
+            public var offramp: Components.Schemas.AssetCapabilityMerchants?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/swap`.
+            public var swap: Components.Schemas.AssetCapabilityAggregators?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/p2p`.
+            public var p2p: Components.Schemas.AssetCapabilityP2PInfo?
+            /// Creates a new `AssetCapabilityDetails`.
+            ///
+            /// - Parameters:
+            ///   - onramp:
+            ///   - offramp:
+            ///   - swap:
+            ///   - p2p:
+            public init(
+                onramp: Components.Schemas.AssetCapabilityMerchants? = nil,
+                offramp: Components.Schemas.AssetCapabilityMerchants? = nil,
+                swap: Components.Schemas.AssetCapabilityAggregators? = nil,
+                p2p: Components.Schemas.AssetCapabilityP2PInfo? = nil
+            ) {
+                self.onramp = onramp
+                self.offramp = offramp
+                self.swap = swap
+                self.p2p = p2p
+            }
+            public enum CodingKeys: String, CodingKey {
+                case onramp
+                case offramp
+                case swap
+                case p2p
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilities`.
+        public struct AssetCapabilities: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilities/capabilities`.
+            public var capabilities: [Components.Schemas.AssetCapability]
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilities/details`.
+            public var details: Components.Schemas.AssetCapabilityDetails?
+            /// Creates a new `AssetCapabilities`.
+            ///
+            /// - Parameters:
+            ///   - capabilities:
+            ///   - details:
+            public init(
+                capabilities: [Components.Schemas.AssetCapability],
+                details: Components.Schemas.AssetCapabilityDetails? = nil
+            ) {
+                self.capabilities = capabilities
+                self.details = details
+            }
+            public enum CodingKeys: String, CodingKey {
+                case capabilities
+                case details
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/Warning`.
         public struct Warning: Codable, Hashable, Sendable {
             /// Код предупреждения.
@@ -1111,35 +1718,43 @@ public enum Components {
     }
     /// Types generated from the `#/components/parameters` section of the OpenAPI document.
     public enum Parameters {
-        /// Store country code
+        /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/storeCountyCodeQuery`.
         public typealias storeCountyCodeQuery = Swift.String
-        /// Currency
+        /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/currency`.
         public typealias currency = Swift.String
-        /// Device country code
+        /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/deviceCountyCodeQuery`.
         public typealias deviceCountyCodeQuery = Swift.String
-        /// SIM card country code
+        /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/simCountryQuery`.
         public typealias simCountryQuery = Swift.String
-        /// Device timezone (IANA format)
+        /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/timezoneQuery`.
         public typealias timezoneQuery = Swift.String
-        /// Whether VPN is currently active
+        /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/isVpnActiveQuery`.
         public typealias isVpnActiveQuery = Swift.Bool
-        /// Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+        /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/XLang`.
         public typealias XLang = Swift.String
-        /// Юзер агент (для совместимости и фичефлагов).
+        /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+        ///
         ///
         /// - Remark: Generated from `#/components/parameters/UserAgent`.
         public typealias UserAgent = Swift.String
@@ -1148,72 +1763,47 @@ public enum Components {
     public enum RequestBodies {}
     /// Types generated from the `#/components/responses` section of the OpenAPI document.
     public enum Responses {
-        public struct Unauthorized: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/Unauthorized/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/Unauthorized/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.Unauthorized.Body
-            /// Creates a new `Unauthorized`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.Unauthorized.Body) {
-                self.body = body
-            }
-        }
-        public struct TooManyRequests: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/TooManyRequests/content`.
-            @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/TooManyRequests/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
-                /// The associated value of the enum case if `self` is `.json`.
-                ///
-                /// - Throws: An error if `self` is not `.json`.
-                /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
-                    get throws {
-                        switch self {
-                        case let .json(body):
-                            return body
-                        }
-                    }
-                }
-            }
-            /// Received HTTP response body
-            public var body: Components.Responses.TooManyRequests.Body
-            /// Creates a new `TooManyRequests`.
-            ///
-            /// - Parameters:
-            ///   - body: Received HTTP response body
-            public init(body: Components.Responses.TooManyRequests.Body) {
-                self.body = body
-            }
-        }
         public struct BadRequest: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/BadRequest/content`.
             @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/BadRequest/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/BadRequest/content/json/code`.
+                    public var code: Swift.String
+                    /// - Remark: Generated from `#/components/responses/BadRequest/content/json/message`.
+                    public var message: Swift.String
+                    /// Идентификатор запроса для саппорта/логов.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/BadRequest/content/json/request_id`.
+                    public var request_id: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - code:
+                    ///   - message:
+                    ///   - request_id: Идентификатор запроса для саппорта/логов.
+                    public init(
+                        code: Swift.String,
+                        message: Swift.String,
+                        request_id: Swift.String? = nil
+                    ) {
+                        self.code = code
+                        self.message = message
+                        self.request_id = request_id
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case code
+                        case message
+                        case request_id
+                    }
+                }
                 /// - Remark: Generated from `#/components/responses/BadRequest/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
+                case json(Components.Responses.BadRequest.Body.jsonPayload)
                 /// The associated value of the enum case if `self` is `.json`.
                 ///
                 /// - Throws: An error if `self` is not `.json`.
                 /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
+                public var json: Components.Responses.BadRequest.Body.jsonPayload {
                     get throws {
                         switch self {
                         case let .json(body):
@@ -1232,16 +1822,106 @@ public enum Components {
                 self.body = body
             }
         }
-        public struct NotFound: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/NotFound/content`.
+        public struct Unauthorized: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Unauthorized/content`.
             @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/NotFound/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
+                /// - Remark: Generated from `#/components/responses/Unauthorized/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/Unauthorized/content/json/code`.
+                    public var code: Swift.String
+                    /// - Remark: Generated from `#/components/responses/Unauthorized/content/json/message`.
+                    public var message: Swift.String
+                    /// Идентификатор запроса для саппорта/логов.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/Unauthorized/content/json/request_id`.
+                    public var request_id: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - code:
+                    ///   - message:
+                    ///   - request_id: Идентификатор запроса для саппорта/логов.
+                    public init(
+                        code: Swift.String,
+                        message: Swift.String,
+                        request_id: Swift.String? = nil
+                    ) {
+                        self.code = code
+                        self.message = message
+                        self.request_id = request_id
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case code
+                        case message
+                        case request_id
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/Unauthorized/content/application\/json`.
+                case json(Components.Responses.Unauthorized.Body.jsonPayload)
                 /// The associated value of the enum case if `self` is `.json`.
                 ///
                 /// - Throws: An error if `self` is not `.json`.
                 /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
+                public var json: Components.Responses.Unauthorized.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Unauthorized.Body
+            /// Creates a new `Unauthorized`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Unauthorized.Body) {
+                self.body = body
+            }
+        }
+        public struct NotFound: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/NotFound/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/NotFound/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/NotFound/content/json/code`.
+                    public var code: Swift.String
+                    /// - Remark: Generated from `#/components/responses/NotFound/content/json/message`.
+                    public var message: Swift.String
+                    /// Идентификатор запроса для саппорта/логов.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/NotFound/content/json/request_id`.
+                    public var request_id: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - code:
+                    ///   - message:
+                    ///   - request_id: Идентификатор запроса для саппорта/логов.
+                    public init(
+                        code: Swift.String,
+                        message: Swift.String,
+                        request_id: Swift.String? = nil
+                    ) {
+                        self.code = code
+                        self.message = message
+                        self.request_id = request_id
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case code
+                        case message
+                        case request_id
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/NotFound/content/application\/json`.
+                case json(Components.Responses.NotFound.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.NotFound.Body.jsonPayload {
                     get throws {
                         switch self {
                         case let .json(body):
@@ -1260,16 +1940,106 @@ public enum Components {
                 self.body = body
             }
         }
-        public struct InternalError: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/responses/InternalError/content`.
+        public struct TooManyRequests: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/TooManyRequests/content`.
             @frozen public enum Body: Sendable, Hashable {
-                /// - Remark: Generated from `#/components/responses/InternalError/content/application\/json`.
-                case json(Components.Schemas.ErrorResponse)
+                /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json/code`.
+                    public var code: Swift.String
+                    /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json/message`.
+                    public var message: Swift.String
+                    /// Идентификатор запроса для саппорта/логов.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json/request_id`.
+                    public var request_id: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - code:
+                    ///   - message:
+                    ///   - request_id: Идентификатор запроса для саппорта/логов.
+                    public init(
+                        code: Swift.String,
+                        message: Swift.String,
+                        request_id: Swift.String? = nil
+                    ) {
+                        self.code = code
+                        self.message = message
+                        self.request_id = request_id
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case code
+                        case message
+                        case request_id
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/TooManyRequests/content/application\/json`.
+                case json(Components.Responses.TooManyRequests.Body.jsonPayload)
                 /// The associated value of the enum case if `self` is `.json`.
                 ///
                 /// - Throws: An error if `self` is not `.json`.
                 /// - SeeAlso: `.json`.
-                public var json: Components.Schemas.ErrorResponse {
+                public var json: Components.Responses.TooManyRequests.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.TooManyRequests.Body
+            /// Creates a new `TooManyRequests`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.TooManyRequests.Body) {
+                self.body = body
+            }
+        }
+        public struct InternalError: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/InternalError/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/InternalError/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/InternalError/content/json/code`.
+                    public var code: Swift.String
+                    /// - Remark: Generated from `#/components/responses/InternalError/content/json/message`.
+                    public var message: Swift.String
+                    /// Идентификатор запроса для саппорта/логов.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/InternalError/content/json/request_id`.
+                    public var request_id: Swift.String?
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - code:
+                    ///   - message:
+                    ///   - request_id: Идентификатор запроса для саппорта/логов.
+                    public init(
+                        code: Swift.String,
+                        message: Swift.String,
+                        request_id: Swift.String? = nil
+                    ) {
+                        self.code = code
+                        self.message = message
+                        self.request_id = request_id
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case code
+                        case message
+                        case request_id
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/InternalError/content/application\/json`.
+                case json(Components.Responses.InternalError.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.InternalError.Body.jsonPayload {
                     get throws {
                         switch self {
                         case let .json(body):
@@ -1307,39 +2077,45 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Currency
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/currency`.
                 public var currency: Components.Parameters.currency?
-                /// Store country code
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/store_country_code`.
                 public var store_country_code: Components.Parameters.storeCountyCodeQuery?
-                /// SIM card country code
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/sim_country`.
                 public var sim_country: Components.Parameters.simCountryQuery?
-                /// Device country code
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/device_country_code`.
                 public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
-                /// Device timezone (IANA format)
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/timezone`.
                 public var timezone: Components.Parameters.timezoneQuery?
-                /// Whether VPN is currently active
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/query/is_vpn_active`.
                 public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - currency: Currency
-                ///   - store_country_code: Store country code
-                ///   - sim_country: SIM card country code
-                ///   - device_country_code: Device country code
-                ///   - timezone: Device timezone (IANA format)
-                ///   - is_vpn_active: Whether VPN is currently active
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
                 public init(
                     currency: Components.Parameters.currency? = nil,
                     store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
@@ -1359,11 +2135,13 @@ public enum Operations {
             public var query: Operations.getShelvesConfig.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/header`.
             public struct Headers: Sendable, Hashable {
-                /// Юзер агент (для совместимости и фичефлагов).
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/header/User-Agent`.
                 public var User_hyphen_Agent: Components.Parameters.UserAgent?
-                /// Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/shelves/config/GET/header/X-Lang`.
                 public var X_hyphen_Lang: Components.Parameters.XLang?
@@ -1371,8 +2149,8 @@ public enum Operations {
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
-                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов).
-                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
                 ///   - accept:
                 public init(
                     User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
@@ -1450,7 +2228,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неверные параметры запроса
+            /// Invalid request
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/shelves/config/get(getShelvesConfig)/responses/400`.
             ///
@@ -1473,7 +2251,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неавторизован
+            /// Unauthorized
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/shelves/config/get(getShelvesConfig)/responses/401`.
             ///
@@ -1496,7 +2274,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Слишком много запросов
+            /// Too many requests
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/shelves/config/get(getShelvesConfig)/responses/429`.
             ///
@@ -1519,9 +2297,295 @@ public enum Operations {
                     }
                 }
             }
-            /// Неизветная ошибка
+            /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/shelves/config/get(getShelvesConfig)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Конфиг полок для трейд-вкладки V2
+    ///
+    /// Клиент дергает при открытии Trade tab (и может периодически обновлять). Сервер возвращает список полок в нужном порядке и с правилами, которые сервер же применит на выдаче контента полок. Клиент не принимает решения: порядок/лимит/видимость — это всё backend. Geo-ограничения применяются здесь же, чтобы клиент не гадал, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/shelves/config`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)`.
+    public enum getShelvesConfigV2 {
+        public static let id: Swift.String = "getShelvesConfigV2"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/currency`.
+                public var currency: Components.Parameters.currency?
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/store_country_code`.
+                public var store_country_code: Components.Parameters.storeCountyCodeQuery?
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/sim_country`.
+                public var sim_country: Components.Parameters.simCountryQuery?
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/device_country_code`.
+                public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/timezone`.
+                public var timezone: Components.Parameters.timezoneQuery?
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/query/is_vpn_active`.
+                public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                public init(
+                    currency: Components.Parameters.currency? = nil,
+                    store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
+                    sim_country: Components.Parameters.simCountryQuery? = nil,
+                    device_country_code: Components.Parameters.deviceCountyCodeQuery? = nil,
+                    timezone: Components.Parameters.timezoneQuery? = nil,
+                    is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil
+                ) {
+                    self.currency = currency
+                    self.store_country_code = store_country_code
+                    self.sim_country = sim_country
+                    self.device_country_code = device_country_code
+                    self.timezone = timezone
+                    self.is_vpn_active = is_vpn_active
+                }
+            }
+            public var query: Operations.getShelvesConfigV2.Input.Query
+            /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/header/User-Agent`.
+                public var User_hyphen_Agent: Components.Parameters.UserAgent?
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/header/X-Lang`.
+                public var X_hyphen_Lang: Components.Parameters.XLang?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getShelvesConfigV2.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///   - accept:
+                public init(
+                    User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
+                    X_hyphen_Lang: Components.Parameters.XLang? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getShelvesConfigV2.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.User_hyphen_Agent = User_hyphen_Agent
+                    self.X_hyphen_Lang = X_hyphen_Lang
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getShelvesConfigV2.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getShelvesConfigV2.Input.Query = .init(),
+                headers: Operations.getShelvesConfigV2.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v2/trading/shelves/config/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ShelvesConfigResponseV2)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ShelvesConfigResponseV2 {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getShelvesConfigV2.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getShelvesConfigV2.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Конфиг полок
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getShelvesConfigV2.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getShelvesConfigV2.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Too many requests
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/shelves/config/get(getShelvesConfigV2)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -1585,39 +2649,50 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Currency
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/currency`.
                 public var currency: Components.Parameters.currency?
-                /// Store country code
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/store_country_code`.
                 public var store_country_code: Components.Parameters.storeCountyCodeQuery?
-                /// SIM card country code
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/sim_country`.
                 public var sim_country: Components.Parameters.simCountryQuery?
-                /// Device country code
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/device_country_code`.
                 public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
-                /// Device timezone (IANA format)
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/timezone`.
                 public var timezone: Components.Parameters.timezoneQuery?
-                /// Whether VPN is currently active
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/is_vpn_active`.
                 public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
-                /// Табы на экране Assets. all/tokens/stocks/etfs — это UI семантика. Сервер маппит это в свой внутренний тип.
+                /// Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/tab`.
                 public var tab: Components.Schemas.AssetsTab?
-                /// Поиск по тикеру/имени. Сервер решает, как матчить (prefix/contains).
+                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/q`.
                 public var q: Swift.String?
+                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/show_perps`.
+                public var show_perps: Swift.Bool?
                 /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/chain`.
@@ -1630,7 +2705,7 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/order`.
                 public var order: Components.Schemas.AssetsOrder?
-                /// Предвыбранный фильтр (например переход из полки). Используйте только если сервер это поддерживает. Если не поддерживает — сервер вернет warnings и применит fallback.
+                /// Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
                 ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/query/filter`.
@@ -1652,18 +2727,19 @@ public enum Operations {
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - currency: Currency
-                ///   - store_country_code: Store country code
-                ///   - sim_country: SIM card country code
-                ///   - device_country_code: Device country code
-                ///   - timezone: Device timezone (IANA format)
-                ///   - is_vpn_active: Whether VPN is currently active
-                ///   - tab: Табы на экране Assets. all/tokens/stocks/etfs — это UI семантика. Сервер маппит это в свой внутренний тип.
-                ///   - q: Поиск по тикеру/имени. Сервер решает, как матчить (prefix/contains).
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///   - tab: Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
+                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
                 ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
                 ///   - sort: Сортировка. По умолчанию volume_24h.
                 ///   - order: Порядок сортировки. По умолчанию desc.
-                ///   - filter: Предвыбранный фильтр (например переход из полки). Используйте только если сервер это поддерживает. Если не поддерживает — сервер вернет warnings и применит fallback.
+                ///   - filter: Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
                 ///   - source_shelf: Откуда пришли (для аналитики и корректного fallback). Например most_traded или top_gainers. Не обязателен, но полезен.
                 ///   - cursor: Курсор пагинации. Если не задан — первая страница.
                 ///   - page_size: Размер страницы. Сервер может clamp-нуть. Клиенту не надо ставить огромные значения.
@@ -1676,6 +2752,7 @@ public enum Operations {
                     is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
                     tab: Components.Schemas.AssetsTab? = nil,
                     q: Swift.String? = nil,
+                    show_perps: Swift.Bool? = nil,
                     chain: Swift.String? = nil,
                     sort: Components.Schemas.AssetsSort? = nil,
                     order: Components.Schemas.AssetsOrder? = nil,
@@ -1692,6 +2769,7 @@ public enum Operations {
                     self.is_vpn_active = is_vpn_active
                     self.tab = tab
                     self.q = q
+                    self.show_perps = show_perps
                     self.chain = chain
                     self.sort = sort
                     self.order = order
@@ -1704,11 +2782,13 @@ public enum Operations {
             public var query: Operations.getAssetsCatalog.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/header`.
             public struct Headers: Sendable, Hashable {
-                /// Юзер агент (для совместимости и фичефлагов).
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/header/User-Agent`.
                 public var User_hyphen_Agent: Components.Parameters.UserAgent?
-                /// Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/GET/header/X-Lang`.
                 public var X_hyphen_Lang: Components.Parameters.XLang?
@@ -1716,8 +2796,8 @@ public enum Operations {
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
-                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов).
-                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
                 ///   - accept:
                 public init(
                     User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
@@ -1795,7 +2875,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неверные параметры запроса
+            /// Invalid request
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)/responses/400`.
             ///
@@ -1818,7 +2898,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неавторизован
+            /// Unauthorized
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)/responses/401`.
             ///
@@ -1841,7 +2921,30 @@ public enum Operations {
                     }
                 }
             }
-            /// Слишком много запросов
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Too many requests
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)/responses/429`.
             ///
@@ -1864,9 +2967,400 @@ public enum Operations {
                     }
                 }
             }
-            /// Неизветная ошибка
+            /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/get(getAssetsCatalog)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Каталог ассетов (infinite scroll) + фильтры
+    ///
+    /// Основной экран "Assets" и результаты поиска. Сервер сортирует и фильтрует. Клиент передает tab/type, query, cursor. Сервер возвращает items и next_cursor. Если filter недоступен у провайдера, сервер не падает, а возвращает warnings и fallback.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)`.
+    public enum getAssetsCatalogV2 {
+        public static let id: Swift.String = "getAssetsCatalogV2"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/currency`.
+                public var currency: Components.Parameters.currency?
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/store_country_code`.
+                public var store_country_code: Components.Parameters.storeCountyCodeQuery?
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/sim_country`.
+                public var sim_country: Components.Parameters.simCountryQuery?
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/device_country_code`.
+                public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/timezone`.
+                public var timezone: Components.Parameters.timezoneQuery?
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/is_vpn_active`.
+                public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
+                /// Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/tab`.
+                public var tab: Components.Schemas.AssetsTab?
+                /// Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/q`.
+                public var q: Swift.String?
+                /// Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/show_perps`.
+                public var show_perps: Swift.Bool?
+                /// Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/chain`.
+                public var chain: Swift.String?
+                /// Сортировка. По умолчанию volume_24h.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/sort`.
+                public var sort: Components.Schemas.AssetsSort?
+                /// Порядок сортировки. По умолчанию desc.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/order`.
+                public var order: Components.Schemas.AssetsOrder?
+                /// Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/filter`.
+                public var filter: Components.Schemas.AssetsFilter?
+                /// Откуда пришли (для аналитики и корректного fallback). Например most_traded или top_gainers. Не обязателен, но полезен.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/source_shelf`.
+                public var source_shelf: Swift.String?
+                /// Список ассетов, которые нужно получить
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/ids`.
+                public var ids: [Swift.String]?
+                /// Курсор пагинации. Если не задан — первая страница.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/cursor`.
+                public var cursor: Swift.String?
+                /// Размер страницы. Сервер может clamp-нуть. Клиенту не надо ставить огромные значения.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/query/page_size`.
+                public var page_size: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///   - tab: Таб на экране Assets: all, tokens или perpetuals. stocks/etfs/commodities поддерживаются только для обратной совместимости — вместо них используйте filter.
+                ///   - q: Поиск по тикеру/имени по префиксу (тикер или имя начинается с запроса). Каталог (и поиск, и обычный список) возвращает только активы, у которых есть хотя бы один swap-провайдер (is_swappable); для клиентов версии >= 26.09.0 (по User-Agent) провайдер omniston не учитывается. Для tab=perpetuals фильтр не применяется.
+                ///   - show_perps: Показывать perp-рынки (lighter/...) вместе с остальными активами на любом табе, в том числе в поиске. По умолчанию false — perp-рынки только на tab=perpetuals. На tab=perpetuals флаг ничего не меняет.
+                ///   - chain: Ограничить выдачу одной сетью (ton/eth/...). Если не задано — мультичейн.
+                ///   - sort: Сортировка. По умолчанию volume_24h.
+                ///   - order: Порядок сортировки. По умолчанию desc.
+                ///   - filter: Фильтр по типу актива внутри таба: all (по умолчанию), tokens, stocks, etfs, commodities. Комбинируется с tab и q.
+                ///   - source_shelf: Откуда пришли (для аналитики и корректного fallback). Например most_traded или top_gainers. Не обязателен, но полезен.
+                ///   - ids: Список ассетов, которые нужно получить
+                ///   - cursor: Курсор пагинации. Если не задан — первая страница.
+                ///   - page_size: Размер страницы. Сервер может clamp-нуть. Клиенту не надо ставить огромные значения.
+                public init(
+                    currency: Components.Parameters.currency? = nil,
+                    store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
+                    sim_country: Components.Parameters.simCountryQuery? = nil,
+                    device_country_code: Components.Parameters.deviceCountyCodeQuery? = nil,
+                    timezone: Components.Parameters.timezoneQuery? = nil,
+                    is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
+                    tab: Components.Schemas.AssetsTab? = nil,
+                    q: Swift.String? = nil,
+                    show_perps: Swift.Bool? = nil,
+                    chain: Swift.String? = nil,
+                    sort: Components.Schemas.AssetsSort? = nil,
+                    order: Components.Schemas.AssetsOrder? = nil,
+                    filter: Components.Schemas.AssetsFilter? = nil,
+                    source_shelf: Swift.String? = nil,
+                    ids: [Swift.String]? = nil,
+                    cursor: Swift.String? = nil,
+                    page_size: Swift.Int? = nil
+                ) {
+                    self.currency = currency
+                    self.store_country_code = store_country_code
+                    self.sim_country = sim_country
+                    self.device_country_code = device_country_code
+                    self.timezone = timezone
+                    self.is_vpn_active = is_vpn_active
+                    self.tab = tab
+                    self.q = q
+                    self.show_perps = show_perps
+                    self.chain = chain
+                    self.sort = sort
+                    self.order = order
+                    self.filter = filter
+                    self.source_shelf = source_shelf
+                    self.ids = ids
+                    self.cursor = cursor
+                    self.page_size = page_size
+                }
+            }
+            public var query: Operations.getAssetsCatalogV2.Input.Query
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/header/User-Agent`.
+                public var User_hyphen_Agent: Components.Parameters.UserAgent?
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/header/X-Lang`.
+                public var X_hyphen_Lang: Components.Parameters.XLang?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetsCatalogV2.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///   - accept:
+                public init(
+                    User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
+                    X_hyphen_Lang: Components.Parameters.XLang? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetsCatalogV2.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.User_hyphen_Agent = User_hyphen_Agent
+                    self.X_hyphen_Lang = X_hyphen_Lang
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getAssetsCatalogV2.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getAssetsCatalogV2.Input.Query = .init(),
+                headers: Operations.getAssetsCatalogV2.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v2/trading/assets/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.AssetsCatalogResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.AssetsCatalogResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getAssetsCatalogV2.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getAssetsCatalogV2.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Страница каталога
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getAssetsCatalogV2.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getAssetsCatalogV2.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Too many requests
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/get(getAssetsCatalogV2)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -1945,39 +3439,45 @@ public enum Operations {
             public var path: Operations.getAssetDetails.Input.Path
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Currency
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/currency`.
                 public var currency: Components.Parameters.currency?
-                /// Store country code
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/store_country_code`.
                 public var store_country_code: Components.Parameters.storeCountyCodeQuery?
-                /// SIM card country code
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/sim_country`.
                 public var sim_country: Components.Parameters.simCountryQuery?
-                /// Device country code
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/device_country_code`.
                 public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
-                /// Device timezone (IANA format)
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/timezone`.
                 public var timezone: Components.Parameters.timezoneQuery?
-                /// Whether VPN is currently active
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/query/is_vpn_active`.
                 public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - currency: Currency
-                ///   - store_country_code: Store country code
-                ///   - sim_country: SIM card country code
-                ///   - device_country_code: Device country code
-                ///   - timezone: Device timezone (IANA format)
-                ///   - is_vpn_active: Whether VPN is currently active
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
                 public init(
                     currency: Components.Parameters.currency? = nil,
                     store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
@@ -1997,11 +3497,13 @@ public enum Operations {
             public var query: Operations.getAssetDetails.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/header`.
             public struct Headers: Sendable, Hashable {
-                /// Юзер агент (для совместимости и фичефлагов).
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/header/User-Agent`.
                 public var User_hyphen_Agent: Components.Parameters.UserAgent?
-                /// Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/details/GET/header/X-Lang`.
                 public var X_hyphen_Lang: Components.Parameters.XLang?
@@ -2009,8 +3511,8 @@ public enum Operations {
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
-                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов).
-                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
                 ///   - accept:
                 public init(
                     User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
@@ -2091,7 +3593,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неверные параметры запроса
+            /// Invalid request
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)/responses/400`.
             ///
@@ -2114,7 +3616,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неавторизован
+            /// Unauthorized
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)/responses/401`.
             ///
@@ -2137,7 +3639,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Объект не найден
+            /// Resource not found
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)/responses/404`.
             ///
@@ -2160,7 +3662,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Слишком много запросов
+            /// Too many requests
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)/responses/429`.
             ///
@@ -2183,9 +3685,336 @@ public enum Operations {
                     }
                 }
             }
-            /// Неизветная ошибка
+            /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/details/get(getAssetDetails)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Детали ассета для экрана ассета
+    ///
+    /// Сервер возвращает секции, которые надо показать на экране, и данные для этих секций. Это важно: для разных типов активов секции могут отличаться (например у stocks/RWA скрываем overview/activity, оставляем about company). Клиент не должен сам решать, что показывать.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/details`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)`.
+    public enum getAssetDetailsV2 {
+        public static let id: Swift.String = "getAssetDetailsV2"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Уникальный идентификатор ассета (chain-agnostic). Пример: ton:token:..., eth:token:..., rwa:TSLA.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/path/assetId`.
+                public var assetId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - assetId: Уникальный идентификатор ассета (chain-agnostic). Пример: ton:token:..., eth:token:..., rwa:TSLA.
+                public init(assetId: Swift.String) {
+                    self.assetId = assetId
+                }
+            }
+            public var path: Operations.getAssetDetailsV2.Input.Path
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/currency`.
+                public var currency: Components.Parameters.currency?
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/store_country_code`.
+                public var store_country_code: Components.Parameters.storeCountyCodeQuery?
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/sim_country`.
+                public var sim_country: Components.Parameters.simCountryQuery?
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/device_country_code`.
+                public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/timezone`.
+                public var timezone: Components.Parameters.timezoneQuery?
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/query/is_vpn_active`.
+                public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                public init(
+                    currency: Components.Parameters.currency? = nil,
+                    store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
+                    sim_country: Components.Parameters.simCountryQuery? = nil,
+                    device_country_code: Components.Parameters.deviceCountyCodeQuery? = nil,
+                    timezone: Components.Parameters.timezoneQuery? = nil,
+                    is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil
+                ) {
+                    self.currency = currency
+                    self.store_country_code = store_country_code
+                    self.sim_country = sim_country
+                    self.device_country_code = device_country_code
+                    self.timezone = timezone
+                    self.is_vpn_active = is_vpn_active
+                }
+            }
+            public var query: Operations.getAssetDetailsV2.Input.Query
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/header/User-Agent`.
+                public var User_hyphen_Agent: Components.Parameters.UserAgent?
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/header/X-Lang`.
+                public var X_hyphen_Lang: Components.Parameters.XLang?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetDetailsV2.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///   - accept:
+                public init(
+                    User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
+                    X_hyphen_Lang: Components.Parameters.XLang? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetDetailsV2.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.User_hyphen_Agent = User_hyphen_Agent
+                    self.X_hyphen_Lang = X_hyphen_Lang
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getAssetDetailsV2.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getAssetDetailsV2.Input.Path,
+                query: Operations.getAssetDetailsV2.Input.Query = .init(),
+                headers: Operations.getAssetDetailsV2.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/details/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.AssetDetailsResponse)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.AssetDetailsResponse {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getAssetDetailsV2.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getAssetDetailsV2.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Данные для экрана ассета
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getAssetDetailsV2.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getAssetDetailsV2.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Too many requests
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/details/get(getAssetDetailsV2)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -2264,27 +4093,33 @@ public enum Operations {
             public var path: Operations.getAssetCharts.Input.Path
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Currency
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/currency`.
                 public var currency: Components.Parameters.currency?
-                /// Store country code
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/store_country_code`.
                 public var store_country_code: Components.Parameters.storeCountyCodeQuery?
-                /// SIM card country code
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/sim_country`.
                 public var sim_country: Components.Parameters.simCountryQuery?
-                /// Device country code
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/device_country_code`.
                 public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
-                /// Device timezone (IANA format)
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/timezone`.
                 public var timezone: Components.Parameters.timezoneQuery?
-                /// Whether VPN is currently active
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/query/is_vpn_active`.
                 public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
@@ -2297,12 +4132,12 @@ public enum Operations {
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - currency: Currency
-                ///   - store_country_code: Store country code
-                ///   - sim_country: SIM card country code
-                ///   - device_country_code: Device country code
-                ///   - timezone: Device timezone (IANA format)
-                ///   - is_vpn_active: Whether VPN is currently active
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
                 ///   - start_date:
                 ///   - end_date:
                 ///   - points_count:
@@ -2331,11 +4166,13 @@ public enum Operations {
             public var query: Operations.getAssetCharts.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/header`.
             public struct Headers: Sendable, Hashable {
-                /// Юзер агент (для совместимости и фичефлагов).
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/header/User-Agent`.
                 public var User_hyphen_Agent: Components.Parameters.UserAgent?
-                /// Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/trading/assets/{assetId}/charts/GET/header/X-Lang`.
                 public var X_hyphen_Lang: Components.Parameters.XLang?
@@ -2343,8 +4180,8 @@ public enum Operations {
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
-                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов).
-                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about). Если не задан — дефолт en.
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
                 ///   - accept:
                 public init(
                     User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
@@ -2425,7 +4262,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неверные параметры запроса
+            /// Invalid request
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)/responses/400`.
             ///
@@ -2448,7 +4285,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Неавторизован
+            /// Unauthorized
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)/responses/401`.
             ///
@@ -2471,7 +4308,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Объект не найден
+            /// Resource not found
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)/responses/404`.
             ///
@@ -2494,7 +4331,7 @@ public enum Operations {
                     }
                 }
             }
-            /// Слишком много запросов
+            /// Too many requests
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)/responses/429`.
             ///
@@ -2517,9 +4354,351 @@ public enum Operations {
                     }
                 }
             }
-            /// Неизветная ошибка
+            /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v1/trading/assets/{assetId}/charts/get(getAssetCharts)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// График цен для ассета
+    ///
+    /// Сервер возвращает график цен для ассета.
+    ///
+    ///
+    /// - Remark: HTTP `GET /api/v2/trading/assets/{assetId}/charts`.
+    /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)`.
+    public enum getAssetChartsV2 {
+        public static let id: Swift.String = "getAssetChartsV2"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Уникальный идентификатор ассета (chain-agnostic). Пример: ton/mainnet/jetton/..., eth/mainnet/erc20/...
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/path/assetId`.
+                public var assetId: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - assetId: Уникальный идентификатор ассета (chain-agnostic). Пример: ton/mainnet/jetton/..., eth/mainnet/erc20/...
+                public init(assetId: Swift.String) {
+                    self.assetId = assetId
+                }
+            }
+            public var path: Operations.getAssetChartsV2.Input.Path
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/currency`.
+                public var currency: Components.Parameters.currency?
+                /// App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/store_country_code`.
+                public var store_country_code: Components.Parameters.storeCountyCodeQuery?
+                /// Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/sim_country`.
+                public var sim_country: Components.Parameters.simCountryQuery?
+                /// Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/device_country_code`.
+                public var device_country_code: Components.Parameters.deviceCountyCodeQuery?
+                /// Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/timezone`.
+                public var timezone: Components.Parameters.timezoneQuery?
+                /// Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/is_vpn_active`.
+                public var is_vpn_active: Components.Parameters.isVpnActiveQuery?
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/start_date`.
+                public var start_date: Swift.Int64?
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/end_date`.
+                public var end_date: Swift.Int64?
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/query/points_count`.
+                public var points_count: Swift.Int?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currency: Display currency for prices and amounts (fiat ISO 4217 like usd/eur, or an asset id). Defaults to usd when omitted. Send the user's currency from app settings.
+                ///   - store_country_code: App-store storefront country, ISO 3166-1 alpha-2, case-insensitive (note: United Kingdom is GB, not UK). iOS: SKStorefront/Storefront countryCode. Android: Play Store account country. The client should ALWAYS send it — the server uses it (together with the other geo signals) to resolve the user's country for geo-gated features and asset capabilities; omit only if the storefront is genuinely unavailable.
+                ///   - sim_country: Country of the SIM card (ISO 3166-1 alpha-2), from the carrier/MCC (iOS: CTCarrier isoCountryCode / carrier info; Android: TelephonyManager simCountryIso). Send it whenever a SIM is present; omit ONLY on devices without a SIM (e.g. Wi-Fi-only tablets). It is the strongest geo signal after IP, so missing it lowers country detection confidence.
+                ///   - device_country_code: Region from the device locale/settings, ISO 3166-1 alpha-2 (note: United Kingdom is GB, not UK). iOS: Locale.current region. Android: device locale country. The client should ALWAYS send it — it is one of the geo signals the server combines to resolve the user's country.
+                ///   - timezone: Device timezone as an IANA name (e.g. Europe/Berlin), not an offset. iOS: TimeZone.current.identifier. Android: TimeZone.getDefault().getID(). The client should ALWAYS send it — it is used as a supporting geo signal.
+                ///   - is_vpn_active: Whether a VPN tunnel is currently active on the device. The client should ALWAYS send an explicit true or false — an omitted value means "unknown" and lowers the confidence of IP-based country detection (true tells the server to distrust the IP country; false confirms it).
+                ///   - start_date:
+                ///   - end_date:
+                ///   - points_count:
+                public init(
+                    currency: Components.Parameters.currency? = nil,
+                    store_country_code: Components.Parameters.storeCountyCodeQuery? = nil,
+                    sim_country: Components.Parameters.simCountryQuery? = nil,
+                    device_country_code: Components.Parameters.deviceCountyCodeQuery? = nil,
+                    timezone: Components.Parameters.timezoneQuery? = nil,
+                    is_vpn_active: Components.Parameters.isVpnActiveQuery? = nil,
+                    start_date: Swift.Int64? = nil,
+                    end_date: Swift.Int64? = nil,
+                    points_count: Swift.Int? = nil
+                ) {
+                    self.currency = currency
+                    self.store_country_code = store_country_code
+                    self.sim_country = sim_country
+                    self.device_country_code = device_country_code
+                    self.timezone = timezone
+                    self.is_vpn_active = is_vpn_active
+                    self.start_date = start_date
+                    self.end_date = end_date
+                    self.points_count = points_count
+                }
+            }
+            public var query: Operations.getAssetChartsV2.Input.Query
+            /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/header/User-Agent`.
+                public var User_hyphen_Agent: Components.Parameters.UserAgent?
+                /// Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/header/X-Lang`.
+                public var X_hyphen_Lang: Components.Parameters.XLang?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetChartsV2.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - User_hyphen_Agent: Юзер агент (для совместимости и фичефлагов). Формат: "Tonkeeper/<app version> (<OS>; <OS version>; <device model>)". Должен передаваться как обычный текст, БЕЗ URL-кодирования (iOS-клиент сейчас шлет "Tonkeeper%2F26.07.1%20..." — так platform/build не распарсятся у downstream-сервисов, которым он форвардится).
+                ///   - X_hyphen_Lang: Язык для локализуемых текстов (например about), ISO 639-1 (en, ru, ...). Клиент должен ВСЕГДА передавать язык интерфейса. Если не задан — дефолт en.
+                ///   - accept:
+                public init(
+                    User_hyphen_Agent: Components.Parameters.UserAgent? = nil,
+                    X_hyphen_Lang: Components.Parameters.XLang? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssetChartsV2.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.User_hyphen_Agent = User_hyphen_Agent
+                    self.X_hyphen_Lang = X_hyphen_Lang
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getAssetChartsV2.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getAssetChartsV2.Input.Path,
+                query: Operations.getAssetChartsV2.Input.Query = .init(),
+                headers: Operations.getAssetChartsV2.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v2/trading/assets/{assetId}/charts/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.ChartPoints)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.ChartPoints {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getAssetChartsV2.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getAssetChartsV2.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Данные для экрана ассета
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.getAssetChartsV2.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.getAssetChartsV2.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Unauthorized
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Too many requests
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/trading/assets/{assetId}/charts/get(getAssetChartsV2)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)

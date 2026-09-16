@@ -9,8 +9,8 @@ final class MultichainReceiveCoordinator<V: UIViewController>: RouterCoordinator
     var didClose: (() -> Void)?
 
     enum Addresses {
-        case single(MultichainWalletAddress)
-        case multi([MultichainWalletAddress])
+        case single(ReceiveAddressPreview)
+        case multi([ReceiveAddressPreview])
     }
 
     private let didCopyAddress: ((String) -> Void)?
@@ -39,6 +39,7 @@ final class MultichainReceiveCoordinator<V: UIViewController>: RouterCoordinator
             switch addresses {
             case let .single(address):
                 await openMultichainReceive(selectedAddress: address)
+                didClose?()
             case let .multi(addresses):
                 await openReceive(addresses: addresses)
             }
@@ -48,17 +49,18 @@ final class MultichainReceiveCoordinator<V: UIViewController>: RouterCoordinator
 
 extension MultichainReceiveCoordinator {
     private func module(
-        address: MultichainWalletAddress
+        address: ReceiveAddressPreview
     ) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, ReceiveModuleInput> {
         let viewModel = ReceiveViewModelImplementation(
             address: address,
-            qrCodeGenerator: QRCodeGeneratorImplementation()
+            qrCodeGenerator: keeperCoreMainAssembly.coreAssembly
+                .qrCodeGenerator(persistent: true)
         )
         let viewController = ReceiveViewController(
             viewModel: viewModel
         )
         viewModel.didRequestCopy = { [weak self] address in
-            self?.didCopyAddress?(address.address)
+            self?.didCopyAddress?(address)
         }
         return MVVMModule(
             view: viewController,
@@ -70,13 +72,12 @@ extension MultichainReceiveCoordinator {
 
 extension MultichainReceiveCoordinator {
     private func openReceive(
-        addresses: [MultichainWalletAddress]
+        addresses: [ReceiveAddressPreview]
     ) async {
         let module = PickMultichainAddressModule()
         let coordinator = module.makeCoordinator(
             router: router,
-            addresses: addresses,
-            selectedAddress: nil
+            addresses: addresses.map(\.walletAddress)
         )
         addChild(coordinator)
 
@@ -84,7 +85,8 @@ extension MultichainReceiveCoordinator {
         for await event in events {
             switch event {
             case let .select(address):
-                await openMultichainReceive(selectedAddress: address)
+                let preview = addresses.first { $0.walletAddress == address } ?? ReceiveAddressPreview(address: address)
+                await openMultichainReceive(selectedAddress: preview)
             case let .copy(address):
                 didCopyAddress?(address.address)
             case .close:
@@ -97,7 +99,7 @@ extension MultichainReceiveCoordinator {
         removeChild(coordinator)
     }
 
-    private func openMultichainReceive(selectedAddress: MultichainWalletAddress) async {
+    private func openMultichainReceive(selectedAddress: ReceiveAddressPreview) async {
         let module = module(
             address: selectedAddress
         )
@@ -120,7 +122,10 @@ extension MultichainReceiveCoordinator {
                     completion: resumeOnce
                 )
             }
-            let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+            let bottomSheetViewController = TKBottomSheetViewController(
+                contentViewController: module.view,
+                ignoreBottomSafeArea: true
+            )
             presentedReceiveBottomSheetViewController = bottomSheetViewController
             bottomSheetViewController.didClose = { _ in
                 resumeOnce()

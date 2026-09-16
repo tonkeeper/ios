@@ -29,17 +29,6 @@ public struct TonRecipient: Equatable {
             }
         }
 
-        public var shortAddressString: String {
-            switch self {
-            case let .friendly(friendlyAddress):
-                return friendlyAddress.toShort()
-            case let .raw(address):
-                return address.toShortRawString()
-            case let .domain(domain):
-                return domain.friendlyAddress.toShort()
-            }
-        }
-
         public var name: String? {
             switch self {
             case let .domain(domain):

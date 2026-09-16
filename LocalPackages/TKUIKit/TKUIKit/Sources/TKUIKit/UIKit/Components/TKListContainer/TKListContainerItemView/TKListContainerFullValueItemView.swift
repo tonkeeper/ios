@@ -11,7 +11,7 @@ public struct TKListContainerFullValueItemItem: TKListContainerItem {
     }
 
     public var action: TKListContainerItemAction? {
-        .copy(copyValue: copyValue)
+        return .copy(copyValue: copyValue)
     }
 
     private let title: String

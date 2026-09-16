@@ -1,33 +1,10 @@
 import SnapKit
-import TKUIKit
 import UIKit
 
 final class KeystoneImportScanView: UIView {
     var didTapOpenKeystoneButton: (() -> Void)?
 
     let scannerContainer = UIView()
-    lazy var openKeystoneButton: TKButton = {
-        var configuration = TKButton.Configuration.actionButtonConfiguration(
-            category: .primary,
-            size: .large
-        )
-        configuration.backgroundColors = [
-            .normal: .white,
-            .highlighted: .white.withAlphaComponent(0.44),
-        ]
-        configuration.textColor = .black
-        configuration.action = { [weak self] in
-            self?.didTapOpenKeystoneButton?()
-        }
-        return TKButton(configuration: configuration)
-    }()
-
-    let openKeystoneButtonContainer: TKPaddingContainerView = {
-        let container = TKPaddingContainerView()
-        container.padding = .openKeystoneButtonPadding
-        return container
-    }()
-
     override init(frame: CGRect) {
         super.init(frame: frame)
         setup()
@@ -58,13 +35,4 @@ private extension KeystoneImportScanView {
             make.edges.equalTo(self)
         }
     }
-}
-
-private extension UIEdgeInsets {
-    static let openKeystoneButtonPadding = UIEdgeInsets(
-        top: 0,
-        left: 32,
-        bottom: 32,
-        right: 32
-    )
 }

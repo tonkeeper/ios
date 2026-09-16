@@ -1,19 +1,6 @@
 import Foundation
 import KeeperCoreComponents
 
-enum WalletsServiceError: Swift.Error {
-    case emptyWallets
-    case walletNotAdded
-    case incorrectMoveFromIndex
-    case incorrectMoveToIndex
-    case incorrectActiveWalletIdentity
-}
-
-public enum WalletsServiceDeleteWalletResult {
-    case deletedWallet
-    case deletedAll
-}
-
 public protocol WalletsService {
     func getWallets() throws -> [Wallet]
     func getActiveWallet() throws -> Wallet

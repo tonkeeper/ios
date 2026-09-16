@@ -1,19 +1,15 @@
+import Foundation
 import KeeperCore
 import KeeperCoreComponents
 import TKCore
 import TKLocalize
 import TKUIKit
-import UIKit
 
 final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurator {
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var title: String {
         "Seed phrases"
-    }
-
-    var isSelectable: Bool {
-        false
     }
 
     var didUpdateState: ((SettingsListState) -> Void)?
@@ -29,44 +25,32 @@ final class SettingsListRNWalletsSeedPhrasesConfigurator: SettingsListConfigurat
     }
 
     private func createState() -> SettingsListState {
-        let sections = [
-            createSeedPhraseRecoverySection(),
-        ]
-
-        return SettingsListState(
-            sections: sections
+        SettingsListState(
+            sections: [
+                createSeedPhraseRecoverySection(),
+            ]
         )
     }
 
     private func createSeedPhraseRecoverySection() -> SettingsListSection {
         let items = createSeedPhrasesItems()
-        return SettingsListSection.listItems(SettingsListItemsSection(
+        return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem)
         ))
     }
 
     private func createSeedPhrasesItems() -> [SettingsListItem] {
-        return mnemonics.values.compactMap { mnemonic -> SettingsListItem? in
-            return createSeedPhrasesItem(mnemonic: mnemonic, label: UUID().uuidString)
+        mnemonics.values.map { mnemonic in
+            createSeedPhrasesItem(mnemonic: mnemonic, label: UUID().uuidString)
         }
     }
 
     private func createSeedPhrasesItem(mnemonic: Mnemonic, label: String) -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: label)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: UUID().uuidString,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { _ in
-                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-                ToastPresenter.showToast(configuration: .copied)
-                UIPasteboard.general.string = mnemonic.mnemonicWords.joined(separator: ",")
+            title: SettingsListItemTitle(label),
+            onTap: { _ in
+                Pasteboard.copySensitive(value: mnemonic.mnemonicWords.joined(separator: ","))
             }
         )
     }

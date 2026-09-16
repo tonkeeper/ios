@@ -2,12 +2,12 @@ import BigInt
 import Foundation
 import KeeperCore
 
-public struct StakingConfirmationItem {
-    public enum Operation {
+struct StakingConfirmationItem {
+    enum Operation {
         case deposit(StackingPoolInfo)
-        case withdraw(StackingPoolInfo)
+        case withdraw(StackingPoolInfo, isCollect: Bool)
     }
 
-    public let operation: Operation
-    public let amount: BigUInt
+    let operation: Operation
+    let amount: BigUInt
 }

@@ -1,0 +1,18 @@
+files:
+  - inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Lottie
+    filter: .+\.json$
+    outputs:
+      - templatePath: templates/lottie.stencil
+        output: ../TKUIKit/Sources/TKUIKit/Generated/TKLottie.swift
+  - inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Fonts
+    filter: .+\.ttf$
+    outputs:
+      - templatePath: templates/fonts.stencil
+        output: ../TKUIKit/Sources/TKUIKit/Generated/TKFonts.swift
+xcassets:
+  inputs: ../../TKUIKitResources/Sources/TKUIKitResources/Resources/Assets.xcassets
+  outputs:
+    - templatePath: templates/images.stencil
+      output: ../TKUIKit/Sources/TKUIKit/Generated/TKImages.swift
+    - templatePath: templates/colors.stencil
+      output: ../TKUIKit/Sources/TKUIKit/Generated/TKColors.swift

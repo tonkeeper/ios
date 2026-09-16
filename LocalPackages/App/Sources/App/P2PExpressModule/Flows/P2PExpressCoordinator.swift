@@ -38,7 +38,7 @@ final class P2PExpressCoordinator: RouterCoordinator<ViewControllerRouter> {
                 let p2pSession = try await onRampService.createP2PSession(
                     data: params.createP2PSession
                 )
-                let merchants = try? await onRampService.getMerchants()
+                let merchants = try? await onRampService.getMerchants(walletId: params.walletId)
                 let merchant = merchants?.first(where: { $0.isP2P })
                 guard
                     let url = URL(string: p2pSession.deeplinkUrl),
@@ -102,15 +102,7 @@ private extension P2PExpressCoordinator {
                 isDoNotShowAgain = newValue
             }
         )
-        popupViewController.headerConfiguration = TKBottomSheetHeaderConfiguration(
-            title: .empty,
-            contentInsets: UIEdgeInsets(
-                top: 16,
-                left: 16,
-                bottom: 0,
-                right: 16
-            )
-        )
+        popupViewController.headerConfiguration = .popup
 
         bottomSheetViewController.didClose = { [weak self] _ in
             guard let self else { return }
@@ -151,7 +143,7 @@ private extension P2PExpressCoordinator {
         {
             ExternalAppHeaderIconItem(bottomSpace: 20, imageURL: iconURL)
         } else {
-            ExternalAppHeaderIconItem(bottomSpace: 20, image: .TKUIKit.Services.wallet)
+            ExternalAppHeaderIconItem(bottomSpace: 20, image: .TKUIKit.Icons.Size72.serviceWallet)
         }
 
         return TKPopUp.Configuration(

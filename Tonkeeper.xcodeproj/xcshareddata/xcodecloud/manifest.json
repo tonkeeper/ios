@@ -1,0 +1,13 @@
+{
+  "id" : "b20a977c-0165-4ba5-9610-7ae0bcfb8a3e",
+  "targets" : [
+    {
+      "id" : "0ACDE2F2-DEDB-4F29-B0FF-FA859E1C9374",
+      "name" : "Tonkeeper Dev"
+    },
+    {
+      "id" : "A033BEAD-9CBB-4FF2-B1FF-B207067D022A",
+      "name" : "ton_keeper"
+    }
+  ]
+}

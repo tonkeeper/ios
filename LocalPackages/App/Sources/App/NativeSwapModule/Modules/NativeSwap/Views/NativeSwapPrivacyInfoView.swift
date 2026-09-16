@@ -4,38 +4,34 @@ import TKUIKit
 
 struct NativeSwapPrivacyInfoView: View {
     var onURLTap: ((URL) -> Void)?
-
     private var stonfiText: some View {
         Text(.init(TKLocales.NativeSwapScreen.Privacy.stonfi))
+            .textStyle(.body2)
     }
 
     private var termsText: some View {
         HStack(spacing: 4) {
             Text(.init(TKLocales.NativeSwapScreen.Privacy.stonfiTerms))
+                .textStyle(.body2)
             Text(String.Symbol.middleDot)
+                .textStyle(.body2)
             Text(.init(TKLocales.NativeSwapScreen.Privacy.stonfiPrivacy))
+                .textStyle(.body2)
         }
     }
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: -3) {
             stonfiText
             termsText
         }
-        .font(.body2)
-        .foregroundStyle(Color(uiColor: .Text.tertiary))
-        .tint(Color(UIColor.Text.secondary))
+        .foregroundStyle(.textTertiary)
+        .tint(.textSecondary)
         .multilineTextAlignment(.center)
         .lineLimit(1)
         .environment(\.openURL, OpenURLAction { url in
             onURLTap?(url)
             return .handled
         })
-    }
-}
-
-private extension Font {
-    static var body2: Font {
-        .init(TKTextStyle.body2.font)
     }
 }

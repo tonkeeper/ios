@@ -3,6 +3,7 @@ import KeeperCoreComponents
 
 public struct RepositoriesAssembly {
     private let coreAssembly: CoreAssembly
+    private let sessionChartDataRepository = SessionChartDataRepository()
 
     init(coreAssembly: CoreAssembly) {
         self.coreAssembly = coreAssembly
@@ -24,8 +25,15 @@ public struct RepositoriesAssembly {
         WalletBalanceRepositoryV2implementation(fileSystemVault: coreAssembly.fileSystemVault())
     }
 
+    func multichainPortfolioRepository() -> MultichainPortfolioRepository {
+        MultichainPortfolioRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+    }
+
     func ratesRepository() -> RatesRepository {
-        RatesRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+        RatesRepositoryImplementation(
+            fileSystemVault: coreAssembly.fileSystemVault(),
+            jettonRatesVault: coreAssembly.fileSystemVault()
+        )
     }
 
     func historyRepository() -> HistoryRepository {
@@ -55,11 +63,11 @@ public struct RepositoriesAssembly {
     }
 
     func chartDataRepository() -> ChartDataRepository {
-        ChartDataRepositoryImplementation()
+        sessionChartDataRepository
     }
 
     func persistentChartDataRepository() -> ChartDataRepository {
-        PersistentChartDataRepositoryImplementation(fileSystemVault: coreAssembly.sharedFileSystemVault())
+        PersistentChartDataRepository(fileSystemVault: coreAssembly.sharedFileSystemVault())
     }
 
     func popularAppsRepository() -> PopularAppsRepository {

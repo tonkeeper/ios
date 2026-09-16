@@ -43,7 +43,9 @@ public enum LogExporter {
         var lines: [String] = []
 
         for case let entry as OSLogEntryLog in entries {
-            lines.append("[\(dateFormatter.string(from: entry.date))] [\(levelName(entry.level))] \(entry.composedMessage)")
+            lines.append(
+                "[\(dateFormatter.string(from: entry.date))] [\(levelName(entry.level))] [\(entry.category)] \(entry.composedMessage)"
+            )
         }
 
         let logsBody = lines.joined(separator: "\n")
@@ -103,7 +105,7 @@ public enum LogExporter {
         let formatter = ISO8601DateFormatter()
 
         var lines: [String] = [
-            "=== Tonkeeper Log Export ===",
+            "=== Keeper Log Export ===",
             "Generated at: \(formatter.string(from: Date()))",
             "Subsystem: \(subsystem)",
             "Category: \(category ?? "all categories")",

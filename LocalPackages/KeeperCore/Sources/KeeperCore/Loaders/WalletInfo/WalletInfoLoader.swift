@@ -3,7 +3,7 @@ import TKLocalize
 import TKLogging
 import TonSwift
 
-public final class WalletInfoLoader {
+final class WalletInfoLoader {
     private var loadTask: Task<Void, Never>?
     private let walletsStore: WalletsStore
     private let walletService: WalletService
@@ -21,7 +21,7 @@ public final class WalletInfoLoader {
         setupObservations()
     }
 
-    public func loadActiveWalletInfoNotifications() {
+    func loadActiveWalletInfoNotifications() {
         loadTask?.cancel()
         loadTask = Task { [walletsStore, walletService, internalNotificationsStore] in
             do {

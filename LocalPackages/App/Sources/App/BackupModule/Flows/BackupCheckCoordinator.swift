@@ -10,18 +10,21 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
     private let phrase: [String]
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let source: BackupSource
 
     init(
         wallet: Wallet,
         phrase: [String],
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
+        source: BackupSource,
         router: NavigationControllerRouter
     ) {
         self.wallet = wallet
         self.phrase = phrase
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
+        self.source = source
         super.init(router: router)
     }
 
@@ -39,11 +42,11 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
         )
 
         if router.rootViewController.viewControllers.isEmpty {
-            module.viewController.setupLeftCloseButton { [weak self] in
+            module.viewController.setupHeaderCloseButton { [weak self] in
                 self?.didFinish?(self)
             }
         } else {
-            module.viewController.setupBackButton()
+            module.viewController.setupHeaderBackButton()
         }
 
         router.push(viewController: module.viewController, onPopClosures: { [weak self] in
@@ -62,14 +65,24 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
             guard let self else { return }
             Task {
                 await self.setDidBackup()
+                self.coreAssembly.analyticsProvider.log(
+                    WalletBackupSuccess(walletMode: WalletMode(wallet: self.wallet), source: self.source)
+                )
                 self.coreAssembly.analyticsProvider.logSeedBackupConfirmed()
                 await MainActor.run(body: {
                     self.didFinish?(self)
                 })
             }
         }
+        module.output.didFailCheckRecoveryPhrase = { [weak self] in
+            guard let self else { return }
+            coreAssembly.analyticsProvider.logWalletBackupMismatch(
+                walletMode: WalletMode(wallet: wallet),
+                source: source
+            )
+        }
 
-        module.viewController.setupBackButton()
+        module.viewController.setupHeaderBackButton()
 
         router.push(viewController: module.viewController)
     }

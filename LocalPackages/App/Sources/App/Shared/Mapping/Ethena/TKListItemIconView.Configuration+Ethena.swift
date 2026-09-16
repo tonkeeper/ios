@@ -6,7 +6,7 @@ extension TKListItemIconView.Configuration {
     static func ethenaConfiguration() -> TKListItemIconView.Configuration {
         return TKListItemIconView.Configuration(
             content: .image(TKImageView.Model(
-                image: .image(.App.Currency.Size44.usde),
+                image: .image(.TKUIKit.Icons.Size44.currencyUsde),
                 size: .size(CGSize(width: 44, height: 44)),
                 corners: .circle
             )),

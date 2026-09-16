@@ -36,7 +36,13 @@ struct TradeAssetDetailsHistoryPreview {
 }
 
 @MainActor
-final class TradeAssetDetailsHistoryViewModel: ObservableObject {
+protocol TradeAssetDetailsHistoryViewModeling: AnyObject {
+    var statePublisher: AnyPublisher<TradeAssetDetailsHistoryPreview?, Never> { get }
+    func scheduleUpdate()
+}
+
+@MainActor
+final class TradeAssetDetailsHistoryViewModel: ObservableObject, TradeAssetDetailsHistoryViewModeling {
     @Published private(set) var state: TradeAssetDetailsHistoryPreview?
 
     private let wallet: Wallet?
@@ -44,7 +50,6 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject {
     private let historyService: HistoryService
     private let tronUSDTHistoryService: HistoryService
     private let tronUsdtApi: TronUSDTAPI
-    private let tonProofTokenService: TonProofTokenService
     private let accountEventMapper: AccountEventMapper
     private let dateFormatter: DateFormatter
     private let signedAmountFormatter: AmountFormatter
@@ -53,13 +58,16 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject {
 
     private var task: Task<Void, Never>?
 
+    var statePublisher: AnyPublisher<TradeAssetDetailsHistoryPreview?, Never> {
+        $state.eraseToAnyPublisher()
+    }
+
     init(
         wallet: Wallet?,
         typedAssetId: TradingAssetToken?,
         historyService: HistoryService,
         tronUSDTHistoryService: HistoryService,
         tronUsdtApi: TronUSDTAPI,
-        tonProofTokenService: TonProofTokenService,
         accountEventMapper: AccountEventMapper,
         dateFormatter: DateFormatter,
         signedAmountFormatter: AmountFormatter,
@@ -71,7 +79,6 @@ final class TradeAssetDetailsHistoryViewModel: ObservableObject {
         self.historyService = historyService
         self.tronUSDTHistoryService = tronUSDTHistoryService
         self.tronUsdtApi = tronUsdtApi
-        self.tonProofTokenService = tonProofTokenService
         self.accountEventMapper = accountEventMapper
         self.dateFormatter = dateFormatter
         self.signedAmountFormatter = signedAmountFormatter
@@ -178,7 +185,8 @@ private extension TradeAssetDetailsHistoryViewModel {
             return .jetton(wallet: wallet, jettonMasterAddress: jettonMasterAddress)
         case .tronUsdt:
             return .tronUSDT(wallet: wallet)
-        case nil:
+        // The legacy TRON feed carries USDT transfers only, so it says nothing about TRX.
+        case .tronTrx, nil:
             return nil
         }
     }
@@ -213,10 +221,10 @@ private extension TradeAssetDetailsHistoryViewModel {
                 return []
             }
             let tronEvents = try await tronUsdtApi.loadAllTronEvents(
+                wallet: wallet,
                 events: [],
                 address: tronAddress,
                 limit: Constants.loadLimit,
-                tonProofToken: tonProofTokenService.getWalletToken(wallet),
                 startTimestamp: nil,
                 finishTimestamp: nil
             )
@@ -355,8 +363,7 @@ private extension TradeAssetDetailsHistoryViewModel {
         return TradeAssetDetailsHistoryPreview.Item(
             id: "\(event.eventId)#\(actionIndex)",
             icon: .init(
-                image: icon(for: action),
-                tintColor: Color(uiColor: .Icon.secondary)
+                image: icon(for: action)
             ),
             title: title,
             subtitle: subtitle,
@@ -418,16 +425,15 @@ private extension TradeAssetDetailsHistoryViewModel {
 
         let icon: UIImage = switch eventType {
         case .send:
-            .App.Icons.Size28.trayArrowUp
+            .TKUIKit.Icons.Size28.trayArrowUp
         case .receive:
-            .App.Icons.Size28.trayArrowDown
+            .TKUIKit.Icons.Size28.trayArrowDown
         }
 
         return TradeAssetDetailsHistoryPreview.Item(
             id: event.txID,
             icon: .init(
-                image: icon,
-                tintColor: Color(uiColor: .Icon.secondary)
+                image: icon
             ),
             title: title,
             subtitle: subtitle,

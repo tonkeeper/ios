@@ -12,7 +12,6 @@ struct BatteryRechargeSignRawBuilder {
     private let payload: BatteryRechargePayload
     private let batteryService: BatteryService
     private let sendService: SendService
-    private let tonProofTokenService: TonProofTokenService
     private let configuration: Configuration
 
     init(
@@ -20,14 +19,12 @@ struct BatteryRechargeSignRawBuilder {
         payload: BatteryRechargePayload,
         batteryService: BatteryService,
         sendService: SendService,
-        tonProofTokenService: TonProofTokenService,
         configuration: Configuration
     ) {
         self.wallet = wallet
         self.payload = payload
         self.batteryService = batteryService
         self.sendService = sendService
-        self.tonProofTokenService = tonProofTokenService
         self.configuration = configuration
     }
 
@@ -141,8 +138,7 @@ struct BatteryRechargeSignRawBuilder {
 
     private func getBatteryBalance(wallet: Wallet) async -> BatteryBalance {
         do {
-            let tonProof = try tonProofTokenService.getWalletToken(wallet)
-            return try await batteryService.loadBatteryBalance(wallet: wallet, tonProofToken: tonProof)
+            return try await batteryService.loadBatteryBalance(wallet: wallet)
         } catch {
             return BatteryBalance.empty
         }

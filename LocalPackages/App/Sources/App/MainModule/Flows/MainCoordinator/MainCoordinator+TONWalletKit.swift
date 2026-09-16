@@ -1,4 +1,4 @@
-import DisconnectDappToast
+import AppUI
 import KeeperCore
 import TKCoordinator
 import TKCore
@@ -83,6 +83,8 @@ extension MainCoordinator: TONWalletKitEventsObserver {
             },
             resultHandler: resultHandler,
             sendFrom: .tonconnectRemote,
+            initiatedBy: .tonconnectRemote,
+            dappUrl: app.manifest.host,
             redAnalyticsConfiguration: .init(
                 flow: .tonConnect,
                 operation: .confirmTransaction,
@@ -165,8 +167,28 @@ extension MainCoordinator: TONWalletKitEventsObserver {
             request: connectionRequest
         )
 
+        let source = event.from
+            .flatMap { from in
+                keeperCoreMainAssembly.tonConnectAssembly
+                    .tonConnectAppsStore
+                    .consumePendingConnectionSource(
+                        clientId: from,
+                        manifestURL: manifestUrl
+                    )
+            } ?? .deeplink
+
         // Create parameters from event
-        let parameters = TonConnectParameters(event: event, manifestUrl: manifestUrl)
+        let eventParameters = TonConnectParameters(
+            event: event,
+            manifestUrl: manifestUrl
+        )
+        let parameters = TonConnectParameters(
+            version: eventParameters.version,
+            clientId: eventParameters.clientId,
+            requestPayload: eventParameters.requestPayload,
+            returnStrategy: eventParameters.returnStrategy,
+            source: source
+        )
 
         let coordinator = TonConnectModule(
             dependencies: TonConnectModule.Dependencies(
@@ -206,7 +228,7 @@ extension MainCoordinator: TONWalletKitEventsObserver {
         }
 
         coordinator.didRequestOpeningBrowser = { [weak self] manifest in
-            self?.openDapp(title: manifest.name, url: manifest.url)
+            self?.openDapp(title: manifest.name, url: manifest.url, analyticsFrom: .deepLink)
         }
 
         addChild(coordinator)
@@ -217,7 +239,7 @@ extension MainCoordinator: TONWalletKitEventsObserver {
 // MARK: - TONWalletKit Coordinator Connector
 
 @MainActor
-public struct TONWalletKitCoordinatorConnector: TonConnectConnectCoordinatorConnector {
+struct TONWalletKitCoordinatorConnector: TonConnectConnectCoordinatorConnector {
     private let kit: TONWalletKit
     private let tonConnectAppsStore: TonConnectAppsStore
     private let request: TONWalletConnectionRequest
@@ -232,7 +254,7 @@ public struct TONWalletKitCoordinatorConnector: TonConnectConnectCoordinatorConn
         self.request = request
     }
 
-    public func connect(
+    func connect(
         wallet: Wallet,
         parameters: TonConnectParameters,
         manifest: TonConnectManifest,
@@ -268,18 +290,18 @@ public struct TONWalletKitCoordinatorConnector: TonConnectConnectCoordinatorConn
     }
 }
 
-public struct TONWalletKitSignDataResultHandler: SignDataResultHandler {
-    public var didCancelHandler: (() -> Void)?
+struct TONWalletKitSignDataResultHandler: SignDataResultHandler {
+    var didCancelHandler: (() -> Void)?
 
     private let signDataRequest: TONWalletSignDataRequest
     private let app: TonConnectApp
 
-    public init(signDataRequest: TONWalletSignDataRequest, app: TonConnectApp) {
+    init(signDataRequest: TONWalletSignDataRequest, app: TonConnectApp) {
         self.signDataRequest = signDataRequest
         self.app = app
     }
 
-    public func didSign(signedData: SignedDataResult) {
+    func didSign(signedData: SignedDataResult) {
         Task {
             do {
                 let signature = try TONBase64(base64Encoded: signedData.signature)
@@ -306,7 +328,7 @@ public struct TONWalletKitSignDataResultHandler: SignDataResultHandler {
         }
     }
 
-    public func didFail(error: SignDataRequestFailure) {
+    func didFail(error: SignDataRequestFailure) {
         Task {
             do {
                 try await signDataRequest.reject(reason: error.localizedDescription)
@@ -322,7 +344,7 @@ public struct TONWalletKitSignDataResultHandler: SignDataResultHandler {
         }
     }
 
-    public func didCancel() {
+    func didCancel() {
         didCancelHandler?()
         Task {
             do {

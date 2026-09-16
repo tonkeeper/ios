@@ -27,9 +27,14 @@ public final class TonConnectAppsStore {
     }
 
     let tonConnectService: TonConnectService
+    private let connectionMetadataStore: TonConnectConnectionMetadataStore
 
-    init(tonConnectService: TonConnectService) {
+    init(
+        tonConnectService: TonConnectService,
+        connectionMetadataStore: TonConnectConnectionMetadataStore
+    ) {
         self.tonConnectService = tonConnectService
+        self.connectionMetadataStore = connectionMetadataStore
     }
 
     public func connect(
@@ -64,6 +69,12 @@ public final class TonConnectAppsStore {
             manifest: manifest,
             connectionType: .remote
         )
+        recordConnectionMetadata(
+            wallet: wallet,
+            clientId: parameters.clientId,
+            source: parameters.source,
+            notifyObservers: false
+        )
         await MainActor.run {
             notifyObservers(event: .didUpdateApps)
         }
@@ -93,6 +104,12 @@ public final class TonConnectAppsStore {
                 manifest: manifest,
                 connectionType: .bridge
             )
+            recordConnectionMetadata(
+                wallet: wallet,
+                clientId: parameters.clientId,
+                source: parameters.source,
+                notifyObservers: false
+            )
             notifyObservers(event: .didUpdateApps)
             return .response(response)
         } catch {
@@ -120,12 +137,18 @@ public final class TonConnectAppsStore {
     }
 
     public func disconnect(wallet: Wallet, appUrl: URL?) throws {
-        guard let app = try? connectedApps(forWallet: wallet).apps.first(where: {
+        let apps = try? connectedApps(forWallet: wallet).apps
+        guard let apps, let app = apps.first(where: {
             $0.manifest.url.host == appUrl?.host
         }) else {
             return
         }
+
         try? tonConnectService.disconnectApp(app, wallet: wallet)
+        deleteConnectionMetadata(
+            wallet: wallet,
+            apps: apps.filter { $0.manifest.host == app.manifest.host }
+        )
         notifyObservers(event: .didUpdateApps)
         notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
     }
@@ -138,9 +161,11 @@ public final class TonConnectAppsStore {
             return
         }
 
+        let app = apps[idx]
         try? tonConnectService.disconnectApp(idx, wallet: wallet)
+        connectionMetadataStore.deleteConnection(wallet: wallet, clientId: app.clientId)
         notifyObservers(event: .didUpdateApps)
-        notifyObservers(event: .didDisconnect(app: apps[idx], wallet: wallet))
+        notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
     }
 
     public func disconnect(wallet: Wallet, appClientId: String) throws {
@@ -149,18 +174,100 @@ public final class TonConnectAppsStore {
             return
         }
 
+        let app = apps[idx]
         try? tonConnectService.disconnectApp(idx, wallet: wallet)
+        connectionMetadataStore.deleteConnection(wallet: wallet, clientId: app.clientId)
         notifyObservers(event: .didUpdateApps)
-        notifyObservers(event: .didDisconnect(app: apps[idx], wallet: wallet))
+        notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
     }
 
     public func connectedApps(forWallet wallet: Wallet) throws -> TonConnectApps {
         try tonConnectService.getConnectedApps(forWallet: wallet)
     }
 
+    func recordConnectionMetadata(
+        wallet: Wallet,
+        clientId: String,
+        source: DappConnectionSource,
+        notifyObservers: Bool
+    ) {
+        connectionMetadataStore.recordConnection(
+            wallet: wallet,
+            clientId: clientId,
+            source: source
+        )
+        if notifyObservers {
+            self.notifyObservers(event: .didUpdateApps)
+        }
+    }
+
+    @discardableResult
+    func recordConnectionMetadata(
+        wallet: Wallet,
+        clientId: String,
+        manifestURL: URL?,
+        fallbackSource: DappConnectionSource = .deeplink,
+        notifyObservers: Bool
+    ) -> DappConnectionSource {
+        let source = consumePendingConnectionSource(
+            clientId: clientId,
+            manifestURL: manifestURL
+        ) ?? fallbackSource
+        recordConnectionMetadata(
+            wallet: wallet,
+            clientId: clientId,
+            source: source,
+            notifyObservers: notifyObservers
+        )
+        return source
+    }
+
+    public func connectionMetadata(
+        wallet: Wallet,
+        clientId: String
+    ) -> TonConnectConnectionMetadata? {
+        connectionMetadataStore.metadata(
+            wallet: wallet,
+            clientId: clientId
+        )
+    }
+
     public func deleteConnectedApp(wallet: Wallet, app: TonConnectApp) {
+        let removedApps = (try? connectedApps(forWallet: wallet).apps.filter {
+            $0.manifest.host == app.manifest.host
+        }) ?? [app]
+
         try? tonConnectService.disconnectApp(app, wallet: wallet)
+        deleteConnectionMetadata(wallet: wallet, apps: removedApps)
         notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
+    }
+
+    public func deleteConnectedAppSession(wallet: Wallet, app: TonConnectApp) {
+        try? tonConnectService.disconnectApp(app.clientId, wallet: wallet)
+        connectionMetadataStore.deleteConnection(wallet: wallet, clientId: app.clientId)
+        notifyObservers(event: .didDisconnect(app: app, wallet: wallet))
+    }
+
+    public func setPendingConnectionSource(
+        _ source: DappConnectionSource,
+        clientId: String,
+        manifestURL: URL?
+    ) {
+        connectionMetadataStore.setPendingConnectionSource(
+            source,
+            clientId: clientId,
+            manifestURL: manifestURL
+        )
+    }
+
+    public func consumePendingConnectionSource(
+        clientId: String,
+        manifestURL: URL?
+    ) -> DappConnectionSource? {
+        connectionMetadataStore.consumePendingConnectionSource(
+            clientId: clientId,
+            manifestURL: manifestURL
+        )
     }
 
     public func getLastEventId() -> String? {
@@ -189,6 +296,15 @@ public final class TonConnectAppsStore {
 }
 
 private extension TonConnectAppsStore {
+    func deleteConnectionMetadata(wallet: Wallet, apps: [TonConnectApp]) {
+        for app in apps {
+            connectionMetadataStore.deleteConnection(
+                wallet: wallet,
+                clientId: app.clientId
+            )
+        }
+    }
+
     func removeNilObservers() {
         observers = observers.filter { $0.observer != nil }
     }

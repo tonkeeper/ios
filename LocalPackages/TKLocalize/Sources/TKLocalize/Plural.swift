@@ -8,7 +8,7 @@ public enum Plural {
     case other
 }
 
-public func plural(count: Int) -> Plural {
+func plural(count: Int) -> Plural {
     let languageCode: String? = {
         if #available(iOS 16, *) {
             Locale.current.language.languageCode?.identifier

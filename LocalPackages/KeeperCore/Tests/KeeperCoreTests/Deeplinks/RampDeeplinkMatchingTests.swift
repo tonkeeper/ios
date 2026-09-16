@@ -20,6 +20,37 @@ final class RampDeeplinkMatchingTests: XCTestCase {
         XCTAssertEqual(asset?.symbol, "TON")
     }
 
+    func test_matchLayoutAsset_trx_without_fn() {
+        let ton = OnRampLayoutToken(
+            symbol: "TON",
+            assetId: "ton",
+            address: nil,
+            network: "native",
+            networkName: "TON",
+            networkImage: "",
+            image: "",
+            decimals: 9,
+            stablecoin: false,
+            cashMethods: [],
+            cryptoMethods: []
+        )
+        let trx = OnRampLayoutToken(
+            symbol: "TRX",
+            assetId: "trx",
+            address: nil,
+            network: "trc20",
+            networkName: "TRON",
+            networkImage: "",
+            image: "",
+            decimals: 6,
+            stablecoin: false,
+            cashMethods: [],
+            cryptoMethods: []
+        )
+        let asset = RampDeeplinkMatching.matchLayoutAsset(in: [ton, trx], fromToken: "TRX", fromNetwork: nil)
+        XCTAssertEqual(asset?.assetId, "trx")
+    }
+
     func test_matchLayoutAsset_usdt_disambiguate_by_fn() {
         let usdtTon = OnRampLayoutToken(
             symbol: "USDT",

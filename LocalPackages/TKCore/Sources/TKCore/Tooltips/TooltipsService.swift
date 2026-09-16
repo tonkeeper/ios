@@ -8,9 +8,28 @@ public protocol TooltipsService: AnyObject {
         id: TooltipID,
         sourceView: UIView,
         targetActionViews: [UIView],
-        configuration: HintConfiguration
+        configuration: HintConfiguration,
+        onTargetAction: (() -> Void)?
     )
 
     @MainActor
     func didPerformTooltipTargetAction(id: TooltipID)
+}
+
+public extension TooltipsService {
+    @MainActor
+    func showTooltipIfNeeded(
+        id: TooltipID,
+        sourceView: UIView,
+        targetActionViews: [UIView],
+        configuration: HintConfiguration
+    ) {
+        showTooltipIfNeeded(
+            id: id,
+            sourceView: sourceView,
+            targetActionViews: targetActionViews,
+            configuration: configuration,
+            onTargetAction: nil
+        )
+    }
 }

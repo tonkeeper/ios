@@ -1,0 +1,120 @@
+name: Prepare Maestro simulator
+description: >-
+  Select and boot an iOS simulator, force en_US locale and keyboard prefs,
+  install the app (MAESTRO_APP_PATH), then start screen recording and a
+  Tonkeeper log stream into the artifacts directory.
+inputs:
+  artifacts-dir:
+    description: Path (relative to the workspace) for Maestro CI artifacts.
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Select iOS Simulator
+      shell: bash
+      run: |
+        set -euo pipefail
+        SIMULATOR_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }' | tr -d '[:space:]')"
+        if [[ -z "$SIMULATOR_UDID" ]]; then
+          echo "No available iPhone simulator found"
+          exit 1
+        fi
+        echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
+        echo "Using simulator: $SIMULATOR_UDID"
+
+    - name: Simulator host defaults (hardware keyboard)
+      shell: bash
+      run: |
+        set -euo pipefail
+        defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool true
+
+    - name: Boot iOS Simulator
+      shell: bash
+      run: |
+        set -euo pipefail
+        xcrun simctl boot "$SIMULATOR_UDID" || true
+        xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+
+    - name: Set simulator locale en_US
+      shell: bash
+      run: |
+        set -euo pipefail
+        xcrun simctl shutdown "$SIMULATOR_UDID" || true
+        sleep 2
+        PLIST="${HOME}/Library/Developer/CoreSimulator/Devices/${SIMULATOR_UDID}/data/Library/Preferences/.GlobalPreferences.plist"
+        if [[ ! -f "$PLIST" ]]; then
+          echo "Missing $PLIST"
+          exit 1
+        fi
+        if plutil -replace AppleLocale -string "en_US" "$PLIST" 2>/dev/null; then
+          :
+        else
+          plutil -insert AppleLocale -string "en_US" "$PLIST"
+        fi
+        if plutil -replace AppleLanguages -json '["en-US"]' "$PLIST" 2>/dev/null; then
+          :
+        else
+          plutil -insert AppleLanguages -json '["en-US"]' "$PLIST"
+        fi
+        if plutil -replace Country -string "US" "$PLIST" 2>/dev/null; then
+          :
+        else
+          plutil -insert Country -string "US" "$PLIST" 2>/dev/null || true
+        fi
+        xcrun simctl boot "$SIMULATOR_UDID" || true
+        xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+        # Keyboard prefs for UI-test stability: suppress QuickPath "Slide to Type" intro
+        # banner and disable autocorrect/predictive bar. Written while booted; the keyboard
+        # daemon reads them lazily on first keyboard appearance (after the app launches),
+        # so no extra reboot is needed.
+        xcrun simctl spawn "$SIMULATOR_UDID" defaults write com.apple.Preferences DidShowContinuousPathIntroduction -bool true
+        xcrun simctl spawn "$SIMULATOR_UDID" defaults write com.apple.keyboard.preferences KeyboardContinuousPathEnabled -bool false
+        xcrun simctl spawn "$SIMULATOR_UDID" defaults write com.apple.keyboard.preferences KeyboardAutocorrection -bool false
+        xcrun simctl spawn "$SIMULATOR_UDID" defaults write com.apple.keyboard.preferences KeyboardPrediction -bool false
+        xcrun simctl spawn "$SIMULATOR_UDID" defaults write com.apple.keyboard.preferences KeyboardShowPredictionBar -bool false
+
+    - name: Install app on booted simulator
+      shell: bash
+      run: |
+        set -euo pipefail
+        xcrun simctl install booted "$MAESTRO_APP_PATH"
+        sleep 3
+
+    - name: Prepare Maestro CI artifact directory
+      shell: bash
+      env:
+        ARTIFACTS_DIR: ${{ inputs.artifacts-dir }}
+      run: |
+        set -euo pipefail
+        mkdir -p "${{ github.workspace }}/$ARTIFACTS_DIR"
+
+    - name: Start simulator screen recording
+      shell: bash
+      env:
+        ARTIFACTS_DIR: ${{ inputs.artifacts-dir }}
+      run: |
+        set -euo pipefail
+        ART="${{ github.workspace }}/$ARTIFACTS_DIR"
+        VIDEO_PATH="$ART/simulator-run.mp4"
+        PID_PATH="$ART/record.pid"
+        mkdir -p "$ART"
+        # Epoch used by summarize_maestro_log to map failed_at → screencast scrub time.
+        python3 -c 'import time; print(f"{time.time():.3f}")' > "$ART/record-started-at.epoch"
+        xcrun simctl io booted recordVideo --codec h264 "$VIDEO_PATH" &
+        echo $! > "$PID_PATH"
+
+    - name: Start Simulator log stream (Tonkeeper process)
+      shell: bash
+      env:
+        ARTIFACTS_DIR: ${{ inputs.artifacts-dir }}
+      run: |
+        set -euo pipefail
+        ART="${{ github.workspace }}/$ARTIFACTS_DIR"
+        LOG_OUT="$ART/simulator-unified.log"
+        PID_FILE="$ART/log-stream.pid"
+        xcrun simctl spawn booted log stream \
+          --style compact \
+          --level default \
+          --predicate 'processImagePath CONTAINS[c] "Keeper.app"' \
+          > "$LOG_OUT" 2>&1 &
+        echo $! > "$PID_FILE"

@@ -10,7 +10,14 @@ import TKLogging
 import TKScreenKit
 import TKUIKit
 import TonSwift
+import TronSwift
 import UIKit
+
+private struct MainHistoryNavigationContext {
+    let fromViewController: UINavigationController?
+    let routerOrNil: NavigationControllerRouter?
+    let presentationStyle: HistoryPresentationStyle
+}
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -22,22 +29,27 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     private let walletModule: WalletModule
     private let tradeModule: TradeModule
+    private let perpsModule: PerpsModule
     private let historyModule: HistoryModule
     private let browserModule: BrowserModule
-    private let collectiblesModule: CollectiblesModule
+    let dappBrowserAnalyticsController: DappBrowserAnalyticsController
 
     private var walletCoordinator: WalletCoordinator?
+    private var multichainWalletCoordinator: MultichainWalletCoordinator?
     private var tradeCoordinator: TradeCoordinator?
-    private var historyCoordinator: HistoryCoordinator?
+    private var standaloneHistoryCoordinator: RouterCoordinator<NavigationControllerRouter>?
     var browserCoordinator: BrowserCoordinator?
-    private var collectiblesCoordinator: CollectiblesCoordinator?
 
     weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+    weak var migrationCoordinator: WalletMigrationCoordinator?
+
     private weak var addWalletCoordinator: AddWalletCoordinator?
-    private weak var sendTokenCoordinator: SendTokenCoordinator?
+    private weak var importTestnetWalletCoordinator: ImportWalletCoordinator?
+    private weak var sendTokenCoordinator: SendCoordinator?
     private weak var webSwapCoordinator: WebSwapCoordinator?
     private weak var batteryRefillCoordinator: BatteryRefillCoordinator?
     private weak var topUpCoordinator: TopUpCoordinator?
+    private weak var perpsCoordinator: PerpsCoordinator?
     private weak var stakingCoordinator: StakingCoordinator?
     private weak var stakingStakeCoordinator: StakingStakeCoordinator?
     private weak var stakingUnstakeCoordinator: StakingUnstakeCoordinator?
@@ -53,12 +65,23 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     private let cookiesController: KeeperCore.CookiesController
 
     var deeplinkHandleTask: Task<Void, Never>?
+    private(set) var walletConnectState = WalletConnectState()
 
     private var sendTransactionNotificationToken: NSObjectProtocol?
+    private let walletOpenAnalyticsObserver: WalletOpenAnalyticsObserver
 
-    private var deeplinkRouter: ContainerViewControllerRouter<UIViewController>?
+    private var modalPresentationDelegate: ModalPresentationDelegate?
 
-    private let depositPendingTracker: DepositPendingTracker
+    let depositPendingTracker: DepositPendingTracker
+    private let tradeAssetDetailsHotWindow: TradeAssetDetailsHotWindow
+
+    private let mysteryRaffleLoadingController: MysteryRaffleLoadingController
+    /// The raffle story auto-opens at most once per app session.
+    private var didPresentRaffleLaunchStory = false
+    /// Holds the raffle's launch story back while the boot configuration's stories play.
+    private var isBootConfigurationStoriesRunning = false
+    /// External navigation or an explicit story dismissal owns the launch from this point on.
+    private var areLaunchStoriesSuppressed = false
 
     init(
         router: TabBarControllerRouter,
@@ -74,6 +97,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.depositPendingTracker = depositPendingTracker
+        self.tradeAssetDetailsHotWindow = TradeAssetDetailsHotWindow()
         self.mainController = keeperCoreMainAssembly.mainController()
         self.walletModule = WalletModule(
             dependencies: WalletModule.Dependencies(
@@ -84,25 +108,29 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.tradeModule = TradeModule(
             dependencies: TradeModule.Dependencies(
                 coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                tradeAssetDetailsHotWindow: tradeAssetDetailsHotWindow
             )
         )
+        self.perpsModule = PerpsModule()
         self.historyModule = HistoryModule(
             dependencies: HistoryModule.Dependencies(
                 coreAssembly: coreAssembly,
                 keeperCoreMainAssembly: keeperCoreMainAssembly
             )
         )
+        let dappBrowserAnalyticsController = DappBrowserAnalyticsController(
+            analyticsProvider: coreAssembly.analyticsProvider,
+            selectedCountryProvider: {
+                keeperCoreMainAssembly.storesAssembly.regionStore.getState()
+            }
+        )
+        self.dappBrowserAnalyticsController = dappBrowserAnalyticsController
         self.browserModule = BrowserModule(
             dependencies: BrowserModule.Dependencies(
                 coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
-            )
-        )
-        self.collectiblesModule = CollectiblesModule(
-            dependencies: CollectiblesModule.Dependencies(
-                coreAssembly: coreAssembly,
-                keeperCoreMainAssembly: keeperCoreMainAssembly
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                analyticsController: dappBrowserAnalyticsController
             )
         )
         self.appStateTracker = appStateTracker
@@ -110,13 +138,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self.recipientResolver = recipientResolver
         self.insufficientFundsValidator = insufficientFundsValidator
         self.inAppReviewService = inAppReviewService
+        self.mysteryRaffleLoadingController = MysteryRaffleLoadingController(
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            appStateTracker: appStateTracker,
+            reachabilityTracker: reachabilityTracker
+        )
 
         self.mainCoordinatorStateManager = MainCoordinatorStateManager(
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
+        )
+        self.walletOpenAnalyticsObserver = WalletOpenAnalyticsObserver(
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
-            walletNFTStoreProvider: { wallet in
-                keeperCoreMainAssembly.storesAssembly.walletNFTsStore(wallet: wallet, nftService: keeperCoreMainAssembly.servicesAssembly.accountNftService())
-            }
+            analyticsProvider: coreAssembly.analyticsProvider
         )
         cookiesController = CookiesController(
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
@@ -137,23 +170,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 guard let self else { return }
                 Task { @MainActor [weak self] in
                     guard let self else { return }
+                    if let wallet = notification.userInfo?["wallet"] as? Wallet {
+                        await keeperCoreMainAssembly.storesAssembly.walletsStore.makeWalletActive(wallet)
+                    }
+                    guard notification.userInfo?[Notification.transactionSendWithoutHistoryKey] as? Bool != true else {
+                        return
+                    }
                     openHistory(
                         fromNavigationController: notification.userInfo?[Self.preservePresentedStackKey] as? UINavigationController
                     )
-                    if let wallet = notification.userInfo?["wallet"] as? Wallet {
-                        Task {
-                            await keeperCoreMainAssembly.storesAssembly.walletsStore.makeWalletActive(wallet)
-                        }
-                    }
                 }
             }
 
         router.didSelectItem = { [weak self] index in
             guard let self else { return }
+            TKTapAnimationHaptic.soft.impactOccurred()
             let viewControllers = self.router.rootViewController.viewControllers ?? []
             guard viewControllers.count > index else { return }
             let viewController = viewControllers[index]
-            playAnimatedTabBarItemIfNeeded(at: index)
+            self.router.rootViewController.playAnimatedTabBarItem(at: index)
             if viewController === self.tradeCoordinator?.router.rootViewController {
                 self.coreAssembly.analyticsProvider.log(
                     TradeStarted(from: TradeFlowAnalyticsSource.tabBar.tradeStarted)
@@ -161,9 +196,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 self.coreAssembly.tooltipsAssembly.service.didPerformTooltipTargetAction(id: .tradeTab)
             }
             if viewController === browserCoordinator?.router.rootViewController {
-                coreAssembly.analyticsProvider.log(
-                    eventKey: .openBrowser
-                )
+                browserCoordinator?.logBrowserOpen(from: .wallet)
             }
         }
 
@@ -176,6 +209,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         if let sendTransactionNotificationToken {
             NotificationCenter.default.removeObserver(sendTransactionNotificationToken)
         }
+        walletConnectState.cancel()
         PushNotificationTapQueue.clearHandler()
     }
 
@@ -189,11 +223,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         if let state = try? mainCoordinatorStateManager.getState() {
             handleStateUpdate(state)
         }
+        walletOpenAnalyticsObserver.start()
         mainController.start()
+        mysteryRaffleLoadingController.start()
+        // Before the deeplink dispatch below, so a deeplink or a push arriving on the way in
+        // has something to cancel the boot stories on.
+        setupStoriesController()
         try? setupTONWalletKitIfNeeded()
+        setupWalletConnectIfNeeded()
         DispatchQueue.main.async {
             _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
-            self.setupStoriesController()
+            if case nil = deeplink {
+                self.runBootConfigurationStories()
+            }
+            self.setupRaffleLaunchStory()
         }
 
         resolveWalletsByPubkey()
@@ -207,20 +250,28 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     func handleDeeplink(deeplink: CoordinatorDeeplink?, fromStories: Bool) -> Bool {
+        let didHandle: Bool
         switch deeplink {
         case let tonkeeperDeeplink as KeeperCore.Deeplink:
-            return handleTonkeeperDeeplink(tonkeeperDeeplink, fromStories: fromStories, sendSource: .deepLink)
+            didHandle = handleTonkeeperDeeplink(tonkeeperDeeplink, fromStories: fromStories, sendSource: .deepLink)
         case let string as String:
             do {
                 let deeplink = try mainController.parseDeeplink(deeplink: string)
-                return handleTonkeeperDeeplink(deeplink, fromStories: fromStories, sendSource: .deepLink)
+                didHandle = handleTonkeeperDeeplink(deeplink, fromStories: fromStories, sendSource: .deepLink)
+            } catch let error as DeeplinkParserError where error.isSilent {
+                didHandle = true
             } catch {
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: error.localizedDescription))
-                return false
+                didHandle = false
             }
         default:
-            return false
+            didHandle = false
         }
+        if didHandle, !fromStories {
+            areLaunchStoriesSuppressed = true
+            cancelBootConfigurationStories()
+        }
+        return didHandle
     }
 
     private func setupStoriesController() {
@@ -243,204 +294,287 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func setupChildCoordinators() {
         let walletCoordinator = walletModule.createWalletCoordinator()
-        walletCoordinator.didTapScan = { [weak self] in
-            self?.openScan()
+        let multichainWalletCoordinator: MultichainWalletCoordinator? = walletModule
+            .createMultichainWalletCoordinator()
+
+        let walletFlows: [WalletTabCoordinatorOutput] = [walletCoordinator, multichainWalletCoordinator]
+            .compactMap { $0 }
+
+        for walletFlow in walletFlows {
+            walletFlow.didTapScan = { [weak self] in
+                self?.openScan()
+            }
+
+            walletFlow.didTapWalletButton = { [weak self] in
+                self?.coreAssembly.tooltipsAssembly.service.didPerformTooltipTargetAction(id: .addMultichainWalletMain)
+                self?.openWalletPicker()
+            }
+
+            walletFlow.didTapSwap = { [weak self] wallet in
+                self?.openSwap(wallet: wallet, token: .ton(.ton))
+            }
+
+            walletFlow.didTapSettingsButton = { [weak self] wallet in
+                self?.openSettings(wallet: wallet)
+            }
+
+            walletFlow.didTapHistoryButton = { [weak self] in
+                guard let self else { return }
+                coreAssembly.tooltipsAssembly.service.didPerformTooltipTargetAction(id: .newHistoryEntryPoint)
+                openHistory()
+            }
+
+            walletFlow.didSelectTonDetails = { [weak self] in
+                self?.openTonDetails(wallet: $0)
+            }
+
+            walletFlow.didSelectJettonDetails = { [weak self] wallet, jettonItem, hasPrice in
+                self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
+            }
+
+            walletFlow.didSelectTronUSDTDetails = { [weak self] wallet in
+                self?.openTronUSDTDetails(wallet: wallet)
+            }
+
+            walletFlow.didSelectTronTRXDetails = { [weak self] wallet in
+                self?.openTronTRXDetails(wallet: wallet)
+            }
+
+            walletFlow.didSelectEthenaDetails = { [weak self] wallet in
+                self?.openEthenaDetails(wallet: wallet)
+            }
+
+            walletFlow.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, _ in
+                self?.openStakingItemDetails(
+                    wallet: wallet,
+                    stakingPoolInfo: stakingPoolInfo
+                )
+            }
+
+            walletFlow.didSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
+                self?.openStakingCollect(
+                    wallet: wallet,
+                    stakingPoolInfo: stakingPoolInfo,
+                    accountStackingInfo: accountStackingInfo
+                )
+            }
+
+            walletFlow.didTapDeposit = { [weak self] wallet in
+                self?.openDeposit(wallet: wallet, entrySource: .walletScreen)
+            }
+
+            walletFlow.didTapSend = { [weak self] wallet in
+                self?.openSendWithTokenPicker(
+                    wallet: wallet,
+                    sendSource: .walletScreen
+                )
+            }
+
+            walletFlow.didTapWithdraw = { [weak self] wallet in
+                self?.openWithdraw(wallet: wallet, entrySource: .walletScreen)
+            }
+
+            walletFlow.didTapStake = { [weak self] wallet in
+                self?.openStake(wallet: wallet)
+            }
+
+            walletFlow.didTapBackup = { [weak self] wallet in
+                self?.openBackup(wallet: wallet)
+            }
+
+            walletFlow.didTapBattery = { [weak self] wallet in
+                self?.openBattery(
+                    wallet: wallet
+                )
+            }
+
+            walletFlow.didTapOpenCryptoAssets = { [weak self] in
+                self?.openCryptoAssetsFromWallet()
+            }
         }
 
-        walletCoordinator.didTapWalletButton = { [weak self] in
-            self?.openWalletPicker()
+        walletCoordinator.collectiblesDidOpenDapp = { [weak self] url, title in
+            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
         }
-
-        walletCoordinator.didTapSwap = { [weak self] wallet in
-            self?.openSwap(wallet: wallet, token: .ton(.ton))
+        walletCoordinator.collectiblesDidRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
+            self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
-
-        walletCoordinator.didTapSettingsButton = { [weak self] wallet in
-            self?.openSettings(wallet: wallet)
+        walletCoordinator.collectiblesDidRequestDepositTon = { [weak self] wallet in
+            self?.openDepositTon(wallet: wallet)
         }
-
-        walletCoordinator.didTapHistoryButton = { [weak self] in
-            guard let self else { return }
-            coreAssembly.tooltipsAssembly.service.didPerformTooltipTargetAction(id: .newHistoryEntryPoint)
-            openHistory()
-        }
-
-        walletCoordinator.didSelectTonDetails = { [weak self] in
-            self?.openTonDetails(wallet: $0)
-        }
-
-        walletCoordinator.didSelectJettonDetails = { [weak self] wallet, jettonItem, hasPrice in
-            self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
-        }
-
-        walletCoordinator.didSelectTronUSDTDetails = { [weak self] wallet in
-            self?.openTronUSDTDetails(wallet: wallet)
-        }
-
-        walletCoordinator.didSelectEthenaDetails = { [weak self] wallet in
-            self?.openEthenaDetails(wallet: wallet)
-        }
-
-        walletCoordinator.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, _ in
-            self?.openStakingItemDetails(
-                wallet: wallet,
-                stakingPoolInfo: stakingPoolInfo
-            )
-        }
-
-        walletCoordinator.didSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
-            self?.openStakingCollect(
-                wallet: wallet,
-                stakingPoolInfo: stakingPoolInfo,
-                accountStackingInfo: accountStackingInfo
-            )
-        }
-
-        walletCoordinator.didTapDeposit = { [weak self] wallet in
-            self?.openRamp(flow: .deposit, wallet: wallet, entrySource: .walletScreen)
-        }
-
-        walletCoordinator.didTapWithdraw = { [weak self] wallet in
-            self?.openRamp(flow: .withdraw, wallet: wallet, entrySource: .walletScreen)
-        }
-
-        walletCoordinator.didTapStake = { [weak self] wallet in
-            self?.openStake(wallet: wallet)
-        }
-
-        walletCoordinator.didTapBackup = { [weak self] wallet in
-            self?.openBackup(wallet: wallet)
-        }
-
-        walletCoordinator.didTapBattery = { [weak self] wallet in
-            self?.openBattery(
-                wallet: wallet
-            )
-        }
-
         walletCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
             _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
         }
-
-        walletCoordinator.didTapOpenCryptoAssets = { [weak self] in
-            guard let self, let tradeCoordinator = self.tradeCoordinator else { return }
-            tradeCoordinator.openAssetList(
-                initialCategory: .crypto,
-                tradeFlowAnalyticsSource: .walletScreen,
-                on: router.rootViewController
-            )
+        walletCoordinator.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink, origin: .banner)
         }
 
-        let tradeCoordinator: TradeCoordinator?
-        if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.tradingUiEnabled) {
-            tradeCoordinator = tradeModule.createTradeCoordinator(
-                output: TradeModule.CoordinatorOutput(
-                    onSwap: { [weak self] swapContext, wallet, navigationController in
-                        guard let self else { return }
-                        switch swapContext {
-                        case let .ton(from, to, fromCategory, toCategory):
-                            let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-                            if configuration.flag(\.nativeSwapDisabled, network: wallet.network) {
-                                let address: (TonToken) -> String? = {
-                                    switch $0 {
-                                    case let .jetton(item):
-                                        item.jettonInfo.address.toRaw()
-                                    case .ton:
-                                        nil
-                                    }
-                                }
-                                openWebSwap(
-                                    wallet: wallet,
-                                    fromToken: address(from),
-                                    toToken: address(to),
-                                    presentingViewController: navigationController
-                                )
-                            } else {
-                                openNativeSwap(
-                                    wallet: wallet,
-                                    nativeSwapContext: NativeSwapContext(
-                                        from: .prefetched(.ton(from), category: fromCategory),
-                                        to: .prefetched(.ton(to), category: toCategory),
-                                        transactionSentNotificationPatch: {
-                                            $0[Self.preservePresentedStackKey] = navigationController
-                                        }
-                                    ),
-                                    presentingViewController: navigationController
-                                )
-                            }
-                        case .tron:
-                            openTRC20Swap()
-                        }
-                    },
-                    onSend: { [weak self] wallet, token, navigationController in
-                        guard let self else { return }
-                        openSend(
-                            wallet: wallet,
-                            sendInput: .direct(item: token.sendV3Item),
-                            sendSource: .jettonScreen,
-                            transactionSentNotificationPatch: {
-                                $0[Self.preservePresentedStackKey] = navigationController
-                            },
-                            comment: nil
-                        )
-                    },
-                    onReceive: { [weak self] tokens, wallet, _ in
-                        guard let self else { return }
-                        openReceive(tokens: tokens, wallet: wallet)
-                    },
-                    onOpenStaking: { [weak self] wallet in
-                        self?.openStake(wallet: wallet)
-                    },
-                    onOpenHistoryEvent: { [weak self] event, navigationController in
-                        guard let self else { return }
-                        switch event {
-                        case let .ton(wallet, event):
-                            openHistoryEventDetails(
-                                wallet: wallet,
-                                event: event,
-                                network: wallet.network,
-                                fromViewController: navigationController
-                            )
-                        case let .tron(wallet, event):
-                            openTronEventDetails(
-                                wallet: wallet,
-                                event: event,
-                                network: wallet.network,
-                                fromViewController: navigationController
-                            )
-                        }
-                    },
-                    tokenDetailsConfiguratorProvider: { [weak self] wallet, token in
-                        self?.makeTokenDetailsConfigurator(
-                            wallet: wallet,
-                            token: token
-                        )
-                    },
-                    onOpenUnverifiedTokenInfoPopup: { [weak self] _ in
-                        guard let self else { return }
-                        openUnverifiedTokenInfoPopup()
-                    },
-                    onOpenUrl: { [weak self] url, navigationController in
-                        guard let self else { return }
-                        if let navigationController {
-                            navigationController.present(
-                                bridgeViewController(for: url, title: nil),
-                                animated: true
-                            )
-                        } else {
-                            openURL(url, title: nil)
-                        }
-                    }
-                )
-            )
-        } else {
-            tradeCoordinator = nil
-        }
-        let tradingUiEnabled = keeperCoreMainAssembly
+        let isPerpsEntryPointEnabled = keeperCoreMainAssembly
             .configurationAssembly
             .configuration
-            .featureEnabled(.tradingUiEnabled)
-        let historyCoordinator = tradingUiEnabled ? nil : createHistoryCoordinator()
+            .featureEnabled(.perpsEnabled)
+
+        let tradeCoordinator: TradeCoordinator? = tradeModule.createTradeCoordinator(
+            output: TradeModule.CoordinatorOutput(
+                onSwap: { [weak self] swapContext, wallet, navigationController in
+                    guard let self else { return }
+                    switch swapContext {
+                    case let .ton(from, to, fromCategory, toCategory):
+                        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+                        if configuration.flag(\.nativeSwapDisabled, network: wallet.network) {
+                            let address: (TonToken) -> String? = {
+                                switch $0 {
+                                case let .jetton(item):
+                                    item.jettonInfo.address.toRaw()
+                                case .ton:
+                                    nil
+                                }
+                            }
+                            openWebSwap(
+                                wallet: wallet,
+                                fromToken: address(from),
+                                toToken: address(to),
+                                presentingViewController: navigationController
+                            )
+                        } else {
+                            openNativeSwap(
+                                wallet: wallet,
+                                nativeSwapContext: NativeSwapContext(
+                                    from: .prefetched(.ton(from), category: fromCategory),
+                                    to: .prefetched(.ton(to), category: toCategory),
+                                    transactionSentNotificationPatch: {
+                                        $0[Self.preservePresentedStackKey] = navigationController
+                                    }
+                                ),
+                                presentingViewController: navigationController
+                            )
+                        }
+                    case .tron:
+                        openTRC20Swap()
+                    case let .multichain(initialSelection):
+                        guard case let .multichain(multichainState) = wallet.multichain else {
+                            return
+                        }
+                        openMultichainSwap(
+                            wallet: wallet,
+                            multichainState: multichainState,
+                            initialSelection: initialSelection,
+                            presentingViewController: navigationController
+                        )
+                    }
+                },
+                onSend: { [weak self] wallet, item, navigationController in
+                    guard let self else { return }
+                    openSendResolvingMultichain(
+                        wallet: wallet,
+                        sendInput: .direct(item: item),
+                        sendSource: .jettonScreen,
+                        transactionSentNotificationPatch: {
+                            $0[Self.preservePresentedStackKey] = navigationController
+                        },
+                        comment: nil
+                    )
+                },
+                onSendMultichain: { [weak self] wallet, multichainState, sendInput, navigationController in
+                    guard let self else { return }
+                    openMultichainSend(
+                        wallet: wallet,
+                        multichainState: multichainState,
+                        entry: .enterAmount(sendInput),
+                        sendSource: .jettonScreen,
+                        transactionSentNotificationPatch: {
+                            $0[Self.preservePresentedStackKey] = navigationController
+                        },
+                        comment: nil
+                    )
+                },
+                onReceive: { [weak self] token, wallet, _ in
+                    guard let self else { return }
+                    openReceive(token: token, wallet: wallet)
+                },
+                onReceiveMultichain: { [weak self] wallet, address, _ in
+                    guard let self else { return }
+                    openReceive(wallet: wallet, address: address)
+                },
+                onSellToCard: { [weak self] wallet, assetInfo, resolvedAsset, navigationController in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        await self.openMultichainOfframpFromAsset(
+                            wallet: wallet,
+                            assetId: assetInfo.assetId,
+                            resolvedAsset: resolvedAsset,
+                            presentingViewController: navigationController
+                        )
+                    }
+                },
+                onCashBuy: { [weak self] wallet, assetInfo, navigationController in
+                    guard let self else { return }
+                    Task { @MainActor in
+                        await self.openMultichainOnrampFromAsset(
+                            wallet: wallet,
+                            assetId: assetInfo.assetId,
+                            presentingViewController: navigationController
+                        )
+                    }
+                },
+                onTronUsdtFees: { [weak self] wallet, snapshot, trigger in
+                    self?.handleTronUsdtFees(wallet: wallet, snapshot: snapshot, trigger: trigger)
+                },
+                onOpenStaking: { [weak self] wallet in
+                    self?.openStake(wallet: wallet)
+                },
+                onOpenPerps: isPerpsEntryPointEnabled ? { [weak self] navigationController in
+                    self?.openPerps(on: navigationController)
+                } : nil,
+                onOpenPerpsMarket: isPerpsEntryPointEnabled ? { [weak self] marketID, navigationController in
+                    self?.openPerps(marketID: marketID, on: navigationController)
+                } : nil,
+                onOpenHistoryEvent: { [weak self] event, navigationController in
+                    guard let self else { return }
+                    switch event {
+                    case let .ton(wallet, event):
+                        openHistoryEventDetails(
+                            wallet: wallet,
+                            event: event,
+                            network: wallet.network,
+                            fromViewController: navigationController
+                        )
+                    case let .tron(wallet, event):
+                        openTronEventDetails(
+                            wallet: wallet,
+                            event: event,
+                            network: wallet.network,
+                            fromViewController: navigationController
+                        )
+                    }
+                },
+                tokenDetailsConfiguratorProvider: { [weak self] wallet, token in
+                    self?.makeTokenDetailsConfigurator(
+                        wallet: wallet,
+                        token: token
+                    )
+                },
+                onOpenUnverifiedTokenInfoPopup: { [weak self] _ in
+                    guard let self else { return }
+                    openUnverifiedTokenInfoPopup()
+                },
+                onOpenVerifiedTokenInfoPopup: { [weak self] _ in
+                    guard let self else { return }
+                    openVerifiedTokenInfoPopup()
+                },
+                onOpenUrl: { [weak self] url, navigationController in
+                    guard let self else { return }
+                    if let navigationController {
+                        navigationController.modalPresentationSourceViewController().present(
+                            bridgeViewController(for: url, title: nil),
+                            animated: true
+                        )
+                    } else {
+                        openURL(url, title: nil)
+                    }
+                }
+            )
+        )
 
         let browserCoordinator = browserModule.createBrowserCoordinator()
 
@@ -452,34 +586,76 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openBuy(wallet: wallet)
         }
 
-        let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(parentRouter: router)
-        collectiblesCoordinator.didOpenDapp = { url, title in
-            self.openDapp(title: title, url: url)
+        self.walletCoordinator = walletCoordinator
+        self.multichainWalletCoordinator = multichainWalletCoordinator
+        self.tradeCoordinator = tradeCoordinator
+        self.browserCoordinator = browserCoordinator
+
+        multichainWalletCoordinator?.collectiblesDidOpenDapp = { [weak self] url, title in
+            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
         }
-        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+        multichainWalletCoordinator?.collectiblesDidRequestDeeplinkHandling = { [weak self] deeplink in
             _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
         }
-        collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
+        multichainWalletCoordinator?.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
+            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink, origin: .banner)
+        }
+        multichainWalletCoordinator?.collectiblesDidRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
             self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
+        multichainWalletCoordinator?.collectiblesDidRequestDepositTon = { [weak self] wallet in
+            self?.openDepositTon(wallet: wallet)
+        }
+        multichainWalletCoordinator?.didRequestDeeplinkHandling = { [weak self] deeplink in
+            self?.handleRaffleDeeplink(deeplink)
+        }
+        multichainWalletCoordinator?.didRequestOpenMigration = { [weak self] onFinish in
+            self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
+        }
+        multichainWalletCoordinator?.didTapMigration = { [weak self] _ in
+            self?.openMigrationDeeplink(source: .setup)
+        }
+        multichainWalletCoordinator?.didTapAddress = { [weak self] wallet in
+            guard let self else { return }
+            openReceive(tokens: getRampTokens(wallet: wallet), wallet: wallet)
+        }
+        tradeCoordinator?.didRequestDeeplinkHandling = { [weak self] deeplink in
+            self?.handleRaffleDeeplink(deeplink)
+        }
+        tradeCoordinator?.didRequestOpenMigration = { [weak self] onFinish in
+            self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
+        }
 
-        self.walletCoordinator = walletCoordinator
-        self.tradeCoordinator = tradeCoordinator
-        self.historyCoordinator = historyCoordinator
-        self.browserCoordinator = browserCoordinator
-        self.collectiblesCoordinator = collectiblesCoordinator
+        multichainWalletCoordinator?.didSelectMultichainAssetDetails = { [weak self] preview in
+            guard let self else { return }
+            guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                  wallet.network.isMainnet,
+                  let tradeCoordinator = self.tradeCoordinator
+            else {
+                return
+            }
+            let navigationController = router.rootViewController.navigationController
+            guard let navigationController else {
+                return
+            }
+            tradeCoordinator.openAssetDetails(
+                preview: preview,
+                on: navigationController,
+                source: .walletScreen
+            )
+        }
 
+        if let multichainWalletCoordinator {
+            addChild(multichainWalletCoordinator)
+        }
         addChild(walletCoordinator)
         tradeCoordinator.flatMap(addChild)
-        historyCoordinator.map(addChild)
         addChild(browserCoordinator)
-        addChild(collectiblesCoordinator)
 
+        multichainWalletCoordinator?.start()
         walletCoordinator.start()
         tradeCoordinator?.start()
-        historyCoordinator?.start()
         browserCoordinator.start()
-        collectiblesCoordinator.start()
     }
 
     private func makeTronDetailsConfigurator(
@@ -502,7 +678,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         configurator.didTapBanner = { [weak self] snapshot in
             if snapshot.isTRXOnlyRegion {
-                self?.openReceive(tokens: [.tron(.trx)], wallet: wallet)
+                self?.openReceive(token: .tron(.trx), wallet: wallet)
             } else {
                 self?.openUsdtFees(wallet: wallet, snapshot: snapshot, reason: .topup)
             }
@@ -546,92 +722,101 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    private func createHistoryCoordinator(navigationController: UINavigationController? = nil) -> HistoryCoordinator {
-        let tradingUiEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.tradingUiEnabled)
-        let fromViewController: UINavigationController?
-        if let navigationController {
-            fromViewController = navigationController
-        } else if tradingUiEnabled {
-            fromViewController = router.rootViewController.navigationController
-        } else {
-            fromViewController = nil
+    private func createStandaloneHistoryCoordinator(
+        navigationController: UINavigationController? = nil
+    ) -> RouterCoordinator<NavigationControllerRouter>? {
+        guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            return nil
         }
 
-        let historyCoordinator = historyModule.createHistoryCoordinator(
-            routerOrNil: {
-                guard tradingUiEnabled else {
-                    return nil
-                }
-                return fromViewController
-                    .map(NavigationControllerRouter.init(rootViewController:))
-            }(),
-            presentationStyle: {
-                if tradingUiEnabled {
-                    HistoryPresentationStyle.push(
-                        closeAction: { [weak fromViewController] in
-                            fromViewController?.popViewController(animated: true)
-                        }
-                    )
-                } else {
-                    HistoryPresentationStyle.modal(closeAction: nil)
-                }
-            }()
+        let navigationContext = createHistoryNavigationContext(navigationController: navigationController)
+        return createHistoryCoordinatorFactory().makeCoordinator(
+            wallet: wallet,
+            router: navigationContext.routerOrNil,
+            presentationStyle: navigationContext.presentationStyle,
+            fromViewController: navigationContext.fromViewController
         )
-        historyCoordinator.didOpenTonEventDetails = { [weak self] wallet, event, network in
-            self?.openHistoryEventDetails(wallet: wallet, event: event, network: network, fromViewController: fromViewController)
-        }
-        historyCoordinator.didOpenTronEventDetails = { [weak self] wallet, event, network in
-            self?.openTronEventDetails(wallet: wallet, event: event, network: network, fromViewController: fromViewController)
-        }
-        historyCoordinator.didDecryptComment = { [weak self] wallet, payload, eventId in
-            self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
-        }
-        historyCoordinator.didOpenDapp = { [weak self] url, title in
-            self?.openDapp(title: title, url: url)
-        }
-        historyCoordinator.didOpenBuySellItem = { [weak self] url, fromViewController in
-            self?.openBuySellItemURL(url, fromViewController: fromViewController)
-        }
-        historyCoordinator.passcodeProvider = getPasscode
+    }
 
-        return historyCoordinator
+    private func createHistoryCoordinatorFactory() -> MainHistoryCoordinatorFactory {
+        MainHistoryCoordinatorFactory(
+            historyModule: historyModule,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            output: MainHistoryCoordinatorFactory.Output(
+                didOpenTonEventDetails: { [weak self] wallet, event, network, fromViewController in
+                    self?.openHistoryEventDetails(
+                        wallet: wallet,
+                        event: event,
+                        network: network,
+                        fromViewController: fromViewController
+                    )
+                },
+                didOpenTronEventDetails: { [weak self] wallet, event, network, fromViewController in
+                    self?.openTronEventDetails(
+                        wallet: wallet,
+                        event: event,
+                        network: network,
+                        fromViewController: fromViewController
+                    )
+                },
+                didDecryptComment: { [weak self] wallet, payload, eventId in
+                    self?.decryptComment(wallet: wallet, payload: payload, eventId: eventId)
+                },
+                didOpenDapp: { [weak self] url, title in
+                    self?.openDapp(
+                        title: title,
+                        url: url,
+                        analyticsFrom: .deepLink
+                    )
+                },
+                didTapAddFunds: { [weak self] wallet in
+                    self?.openDeposit(wallet: wallet, entrySource: .walletScreen /* TODO: add history source */ )
+                },
+                didRequestDepositTon: { [weak self] wallet in
+                    self?.openDepositTon(wallet: wallet)
+                }
+            )
+        )
+    }
+
+    private func createHistoryNavigationContext(navigationController: UINavigationController? = nil) -> MainHistoryNavigationContext {
+        let fromViewController = navigationController ?? router.rootViewController.navigationController
+        let routerOrNil = fromViewController.map(NavigationControllerRouter.init(rootViewController:))
+        let presentationStyle: HistoryPresentationStyle = .push(
+            closeAction: { [weak fromViewController] in
+                fromViewController?.popViewController(animated: true)
+            }
+        )
+
+        return MainHistoryNavigationContext(
+            fromViewController: fromViewController,
+            routerOrNil: routerOrNil,
+            presentationStyle: presentationStyle
+        )
     }
 
     func handleStateUpdate(_ state: MainCoordinatorStateManager.State) {
         let viewControllers = state.tabs.compactMap { tab -> RouterCoordinator<NavigationControllerRouter>? in
             switch tab {
             case .wallet:
-                walletCoordinator
-            case .history:
-                historyCoordinator
+                walletTabNavigationCoordinator()
             case .trade:
                 tradeCoordinator
             case .browser:
                 browserCoordinator
-            case .purchases:
-                collectiblesCoordinator
             }
         }.map { $0.router.rootViewController }
 
         router.rootViewController.setViewControllers(viewControllers, animated: false)
-        setupAnimatedTabsIfNeeded(with: state)
+        setupAnimatedTabs(with: state)
         DispatchQueue.main.async { [weak self] in
             self?.showEntryPointTooltipsIfNeeded(with: state)
         }
     }
 
     @MainActor
-    private func setupAnimatedTabsIfNeeded(with state: MainCoordinatorStateManager.State) {
-        let tradingUiEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.tradingUiEnabled)
-        guard tradingUiEnabled else {
-            return
-        }
+    private func setupAnimatedTabs(with state: MainCoordinatorStateManager.State) {
         router.rootViewController.configureAnimatedTabBarItems(
             items: state.tabs
         )
@@ -648,29 +833,62 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     private func showEntryPointTooltipsIfNeeded(with state: MainCoordinatorStateManager.State) {
         showNewHistoryEntryPointTooltipIfNeeded()
         showTradeTabTooltipIfNeeded(with: state)
+        showAddMultichainWalletMainTooltipIfNeeded()
     }
 
     @MainActor
     private func showNewHistoryEntryPointTooltipIfNeeded() {
-        guard let sourceView = walletCoordinator?.historyButtonTooltipSourceView else {
-            return
-        }
-
-        coreAssembly.tooltipsAssembly.service.showTooltipIfNeeded(
-            id: .newHistoryEntryPoint,
-            sourceView: sourceView,
-            targetActionViews: [sourceView],
-            configuration: HintConfiguration(
-                position: HintPosition(
-                    tailParameters: TKTooltipView.tailParameters,
-                    horizontal: .default,
-                    vertical: .init(absolute: 0),
-                    direction: .bottomRight
-                ),
-                maximumWidth: 280,
-                animationStyle: .bouncing
+        walletTabCoordinatorOutput()?.historyButtonTooltipSourceView { [weak self] sourceView in
+            self?.coreAssembly.tooltipsAssembly.service.showTooltipIfNeeded(
+                id: .newHistoryEntryPoint,
+                sourceView: sourceView,
+                targetActionViews: [sourceView],
+                configuration: HintConfiguration(
+                    position: HintPosition(
+                        tailParameters: TKTooltipView.tailParameters,
+                        horizontal: .default,
+                        vertical: .init(absolute: 0),
+                        direction: .bottomRight
+                    ),
+                    maximumWidth: 280,
+                    animationStyle: .bouncing
+                )
             )
-        )
+        }
+    }
+
+    @MainActor
+    private func showAddMultichainWalletMainTooltipIfNeeded() {
+        guard shouldShowAddMultichainWalletTooltip else { return }
+
+        walletTabCoordinatorOutput()?.walletButtonTooltipSourceView { [weak self] sourceView in
+            guard let self else { return }
+            coreAssembly.tooltipsAssembly.service.showTooltipIfNeeded(
+                id: .addMultichainWalletMain,
+                sourceView: sourceView,
+                targetActionViews: [sourceView],
+                configuration: HintConfiguration(
+                    position: HintPosition(
+                        tailParameters: TKTooltipView.tailParameters,
+                        horizontal: .default,
+                        vertical: .init(absolute: 0),
+                        direction: .bottomCenter
+                    ),
+                    maximumWidth: AddMultichainWalletTooltipLayout.maximumWidth,
+                    animationStyle: .bouncing
+                ),
+                onTargetAction: { [weak self] in
+                    self?.openWalletPicker()
+                }
+            )
+        }
+    }
+
+    private var shouldShowAddMultichainWalletTooltip: Bool {
+        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
+            return false
+        }
+        return keeperCoreMainAssembly.storesAssembly.walletsStore.wallets.filter(\.isMultichain).isEmpty
     }
 
     @MainActor
@@ -679,7 +897,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         router.rootViewController.tabBar.layoutIfNeeded()
 
-        guard let sourceView = router.rootViewController.tabBar.items?[safe: tradeIndex]?.contentView else {
+        guard let tabBarController = router.rootViewController as? TKTabBarController,
+              let sourceView = tabBarController.tabBarItemView(at: tradeIndex)
+        else {
             return
         }
 
@@ -702,13 +922,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func openScan() {
         let extensions = keeperCoreMainAssembly.configurationAssembly.configuration.value(\.qrScannerExtensions)
+        let scannerAssembly = keeperCoreMainAssembly.scannerAssembly()
         let scanModule = ScannerModule(
             dependencies: ScannerModule.Dependencies(
                 coreAssembly: coreAssembly,
-                scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+                scannerAssembly: scannerAssembly
             )
         ).createScannerModule(
-            configurator: DefaultScannerControllerConfigurator(extensions: extensions ?? []),
+            configurator: DefaultScannerControllerConfigurator(
+                extensions: extensions ?? [],
+                deeplinkParser: scannerAssembly.deeplinkParser,
+                isMultichainEnabled: isActiveWalletMultichain
+            ),
             uiConfiguration: ScannerUIConfiguration(
                 title: TKLocales.Scanner.title,
                 subtitle: nil,
@@ -746,7 +971,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         sendInput: SendInput,
         sendSource: SendAnalyticsSource,
         transactionSentNotificationPatch: @Sendable @escaping (inout [String: Any]) -> Void = { _ in },
-        recipient: Recipient? = nil,
+        recipient: LegacyRecipient? = nil,
         comment: String?,
         successReturn: URL? = nil
     ) {
@@ -787,14 +1012,104 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
-        sendTokenCoordinator.didRequestRefill = { [weak self] token in
-            guard let self else { return }
-            router.dismiss(animated: true) { [weak self] in
-                self?.openReceive(tokens: [token], wallet: wallet)
-            }
+        sendTokenCoordinator.didRequestRefill = { [weak self] token, onRefill in
+            self?.openFeeRefill(token: token, wallet: wallet, onRefill: onRefill)
         }
-        sendTokenCoordinator.didRequestOpenBattery = { [weak self] in
-            self?.openBattery(wallet: wallet)
+        sendTokenCoordinator.didRequestOpenBattery = { [weak self] onRechargeSuccess in
+            self?.openBattery(
+                wallet: wallet,
+                keepCurrentModal: true,
+                onRechargeSuccess: onRechargeSuccess
+            )
+        }
+
+        self.sendTokenCoordinator = sendTokenCoordinator
+
+        addChild(sendTokenCoordinator)
+
+        sendTokenCoordinator.start()
+
+        router.presentOverTopPresented(
+            navigationController,
+            animated: true,
+            completion: nil
+        ) { [weak self, weak sendTokenCoordinator] in
+            self?.sendTokenCoordinator = nil
+            guard let sendTokenCoordinator else { return }
+            self?.removeChild(sendTokenCoordinator)
+        }
+    }
+
+    func openMultichainSend(
+        wallet: Wallet,
+        multichainState: MultichainWalletState,
+        entry: MultichainSendEntry,
+        sendSource: SendAnalyticsSource,
+        transactionSentNotificationPatch: @Sendable @escaping (inout [String: Any]) -> Void = { _ in },
+        recipient: MultichainRecipient? = nil,
+        comment: String?,
+        successReturn: URL? = nil
+    ) {
+        let navigationController = TKNavigationController()
+        navigationController.setNavigationBarHidden(true, animated: false)
+
+        guard let sendTokenCoordinator = SendModule(
+            dependencies: SendModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        ).createMultichainSendCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet,
+            multichainState: multichainState,
+            entry: entry,
+            sendSource: sendSource,
+            transactionSentNotificationPatch: transactionSentNotificationPatch,
+            recipient: recipient,
+            comment: comment
+        ) else {
+            return
+        }
+
+        sendTokenCoordinator.didFinish = { [weak self, weak navigationController] in
+            self?.sendTokenCoordinator = nil
+            navigationController?.dismiss(animated: true)
+            self?.removeChild($0)
+        }
+
+        sendTokenCoordinator.didSendSuccessfully = { [weak self, weak navigationController] in
+            self?.sendTokenCoordinator = nil
+            navigationController?.dismiss(animated: true, completion: { [weak self] in
+                self?.inAppReviewService.trackSuccessfulSend()
+                guard let successReturn else { return }
+                self?.openURL(successReturn, title: nil)
+            })
+            self?.removeChild($0)
+        }
+
+        sendTokenCoordinator.didRequestRefill = { [weak self] token, onRefill in
+            self?.openFeeRefill(token: token, wallet: wallet, onRefill: onRefill)
+        }
+        sendTokenCoordinator.didRequestOpenBattery = { [weak self] onRechargeSuccess in
+            self?.openBattery(
+                wallet: wallet,
+                keepCurrentModal: true,
+                onRechargeSuccess: onRechargeSuccess
+            )
+        }
+        sendTokenCoordinator.didRequestFeeDeposit = { [weak self, weak navigationController] assetId, onDismiss in
+            guard let self, let navigationController else { return }
+            Task {
+                await self.openMultichainOnrampFromAsset(
+                    wallet: wallet,
+                    assetId: assetId,
+                    presentingViewController: navigationController,
+                    onDismiss: onDismiss,
+                    onUnavailable: {
+                        self.openReceiveForFeeAsset(assetId: assetId, wallet: wallet, onClose: onDismiss)
+                    }
+                )
+            }
         }
 
         self.sendTokenCoordinator = sendTokenCoordinator
@@ -852,14 +1167,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         sendTokenCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             self?.openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
-        sendTokenCoordinator.didRequestRefill = { [weak self] token in
-            guard let self else { return }
-            router.dismiss(animated: true) { [weak self] in
-                self?.openReceive(tokens: [token], wallet: wallet)
-            }
+        sendTokenCoordinator.didRequestRefill = { [weak self] token, onRefill in
+            self?.openFeeRefill(token: token, wallet: wallet, onRefill: onRefill)
         }
-        sendTokenCoordinator.didRequestOpenBattery = { [weak self] in
-            self?.openBattery(wallet: wallet)
+        sendTokenCoordinator.didRequestOpenBattery = { [weak self] onRechargeSuccess in
+            self?.openBattery(
+                wallet: wallet,
+                keepCurrentModal: true,
+                onRechargeSuccess: onRechargeSuccess
+            )
         }
 
         self.sendTokenCoordinator = sendTokenCoordinator
@@ -896,22 +1212,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     fromToken: fromToken,
                     toToken: toToken
                 )
-            } else if configuration.featureEnabled(.multichainEnabled) {
-                openMultichainSwap(
-                    wallet: wallet,
-                    nativeSwapContext: NativeSwapContext(
-                        fromTokenAddress: fromToken,
-                        toTokenAddress: toToken
-                    )
-                )
             } else {
-                openNativeSwap(
-                    wallet: wallet,
-                    nativeSwapContext: NativeSwapContext(
-                        fromTokenAddress: fromToken,
-                        toTokenAddress: toToken
+                if let state = wallet.multichainWalletState {
+                    openMultichainSwap(
+                        wallet: wallet,
+                        multichainState: state,
+                        nativeSwapContext: NativeSwapContext(
+                            fromTokenAddress: fromToken,
+                            toTokenAddress: toToken
+                        )
                     )
-                )
+                } else {
+                    openNativeSwap(
+                        wallet: wallet,
+                        nativeSwapContext: NativeSwapContext(
+                            fromTokenAddress: fromToken,
+                            toTokenAddress: toToken
+                        )
+                    )
+                }
             }
         case .tron:
             openTRC20Swap()
@@ -920,7 +1239,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func openMultichainSwap(
         wallet: Wallet,
+        multichainState: MultichainWalletState,
         nativeSwapContext: NativeSwapContext = NativeSwapContext(),
+        initialSelection: MultichainSwapInitialAssetSelection? = nil,
         presentingViewController: UIViewController? = nil
     ) {
         let navigationController = TKNavigationController()
@@ -929,13 +1250,23 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         let coordinator = MultichainSwapCoordinator(
             wallet: wallet,
+            multichainState: multichainState,
             nativeSwapContext: nativeSwapContext,
+            initialSelection: initialSelection,
             router: NavigationControllerRouter(rootViewController: navigationController),
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly
         )
 
         multichainSwapCoordinator = coordinator
+
+        coordinator.didRequestDeeplinkHandling = { [weak self] in
+            self?.handleRaffleDeeplink($0)
+        }
+
+        coordinator.didRequestOpenMigration = { [weak self] onFinish in
+            self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
+        }
 
         coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] _ in
             guard let self, let coordinator else { return }
@@ -944,21 +1275,62 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             removeChild(coordinator)
         }
 
+        coordinator.didSwapSuccessfully = { [weak self, weak coordinator, weak navigationController] in
+            guard let self else { return }
+
+            removeChild(coordinator)
+            guard let navigationController else {
+                openHistory()
+                return
+            }
+
+            navigationController.dismiss(animated: true) { [weak self] in
+                self?.openHistory()
+            }
+        }
+
         coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
             guard let self else { return }
 
             openBuy(wallet: wallet, isInternalPurchasing: isInternalPurchasing)
         }
 
+        coordinator.didRequestFeeDeposit = { [weak self, weak navigationController] assetId, onDismiss in
+            guard let self, let navigationController else { return }
+            Task {
+                await self.openMultichainOnrampFromAsset(
+                    wallet: wallet,
+                    assetId: assetId,
+                    presentingViewController: navigationController,
+                    onDismiss: onDismiss,
+                    onUnavailable: {
+                        self.openReceiveForFeeAsset(assetId: assetId, wallet: wallet, onClose: onDismiss)
+                    }
+                )
+            }
+        }
+
+        coordinator.didRequestOpenBattery = { [weak self] onRechargeSuccess in
+            self?.openBattery(
+                wallet: wallet,
+                keepCurrentModal: true,
+                onRechargeSuccess: onRechargeSuccess
+            )
+        }
+
         addChild(coordinator)
         coordinator.start()
 
         if let presentingViewController {
-            presentingViewController
-                .topPresentedViewController()
-                .present(navigationController, animated: true)
+            presentModally(
+                navigationController,
+                from: presentingViewController,
+                onDismiss: { [weak self, weak coordinator] in
+                    self?.removeChild(coordinator)
+                }
+            )
         } else {
-            router.dismiss(animated: true) { [weak self] in
+            router.dismiss(animated: true) { [weak self, weak coordinator] in
                 self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
                     self?.removeChild(coordinator)
                 })
@@ -1005,16 +1377,59 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.start()
 
         if let presentingViewController {
-            presentingViewController
-                .topPresentedViewController()
-                .present(navigationController, animated: true)
+            presentModally(
+                navigationController,
+                from: presentingViewController,
+                onDismiss: { [weak self, weak coordinator] in
+                    self?.removeChild(coordinator)
+                }
+            )
         } else {
-            router.dismiss(animated: true) { [weak self] in
+            router.dismiss(animated: true) { [weak self, weak coordinator] in
                 self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
                     self?.removeChild(coordinator)
                 })
             }
         }
+    }
+
+    func openPerps(on navigationController: UINavigationController?) {
+        openPerps(marketID: nil, on: navigationController)
+    }
+
+    func openPerps(marketID: Int64?, on navigationController: UINavigationController?) {
+        guard perpsCoordinator == nil,
+              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+              wallet.isMultichain
+        else {
+            return
+        }
+
+        let targetNavigationController: UINavigationController
+        if let navigationController {
+            targetNavigationController = navigationController.tabBarHostNavigationController
+        } else if let selectedNavigationController = router.rootViewController.selectedViewController as? UINavigationController {
+            targetNavigationController = selectedNavigationController.tabBarHostNavigationController
+        } else {
+            return
+        }
+
+        let coordinator = perpsModule.createPerpsCoordinator(
+            router: NavigationControllerRouter(rootViewController: targetNavigationController),
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            walletScope: keeperCoreMainAssembly.perpsAssembly.makeWalletScope(for: wallet),
+            analyticsProvider: coreAssembly.analyticsProvider
+        )
+        perpsCoordinator = coordinator
+        coordinator.didFinish = { [weak self] finished in
+            guard let self else { return }
+            self.removeChild(finished)
+            if self.perpsCoordinator === finished {
+                self.perpsCoordinator = nil
+            }
+        }
+        addChild(coordinator)
+        coordinator.start(marketID: marketID)
     }
 
     func openWebSwap(
@@ -1052,11 +1467,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.start()
 
         if let presentingViewController {
-            presentingViewController
-                .topPresentedViewController()
-                .present(navigationController, animated: true)
+            presentModally(
+                navigationController,
+                from: presentingViewController,
+                onDismiss: { [weak self, weak coordinator] in
+                    self?.removeChild(coordinator)
+                }
+            )
         } else {
-            router.dismiss(animated: true) { [weak self] in
+            router.dismiss(animated: true) { [weak self, weak coordinator] in
                 self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
                     self?.removeChild(coordinator)
                 })
@@ -1071,9 +1490,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             guard let self else { return }
 
             let service = keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
-            guard let methods = try? await service.loadFiatMethods(countryCode: nil) else { return }
+            guard let methods = try? await service.loadFiatMethods(
+                countryCode: nil,
+                walletId: activeWalletScopeId
+            ) else { return }
 
-            if Task.isCancelled { return }
+            if Task.isCancelled {
+                return
+            }
 
             guard let url = methods.buy
                 .flatMap(\.items)
@@ -1085,18 +1509,30 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink, fromStories: Bool, sendSource: SendAnalyticsSource) -> Bool {
+    func handleTonkeeperDeeplink(
+        _ deeplink: KeeperCore.Deeplink,
+        fromStories: Bool,
+        sendSource: SendAnalyticsSource,
+        origin: DeeplinkOrigin = .app
+    ) -> Bool {
         switch deeplink {
         case let .transfer(data):
             switch data {
             case let .sendTransfer(sendTransferData):
                 openSendDeeplink(
-                    recipient: sendTransferData.recipient,
-                    amount: sendTransferData.amount,
-                    comment: sendTransferData.comment,
-                    jettonAddress: sendTransferData.jettonAddress,
-                    expirationTimestamp: sendTransferData.expirationTimestamp,
-                    successReturn: sendTransferData.successReturn,
+                    transfer: sendTransferData,
+                    sendSource: sendSource
+                )
+                return true
+            case let .multichainSendTransfer(candidates):
+                openMultichainSendDeeplink(
+                    candidates: candidates,
+                    sendSource: sendSource
+                )
+                return true
+            case let .evmSendTransfer(evmTransferData):
+                openEvmSendDeeplink(
+                    transfer: evmTransferData,
                     sendSource: sendSource
                 )
                 return true
@@ -1107,21 +1543,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     amount: signRawTransferData.amount,
                     bin: signRawTransferData.bin,
                     stateInit: signRawTransferData.stateInit,
-                    expirationTimestamp: signRawTransferData.expirationTimestamp
+                    expirationTimestamp: signRawTransferData.expirationTimestamp,
+                    sendSource: sendSource
                 )
                 return true
             }
-        case .buyTon:
-            openBuyDeeplink()
-            return true
         case .staking:
             openStakingDeeplink()
             return true
         case let .pool(poolAddress):
             openPoolDetailsDeeplink(poolAddress: poolAddress)
-            return true
-        case let .exchange(provider):
-            openExchangeDeeplink(provider: provider)
             return true
         case let .swap(data):
             openSwapDeeplink(fromToken: data.fromToken, toToken: data.toToken)
@@ -1138,9 +1569,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             if let sendTokenCoordinator = sendTokenCoordinator {
                 return sendTokenCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
             }
-            if let collectiblesCoordinator = collectiblesCoordinator,
-               collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
-            {
+            if handleWalletCollectiblesPublishDeeplink(sign: sign) {
                 return true
             }
             if let webSwapCoordinator = webSwapCoordinator,
@@ -1188,14 +1617,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             return handleSignerDeeplink(data)
         case let .tonconnect(parameters):
             return handleTonConnectDeeplink(parameters)
+        case let .walletConnect(payload):
+            return handleWalletConnectDeeplink(payload)
         case let .dapp(dappURL):
             return handleDappDeeplink(url: dappURL)
-        case .browser:
-            openBrowserTabExplore()
-            coreAssembly.analyticsProvider.log(
-                eventKey: .openBrowser,
-                args: ["from": fromStories ? "story" : "deep-link"]
-            )
+        case let .browser(network):
+            openBrowserTabExplore(network: network)
+            browserCoordinator?.logBrowserOpen(from: fromStories ? .story : .deepLink)
+            return true
+        case .migration:
+            openMigrationDeeplink(source: migrationSource(fromStories: fromStories, origin: origin))
             return true
         case let .trading(gridID):
             return openTradingDeeplink(
@@ -1219,8 +1650,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         case .backup:
             openBackupDeeplink()
             return true
+        case .addWallet:
+            openAddWalletDeeplink()
+            return true
         case .main:
             openMainDeeplink()
+            return true
+        case .raffle:
+            openMysteryRaffleDeeplink()
             return true
         case let .deposit(parameters):
             openRampDeeplink(flow: .deposit, parameters: parameters, entrySource: depositAnalyticsSource(for: sendSource))
@@ -1239,16 +1676,29 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             return false
         case let .withParameters(parameters, url):
             if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.walletKitEnabled) {
-                return handleTonConnectDeeplink(url: url)
+                return handleTonConnectDeeplink(
+                    url: url,
+                    parameters: parameters
+                )
             } else {
                 return handleTonConnectDeeplink(parameters: parameters)
             }
         }
     }
 
-    private func handleTonConnectDeeplink(url: URL) -> Bool {
+    private func handleTonConnectDeeplink(
+        url: URL,
+        parameters: TonConnectParameters
+    ) -> Bool {
         ToastPresenter.hideAll()
         ToastPresenter.showToast(configuration: .loading)
+
+        keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+            .setPendingConnectionSource(
+                parameters.source,
+                clientId: parameters.clientId,
+                manifestURL: parameters.requestPayload.manifestUrl
+            )
 
         Task {
             do {
@@ -1282,7 +1732,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let window = TKWindow(windowScene: windowScene)
         window.windowLevel = .tonConnectConnect
         let router = WindowRouter(window: window)
-        Task {
+        Task { [self] in
             switch await tonConnectService.loadAppManifest(parameters: parameters) {
             case let .success(manifest):
                 await MainActor.run {
@@ -1315,7 +1765,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     }
 
                     coordinator.didRequestOpeningBrowser = { [weak self] manifest in
-                        self?.openDapp(title: manifest.name, url: manifest.url)
+                        self?.openDapp(title: manifest.name, url: manifest.url, analyticsFrom: .deepLink)
                     }
 
                     addChild(coordinator)
@@ -1344,6 +1794,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                     storesAssembly: keeperCoreMainAssembly.storesAssembly,
                     coreAssembly: coreAssembly,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                     scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                     configurationAssembly: keeperCoreMainAssembly.configurationAssembly
                 )
@@ -1352,6 +1804,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 name: name,
                 router: NavigationControllerRouter(
                     rootViewController: navigationController
+                ),
+                analyticsContext: WalletFlowAnalyticsContext(
+                    from: .main,
+                    multichainEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled)
                 )
             )
 
@@ -1382,21 +1838,31 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         return true
     }
 
+    private weak var presentedWalletPicker: TKBottomSheetViewController?
+
     func openWalletPicker() {
+        guard presentedWalletPicker == nil else { return }
+
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         let module = WalletsListAssembly.module(
             model: WalletsPickerListModel(
                 walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
             ),
-            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
-            totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
-            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            raffleStore: keeperCoreMainAssembly.storesAssembly.raffleStore,
+            isMysteryRaffleEnabled: keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
+            analyticsProvider: coreAssembly.analyticsProvider,
+            tooltipsService: coreAssembly.tooltipsAssembly.service,
+            shouldShowAddMultichainWalletTooltip: shouldShowAddMultichainWalletTooltip
         )
 
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+        presentedWalletPicker = bottomSheetViewController
 
+        var didOpenAddWallet = false
         module.output.addButtonEvent = { [weak self, unowned bottomSheetViewController] in
+            guard !didOpenAddWallet else { return }
+            didOpenAddWallet = true
             bottomSheetViewController.dismiss {
                 guard let self else { return }
                 self.openAddWallet(router: ViewControllerRouter(rootViewController: self.router.rootViewController))
@@ -1411,28 +1877,172 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             bottomSheetViewController?.dismiss()
         }
 
+        module.output.onOpenRaffle = { [weak self, unowned bottomSheetViewController] in
+            bottomSheetViewController.dismiss {
+                self?.openMysteryRaffle(source: .walletsList)
+            }
+        }
+
+        module.output.onOpenRaffleBanner = { [weak self, unowned bottomSheetViewController] url in
+            bottomSheetViewController.dismiss {
+                self?.openURL(url, title: nil)
+            }
+        }
+
         bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
 
+    func openMysteryRaffle(source: RaffleSource) {
+        MysteryRaffleCoordinator.presentCurrent(
+            from: self,
+            rootViewController: router.rootViewController,
+            source: source,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            presentedFromBanner: source == .walletsList,
+            openDeeplink: { [weak self] in self?.handleRaffleDeeplink($0) },
+            openMigration: { [weak self] onFinish in
+                self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
+            }
+        )
+    }
+
+    /// Auto-shows the raffle's story after launch. `RaffleStore` is empty until the
+    /// wallet-scoped fetch answers (and stays empty for wallets without a multichain id),
+    /// so the trigger is the store emission rather than `start()` itself.
+    private func setupRaffleLaunchStory() {
+        let raffleStore = keeperCoreMainAssembly.storesAssembly.raffleStore
+        presentRaffleLaunchStoryIfNeeded(raffles: raffleStore.getState())
+        raffleStore.addObserver(self) { coordinator, event in
+            guard case let .didUpdateRaffles(raffles) = event else { return }
+            Task { @MainActor in
+                coordinator.presentRaffleLaunchStoryIfNeeded(raffles: raffles)
+            }
+        }
+    }
+
+    private func presentRaffleLaunchStoryIfNeeded(raffles: [MultichainRaffle]) {
+        guard !didPresentRaffleLaunchStory,
+              !isBootConfigurationStoriesRunning,
+              !areLaunchStoriesSuppressed
+        else { return }
+        didPresentRaffleLaunchStory = MysteryRaffleCoordinator.presentLaunchStory(
+            raffles: raffles,
+            rootViewController: router.rootViewController,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            openDeeplink: { [weak self] in self?.handleRaffleDeeplink($0) }
+        )
+    }
+
+    /// The wallet the tab bar itself is standing on, for the requests it makes on nobody's behalf.
+    var activeWalletScopeId: String? {
+        (try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet)?
+            .multichainWalletState?
+            .walletId
+    }
+
+    /// Plays the boot configuration's stories once per launch. The two auto-open paths own
+    /// separate presenter windows, so the raffle's launch story is held back while these run —
+    /// a raffle emission landing mid-sequence would otherwise stack a second story window over
+    /// the visible one. Only the presentation waits: the `raffleStore` observer is registered
+    /// either way, so nothing is lost if this never finishes.
+    private func runBootConfigurationStories() {
+        guard !areLaunchStoriesSuppressed else { return }
+        isBootConfigurationStoriesRunning = true
+        guard let storiesController = mainCoordinatorStoriesController else {
+            finishBootConfigurationStories(didComplete: true)
+            return
+        }
+        storiesController.runBootConfigurationStories(
+            walletId: activeWalletScopeId,
+            // Claimed as each story goes on screen — a turn before `StoriesService` gets to
+            // record it — so the raffle's own auto-open can't pick the same story up in
+            // between, and stays covered if that record fails to persist.
+            didPresentStory: { [weak self] storyID in
+                guard let self else { return }
+                MysteryRaffleStoriesRouter
+                    .make(keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
+                    .excludeAutoOpenStoryIDs([storyID])
+            },
+            completion: { [weak self] didComplete in
+                self?.finishBootConfigurationStories(didComplete: didComplete)
+            }
+        )
+    }
+
+    /// Something else took over the launch — a deeplink, a push tap. The remaining boot stories
+    /// must not open on top of wherever the user is being taken, and the hold on the raffle's
+    /// launch story is released right away rather than waiting for a dismissal that the user
+    /// may never give.
+    private func cancelBootConfigurationStories() {
+        mainCoordinatorStoriesController?.cancelBootConfigurationStories()
+        finishBootConfigurationStories(didComplete: false)
+    }
+
+    /// Releases the hold the boot stories put on the raffle's launch story. `didComplete` is
+    /// false when the run ended early — a page button routed the user somewhere, or a deeplink
+    /// took over — so the launch story must not land on top of that, and only the `raffleStore`
+    /// observer is left to pick it up.
+    private func finishBootConfigurationStories(didComplete: Bool) {
+        guard isBootConfigurationStoriesRunning else { return }
+        isBootConfigurationStoriesRunning = false
+        guard didComplete else {
+            areLaunchStoriesSuppressed = true
+            return
+        }
+        presentRaffleLaunchStoryIfNeeded(raffles: keeperCoreMainAssembly.storesAssembly.raffleStore.getState())
+    }
+
+    /// Generic deeplink dispatch handed to every raffle surface (CTAs, earn tasks, story
+    /// buttons) so backend-driven payloads route like any other in-app deeplink.
+    func handleRaffleDeeplink(_ deeplink: String) {
+        _ = handleDeeplink(deeplink: deeplink, fromStories: false)
+    }
+
     func openAddWallet(router: ViewControllerRouter) {
+        // A second run would drop the coordinator this one is holding, and the dropped flow's
+        // own completion would then clear the reference to its replacement.
+        guard addWalletCoordinator == nil else { return }
         let module = AddWalletModule(
             dependencies: AddWalletModule.Dependencies(
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
         )
 
+        let multichainEnabled = keeperCoreMainAssembly
+            .configurationAssembly
+            .configuration
+            .featureEnabled(.multichainEnabled)
+
         let coordinator = module.createAddWalletCoordinator(
-            options: [.createRegular, .importRegular, .signer, .keystone, .ledger, .importWatchOnly, .importTestnet, .importTetra],
-            router: router
+            options: [
+                multichainEnabled ? .createMultichain : .createRegular,
+                .importRegular,
+                .signer,
+                .keystone,
+                .ledger,
+                .importWatchOnly,
+                .importTetra,
+            ],
+            router: router,
+            analyticsContext: module.makeWalletFlowAnalyticsContext(from: .main)
         )
         coordinator.didAddWallets = { [weak self, weak coordinator] in
-            self?.addWalletCoordinator = nil
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
+            guard let self else { return }
+            self.addWalletCoordinator = nil
+            if let coordinator {
+                self.removeChild(coordinator)
+            }
+            ToastPresenter.showNoInternetConnectionToastIfNeeded { [weak self] in
+                self?.reachabilityTracker.state == .noInternetConnection
+            }
         }
         coordinator.didCancel = { [weak self, weak coordinator] in
             self?.addWalletCoordinator = nil
@@ -1446,12 +2056,69 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.start()
     }
 
+    /// Testnet import lives in the dev menu only: the add-wallet picker offered it to everyone,
+    /// and users kept importing their seed phrase there and mistaking the testnet address for their own.
+    func openImportTestnetWallet() {
+        guard importTestnetWalletCoordinator == nil else { return }
+
+        let module = AddWalletModule(
+            dependencies: AddWalletModule.Dependencies(
+                walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+                storesAssembly: keeperCoreMainAssembly.storesAssembly,
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
+                scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+                configurationAssembly: keeperCoreMainAssembly.configurationAssembly
+            )
+        )
+
+        let navigationController = TKNavigationController()
+        navigationController.configureTransparentAppearance()
+
+        let coordinator = module.createImportWalletCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            network: .testnet,
+            analyticsContext: module.makeWalletFlowAnalyticsContext(from: .main)
+        )
+
+        var isFlowFinished = false
+        weak var presentationDelegate: ModalPresentationDelegate?
+        let finishFlow: () -> Void = { [weak self, weak coordinator] in
+            guard !isFlowFinished else { return }
+            isFlowFinished = true
+            self?.importTestnetWalletCoordinator = nil
+            self?.clearModalPresentationDelegate(presentationDelegate)
+            self?.removeChild(coordinator)
+        }
+
+        let finish: () -> Void = { [weak navigationController] in
+            navigationController?.dismiss(animated: true)
+            finishFlow()
+        }
+        coordinator.didCancel = finish
+        coordinator.didImportWallets = finish
+
+        importTestnetWalletCoordinator = coordinator
+
+        addChild(coordinator)
+        coordinator.start()
+
+        presentationDelegate = presentModally(
+            navigationController,
+            from: router.rootViewController,
+            onDismiss: finishFlow
+        )
+    }
+
     func openEditWallet(wallet: Wallet, fromViewController: UIViewController) {
         let addWalletModuleModule = AddWalletModule(
             dependencies: AddWalletModule.Dependencies(
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
@@ -1477,7 +2144,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
         let navigationController = TKNavigationController(rootViewController: module.view)
 
-        module.view.setupRightCloseButton { [weak navigationController] in
+        module.view.setupHeaderRightCloseButton { [weak navigationController] in
             navigationController?.dismiss(animated: true)
         }
 
@@ -1489,17 +2156,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let supportEmailURL = keeperCoreMainAssembly.configurationAssembly.configuration.supportLink
         let urlOpener = coreAssembly.urlOpener()
 
-        let module = SupportPopupAssembly.module(
+        SupportPopupPresenter.present(
             directSupportURL: directSupportURL,
-            supportEmailURL: supportEmailURL
+            supportEmailURL: supportEmailURL,
+            from: router.rootViewController.topPresentedViewController(),
+            onOpenURL: { urlOpener.open(url: $0) }
         )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-        bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-
-        module.output.didOpenURL = { [weak bottomSheetViewController] in
-            bottomSheetViewController?.dismiss()
-            urlOpener.open(url: $0)
-        }
     }
 
     func openSettings(wallet: Wallet) {
@@ -1508,7 +2170,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             dependencies: SettingsModule.Dependencies(
                 inAppReviewService: inAppReviewService,
                 keeperCoreMainAssembly: keeperCoreMainAssembly,
-                coreAssembly: coreAssembly
+                coreAssembly: coreAssembly,
+                depositPendingTracker: depositPendingTracker
             )
         )
 
@@ -1529,6 +2192,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openSupport()
         }
 
+        coordinator.didRequestOpenMerchantURL = { [weak self] url, fromViewController in
+            self?.openBuySellItemURL(url, fromViewController: fromViewController)
+        }
+
+        coordinator.didRequestImportTestnetWallet = { [weak self] in
+            self?.openImportTestnetWallet()
+        }
+
         coordinator.didFinish = { [weak self] in
             self?.removeChild($0)
         }
@@ -1546,9 +2217,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         guard let navigationController else {
             return
         }
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        if configuration.featureEnabled(.tradingUiEnabled),
-           wallet.network.isMainnet,
+        if wallet.network.isMainnet,
            let tradeCoordinator
         {
             tradeCoordinator.openAssetDetails(
@@ -1590,6 +2259,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
                 ChartAssembly.module(
                     token: .ton(.ton),
+                    wallet: wallet,
                     coreAssembly: coreAssembly,
                     keeperCoreMainAssembly: keeperCoreMainAssembly
                 ).view
@@ -1598,20 +2268,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
 
         module.output.didTapReceive = { [weak self] token in
-            self?.openReceive(tokens: [token], wallet: wallet)
+            self?.openReceive(token: token, wallet: wallet)
         }
 
         module.output.didTapSend = { [weak self] token in
-            self?.openSend(
+            self?.openSendResolvingMultichain(
                 wallet: wallet,
                 sendInput: .direct(item: token.sendV3Item),
                 sendSource: .jettonScreen,
                 comment: nil
             )
-        }
-
-        module.output.didTapBuyOrSell = { [weak self] in
-            self?.openBuy(wallet: wallet)
         }
 
         module.output.didTapSwap = { [weak self] token in
@@ -1636,9 +2302,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         guard let navigationController else {
             return
         }
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        if configuration.featureEnabled(.tradingUiEnabled),
-           wallet.network.isMainnet,
+        if wallet.network.isMainnet,
            let tradeCoordinator
         {
             tradeCoordinator.openAssetDetails(
@@ -1683,6 +2347,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 guard hasPrice else { return nil }
                 return ChartAssembly.module(
                     token: .ton(.jetton(jettonItem)),
+                    wallet: wallet,
                     coreAssembly: coreAssembly,
                     keeperCoreMainAssembly: keeperCoreMainAssembly
                 ).view
@@ -1691,11 +2356,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
 
         module.output.didTapReceive = { [weak self] token in
-            self?.openReceive(tokens: [token], wallet: wallet)
+            self?.openReceive(token: token, wallet: wallet)
         }
 
         module.output.didTapSend = { [weak self] token in
-            self?.openSend(
+            self?.openSendResolvingMultichain(
                 wallet: wallet,
                 sendInput: .direct(item: token.sendV3Item),
                 sendSource: .jettonScreen,
@@ -1726,6 +2391,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         Task {
             await keeperCoreMainAssembly.servicesAssembly.tronUSDTFeesService.refresh(wallet: wallet)
         }
+        if wallet.network.isMainnet,
+           let tradeCoordinator,
+           let walletTron = wallet.tron
+        {
+            tradeCoordinator.openAssetDetails(
+                preview: AssetIdResolver
+                    .usdtTrc20PreviewContext(
+                        wallet: wallet,
+                        walletTron: walletTron
+                    ),
+                on: navigationController,
+                source: analyticsSource
+            )
+            return
+        }
 
         let historyListModule = HistoryModule(
             dependencies: HistoryModule.Dependencies(
@@ -1755,6 +2435,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
                 ChartAssembly.module(
                     token: .tron(.usdt),
+                    wallet: wallet,
                     coreAssembly: coreAssembly,
                     keeperCoreMainAssembly: keeperCoreMainAssembly
                 ).view
@@ -1763,7 +2444,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
 
         module.output.didTapReceive = { [weak self] token in
-            self?.openReceive(tokens: [token], wallet: wallet)
+            self?.openReceive(token: token, wallet: wallet)
         }
 
         module.output.didTapSend = { [weak self, weak configuration] token in
@@ -1787,7 +2468,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                                     return
                                 }
                                 router.dismiss { [weak self] in
-                                    self?.openReceive(tokens: [.tron(.trx)], wallet: wallet)
+                                    self?.openReceive(token: .tron(.trx), wallet: wallet)
                                 }
                             }
                         )
@@ -1797,16 +2478,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 }
             }
 
-            openSend(
+            openSendResolvingMultichain(
                 wallet: wallet,
                 sendInput: .direct(item: token.sendV3Item),
                 sendSource: .jettonScreen,
                 comment: nil
             )
-        }
-
-        module.output.didTapBuyOrSell = { [weak self] in
-            self?.openBuy(wallet: wallet)
         }
 
         module.output.didTapSwap = { [weak self] token in
@@ -1818,6 +2495,104 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         navigationController.pushViewController(module.view, animated: true)
+    }
+
+    func openTronTRXDetails(
+        wallet: Wallet,
+        analyticsSource: AssetViewAnalyticsSource = .walletScreen,
+        navigationControllerOrNil: UINavigationController? = nil
+    ) {
+        let navigationController = navigationControllerOrNil ?? router.rootViewController.navigationController
+        guard let navigationController else {
+            return
+        }
+        if wallet.network.isMainnet,
+           let tradeCoordinator,
+           let walletTron = wallet.tron
+        {
+            tradeCoordinator.openAssetDetails(
+                preview: AssetIdResolver
+                    .trxPreviewContext(
+                        wallet: wallet,
+                        walletTron: walletTron
+                    ),
+                on: navigationController,
+                source: analyticsSource
+            )
+            return
+        }
+
+        let module = TokenDetailsAssembly.module(
+            wallet: wallet,
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+            configurator: TronTRXTokenDetailsConfigurator(
+                wallet: wallet,
+                mapper: TokenDetailsMapper(
+                    amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                    rateConverter: RateConverter()
+                )
+            ),
+            // The only TRON history available here is the USDT TRC20 feed, which says nothing
+            // about TRX, so the screen shows the header alone.
+            tokenDetailsListContentViewController: TokenDetailsHeaderContentViewController(),
+            chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+                ChartAssembly.module(
+                    token: .tron(.trx),
+                    wallet: wallet,
+                    coreAssembly: coreAssembly,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly
+                ).view
+            },
+            shouldReserveChartSpace: true
+        )
+
+        module.output.didTapReceive = { [weak self] token in
+            self?.openReceive(token: token, wallet: wallet)
+        }
+
+        module.output.didOpenURL = { [weak self] url in
+            self?.openURL(url, title: nil)
+        }
+
+        navigationController.pushViewController(module.view, animated: true)
+    }
+
+    func handleTronUsdtFees(
+        wallet: Wallet,
+        snapshot: TronUsdtFeesSnapshot,
+        trigger: TradeAssetDetailsTronFeesTrigger
+    ) {
+        switch trigger {
+        case .transfersAvailable:
+            openUsdtFees(wallet: wallet, snapshot: snapshot, reason: .topup)
+        case .banner:
+            if snapshot.isTRXOnlyRegion {
+                openReceive(token: .tron(.trx), wallet: wallet)
+            } else {
+                openUsdtFees(wallet: wallet, snapshot: snapshot, reason: .topup)
+            }
+        case .insufficientSend:
+            if snapshot.isTRXOnlyRegion {
+                openInsufficientFundsPopup(
+                    configuration: TronUsdtInsufficientTrxSheet.configuration(
+                        for: snapshot,
+                        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                        onGetTrx: { [weak self] in
+                            guard let self else {
+                                return
+                            }
+                            router.dismiss { [weak self] in
+                                self?.openReceive(token: .tron(.trx), wallet: wallet)
+                            }
+                        }
+                    )
+                )
+            } else {
+                openUsdtFees(wallet: wallet, snapshot: snapshot, reason: .insufficient)
+            }
+        }
     }
 
     func openUsdtFees(wallet: Wallet, snapshot: TronUsdtFeesSnapshot, reason: TopUpReason) {
@@ -1886,7 +2661,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         configurator.didOpenDapp = { [weak self] url, title in
-            self?.openDapp(title: title, url: url, isSilentConnect: true)
+            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink, isSilentConnect: true)
         }
 
         let module = TokenDetailsAssembly.module(
@@ -1900,11 +2675,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
 
         module.output.didTapReceive = { [weak self] token in
-            self?.openReceive(tokens: [token], wallet: wallet)
+            self?.openReceive(token: token, wallet: wallet)
         }
 
         module.output.didTapSend = { [weak self] token in
-            self?.openSend(
+            self?.openSendResolvingMultichain(
                 wallet: wallet,
                 sendInput: .direct(item: token.sendV3Item),
                 sendSource: .jettonScreen,
@@ -1941,7 +2716,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         module.output.didOpenDapp = { [weak self] url, title in
-            self?.openDapp(title: title, url: url)
+            self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
         }
 
         module.output.openJettonDetails = { [weak self] wallet, jettonItem in
@@ -1959,8 +2734,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         module.output.didTapCollect = { [weak self] in
             self?.openStakingCollect(wallet: $0, stakingPoolInfo: $1, accountStackingInfo: $2)
         }
-
-        module.view.setupBackButton()
 
         navigationController.pushViewController(module.view, animated: true)
     }
@@ -2001,8 +2774,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self?.openStakingCollect(wallet: $0, stakingPoolInfo: $1, accountStackingInfo: $2)
         }
 
-        module.view.setupBackButton()
-
         navigationController.pushViewController(module.view, animated: true)
     }
 
@@ -2017,7 +2788,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let coordinator = StakingConfirmationCoordinator(
             wallet: wallet,
             item: StakingConfirmationItem(
-                operation: .withdraw(stakingPoolInfo),
+                operation: .withdraw(stakingPoolInfo, isCollect: true),
                 amount: BigUInt(accountStackingInfo.readyWithdraw)
             ),
             keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -2043,7 +2814,16 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     func openURL(_ url: URL, title: String?) {
-        router.present(bridgeViewController(for: url, title: title))
+        if let deeplink = try? keeperCoreMainAssembly.deeplinkParser.parse(
+            string: url.absoluteString,
+            source: .browser
+        ), handleDeeplink(deeplink: deeplink, fromStories: false) {
+            return
+        }
+        router.rootViewController.modalPresentationSourceViewController().present(
+            bridgeViewController(for: url, title: title),
+            animated: true
+        )
     }
 
     private func bridgeViewController(for url: URL, title: String?) -> TKBridgeWebViewController {
@@ -2054,9 +2834,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             configuration: .default,
             deeplinkHandler: { [weak self] url in
                 guard let self else { return }
-                let deeplinkParser = DeeplinkParser()
-                let deeplink = try deeplinkParser.parse(string: url)
-                _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+                do {
+                    let deeplink = try keeperCoreMainAssembly.deeplinkParser.parse(
+                        string: url,
+                        source: .browser
+                    )
+                    _ = self.handleDeeplink(deeplink: deeplink, fromStories: false)
+                } catch let error as DeeplinkParserError where error.isSilent {
+                    return
+                } catch {
+                    throw error
+                }
             }
         )
     }
@@ -2067,9 +2855,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
-        let deeplinkHandler = TKWebViewControllerNavigationHandler { [weak self] deeplink in
-            _ = self?.handleDeeplink(deeplink: deeplink, fromStories: false)
-        }
+        let deeplinkHandler = TKWebViewControllerNavigationHandler(
+            deeplinkParser: keeperCoreMainAssembly.deeplinkParser,
+            openDeeplinkHandler: { [weak self] deeplink in
+                _ = self?.handleDeeplink(deeplink: deeplink, fromStories: false)
+            }
+        )
 
         let webViewController = TKWebViewController(url: url, handler: deeplinkHandler)
         let navigationController = UINavigationController(rootViewController: webViewController)
@@ -2105,7 +2896,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         addChild(coordinator)
         coordinator.start(deeplink: nil)
 
-        self.router.dismiss(animated: true) { [weak self] in
+        self.router.dismiss(animated: true) { [weak self, weak coordinator] in
             self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
                 self?.removeChild(coordinator)
             })
@@ -2148,7 +2939,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         flow: RampFlow,
         wallet: Wallet,
         initialDeeplink: RampDeeplinkParameters? = nil,
-        entrySource: DepositAnalyticsSource
+        entrySource: DepositAnalyticsSource,
+        presentingViewController: UIViewController? = nil,
+        onDismiss: (() -> Void)? = nil
     ) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
@@ -2180,7 +2973,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         coordinator.didTapSend = { [weak self] wallet, token in
-            self?.openSend(
+            self?.openSendResolvingMultichain(
                 wallet: wallet,
                 sendInput: .direct(item: .ton(.token(token, amount: 0))),
                 sendSource: .walletScreen,
@@ -2203,22 +2996,280 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             self.openBuySellItemURL(url, fromViewController: navigationController)
         }
 
-        coordinator.didClose = { [weak self, weak coordinator] in
-            self?.router.dismiss()
+        var isFlowFinished = false
+        weak var presentationDelegate: ModalPresentationDelegate?
+        let finishFlow: () -> Void = { [weak self, weak coordinator] in
+            guard !isFlowFinished else { return }
+            isFlowFinished = true
+            self?.clearModalPresentationDelegate(presentationDelegate)
             self?.removeChild(coordinator)
+            onDismiss?()
         }
 
-        coordinator.didRequestTRC20Enable = { [weak self] wallet, enableCompletion in
-            self?.openReceiveTRC20Popup(wallet: wallet, enableCompletion: enableCompletion)
+        let isCustomPresentation = presentingViewController != nil
+        coordinator.didClose = { [weak self, weak navigationController] in
+            if isCustomPresentation {
+                navigationController?.dismiss(animated: true)
+            } else {
+                self?.router.dismiss()
+            }
+            finishFlow()
         }
 
         addChild(coordinator)
         coordinator.start()
 
-        router.dismiss(animated: true) { [weak self] in
-            self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-                self?.removeChild(coordinator)
-            })
+        if let presentingViewController {
+            presentationDelegate = presentModally(
+                navigationController,
+                from: presentingViewController,
+                onDismiss: finishFlow
+            )
+        } else {
+            router.dismiss(animated: true) { [weak self] in
+                self?.router.present(navigationController, onDismiss: finishFlow)
+            }
+        }
+    }
+
+    func openMultichainOfframpFromAsset(
+        wallet: Wallet,
+        assetId: String,
+        resolvedAsset: MultichainAsset? = nil,
+        presentingViewController: UIViewController?
+    ) async {
+        guard case let .multichain(multichainState) = wallet.multichain else {
+            return
+        }
+
+        if let resolvedAsset {
+            openMultichainRamp(
+                mode: .withdraw(resolvedAsset),
+                wallet: wallet,
+                presentingViewController: presentingViewController
+            )
+            return
+        }
+
+        let assetResolver = MultichainSendAssetResolver(
+            multichainAssetBalanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
+            assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService()
+        )
+        guard let asset = await assetResolver.resolveAsset(for: assetId, multichainState: multichainState) else {
+            ToastPresenter.showToast(
+                configuration: ToastPresenter.Configuration(
+                    title: TKLocales.Trade.Assets.Errors.load
+                )
+            )
+            return
+        }
+
+        openMultichainRamp(
+            mode: .withdraw(asset),
+            wallet: wallet,
+            presentingViewController: presentingViewController
+        )
+    }
+
+    /// A fee the wallet is short of is topped up through the ramp with the asset already chosen.
+    /// Whatever keeps the ramp shut — no multichain addresses, an asset the resolver cannot load —
+    /// falls back to the receive screen: the user is short of gas either way and still needs a way
+    /// to deposit.
+    func openFeeRefill(
+        token: Token,
+        wallet: Wallet,
+        onRefill: @escaping () -> Void
+    ) {
+        Task {
+            await self.openMultichainOnrampFromAsset(
+                wallet: wallet,
+                assetId: token.assetId(network: wallet.network),
+                presentingViewController: self.router.rootViewController.topPresentedViewController(),
+                onDismiss: onRefill,
+                onUnavailable: {
+                    self.openReceive(token: token, wallet: wallet, onClose: onRefill)
+                }
+            )
+        }
+    }
+
+    /// The receive screen for the chain a fee asset lives on: all a deposit needs is the wallet's
+    /// address there, which stays reachable even when the ramp cannot resolve the asset itself.
+    func openReceiveForFeeAsset(
+        assetId: String,
+        wallet: Wallet,
+        onClose: @escaping () -> Void
+    ) {
+        guard case let .multichain(multichainState) = wallet.multichain,
+              let chain = MultichainChain(assetId: assetId),
+              let address = multichainState.walletAddress(
+                  for: chain,
+                  preferredType: wallet.preferredMultichainAddressType(for: chain)
+              )
+        else {
+            // Nothing was presented, so the caller has to hear about it: it is waiting on this to
+            // re-price the fee. The ramp swallowed its own error toast on the way here, having been
+            // told this fallback would take over, so the only report left to make is this one.
+            Log.w("fee deposit skipped - no receive address for \(assetId)")
+            ToastPresenter.showToast(
+                configuration: ToastPresenter.Configuration(
+                    title: TKLocales.Trade.Assets.Errors.load
+                )
+            )
+            onClose()
+            return
+        }
+        openReceive(
+            wallet: wallet,
+            address: ReceiveAddressPreview(address: address),
+            onClose: onClose
+        )
+    }
+
+    /// A caller with its own way to take a deposit passes `onUnavailable` and gets it instead of the
+    /// error toast, which is a dead end for anyone who opened the ramp to cover a fee.
+    func openMultichainOnrampFromAsset(
+        wallet: Wallet,
+        assetId: String,
+        presentingViewController: UIViewController?,
+        onDismiss: (() -> Void)? = nil,
+        onUnavailable: (() -> Void)? = nil
+    ) async {
+        guard case let .multichain(multichainState) = wallet.multichain else {
+            onUnavailable?()
+            return
+        }
+
+        let assetResolver = MultichainSendAssetResolver(
+            multichainAssetBalanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
+            assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService()
+        )
+        guard let asset = await assetResolver.resolveAsset(for: assetId, multichainState: multichainState) else {
+            guard let onUnavailable else {
+                ToastPresenter.showToast(
+                    configuration: ToastPresenter.Configuration(
+                        title: TKLocales.Trade.Assets.Errors.load
+                    )
+                )
+                return
+            }
+            Log.w("multichain ramp unavailable for fee asset \(assetId), falling back to receive")
+            onUnavailable()
+            return
+        }
+
+        openMultichainRamp(
+            mode: .deposit(asset),
+            wallet: wallet,
+            presentingViewController: presentingViewController,
+            onDismiss: onDismiss
+        )
+    }
+
+    func openDepositTon(wallet: Wallet) {
+        let presentingViewController = router.rootViewController
+        let reloadBalance: () -> Void = { [weak self] in
+            guard let balanceLoader = self?.keeperCoreMainAssembly.loadersAssembly.balanceLoader else { return }
+            Task {
+                await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
+            }
+        }
+
+        guard wallet.isMultichain else {
+            openRamp(
+                flow: .deposit,
+                wallet: wallet,
+                initialDeeplink: RampDeeplinkParameters(
+                    fromToken: TonInfo.symbol,
+                    toToken: nil,
+                    toNetwork: nil,
+                    fromNetwork: "NATIVE",
+                    cashMethod: nil,
+                    itemType: .fiat
+                ),
+                entrySource: .walletScreen,
+                presentingViewController: presentingViewController,
+                onDismiss: reloadBalance
+            )
+            return
+        }
+
+        Task { [weak self] in
+            guard let self else { return }
+            await openMultichainOnrampFromAsset(
+                wallet: wallet,
+                assetId: MultichainChain.ton.defaultSendAssetId,
+                presentingViewController: presentingViewController,
+                onDismiss: reloadBalance
+            )
+        }
+    }
+
+    func openMultichainRamp(
+        mode: MultichainRampCoordinator.Mode,
+        wallet: Wallet,
+        presentingViewController: UIViewController? = nil,
+        onDismiss: (() -> Void)? = nil
+    ) {
+        let navigationController = TKNavigationController()
+        navigationController.setNavigationBarHidden(true, animated: false)
+        let rampRouter = NavigationControllerRouter(rootViewController: navigationController)
+
+        let coordinator = MultichainRampCoordinator(
+            mode: mode,
+            router: rampRouter,
+            wallet: wallet,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            multichainRampService: keeperCoreMainAssembly.servicesAssembly.multichainRampService()
+        )
+
+        var isFlowFinished = false
+        weak var presentationDelegate: ModalPresentationDelegate?
+        let finishFlow: () -> Void = { [weak self, weak coordinator] in
+            guard !isFlowFinished else { return }
+            isFlowFinished = true
+            self?.clearModalPresentationDelegate(presentationDelegate)
+            self?.removeChild(coordinator)
+            onDismiss?()
+        }
+
+        coordinator.didTapReceiveTokens = { [weak self] wallet in
+            guard let self else { return }
+            openReceive(
+                tokens: getRampTokens(wallet: wallet),
+                wallet: wallet
+            )
+        }
+
+        coordinator.didTapOpenMerchant = { [weak self, weak navigationController] url in
+            guard let self, let navigationController else { return }
+            self.openBuySellItemURL(url, fromViewController: navigationController)
+        }
+
+        let isCustomPresentation = presentingViewController != nil
+        coordinator.didClose = { [weak self, weak navigationController] in
+            if isCustomPresentation {
+                navigationController?.dismiss(animated: true)
+            } else {
+                self?.router.dismiss()
+            }
+            finishFlow()
+        }
+
+        addChild(coordinator)
+        coordinator.start()
+
+        if let presentingViewController {
+            presentationDelegate = presentModally(
+                navigationController,
+                from: presentingViewController,
+                onDismiss: finishFlow
+            )
+        } else {
+            router.dismiss(animated: true) { [weak self] in
+                self?.router.present(navigationController, onDismiss: finishFlow)
+            }
         }
     }
 
@@ -2229,7 +3280,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         let tronDisabled = configuration.flag(\.tronDisabled, network: wallet.network) && tronBalanceIsZero
 
         var tokens: [Token] = [.ton(.ton)]
-        if !tronDisabled || wallet.isTronTurnOn, wallet.isTronAvailable {
+        if !tronDisabled, wallet.tron != nil {
             tokens.append(.tron(.usdt))
         }
 
@@ -2242,22 +3293,73 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         completion: (() -> Void)? = nil,
         onDidDisplayToken: ((Token) -> Void)? = nil
     ) {
-        let coordinator = ReceiveModule(
+        let coordinator = receiveModule()
+            .createReceiveCoordinator(
+                router: router,
+                tokens: tokens,
+                wallet: wallet,
+                didDisplayToken: onDidDisplayToken
+            )
+
+        startReceiveCoordinator(coordinator, completion: completion)
+    }
+
+    func openReceive(
+        token: Token,
+        wallet: Wallet,
+        completion: (() -> Void)? = nil,
+        onClose: (() -> Void)? = nil
+    ) {
+        guard let coordinator = receiveModule()
+            .createReceiveCoordinator(
+                router: router,
+                token: token,
+                wallet: wallet
+            )
+        else {
+            // A caller waiting to hear the screen closed is waiting for something that will never
+            // open, and a fee refill routes here as its own last resort.
+            completion?()
+            onClose?()
+            return
+        }
+
+        startReceiveCoordinator(coordinator, completion: completion, onClose: onClose)
+    }
+
+    func openReceive(
+        wallet: Wallet,
+        address: ReceiveAddressPreview,
+        completion: (() -> Void)? = nil,
+        onClose: (() -> Void)? = nil
+    ) {
+        let coordinator = receiveModule()
+            .createReceiveCoordinator(
+                router: router,
+                wallet: wallet,
+                address: address
+            )
+
+        startReceiveCoordinator(coordinator, completion: completion, onClose: onClose)
+    }
+
+    private func receiveModule() -> ReceiveModule {
+        ReceiveModule(
             dependencies: .init(
                 coreAssembly: coreAssembly,
                 keeperCoreMainAssembly: keeperCoreMainAssembly
             )
         )
-        .createReceiveCoordinator(
-            router: router,
-            tokens: tokens,
-            wallet: wallet,
-            passcodeProvider: getPasscode,
-            didDisplayToken: onDidDisplayToken
-        )
+    }
 
+    private func startReceiveCoordinator(
+        _ coordinator: ReceiveCoordinator,
+        completion: (() -> Void)?,
+        onClose: (() -> Void)? = nil
+    ) {
         coordinator.didClose = { [weak self, weak coordinator] in
             self?.removeChild(coordinator)
+            onClose?()
         }
 
         addChild(coordinator)
@@ -2291,7 +3393,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         addChild(coordinator)
         coordinator.start(deeplink: nil)
 
-        self.router.dismiss(animated: true) { [weak self] in
+        self.router.dismiss(animated: true) { [weak self, weak coordinator] in
             self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
                 self?.removeChild(coordinator)
             })
@@ -2300,58 +3402,52 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     func openBuy(wallet: Wallet, isInternalPurchasing: Bool) {
         if isInternalPurchasing {
-            openBuy(wallet: wallet)
+            openDeposit(wallet: wallet, entrySource: .walletScreen)
         } else {
             openBrowserDefiFlow()
         }
     }
 
-    func presentStory(story: KeeperCore.Story, shouldDismissCurrentOnAction: Bool = false) {
-        let fromViewController = self.router.rootViewController
-
-        mainCoordinatorStoriesController?.presentStory(
-            story: .init(id: story.story_id, story: story),
-            fromViewController: fromViewController,
-            fromAnalyticsProperty: "updates",
-            shouldDismissCurrentOnAction: shouldDismissCurrentOnAction
-        )
-    }
-
-    func openAllUpdates() {
-        let module = AllUpdatesAssembly.module(
-            storiesStore: keeperCoreMainAssembly.storesAssembly.storiesStore
-        )
-
-        module.output.didSelectStory = { [weak self] story in
-            self?.presentStory(story: story, shouldDismissCurrentOnAction: true)
-        }
-
-        let navigationController = TKNavigationController(rootViewController: module.view)
-        navigationController.setNavigationBarHidden(true, animated: false)
-
-        router.present(navigationController, onDismiss: nil)
-    }
-
     func openBuy(wallet: Wallet) {
-        let coordinator = BuyCoordinator(
+        openDeposit(wallet: wallet, entrySource: .walletScreen)
+    }
+
+    func openDeposit(
+        wallet: Wallet,
+        entrySource: DepositAnalyticsSource,
+        initialDeeplink: RampDeeplinkParameters? = nil
+    ) {
+        if wallet.isMultichain {
+            openMultichainRamp(mode: .deposit(nil), wallet: wallet)
+        } else {
+            openRamp(
+                flow: .deposit,
+                wallet: wallet,
+                initialDeeplink: initialDeeplink,
+                entrySource: entrySource
+            )
+        }
+    }
+
+    func openWithdraw(
+        wallet: Wallet,
+        entrySource: DepositAnalyticsSource,
+        initialDeeplink: RampDeeplinkParameters? = nil
+    ) {
+        if wallet.isMultichain {
+            openSendWithTokenPicker(
+                wallet: wallet,
+                sendSource: sendAnalyticsSource(for: entrySource)
+            )
+            return
+        }
+
+        openRamp(
+            flow: .withdraw,
             wallet: wallet,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly,
-            router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+            initialDeeplink: initialDeeplink,
+            entrySource: entrySource
         )
-
-        coordinator.didOpenItem = { [weak self] url, fromViewController in
-            self?.openBuySellItemURL(url, fromViewController: fromViewController)
-        }
-
-        coordinator.didClose = { [weak coordinator, weak self] in
-            self?.removeChild(coordinator)
-        }
-
-        self.router.dismiss(animated: true) { [weak self] in
-            self?.addChild(coordinator)
-            coordinator.start()
-        }
     }
 
     func openHistoryEventDetails(
@@ -2377,7 +3473,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         module.output.didTapTransactionDetails = { [weak self] url, title in
-            self?.openDapp(title: title, url: url)
+            self?.openDapp(
+                title: title,
+                url: url,
+                analyticsFrom: .deepLink
+            )
         }
         if let fromViewController {
             bottomSheetViewController.present(fromViewController: fromViewController)
@@ -2408,7 +3508,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         module.output.didTapTransactionDetails = { [weak self] url, title in
-            self?.openDapp(title: title, url: url)
+            self?.openDapp(
+                title: title,
+                url: url,
+                analyticsFrom: .deepLink
+            )
         }
 
         if let fromViewController {
@@ -2421,7 +3525,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
-    func openBackup(wallet: Wallet) {
+    func openBackup(wallet: Wallet, source: BackupSource = .walletSetupSection) {
         guard let navigationController = router.rootViewController.navigationController else { return }
         let configuration = SettingsListBackupConfigurator(
             wallet: wallet,
@@ -2431,8 +3535,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
         )
 
-        configuration.didTapBackupManually = { [weak self] in
-            self?.openManuallyBackup(wallet: wallet)
+        configuration.didTapBackupManually = { [weak self, weak navigationController] in
+            self?.openManuallyBackup(wallet: wallet, source: source) {
+                guard source == .walletSetupSection else { return }
+                navigationController?.popViewController(animated: true)
+            }
         }
 
         configuration.didTapShowRecoveryPhrase = { [weak self] in
@@ -2440,15 +3547,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak navigationController] in
+            navigationController?.popViewController(animated: true)
+        }
 
         navigationController.pushViewController(module.viewController, animated: true)
     }
 
     func openBattery(
         wallet: Wallet,
-        jettonMasterAddress: Address? = nil,
-        keepCurrentModal: Bool = false
+        jettonMasterAddress: TonSwift.Address? = nil,
+        keepCurrentModal: Bool = false,
+        onRechargeSuccess: (() -> Void)? = nil
     ) {
         let navigationController = TKNavigationController()
         navigationController.setNavigationBarHidden(true, animated: false)
@@ -2462,11 +3572,25 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
 
         coordinator.didOpenRefundURL = { [weak self] url, title in
-            self?.openDapp(title: title, url: url)
+            if wallet.isMultichain {
+                self?.openBatteryWeb(wallet: wallet, url: url, title: title)
+            } else {
+                self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
+            }
         }
 
-        coordinator.didRechargeSuccess = { [weak self] in
-            self?.openHistory()
+        coordinator.didRechargeSuccess = { [weak self, weak navigationController, weak coordinator] in
+            if keepCurrentModal {
+                navigationController?.dismiss(
+                    animated: true,
+                    completion: { [weak self, weak coordinator] in
+                        self?.removeChild(coordinator)
+                        onRechargeSuccess?()
+                    }
+                )
+            } else {
+                self?.openHistory()
+            }
         }
 
         coordinator.didFinish = { [weak self, weak navigationController] in
@@ -2494,7 +3618,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                 }
             )
         } else {
-            self.router.dismiss(animated: true) { [weak self] in
+            self.router.dismiss(animated: true) { [weak self, coordinator] in
                 self?.router.present(
                     navigationController,
                     completion: {
@@ -2505,27 +3629,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
                     }
                 )
             }
-        }
-    }
-
-    func openReceiveTRC20Popup(
-        wallet: Wallet,
-        enableCompletion: (() -> Void)? = nil
-    ) {
-        let module = ReceiveTRC20PopupAssembly.module(
-            wallet: wallet,
-            keeperCoreAssembly: keeperCoreMainAssembly,
-            passcodeProvider: getPasscode
-        )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-        bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-
-        module.output.didFinish = { [weak bottomSheetViewController] in
-            bottomSheetViewController?.dismiss()
-        }
-
-        module.output.didEnable = {
-            enableCompletion?()
         }
     }
 
@@ -2546,7 +3649,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coordinator.start()
     }
 
-    func openManuallyBackup(wallet: Wallet) {
+    func openManuallyBackup(
+        wallet: Wallet,
+        source: BackupSource = .settings,
+        onComplete: (() -> Void)? = nil
+    ) {
         guard let navigationController = router.rootViewController.navigationController else { return }
         let coordinator = BackupModule(
             dependencies: BackupModule.Dependencies(
@@ -2555,9 +3662,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             )
         ).createBackupCoordinator(
             router: NavigationControllerRouter(rootViewController: navigationController),
-            wallet: wallet
+            wallet: wallet,
+            source: source
         )
 
+        coordinator.didCompleteBackup = onComplete
         coordinator.didFinish = { [weak self] in
             self?.removeChild($0)
         }
@@ -2576,38 +3685,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     func openUnverifiedTokenInfoPopup() {
-        AssetInfoPopupPresenter.presentUnverifiedToken(
+        PopupContentPresenter.presentUnverifiedToken(
             from: router.rootViewController.topPresentedViewController()
         )
     }
 
-    func openDapp(title: String?, url: URL, isSilentConnect: Bool = false) {
-        let dapp = Dapp(
-            name: title ?? "",
-            description: "",
-            icon: nil,
-            poster: nil,
-            url: url,
-            textColor: nil,
-            excludeCountries: nil,
-            includeCountries: nil
+    func openVerifiedTokenInfoPopup() {
+        PopupContentPresenter.presentVerifiedToken(
+            from: router.rootViewController.topPresentedViewController()
         )
-
-        let controllerRouter = ViewControllerRouter(rootViewController: router.rootViewController)
-        let coordinator = DappCoordinator(
-            router: controllerRouter,
-            dapp: dapp,
-            isSilentConnect: isSilentConnect,
-            coreAssembly: coreAssembly,
-            keeperCoreMainAssembly: keeperCoreMainAssembly
-        )
-
-        coordinator.didHandleDeeplink = { [weak self] deeplink in
-            _ = self?.handleTonkeeperDeeplink(deeplink, fromStories: false, sendSource: .deepLink)
-        }
-
-        addChild(coordinator)
-        coordinator.start()
     }
 
     private nonisolated static var preservePresentedStackKey: String {
@@ -2615,33 +3701,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
 
     private func openHistory(fromNavigationController: UINavigationController? = nil) {
-        let tradingUiEnabled = keeperCoreMainAssembly
-            .configurationAssembly
-            .configuration
-            .featureEnabled(.tradingUiEnabled)
-
-        if tradingUiEnabled {
-            let coordinator = createHistoryCoordinator(navigationController: fromNavigationController)
-            historyCoordinator.map(removeChild)
-            historyCoordinator = coordinator
-            addChild(coordinator)
-            if fromNavigationController != nil {
-                coordinator.start()
-            } else {
-                router.dismiss(animated: true) {
-                    coordinator.start()
-                }
-            }
+        guard let coordinator = createStandaloneHistoryCoordinator(navigationController: fromNavigationController) else {
+            return
+        }
+        standaloneHistoryCoordinator.map(removeChild)
+        standaloneHistoryCoordinator = coordinator
+        addChild(coordinator)
+        if fromNavigationController != nil {
+            coordinator.start()
         } else {
-            guard
-                let historyViewController = historyCoordinator?.router.rootViewController,
-                let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController)
-            else {
-                return
+            router.dismiss(animated: true) {
+                coordinator.start()
             }
-            router.rootViewController.navigationController?.popToRootViewController(animated: true)
-            router.rootViewController.selectedIndex = index
-            router.dismiss(animated: true)
         }
     }
 
@@ -2655,15 +3726,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     private func openMainDeeplink() {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
-        guard let walletViewController = walletCoordinator?.router.rootViewController else { return }
+        guard let walletViewController = walletTabNavigationCoordinator()?.router.rootViewController else { return }
         _ = openDeeplinkTab(
             for: walletViewController
         )
     }
 
-    private func openBrowserTabExplore() {
+    private func openBrowserTabExplore(network: MultichainChain? = nil) {
         openBrowserTab()
         browserCoordinator?.openExplore()
+        if let network {
+            browserCoordinator?.selectExploreNetworkFilter(network)
+        }
     }
 
     private func openBrowserDefiFlow() {
@@ -2705,13 +3779,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
     private func selectTab(at index: Int) {
         router.rootViewController.selectedIndex = index
-        playAnimatedTabBarItemIfNeeded(at: index)
-    }
-
-    private func playAnimatedTabBarItemIfNeeded(at index: Int) {
-        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.tradingUiEnabled) else {
-            return
-        }
         router.rootViewController.playAnimatedTabBarItem(at: index)
     }
 
@@ -2763,6 +3830,19 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
     }
 
+    private func sendAnalyticsSource(for entrySource: DepositAnalyticsSource) -> SendAnalyticsSource {
+        switch entrySource {
+        case .walletScreen:
+            .walletScreen
+        case .jettonScreen:
+            .jettonScreen
+        case .deepLink:
+            .deepLink
+        case .qrCode:
+            .qrCode
+        }
+    }
+
     private func assetViewAnalyticsSource(for sendSource: SendAnalyticsSource) -> AssetViewAnalyticsSource {
         switch sendSource {
         case .qrCode:
@@ -2788,16 +3868,64 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         )
     }
 
-    private func getPasscode() async -> String? {
-        return await PasscodeInputCoordinator.getPasscode(
-            parentCoordinator: self,
-            parentRouter: router,
-            mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    var isActiveWalletMultichain: Bool {
+        guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            return false
+        }
+        return wallet.isMultichain
+    }
+
+    private func openCryptoAssetsFromWallet() {
+        guard
+            let tradeCoordinator,
+            let targetNavigationController = (
+                router.rootViewController.selectedViewController as? UINavigationController
+            ) ?? walletTabNavigationCoordinator()?.router.rootViewController
+        else {
+            return
+        }
+
+        tradeCoordinator.openAssetList(
+            initialCategory: .all,
+            tradeFlowAnalyticsSource: .walletScreen,
+            on: targetNavigationController
         )
     }
 
+    private func walletTabNavigationCoordinator() -> RouterCoordinator<NavigationControllerRouter>? {
+        if isActiveWalletMultichain {
+            multichainWalletCoordinator ?? walletCoordinator
+        } else {
+            walletCoordinator ?? multichainWalletCoordinator
+        }
+    }
+
+    private func walletTabCoordinatorOutput() -> WalletTabCoordinatorOutput? {
+        if isActiveWalletMultichain {
+            multichainWalletCoordinator ?? walletCoordinator
+        } else {
+            walletCoordinator ?? multichainWalletCoordinator
+        }
+    }
+
+    private func handleWalletCollectiblesPublishDeeplink(sign: Data) -> Bool {
+        if let walletCoordinator,
+           walletCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
+        {
+            return true
+        }
+        if let multichainWalletCoordinator,
+           multichainWalletCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
+        {
+            return true
+        }
+        return false
+    }
+
     private func didOpenAppWithPushNotificationTapHandler(userInfo: [AnyHashable: Any]?) {
+        areLaunchStoriesSuppressed = true
+        cancelBootConfigurationStories()
+
         let pushId = userInfo?["push_id"] as? String
         let link = userInfo?["link"] as? String
         let dappUrl = userInfo?["dapp_url"] as? String
@@ -2809,7 +3937,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
             openURL(linkURL, title: nil)
         } else if let dappUrl, let dappUrlURL = URL(string: dappUrl) {
             resolvedDeeplink = dappUrl
-            openURL(dappUrlURL, title: nil)
+            openDapp(title: nil, url: dappUrlURL, analyticsFrom: .push)
         } else {
             let deeplink = link ?? dappUrl ?? deeplink
             resolvedDeeplink = deeplink
@@ -2836,12 +3964,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
 extension MainCoordinator: AppStateTrackerObserver {
     func didUpdateState(_ state: TKCore.AppStateTracker.State) {
-        switch (appStateTracker.state, reachabilityTracker.state) {
-        case (.active, .connected):
+        switch appStateTracker.state {
+        case .active:
             mainController.startUpdates()
-        case (.background, _):
+        case .background:
             mainController.stopUpdates()
-        default: return
+        case .resign:
+            return
         }
     }
 }
@@ -2850,11 +3979,50 @@ extension MainCoordinator: AppStateTrackerObserver {
 
 extension MainCoordinator: ReachabilityTrackerObserver {
     func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
-        switch reachabilityTracker.state {
-        case .connected:
-            mainController.startUpdates()
+        switch (appStateTracker.state, reachabilityTracker.state) {
+        case (.active, .connected):
+            mainController.reconnectUpdates()
         default:
             return
         }
+    }
+}
+
+private extension MainCoordinator {
+    @discardableResult
+    func presentModally(
+        _ viewController: UIViewController,
+        from presentingViewController: UIViewController,
+        onDismiss: @escaping () -> Void
+    ) -> ModalPresentationDelegate {
+        let delegate = ModalPresentationDelegate { [weak self] in
+            self?.modalPresentationDelegate = nil
+            onDismiss()
+        }
+        modalPresentationDelegate = delegate
+
+        presentingViewController.topPresentedViewController().present(viewController, animated: true) {
+            viewController.presentationController?.delegate = delegate
+        }
+        return delegate
+    }
+
+    /// A programmatic dismissal never reaches `presentationControllerDidDismiss`, so a flow that
+    /// closes itself has to release its delegate. Identity keeps it from dropping a newer presentation.
+    func clearModalPresentationDelegate(_ delegate: ModalPresentationDelegate?) {
+        guard let delegate, modalPresentationDelegate === delegate else { return }
+        modalPresentationDelegate = nil
+    }
+}
+
+private final class ModalPresentationDelegate: NSObject, UIAdaptivePresentationControllerDelegate {
+    private let onDismiss: () -> Void
+
+    init(onDismiss: @escaping () -> Void) {
+        self.onDismiss = onDismiss
+    }
+
+    func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+        onDismiss()
     }
 }

@@ -2,6 +2,7 @@ import Foundation
 import TonSwift
 
 public final class StoresAssembly {
+    private let storeCacheLock = NSRecursiveLock()
     private let apiAssembly: APIAssembly
     private let coreAssembly: CoreAssembly
     private let repositoriesAssembly: RepositoriesAssembly
@@ -36,6 +37,16 @@ public final class StoresAssembly {
         return store
     }
 
+    private var _raffleStore: RaffleStore?
+    public var raffleStore: RaffleStore {
+        if let _raffleStore {
+            return _raffleStore
+        }
+        let store = RaffleStore()
+        _raffleStore = store
+        return store
+    }
+
     private weak var _walletsStore: WalletsStore?
     public var walletsStore: WalletsStore {
         if let _walletsStore {
@@ -48,15 +59,17 @@ public final class StoresAssembly {
 
     private weak var _balanceStore: BalanceStore?
     public var balanceStore: BalanceStore {
-        if let _balanceStore {
-            return _balanceStore
+        storeCacheLock.withLock {
+            if let _balanceStore {
+                return _balanceStore
+            }
+            let store = BalanceStore(
+                walletsStore: walletsStore,
+                repository: repositoriesAssembly.walletBalanceRepositoryV2()
+            )
+            _balanceStore = store
+            return store
         }
-        let store = BalanceStore(
-            walletsStore: walletsStore,
-            repository: repositoriesAssembly.walletBalanceRepositoryV2()
-        )
-        _balanceStore = store
-        return store
     }
 
     private weak var _convertedBalanceStore: ConvertedBalanceStore?
@@ -113,6 +126,19 @@ public final class StoresAssembly {
         return store
     }
 
+    private var _multichainPortfolioStore: MultichainPortfolioStore?
+    public var multichainPortfolioStore: MultichainPortfolioStore {
+        if let _multichainPortfolioStore {
+            return _multichainPortfolioStore
+        }
+        let store = MultichainPortfolioStore(
+            walletsStore: walletsStore,
+            repository: repositoriesAssembly.multichainPortfolioRepository()
+        )
+        _multichainPortfolioStore = store
+        return store
+    }
+
     private weak var _currencyStore: CurrencyStore?
     public var currencyStore: CurrencyStore {
         if let _currencyStore {
@@ -148,19 +174,21 @@ public final class StoresAssembly {
 
     private var _walletNFTsStores = [Wallet: Weak<WalletNFTStore>]()
     public func walletNFTsStore(wallet: Wallet, nftService: AccountNFTService) -> WalletNFTStore {
-        if let weakWrapper = _walletNFTsStores[wallet],
-           let store = weakWrapper.value
-        {
+        storeCacheLock.withLock {
+            if let weakWrapper = _walletNFTsStores[wallet],
+               let store = weakWrapper.value
+            {
+                return store
+            }
+            let store = WalletNFTStore(
+                wallet: wallet,
+                repository: repositoriesAssembly.walletNFTRepository(),
+                nftManagementStore: walletNFTsManagementStore(wallet: wallet),
+                nftsService: nftService
+            )
+            _walletNFTsStores[wallet] = Weak(value: store)
             return store
         }
-        let store = WalletNFTStore(
-            wallet: wallet,
-            repository: repositoriesAssembly.walletNFTRepository(),
-            nftManagementStore: walletNFTsManagementStore(wallet: wallet),
-            nftsService: nftService
-        )
-        _walletNFTsStores[wallet] = Weak(value: store)
-        return store
     }
 
     private weak var _securityStore: SecurityStore?
@@ -176,9 +204,10 @@ public final class StoresAssembly {
 
     private weak var _stackingPoolsStore: StakingPoolsStore?
     public var stackingPoolsStore: StakingPoolsStore {
-        if let store = _stackingPoolsStore {
-            return store
-        } else {
+        storeCacheLock.withLock {
+            if let store = _stackingPoolsStore {
+                return store
+            }
             let store = StakingPoolsStore(
                 walletsStore: walletsStore,
                 repository: repositoriesAssembly.stakingPoolsInfoRepository()
@@ -230,17 +259,19 @@ public final class StoresAssembly {
 
     private var _walletNFTsManagementStore = [Wallet: Weak<WalletNFTsManagementStore>]()
     public func walletNFTsManagementStore(wallet: Wallet) -> WalletNFTsManagementStore {
-        if let weakWrapper = _walletNFTsManagementStore[wallet],
-           let store = weakWrapper.value
-        {
+        storeCacheLock.withLock {
+            if let weakWrapper = _walletNFTsManagementStore[wallet],
+               let store = weakWrapper.value
+            {
+                return store
+            }
+            let store = WalletNFTsManagementStore(
+                wallet: wallet,
+                accountNFTsManagementRepository: repositoriesAssembly.accountNFTsManagementRepository()
+            )
+            _walletNFTsManagementStore[wallet] = Weak(value: store)
             return store
         }
-        let store = WalletNFTsManagementStore(
-            wallet: wallet,
-            accountNFTsManagementRepository: repositoriesAssembly.accountNFTsManagementRepository()
-        )
-        _walletNFTsManagementStore[wallet] = Weak(value: store)
-        return store
     }
 
     private weak var _walletNotificationStore: WalletNotificationStore?
@@ -286,6 +317,19 @@ public final class StoresAssembly {
                 tonConnectAppsStore: tonConnectAppsStore
             )
             _connectedAppsStore = store
+            return store
+        }
+    }
+
+    private weak var _walletConnectSessionsStore: WalletConnectSessionsStore?
+    public func walletConnectSessionsStore(walletConnectService: any WalletConnectService) -> WalletConnectSessionsStore {
+        if let _walletConnectSessionsStore {
+            return _walletConnectSessionsStore
+        } else {
+            let store = WalletConnectSessionsStore(
+                walletConnectService: walletConnectService
+            )
+            _walletConnectSessionsStore = store
             return store
         }
     }

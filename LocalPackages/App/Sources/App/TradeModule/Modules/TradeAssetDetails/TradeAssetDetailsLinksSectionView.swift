@@ -7,37 +7,21 @@ private extension TradingAssetLinkKind {
     var image: SwiftUI.Image {
         switch self {
         case .telegram:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.telegram
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.telegram
         case .x:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.x
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.x
         case .facebook:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.facebook
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.facebook
         case .instagram:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.instagram
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.instagram
         case .discord:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.discord
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.discord
         case .getgems:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.getgems
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.getgems
         case .github:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.github
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.github
         case .website:
-            SwiftUI.Image(
-                uiImage: .TKUIKit.Icons.Size16.globe
-            )
+            SwiftUI.Image.TKUIKit.Icons.Size16.globe
         }
     }
 }

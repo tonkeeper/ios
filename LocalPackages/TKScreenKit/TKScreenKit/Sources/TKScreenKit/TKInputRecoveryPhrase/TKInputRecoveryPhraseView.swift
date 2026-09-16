@@ -225,8 +225,15 @@ private extension TKInputRecoveryPhraseView {
     func updateSeedPhraseModeSegmentedControl() {
         if let seedPhraseInputControlModel {
             seedPhraseModeSegmentedControlContainer.isHidden = false
-            seedPhraseModeSegmentedControl.tabs = seedPhraseInputControlModel.tabs
-            seedPhraseModeSegmentedControl.selectedIndex = seedPhraseInputControlModel.selectedIndex
+            if seedPhraseModeSegmentedControl.tabs != seedPhraseInputControlModel.tabs {
+                seedPhraseModeSegmentedControl.tabs = seedPhraseInputControlModel.tabs
+            }
+            if seedPhraseModeSegmentedControl.selectedIndex != seedPhraseInputControlModel.selectedIndex {
+                seedPhraseModeSegmentedControl.setSelectedIndex(
+                    seedPhraseInputControlModel.selectedIndex,
+                    animated: true
+                )
+            }
             seedPhraseModeSegmentedControl.didSelectTab = { _, index in
                 seedPhraseInputControlModel.selectionClosure(index)
             }
@@ -268,17 +275,7 @@ private extension TKInputRecoveryPhraseView {
 }
 
 private extension CGFloat {
-    static let topSpacing: CGFloat = 44
     static let afterWordInputSpacing: CGFloat = 16
-}
-
-private extension UIEdgeInsets {
-    static let continueButtonContainerPadding = UIEdgeInsets(
-        top: 16,
-        left: 0,
-        bottom: 32,
-        right: 0
-    )
 }
 
 private extension NSDirectionalEdgeInsets {
@@ -294,12 +291,5 @@ private extension NSDirectionalEdgeInsets {
         leading: 32,
         bottom: 0,
         trailing: 32
-    )
-
-    static let switchWordsCountButtonsStackViewPadding = NSDirectionalEdgeInsets(
-        top: 4,
-        leading: 4,
-        bottom: 4,
-        trailing: 4
     )
 }

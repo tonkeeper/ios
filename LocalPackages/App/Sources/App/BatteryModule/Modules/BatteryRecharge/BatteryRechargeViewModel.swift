@@ -1,9 +1,9 @@
 import BigInt
+import Foundation
 import KeeperCore
 import TKCore
 import TKLocalize
 import TKUIKit
-import UIKit
 
 protocol BatteryRechargeModuleOutput: AnyObject {
     var didTapContinue: ((_ payload: BatteryRechargePayload) -> Void)? { get set }
@@ -14,17 +14,7 @@ protocol BatteryRechargeModuleInput: AnyObject {
     func setToken(token: TonToken)
 }
 
-protocol BatteryRechargeViewModel: AnyObject {
-    var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)? { get set }
-    var didUpdateTitle: ((String) -> Void)? { get set }
-    var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)? { get set }
-    var didUpdateTokenPickerButtonConfiguration: ((TokenPickerButton.Configuration) -> Void)? { get set }
-    var didUpdateTokenPickerAction: ((@escaping () -> Void) -> Void)? { get set }
-
-    func viewDidLoad()
-}
-
-final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, BatteryRechargeModuleOutput, BatteryRechargeModuleInput {
+final class BatteryRechargeViewModelImplementation: ObservableObject, BatteryRechargeModuleOutput, BatteryRechargeModuleInput {
     // MARK: - BatteryRechargeModuleOutput
 
     var didTapContinue: ((BatteryRechargePayload) -> Void)?
@@ -36,42 +26,104 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
         model.token = token
     }
 
-    // MARK: - BatteryRechargeViewModel
+    // MARK: - State
 
-    var didUpdateSnapshot: ((BatteryRecharge.Snapshot) -> Void)?
-    var didUpdateTitle: ((String) -> Void)?
-    var didUpdateContinueButtonConfiguration: ((TKButton.Configuration) -> Void)?
-    var didUpdateTokenPickerButtonConfiguration: ((TokenPickerButton.Configuration) -> Void)?
-    var didUpdateTokenPickerAction: ((@escaping () -> Void) -> Void)?
+    struct OptionRow: Identifiable {
+        let id: String
+        let title: String
+        let caption: String
+        let batteryState: BatterySwiftUIViewConfig.State
+        let isEnabled: Bool
+        let isSelected: Bool
+    }
+
+    struct TokenPickerState {
+        enum Icon {
+            case ton
+            case jetton(URL?)
+        }
+
+        let symbol: String
+        let icon: Icon
+
+        init(token: TonToken) {
+            switch token {
+            case .ton:
+                symbol = TonInfo.symbol
+                icon = .ton
+            case let .jetton(jettonItem):
+                symbol = jettonItem.jettonInfo.symbol ?? ""
+                icon = .jetton(jettonItem.jettonInfo.imageURL)
+            }
+        }
+    }
+
+    let title: String
+    let isGift: Bool
+
+    @Published private(set) var optionRows = [OptionRow]()
+    @Published private(set) var isCustomInputVisible = false
+    @Published private(set) var isContinueEnabled = false
+    @Published private(set) var tokenPickerState: TokenPickerState
+
+    var didTapClose: (() -> Void)?
+    var endEditing: (() -> Void)?
+
+    // MARK: - Dependencies
+
+    private let model: BatteryRechargeModel
+    private let amountFormatter: AmountFormatter
+    private let amountInputModuleInput: AmountInputModuleInput
+    private let amountInputModuleOutput: AmountInputModuleOutput
+    private let promocodeOutput: BatteryPromocodeInputModuleOutput
+    private let recipientInputOutput: RecipientInputModuleOutput
+
+    // MARK: - Init
+
+    init(
+        model: BatteryRechargeModel,
+        amountFormatter: AmountFormatter,
+        amountInputModuleInput: AmountInputModuleInput,
+        amountInputModuleOutput: AmountInputModuleOutput,
+        promocodeOutput: BatteryPromocodeInputModuleOutput,
+        recipientInputOutput: RecipientInputModuleOutput
+    ) {
+        self.model = model
+        self.amountFormatter = amountFormatter
+        self.amountInputModuleInput = amountInputModuleInput
+        self.amountInputModuleOutput = amountInputModuleOutput
+        self.promocodeOutput = promocodeOutput
+        self.recipientInputOutput = recipientInputOutput
+        title = model.isGift ? TKLocales.Battery.Recharge.giftTitle : TKLocales.Battery.Recharge.title
+        isGift = model.isGift
+        tokenPickerState = TokenPickerState(token: model.token)
+    }
 
     func viewDidLoad() {
-        didUpdateTitle?(model.isGift ? TKLocales.Battery.Recharge.giftTitle : TKLocales.Battery.Recharge.title)
-        didUpdateTokenPickerAction? { [weak self] in
-            guard let self else { return }
-            didSelectTokenPicker?(model.token)
-        }
         setupPromocode()
         setupRecipientInput()
 
         model.didUpdateIsContinueEnable = { [weak self] in
-            self?.updateContinueButton()
+            guard let self else { return }
+            isContinueEnabled = model.isContinueEnable
         }
         model.didUpdateOptionItems = { [weak self] in
-            self?.updateList()
+            self?.updateOptionRows()
         }
         model.didUpdateIsCustomInputEnable = { [weak self] in
             guard let self else { return }
             if !model.isCustomInputEnable {
                 amountInputModuleInput.reset()
             }
-            updateList()
+            isCustomInputVisible = model.isCustomInputEnable
+            updateOptionRows()
         }
         model.didUpdateToken = { [weak self] in
             guard let self else { return }
             amountInputModuleInput.sourceUnit = model.token
             amountInputModuleInput.sourceBalance = model.balance
             amountInputModuleInput.destinationUnit = ChargeItem()
-            didUpdateTokenPickerButtonConfiguration?(.createConfiguration(token: model.token))
+            tokenPickerState = TokenPickerState(token: model.token)
         }
 
         model.didUpdateRate = { [weak self] in
@@ -91,92 +143,40 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
         model.start()
     }
 
-    private var snapshot = BatteryRecharge.Snapshot()
+    // MARK: - Actions
 
-    private let model: BatteryRechargeModel
-    private let amountFormatter: AmountFormatter
-    private let amountInputModuleInput: AmountInputModuleInput
-    private let amountInputModuleOutput: AmountInputModuleOutput
-    private let promocodeOutput: BatteryPromocodeInputModuleOutput
-    private let recipientInputOutput: RecipientInputModuleOutput
-
-    init(
-        model: BatteryRechargeModel,
-        amountFormatter: AmountFormatter,
-        amountInputModuleInput: AmountInputModuleInput,
-        amountInputModuleOutput: AmountInputModuleOutput,
-        promocodeOutput: BatteryPromocodeInputModuleOutput,
-        recipientInputOutput: RecipientInputModuleOutput
-    ) {
-        self.model = model
-        self.amountFormatter = amountFormatter
-        self.amountInputModuleInput = amountInputModuleInput
-        self.amountInputModuleOutput = amountInputModuleOutput
-        self.promocodeOutput = promocodeOutput
-        self.recipientInputOutput = recipientInputOutput
-    }
-
-    private func updateList() {
-        var snapshot = BatteryRecharge.Snapshot()
-
-        setupRecipientSnapshotSection(snapshot: &snapshot)
-        setupOptionsSection(snapshot: &snapshot)
-        setupCustomInputSection(snapshot: &snapshot)
-        setupPromocodeInputSection(snapshot: &snapshot)
-        setupContinueButtonSection(snapshot: &snapshot)
-
-        didUpdateSnapshot?(snapshot)
-    }
-
-    func setupOptionsSection(snapshot: inout BatteryRecharge.Snapshot) {
-        var snapshotItems = [BatteryRecharge.SnapshotItem]()
-
-        for item in model.optionsItems {
-            let snapshotItem = createOptionSnapshotItem(option: item)
-            snapshotItems.append(snapshotItem)
-        }
-
-        snapshot.appendSections([.options])
-        snapshot.appendItems(snapshotItems, toSection: .options)
-    }
-
-    func setupPromocodeInputSection(snapshot: inout BatteryRecharge.Snapshot) {
-        snapshot.appendSections([.promocode])
-        snapshot.appendItems([.promocode], toSection: .promocode)
-    }
-
-    func setupRecipientSnapshotSection(snapshot: inout BatteryRecharge.Snapshot) {
-        guard model.isGift else { return }
-        snapshot.appendSections([.recipient])
-        snapshot.appendItems([.recipient], toSection: .recipient)
-    }
-
-    func setupCustomInputSection(snapshot: inout BatteryRecharge.Snapshot) {
-        guard model.isCustomInputEnable else {
+    func selectOption(id: String) {
+        guard let option = model.optionsItems.first(where: { $0.identifier == id }),
+              option.isEnable
+        else {
             return
         }
-        snapshot.appendSections([.customInput])
-        snapshot.appendItems([.customInput], toSection: .customInput)
+        model.selectedOptionItem = option
+        updateOptionRows()
     }
 
-    func setupContinueButtonSection(snapshot: inout BatteryRecharge.Snapshot) {
-        snapshot.appendSections([.continueButton])
-        snapshot.appendItems([.continueButton], toSection: .continueButton)
+    func openTokenPicker() {
+        didSelectTokenPicker?(model.token)
     }
 
-    func createOptionSnapshotItem(option: BatteryRechargeModel.OptionItem) -> BatteryRecharge.SnapshotItem {
-        let title = {
-            switch option {
-            case let .prefilled(prefilled):
-                return "\(prefilled.chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: prefilled.chargesCount))"
-            case .custom:
-                return TKLocales.Battery.Recharge.СustomInput.title
-            }
-        }()
+    func tapContinue() {
+        didTapContinue?(model.getConfirmationPayload())
+    }
 
-        let caption = {
+    func close() {
+        didTapClose?()
+    }
+
+    // MARK: - State updates
+
+    private func updateOptionRows() {
+        optionRows = model.optionsItems.map { option in
+            let title: String
+            let caption: String
+            let batteryState: BatterySwiftUIViewConfig.State
             switch option {
             case let .prefilled(prefilled):
+                title = "\(prefilled.chargesCount) \(TKLocales.Battery.Refill.chargesCount(count: prefilled.chargesCount))"
                 let tokenFormatted = amountFormatter.format(
                     amount: prefilled.tokenAmount,
                     fractionDigits: prefilled.tokenDigits,
@@ -187,59 +187,26 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
                     accessory: .fiat(prefilled.currency),
                     style: .compact
                 )
-                return "\(tokenFormatted) · \(fiatFormatted) "
+                caption = "\(tokenFormatted) · \(fiatFormatted) "
+                batteryState = .fill(prefilled.batteryPercent)
             case .custom:
-                return TKLocales.Battery.Recharge.СustomInput.caption
+                title = TKLocales.Battery.Recharge.СustomInput.title
+                caption = TKLocales.Battery.Recharge.СustomInput.caption
+                batteryState = .emptyTinted
             }
-        }()
 
-        let batteryViewState: BatteryView.State = {
-            switch option {
-            case let .prefilled(prefilled):
-                return .fill(prefilled.batteryPercent)
-            case .custom:
-                return .emptyTinted
-            }
-        }()
-
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2),
-                    ]
-                )
+            return OptionRow(
+                id: option.identifier,
+                title: title,
+                caption: caption,
+                batteryState: batteryState,
+                isEnabled: option.isEnable,
+                isSelected: option.identifier == model.selectedOptionItem?.identifier
             )
-        )
-
-        return BatteryRecharge.SnapshotItem.rechargeOption(
-            BatteryRecharge.RechargeOptionItem(
-                identifier: option.identifier,
-                listCellConfiguration: cellConfiguration,
-                isEnable: option.isEnable,
-                batteryViewState: batteryViewState,
-                onSelection: { [weak self] in
-                    self?.model.selectedOptionItem = option
-                }
-            )
-        )
-    }
-
-    func updateContinueButton() {
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continueAction))
-        buttonConfiguration.isEnabled = model.isContinueEnable
-        buttonConfiguration.action = { [weak self] in
-            guard let self else { return }
-            let payload = model.getConfirmationPayload()
-            didTapContinue?(payload)
         }
-
-        didUpdateContinueButtonConfiguration?(buttonConfiguration)
     }
 
-    func setupPromocode() {
+    private func setupPromocode() {
         promocodeOutput.didUpdateResolvingState = { [weak self] in
             switch $0 {
             case let .success(promocode):
@@ -250,7 +217,7 @@ final class BatteryRechargeViewModelImplementation: BatteryRechargeViewModel, Ba
         }
     }
 
-    func setupRecipientInput() {
+    private func setupRecipientInput() {
         recipientInputOutput.didResolveRecipient = { [weak self] recipient in
             self?.model.recipient = recipient
         }

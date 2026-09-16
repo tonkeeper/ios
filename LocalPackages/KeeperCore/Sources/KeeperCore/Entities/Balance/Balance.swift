@@ -1,6 +1,5 @@
 import BigInt
 import Foundation
-import TKLocalize
 import TonSwift
 
 public struct Balance: Codable, Equatable {
@@ -18,7 +17,7 @@ public struct Balance: Codable, Equatable {
 
 public extension Balance {
     var isEmptyJettonsBalance: Bool {
-        jettonsBalance.filter { !$0.quantity.isZero && $0.item.jettonInfo.verification != .blacklist }.isEmpty
+        !jettonsBalance.contains(where: { !$0.quantity.isZero && $0.item.jettonInfo.verification != .blacklist })
     }
 
     var isEmpty: Bool {
@@ -69,11 +68,7 @@ public struct JettonItem: Codable, Equatable, Hashable {
 }
 
 public struct TonInfo {
-    /// Localized: "Gram (prev. Toncoin)" (en) / "Gram (ex-Toncoin)" (other locales)
-    public static var name: String {
-        TKLocales.Token.tonName
-    }
-
+    public static let name = "Gram"
     public static let symbol = "GRAM"
     public static let chain = "TON"
     public static let fractionDigits = 9

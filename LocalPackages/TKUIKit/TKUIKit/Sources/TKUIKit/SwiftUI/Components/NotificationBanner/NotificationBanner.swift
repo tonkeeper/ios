@@ -31,6 +31,8 @@ public struct NotificationBanner: View {
         case accentBlue
     }
 
+    @Environment(\.tkPalette) private var palette
+
     public var content: NotificationBannerContent
     public var onTap: (() -> Void)?
     public var onButtonTap: (() -> Void)?
@@ -54,7 +56,7 @@ public struct NotificationBanner: View {
                 if let title = content.title {
                     Text(title)
                         .textStyle(.label1)
-                        .foregroundStyle(content.state.titleColor)
+                        .foregroundStyle(content.state.titleColor(palette))
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Layout.titleTopPadding)
                 }
@@ -62,7 +64,7 @@ public struct NotificationBanner: View {
                 if let description = content.description {
                     Text(description)
                         .textStyle(.body2)
-                        .foregroundStyle(content.state.descriptionColor)
+                        .foregroundStyle(content.state.descriptionColor(palette))
                         .opacity(content.state.descriptionAlpha)
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.top, Layout.subtitleTopPadding)
@@ -82,7 +84,7 @@ public struct NotificationBanner: View {
         }
         .background(
             RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous)
-                .fill(content.state.backgroundColor)
+                .fill(content.state.backgroundColor(palette))
         )
         .contentShape(
             RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous)
@@ -113,14 +115,14 @@ private extension NotificationBanner {
                 Text(title)
                     .textStyle(.label2)
 
-                Image(uiImage: .TKUIKit.Icons.Size12.chevronRight)
+                SwiftUI.Image.TKUIKit.Icons.Size12.chevronRight
                     .renderingMode(.template)
                     .resizable()
                     .scaledToFit()
                     .frame(width: Layout.buttonIconSize, height: Layout.buttonIconSize)
                     .padding([.top, .leading], 1)
             }
-            .foregroundStyle(content.state.buttonColor)
+            .foregroundStyle(content.state.buttonColor(palette))
         }
         .buttonStyle(NotificationBannerButtonStyle())
     }
@@ -129,12 +131,12 @@ private extension NotificationBanner {
         Button {
             onCloseTap?()
         } label: {
-            Image(uiImage: .TKUIKit.Icons.Size16.close)
+            SwiftUI.Image.TKUIKit.Icons.Size16.close
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: Layout.closeIconSize, height: Layout.closeIconSize)
-                .foregroundStyle(content.state.closeColor)
+                .foregroundStyle(content.state.closeColor(palette))
                 .frame(
                     width: Layout.closeHitSize,
                     height: Layout.closeHitSize,
@@ -150,67 +152,67 @@ private extension NotificationBanner {
 private struct NotificationBannerButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .opacity(configuration.isPressed ? 0.48 : 1)
+            .tkTapAnimation(isPressed: configuration.isPressed)
     }
 }
 
 private extension NotificationBanner.State {
-    var titleColor: Color {
+    func titleColor(_ palette: TKPalette) -> Color {
         switch self {
         case .neutral, .neutralAlternate:
-            Color(uiColor: .Text.primary)
+            palette.text.primary
         case .accentOrange:
-            Color(uiColor: .Constant.black)
+            palette.constant.black
         case .accentRed, .accentBlue:
-            Color(uiColor: .Constant.white)
+            palette.constant.white
         }
     }
 
-    var descriptionColor: Color {
+    func descriptionColor(_ palette: TKPalette) -> Color {
         switch self {
         case .neutral, .neutralAlternate:
-            Color(uiColor: .Text.secondary)
+            palette.text.secondary
         case .accentOrange:
-            Color(uiColor: .Constant.black)
+            palette.constant.black
         case .accentRed, .accentBlue:
-            Color(uiColor: .Constant.white)
+            palette.constant.white
         }
     }
 
-    var buttonColor: Color {
+    func buttonColor(_ palette: TKPalette) -> Color {
         switch self {
         case .neutral, .neutralAlternate:
-            Color(uiColor: .Text.primary)
+            palette.text.primary
         case .accentOrange:
-            Color(uiColor: .Constant.black)
+            palette.constant.black
         case .accentRed, .accentBlue:
-            Color(uiColor: .Constant.white)
+            palette.constant.white
         }
     }
 
-    var closeColor: Color {
+    func closeColor(_ palette: TKPalette) -> Color {
         switch self {
         case .neutral, .neutralAlternate:
-            Color(uiColor: .Icon.primary)
+            palette.icon.primary
         case .accentOrange:
-            Color(uiColor: .Constant.black)
+            palette.constant.black
         case .accentRed, .accentBlue:
-            Color(uiColor: .Constant.white)
+            palette.constant.white
         }
     }
 
-    var backgroundColor: Color {
+    func backgroundColor(_ palette: TKPalette) -> Color {
         switch self {
         case .neutral:
-            Color(uiColor: .Background.contentTint)
+            palette.background.contentTint
         case .neutralAlternate:
-            Color(uiColor: .Background.content)
+            palette.background.content
         case .accentOrange:
-            Color(uiColor: .Accent.orange)
+            palette.accent.orange
         case .accentRed:
-            Color(uiColor: .Accent.red)
+            palette.accent.red
         case .accentBlue:
-            Color(uiColor: .Accent.blue)
+            palette.accent.blue
         }
     }
 
@@ -228,14 +230,14 @@ private extension NotificationBanner {
     enum Layout {
         static let cornerRadius: CGFloat = 16
         static let topPadding: CGFloat = 12
-        static let bottomPadding: CGFloat = 14
+        static let bottomPadding: CGFloat = 13
         static let horizontalPadding: CGFloat = 16
         static let trailingPaddingWithCloseButton: CGFloat = 48
 
-        static let titleTopPadding: CGFloat = 3
-        static let subtitleTopPadding: CGFloat = 3
+        static let titleTopPadding: CGFloat = 1
+        static let subtitleTopPadding: CGFloat = -1
 
-        static let buttonTopPadding: CGFloat = 6
+        static let buttonTopPadding: CGFloat = 3
         static let buttonIconSpacing: CGFloat = 2
         static let buttonIconSize: CGFloat = 12
         static let closeIconSize: CGFloat = 16

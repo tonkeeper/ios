@@ -8,7 +8,12 @@ protocol PasscodeModuleOutput: AnyObject {
     var didTapBiometry: (() -> Void)? { get set }
 }
 
-protocol PasscodeModuleInput: AnyObject {}
+protocol PasscodeModuleInput: AnyObject {
+    /// Re-query biometry and refresh the keypad button. When `autoPrompt` is true, also trigger it
+    /// immediately. Called with `true` on load; with `false` when a lockout ends so the button is just
+    /// re-activated without forcing a prompt. (TK-1472)
+    func evaluateBiometry(autoPrompt: Bool)
+}
 
 protocol PasscodeViewModel: AnyObject {
     var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)? { get set }
@@ -32,14 +37,17 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
     // MARK: - PasscodeViewModel
 
     var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)?
-    var didEnableInput: (() -> Void)?
-    var didDisableInput: (() -> Void)?
 
     func viewDidLoad() {
+        evaluateBiometry(autoPrompt: true)
+    }
+
+    func evaluateBiometry(autoPrompt: Bool) {
         Task {
             let biometry = await biometryProvider?() ?? .none
             await MainActor.run {
                 didUpdateBiometry?(biometry)
+                guard autoPrompt else { return }
                 switch biometry {
                 case .faceId, .touchId:
                     didTapBiometryButton()

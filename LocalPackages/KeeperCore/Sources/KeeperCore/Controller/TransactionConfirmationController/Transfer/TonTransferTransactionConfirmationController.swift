@@ -28,9 +28,9 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         }
     }
 
-    func sendTransaction() async -> Result<Void, TransactionConfirmationError> {
+    func sendTransaction() async -> Result<TransactionConfirmationSendResult, TransactionConfirmationError> {
         do {
-            try await transferService.sendTransaction(
+            let broadcastedTransactions = try await transferService.sendTransaction(
                 wallet: wallet,
                 transfer: .ton(amount: amount, recipient: recipient, comment: comment),
                 transferType: emulationResult?.transferType ?? .default,
@@ -41,7 +41,13 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
                     return await signedTransactions(transferData: transferData, wallet: wallet)
                 }
             )
-            return .success(())
+            return .success(
+                .ton(
+                    wallet: wallet,
+                    signedTransactions: broadcastedTransactions,
+                    activityType: .send
+                )
+            )
         } catch {
             if case let .secondOption(transactionError) = error,
                case .cancelledByUser = transactionError
@@ -73,7 +79,6 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
     private let ratesStore: TonRatesStore
     private let currencyStore: CurrencyStore
     private let transferService: TransferService
-    private let ratesService: RatesService
 
     init(
         wallet: Wallet,
@@ -86,8 +91,7 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         blockchainService: BlockchainService,
         ratesStore: TonRatesStore,
         currencyStore: CurrencyStore,
-        transferService: TransferService,
-        ratesService: RatesService
+        transferService: TransferService
     ) {
         self.wallet = wallet
         self.recipient = recipient
@@ -100,7 +104,6 @@ final class TonTransferTransactionConfirmationController: TransactionConfirmatio
         self.ratesStore = ratesStore
         self.currencyStore = currencyStore
         self.transferService = transferService
-        self.ratesService = ratesService
     }
 
     private func createModel() -> TransactionConfirmationModel {

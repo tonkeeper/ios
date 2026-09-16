@@ -46,11 +46,6 @@ public struct NFT: Codable, Equatable {
         }
     }
 
-    public struct Marketplace: Equatable {
-        public let name: String
-        public let url: URL?
-    }
-
     public struct Attribute: Codable, Equatable {
         public let key: String
         public let value: String

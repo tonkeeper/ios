@@ -122,12 +122,6 @@ private extension InsertAmountViewController {
             self?.customView.detailsViewContainer.isHidden = hidden
         }
 
-        viewModel.didUpdateAmountError = { [weak self] message in
-            guard let self else { return }
-            self.customView.amountErrorLabel.text = message
-            self.customView.amountErrorLabel.isHidden = (message == nil || message?.isEmpty == true)
-        }
-
         viewModel.didShowError = { message in
             ToastPresenter.showToast(configuration: .init(title: message))
         }

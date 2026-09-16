@@ -3,6 +3,7 @@ import UIKit
 
 final class HintViewController: UIViewController {
     var didTapToDismiss: (() -> Void)?
+    var didLoseSourceView: (() -> Void)?
     var didTapHintContent: (() -> Void)?
     var didTapTargetActionView: (() -> Void)?
     var didHide: (() -> Void)?
@@ -29,6 +30,10 @@ final class HintViewController: UIViewController {
 
         view.backgroundColor = .clear
         view.addSubview(dismissControl)
+
+        contentLayoutTracker.onSourceViewLost = { [weak self] in
+            self?.didLoseSourceView?()
+        }
 
         dismissControl.addTarget(self, action: #selector(didTapDismissControl(_:)), for: .touchUpInside)
         dismissControl.didTapTargetActionView = { [weak self] view in
@@ -74,6 +79,7 @@ final class HintViewController: UIViewController {
         view.insertSubview(contentViewController.view, aboveSubview: dismissControl)
         contentViewController.didMove(toParent: self)
         contentViewController.view.translatesAutoresizingMaskIntoConstraints = false
+        contentViewController.view.accessibilityIdentifier = "tooltip"
         let tapGestureRecognizer = UITapGestureRecognizer(
             target: self,
             action: #selector(didTapContentView(_:))

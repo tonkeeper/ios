@@ -49,6 +49,7 @@ private extension StakingPoolDetailsViewController {
             viewModel?.didTapChooseButton()
         }
         customView.continueButton.configuration = configuration
+        customView.continueButton.accessibilityIdentifier = "staking_pool_details_choose"
 
         customView.listView.configure(model: viewModel.listViewModel)
         customView.descriptionLabel.attributedText = viewModel.description

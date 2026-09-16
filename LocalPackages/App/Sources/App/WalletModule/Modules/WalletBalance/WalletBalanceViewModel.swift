@@ -1,5 +1,6 @@
 import Foundation
 import KeeperCore
+import SwiftUI
 import TKCore
 import TKLocalize
 import TKUIKit
@@ -10,6 +11,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
     var didSelectTon: ((Wallet) -> Void)? { get set }
     var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
     var didSelectTronUSDT: ((Wallet) -> Void)? { get set }
+    var didSelectTronTRX: ((Wallet) -> Void)? { get set }
     var didSelectEthena: ((Wallet) -> Void)? { get set }
     var didSelectStakingItem: ((
         _ wallet: Wallet,
@@ -35,7 +37,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
 
     var didRequirePasscode: (() async -> String?)? { get set }
 
-    var homeBannersViewModel: WalletBalanceHomeBannersViewModel { get }
+    var collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel { get }
+
+    var didRequestBannerDeeplinkHandling: ((Deeplink) -> Void)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -46,6 +50,7 @@ protocol WalletBalanceViewModel: AnyObject {
     var didUpdateItems: (([WalletBalance.ListItem: WalletBalanceListCell.Configuration]) -> Void)? { get set }
 
     var didChangeWallet: (() -> Void)? { get set }
+    var didChangeHomeBannersViewModel: (() -> Void)? { get set }
     var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)? { get set }
     var didCopy: ((ToastPresenter.Configuration) -> Void)? { get set }
 
@@ -54,25 +59,38 @@ protocol WalletBalanceViewModel: AnyObject {
     @MainActor
     func viewDidLoad()
     @MainActor
+    func viewWillAppear()
+    @MainActor
+    func viewDidDisappear()
+    @MainActor
     func getListItemCellConfiguration(identifier: String) -> WalletBalanceListCell.Configuration?
     @MainActor
     func getNotificationItemCellConfiguration(identifier: String) -> NotificationBannerCell.Configuration?
 
-    var shouldShowBannersSection: Bool { get }
+    var collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel { get }
 
     var homeBannersViewModel: WalletBalanceHomeBannersViewModel { get }
+
+    @MainActor
+    func reloadCollectibles() async
 
     @MainActor
     func tapCryptoAssetsManage()
 
     @MainActor
     func tapCryptoAssetsOpen()
+
+    func expandMoreAssets()
+
+    @MainActor
+    var moreAssetsPreviewAvatars: [AssetAvatarViewImageSource] { get }
 }
 
 struct WalletBalanceListModel: @unchecked Sendable {
     let snapshot: WalletBalance.Snapshot
     let listItemsConfigurations: [String: WalletBalanceListCell.Configuration]
     let notificationItemsConfigurations: [String: NotificationBannerCell.Configuration]
+    let moreAssetsPreviewAvatars: [AssetAvatarViewImageSource]
 }
 
 final class WalletBalanceViewModelImplementation:
@@ -89,6 +107,7 @@ final class WalletBalanceViewModelImplementation:
     var didSelectTon: ((Wallet) -> Void)?
     var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
     var didSelectTronUSDT: ((Wallet) -> Void)?
+    var didSelectTronTRX: ((Wallet) -> Void)?
     var didSelectEthena: ((Wallet) -> Void)?
     var didSelectStakingItem: ((
         _ wallet: Wallet,
@@ -117,6 +136,8 @@ final class WalletBalanceViewModelImplementation:
     // MARK: - WalletBalanceViewModel
 
     var didChangeWallet: (() -> Void)?
+    var didChangeHomeBannersViewModel: (() -> Void)?
+    var didRequestBannerDeeplinkHandling: ((Deeplink) -> Void)?
     var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)?
     var didCopy: ((ToastPresenter.Configuration) -> Void)?
     private var loadBalanceTrace: Trace?
@@ -138,26 +159,31 @@ final class WalletBalanceViewModelImplementation:
             setupState: setupState,
             notifications: notifications
         )
-        self.listModel = listModel
-        didUpdateSnapshot?(listModel.snapshot, false)
+        applyListModel(listModel, isAnimated: false)
 
-        if let totalBalanceModelState = try? totalBalanceModel.getState() {
-            let model = syncQueue.sync {
-                createHeaderModel(totalBalanceModelState: totalBalanceModelState)
-            }
-            didUpdateHeader?(model)
-        }
+        // The screen enters the hierarchy only once its kind of wallet becomes active, so the
+        // wallet it is loaded for is not the one it was assembled for, and the change that brought
+        // it here landed before the observations above existed.
+        updateWalletScopedModels(wallet: try? walletsStore.activeWallet)
+    }
+
+    func viewWillAppear() {
+        isOnScreen = true
+        headerViewModel.didAppear()
+    }
+
+    func viewDidDisappear() {
+        isOnScreen = false
+        headerViewModel.didDisappear()
     }
 
     func reloadData() {
-        balanceLoader.loadActiveWalletBalance()
-    }
-
-    private func refreshHeaderLocked() {
-        guard let totalBalanceModelState = try? self.totalBalanceModel.getState() else { return }
-        let model = self.createHeaderModel(totalBalanceModelState: totalBalanceModelState)
-        DispatchQueue.main.async {
-            self.didUpdateHeader?(model)
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            await headerViewModel.reload()
+        }
+        Task { @MainActor [weak self] in
+            await self?.reloadCollectibles()
         }
     }
 
@@ -177,12 +203,21 @@ final class WalletBalanceViewModelImplementation:
     private var listModel = WalletBalanceListModel(
         snapshot: WalletBalance.Snapshot(),
         listItemsConfigurations: [:],
-        notificationItemsConfigurations: [:]
+        notificationItemsConfigurations: [:],
+        moreAssetsPreviewAvatars: []
     )
     private var balanceListItems: WalletBalanceBalanceModel.BalanceListItems?
     private var setupState: WalletBalanceSetupModel.State?
     private var notifications = [NotificationModel]()
     private var stakingUpdateTimer: DispatchSourceTimer?
+    private var isMoreAssetsExpanded = false
+    @MainActor
+    private var isOnScreen = false
+
+    @MainActor
+    var moreAssetsPreviewAvatars: [AssetAvatarViewImageSource] {
+        listModel.moreAssetsPreviewAvatars
+    }
 
     // MARK: - Mapper
 
@@ -191,17 +226,19 @@ final class WalletBalanceViewModelImplementation:
     private let balanceListModel: WalletBalanceBalanceModel
     private let balanceLoader: BalanceLoader
     private let setupModel: WalletBalanceSetupModel
-    private let totalBalanceModel: WalletTotalBalanceModel
+    private let makeHeaderViewModel: (Wallet) -> WalletBalanceHeaderViewModel
+    private var headerViewModels = [String: WalletBalanceHeaderViewModel]()
+    private var headerViewModel: WalletBalanceHeaderViewModel
     private let walletsStore: WalletsStore
     private let notificationStore: InternalNotificationsStore
     private let configuration: Configuration
     private let appSettingsStore: AppSettingsStore
     private let listMapper: WalletBalanceListMapper
-    private let headerMapper: WalletBalanceHeaderMapper
     private let urlOpener: URLOpener
-    private let appSettings: AppSettings
-    private let tooltipsService: TooltipsService
-    let homeBannersViewModel: WalletBalanceHomeBannersViewModel
+    let collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel
+    private(set) var homeBannersViewModel: WalletBalanceHomeBannersViewModel
+    private let makeHomeBannersViewModel: (Wallet) -> WalletBalanceHomeBannersViewModel
+    private var homeBannersViewModels = [HomeBannersIdentity: WalletBalanceHomeBannersViewModel]()
 
     private var isBannersSectionVisible = false
 
@@ -209,47 +246,168 @@ final class WalletBalanceViewModelImplementation:
         isBannersSectionVisible
     }
 
+    var shouldShowCollectiblesSection: Bool {
+        (try? walletsStore.activeWallet) != nil
+    }
+
+    @MainActor
     init(
+        wallet: Wallet,
         balanceListModel: WalletBalanceBalanceModel,
         balanceLoader: BalanceLoader,
         setupModel: WalletBalanceSetupModel,
-        totalBalanceModel: WalletTotalBalanceModel,
+        makeHeaderViewModel: @escaping (Wallet) -> WalletBalanceHeaderViewModel,
         walletsStore: WalletsStore,
         notificationStore: InternalNotificationsStore,
         configuration: Configuration,
         appSettingsStore: AppSettingsStore,
         listMapper: WalletBalanceListMapper,
-        headerMapper: WalletBalanceHeaderMapper,
         urlOpener: URLOpener,
-        appSettings: AppSettings,
-        tooltipsService: TooltipsService,
-        homeBannersViewModel: WalletBalanceHomeBannersViewModel
+        collectiblesViewModel: WalletBalanceMultichainCollectiblesViewModel,
+        makeHomeBannersViewModel: @escaping (Wallet) -> WalletBalanceHomeBannersViewModel
     ) {
         self.balanceListModel = balanceListModel
         self.balanceLoader = balanceLoader
         self.setupModel = setupModel
-        self.totalBalanceModel = totalBalanceModel
         self.walletsStore = walletsStore
         self.notificationStore = notificationStore
         self.configuration = configuration
         self.appSettingsStore = appSettingsStore
         self.listMapper = listMapper
-        self.headerMapper = headerMapper
         self.urlOpener = urlOpener
-        self.appSettings = appSettings
-        self.tooltipsService = tooltipsService
+        self.collectiblesViewModel = collectiblesViewModel
+        self.makeHeaderViewModel = makeHeaderViewModel
+        let headerViewModel = makeHeaderViewModel(wallet)
+        headerViewModels = [wallet.id: headerViewModel]
+        self.headerViewModel = headerViewModel
+        self.makeHomeBannersViewModel = makeHomeBannersViewModel
+        let homeBannersViewModel = makeHomeBannersViewModel(wallet)
+        homeBannersViewModels = [HomeBannersIdentity(wallet: wallet): homeBannersViewModel]
         self.homeBannersViewModel = homeBannersViewModel
+        bindHeaderViewModel()
+        bindHomeBannersViewModel()
     }
 
     @MainActor
     func bindBannersSectionVisibility() {
-        homeBannersViewModel.onSectionVisibilityChanged = { [weak self] isVisible in
-            self?.didUpdateBannersSectionVisibility(isVisible: isVisible)
-        }
+        updateWalletScopedModels(wallet: try? walletsStore.activeWallet)
         let isVisible = homeBannersViewModel.isSectionVisible
         syncQueue.sync { [weak self] in
             self?.isBannersSectionVisible = isVisible
         }
+    }
+
+    /// One model per wallet: the deck it renders, the dismissals it writes and the scope it reloads
+    /// all belong to that wallet alone. Without a wallet there is nothing to re-point it to, and the
+    /// screen is on its way out anyway, so it keeps the deck it is showing.
+    @MainActor
+    private func updateWalletScopedModels(wallet: Wallet?) {
+        updateHeaderViewModel(wallet: wallet)
+        updateHomeBannersViewModel(wallet: wallet)
+    }
+
+    /// The total, the address and the loading flag it renders all belong to one wallet, so a
+    /// switch takes that wallet's model rather than re-pointing this one. Without a wallet there is
+    /// nothing to re-point it to, and the screen is on its way out anyway, so it keeps the header
+    /// it is showing.
+    @MainActor
+    private func updateHeaderViewModel(wallet: Wallet?) {
+        guard let wallet else { return }
+        let viewModel = headerViewModel(for: wallet)
+        if viewModel !== headerViewModel {
+            // A header kept for a wallet nobody is looking at must not redraw the one on screen,
+            // nor keep asking for the loads that a visible one is entitled to.
+            headerViewModel.didUpdateModel = nil
+            headerViewModel.didDisappear()
+            headerViewModel = viewModel
+            bindHeaderViewModel()
+        }
+        if isOnScreen {
+            viewModel.didAppear()
+        }
+        if let model = viewModel.model {
+            didUpdateHeader?(model)
+        }
+    }
+
+    @MainActor
+    private func headerViewModel(for wallet: Wallet) -> WalletBalanceHeaderViewModel {
+        if let viewModel = headerViewModels[wallet.id] {
+            return viewModel
+        }
+
+        let viewModel = makeHeaderViewModel(wallet)
+        headerViewModels[wallet.id] = viewModel
+        return viewModel
+    }
+
+    @MainActor
+    private func bindHeaderViewModel() {
+        headerViewModel.didUpdateModel = { [weak self] model in
+            self?.didUpdateHeader?(model)
+        }
+        headerViewModel.onWithdraw = { [weak self] wallet in
+            self?.didTapWithdraw?(wallet)
+        }
+        headerViewModel.onDeposit = { [weak self] wallet in
+            self?.didTapDeposit?(wallet)
+        }
+        headerViewModel.onSwap = { [weak self] wallet in
+            self?.didTapSwap?(wallet)
+        }
+        headerViewModel.onStake = { [weak self] wallet in
+            self?.didTapStake?(wallet)
+        }
+        headerViewModel.onBattery = { [weak self] wallet in
+            self?.didTapBattery?(wallet)
+        }
+        headerViewModel.onBackup = { [weak self] wallet in
+            self?.didTapBackup?(wallet)
+        }
+    }
+
+    @MainActor
+    private func updateHomeBannersViewModel(wallet: Wallet?) {
+        guard let wallet else { return }
+        let viewModel = homeBannersViewModel(for: wallet)
+        if viewModel !== homeBannersViewModel {
+            // A deck kept for a wallet nobody is looking at must not resize or reveal a section
+            // that now belongs to another one.
+            homeBannersViewModel.onSectionVisibilityChanged = nil
+            homeBannersViewModel = viewModel
+            bindHomeBannersViewModel()
+            didChangeHomeBannersViewModel?()
+        }
+        viewModel.loadIfNeeded()
+        didUpdateBannersSectionVisibility(isVisible: viewModel.isSectionVisible)
+    }
+
+    @MainActor
+    private func homeBannersViewModel(for wallet: Wallet) -> WalletBalanceHomeBannersViewModel {
+        let identity = HomeBannersIdentity(wallet: wallet)
+        if let viewModel = homeBannersViewModels[identity] {
+            return viewModel
+        }
+
+        let viewModel = makeHomeBannersViewModel(wallet)
+        homeBannersViewModels[identity] = viewModel
+        return viewModel
+    }
+
+    @MainActor
+    private func bindHomeBannersViewModel() {
+        homeBannersViewModel.onSectionVisibilityChanged = { [weak self] isVisible in
+            self?.didUpdateBannersSectionVisibility(isVisible: isVisible)
+        }
+        homeBannersViewModel.onOpenDeeplink = { [weak self] deeplink in
+            self?.didRequestBannerDeeplinkHandling?(deeplink)
+        }
+    }
+
+    @MainActor
+    func reloadCollectibles() async {
+        let wallet = try? walletsStore.activeWallet
+        await collectiblesViewModel.load(for: wallet)
     }
 
     @MainActor
@@ -265,6 +423,15 @@ final class WalletBalanceViewModelImplementation:
     @MainActor
     func tapCryptoAssetsOpen() {
         didTapOpenCryptoAssets?()
+    }
+
+    func expandMoreAssets() {
+        syncQueue.async { [weak self] in
+            guard let self else { return }
+            guard !self.isMoreAssetsExpanded else { return }
+            self.isMoreAssetsExpanded = true
+            self.refreshBalanceListSnapshot()
+        }
     }
 
     private func didUpdateBannersSectionVisibility(isVisible: Bool) {
@@ -286,15 +453,11 @@ final class WalletBalanceViewModelImplementation:
         )
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            self.listModel = listModel
-            self.didUpdateSnapshot?(listModel.snapshot, !isShowing)
+            self.applyListModel(listModel, isAnimated: !isShowing)
         }
     }
 
     private func setupObservations() {
-        totalBalanceModel.didUpdateState = { [weak self] state in
-            self?.didUpdateTotalBalanceState(state)
-        }
         balanceListModel.didUpdateItems = { [weak self] items in
             guard let self else { return }
             syncQueue.async {
@@ -307,11 +470,18 @@ final class WalletBalanceViewModelImplementation:
                 self.didUpdateSetupState(setupState: state)
             }
         }
-        walletsStore.addObserver(self) { _, event in
+        walletsStore.addObserver(self) { observer, event in
             switch event {
-            case .didChangeActiveWallet:
-                DispatchQueue.main.async {
-                    self.didChangeWallet?()
+            case let .didChangeActiveWallet(_, wallet):
+                observer.syncQueue.async {
+                    observer.isMoreAssetsExpanded = false
+                }
+                Task { @MainActor [weak observer] in
+                    guard let observer else { return }
+                    observer.updateWalletScopedModels(wallet: wallet)
+                    observer.collectiblesViewModel.prepare(for: wallet)
+                    observer.didChangeWallet?()
+                    await observer.collectiblesViewModel.load(for: wallet)
                 }
             default:
                 break
@@ -326,16 +496,24 @@ final class WalletBalanceViewModelImplementation:
             }
         }
 
-        configuration.addUpdateObserver(self) { observer in
+        balanceLoader.addUpdateObserver(self) { observer, update in
             observer.syncQueue.async {
-                guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else {
-                    return
-                }
-                let model = observer.createHeaderModel(totalBalanceModelState: totalBalanceModelState)
-                DispatchQueue.main.async {
-                    observer.didUpdateHeader?(model)
-                }
+                observer.trackLoadBalance(update: update)
             }
+        }
+    }
+
+    /// The wait the screen is showing, so it is timed for the wallet on it rather than for any
+    /// wallet a sweep happens to be refreshing.
+    private func trackLoadBalance(update: BalanceLoaderUpdate) {
+        guard (try? walletsStore.activeWallet) == update.wallet else { return }
+        if update.isLoading {
+            if loadBalanceTrace == nil {
+                loadBalanceTrace = Trace(name: "load_balance")
+            }
+        } else {
+            loadBalanceTrace?.stop()
+            loadBalanceTrace = nil
         }
     }
 
@@ -347,8 +525,7 @@ final class WalletBalanceViewModelImplementation:
             notifications: notifications
         )
         DispatchQueue.main.async {
-            self.listModel = listModel
-            self.didUpdateSnapshot?(listModel.snapshot, false)
+            self.applyListModel(listModel, isAnimated: false)
         }
         self.stopStakingItemsUpdateTimer()
         self.startStakingItemsUpdateTimer(
@@ -367,8 +544,7 @@ final class WalletBalanceViewModelImplementation:
         )
         let animateRemoval = hadSetupSection && setupState == nil
         DispatchQueue.main.async {
-            self.listModel = listModel
-            self.didUpdateSnapshot?(listModel.snapshot, animateRemoval)
+            self.applyListModel(listModel, isAnimated: animateRemoval)
         }
     }
 
@@ -380,8 +556,7 @@ final class WalletBalanceViewModelImplementation:
             notifications: notifications
         )
         DispatchQueue.main.async {
-            self.listModel = listModel
-            self.didUpdateSnapshot?(listModel.snapshot, false)
+            self.applyListModel(listModel, isAnimated: false)
         }
     }
 
@@ -409,21 +584,29 @@ final class WalletBalanceViewModelImplementation:
             snapshot.appendItems([.banners], toSection: .banners)
         }
 
-        if let setupState {
-            let (section, cellConfigurations) = createSetupSection(setupState: setupState)
+        if let setupState,
+           let (section, cellConfigurations) = createSetupSection(setupState: setupState)
+        {
             listItemsConfigurations.merge(cellConfigurations) { $1 }
             snapshot.appendSections([.setup(section)])
             snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .setup(section))
         }
 
+        var moreAssetsPreviewAvatars = [AssetAvatarViewImageSource]()
         if let balanceListItems {
             snapshot.appendSections([.cryptoAssetsHeader(canManage: balanceListItems.canManage)])
             snapshot.appendItems([.cryptoAssetsHeader], toSection: .cryptoAssetsHeader(canManage: balanceListItems.canManage))
 
-            let (section, cellConfigurations) = createBalanceSection(balanceListItems: balanceListItems)
+            let (section, cellConfigurations, previewAvatars) = createBalanceSection(balanceListItems: balanceListItems)
+            moreAssetsPreviewAvatars = previewAvatars
             listItemsConfigurations.merge(cellConfigurations) { $1 }
             snapshot.appendSections([.balance(section)])
-            snapshot.appendItems(section.items.map { .listItem($0) }, toSection: .balance(section))
+            snapshot.appendItems(mapBalanceSnapshotItems(section.items), toSection: .balance(section))
+        }
+
+        if shouldShowCollectiblesSection {
+            snapshot.appendSections([.collectibles])
+            snapshot.appendItems([.collectibles], toSection: .collectibles)
         }
 
         if #available(iOS 15.0, *) {
@@ -435,15 +618,41 @@ final class WalletBalanceViewModelImplementation:
         return WalletBalanceListModel(
             snapshot: snapshot,
             listItemsConfigurations: listItemsConfigurations,
-            notificationItemsConfigurations: notificationItemsConfigurations
+            notificationItemsConfigurations: notificationItemsConfigurations,
+            moreAssetsPreviewAvatars: moreAssetsPreviewAvatars
         )
+    }
+
+    private func refreshBalanceListSnapshot() {
+        let listModel = createWalletBalanceListModel(
+            balanceListItems: balanceListItems,
+            setupState: setupState,
+            notifications: notifications
+        )
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.applyListModel(listModel, isAnimated: false)
+        }
+    }
+
+    @MainActor
+    private func applyListModel(_ listModel: WalletBalanceListModel, isAnimated: Bool) {
+        collectiblesViewModel.prepare(for: try? walletsStore.activeWallet)
+        self.listModel = listModel
+        didUpdateSnapshot?(listModel.snapshot, isAnimated)
     }
 
     private func createBalanceSection(
         balanceListItems: WalletBalanceBalanceModel.BalanceListItems
-    ) -> (section: WalletBalance.BalanceItemsSection, cellConfigurations: [String: WalletBalanceListCell.Configuration]) {
+    ) -> (
+        section: WalletBalance.BalanceItemsSection,
+        cellConfigurations: [String: WalletBalanceListCell.Configuration],
+        moreAssetsPreviewAvatars: [AssetAvatarViewImageSource]
+    ) {
         var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
         var sectionItems = [WalletBalance.ListItem]()
+        var builtItems = [(listItem: WalletBalance.ListItem, balanceItem: WalletBalanceBalanceModel.Item)]()
+
         for balanceListItem in balanceListItems.items {
             switch balanceListItem.balanceItem {
             case let .ton(item):
@@ -459,9 +668,9 @@ final class WalletBalanceViewModelImplementation:
                     self?.didSelectTon?(balanceListItems.wallet)
                 }
                 cellConfigurations[item.id] = cellConfiguration
-                sectionItems.append(sectionItem)
+                builtItems.append((sectionItem, balanceListItem))
             case let .jetton(item):
-                let isNetworkBadgeVisible = item.jetton.jettonInfo.isTonUSDT && balanceListItems.wallet.isTronTurnOn
+                let isNetworkBadgeVisible = item.jetton.jettonInfo.isTonUSDT && balanceListItems.wallet.tron != nil
                 let cellConfiguration = listMapper.mapJettonItem(
                     item,
                     isSecure: balanceListItems.isSecure,
@@ -474,7 +683,7 @@ final class WalletBalanceViewModelImplementation:
                     self?.didSelectJetton?(balanceListItems.wallet, item.jetton, !item.price.isZero)
                 }
                 cellConfigurations[item.id] = cellConfiguration
-                sectionItems.append(sectionItem)
+                builtItems.append((sectionItem, balanceListItem))
             case let .staking(item):
                 let cellConfiguration = listMapper.mapStakingItem(
                     item,
@@ -495,12 +704,14 @@ final class WalletBalanceViewModelImplementation:
                     self.didSelectStakingItem?(balanceListItems.wallet, poolInfo, item.info)
                 }
                 cellConfigurations[item.id] = cellConfiguration
-                sectionItems.append(sectionItem)
+                builtItems.append((sectionItem, balanceListItem))
             case let .tronUSDT(item):
                 if
                     configuration.flag(\.tronDisabled, network: balanceListItems.wallet.network),
                     item.amount.isZero
-                { continue }
+                {
+                    continue
+                }
 
                 let cellConfiguration = listMapper.mapTronUSDTItem(
                     item,
@@ -513,7 +724,26 @@ final class WalletBalanceViewModelImplementation:
                     self?.didSelectTronUSDT?(balanceListItems.wallet)
                 }
                 cellConfigurations[item.id] = cellConfiguration
-                sectionItems.append(sectionItem)
+                builtItems.append((sectionItem, balanceListItem))
+            case let .tronTRX(item):
+                if
+                    configuration.flag(\.tronDisabled, network: balanceListItems.wallet.network),
+                    item.amount.isZero
+                {
+                    continue
+                }
+
+                let cellConfiguration = listMapper.mapTronTRXItem(
+                    item,
+                    isSecure: balanceListItems.isSecure
+                )
+                let sectionItem = WalletBalance.ListItem(
+                    identifier: item.id
+                ) { [weak self] in
+                    self?.didSelectTronTRX?(balanceListItems.wallet)
+                }
+                cellConfigurations[item.id] = cellConfiguration
+                builtItems.append((sectionItem, balanceListItem))
             case let .ethena(item):
                 let identifier = "ethena_\(item.id)"
                 let cellConfiguration = listMapper.mapEthenaItem(
@@ -542,21 +772,65 @@ final class WalletBalanceViewModelImplementation:
                     self?.didSelectEthena?(balanceListItems.wallet)
                 }
                 cellConfigurations[identifier] = cellConfiguration
-                sectionItems.append(sectionItem)
+                builtItems.append((sectionItem, balanceListItem))
             }
         }
 
+        let displayedItems = displayedBalanceItems(from: builtItems)
+        sectionItems = displayedItems.map(\.listItem)
+
+        let moreAssetsPreviewAvatars: [AssetAvatarViewImageSource]
+        if shouldShowMoreAssetsButton(for: builtItems.count) {
+            moreAssetsPreviewAvatars = builtItems
+                .dropFirst(AssetsListLayout.collapsedVisibleCount)
+                .prefix(2)
+                .map { WalletBalanceMoreAssetsPreviewMapper.previewAvatarSource(for: $0.balanceItem.balanceItem) }
+            sectionItems.append(
+                WalletBalance.ListItem(identifier: AssetsListLayout.moreAssetsItemIdentifier, onSelection: nil)
+            )
+        } else {
+            moreAssetsPreviewAvatars = []
+        }
+
         let section = WalletBalance.BalanceItemsSection(items: sectionItems)
-        return (section, cellConfigurations)
+        return (section, cellConfigurations, moreAssetsPreviewAvatars)
+    }
+
+    private func displayedBalanceItems(
+        from builtItems: [(listItem: WalletBalance.ListItem, balanceItem: WalletBalanceBalanceModel.Item)]
+    ) -> [(listItem: WalletBalance.ListItem, balanceItem: WalletBalanceBalanceModel.Item)] {
+        if isMoreAssetsExpanded || builtItems.count <= AssetsListLayout.moreButtonThreshold {
+            return builtItems
+        }
+        return Array(builtItems.prefix(AssetsListLayout.collapsedVisibleCount))
+    }
+
+    private func shouldShowMoreAssetsButton(for itemsCount: Int) -> Bool {
+        !isMoreAssetsExpanded && itemsCount > AssetsListLayout.moreButtonThreshold
+    }
+
+    private func mapBalanceSnapshotItems(_ items: [WalletBalance.ListItem]) -> [WalletBalance.SnapshotItem] {
+        items.map { item in
+            if item.identifier == AssetsListLayout.moreAssetsItemIdentifier {
+                return .moreAssets
+            }
+            return .listItem(item)
+        }
     }
 
     private func createSetupSection(
         setupState: WalletBalanceSetupModel.State
-    ) -> (section: WalletBalance.SetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration]) {
+    ) -> (section: WalletBalance.SetupSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])? {
         var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
         var sectionItems = [WalletBalance.ListItem]()
 
-        for item in setupState.items {
+        let items = setupState.items.filter { item in
+            if case .migration = item { return false }
+            return true
+        }
+        guard !items.isEmpty else { return nil }
+
+        for item in items {
             switch item {
             case .notifications:
                 let action: (Bool) -> Void = { [weak self] _ in
@@ -568,7 +842,7 @@ final class WalletBalanceViewModelImplementation:
 
                 let configuration = self.listMapper.createNotificationsConfiguration()
                 let notificationsItem = WalletBalance.ListItem(
-                    identifier: item.rawValue,
+                    identifier: item.identifier,
                     accessory: .switch(
                         TKListItemSwitchAccessoryView.Configuration(
                             isOn: false,
@@ -579,12 +853,12 @@ final class WalletBalanceViewModelImplementation:
                         action(true)
                     }
                 )
-                cellConfigurations[item.rawValue] = configuration
+                cellConfigurations[item.identifier] = configuration
                 sectionItems.append(notificationsItem)
             case .backup:
                 let backupConfiguration = self.listMapper.createBackupConfiguration()
                 let backupItem = WalletBalance.ListItem(
-                    identifier: item.rawValue,
+                    identifier: item.identifier,
                     accessory: .chevron,
                     onSelection: { [weak self] in
                         guard let self else { return }
@@ -595,8 +869,10 @@ final class WalletBalanceViewModelImplementation:
                         }
                     }
                 )
-                cellConfigurations[item.rawValue] = backupConfiguration
+                cellConfigurations[item.identifier] = backupConfiguration
                 sectionItems.append(backupItem)
+            case .migration:
+                break
             case .biometry:
                 let action: (Bool) -> Void = { [weak self] isOn in
                     guard let self else { return }
@@ -626,7 +902,7 @@ final class WalletBalanceViewModelImplementation:
 
                 let biometryConfiguration = self.listMapper.createBiometryConfiguration()
                 let biometryItem = WalletBalance.ListItem(
-                    identifier: item.rawValue,
+                    identifier: item.identifier,
                     accessory: .switch(
                         TKListItemSwitchAccessoryView.Configuration(
                             isOn: false,
@@ -637,7 +913,7 @@ final class WalletBalanceViewModelImplementation:
                         action(true)
                     }
                 )
-                cellConfigurations[item.rawValue] = biometryConfiguration
+                cellConfigurations[item.identifier] = biometryConfiguration
                 sectionItems.append(biometryItem)
             }
         }
@@ -785,7 +1061,8 @@ final class WalletBalanceViewModelImplementation:
         let updatedListModel = WalletBalanceListModel(
             snapshot: listModel.snapshot,
             listItemsConfigurations: listItemsConfigurations,
-            notificationItemsConfigurations: listModel.notificationItemsConfigurations
+            notificationItemsConfigurations: listModel.notificationItemsConfigurations,
+            moreAssetsPreviewAvatars: listModel.moreAssetsPreviewAvatars
         )
 
         await MainActor.run { [items] in
@@ -793,256 +1070,16 @@ final class WalletBalanceViewModelImplementation:
             self.didUpdateItems?(items)
         }
     }
-
-    func createHeaderModel(totalBalanceModelState: WalletTotalBalanceModel.State) -> BalanceHeaderView.Model {
-        let addressButtonText: String = {
-            if self.appSettings.addressCopyCount > 2 {
-                totalBalanceModelState.address.toShort()
-            } else {
-                (totalBalanceModelState.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + totalBalanceModelState.address.toShort()
-            }
-        }()
-
-        let statusViewConfiguration: BalanceHeaderBalanceStatusView.Configuration = {
-            let action = { [weak self] in
-                guard let self else { return }
-                self.didTapCopy(
-                    address: totalBalanceModelState.address.toString(),
-                    toastConfiguration: totalBalanceModelState.wallet.copyToastConfiguration()
-                )
-                self.appSettings.addressCopyCount += 1
-                if self.appSettings.addressCopyCount <= 3 {
-                    didUpdateTotalBalanceState(totalBalanceModelState)
-                }
-            }
-
-            if let connectionStatusModel = self.createConnectionStatusModel(
-                backgroundUpdateState: totalBalanceModelState.backgroundUpdateConnectionState,
-                isLoading: totalBalanceModelState.isLoadingBalance
-            ) {
-                return BalanceHeaderBalanceStatusView.Configuration(
-                    state: .connection(connectionStatusModel),
-                    action: action
-                )
-            } else if let totalBalanceState = totalBalanceModelState.totalBalanceState, case let .previous(totalBalance) = totalBalanceState {
-                return BalanceHeaderBalanceStatusView.Configuration(
-                    state: .updated(TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))),
-                    action: action
-                )
-            } else {
-                return BalanceHeaderBalanceStatusView.Configuration(
-                    state: .address(addressButtonText, tags: totalBalanceModelState.wallet.balanceTagConfigurations()),
-                    action: action
-                )
-            }
-        }()
-
-        let headerModel = BalanceHeaderBalanceView.Model(
-            amountViewConfiguration: createAmountViewConfiguration(state: totalBalanceModelState),
-            statusViewConfiguration: statusViewConfiguration
-        )
-
-        return BalanceHeaderView.Model(
-            balanceModel: headerModel,
-            buttonsModel: self.createHeaderButtonsRedesignModel(wallet: totalBalanceModelState.wallet)
-        )
-    }
-
-    func createAmountViewConfiguration(state: WalletTotalBalanceModel.State) -> BalanceHeaderBalanceAmountView.Configuration {
-        let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
-
-        let backupWarningState = BalanceBackupWarningCheck().check(
-            wallet: state.wallet,
-            tonAmount: state.totalBalanceState?.totalBalance?.balance.tonItems.first?.amount ?? 0
-        )
-        let balanceColor: UIColor
-        var backupButton: BalanceHeaderBalanceAmountView.Configuration.BackupButton?
-        switch backupWarningState {
-        case .error:
-            balanceColor = .Accent.red
-            backupButton = BalanceHeaderBalanceAmountView.Configuration.BackupButton(
-                color: .Accent.red,
-                action: { [weak self] in
-                    self?.didTapBackup?(state.wallet)
-                }
-            )
-        case .warning:
-            balanceColor = .Accent.orange
-            backupButton = BalanceHeaderBalanceAmountView.Configuration.BackupButton(
-                color: .Accent.orange,
-                action: { [weak self] in
-                    self?.didTapBackup?(state.wallet)
-                }
-            )
-        case .none:
-            balanceColor = .Text.primary
-            backupButton = nil
-        }
-
-        let amountButtonConfiguration: BalanceHeaderBalanceAmountButton.Configuration = {
-            let amountButtonState: BalanceHeaderBalanceAmountButton.State
-            if state.isSecure {
-                amountButtonState = .secure(color: balanceColor)
-            } else {
-                amountButtonState = .amount(
-                    BalanceHeaderBalanceAmountButton.State.Amount(
-                        balance: totalBalanceMapped,
-                        color: balanceColor
-                    )
-                )
-            }
-
-            return BalanceHeaderBalanceAmountButton.Configuration(
-                state: amountButtonState,
-                action: { [weak self] in
-                    self?.appSettingsStore.toggleIsSecureMode()
-                }
-            )
-        }()
-
-        let batteryButtonConfiguration = createBatteryButtonConfiguration(
-            wallet: state.wallet,
-            batteryBalance: state.totalBalanceState?.totalBalance?.batteryBalance
-        )
-
-        return BalanceHeaderBalanceAmountView.Configuration(
-            amountButtonConfiguration: amountButtonConfiguration,
-            batteryButtonConfiguration: batteryButtonConfiguration,
-            backupButton: backupButton
-        )
-    }
-
-    func createBatteryButtonConfiguration(
-        wallet: Wallet,
-        batteryBalance: BatteryBalance?
-    ) -> BalanceHeaderBalanceBatteryButton.Configuration? {
-        guard wallet.kind == .regular else { return nil }
-        let batteryDisabled = configuration.flag(\.batteryDisabled, network: wallet.network)
-
-        let state: BatteryView.State
-        switch (batteryBalance?.batteryState, batteryDisabled) {
-        case let (.fill(percents), _):
-            state = .fill(percents)
-        case let (.empty, disabled):
-            if disabled { return nil }
-            state = .emptyTinted
-        case let (.none, disabled):
-            if disabled { return nil }
-            state = .emptyTinted
-        }
-        return BalanceHeaderBalanceBatteryButton.Configuration(
-            batteryConfiguration: state,
-            action: { [weak self] in
-                self?.didTapBattery?(wallet)
-            }
-        )
-    }
-
-    func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {
-        syncQueue.async {
-            if state.isLoadingBalance {
-                if self.loadBalanceTrace == nil {
-                    self.loadBalanceTrace = Trace(name: "load_balance")
-                }
-            } else {
-                self.loadBalanceTrace?.stop()
-                self.loadBalanceTrace = nil
-            }
-
-            let model = self.createHeaderModel(totalBalanceModelState: state)
-            DispatchQueue.main.async {
-                self.didUpdateHeader?(model)
-            }
-        }
-    }
-
-    func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateConnectionState, isLoading: Bool) -> BalanceHeaderBalanceConnectionStatusView.Model? {
-        switch (backgroundUpdateState, isLoading) {
-        case (.connecting, _):
-            return BalanceHeaderBalanceConnectionStatusView.Model(
-                title: TKLocales.ConnectionStatus.updating,
-                titleColor: .Text.secondary,
-                isLoading: true
-            )
-        case (.connected, false):
-            return nil
-        case (.connected, true):
-            return BalanceHeaderBalanceConnectionStatusView.Model(
-                title: TKLocales.ConnectionStatus.updating,
-                titleColor: .Text.secondary,
-                isLoading: true
-            )
-        case (.disconnected, _):
-            return BalanceHeaderBalanceConnectionStatusView.Model(
-                title: TKLocales.ConnectionStatus.updating,
-                titleColor: .Text.secondary,
-                isLoading: true
-            )
-        case (.noConnection, _):
-            return BalanceHeaderBalanceConnectionStatusView.Model(
-                title: TKLocales.ConnectionStatus.noInternet,
-                titleColor: .Accent.orange,
-                isLoading: false
-            )
-        }
-    }
-
-    func createHeaderButtonsRedesignModel(wallet: Wallet) -> WalletBalanceHeaderButtonsRedesignView.Model {
-        let withdrawButton = WalletBalanceHeaderButtonsRedesignView.Model.Button(
-            title: TKLocales.WalletButtons.send,
-            icon: .TKUIKit.Icons.Size28.arrowUpOutline,
-            isEnabled: wallet.isSendEnable, // TODO: - enabled flag
-            action: { [weak self] in
-                guard let self else { return }
-                tooltipsService.didPerformTooltipTargetAction(id: .walletBalanceWithdraw)
-                didTapWithdraw?(wallet)
-            }
-        )
-        let depositButton = WalletBalanceHeaderButtonsRedesignView.Model.Button(
-            title: TKLocales.WalletButtons.deposit,
-            icon: .TKUIKit.Icons.Size28.arrowDownOutline,
-            isEnabled: wallet.isReceiveEnable, // TODO: - enabled flag
-            action: { [weak self] in self?.didTapDeposit?(wallet) }
-        )
-
-        let swapButton: WalletBalanceHeaderButtonsRedesignView.Model.Button? = {
-            guard !configuration.flag(\.isSwapDisable, network: wallet.network) else { return nil }
-            return WalletBalanceHeaderButtonsRedesignView.Model.Button(
-                title: TKLocales.WalletButtons.swap,
-                icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
-                isEnabled: wallet.isSwapEnable,
-                action: { [weak self] in self?.didTapSwap?(wallet) }
-            )
-        }()
-        let stakeButton: WalletBalanceHeaderButtonsRedesignView.Model.Button? = {
-            guard !configuration.flag(\.stakingDisabled, network: wallet.network) else { return nil }
-            return WalletBalanceHeaderButtonsRedesignView.Model.Button(
-                title: TKLocales.WalletButtons.stake,
-                icon: .TKUIKit.Icons.Size28.stakingOutline,
-                isEnabled: wallet.isStakeEnable,
-                action: { [weak self] in self?.didTapStake?(wallet) }
-            )
-        }()
-
-        return WalletBalanceHeaderButtonsRedesignView.Model(
-            withdrawButton: withdrawButton,
-            depositButton: depositButton,
-            swapButton: swapButton,
-            stakeButton: stakeButton,
-            withdrawTooltipEnabled: wallet.isSendEnable
-        )
-    }
-
-    func didTapCopy(address: String, toastConfiguration: ToastPresenter.Configuration) {
-        UINotificationFeedbackGenerator().notificationOccurred(.warning)
-        UIPasteboard.general.string = address
-
-        didCopy?(toastConfiguration)
-    }
 }
 
 private extension String {
     static let setupSectionHeaderIdentifier = "SetupSectionHeaderIdentifier"
+}
+
+private enum AssetsListLayout {
+    static let collapsedVisibleCount = 6
+    static let moreButtonThreshold = collapsedVisibleCount + 1
+    static let moreAssetsItemIdentifier = "more-assets"
 }
 
 private extension Array where Element == WalletBalanceBalanceModel.Item {

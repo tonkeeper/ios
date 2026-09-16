@@ -172,7 +172,6 @@ private extension TKModalCardListItemView {
 }
 
 private extension CGFloat {
-    static let leftRightSpacing: CGFloat = 18
     static let rightTopShimmerHeight: CGFloat = 22
     static let rightBottomShimmerheight: CGFloat = 22
     static let shimmerWidth: CGFloat = 50

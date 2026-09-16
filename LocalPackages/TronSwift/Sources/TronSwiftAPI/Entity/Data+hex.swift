@@ -1,10 +1,20 @@
 import Foundation
 
 public extension Data {
-    init?(hex: String) {
+    /// Named apart from the `Data(hex:)` overloads shipped by `TonSwift` and `WalletConnectUtils`:
+    /// both decode a malformed string into plausible-looking bytes instead of failing, and which one
+    /// wins is decided by overload resolution at the call site.
+    ///
+    /// `KeeperCoreComponents` carries an identical copy for the modules that cannot reach this one;
+    /// see the note there. `DataHexTests` runs the same vectors as its `DataStrictHexTests`.
+    init?(strictHex hex: String) {
         var hex = hex
         if hex.hasPrefix("0x") {
             hex = String(hex.dropFirst(2))
+        }
+
+        guard hex.count.isMultiple(of: 2) else {
+            return nil
         }
 
         let len = hex.count / 2

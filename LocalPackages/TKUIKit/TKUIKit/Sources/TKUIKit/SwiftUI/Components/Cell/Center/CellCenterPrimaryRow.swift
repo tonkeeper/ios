@@ -27,52 +27,59 @@ public struct CellCenterPrimaryRow: View {
                 ForEach(Array(content.tags.enumerated()), id: \.offset) { _, tag in
                     TKTagSwiftUIView(config: tag)
                 }
+                .offset(y: -1)
             }
 
-            if let status = content.status {
-                statusIconView(status: status)
-                    .padding(.leading, 6)
+            if !content.statusIcons.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(Array(content.statusIcons.enumerated()), id: \.offset) { _, status in
+                        statusIconView(status: status)
+                    }
+                }
+                .padding(.leading, 4)
+                .padding(.bottom, 1)
             }
             Spacer(minLength: 0)
             if let value = content.value {
-                Text(value.title)
-                    .textStyle(value.style)
-                    .foregroundStyle(value.color)
-                    .lineLimit(1)
+                valueView(value)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func valueView(_ value: ValueConfig) -> some View {
+        let text = Text(value.title)
+            .textStyle(value.style)
+            .lineLimit(1)
+
+        if value.appliesColor {
+            text.foregroundStyle(value.color)
+        } else {
+            text
         }
     }
 
     private func shimmerView(primaryWidth: CGFloat, secondaryWidth: CGFloat?) -> some View {
         HStack(alignment: .center, spacing: 0) {
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
+            ShimmerSwiftUIView(
+                config: ShimmerSwiftUIView.Config(
+                    color: .backgroundContentTint,
+                    cornerRadius: .capsule
+                )
+            )
+            .frame(width: primaryWidth, height: Self.shimmerTextContentHeight)
+            .padding(.vertical, (Self.defaultTitleTextStyle.lineHeight - Self.shimmerTextContentHeight) / 2)
+
+            Spacer(minLength: 0)
+            if let secondaryWidth {
                 ShimmerSwiftUIView(
                     config: ShimmerSwiftUIView.Config(
-                        color: .Background.contentTint,
+                        color: .backgroundContentTint,
                         cornerRadius: .capsule
                     )
                 )
-                .frame(width: primaryWidth, height: 12)
-                Spacer(minLength: 0)
-            }
-            .frame(height: Self.defaultTitleTextStyle.lineHeight)
-            .padding(.vertical, -1)
-            Spacer(minLength: 0)
-            if let secondaryWidth {
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    ShimmerSwiftUIView(
-                        config: ShimmerSwiftUIView.Config(
-                            color: .Background.contentTint,
-                            cornerRadius: .capsule
-                        )
-                    )
-                    .frame(width: secondaryWidth, height: 12)
-                    Spacer(minLength: 0)
-                }
-                .frame(height: Self.defaultValueTextStyle.lineHeight)
-                .padding(.vertical, -1)
+                .frame(width: secondaryWidth, height: Self.shimmerTextContentHeight)
+                .padding(.vertical, (Self.defaultTitleTextStyle.lineHeight - Self.shimmerTextContentHeight) / 2)
             }
         }
     }
@@ -92,17 +99,21 @@ public struct CellCenterPrimaryRow: View {
     private static var defaultValueTextStyle: TKTextStyle {
         .label1
     }
+
+    private static var shimmerTextContentHeight: CGFloat {
+        12
+    }
 }
 
 public extension CellCenterPrimaryRow {
     struct TitleConfig {
         public var text: String
-        public var color: Color
+        public var color: TKColor
         public var style: TKTextStyle
 
         public init(
             text: String,
-            color: Color = Color(uiColor: .Text.primary),
+            color: TKColor = .textPrimary,
             style: TKTextStyle? = nil
         ) {
             self.text = text
@@ -113,42 +124,42 @@ public extension CellCenterPrimaryRow {
 
     struct ValueConfig {
         public var title: AttributedString
-        public var color: Color
+        public var color: TKColor
         public var style: TKTextStyle
+        public var appliesColor: Bool
 
         public init(
             title: String,
-            color: Color = Color(uiColor: .Text.primary),
+            color: TKColor = .textPrimary,
             style: TKTextStyle? = nil
         ) {
-            self.title = {
-                var value = AttributedString(title)
-                value.foregroundColor = color
-                return value
-            }()
+            self.title = AttributedString(title)
             self.color = color
             self.style = style ?? defaultValueTextStyle
+            self.appliesColor = true
         }
 
         public init(
             title: AttributedString,
-            color: Color = Color(uiColor: .Text.primary),
+            color: TKColor = .textPrimary,
+            appliesColor: Bool = false,
             style: TKTextStyle? = nil
         ) {
             self.title = title
             self.color = color
             self.style = style ?? defaultValueTextStyle
+            self.appliesColor = appliesColor
         }
     }
 
     struct StatusIcon {
         public var image: UIImage
-        public var color: Color
+        public var color: TKColor
         public var size: CGFloat
 
         public init(
             image: UIImage,
-            color: Color = Color(uiColor: .Icon.tertiary),
+            color: TKColor = .iconTertiary,
             size: CGFloat
         ) {
             self.image = image
@@ -166,17 +177,20 @@ public extension CellCenterPrimaryRow {
         public var title: TitleConfig
         public var tags: [TKTagSwiftUIViewConfig]
         public var status: StatusIcon?
+        public var statusIcons: [StatusIcon]
         public var value: ValueConfig?
 
         public init(
             title: TitleConfig,
             tags: [TKTagSwiftUIViewConfig]? = nil,
             status: StatusIcon? = nil,
+            statusIcons: [StatusIcon]? = nil,
             value: ValueConfig? = nil
         ) {
             self.title = title
             self.tags = tags ?? []
             self.status = status
+            self.statusIcons = statusIcons ?? status.map { [$0] } ?? []
             self.value = value
         }
 
@@ -184,11 +198,13 @@ public extension CellCenterPrimaryRow {
             title: String,
             tags: [TKTagSwiftUIViewConfig]? = nil,
             status: StatusIcon? = nil,
+            statusIcons: [StatusIcon]? = nil,
             value: ValueConfig? = nil
         ) {
             self.title = TitleConfig(text: title)
             self.tags = tags ?? []
             self.status = status
+            self.statusIcons = statusIcons ?? status.map { [$0] } ?? []
             self.value = value
         }
     }

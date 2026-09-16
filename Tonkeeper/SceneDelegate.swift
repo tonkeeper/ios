@@ -8,6 +8,7 @@
 import App
 import TKCoordinator
 import TKFeatureFlags
+import TKFeatureFlagsFirebase
 import TKUIKit
 import UIKit
 

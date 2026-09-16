@@ -248,31 +248,31 @@ extension AccountEventModel.Action.ActionType {
     var icon: UIImage? {
         switch self {
         case .sent:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .receieved:
-            return .App.Icons.Size28.trayArrowDown
+            return .TKUIKit.Icons.Size28.trayArrowDown
         case .mint:
-            return .App.Icons.Size28.trayArrowDown
+            return .TKUIKit.Icons.Size28.trayArrowDown
         case .burn:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .depositStake:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .withdrawStake:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .withdrawStakeRequest:
-            return .App.Icons.Size28.trayArrowDown
+            return .TKUIKit.Icons.Size28.trayArrowDown
         case .jettonSwap:
-            return .App.Icons.Size28.swapHorizontalAlternative
+            return .TKUIKit.Icons.Size28.swapHorizontalAlternative
         case .spam:
-            return .App.Icons.Size28.trayArrowDown
+            return .TKUIKit.Icons.Size28.trayArrowDown
         case .bounced:
             return .TKUIKit.Icons.Size28.return
         case .subscribed:
-            return .App.Icons.Size28.bell
+            return .TKUIKit.Icons.Size28.bell
         case .unsubscribed:
-            return .App.Icons.Size28.xmark
+            return .TKUIKit.Icons.Size28.xmark
         case .walletInitialized:
-            return .App.Icons.Size28.donemark
+            return .TKUIKit.Icons.Size28.donemark
         case .contractExec:
             return .TKUIKit.Icons.Size28.gear
         case .nftCollectionCreation:
@@ -280,19 +280,19 @@ extension AccountEventModel.Action.ActionType {
         case .nftCreation:
             return .TKUIKit.Icons.Size28.gear
         case .removalFromSale:
-            return .App.Icons.Size28.xmark
+            return .TKUIKit.Icons.Size28.xmark
         case .nftPurchase:
-            return .App.Icons.Size28.shoppingBag
+            return .TKUIKit.Icons.Size28.shoppingBag
         case .purchase:
-            return .App.Icons.Size28.shoppingBag
+            return .TKUIKit.Icons.Size28.shoppingBag
         case .bid:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .putUpForAuction:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .endOfAuction:
-            return .App.Icons.Size28.xmark
+            return .TKUIKit.Icons.Size28.xmark
         case .putUpForSale:
-            return .App.Icons.Size28.trayArrowUp
+            return .TKUIKit.Icons.Size28.trayArrowUp
         case .domainRenew:
             return .TKUIKit.Icons.Size28.renew
         case .unknown:

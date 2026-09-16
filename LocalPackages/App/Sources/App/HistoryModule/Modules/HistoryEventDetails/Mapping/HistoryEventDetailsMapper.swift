@@ -128,7 +128,7 @@ final class HistoryEventDetailsMapper {
                 status: status,
                 detailsButton: detailsButton,
                 network: network,
-                isNetworkBadgeVisible: wallet.isTronTurnOn && jettonTransfer.jettonInfo.isTonUSDT,
+                isNetworkBadgeVisible: wallet.tron != nil && jettonTransfer.jettonInfo.isTonUSDT,
                 decryptedCommentProvider: decryptedCommentProvider
             )
         case let .nftItemTransfer(nftItemTransfer):
@@ -384,7 +384,7 @@ final class HistoryEventDetailsMapper {
             guard transferDirection == .receive else { return nil }
             let isManagementAvailable: Bool = {
                 let compareResult = NSDecimalNumber(value: tonAmount)
-                    .compare(configuration.reportAmount(network: network).multiplying(byPowerOf10: Int16(TonInfo.fractionDigits)))
+                    .compare(configuration.reportAmount(network: network).toNanoTons())
                 if compareResult == .orderedAscending || compareResult == .orderedSame {
                     return true
                 } else {
@@ -400,7 +400,7 @@ final class HistoryEventDetailsMapper {
             headerImage: .transfer(
                 TransactionConfirmationHeaderImageItem(
                     configuration: TransactionConfirmationHeaderImageItemView.Configuration(
-                        image: .image(.App.Currency.Vector.ton),
+                        image: .image(.TKUIKit.Icons.Size44.currencyTon),
                         corners: .circle,
                         badge: nil
                     ),
@@ -544,7 +544,7 @@ final class HistoryEventDetailsMapper {
                 )
 
                 let compareResult = NSDecimalNumber(decimal: tonAmount)
-                    .compare(configuration.reportAmount(network: network).multiplying(byPowerOf10: Int16(TonInfo.fractionDigits)))
+                    .compare(configuration.reportAmount(network: network).toNanoTons())
                 if compareResult == .orderedAscending || compareResult == .orderedSame {
                     return true
                 } else {

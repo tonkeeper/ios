@@ -1,8 +1,7 @@
+import Foundation
 import KeeperCore
 import TKCore
 import TKLocalize
-import TKUIKit
-import UIKit
 
 public struct CustomizeWalletModel {
     public let name: String
@@ -10,62 +9,83 @@ public struct CustomizeWalletModel {
     public let icon: WalletIcon
 }
 
-public protocol CustomizeWalletModuleOutput: AnyObject {
+protocol CustomizeWalletModuleOutput: AnyObject {
     var didCustomizeWallet: ((CustomizeWalletModel) -> Void)? { get set }
 }
 
-protocol CustomizeWalletViewModel: AnyObject {
-    var didUpdateModel: ((CustomizeWalletView.Model) -> Void)? { get set }
-    var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)? { get set }
-    var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)? { get set }
-    var didSelectColor: ((UIColor) -> Void)? { get set }
-    var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)? { get set }
-    var didUpdateContinueButtonIsLoadig: ((Bool) -> Void)? { get set }
-
-    func viewDidLoad()
-    func setWalletName(_ name: String)
-    func setIcon(_ walletIcon: WalletIcon)
-}
-
-final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, CustomizeWalletModuleOutput {
+final class CustomizeWalletViewModel: ObservableObject, CustomizeWalletModuleOutput {
     // MARK: - CustomizeWalletModuleOutput
 
     var didCustomizeWallet: ((CustomizeWalletModel) -> Void)?
 
-    // MARK: - CustomizeWalletViewModel
+    // MARK: - State
 
-    var didUpdateModel: ((CustomizeWalletView.Model) -> Void)?
-    var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)?
-    var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)?
-    var didSelectColor: ((UIColor) -> Void)?
-    var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)?
-    var didUpdateContinueButtonIsLoadig: ((Bool) -> Void)?
+    struct HeaderButton {
+        enum Icon {
+            case back
+            case close
+            case chevronDown
+        }
 
-    func viewDidLoad() {
-        didUpdateModel?(createModel(items: []))
-        didUpdateContinueButtonIsEnabled?(true)
-        Task {
-            let items = await createIconPickerItems()
-            guard !items.isEmpty else { return }
-            await MainActor.run {
-                didSelectWalletIcon?((items.first(where: { $0 == self.icon }) ?? items[0]).colorIconBadgeViewModel)
-                didUpdateModel?(createModel(items: items))
-                didSelectColor?(self.tintColor.uiColor)
-            }
+        let icon: Icon
+        let action: () -> Void
+    }
+
+    @Published var leftHeaderButton: HeaderButton?
+    @Published var rightHeaderButton: HeaderButton?
+    @Published var nameInput: String
+    @Published private(set) var tintColor: WalletTintColor
+    @Published private(set) var icon: WalletIcon
+    @Published private(set) var icons: [WalletIcon] = []
+    @Published private(set) var isContinueEnabled = true
+    @Published private(set) var isContinueLoading = false
+
+    let title = TKLocales.CustomizeWallet.title
+    let description = TKLocales.CustomizeWallet.description
+    let namePlaceholder = TKLocales.CustomizeWallet.inputPlaceholder
+
+    var continueButtonTitle: String? {
+        switch configurator.continueButtonMode {
+        case .hidden:
+            nil
+        case let .visible(title, _):
+            title
         }
     }
 
-    func setWalletName(_ name: String) {
-        let isNameValid = !name.isEmpty
-        self.name = isNameValid ? name : .defaultWalletName
-        didUpdateContinueButtonIsEnabled?(isNameValid)
+    @MainActor
+    func start() async {
+        guard icons.isEmpty else { return }
+        let items = await createIconPickerItems()
+        guard !items.isEmpty else { return }
+        icons = items
+        if !items.contains(icon), let first = items.first {
+            icon = first
+        }
+    }
+
+    func setName(_ input: String) {
+        let isNameValid = !input.isEmpty
+        name = isNameValid ? input : defaultName
+        isContinueEnabled = isNameValid
         configurator.didEditName()
     }
 
-    func setIcon(_ walletIcon: WalletIcon) {
-        self.icon = walletIcon
-        self.didSelectWalletIcon?(walletIcon.colorIconBadgeViewModel)
-        self.configurator.didSelectColor()
+    func select(color: WalletTintColor) {
+        tintColor = color
+        configurator.didSelectColor()
+    }
+
+    func select(icon: WalletIcon) {
+        self.icon = icon
+        configurator.didSelectColor()
+    }
+
+    func didTapContinue() {
+        guard case let .visible(_, action) = configurator.continueButtonMode else { return }
+        isContinueEnabled = false
+        isContinueLoading = true
+        action()
     }
 
     // MARK: - Data Source
@@ -75,8 +95,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
     // MARK: - Dependencies
 
     private var name: String
-    private var tintColor: WalletTintColor
-    private var icon: WalletIcon
+    private let defaultName: String
     private let configurator: CustomizeWalletViewModelConfigurator
 
     init(
@@ -85,7 +104,10 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
         icon: WalletIcon? = nil,
         configurator: CustomizeWalletViewModelConfigurator
     ) {
-        self.name = name ?? .defaultWalletName
+        let resolvedName = name ?? .defaultWalletName
+        self.name = resolvedName
+        defaultName = resolvedName
+        nameInput = resolvedName
         self.tintColor = tintColor ?? .defaultColor
         self.icon = icon ?? .default
         self.configurator = configurator
@@ -96,67 +118,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
     }
 }
 
-private extension CustomizeWalletViewModelImplementation {
-    func createModel(items: [WalletIcon]) -> CustomizeWalletView.Model {
-        let titleDescriptionModel = TKTitleDescriptionView.Model(
-            title: TKLocales.CustomizeWallet.title,
-            bottomDescription: TKLocales.CustomizeWallet.description
-        )
-
-        let walletNameTextFieldPlaceholder = TKLocales.CustomizeWallet.inputPlaceholder
-
-        let colorPickerModel = createColorPickerModel()
-        let iconPickerModel = WalletIconPickerView.Model(items: items)
-
-        var continueButtonConfiguration: TKButton.Configuration?
-        switch configurator.continueButtonMode {
-        case .hidden:
-            continueButtonConfiguration = nil
-        case let .visible(title, action):
-            continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-                category: .primary,
-                size: .large
-            )
-            continueButtonConfiguration?.content.title = .plainString(title)
-            continueButtonConfiguration?.action = { [weak self] in
-                self?.didUpdateContinueButtonIsEnabled?(false)
-                self?.didUpdateContinueButtonIsLoadig?(true)
-                action()
-            }
-        }
-
-        return CustomizeWalletView.Model(
-            titleDescriptionModel: titleDescriptionModel,
-            continueButtonConfiguration: continueButtonConfiguration,
-            walletNameTextFieldPlaceholder: walletNameTextFieldPlaceholder,
-            walletNameDefaultValue: name,
-            colorPickerModel: colorPickerModel,
-            iconPickerModel: iconPickerModel
-        )
-    }
-
-    func createColorPickerModel() -> WalletColorPickerView.Model {
-        var colorItems = [WalletColorPickerView.Model.ColorItem]()
-        var initialSelectedIndex: Int?
-        for (index, color) in WalletTintColor.allCases.enumerated() {
-            let colorItem = WalletColorPickerView.Model.ColorItem(
-                color: color.uiColor
-            ) { [weak self] in
-                self?.didSelectColor?(color.uiColor)
-                self?.tintColor = color
-                self?.configurator.didSelectColor()
-            }
-            colorItems.append(colorItem)
-            if tintColor == color {
-                initialSelectedIndex = index
-            }
-        }
-        return WalletColorPickerView.Model(
-            items: colorItems,
-            intitialSelectedIndex: initialSelectedIndex
-        )
-    }
-
+private extension CustomizeWalletViewModel {
     func createIconPickerItems() async -> [WalletIcon] {
         var emojis = await emojiDataSource.loadData()
 
@@ -183,21 +145,6 @@ private extension CustomizeWalletViewModelImplementation {
         )
         didCustomizeWallet?(model)
     }
-}
-
-private extension WalletIcon {
-    var colorIconBadgeViewModel: WalletColorIconBadgeView.Model {
-        switch self {
-        case let .emoji(string):
-            return .emoji(string)
-        case let .icon(image):
-            return .image(image.image)
-        }
-    }
-}
-
-private extension Int {
-    static let colorsCount = 26
 }
 
 private extension WalletIcon {

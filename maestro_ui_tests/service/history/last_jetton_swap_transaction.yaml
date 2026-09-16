@@ -1,10 +1,17 @@
 appId: com.jbig.tonkeeper.dev
 ---
+# Poll until TonAPI indexes the swap we just sent — limit=1 often returns a non-swap event
+# right after signing, or a stale swap from a previous run.
 - runScript:
     file: ../../scripts/api/v2/accounts/getLastSwapEvent.js
     env:
       addr: ${WALLET_WITH_MONEY_ADDR}
       auth_token: ${auth}
+      expected_ton_in: ${nanoTonToSwap}
+      fresh_within_sec: "600"
+      events_limit: "15"
+      poll_attempts: "8"
+      poll_delay_ms: "12000"
 
 - runScript: ../../scripts/utils/formatter.js
 

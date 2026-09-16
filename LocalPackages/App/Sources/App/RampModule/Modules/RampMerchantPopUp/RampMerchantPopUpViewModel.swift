@@ -23,8 +23,6 @@ final class RampMerchantPopUpViewModelImplementation: RampMerchantPopUpViewModel
         configure()
     }
 
-    private var doNotShowAgain = false
-
     private let merchantInfo: OnRampMerchantInfo
     private let actionURL: URL
     private let appSettings: AppSettings

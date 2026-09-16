@@ -3,7 +3,7 @@ import UIKit
 
 struct ChargeItem: AmountInputUnit {
     var inputSymbol: AmountInputSymbol {
-        .icon(.TKUIKit.Icons.Vector.flash)
+        .icon(.TKUIKit.Icons.Size16.batteryFlash)
     }
 
     var fractionalDigits: Int {

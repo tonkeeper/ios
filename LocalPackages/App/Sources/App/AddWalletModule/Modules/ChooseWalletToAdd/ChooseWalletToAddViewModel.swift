@@ -6,7 +6,7 @@ import TKLocalize
 import TKUIKit
 import TonSwift
 
-public protocol ChooseWalletToAddModuleOutput: AnyObject {
+protocol ChooseWalletToAddModuleOutput: AnyObject {
     var didSelectWallets: (([ActiveWalletModel]) -> Void)? { get set }
 }
 

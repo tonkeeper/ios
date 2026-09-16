@@ -3,21 +3,6 @@ import TKFeatureFlags
 import TKUIKit
 import UIKit
 
-private extension UIView {
-    var firstButtonWithMenu: UIButton? {
-        if let button = self as? UIButton, button.menu != nil, !button.isHidden, button.isEnabled {
-            return button
-        }
-        for subview in subviews {
-            guard let button = subview.firstButtonWithMenu else {
-                continue
-            }
-            return button
-        }
-        return nil
-    }
-}
-
 final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
     var didUpdateState: ((SettingsListState) -> Void)?
 
@@ -47,16 +32,16 @@ final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
         let disabledFlags = sortedFlags.filter { configurationAssembly.configuration.isFeatureFlagDisabledByBootConfiguration($0) }
 
         let sections: [SettingsListSection] = [
-            .listItems(
+            .items(
                 SettingsListItemsSection(
                     items: enabledFlags.compactMap(createFlagItem).map(SettingsListItemsSectionItem.listItem),
-                    headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Allowed by keys/all")
+                    header: SettingsListSectionHeader(title: "Allowed by keys/all")
                 )
             ),
-            .listItems(
+            .items(
                 SettingsListItemsSection(
                     items: disabledFlags.compactMap(createFlagItem).map(SettingsListItemsSectionItem.listItem),
-                    headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Disabled by keys/all")
+                    header: SettingsListSectionHeader(title: "Disabled by keys/all")
                 )
             ),
         ]
@@ -71,15 +56,29 @@ final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
         guard let value = valuesByFlag[flag] else {
             return nil
         }
-        let isDisabledByBootConfig = configurationAssembly.configuration.isFeatureFlagDisabledByBootConfiguration(flag)
+        let bundleValue = value.bundleValue
         let localValue = value.localValue
+        let isVetoedByBootConfig = configurationAssembly.configuration
+            .isFeatureFlagDisabledByBootConfiguration(flag) && bundleValue == nil && localValue == nil
         let remoteValue = value.remoteValue
         let defaultValue = value.defaultValue
-        let resolvedValue = value.resolvedValue
+        let resolvedValue = configurationAssembly.configuration.featureEnabled(flag)
 
-        let titleColor: UIColor = isDisabledByBootConfig ? .Text.tertiary : .Text.primary
-        let detailsColor: UIColor = isDisabledByBootConfig ? .Text.tertiary : .Text.secondary
-        let localValueColor: UIColor = isDisabledByBootConfig ? .Text.tertiary : .Text.primary
+        let titleColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textPrimary
+        let detailsColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textSecondary
+        let localValueColor: TKColor = isVetoedByBootConfig ? .textTertiary : .textPrimary
+
+        var captions = [
+            SettingsListItemCaption("remote: \(remoteValue.displayText)", color: detailsColor),
+            SettingsListItemCaption("local: \(localValue.displayText)", color: detailsColor),
+            SettingsListItemCaption("default: \(defaultValue.displayText)", color: detailsColor),
+        ]
+        if bundleValue != nil {
+            captions.insert(
+                SettingsListItemCaption("bundle: \(bundleValue.displayText)", color: detailsColor),
+                at: 0
+            )
+        }
 
         let applyOverride: (Bool?) -> Void = { [weak self] overrideValue in
             guard let self else { return }
@@ -89,92 +88,46 @@ final class SettingsListFeatureFlagsConfigurator: SettingsListConfigurator {
                 self.featureFlags.resetValue(for: flag)
             }
             self.didUpdateState?(self.createState())
-        }
-
-        let menu = UIMenu(children: [
-            UIAction(
-                title: "default",
-                state: localValue == nil ? .on : .off,
-                handler: { _ in
-                    applyOverride(nil)
-                }
-            ),
-            UIAction(
-                title: "force true",
-                state: localValue == true ? .on : .off,
-                handler: { _ in
-                    applyOverride(true)
-                }
-            ),
-            UIAction(
-                title: "force false",
-                state: localValue == false ? .on : .off,
-                handler: { _ in
-                    applyOverride(false)
-                }
-            ),
-        ])
-
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: flag.localKey.withTextStyle(.label1, color: titleColor, alignment: .left),
-                        numberOfLines: 1
-                    ),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(
-                            text: "remote: \(remoteValue.displayText)",
-                            color: detailsColor,
-                            textStyle: .body2
-                        ),
-                        TKListItemTextView.Configuration(
-                            text: "local: \(localValue.displayText)",
-                            color: detailsColor,
-                            textStyle: .body2
-                        ),
-                        TKListItemTextView.Configuration(
-                            text: "default: \(defaultValue.displayText)",
-                            color: detailsColor,
-                            textStyle: .body2
-                        ),
-                    ]
+            ToastPresenter.showToast(
+                configuration: .defaultConfiguration(
+                    text: bundleValue == nil
+                        ? "Restart the app to apply"
+                        : "Ignored: forced by bundled FlagsOverride.json"
                 )
-            )
-        )
-
-        if isDisabledByBootConfig {
-            return SettingsListItem(
-                id: "featureFlag_\(flag.localKey)",
-                cellConfiguration: cellConfiguration,
-                accessory: .text(
-                    TKListItemTextAccessoryView.Configuration(
-                        text: "resolved: \(configurationAssembly.configuration.featureEnabled(flag).displayText)",
-                        color: localValueColor,
-                        textStyle: .body2
-                    )
-                ),
-                onSelection: { _ in
-                    ToastPresenter.showToast(
-                        configuration: .defaultConfiguration(text: "Feature is disabled via keys/all")
-                    )
-                }
             )
         }
 
         return SettingsListItem(
             id: "featureFlag_\(flag.localKey)",
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: "resolved: \(resolvedValue.displayText)\ntap to override",
-                    color: localValueColor,
-                    textStyle: .body2,
-                    numberOfLines: 2,
-                    menu: menu
+            title: SettingsListItemTitle(flag.localKey),
+            titleColor: titleColor,
+            captions: captions,
+            accessory: .menu(
+                SettingsListItemMenuAccessory(
+                    label: SettingsListItemTextAccessory(
+                        text: "resolved: \(resolvedValue.displayText)\ntap to override",
+                        color: localValueColor,
+                        lineLimit: 2
+                    ),
+                    options: [
+                        SettingsListItemMenuOption(
+                            title: "default",
+                            isSelected: localValue == nil,
+                            action: { applyOverride(nil) }
+                        ),
+                        SettingsListItemMenuOption(
+                            title: "force true",
+                            isSelected: localValue == true,
+                            action: { applyOverride(true) }
+                        ),
+                        SettingsListItemMenuOption(
+                            title: "force false",
+                            isSelected: localValue == false,
+                            action: { applyOverride(false) }
+                        ),
+                    ]
                 )
-            ),
-            onSelection: nil
+            )
         )
     }
 }

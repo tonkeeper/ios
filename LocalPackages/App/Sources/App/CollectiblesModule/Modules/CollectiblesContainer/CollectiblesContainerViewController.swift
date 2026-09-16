@@ -11,7 +11,7 @@ final class CollectiblesContainerViewController: GenericViewViewController<Colle
         collectiblesViewController?.scrollToTop()
     }
 
-    var collectiblesViewController: CollectiblesViewController? {
+    var collectiblesViewController: CollectiblesListViewController? {
         didSet {
             oldValue?.willMove(toParent: nil)
             customView.setContentView(nil)
@@ -36,6 +36,11 @@ final class CollectiblesContainerViewController: GenericViewViewController<Colle
 
         setup()
         viewModel.viewDidLoad()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
     private func setup() {

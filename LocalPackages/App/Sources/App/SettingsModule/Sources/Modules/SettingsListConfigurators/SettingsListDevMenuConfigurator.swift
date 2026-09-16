@@ -13,21 +13,21 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     var didSelectRNSeedPhrasesRecovery: (() -> Void)?
     var didSelectSeedPhrasesRecovery: (() -> Void)?
     var didSelectExportLogs: (() -> Void)?
+    var didSelectImportTestnetWallet: (() -> Void)?
     var didSelectFeatureFlags: (() -> Void)?
     var didSelectTooltips: (() -> Void)?
     var didSelectDesignSystem: (() -> Void)?
+    var didSelectToastTesting: (() -> Void)?
+    var didSelectMysteryRaffle: (() -> Void)?
 
     var didSelectStoreCountryCode: ((_ completion: @escaping () -> Void) -> Void)?
     var didSelectDeviceCountryCode: ((_ completion: @escaping () -> Void) -> Void)?
+    var didSelectBuildVersion: ((_ completion: @escaping () -> Void) -> Void)?
 
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var title: String {
         "Dev Menu"
-    }
-
-    var isSelectable: Bool {
-        false
     }
 
     var didUpdateState: ((SettingsListState) -> Void)?
@@ -59,6 +59,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     private let uniqueIdProvider: UniqueIdProvider
     private let storiesService: StoriesService
     private let homeBannersStore: HomeBannersStore
+    private let mysteryRaffleTradeBannerDismissStore: MysteryRaffleTradeBannerDismissStore
     private let appInfoProvider: KeeperCore.AppInfoProvider
     private let featureFlags: TKFeatureFlags
     private let tkAppSettings: TKAppSettings
@@ -67,6 +68,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         uniqueIdProvider: UniqueIdProvider,
         storiesService: StoriesService,
         homeBannersStore: HomeBannersStore,
+        mysteryRaffleTradeBannerDismissStore: MysteryRaffleTradeBannerDismissStore = UserDefaultsMysteryRaffleTradeBannerDismissStore(),
         appInfoProvider: KeeperCore.AppInfoProvider,
         featureFlags: TKFeatureFlags,
         tkAppSettings: TKAppSettings
@@ -74,6 +76,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         self.uniqueIdProvider = uniqueIdProvider
         self.storiesService = storiesService
         self.homeBannersStore = homeBannersStore
+        self.mysteryRaffleTradeBannerDismissStore = mysteryRaffleTradeBannerDismissStore
         self.appInfoProvider = appInfoProvider
         self.featureFlags = featureFlags
         self.tkAppSettings = tkAppSettings
@@ -81,6 +84,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
     private func createState() -> SettingsListState {
         var sections = [SettingsListSection]()
+
         sections.append(createCacheSection())
         sections.append(createLogsSection())
         if let seedPhraseRecoverySection = createSeedPhraseRecoverySection() {
@@ -92,6 +96,8 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
 
         if let regionSection = createDevOverridesSection() {
             sections.append(createDesignSystemSection())
+            sections.append(createPerpTradingSection())
+            sections.append(createMysteryRaffleSection())
             sections.append(regionSection)
         }
 
@@ -106,7 +112,7 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             createRNSeedPhrasesItem(),
             createSeedPhraseRecoveryItem(),
         ]
-        return SettingsListSection.listItems(SettingsListItemsSection(
+        return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem)
         ))
     }
@@ -114,9 +120,9 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     private func createCacheSection() -> SettingsListSection {
         let items = [
             createResetWatchedStories(),
-            createResetDismissedHomeBanners(),
+            createResetDismissedBanners(),
         ]
-        return SettingsListSection.listItems(SettingsListItemsSection(
+        return .items(SettingsListItemsSection(
             items: items.map(SettingsListItemsSectionItem.listItem)
         ))
     }
@@ -124,118 +130,115 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     private func createLogsSection() -> SettingsListSection {
         let items = [
             createExportLogsItem(),
+            createFirebaseInstallationIDItem(),
+            createFirebaseUserIDItem(),
+            createBuildVersionItem(),
         ]
-        return SettingsListSection.listItems(
+        return .items(
             SettingsListItemsSection(
                 items: items.map(SettingsListItemsSectionItem.listItem),
-                headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Logs")
+                header: SettingsListSectionHeader(title: "Logs")
             )
         )
     }
 
     private func createRNSeedPhrasesItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Pre 5.0.0 seed phrases recovery")
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .version4SeedPhrasesIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle("Pre 5.0.0 seed phrases recovery"),
+            onTap: { [weak self] _ in
                 self?.didSelectRNSeedPhrasesRecovery?()
             }
         )
     }
 
     private func createSeedPhraseRecoveryItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "5 version seed phrases recovery")
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .version5SeedPhrasesIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle("5 version seed phrases recovery"),
+            onTap: { [weak self] _ in
                 self?.didSelectSeedPhrasesRecovery?()
             }
         )
     }
 
     private func createResetWatchedStories() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Reset watched stories")
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .resetWatchedStoriesIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle("Reset watched stories"),
+            onTap: { [weak self] _ in
                 self?.storiesService.resetShownStories()
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
             }
         )
     }
 
-    private func createResetDismissedHomeBanners() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Reset dismissed home banners")
-                )
-            )
-        )
-        return SettingsListItem(
-            id: .resetDismissedHomeBannersIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+    private func createResetDismissedBanners() -> SettingsListItem {
+        SettingsListItem(
+            id: .resetDismissedBannersIdentifier,
+            title: SettingsListItemTitle("Reset dismissed banners"),
+            onTap: { [weak self] _ in
                 self?.homeBannersStore.resetDismissedBanners()
+                self?.mysteryRaffleTradeBannerDismissStore.resetDismissedBanners()
                 ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reseted"))
             }
         )
     }
 
     private func createExportLogsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Export logs")
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: .exportLogsIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle("Export logs"),
+            onTap: { [weak self] _ in
                 self?.didSelectExportLogs?()
             }
         )
     }
 
-    private func createLoggingSeverityItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: "Minimum severity"
-                    )
-                )
-            )
+    private func createFirebaseInstallationIDItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .firebaseInstallationIDIdentifier,
+            title: SettingsListItemTitle("Firebase installation ID"),
+            onTap: { _ in
+                Task { @MainActor in
+                    guard let id = await FirebaseInstallationsProvider().getInstallationID() else {
+                        ToastPresenter.showToast(configuration: .defaultConfiguration(text: "No installation ID"))
+                        return
+                    }
+                    Pasteboard.copy(value: id)
+                }
+            }
         )
+    }
 
+    private func createFirebaseUserIDItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .firebaseUserIDIdentifier,
+            title: SettingsListItemTitle("Firebase user ID"),
+            onTap: { [weak self] _ in
+                guard let self else { return }
+                Pasteboard.copy(value: uniqueIdProvider.uniqueDeviceId.uuidString)
+            }
+        )
+    }
+
+    private func createBuildVersionItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .buildVersionItemIdentifier,
+            title: SettingsListItemTitle("Metrics tag"),
+            accessory: .text(
+                SettingsListItemTextAccessory(text: appInfoProvider.version)
+            ),
+            onTap: { [weak self] _ in
+                self?.didSelectBuildVersion? {
+                    guard let self else { return }
+                    self.didUpdateState?(self.createState())
+                }
+            }
+        )
+    }
+
+    private func createLoggingSeverityItem() -> SettingsListItem {
         let selectedValue = Log.configuration.minimumSeverity
         let applyValue: (LogSeverity) -> Void = { [weak self] value in
             TKAppPreferences.minimumLogSeverityRawValue = value.rawValue
@@ -245,116 +248,91 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             self.didUpdateState?(state)
         }
 
-        let menu = UIMenu(children: [
-            UIAction(
-                title: "debug",
-                state: selectedValue == .debug ? .on : .off,
-                handler: { _ in
-                    applyValue(.debug)
-                }
-            ),
-            UIAction(
-                title: "info",
-                state: selectedValue == .info ? .on : .off,
-                handler: { _ in
-                    applyValue(.info)
-                }
-            ),
-            UIAction(
-                title: "warning",
-                state: selectedValue == .warning ? .on : .off,
-                handler: { _ in
-                    applyValue(.warning)
-                }
-            ),
-            UIAction(
-                title: "error",
-                state: selectedValue == .error ? .on : .off,
-                handler: { _ in
-                    applyValue(.error)
-                }
-            ),
-        ])
+        let options = [LogSeverity.debug, .info, .warning, .error].map { severity in
+            SettingsListItemMenuOption(
+                title: severity.displayText.lowercased(),
+                isSelected: selectedValue == severity,
+                action: { applyValue(severity) }
+            )
+        }
 
         return SettingsListItem(
             id: .loggingSeverityItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: selectedValue.displayText,
-                    color: .Text.primary,
-                    textStyle: .body2,
-                    menu: menu
+            title: SettingsListItemTitle("Minimum severity"),
+            accessory: .menu(
+                SettingsListItemMenuAccessory(
+                    label: SettingsListItemTextAccessory(text: selectedValue.displayText),
+                    options: options
                 )
-            ),
-            onSelection: nil
+            )
         )
     }
 
     private func createWalletsSection() -> SettingsListSection {
-        return SettingsListSection.listItems(
+        .items(
             SettingsListItemsSection(
                 items: [
+                    .listItem(createImportTestnetWalletItem()),
                     .listItem(createTetraWalletsItem()),
                 ],
-                headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Wallets")
+                header: SettingsListSectionHeader(title: "Wallets")
             )
         )
     }
 
     private func createFeatureFlagsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Feature Flags")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .featureFlagsItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle("Feature Flags"),
             accessory: .chevron,
-            onSelection: { [weak self] _ in
+            onTap: { [weak self] _ in
                 self?.didSelectFeatureFlags?()
             }
         )
     }
 
     private func createDesignSystemItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Design System")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .designSystemItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle("Design System"),
             accessory: .chevron,
-            onSelection: { [weak self] _ in
+            onTap: { [weak self] _ in
                 self?.didSelectDesignSystem?()
             }
         )
     }
 
-    private func createTooltipsItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Tooltips")
-                )
-            )
-        )
-
-        return SettingsListItem(
-            id: .tooltipsItemIdentifier,
-            cellConfiguration: cellConfiguration,
+    private func createToastTestingItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .toastTestingItemIdentifier,
+            title: SettingsListItemTitle("Toast Testing"),
             accessory: .chevron,
-            onSelection: { [weak self] _ in
+            onTap: { [weak self] _ in
+                self?.didSelectToastTesting?()
+            }
+        )
+    }
+
+    private func createTooltipsItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .tooltipsItemIdentifier,
+            title: SettingsListItemTitle("Tooltips"),
+            accessory: .chevron,
+            onTap: { [weak self] _ in
                 self?.didSelectTooltips?()
+            }
+        )
+    }
+
+    /// The only way into testnet: the option was pulled out of the add-wallet picker because
+    /// users kept importing their seed phrase there and treating the testnet address as their own.
+    private func createImportTestnetWalletItem() -> SettingsListItem {
+        SettingsListItem(
+            id: .importTestnetWalletItemIdentifier,
+            title: SettingsListItemTitle("Import Testnet Wallet"),
+            accessory: .chevron,
+            onTap: { [weak self] _ in
+                self?.didSelectImportTestnetWallet?()
             }
         )
     }
@@ -373,24 +351,45 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     }
 
     private func createConfirmationSection() -> SettingsListSection {
-        return SettingsListSection.listItems(
+        .items(
             SettingsListItemsSection(
-                items: [
-                    .listItem(createConfirmationSliderItem()),
-                ],
-                headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Confirmation")
+                items: [.listItem(createConfirmationSliderItem())],
+                header: SettingsListSectionHeader(title: "Confirmation")
             )
         )
     }
 
     private func createDesignSystemSection() -> SettingsListSection {
-        SettingsListSection.listItems(
+        .items(
             SettingsListItemsSection(
                 items: [
                     .listItem(createDesignSystemItem()),
+                    .listItem(createToastTestingItem()),
                 ],
-                headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Design System")
+                header: SettingsListSectionHeader(title: "Design System")
             )
+        )
+    }
+
+    private func createPerpTradingSection() -> SettingsListSection {
+        .items(
+            SettingsListItemsSection(
+                items: [.listItem(createPerpTestnetItem())],
+                header: SettingsListSectionHeader(title: "Perp Trading")
+            )
+        )
+    }
+
+    private func createPerpTestnetItem() -> SettingsListItem {
+        let action: (Bool) -> Void = { isOn in
+            self.tkAppSettings.lighterAPIEnvironment = isOn ? .testnet : .production
+        }
+
+        return createSwitchItem(
+            title: "Testnet",
+            id: .perpTestnetItemIdentifier,
+            isOn: tkAppSettings.lighterAPIEnvironment == .testnet,
+            action: action
         )
     }
 
@@ -407,10 +406,32 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
         )
     }
 
+    /// Single entry into the consolidated Mystery Raffle design-review + QA screen
+    /// (banner, entry point, every modal state, `_debug_now`, `pick-winners`, stories).
+    private func createMysteryRaffleSection() -> SettingsListSection {
+        .items(
+            SettingsListItemsSection(
+                items: [
+                    .listItem(
+                        SettingsListItem(
+                            id: .mysteryRaffleItemIdentifier,
+                            title: SettingsListItemTitle("Design review & QA hooks"),
+                            accessory: .chevron,
+                            onTap: { [weak self] _ in
+                                self?.didSelectMysteryRaffle?()
+                            }
+                        )
+                    ),
+                ],
+                header: SettingsListSectionHeader(title: "Mystery Raffle")
+            )
+        )
+    }
+
     private func createDevOverridesSection() -> SettingsListSection? {
         guard !UIApplication.shared.isAppStoreEnvironment else { return nil }
 
-        return SettingsListSection.listItems(
+        return .items(
             SettingsListItemsSection(
                 items: [
                     .listItem(createShowTouchesItem()),
@@ -421,81 +442,41 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
                     .listItem(createFeatureFlagsItem()),
                     .listItem(createTooltipsItem()),
                 ],
-                headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Dev Overrides")
+                header: SettingsListSectionHeader(title: "Dev Overrides")
             )
         )
     }
 
     private func createStoreCountryCodeItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: "Store country code"
-                    )
-                )
-            )
-        )
-
-        let action: () -> Void = { [weak self] in
-            self?.didSelectStoreCountryCode? {
-                guard let self else { return }
-                Task {
-                    self.storeCountryCode = await self.appInfoProvider.storeCountryCode
-                }
-            }
-        }
-
-        return SettingsListItem(
+        SettingsListItem(
             id: "country_code_region",
-            cellConfiguration: cellConfiguration,
-            accessory:
-            .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: self.storeCountryCode,
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
+            title: SettingsListItemTitle("Store country code"),
+            accessory: .text(
+                SettingsListItemTextAccessory(text: storeCountryCode ?? "")
             ),
-            onSelection: { _ in
-                action()
+            onTap: { [weak self] _ in
+                self?.didSelectStoreCountryCode? {
+                    guard let self else { return }
+                    Task {
+                        self.storeCountryCode = await self.appInfoProvider.storeCountryCode
+                    }
+                }
             }
         )
     }
 
     private func createDeviceCountryCodeItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: "Device country code"
-                    )
-                )
-            )
-        )
-
-        let action: () -> Void = { [weak self] in
-            self?.didSelectDeviceCountryCode? {
-                guard let self else { return }
-                self.deviceCountryCode = self.appInfoProvider.deviceCountryCode
-            }
-        }
-
-        let countryCode = appInfoProvider.deviceCountryCode
-
-        return SettingsListItem(
+        SettingsListItem(
             id: "country_code_device",
-            cellConfiguration: cellConfiguration,
-            accessory:
-            .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: countryCode,
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
+            title: SettingsListItemTitle("Device country code"),
+            accessory: .text(
+                SettingsListItemTextAccessory(text: appInfoProvider.deviceCountryCode ?? "")
             ),
-            onSelection: { _ in
-                action()
+            onTap: { [weak self] _ in
+                self?.didSelectDeviceCountryCode? {
+                    guard let self else { return }
+                    self.deviceCountryCode = self.appInfoProvider.deviceCountryCode
+                }
             }
         )
     }
@@ -515,16 +496,6 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
     }
 
     private func sendStatsImmediatelyItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: "Send Stats Immediately"
-                    )
-                )
-            )
-        )
-
         let selectedValue = TKAppPreferences.sendStatsImmediately
         let applyValue: (Bool?) -> Void = { [weak self] value in
             TKAppPreferences.sendStatsImmediately = value
@@ -532,42 +503,32 @@ final class SettingsListDevMenuConfigurator: SettingsListConfigurator {
             let state = self.createState()
             self.didUpdateState?(state)
         }
-        let menu = UIMenu(children: [
-            UIAction(
-                title: "default",
-                state: selectedValue == nil ? .on : .off,
-                handler: { _ in
-                    applyValue(nil)
-                }
-            ),
-            UIAction(
-                title: "force true",
-                state: selectedValue == true ? .on : .off,
-                handler: { _ in
-                    applyValue(true)
-                }
-            ),
-            UIAction(
-                title: "force false",
-                state: selectedValue == false ? .on : .off,
-                handler: { _ in
-                    applyValue(false)
-                }
-            ),
-        ])
 
         return SettingsListItem(
             id: .sendStatsImmediatelyItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: selectedValue.displayText,
-                    color: .Text.primary,
-                    textStyle: .body2,
-                    menu: menu
+            title: SettingsListItemTitle("Send Stats Immediately"),
+            accessory: .menu(
+                SettingsListItemMenuAccessory(
+                    label: SettingsListItemTextAccessory(text: selectedValue.displayText),
+                    options: [
+                        SettingsListItemMenuOption(
+                            title: "default",
+                            isSelected: selectedValue == nil,
+                            action: { applyValue(nil) }
+                        ),
+                        SettingsListItemMenuOption(
+                            title: "force true",
+                            isSelected: selectedValue == true,
+                            action: { applyValue(true) }
+                        ),
+                        SettingsListItemMenuOption(
+                            title: "force false",
+                            isSelected: selectedValue == false,
+                            action: { applyValue(false) }
+                        ),
+                    ]
                 )
-            ),
-            onSelection: nil
+            )
         )
     }
 }
@@ -579,31 +540,22 @@ private extension SettingsListDevMenuConfigurator {
         isOn: Bool,
         action: @escaping @MainActor (Bool) -> Void
     ) -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: title)
-                )
-            )
-        )
-        return SettingsListItem(
+        SettingsListItem(
             id: id,
-            cellConfiguration: cellConfiguration,
-            accessory: .switch(
-                TKListItemSwitchAccessoryView.Configuration(
+            title: SettingsListItemTitle(title),
+            accessory: .toggle(
+                SettingsListItemToggleAccessory(
                     isOn: isOn,
-                    isEnable: true,
-                    action: { isEnabled in
-                        action(isEnabled)
+                    onToggle: { [weak self] isOn in
+                        Task { @MainActor in
+                            action(isOn)
+                            guard let self else { return }
+                            let state = self.createState()
+                            self.didUpdateState?(state)
+                        }
                     }
                 )
-            ),
-            onSelection: { [weak self] _ in
-                guard let self else { return }
-                action(!isOn)
-                let state = self.createState()
-                self.didUpdateState?(state)
-            }
+            )
         )
     }
 }
@@ -617,17 +569,6 @@ private extension Optional where Wrapped == Bool {
             return "True"
         case .some(false):
             return "False"
-        }
-    }
-}
-
-private extension Optional where Wrapped == LogSeverity {
-    var displayText: String {
-        switch self {
-        case .none:
-            return "Default"
-        case let .some(value):
-            return value.displayText
         }
     }
 }
@@ -651,15 +592,21 @@ private extension String {
     static let version4SeedPhrasesIdentifier = "version4SeedPhrasesIdentifier"
     static let version5SeedPhrasesIdentifier = "version5SeedPhrasesIdentifier"
     static let resetWatchedStoriesIdentifier = "resetWatchedStoriesIdentifier"
-    static let resetDismissedHomeBannersIdentifier = "resetDismissedHomeBannersIdentifier"
-    static let clearCookiesItemIdentifier = "clearCookiesItemIdentifier"
+    static let resetDismissedBannersIdentifier = "resetDismissedBannersIdentifier"
     static let confirmationSliderItemIdentifier = "confirmationSliderItemIdentifier"
     static let sendStatsImmediatelyItemIdentifier = "sendStatsImmediately"
     static let exportLogsIdentifier = "exportLogsIdentifier"
+    static let firebaseInstallationIDIdentifier = "firebaseInstallationIDIdentifier"
+    static let firebaseUserIDIdentifier = "firebaseUserIDIdentifier"
+    static let buildVersionItemIdentifier = "buildVersionItemIdentifier"
     static let loggingSeverityItemIdentifier = "loggingSeverityItemIdentifier"
+    static let mysteryRaffleItemIdentifier = "mysteryRaffleItemIdentifier"
+    static let perpTestnetItemIdentifier = "perpTestnetItemIdentifier"
     static let showTouchesItemIdentifier = "showTouchesItemIdentifier"
+    static let importTestnetWalletItemIdentifier = "importTestnetWalletItemIdentifier"
     static let tetraWalletsItemIdentifier = "tetraWalletsItemIdentifier"
     static let tooltipsItemIdentifier = "tooltipsItemIdentifier"
     static let featureFlagsItemIdentifier = "featureFlagsItemIdentifier"
     static let designSystemItemIdentifier = "designSystemItemIdentifier"
+    static let toastTestingItemIdentifier = "toastTestingItemIdentifier"
 }

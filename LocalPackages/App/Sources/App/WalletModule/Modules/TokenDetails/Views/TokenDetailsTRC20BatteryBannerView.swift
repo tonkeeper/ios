@@ -69,7 +69,7 @@ final class TokenDetailsTRC20BatteryBannerView: UIView {
         let iconImageViewContainer = UIView()
 
         let iconImageView = UIImageView()
-        iconImageView.image = .TKUIKit.Images.Battery.batteryBanner
+        iconImageView.image = .TKUIKit.Icons.Size44.batteryBanner
 
         let stackView = UIStackView()
         stackView.axis = .horizontal

@@ -5,11 +5,11 @@ import UIKit
 
 final class TradeViewController: UIViewController, ScrollViewController {
     private let viewModel: TradeViewModel
-    private let hostingController: UIHostingController<TradeRootView>
+    private let hostingController: TKHostingController<TradeRootView>
 
     init(viewModel: TradeViewModel) {
         self.viewModel = viewModel
-        self.hostingController = UIHostingController(rootView: TradeRootView(viewModel: viewModel))
+        self.hostingController = TKHostingController(content: TradeRootView(viewModel: viewModel))
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -36,6 +36,24 @@ final class TradeViewController: UIViewController, ScrollViewController {
             hostingController.view.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             hostingController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
         ])
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        viewModel.refreshFavoriteAssets()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+
+        viewModel.viewDidAppear()
+    }
+
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+
+        viewModel.viewDidDisappear()
     }
 
     func scrollToTop() {

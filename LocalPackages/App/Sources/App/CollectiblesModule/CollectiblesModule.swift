@@ -5,25 +5,33 @@ import TKUIKit
 import UIKit
 
 @MainActor
-public struct CollectiblesModule {
+struct CollectiblesModule {
     private let dependencies: Dependencies
     init(dependencies: Dependencies) {
         self.dependencies = dependencies
     }
 
-    public func createCollectiblesCoordinator(parentRouter: TabBarControllerRouter?) -> CollectiblesCoordinator {
-        let navigationController = TKNavigationController()
+    func createCollectiblesCoordinator(
+        router: NavigationControllerRouter? = nil,
+        configuresTabBarItem: Bool = true
+    ) -> CollectiblesCoordinator {
+        let navigationController: TKNavigationController
+        if let router, let routerNavigationController = router.rootViewController as? TKNavigationController {
+            navigationController = routerNavigationController
+        } else {
+            navigationController = TKNavigationController()
 
-        if !UIApplication.useSystemBarsAppearance {
             navigationController.configureTransparentAppearance()
             navigationController.setNavigationBarHidden(true, animated: false)
         }
 
+        let collectiblesRouter = router ?? NavigationControllerRouter(rootViewController: navigationController)
+
         return CollectiblesCoordinator(
-            router: NavigationControllerRouter(rootViewController: navigationController),
-            parentRouter: parentRouter,
+            router: collectiblesRouter,
             coreAssembly: dependencies.coreAssembly,
-            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+            configuresTabBarItem: configuresTabBarItem
         )
     }
 }

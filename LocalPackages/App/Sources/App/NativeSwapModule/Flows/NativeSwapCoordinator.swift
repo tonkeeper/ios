@@ -8,7 +8,7 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class NativeSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class NativeSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
 
     private let wallet: Wallet
@@ -19,7 +19,7 @@ public final class NativeSwapCoordinator: RouterCoordinator<NavigationController
     private weak var confirmationCoordinator: NativeSwapTransactionConfirmationCoordinator?
     private var tokenUpdateTask: Task<Void, Never>?
 
-    public init(
+    init(
         wallet: Wallet,
         nativeSwapContext: NativeSwapContext,
         router: NavigationControllerRouter,
@@ -33,15 +33,15 @@ public final class NativeSwapCoordinator: RouterCoordinator<NavigationController
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openSwap()
     }
 
-    public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+    func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
         confirmationCoordinator?.handleTonkeeperPublishDeeplink(sign: sign) ?? false
     }
 
-    override public func didMoveTo(toParent parent: Coordinator?) {
+    override func didMoveTo(toParent parent: Coordinator?) {
         if parent == nil {
             tokenUpdateTask?.cancel()
             confirmationCoordinator?.cancelPendingSignerFlow()
@@ -104,8 +104,8 @@ private extension NativeSwapCoordinator {
                 case let .jetton(jettonItem):
                     pickerToken = .ton(.jetton(jettonItem))
                 }
-            case .tron:
-                pickerToken = .tronUSDT
+            case let .tron(token):
+                pickerToken = .tron(token)
             }
 
             openTokenPicker(
@@ -173,8 +173,8 @@ private extension NativeSwapCoordinator {
                     case let .jetton(jettonInfo):
                         .ton(.jetton(jettonInfo))
                     }
-                case .tronUSDT:
-                    .tron(.usdt)
+                case let .tron(token):
+                    .tron(token)
                 }
             }()
             completion(sendToken)

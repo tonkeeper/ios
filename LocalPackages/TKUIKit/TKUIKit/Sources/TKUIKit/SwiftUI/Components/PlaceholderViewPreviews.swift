@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct PlaceholderViewPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -14,8 +16,9 @@ public struct PlaceholderViewPreviews: View {
             .padding(.vertical, Layout.contentVerticalPadding)
             .frame(maxWidth: .infinity)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
         )
     }
@@ -83,7 +86,7 @@ private extension PlaceholderViewPreviews {
                 minHeight: Layout.cardMinHeight,
                 alignment: .top
             )
-            .background(Color(uiColor: .Background.content))
+            .background(.backgroundContent)
             .clipShape(
                 RoundedRectangle(
                     cornerRadius: Layout.cardCornerRadius,
@@ -95,7 +98,6 @@ private extension PlaceholderViewPreviews {
 
 #Preview {
     PlaceholderViewPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

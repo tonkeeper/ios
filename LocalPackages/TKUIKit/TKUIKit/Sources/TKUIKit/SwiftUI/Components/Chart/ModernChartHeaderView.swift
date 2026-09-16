@@ -2,6 +2,8 @@ import SwiftUI
 import UIKit
 
 public struct ModernChartHeaderView: View {
+    @Environment(\.tkPalette) private var palette
+
     @ObservedObject private var store: ConfigurationStore
 
     private var configuration: Configuration {
@@ -10,10 +12,6 @@ public struct ModernChartHeaderView: View {
 
     public init(configuration: Configuration) {
         self.store = ConfigurationStore(configuration: configuration)
-    }
-
-    public init(store: ConfigurationStore) {
-        self.store = store
     }
 
     public var body: some View {
@@ -41,20 +39,20 @@ public struct ModernChartHeaderView: View {
 
     @ViewBuilder
     private func contentView(_ content: Content) -> some View {
-        Text(content.price)
+        Text(priceText(content))
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
 
         HStack(alignment: .center, spacing: Layout.diffSpacing) {
             DiffValueText(
-                value: content.diff,
+                value: diffText(content),
                 animationStyle: content.diffAnimationStyle
             )
             DiffValueText(
-                value: content.priceDiff,
+                value: priceDiffText(content),
                 animationStyle: content.diffAnimationStyle
             )
-            Text(content.date)
+            Text(dateText(content))
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .padding(.leading, 2)
@@ -62,6 +60,61 @@ public struct ModernChartHeaderView: View {
         .padding(.top, 5)
 
         Spacer(minLength: 0)
+    }
+
+    private func priceText(_ content: Content) -> AttributedString {
+        AttributedString(
+            content.price.withTextStyle(
+                Layout.priceTextStyle,
+                color: UIColor(palette.text.primary),
+                alignment: .left,
+                lineBreakMode: .byTruncatingTail
+            ).replaceMonospaceSpaces()
+        )
+    }
+
+    private func dateText(_ content: Content) -> AttributedString {
+        AttributedString(
+            content.date.withTextStyle(
+                Layout.otherTextStyle,
+                color: UIColor(palette.text.secondary),
+                alignment: .left,
+                lineBreakMode: .byTruncatingTail
+            )
+        )
+    }
+
+    private func diffText(_ content: Content) -> AttributedString {
+        AttributedString(
+            content.diff.diff.withTextStyle(
+                Layout.otherTextStyle,
+                color: UIColor(diffColor(content.diff.direction)),
+                alignment: .left,
+                lineBreakMode: .byTruncatingTail
+            ).replaceMonospaceSpaces()
+        )
+    }
+
+    private func priceDiffText(_ content: Content) -> AttributedString {
+        AttributedString(
+            content.diff.priceDiff.withTextStyle(
+                Layout.otherTextStyle,
+                color: UIColor(diffColor(content.diff.direction).opacity(0.44)),
+                alignment: .left,
+                lineBreakMode: .byTruncatingTail
+            ).replaceMonospaceSpaces()
+        )
+    }
+
+    private func diffColor(_ direction: Diff.Direction) -> Color {
+        switch direction {
+        case .up:
+            palette.accent.green
+        case .down:
+            palette.accent.red
+        case .none:
+            palette.text.secondary
+        }
     }
 }
 
@@ -71,11 +124,11 @@ public extension ModernChartHeaderView {
         static let diffSpacing: CGFloat = 8
 
         static let priceTextStyle = TKTextStyle(
-            font: .montserratBold(size: 24),
+            font: .tkBold(size: 24, features: .display),
             lineHeight: 32
         )
         static let otherTextStyle = TKTextStyle(
-            font: .montserratMedium(size: 14),
+            font: .tkRegular(size: 14, features: .text),
             lineHeight: 20
         )
     }
@@ -112,10 +165,9 @@ public extension ModernChartHeaderView {
     }
 
     struct Content: Hashable {
-        public let price: AttributedString
-        public let diff: AttributedString
-        public let priceDiff: AttributedString
-        public let date: AttributedString
+        public let price: String
+        public let diff: Diff
+        public let date: String
         public let diffAnimationStyle: DiffAnimationStyle
 
         public init(
@@ -124,50 +176,9 @@ public extension ModernChartHeaderView {
             date: String,
             diffAnimationStyle: DiffAnimationStyle = .none
         ) {
-            self.price = AttributedString(
-                price.withTextStyle(
-                    Layout.priceTextStyle,
-                    color: .Text.primary,
-                    alignment: .left,
-                    lineBreakMode: .byTruncatingTail
-                ).replaceMonospaceSpaces()
-            )
-            self.date = AttributedString(
-                date.withTextStyle(
-                    Layout.otherTextStyle,
-                    color: .Text.secondary,
-                    alignment: .left,
-                    lineBreakMode: .byTruncatingTail
-                )
-            )
-
-            let diffColor: UIColor
-            switch diff.direction {
-            case .up:
-                diffColor = .Accent.green
-            case .down:
-                diffColor = .Accent.red
-            case .none:
-                diffColor = .Text.secondary
-            }
-
-            self.diff = AttributedString(
-                diff.diff.withTextStyle(
-                    Layout.otherTextStyle,
-                    color: diffColor,
-                    alignment: .left,
-                    lineBreakMode: .byTruncatingTail
-                ).replaceMonospaceSpaces()
-            )
-
-            self.priceDiff = AttributedString(
-                diff.priceDiff.withTextStyle(
-                    Layout.otherTextStyle,
-                    color: diffColor.withAlphaComponent(0.44),
-                    alignment: .left,
-                    lineBreakMode: .byTruncatingTail
-                ).replaceMonospaceSpaces()
-            )
+            self.price = price
+            self.diff = diff
+            self.date = date
             self.diffAnimationStyle = diffAnimationStyle
         }
     }
@@ -238,7 +249,7 @@ private extension NSAttributedString {
                 )
             )
         )
-        .border(Color(uiColor: .Separator.common))
+        .border(TKPreview.palette.separator.common)
 
         ModernChartHeaderView(
             configuration: .content(
@@ -253,12 +264,12 @@ private extension NSAttributedString {
                 )
             )
         )
-        .border(Color(uiColor: .Separator.common))
+        .border(TKPreview.palette.separator.common)
 
         ModernChartHeaderView(
             configuration: .shimmer
         )
-        .border(Color(uiColor: .Separator.common))
+        .border(TKPreview.palette.separator.common)
     }
-    .debugPreview(backgroundColor: Color(uiColor: .Background.page))
+    .debugPreview(background: .page)
 }

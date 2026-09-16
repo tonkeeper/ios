@@ -74,8 +74,6 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
 
     var didUpdateTitle: ((String) -> Void)?
     var didUpdateButton: ((String, Bool) -> Void)?
-    var didUpdateDetailsViewIsHidden: ((Bool) -> Void)?
-
     func viewDidLoad() {
         setup()
         setupAmountInput()

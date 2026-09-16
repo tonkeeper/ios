@@ -46,6 +46,6 @@ public struct InternalNotification: Decodable, Equatable, Hashable {
     }
 }
 
-public struct InternalNotificationResponse: Decodable {
-    public let notifications: [InternalNotification]
+struct InternalNotificationResponse: Decodable {
+    let notifications: [InternalNotification]
 }

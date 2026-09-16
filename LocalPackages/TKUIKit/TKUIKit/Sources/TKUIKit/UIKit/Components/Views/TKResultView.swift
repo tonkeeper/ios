@@ -24,8 +24,13 @@ final class TKResultView: UIView {
         didSet { didChangeState() }
     }
 
-    var successTitle: String = "Done"
-    var errorTitle: String = "Error"
+    var successTitle: String = "Done" {
+        didSet { didChangeState() }
+    }
+
+    var errorTitle: String = "Error" {
+        didSet { didChangeState() }
+    }
 
     private let stackView: UIStackView = {
         let stackView = UIStackView()

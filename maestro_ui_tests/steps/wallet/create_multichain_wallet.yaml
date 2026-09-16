@@ -1,0 +1,20 @@
+appId: com.example.app
+---
+- tapOn: Create New Wallet
+- assertVisible: Create passcode
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- assertVisible: Re-enter passcode
+- repeat:
+    times: 4
+    commands:
+      - tapOn: ${PASSWORD_KEY}
+
+- tapOn: Later
+
+- assertVisible: Customize your Wallet
+- assertVisible: Wallet
+- tapOn: "Continue"

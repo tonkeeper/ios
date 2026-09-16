@@ -1,46 +1,23 @@
 import BigInt
 import KeeperCore
+import SwiftUI
 import TKFeatureFlags
 import TKLocalize
 import TKUIKit
 import TronSwift
 import UIKit
 
-public struct WithdrawDisplayInfo {
-    public let fromSymbol: String
-    public let fromImageUrl: String?
-    public let fromNetworkName: String
-    public let fromNetworkType: String
-    public let symbol: String
-    public let imageUrl: String?
-    public let networkName: String
-    public let networkType: String
-    public let estimatedDurationSeconds: Int?
-    public let withdrawalFeeUsd: Double?
-
-    public init(
-        fromSymbol: String,
-        fromImageUrl: String?,
-        fromNetworkName: String,
-        fromNetworkType: String,
-        symbol: String,
-        imageUrl: String?,
-        networkName: String,
-        networkType: String,
-        estimatedDurationSeconds: Int?,
-        withdrawalFeeUsd: Double?
-    ) {
-        self.fromSymbol = fromSymbol
-        self.fromImageUrl = fromImageUrl
-        self.fromNetworkName = fromNetworkName
-        self.fromNetworkType = fromNetworkType
-        self.symbol = symbol
-        self.imageUrl = imageUrl
-        self.networkName = networkName
-        self.networkType = networkType
-        self.estimatedDurationSeconds = estimatedDurationSeconds
-        self.withdrawalFeeUsd = withdrawalFeeUsd
-    }
+struct WithdrawDisplayInfo {
+    let fromSymbol: String
+    let fromImageUrl: String?
+    let fromNetworkName: String
+    let fromNetworkType: String
+    let symbol: String
+    let imageUrl: String?
+    let networkName: String
+    let networkType: String
+    let estimatedDurationSeconds: Int?
+    let withdrawalFeeUsd: Double?
 }
 
 @MainActor
@@ -49,17 +26,21 @@ protocol TransactionConfirmationOutput: AnyObject {
     var didStartEmulation: (() -> Void)? { get set }
     var didFinishEmulation: ((TransactionConfirmationError?) -> Void)? { get set }
     var didCancelEmulation: (() -> Void)? { get set }
+    var didOpenFeePicker: ((NetworkFeePickerPresentation) -> Void)? { get set }
     var didStartConfirmTransaction: ((TransactionConfirmationModel) -> Void)? { get set }
     var didConfirmTransaction: ((TransactionConfirmationModel) -> Void)? { get set }
     var didFailTransaction: ((TransactionConfirmationModel, any AnalyticsError) -> Void)? { get set }
     var didCancelTransaction: (() -> Void)? { get set }
     var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)? { get set }
     var didRequestOpenFeeRefill: ((_ extraType: TransactionConfirmationModel.ExtraType) -> Void)? { get set }
+    var didDetectInsufficientMultichainFee: ((MultichainNativeFeeShortage) -> Void)? { get set }
     var didClose: (() -> Void)? { get set }
+
+    func refresh()
 }
 
 @MainActor
-public protocol TransactionConfirmationViewModel: AnyObject {
+protocol TransactionConfirmationViewModel: AnyObject {
     var didUpdateConfiguration: ((TKPopUp.Configuration) -> Void)? { get set }
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)? { get set }
     func viewDidLoad()
@@ -74,12 +55,14 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     var didStartEmulation: (() -> Void)?
     var didFinishEmulation: ((TransactionConfirmationError?) -> Void)?
     var didCancelEmulation: (() -> Void)?
+    var didOpenFeePicker: ((NetworkFeePickerPresentation) -> Void)?
     var didStartConfirmTransaction: ((TransactionConfirmationModel) -> Void)?
     var didConfirmTransaction: ((TransactionConfirmationModel) -> Void)?
     var didFailTransaction: ((TransactionConfirmationModel, any AnalyticsError) -> Void)?
     var didCancelTransaction: (() -> Void)?
     var didProduceInsufficientFundsError: ((_ error: InsufficientFundsError) -> Void)?
     var didRequestOpenFeeRefill: ((_ extraType: TransactionConfirmationModel.ExtraType) -> Void)?
+    var didDetectInsufficientMultichainFee: ((MultichainNativeFeeShortage) -> Void)?
     var didClose: (() -> Void)?
     var didRequestSendAllConfirmation: ((String, @escaping (Bool) -> Void) -> Void)?
 
@@ -106,6 +89,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         updateTask?.cancel()
         confirmTask?.cancel()
         didClose?()
+    }
+
+    func refresh() {
+        update()
     }
 
     // MARK: - State
@@ -137,6 +124,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     // MARK: - Dependencies
 
     private let confirmationController: TransactionConfirmationController
+    private let pendingTransactionsService: PendingTransactionsService
     private let amountFormatter: AmountFormatter
     private let fundsValidator: InsufficientFundsValidator
     private let currencyStore: CurrencyStore
@@ -153,6 +141,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
 
     init(
         confirmationController: TransactionConfirmationController,
+        pendingTransactionsService: PendingTransactionsService,
         amountFormatter: AmountFormatter,
         fundsValidator: InsufficientFundsValidator,
         currencyStore: CurrencyStore,
@@ -164,6 +153,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         withdrawDisplayInfo: WithdrawDisplayInfo? = nil
     ) {
         self.confirmationController = confirmationController
+        self.pendingTransactionsService = pendingTransactionsService
         self.amountFormatter = amountFormatter
         self.fundsValidator = fundsValidator
         self.currencyStore = currencyStore
@@ -235,6 +225,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 didFinishEmulation?(nil)
             }
             let model = confirmationController.getModel()
+            reportInsufficientMultichainFeeIfNeeded(model)
             let currency = currencyStore.state
             let rates = await getRates(model: model, currency: currency)
             guard !Task.isCancelled else { return }
@@ -275,7 +266,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     return TKLocales.TransactionConfirmation.confirmAction
                 case let .transfer(transfer):
                     switch transfer {
-                    case .jetton, .ton, .tronUSDT:
+                    case .jetton, .ton, .tronUSDT, .tronTRX, .multichain:
                         return TKLocales.TransactionConfirmation.confirmAction
                     case let .nft(nft):
                         var result = nft.notNilName
@@ -327,6 +318,22 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         didUpdateConfiguration?(configuration)
     }
 
+    private func reportInsufficientMultichainFeeIfNeeded(_ model: TransactionConfirmationModel) {
+        guard model.isSelectedFeeInsufficient,
+              case .transfer(.multichain) = model.transaction,
+              case let .extra(extra) = model.extraState,
+              case let .multichain(asset, amount) = extra.value
+        else {
+            return
+        }
+        didDetectInsufficientMultichainFee?(
+            MultichainNativeFeeShortage(
+                asset: asset,
+                requiredAmount: amount
+            )
+        )
+    }
+
     private func createActionNameItem(transaction: TransactionConfirmationModel.Transaction) -> TKPopUp.Item {
         let text: String = {
             if let info = withdrawDisplayInfo {
@@ -350,16 +357,39 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     return "NFT transfer"
                 case .tronUSDT:
                     return "Transfer \(TronSwift.USDT.name)"
+                case .tronTRX:
+                    return "Transfer \(TronSwift.TRX.name)"
+                case let .multichain(asset):
+                    return "Transfer \(asset.asset.symbol)"
                 }
             }
         }()
-        return TKPopUp.Component.LabelComponent(
-            text: text.withTextStyle(
+        let attributedText = NSMutableAttributedString(
+            attributedString: text.withTextStyle(
                 .h3,
                 color: .Text.primary,
                 alignment: .center,
                 lineBreakMode: .byTruncatingTail
-            ),
+            )
+        )
+
+        if withdrawDisplayInfo == nil,
+           case let .transfer(.multichain(asset)) = transaction,
+           !asset.isNative,
+           let chain = asset.asset.chain
+        {
+            attributedText.append(
+                " \(chain.shortDisplayTitle)".withTextStyle(
+                    .h3,
+                    color: .Text.secondary,
+                    alignment: .center,
+                    lineBreakMode: .byTruncatingTail
+                )
+            )
+        }
+
+        return TKPopUp.Component.LabelComponent(
+            text: attributedText,
             numberOfLines: 1,
             bottomSpace: 0
         )
@@ -395,10 +425,10 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             switch transfer {
             case let .jetton(jettonInfo):
                 image = .urlImage(jettonInfo.imageURL)
-                badgeImage = transaction.wallet.isTronTurnOn && jettonInfo.isTonUSDT ? .image(.TKUIKit.Icons.Size44.tonChain) : nil
+                badgeImage = transaction.wallet.tron != nil && jettonInfo.isTonUSDT ? .image(.TKUIKit.Icons.Size44.tonChain) : nil
                 corners = .circle
             case .ton:
-                image = .image(.App.Currency.Vector.ton)
+                image = .image(.TKUIKit.Icons.Size44.currencyTon)
                 badgeImage = nil
                 corners = .circle
             case let .nft(nft):
@@ -406,8 +436,21 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 badgeImage = nil
                 corners = .cornerRadius(cornerRadius: 12)
             case .tronUSDT:
-                image = .image(.App.Currency.Size96.usdt)
-                badgeImage = .image(.App.Currency.Vector.trc20)
+                image = .image(.TKUIKit.Icons.Size96.currencyUsdt)
+                badgeImage = .image(.TKUIKit.Icons.Size44.currencyTrc20)
+                corners = .circle
+            case .tronTRX:
+                image = .image(.TKUIKit.Icons.Size44.trxChain)
+                badgeImage = nil
+                corners = .circle
+            case let .multichain(asset):
+                let source = AssetIdResolver.tkImageSource(
+                    for: asset.asset.assetId,
+                    imageUrl: URL(string: asset.asset.image),
+                    multichainEnabled: true
+                )
+                image = source.image
+                badgeImage = source.chainIcon.map(TKImage.image)
                 corners = .circle
             }
         }
@@ -448,6 +491,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }
         if let recipientAddress = createRecipientAddresItem(transaction: transaction) {
             items.append(recipientAddress)
+        }
+        if let assetChainItem = createAssetChainItem(transaction: transaction) {
+            items.append(assetChainItem)
         }
         if let networkItem = createNetworkItem() {
             items.append(networkItem)
@@ -496,6 +542,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             text = "Failed to calculate fee"
         case let .failedToSendTransaction(message):
             text = message ?? "Failed to send transaction"
+        case let .multichainTransactionFailure(failure):
+            text = failure.transactionConfirmationUserMessage
         case .failedToSign:
             text = "Failed to sign"
         case .cancelledByUser:
@@ -532,10 +580,71 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
 
     private func createRecipientAddresItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
         guard let recipientAddress = transaction.recipientAddress else { return nil }
-        return TKListContainerFullValueItemItem(
+        return TKListContainerItemView.Model(
             title: TKLocales.TransactionConfirmation.recipient,
-            value: recipientAddress,
-            copyValue: recipientAddress
+            value: .value(
+                TKListContainerItemDefaultValueView.Model(
+                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: recipientAddress.shortenedMiddle())
+                )
+            ),
+            action: .custom { view in
+                MainActor.assumeIsolated {
+                    Self.toggleAddressTooltip(value: recipientAddress, sourceView: view)
+                }
+            }
+        )
+    }
+
+    @MainActor
+    private static func toggleAddressTooltip(value: String, sourceView: UIView) {
+        let maximumWidth: CGFloat = 260
+        HintController.toggle(
+            sourceView: sourceView,
+            configuration: HintConfiguration(
+                position: HintPosition(
+                    tailParameters: TKTooltipView.tailParameters,
+                    horizontal: .default,
+                    vertical: .init(absolute: 0),
+                    direction: .topCenter
+                ),
+                maximumWidth: maximumWidth,
+                animationStyle: .bouncing
+            ),
+            contentViewControllerProvider: { direction in
+                let rootView = TKTooltipView(
+                    configuration: TKTooltipView.Configuration(title: value, lineLimit: nil),
+                    position: direction
+                )
+                let hostingController = TKHostingController(content: rootView)
+                hostingController.view.backgroundColor = .clear
+                let size = hostingController.sizeThatFits(
+                    in: CGSize(width: maximumWidth, height: .greatestFiniteMagnitude)
+                )
+                hostingController.preferredContentSize = CGSize(
+                    width: min(maximumWidth, ceil(size.width)),
+                    height: ceil(size.height)
+                )
+                return hostingController
+            }
+        )
+    }
+
+    private func createAssetChainItem(transaction: TransactionConfirmationModel) -> TKListContainerItem? {
+        guard case let .transfer(.multichain(asset)) = transaction.transaction,
+              let chain = asset.asset.chain
+        else {
+            return nil
+        }
+
+        return TKListContainerItemView.Model(
+            title: TKLocales.Ramp.Deposit.network,
+            value: .value(
+                TKListContainerItemDefaultValueView.Model(
+                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: chain.addressConfiguration.title),
+                    bottomValue: TKListContainerItemDefaultValueView.Model.Value(value: chain.tokenType)
+                )
+            ),
+            action: nil
         )
     }
 
@@ -663,7 +772,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             }
         case let .transfer(transfer):
             switch transfer {
-            case .jetton, .ton, .tronUSDT:
+            case .jetton, .ton, .tronUSDT, .tronTRX, .multichain:
                 title = TKLocales.TransactionConfirmation.amount
             case .nft:
                 return nil
@@ -671,6 +780,31 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }
 
         guard let amount = transaction.amount else { return nil }
+
+        if case let .multichain(asset) = amount.token {
+            let valueFormatted = amountFormatter.format(
+                amount: amount.value,
+                fractionDigits: asset.asset.decimals,
+                accessory: .tokenSymbol(asset.asset.symbol),
+                isNegative: false,
+                style: .exactValue
+            )
+
+            return TKListContainerItemView.Model(
+                title: title,
+                value: .value(TKListContainerItemDefaultValueView.Model(
+                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: valueFormatted),
+                    bottomValue: TKListContainerItemDefaultValueView.Model.Value(
+                        value: multichainConvertedAmount(
+                            amount: amount.value,
+                            asset: asset,
+                            currency: currency
+                        )
+                    )
+                )),
+                action: .copy(copyValue: valueFormatted)
+            )
+        }
 
         let value: TKListContainerItemView.Model.Value
         let valueFormatted = amountFormatter.format(
@@ -713,10 +847,13 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         trxRate: Rates.Rate?,
         currency: Currency
     ) -> TKListContainerItemView.Model {
-        var captionButton: TKPlainButton.Model?
         var isRefund: Bool = false
-        var extraType: TransactionConfirmationModel.ExtraType = .default
         let value: TKListContainerItemView.Model.Value
+        // Open the picker when there's a choice to make, and also when the single selected method is
+        // insufficient — the picker is the only path to Deposit/refill, otherwise confirm stays
+        // disabled with no way to top up.
+        let canOpenFeePicker = transaction.availableExtraTypes.count > 1
+            || isSelectedFeeInsufficient(transaction: transaction)
         switch transaction.extraState {
         case .loading:
             value = .loading
@@ -724,7 +861,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         case let .extra(extra):
             let feeDetails = feeCalculator.feeDetails(extra: extra, wallet: transaction.wallet)
             isRefund = feeDetails.isRefund
-            extraType = feeDetails.extraType
+            let usesNetworkFeePicker = canOpenFeePicker
 
             let feeFormatted = textFormatter.formatFeeList(
                 fee: feeDetails,
@@ -737,152 +874,91 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 feeDetails: feeDetails
             )
 
-            value = .value(TKListContainerItemDefaultValueView.Model(
-                topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"),
-                bottomValue: TKListContainerItemDefaultValueView.Model.Value(
-                    value: tronFeeBalanceAvailability ?? feeFormatted.bottomValue
-                )
-            ))
+            if usesNetworkFeePicker {
+                let primaryText: String
+                let tokenSymbol: String?
+                switch feeDetails.kind {
+                case .battery:
+                    primaryText = "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"
+                    tokenSymbol = TKLocales.TronUsdtFees.Common.ItemTitle.battery
 
-            if transaction.availableExtraTypes.count > 1 {
-                captionButton = TKPlainButton.Model(
-                    title: TKLocales.Actions.edit.withTextStyle(.body2, color: .Text.accent),
-                    icon: TKPlainButton.Model.Icon(
-                        image: .TKUIKit.Icons.Size12.chevronRight,
-                        tintColor: .Text.accent,
-                        padding: .init(top: 4, left: 2, bottom: 4, right: 0)
-                    ),
-                    action: nil
+                case let .token(_, _, symbol, _):
+                    if let fiatValue = feeFormatted.bottomValue {
+                        primaryText = "\(TKLocales.Common.Numbers.approximate) \(fiatValue)"
+                        tokenSymbol = symbol
+                    } else {
+                        primaryText = "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"
+                        tokenSymbol = nil
+                    }
+                }
+                value = .value(
+                    TransactionConfirmationNetworkFeeValueView.Configuration(
+                        primaryText: primaryText,
+                        tokenSymbol: tokenSymbol,
+                        showsPicker: canOpenFeePicker
+                    )
                 )
+            } else {
+                value = .value(TKListContainerItemDefaultValueView.Model(
+                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: "\(TKLocales.Common.Numbers.approximate) \(feeFormatted.topValue)"),
+                    bottomValue: TKListContainerItemDefaultValueView.Model.Value(
+                        value: tronFeeBalanceAvailability ?? feeFormatted.bottomValue
+                    )
+                ))
             }
 
         case .none:
-            value = .value(TKListContainerItemDefaultValueView.Model(
-                topValue: TKListContainerItemDefaultValueView.Model.Value(value: "?")
-            ))
+            value = .value(
+                TransactionConfirmationFeeErrorValueView.Configuration(
+                    retry: { [weak self] in
+                        self?.update()
+                    }
+                )
+            )
         }
         return TKListContainerItemView.Model(
-            title: isRefund ? TKLocales.EventDetails.refund : TKLocales.EventDetails.fee,
-            captionButtonModel: captionButton,
+            title: isRefund
+                ? TKLocales.EventDetails.refund
+                : feeTitle(transaction: transaction),
+            captionButtonModel: nil,
             value: value,
-            action: .custom { [weak self] view in
-                guard transaction.availableExtraTypes.count > 1, let self else { return }
+            action: .custom { [weak self] _ in
+                guard canOpenFeePicker, let self else { return }
 
-                let items = transaction.availableExtraTypes.map { item in
-                    let optionValue = transaction.extraOptions
-                        .first(where: { $0.type == item })?
-                        .value
-                    let optionPresentation = self.feeOptionPresentation(
-                        transaction: transaction,
-                        extraType: item,
-                        extraValue: optionValue,
-                        currency: currency,
-                        tonRate: tonRate,
-                        trxRate: trxRate
-                    )
-
-                    let title = {
-                        switch item {
-                        case .default:
-                            return TKLocales.ExtraType.ton
-                        case .battery:
-                            return TKLocales.ExtraType.battery
-                        case let .gasless(token):
-                            return token.symbol ?? token.name
-                        }
-                    }()
-
-                    let leftIcon: TKImageView.Model? = {
-                        switch item {
-                        case .default:
-                            return TKImageView.Model(
-                                image: .image(.TKCore.Icons.Size44.tonLogo),
-                                tintColor: nil,
-                                corners: .circle
-                            )
-
-                        case .battery:
-                            return TKImageView.Model(
-                                image: .image(.TKUIKit.Icons.Size24.flash),
-                                tintColor: .Accent.green,
-                                corners: .none
-                            )
-
-                        case let .gasless(token):
-                            switch token.symbol?.uppercased() {
-                            case TRX.symbol.uppercased():
-                                return TKImageView.Model(
-                                    image: .image(
-                                        .App.Currency.Vector.trc20.withRenderingMode(.alwaysOriginal)
-                                    ),
-                                    tintColor: nil,
-                                    corners: .circle
-                                )
-                            default:
-                                return TKImageView.Model(
-                                    image: .urlImage(token.imageURL),
-                                    tintColor: nil,
-                                    corners: .circle
-                                )
-                            }
-                        }
-                    }()
-
-                    return TKPopupMenuItem(
-                        title: title,
-                        value: nil,
-                        description: optionPresentation.description,
-                        icon: nil,
-                        leftIcon: leftIcon,
-                        footerText: optionPresentation.footerText,
-                        footerActionTitle: optionPresentation.footerActionTitle,
-                        footerActionHandler: optionPresentation.footerActionHandler,
-                        isEnabled: optionPresentation.isEnabled,
-                        selectionHandler: optionPresentation.isEnabled ? { [weak self] in
-                            guard let self else { return }
-                            if isFeeOptionInsufficient(
-                                extraValue: optionValue,
-                                walletBalance: walletBalance
-                            ) {
-                                didRequestOpenFeeRefill?(item)
-                                return
-                            }
-                            confirmationController.setPrefferedExtraType(extraType: item)
-                            update()
-                        } : nil
-                    )
-                }
-
-                let selectedIndex = transaction.availableExtraTypes.firstIndex(where: { type in
-                    guard type == extraType else { return false }
-                    let optionValue = transaction.extraOptions.first(where: { $0.type == type })?.value
-                    return self.feeOptionPresentation(
-                        transaction: transaction,
-                        extraType: type,
-                        extraValue: optionValue,
-                        currency: currency,
-                        tonRate: tonRate,
-                        trxRate: trxRate
-                    ).isEnabled
-                })
-
-                TKPopupMenuController.show(
-                    sourceView: view,
-                    position: .topRight,
-                    minimumWidth: 0,
-                    items: Array(
-                        items
-                            .enumerated()
-                            .map { offset, element in
-                                var item = element
-                                item.hasSeparator = offset + 1 < items.count
-                                return item
-                            }
-                    ),
-                    selectedIndex: selectedIndex
+                let presentation = self.makeFeePickerPresentation(
+                    currency: currency,
+                    tonRate: tonRate,
+                    trxRate: trxRate,
+                    title: isRefund
+                        ? TKLocales.EventDetails.refund
+                        : TKLocales.FeeMethodPicker.title,
+                    subtitle: isRefund
+                        ? nil
+                        : TKLocales.FeeMethodPicker.subtitle,
+                    skeletonItemCount: transaction.networkFeePickerSkeletonItemCount
                 )
+
+                self.didOpenFeePicker?(presentation)
             }
         )
+    }
+
+    private func isNetworkFeePickerTransaction(_ transaction: TransactionConfirmationModel) -> Bool {
+        switch transaction.transaction {
+        case .transfer(.tronUSDT):
+            true
+        case .transfer(.multichain):
+            !transaction.availableExtraTypes.isEmpty
+        default:
+            false
+        }
+    }
+
+    private func feeTitle(transaction: TransactionConfirmationModel) -> String {
+        if isNetworkFeePickerTransaction(transaction) {
+            return TKLocales.FeeMethodPicker.title
+        }
+        return TKLocales.EventDetails.fee
     }
 
     private func createActionBar(model: TransactionConfirmationModel) -> TKPopUp.Item {
@@ -925,9 +1001,9 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     return TKLocales.TransactionConfirmation.Buttons.confirmAndStake
                 case let .withdraw(isCollect):
                     if isCollect {
-                        return TKLocales.TransactionConfirmation.Buttons.confirmAndUnstake
-                    } else {
                         return TKLocales.TransactionConfirmation.Buttons.confirmAndCollect
+                    } else {
+                        return TKLocales.TransactionConfirmation.Buttons.confirmAndUnstake
                     }
                 }
             case .transfer:
@@ -936,6 +1012,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }()
         var btnConf = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
         btnConf.content = .init(title: .plainString(buttonTitle))
+        btnConf.isEnabled = isConfirmEnabled(transaction: model)
         btnConf.action = { [weak self] in
             self?.confirmAction(model: model)
         }
@@ -946,9 +1023,13 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     private func createConfirmSlider(model: TransactionConfirmationModel) -> TKPopUp.Item {
+        let sliderTitle = NSMutableAttributedString()
+        sliderTitle.append(TKLocales.Actions.Confirm.title.withTextStyle(.label1, color: .Text.tertiary, alignment: .center))
+        sliderTitle.append("\n".withTextStyle(.body2, color: .Text.tertiary, alignment: .center))
+        sliderTitle.append(TKLocales.Actions.Confirm.subtitle.withTextStyle(.body2, color: .Text.tertiary, alignment: .center))
         let sliderItem = TKPopUp.Component.Slider(
-            title: TKLocales.Actions.Confirm.title.withTextStyle(.label1, color: .Text.tertiary, alignment: .center),
-            isEnable: true,
+            title: sliderTitle,
+            isEnable: isConfirmEnabled(transaction: model),
             appearance: .standart,
             didConfirm: { [weak self] in
                 self?.confirmAction(model: model)
@@ -986,7 +1067,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             case .ton: valueToken = .ton
             case let .jetton(item): valueToken = .jetton(item.jettonInfo)
             }
-        case .tronUSDT: valueToken = nil
+        case .tronTRX: valueToken = .trx
+        case .tronUSDT, .multichain: valueToken = nil
         case .none: valueToken = nil
         }
 
@@ -995,7 +1077,8 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         case .loading, .none: feeToken = nil
         case let .extra(extra):
             switch extra.value {
-            case .default: feeToken = .ton
+            case .default:
+                feeToken = .ton
             case let .gasless(token, _):
                 if token.symbol?.uppercased() == TRX.symbol.uppercased() {
                     feeToken = .trx
@@ -1003,18 +1086,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                     feeToken = .jetton(token)
                 }
             case .battery: feeToken = .none
+            case .multichain: feeToken = .none
             }
         }
 
-        let shouldLoadTRXRate: Bool = {
-            guard case .transfer(.tronUSDT) = model.transaction else { return false }
-            return model.availableExtraTypes.contains {
-                if case let .gasless(token) = $0 {
-                    return token.symbol?.uppercased() == TRX.symbol.uppercased()
-                }
-                return false
+        let shouldLoadTRXRate = model.availableExtraTypes.contains {
+            if case let .gasless(token) = $0 {
+                return token.symbol?.uppercased() == TRX.symbol.uppercased()
             }
-        }()
+            return false
+        }
 
         var jettonsForRates = Set<String>()
         for token in [valueToken, feeToken] {
@@ -1069,21 +1150,29 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             }
 
             let feeRate: Rates.Rate?
-            switch feeToken {
-            case .ton:
-                feeRate = tonRate
-            case let .jetton(jettonInfo):
-                if jettonInfo.symbol?.uppercased() == TRX.symbol.uppercased() {
+            if case let .transfer(.multichain(asset)) = model.transaction,
+               case let .extra(extra) = model.extraState,
+               case let .multichain(feeAsset, _) = extra.value,
+               feeAsset.assetId == asset.asset.assetId
+            {
+                feeRate = multichainRate(asset: asset, currency: currency)
+            } else {
+                switch feeToken {
+                case .ton:
+                    feeRate = tonRate
+                case let .jetton(jettonInfo):
+                    if jettonInfo.symbol?.uppercased() == TRX.symbol.uppercased() {
+                        feeRate = trxRate
+                    } else {
+                        feeRate = rates.jettonRates.first(where: { $0.key == jettonInfo.address.toRaw() })?
+                            .value
+                            .first(where: { $0.currency == currency })
+                    }
+                case .trx:
                     feeRate = trxRate
-                } else {
-                    feeRate = rates.jettonRates.first(where: { $0.key == jettonInfo.address.toRaw() })?
-                        .value
-                        .first(where: { $0.currency == currency })
+                case .none:
+                    feeRate = nil
                 }
-            case .trx:
-                feeRate = trxRate
-            case .none:
-                feeRate = nil
             }
 
             let usdtFiatRate = rates.usdt.first(where: { $0.currency == currency })
@@ -1094,26 +1183,81 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }
     }
 
+    private func multichainConvertedAmount(
+        amount: BigUInt,
+        asset: MultichainAsset,
+        currency: Currency
+    ) -> String? {
+        guard let price = multichainPrice(asset: asset, currency: currency),
+              let decimalAmount = Decimal(string: amount.description, locale: Locale(identifier: "en_US_POSIX"))
+        else {
+            return nil
+        }
+
+        let divisor = decimalPowerOfTen(asset.asset.decimals)
+        let fiatAmount = decimalAmount / divisor * price
+        return amountFormatter.format(
+            decimal: fiatAmount,
+            accessory: .fiat(currency),
+            style: .regular
+        )
+    }
+
+    private func multichainRate(
+        asset: MultichainAsset,
+        currency: Currency
+    ) -> Rates.Rate? {
+        guard let price = multichainPrice(asset: asset, currency: currency) else {
+            return nil
+        }
+        return Rates.Rate(
+            currency: currency,
+            rate: price,
+            diff24h: nil
+        )
+    }
+
+    private func multichainPrice(
+        asset: MultichainAsset,
+        currency: Currency
+    ) -> Decimal? {
+        let prices = asset.price.prices
+        let value = prices[currency.code]
+            ?? prices[currency.code.lowercased()]
+            ?? prices[currency.code.uppercased()]
+        guard let value, value.isFinite else {
+            return nil
+        }
+        return Decimal(value)
+    }
+
+    private func decimalPowerOfTen(_ exponent: Int) -> Decimal {
+        guard exponent > 0 else {
+            return 1
+        }
+        var result = Decimal(1)
+        for _ in 0 ..< exponent {
+            result *= 10
+        }
+        return result
+    }
+
     private struct FeeOptionPresentation {
         let description: String?
-        let footerText: String?
-        let footerActionTitle: String?
-        let footerActionHandler: (() -> Void)?
         let isEnabled: Bool
     }
 
     private func feeOptionPresentation(
         transaction: TransactionConfirmationModel,
-        extraType: TransactionConfirmationModel.ExtraType,
-        extraValue: TransactionConfirmationModel.ExtraValue?,
+        extraOption: TransactionConfirmationModel.ExtraOption?,
         currency: Currency,
         tonRate: Rates.Rate?,
         trxRate: Rates.Rate?
     ) -> FeeOptionPresentation {
-        let description = extraValue.flatMap {
+        let description = extraOption.flatMap { option in
             self.textFormatter.formatFeeOptionDescription(
                 feeKind: self.feeCalculator.feeKind(
-                    value: $0,
+                    value: option.value,
                     wallet: transaction.wallet
                 ),
                 currency: currency,
@@ -1122,45 +1266,40 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
             )
         }
 
-        guard case .transfer(.tronUSDT) = transaction.transaction else {
+        guard isNetworkFeePickerTransaction(transaction) else {
             return FeeOptionPresentation(
                 description: description,
-                footerText: nil,
-                footerActionTitle: nil,
-                footerActionHandler: nil,
                 isEnabled: true
             )
         }
 
         guard isFeeOptionInsufficient(
-            extraValue: extraValue,
+            transaction: transaction,
+            extraOption: extraOption,
             walletBalance: walletBalance
         ) else {
             return FeeOptionPresentation(
                 description: description,
-                footerText: nil,
-                footerActionTitle: nil,
-                footerActionHandler: nil,
                 isEnabled: true
             )
         }
 
         return FeeOptionPresentation(
-            description: nil,
-            footerText: TKLocales.TronUsdtFees.TransactionConfirmation.noEnoughFunds,
-            footerActionTitle: TKLocales.TronUsdtFees.TransactionConfirmation.refill,
-            footerActionHandler: { [weak self] in
-                self?.didRequestOpenFeeRefill?(extraType)
-            },
-            isEnabled: true
+            description: description,
+            isEnabled: false
         )
     }
 
     private func isFeeOptionInsufficient(
-        extraValue: TransactionConfirmationModel.ExtraValue?,
+        transaction: TransactionConfirmationModel,
+        extraOption: TransactionConfirmationModel.ExtraOption?,
         walletBalance: KeeperCore.WalletBalance?
     ) -> Bool {
-        guard let extraValue else {
+        if case .transfer(.multichain) = transaction.transaction {
+            return extraOption?.isInsufficient ?? false
+        }
+
+        guard let extraValue = extraOption?.value else {
             return false
         }
         guard let walletBalance else {
@@ -1177,23 +1316,69 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
 
         case let .default(amount):
             let tonBalance = BigUInt(max(walletBalance.balance.tonBalance.amount, 0))
-            return tonBalance < amount
+            // Sending the TON fee also needs its own gas buffer; mirror the send path's requirement.
+            return tonBalance < TronUSDTTonFeePaymentBuilder.requiredTonBalance(for: amount)
 
         case let .gasless(token, amount):
             if token.symbol?.uppercased() == TRX.symbol.uppercased() {
                 let trxBalance = walletBalance.tronBalance?.trxAmount ?? 0
-                return trxBalance < amount
+                // A TRX transfer and a TRX-paid fee come out of the same balance.
+                let transferred: BigUInt = if case .transfer(.tronTRX) = transaction.transaction {
+                    transaction.amount?.value ?? 0
+                } else {
+                    0
+                }
+                return trxBalance < transferred + amount
             } else {
                 return false
             }
+
+        case .multichain:
+            return false
         }
+    }
+
+    private func isFeeOptionRefillable(
+        transaction: TransactionConfirmationModel,
+        extraOption: TransactionConfirmationModel.ExtraOption?
+    ) -> Bool {
+        guard case let .transfer(.multichain(asset)) = transaction.transaction,
+              asset.asset.chain == .ton,
+              case let .gasless(_, feeAmount) = extraOption?.value,
+              let amount = transaction.amount?.value
+        else {
+            return true
+        }
+        return feeAmount < amount
+    }
+
+    private func isConfirmEnabled(transaction: TransactionConfirmationModel) -> Bool {
+        guard case .extra = transaction.extraState else {
+            return false
+        }
+        return !isSelectedFeeInsufficient(transaction: transaction)
+    }
+
+    private func isSelectedFeeInsufficient(transaction: TransactionConfirmationModel) -> Bool {
+        guard case let .extra(extra) = transaction.extraState else {
+            return false
+        }
+        let extraOption = transaction.extraOptions.first { $0.type == extra.value.extraType }
+        return isFeeOptionInsufficient(
+            transaction: transaction,
+            extraOption: extraOption,
+            walletBalance: walletBalance
+        )
     }
 
     private func tronFeeBalanceAvailabilityText(
         transaction: TransactionConfirmationModel,
         feeDetails: TransactionConfirmationFeeCalculator.FeeDetails
     ) -> String? {
-        guard case .transfer(.tronUSDT) = transaction.transaction else {
+        switch transaction.transaction {
+        case .transfer(.tronUSDT), .transfer(.tronTRX):
+            break
+        default:
             return nil
         }
         guard let walletBalance else {
@@ -1242,10 +1427,7 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     private func batteryChargesBalance(walletBalance: KeeperCore.WalletBalance) -> Int {
         guard
             let batteryBalance = walletBalance.batteryBalance,
-            !batteryBalance.isBalanceZero,
-            let charges = batteryCalculation.calculateCharges(
-                tonAmount: batteryBalance.balanceDecimalNumber
-            )
+            let charges = batteryCalculation.calculateAvailableCharges(balance: batteryBalance)
         else {
             return 0
         }
@@ -1253,14 +1435,16 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
     }
 
     private func loadWalletBalance(wallet: Wallet, currency: Currency) async -> KeeperCore.WalletBalance? {
-        if let cached = try? balanceService.getBalance(wallet: wallet) {
-            return cached
-        }
-        return try? await balanceService.loadWalletBalance(
+        // Load a fresh balance so a just-completed fee refill isn't masked by a stale cache (the
+        // insufficiency checks below read this balance); fall back to the cache only on failure.
+        if let fresh = try? await balanceService.loadWalletBalance(
             wallet: wallet,
             currency: currency,
             includingTransferFees: true
-        )
+        ) {
+            return fresh
+        }
+        return try? balanceService.getBalance(wallet: wallet)
     }
 
     private func confirmAction(model: TransactionConfirmationModel) {
@@ -1305,7 +1489,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 guard !Task.isCancelled else { return }
                 NotificationCenter.default.postTransactionSendNotification(
                     wallet: model.wallet,
-                    patch: transactionSentNotificationPatch
+                    patch: { [transactionSentNotificationPatch] userInfo in
+                        if !model.hasHistoryFeed {
+                            userInfo[Notification.transactionSendWithoutHistoryKey] = true
+                        }
+                        transactionSentNotificationPatch(&userInfo)
+                    }
                 )
                 didConfirmTransaction?(model)
             }
@@ -1340,6 +1529,12 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
         }
 
         let result = await confirmationController.sendTransaction()
+        if case let .success(sendResult) = result {
+            await pendingTransactionsService.record(
+                sendResult,
+                wallet: confirmationController.getModel().wallet
+            )
+        }
         guard !Task.isCancelled else {
             return .cancelledByUser
         }
@@ -1352,6 +1547,119 @@ final class TransactionConfirmationViewModelImplementation: TransactionConfirmat
                 return .cancelledByUser
             }
             return .failure(error)
+        }
+    }
+}
+
+private extension TransactionConfirmationViewModelImplementation {
+    func makeFeePickerPresentation(
+        currency: Currency,
+        tonRate: Rates.Rate?,
+        trxRate: Rates.Rate?,
+        title: String,
+        subtitle: String?,
+        skeletonItemCount: Int
+    ) -> NetworkFeePickerPresentation {
+        let dataSource = LazyNetworkFeePickerDataSource { [weak self] in
+            guard let self else {
+                return .uncategorized(dataSource: StaticNetworkFeePickerDataSource(items: []))
+            }
+            await self.confirmationController.prepareFeeOptions()
+            let items = self.makeFeePickerItems(
+                transaction: self.confirmationController.getModel(),
+                currency: currency,
+                tonRate: tonRate,
+                trxRate: trxRate
+            )
+            return .uncategorized(dataSource: StaticNetworkFeePickerDataSource(items: items))
+        }
+
+        return NetworkFeePickerPresentation(
+            configuration: NetworkFeePickerConfiguration(
+                title: title,
+                subtitle: subtitle,
+                skeletonItemCount: skeletonItemCount
+            ),
+            dataSource: dataSource,
+            didSelectItem: { [weak self] item, _ in
+                guard let self,
+                      let index = Int(item.id)
+                else {
+                    return
+                }
+                let transaction = self.confirmationController.getModel()
+                guard transaction.availableExtraTypes.indices.contains(index) else {
+                    return
+                }
+                let extraType = transaction.availableExtraTypes[index]
+                let extraOption = transaction.extraOptions.first { $0.type == extraType }
+
+                if self.isFeeOptionInsufficient(
+                    transaction: transaction,
+                    extraOption: extraOption,
+                    walletBalance: self.walletBalance
+                ) {
+                    guard self.isFeeOptionRefillable(
+                        transaction: transaction,
+                        extraOption: extraOption
+                    ) else {
+                        return
+                    }
+                    self.didRequestOpenFeeRefill?(extraType)
+                    return
+                }
+
+                self.confirmationController.setPrefferedExtraType(extraType: extraType)
+                self.update()
+            }
+        )
+    }
+
+    func makeFeePickerItems(
+        transaction: TransactionConfirmationModel,
+        currency: Currency,
+        tonRate: Rates.Rate?,
+        trxRate: Rates.Rate?
+    ) -> [NetworkFeePickerItem] {
+        let selectedExtraType: TransactionConfirmationModel.ExtraType? = {
+            guard case let .extra(extra) = transaction.extraState else {
+                return nil
+            }
+            return extra.value.extraType
+        }()
+        return transaction.availableExtraTypes.enumerated().map { index, extraType in
+            let extraOption = transaction.extraOptions.first(where: { $0.type == extraType })
+            let optionPresentation = feeOptionPresentation(
+                transaction: transaction,
+                extraOption: extraOption,
+                currency: currency,
+                tonRate: tonRate,
+                trxRate: trxRate
+            )
+            let isRefillable = isFeeOptionRefillable(
+                transaction: transaction,
+                extraOption: extraOption
+            )
+            let subtitle = optionPresentation.description
+            let text: NetworkFeePickerItem.Text = if let subtitle {
+                .titled(
+                    title: extraType.networkFeePickerTitle,
+                    subtitle: subtitle
+                )
+            } else {
+                .singleLine(title: extraType.networkFeePickerTitle)
+            }
+
+            return NetworkFeePickerItem(
+                id: "\(index)",
+                leading: extraType.networkFeePickerLeading,
+                text: text,
+                isDisabled: !optionPresentation.isEnabled,
+                actionTitle: optionPresentation.isEnabled || !isRefillable
+                    ? nil
+                    : TKLocales.FeeMethodPicker.deposit,
+                isSelected: extraType == selectedExtraType
+            )
         }
     }
 }

@@ -1,12 +1,16 @@
 import KeeperCore
+import SnapKit
 import TKCoordinator
 import TKCore
 import TKFeatureFlags
 import TKUIKit
 import UIKit
+import UserNotifications
 import WidgetKit
 
-public final class AppCoordinator: RouterCoordinator<WindowRouter> {
+final class AppCoordinator: RouterCoordinator<WindowRouter> {
+    private static let bootConfigurationDeadline: UInt64 = 3000
+
     let coreAssembly: TKCore.CoreAssembly
     let keeperCoreAssembly: KeeperCore.Assembly
 
@@ -14,28 +18,19 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
     private weak var rootCoordinator: RootCoordinator?
 
-    public init(
+    init(
         router: WindowRouter,
         coreAssembly: TKCore.CoreAssembly
     ) {
         self.coreAssembly = coreAssembly
-        self.keeperCoreAssembly = KeeperCore.Assembly(
-            dependencies: Assembly.Dependencies(
-                cacheURL: coreAssembly.cacheURL,
-                sharedCacheURL: coreAssembly.sharedCacheURL,
-                appInfoProvider: coreAssembly.appInfoProvider,
-                featureFlags: coreAssembly.featureFlags,
-                tkAppSettings: coreAssembly.tkAppSettings,
-                seedProvider: coreAssembly.seedProvider,
-                firebaseUserIdProvider: { coreAssembly.uniqueIdProvider.uniqueDeviceId.uuidString }
-            )
-        )
+        self.keeperCoreAssembly = coreAssembly.keeperCoreAssembly
         self.appStateTracker = coreAssembly.appStateTracker
         super.init(router: router)
     }
 
-    override public func start(deeplink: CoordinatorDeeplink? = nil) {
+    override func start(deeplink: CoordinatorDeeplink? = nil) {
         makeTKUIKitInitialSetup()
+        setupSensitiveContentAnalytics()
 
         var settingsRepository = keeperCoreAssembly.repositoriesAssembly.settingsRepository()
         if settingsRepository.isFirstRun {
@@ -43,23 +38,58 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
             settingsRepository.seed = UUID().uuidString
         }
 
+        logLaunchApp()
+
         openRoot(deeplink: deeplink)
 
         appStateTracker.addObserver(self)
-
-        coreAssembly.analyticsProvider.log(
-            LaunchApp(theme: TKThemeManager.shared.theme.analyticsTheme),
-            featureFlags: coreAssembly.featureFlags.asDictionary().asJsonString()
-        )
     }
 
-    override public func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
         guard let rootCoordinator else { return false }
         return rootCoordinator.handleDeeplink(deeplink: deeplink)
     }
 
     private func makeTKUIKitInitialSetup() {
         ToastPresenter.windowLevel = .toast
+    }
+
+    /// Flag values are only final once the boot config is loaded, so the event waits for it,
+    /// but never longer than `bootConfigurationDeadline` — a stalled network must not drop the event.
+    /// The permission read runs alongside that wait and is not covered by the same bound.
+    private func logLaunchApp() {
+        let theme = TKThemeManager.shared.theme.analyticsTheme
+        let walletsCount = keeperCoreAssembly.rootAssembly().storesAssembly.walletsStore.wallets.count
+        let configuration = keeperCoreAssembly.configurationAssembly.configuration
+        Task { [analyticsProvider = coreAssembly.analyticsProvider, configuration] in
+            async let pushPermission = UNUserNotificationCenter.current()
+                .notificationSettings()
+                .authorizationStatus
+                .analyticsPushPermission
+            let deadline = Task {
+                try? await Task.sleep(nanoseconds: Self.bootConfigurationDeadline * NSEC_PER_MSEC)
+            }
+            Task {
+                _ = await configuration.loadConfigurations()
+                deadline.cancel()
+            }
+            await deadline.value
+
+            let event = LaunchApp(
+                theme: theme,
+                walletsCount: walletsCount,
+                pushPermission: await pushPermission
+            )
+            analyticsProvider.log(
+                event.withExtraValues(configuration.resolvedFeatureFlags.analyticsParameters)
+            )
+        }
+    }
+
+    private func setupSensitiveContentAnalytics() {
+        TKSensitiveContentController.didTakeScreenshot = { [analyticsProvider = coreAssembly.analyticsProvider] in
+            analyticsProvider.log(eventKey: .sensitiveContentScreenshot)
+        }
     }
 }
 
@@ -82,7 +112,7 @@ private extension AppCoordinator {
 }
 
 extension AppCoordinator: AppStateTrackerObserver {
-    public func didUpdateState(_ state: AppStateTracker.State) {
+    func didUpdateState(_ state: AppStateTracker.State) {
         switch state {
         case .resign:
             WidgetCenter.shared.reloadAllTimelines()
@@ -95,6 +125,30 @@ extension AppCoordinator: AppStateTrackerObserver {
 class AppCoordinatorRootViewController: UIViewController {
     override var supportedInterfaceOrientations: UIInterfaceOrientationMask {
         .portrait
+    }
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        let launchScreen = LaunchScreenViewController()
+        addChild(launchScreen)
+        view.addSubview(launchScreen.view)
+        launchScreen.didMove(toParent: self)
+
+        launchScreen.view.snp.makeConstraints { make in
+            make.edges.equalTo(view)
+        }
+    }
+}
+
+private extension UNAuthorizationStatus {
+    var analyticsPushPermission: LaunchApp.PushPermission? {
+        switch self {
+        case .authorized, .provisional, .ephemeral: .granted
+        case .denied: .denied
+        case .notDetermined: .notRequested
+        @unknown default: nil
+        }
     }
 }
 

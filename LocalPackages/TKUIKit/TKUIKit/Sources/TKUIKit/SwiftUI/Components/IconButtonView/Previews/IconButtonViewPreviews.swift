@@ -29,7 +29,7 @@ public struct IconButtonViewPreviews: View {
             Toggle(isOn: $shimmering) {
                 Text("shimmering")
                     .textStyle(.label1)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
             }
             .padding(.all, 16)
 
@@ -59,14 +59,11 @@ public struct IconButtonViewPreviews: View {
                 }
             }
         }
-        .debugPreview(
-            backgroundColor: Color(
-                uiColor: .Background.page
-            )
-        )
+        .debugPreview(background: .page)
     }
 }
 
 #Preview {
     IconButtonViewPreviews()
+        .tkThemed()
 }

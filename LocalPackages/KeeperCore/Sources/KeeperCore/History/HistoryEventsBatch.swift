@@ -1,6 +1,6 @@
 import Foundation
 
-public struct HistoryEventsBatch: Sendable {
-    public let accountsEvents: AccountEvents?
-    public let tronTransactions: [TronTransaction]?
+struct HistoryEventsBatch {
+    let accountsEvents: AccountEvents?
+    let tronTransactions: [TronTransaction]?
 }

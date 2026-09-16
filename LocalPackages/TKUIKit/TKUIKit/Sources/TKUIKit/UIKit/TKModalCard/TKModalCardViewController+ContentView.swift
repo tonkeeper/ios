@@ -57,7 +57,3 @@ private extension TKModalCardViewController.ContentView {
         ])
     }
 }
-
-private extension CGFloat {
-    static let descriptionBottomSpace: CGFloat = 4
-}

@@ -7,8 +7,6 @@ protocol ReceiveLegacyViewModel: AnyObject {
     var didUpdateTokenViewController: ((ReceiveTabViewController, _ animated: Bool) -> Void)? { get set }
     var didUpdateSegmentedControl: (([String]?) -> Void)? { get set }
     var didChangeIndex: ((Int) -> Void)? { get set }
-    var didRequestClose: (() -> Void)? { get set }
-
     func viewDidLoad()
     func setActiveIndex(_ from: Int, _ to: Int)
     func close()
@@ -24,24 +22,19 @@ final class ReceiveLegacyViewModelImplementation: ReceiveLegacyViewModel, Receiv
 
     private var activeTokenIndex = 0
 
-    private let didSelectInactiveTRC20: ((Wallet) -> Void)?
     private let tokens: [ReceiveLegacyToken]
-    private var wallet: Wallet
-    private let walletsStore: WalletsStore
     private let tokenModuleViewControllerProvider: (ReceiveLegacyToken) -> ReceiveTabViewController
 
     init(
         tokens: [ReceiveLegacyToken],
-        wallet: Wallet,
-        walletsStore: WalletsStore,
-        didSelectInactiveTRC20: ((Wallet) -> Void)?,
+        initialToken: ReceiveLegacyToken? = nil,
         tokenModuleViewControllerProvider: @escaping (ReceiveLegacyToken) -> ReceiveTabViewController
     ) {
         self.tokens = tokens
-        self.wallet = wallet
-        self.walletsStore = walletsStore
-        self.didSelectInactiveTRC20 = didSelectInactiveTRC20
         self.tokenModuleViewControllerProvider = tokenModuleViewControllerProvider
+        if let initialToken, let index = tokens.firstIndex(of: initialToken) {
+            activeTokenIndex = index
+        }
     }
 
     func viewDidLoad() {
@@ -50,20 +43,8 @@ final class ReceiveLegacyViewModelImplementation: ReceiveLegacyViewModel, Receiv
 
     func setActiveIndex(_ from: Int, _ to: Int) {
         let index = min(tokens.count - 1, max(0, to))
-        if case .tron = tokens[index], !wallet.isTronTurnOn {
-            didChangeIndex?(from)
-            didSelectInactiveTRC20?(wallet)
-            return
-        }
         activeTokenIndex = index
         setupTokenPage(animated: true)
-    }
-
-    func selectToken(token: ReceiveLegacyToken) {
-        guard let index = tokens.index(of: token) else { return }
-        activeTokenIndex = index
-        setupTokenPage(animated: true)
-        didChangeIndex?(index)
     }
 
     func close() {
@@ -73,20 +54,13 @@ final class ReceiveLegacyViewModelImplementation: ReceiveLegacyViewModel, Receiv
 
 private extension ReceiveLegacyViewModelImplementation {
     func setup() {
-        walletsStore.addObserver(self) { observer, event in
-            switch event {
-            case let .didUpdateWalletTron(wallet):
-                DispatchQueue.main.async {
-                    guard wallet == observer.wallet else { return }
-                    observer.wallet = wallet
-                }
-            default:
-                break
-            }
-        }
-
         guard !tokens.isEmpty else { return }
         setupSegmentedControl()
+        // Reflect a non-default preselection on the control; guarded to >1 tab because a
+        // single-token receive has no segmented control to index into.
+        if tokens.count > 1, activeTokenIndex != 0 {
+            didChangeIndex?(activeTokenIndex)
+        }
         setupTokenPage(animated: false)
     }
 

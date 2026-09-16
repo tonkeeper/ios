@@ -7,87 +7,97 @@ struct PriceImpactView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            SwiftUI.Image(uiImage: .TKUIKit.Icons.Size28.exclamationmarkTriangle)
+            SwiftUI.Image(uiImage: presentation.style.icon)
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .frame(width: Layout.iconSize, height: Layout.iconSize)
-                .foregroundColor(Color(uiColor: .Accent.red))
-                .padding(.top, Layout.contentTopPadding)
-                .padding(.bottom, Layout.titleTopPadding)
+                .foregroundStyle(presentation.style.accentColor)
 
             Text(presentation.title)
-                .font(Font(TKTextStyle.h2.font))
-                .foregroundColor(Color(uiColor: .Text.primary))
+                .textStyle(.h2)
+                .foregroundStyle(.textPrimary)
                 .multilineTextAlignment(.center)
+                .padding(.top, Layout.titleTopPadding)
                 .padding(.bottom, Layout.subtitleTopPadding)
 
             Text(presentation.subtitle)
-                .font(Font(TKTextStyle.body1.font))
-                .foregroundColor(Color(uiColor: .Text.secondary))
+                .textStyle(.body1)
+                .foregroundStyle(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, Layout.descriptionTopPadding)
 
             Text(presentation.description)
-                .font(Font(TKTextStyle.body1.font))
-                .foregroundColor(Color(uiColor: .Text.secondary))
+                .textStyle(.body1)
+                .foregroundStyle(.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.bottom, Layout.buttonsTopPadding)
 
             VStack(spacing: Layout.buttonsSpacing) {
-                actionButton(
-                    title: presentation.confirmButtonTitle,
-                    titleColor: .Accent.red,
-                    backgroundColor: .Background.contentAttention,
-                    action: presentation.didTapConfirm
+                ButtonView(
+                    config: ButtonView.Config(
+                        title: presentation.confirmButtonTitle,
+                        size: .large,
+                        layoutMode: .fill,
+                        appearance: {
+                            switch presentation.style {
+                            case .warning:
+                                .attention
+                            case .danger:
+                                .destructive
+                            }
+                        }(),
+                        action: presentation.didTapConfirm
+                    )
                 )
 
-                actionButton(
-                    title: presentation.backButtonTitle,
-                    titleColor: .Button.secondaryForeground,
-                    backgroundColor: .Button.secondaryBackground,
-                    action: presentation.didTapBack
+                ButtonView(
+                    config: ButtonView.Config(
+                        title: presentation.backButtonTitle,
+                        size: .large,
+                        layoutMode: .fill,
+                        appearance: .secondary,
+                        action: presentation.didTapBack
+                    )
                 )
             }
-            .padding(.bottom, Layout.bottomPadding)
+            .padding(.bottom, Layout.buttonsBottomPadding)
         }
         .padding(.horizontal, Layout.horizontalPadding)
         .frame(maxWidth: .infinity, alignment: .top)
-        .background(Color(uiColor: .Background.page))
+        .background(.backgroundPage)
     }
 }
 
 private extension PriceImpactView {
     enum Layout {
         static let horizontalPadding: CGFloat = 16
-        static let contentTopPadding: CGFloat = 8
-        static let iconSize: CGFloat = 44
-        static let titleTopPadding: CGFloat = 12
-        static let subtitleTopPadding: CGFloat = 8
+        static let iconSize: CGFloat = 84
+        static let titleTopPadding: CGFloat = 13
+        static let subtitleTopPadding: CGFloat = 4
         static let descriptionTopPadding: CGFloat = 12
-        static let buttonsTopPadding: CGFloat = 24
-        static let buttonsSpacing: CGFloat = 12
-        static let buttonHeight: CGFloat = 56
-        static let bottomPadding: CGFloat = 16
+        static let buttonsTopPadding: CGFloat = 30
+        static let buttonsBottomPadding: CGFloat = 3
+        static let buttonsSpacing: CGFloat = 17
+    }
+}
+
+private extension PriceImpactPresentationStyle {
+    var icon: UIImage {
+        switch self {
+        case .warning:
+            return .TKUIKit.Icons.Size84.exclamationmarkCircle
+        case .danger:
+            return .TKUIKit.Icons.Size84.exclamationmarkTriangle
+        }
     }
 
-    func actionButton(
-        title: String,
-        titleColor: UIColor,
-        backgroundColor: UIColor,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(Font(TKTextStyle.label1.font))
-                .foregroundColor(Color(uiColor: titleColor))
-                .frame(maxWidth: .infinity)
-                .frame(height: Layout.buttonHeight)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(uiColor: backgroundColor))
-                )
+    var accentColor: TKColor {
+        switch self {
+        case .warning:
+            return .accentOrange
+        case .danger:
+            return .accentRed
         }
-        .buttonStyle(.plain)
     }
 }

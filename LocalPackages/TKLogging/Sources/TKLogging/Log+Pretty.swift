@@ -40,3 +40,20 @@ public extension Date {
         PrettyPrinter(self)
     }
 }
+
+// MARK: - Array
+
+public extension PrettyPrinter where Value == [String] {
+    var string: String {
+        guard !value.isEmpty else {
+            return "none"
+        }
+        return value.joined(separator: ",")
+    }
+}
+
+public extension [String] {
+    var pretty: PrettyPrinter<Self> {
+        PrettyPrinter(self)
+    }
+}

@@ -20,7 +20,7 @@ public struct CellCenter<PrimaryRow: View, SecondaryRow: View>: View {
     }
 
     public var body: some View {
-        VStack(alignment: .leading, spacing: Layout.rowSpacing) {
+        VStack(alignment: .leading, spacing: 0) {
             primaryRow
             secondaryRow
         }
@@ -31,13 +31,9 @@ public struct CellCenter<PrimaryRow: View, SecondaryRow: View>: View {
 
 private extension CellCenter {
     enum Layout {
-        static var rowSpacing: CGFloat {
-            3
-        }
-
         static var insets: EdgeInsets {
             EdgeInsets(
-                top: 17,
+                top: 16,
                 leading: 16,
                 bottom: 16,
                 trailing: 16

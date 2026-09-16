@@ -1,22 +1,36 @@
 appId: com.jbig.tonkeeper
 ---
-- assertVisible: Enter recovery phrase
-- runScript:
-    file: ../../scripts/parse_mnemonic.js
-    env:
-      phrase: ${WALLET_WITH_MONEY}
+- extendedWaitUntil:
+    visible: Enter recovery phrase
+    timeout: 30000
 
-- evalScript: ${output.i = 0}
-- repeat:
-    while:
-      true: ${output.i <= 23}
-    commands:
-      - evalScript: ${output.wordId = 'mnemonic.input.' + output.i}
-      - tapOn:
-          id: ${output.wordId}
-      - evalScript: ${output.currentWord = output.word[output.i]}
-      - inputText: ${output.currentWord}
-      - pressKey: enter
-      - evalScript: ${output.i++}
+# Paste reads simulator UIPasteboard (primed once on CI before maestro test; not re-copied on retry).
+- tapOn: Paste
+
+# iOS 17+ system sheet: "Allow Paste" (skip if already allowed or no prompt).
+- waitForAnimationToEnd:
+    timeout: 3000
+- tapOn:
+    text: Allow Paste
+    optional: true
+
+# Word-by-word fallback (e.g. local runs without simctl pbcopy):
+# - runScript:
+#     file: ../../scripts/utils/parse_mnemonic.js
+#     env:
+#       phrase: ${WALLET_WITH_MONEY}
+#
+# - evalScript: ${output.i = 0}
+# - repeat:
+#     while:
+#       true: ${output.i <= 23}
+#     commands:
+#       - evalScript: ${output.wordId = 'mnemonic.input.' + output.i}
+#       - tapOn:
+#           id: ${output.wordId}
+#       - evalScript: ${output.currentWord = output.word[output.i]}
+#       - inputText: ${output.currentWord}
+#       - pressKey: enter
+#       - evalScript: ${output.i++}
 
 - tapOn: Continue

@@ -1,8 +1,10 @@
+import TKLocalize
 import TKUIKit
 import UIKit
 
 final class PasscodeInputViewController: GenericViewViewController<PasscodeInputView> {
     private let viewModel: PasscodeInputViewModel
+    private let sensitiveContentController = TKSensitiveContentController()
 
     init(viewModel: PasscodeInputViewModel) {
         self.viewModel = viewModel
@@ -19,6 +21,23 @@ final class PasscodeInputViewController: GenericViewViewController<PasscodeInput
 
         setupBindings()
         viewModel.viewDidLoad()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        viewModel.viewWillAppear()
+
+        sensitiveContentController.start(
+            in: self,
+            title: TKLocales.Toast.sensitiveScreenshotWarningPasscode
+        )
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
+        sensitiveContentController.stop()
     }
 
     override func viewDidDisappear(_ animated: Bool) {
@@ -40,8 +59,4 @@ private extension PasscodeInputViewController {
             customView?.setState(state, completion: { completion?() })
         }
     }
-}
-
-private extension Int {
-    static let dotsCount = 4
 }

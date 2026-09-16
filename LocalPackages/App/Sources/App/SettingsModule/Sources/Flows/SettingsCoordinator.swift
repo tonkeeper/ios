@@ -1,35 +1,43 @@
 import KeeperCore
 import KeeperCoreComponents
 import Stories
+import SwiftUI
 import TKAppInfo
 import TKCoordinator
 import TKCore
+import TKFeatureFlags
 import TKLocalize
 import TKLogging
 import TKStories
 import TKUIKit
 import UIKit
+import WalletExtensions
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didTapBattery: ((Wallet) -> Void)?
     var didTapSupport: (() -> Void)?
+    var didRequestOpenMerchantURL: ((URL, UIViewController) -> Void)?
+    var didRequestImportTestnetWallet: (() -> Void)?
 
     private let wallet: Wallet
     private let inAppReviewService: InAppReviewService
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let depositPendingTracker: DepositPendingTracker
 
     init(
         wallet: Wallet,
         inAppReviewService: InAppReviewService,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
         coreAssembly: TKCore.CoreAssembly,
-        router: NavigationControllerRouter
+        router: NavigationControllerRouter,
+        depositPendingTracker: DepositPendingTracker
     ) {
         self.wallet = wallet
         self.inAppReviewService = inAppReviewService
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
+        self.depositPendingTracker = depositPendingTracker
         super.init(router: router)
     }
 
@@ -47,7 +55,7 @@ private extension SettingsCoordinator {
 
     func openSettingsRoot() {
         let configurator = SettingsListRootConfigurator(
-            wallet: wallet,
+            wallet: keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) ?? wallet,
             walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
             appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
@@ -56,14 +64,9 @@ private extension SettingsCoordinator {
             configuration: keeperCoreMainAssembly.configurationAssembly.configuration,
             walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
             anaylticsProvider: coreAssembly.analyticsProvider,
-            tronWalletConfigurator: keeperCoreMainAssembly.tronUSDTAssembly.walletConfigurator(),
-            tronBalanceService: keeperCoreMainAssembly.tronUSDTAssembly.balanceService(),
-            walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore
+            walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+            settingsRepository: keeperCoreMainAssembly.repositoriesAssembly.settingsRepository()
         )
-
-        configurator.didRequirePasscode = { [weak self] in
-            await self?.getPasscode()
-        }
 
         configurator.didOpenURL = { [coreAssembly] in
             coreAssembly.urlOpener().open(url: $0)
@@ -129,6 +132,10 @@ private extension SettingsCoordinator {
             self?.openConnectedApps(wallet: wallet)
         }
 
+        configurator.didTapMigration = { [weak self] wallet in
+            self?.openMigration(wallet: wallet)
+        }
+
         configurator.didDeleteWallet = { [weak self] in
             guard let self else { return }
             let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
@@ -139,11 +146,13 @@ private extension SettingsCoordinator {
 
         let module = SettingsListAssembly.module(configurator: configurator)
 
-        module.output.didOpenDevMenu = { [weak self] in
+        module.viewModel.didOpenDevMenu = { [weak self] in
             self?.openDevMenu()
         }
 
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(
             viewController: module.viewController,
@@ -159,6 +168,8 @@ private extension SettingsCoordinator {
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
@@ -177,7 +188,7 @@ private extension SettingsCoordinator {
 
         let navigationController = TKNavigationController(rootViewController: module.view)
 
-        module.view.setupRightCloseButton { [weak navigationController] in
+        module.view.setupHeaderRightCloseButton { [weak navigationController] in
             navigationController?.dismiss(animated: true)
         }
 
@@ -190,6 +201,8 @@ private extension SettingsCoordinator {
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
@@ -213,12 +226,12 @@ private extension SettingsCoordinator {
                 StoriesPageModel(
                     title: TKLocales.W5Stories.Gasless.title,
                     description: TKLocales.W5Stories.Gasless.subtitle,
-                    backgroundImage: .image(.TKUIKit.Images.storyGasless)
+                    backgroundImage: .image(.TKUIKit.Artwork.Stories.gasless)
                 ),
                 StoriesPageModel(
                     title: TKLocales.W5Stories.Messages.title,
                     description: TKLocales.W5Stories.Messages.subtitle,
-                    backgroundImage: .image(.TKUIKit.Images.storyMessages)
+                    backgroundImage: .image(.TKUIKit.Artwork.Stories.messages)
                 ),
                 StoriesPageModel(
                     title: TKLocales.W5Stories.Phrase.title,
@@ -231,7 +244,7 @@ private extension SettingsCoordinator {
                             })
                         }
                     ),
-                    backgroundImage: .image(.TKUIKit.Images.storyPhrase)
+                    backgroundImage: .image(.TKUIKit.Artwork.Stories.phrase)
                 ),
             ]
         )
@@ -244,6 +257,8 @@ private extension SettingsCoordinator {
                 walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
                 storesAssembly: keeperCoreMainAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: keeperCoreMainAssembly.multichainAssembly,
                 scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
                 configurationAssembly: keeperCoreMainAssembly.configurationAssembly
             )
@@ -282,7 +297,9 @@ private extension SettingsCoordinator {
             self?.router.pop()
         }
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -305,7 +322,9 @@ private extension SettingsCoordinator {
         }
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -326,7 +345,9 @@ private extension SettingsCoordinator {
         }
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -374,7 +395,8 @@ private extension SettingsCoordinator {
             router: NavigationControllerRouter(
                 rootViewController: navigationController
             ),
-            keeperCoreAssembly: keeperCoreMainAssembly
+            keeperCoreAssembly: keeperCoreMainAssembly,
+            analyticsProvider: coreAssembly.analyticsProvider
         )
 
         coordinator.didCancel = { [weak self, weak coordinator] in
@@ -402,48 +424,54 @@ private extension SettingsCoordinator {
     }
 
     func deleteRegular(wallet: Wallet, isSignOut: Bool) {
-        let viewController = SettingsDeleteWarningViewController(
-            popupTitle: isSignOut ? TKLocales.SignOutWarning.title : TKLocales.DeleteWalletWarning.title,
-            popupCaption: isSignOut ? TKLocales.SignOutWarning.caption : TKLocales.DeleteWalletWarning.caption,
-            buttonTitle: isSignOut ? TKLocales.Actions.signOut : TKLocales.DeleteWalletWarning.button,
-            walletName: wallet.iconWithName(
-                attributes: TKTextStyle.body1.getAttributes(color: .Text.primary),
-                iconColor: .Icon.primary,
-                iconSide: 20
-            )
-        )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
-
-        viewController.didTapSignOut = { [weak bottomSheetViewController, weak self] in
-            bottomSheetViewController?.dismiss(completion: {
-                guard let self else { return }
-                Task {
-                    guard let passcode = await self.getPasscode() else { return }
-                    await self.keeperCoreMainAssembly.storesAssembly.walletNotificationStore.setNotificationIsOn(false, wallet: wallet)
-                    await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
-                    await MainActor.run {
-                        let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
-                        if !wallets.isEmpty {
-                            self.router.pop(animated: true)
+        let walletIcon: SwiftUI.Image?
+        let walletName: String
+        switch wallet.icon {
+        case let .emoji(emoji):
+            walletIcon = nil
+            walletName = "\(emoji) \(wallet.label)"
+        case let .icon(image):
+            walletIcon = image.swiftUIImage
+            walletName = wallet.label
+        }
+        PopupContentPresenter.present(
+            from: router.rootViewController
+        ) { dismisser in
+            SettingsDeleteWarningView(
+                title: isSignOut ? TKLocales.SignOutWarning.title : TKLocales.DeleteWalletWarning.title,
+                caption: isSignOut ? TKLocales.SignOutWarning.caption : TKLocales.DeleteWalletWarning.caption,
+                buttonTitle: isSignOut ? TKLocales.Actions.signOut : TKLocales.DeleteWalletWarning.button,
+                walletIcon: walletIcon,
+                walletName: walletName,
+                onSignOut: { [weak self] in
+                    dismisser.dismiss {
+                        guard let self else { return }
+                        Task {
+                            guard let passcode = await self.getPasscode() else { return }
+                            await self.keeperCoreMainAssembly.storesAssembly.walletNotificationStore.setNotificationIsOn(false, wallet: wallet)
+                            await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
+                            await MainActor.run {
+                                let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
+                                if !wallets.isEmpty {
+                                    self.router.pop(animated: true)
+                                }
+                            }
+                        }
+                    }
+                },
+                onBackup: { [weak self] in
+                    dismisser.dismiss {
+                        if wallet.isBackupAvailable {
+                            if wallet.hasBackup {
+                                self?.openRecoveryPhrase(wallet: wallet)
+                            } else {
+                                self?.openManuallyBackup(wallet: wallet)
+                            }
                         }
                     }
                 }
-            })
+            )
         }
-
-        viewController.didTapBackup = { [weak bottomSheetViewController, weak self] in
-            bottomSheetViewController?.dismiss(completion: {
-                if wallet.isBackupAvailable {
-                    if wallet.hasBackup {
-                        self?.openRecoveryPhrase(wallet: wallet)
-                    } else {
-                        self?.openManuallyBackup(wallet: wallet)
-                    }
-                }
-            })
-        }
-
-        bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
 
     func openNativeSettings() {
@@ -456,12 +484,8 @@ private extension SettingsCoordinator {
         let configuration = SettingsListLegalConfigurator()
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
-
-        configuration.didTapFontLicense = { [weak self] in
-            let viewController = FontLicenseViewController()
-            viewController.setupBackButton()
-            self?.router.push(viewController: viewController)
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
         }
 
         configuration.openUrl = { [coreAssembly] url in
@@ -485,7 +509,9 @@ private extension SettingsCoordinator {
         )
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -496,7 +522,8 @@ private extension SettingsCoordinator {
             parentCoordinator: self,
             parentRouter: router,
             mnemonicAccess: mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider
         )
     }
 
@@ -510,22 +537,91 @@ private extension SettingsCoordinator {
                     .legacyRepository
                     .rn
             ),
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider
         )
     }
 
     func openConnectedApps(wallet: Wallet) {
-        let tonConnectAppsStore = keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
-        let connectedAppsStore = keeperCoreMainAssembly.storesAssembly.connectedAppsStore(
-            tonConnectAppsStore: tonConnectAppsStore
-        )
-        let configurator = SettingsListConnectedAppsConfigurator(connectedAppsStore: connectedAppsStore)
-        configurator.didRequestShowAlert = { [weak self] title, actions in
-            self?.presentAlertController(title: title, message: nil, actions: actions)
-        }
+        Task { @MainActor [weak self] in
+            guard let self else { return }
 
-        let module = SettingsListAssembly.module(configurator: configurator)
-        router.push(viewController: module.viewController)
+            let tonConnectAppsStore = keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+            let connectedAppsStore = keeperCoreMainAssembly.storesAssembly.connectedAppsStore(
+                tonConnectAppsStore: tonConnectAppsStore
+            )
+            let walletConnectSessionsStore: WalletConnectSessionsStore?
+            if keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) {
+                let walletConnectService = await keeperCoreMainAssembly.walletConnectAssembly.walletConnectService
+                walletConnectSessionsStore = keeperCoreMainAssembly.storesAssembly.walletConnectSessionsStore(
+                    walletConnectService: walletConnectService
+                )
+            } else {
+                walletConnectSessionsStore = nil
+            }
+
+            let viewModel = SettingsConnectedAppsViewModel(
+                wallet: wallet,
+                connectedAppsStore: connectedAppsStore,
+                tonConnectConnectionMetadataStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConnectionMetadataStore,
+                walletConnectSessionsStore: walletConnectSessionsStore,
+                notificationsService: keeperCoreMainAssembly.servicesAssembly.notificationsService(
+                    walletNotificationsStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+                    tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+                ),
+                pushTokenProvider: PushNotificationTokenProvider(),
+                dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+            )
+            let viewController = SettingsConnectedAppsHostingViewController(viewModel: viewModel)
+
+            viewModel.didRequestClose = { [weak self] in
+                self?.router.pop(animated: true)
+            }
+            viewModel.didRequestShowAlert = { [weak self] message in
+                self?.presentAlertController(
+                    title: message,
+                    message: nil,
+                    actions: [
+                        UIAlertAction(
+                            title: TKLocales.Actions.ok,
+                            style: .default,
+                            handler: nil
+                        ),
+                    ]
+                )
+            }
+            viewModel.didRequestShowDisconnectConfirmation = { [weak viewController] configuration, disconnect in
+                guard let viewController else { return }
+
+                WalletConnectConfirmationPresenter.present(
+                    configuration: configuration,
+                    from: viewController.topPresentedViewController(),
+                    primaryAction: disconnect
+                )
+            }
+
+            router.push(viewController: viewController)
+        }
+    }
+
+    func openMigration(wallet: Wallet, onFinish: (() -> Void)? = nil) {
+        let coordinator = WalletMigrationCoordinator(
+            wallet: wallet,
+            source: .settings,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            router: router,
+            depositPendingTracker: depositPendingTracker
+        )
+        coordinator.didRequestOpenMerchantURL = { [weak self] url, fromViewController in
+            self?.didRequestOpenMerchantURL?(url, fromViewController)
+        }
+        addChild(coordinator)
+        coordinator.didFinish = { [weak self, weak coordinator] _ in
+            self?.removeChild(coordinator)
+            onFinish?()
+        }
+        coordinator.start()
     }
 
     func openDevMenu() {
@@ -544,7 +640,10 @@ private extension SettingsCoordinator {
         configuration.didSelectExportLogs = { [weak self] in
             self?.exportLogs()
         }
-        configuration.didSelectRNSeedPhrasesRecovery = {
+        configuration.didSelectImportTestnetWallet = { [weak self] in
+            self?.didRequestImportTestnetWallet?()
+        }
+        configuration.didSelectRNSeedPhrasesRecovery = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self,
                       let passcode = await self.getRNPasscode() else { return }
@@ -556,7 +655,7 @@ private extension SettingsCoordinator {
                 self.openSeedPhrases(mnemonics: mnemonics)
             }
         }
-        configuration.didSelectSeedPhrasesRecovery = {
+        configuration.didSelectSeedPhrasesRecovery = { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self,
                       let passcode = await self.getPasscode() else { return }
@@ -576,6 +675,9 @@ private extension SettingsCoordinator {
         configuration.didSelectDeviceCountryCode = { [weak self] completion in
             self?.openDeviceCountryCodeInput(completion: completion)
         }
+        configuration.didSelectBuildVersion = { [weak self] completion in
+            self?.openBuildVersionInput(completion: completion)
+        }
         configuration.didSelectFeatureFlags = { [weak self] in
             self?.openFeatureFlags()
         }
@@ -585,9 +687,17 @@ private extension SettingsCoordinator {
         configuration.didSelectDesignSystem = { [weak self] in
             self?.openDesignSystem()
         }
+        configuration.didSelectToastTesting = { [weak self] in
+            self?.openToastTesting()
+        }
+        configuration.didSelectMysteryRaffle = { [weak self] in
+            self?.openMysteryRaffleDebug()
+        }
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -598,7 +708,9 @@ private extension SettingsCoordinator {
             configurationAssembly: keeperCoreMainAssembly.configurationAssembly
         )
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
         router.push(viewController: module.viewController)
     }
 
@@ -608,13 +720,17 @@ private extension SettingsCoordinator {
             tooltipOverrides: coreAssembly.tooltipsAssembly.overrides,
             withdrawTooltipSettings: coreAssembly.tooltipsAssembly.withdrawButtonRepository,
             newHistoryEntryPointTooltipSettings: coreAssembly.tooltipsAssembly.newHistoryEntryPointRepository,
-            tradeTabTooltipSettings: coreAssembly.tooltipsAssembly.tradeTabRepository
+            tradeTabTooltipSettings: coreAssembly.tooltipsAssembly.tradeTabRepository,
+            favoriteTooltipSettings: coreAssembly.tooltipsAssembly.favoriteRepository,
+            addMultichainWalletTooltipSettings: coreAssembly.tooltipsAssembly.addMultichainWalletRepository
         )
         configuration.didSelectFirstLaunchDate = { [weak self] selectedDate, completion in
             self?.presentTooltipFirstLaunchDatePicker(selectedDate: selectedDate, completion: completion)
         }
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
         router.push(viewController: module.viewController)
     }
 
@@ -625,6 +741,9 @@ private extension SettingsCoordinator {
         }
         configuration.didSelectTransactionCellPreviews = { [weak self] in
             self?.openTransactionCellPreviews()
+        }
+        configuration.didSelectNFTCardPreviews = { [weak self] in
+            self?.openNFTCardPreviews()
         }
         configuration.didSelectIconButtonViewPreviews = { [weak self] in
             self?.openIconButtonViewPreviews()
@@ -656,10 +775,87 @@ private extension SettingsCoordinator {
         configuration.didSelectChartPreviews = { [weak self] in
             self?.openChartPreviews()
         }
+        configuration.didSelectCircularLoaderPreviews = { [weak self] in
+            self?.openCircularLoaderPreviews()
+        }
+        configuration.didSelectColorsPreviews = { [weak self] in
+            self?.openColorsPreviews()
+        }
 
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
         router.push(viewController: module.viewController)
+    }
+
+    func openToastTesting() {
+        let configuration = SettingsListToastTestingConfigurator()
+        let module = SettingsListAssembly.module(configurator: configuration)
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
+        router.push(viewController: module.viewController)
+    }
+
+    func openMysteryRaffleDebug() {
+        let viewModel = MysteryRaffleDebugViewModel(
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            appSettings: coreAssembly.tkAppSettings
+        )
+        let view = MysteryRaffleDebugView(
+            viewModel: viewModel,
+            onSelectState: { [weak self] content in
+                guard let self else { return }
+                MysteryRaffleCoordinator.presentStub(
+                    content: content,
+                    rootViewController: router.rootViewController
+                )
+            },
+            onOpenLiveRaffle: { [weak self] raffle in
+                guard let self else { return }
+                // Presents the loaded raffle directly instead of `presentCurrent`: the dev
+                // surface must open whatever it just showed, regardless of the feature flag.
+                MysteryRaffleCoordinator.present(
+                    raffle: raffle,
+                    from: self,
+                    rootViewController: router.rootViewController,
+                    source: .walletMain,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    coreAssembly: coreAssembly,
+                    openMigration: { [weak self] onFinish in
+                        guard let self,
+                              let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+                              wallet.isMultichain
+                        else {
+                            onFinish()
+                            return
+                        }
+                        self.openMigration(wallet: wallet, onFinish: onFinish)
+                    }
+                )
+            },
+            onSelectStory: { [weak self] story in
+                guard let self else { return }
+                MysteryRaffleCoordinator.presentStory(
+                    story,
+                    rootViewController: router.rootViewController,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    coreAssembly: coreAssembly,
+                    openDeeplink: nil
+                )
+            },
+            onResetShownStories: { [weak self] in
+                guard let self else { return }
+                MysteryRaffleStoriesRouter
+                    .make(keeperCoreMainAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
+                    .resetShownStories()
+            }
+        )
+        let viewController = TKHostingController(content: view)
+        viewController.title = "Mystery Raffle"
+        viewController.setupBackButton()
+        router.push(viewController: viewController)
     }
 
     func openCellsCatalog() {
@@ -672,6 +868,13 @@ private extension SettingsCoordinator {
     func openTransactionCellPreviews() {
         let viewController = SettingsTransactionCellPreviewsViewController()
         viewController.title = "Transaction Cell"
+        viewController.setupBackButton()
+        router.push(viewController: viewController)
+    }
+
+    func openNFTCardPreviews() {
+        let viewController = SettingsNFTCardPreviewsViewController()
+        viewController.title = "NFT Card"
         viewController.setupBackButton()
         router.push(viewController: viewController)
     }
@@ -746,12 +949,27 @@ private extension SettingsCoordinator {
         router.push(viewController: viewController)
     }
 
+    func openCircularLoaderPreviews() {
+        let viewController = SettingsCircularLoaderPreviewsViewController()
+        viewController.title = "Circular Loader"
+        viewController.setupBackButton()
+        router.push(viewController: viewController)
+    }
+
+    func openColorsPreviews() {
+        let viewController = SettingsColorsPreviewViewController()
+        viewController.setupBackButton()
+        router.push(viewController: viewController)
+    }
+
     func openSeedPhrases(mnemonics: Mnemonics) {
         let configuration = SettingsListRNWalletsSeedPhrasesConfigurator(
             mnemonics: mnemonics
         )
         let module = SettingsListAssembly.module(configurator: configuration)
-        module.viewController.setupBackButton()
+        module.viewModel.didRequestClose = { [weak self] in
+            self?.router.pop(animated: true)
+        }
 
         router.push(viewController: module.viewController)
     }
@@ -765,7 +983,7 @@ private extension SettingsCoordinator {
                     try LogExporter.exportToTemporaryFile(
                         domain: nil,
                         lastHours: 2,
-                        filenamePrefix: "tonkeeper_logs"
+                        filenamePrefix: "keeper_logs"
                     )
                 }.value
 
@@ -829,6 +1047,31 @@ private extension SettingsCoordinator {
                     let input = alertController.textFields?[0].text
                     appInfoProvider.overrideDeviceCountryCode((input?.isEmpty == true ? nil : input))
                     completion()
+                }
+            )
+        )
+        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+
+        router.rootViewController.topPresentedViewController().present(alertController, animated: true)
+    }
+
+    func openBuildVersionInput(completion: @escaping () -> Void) {
+        let appInfoProvider = coreAssembly.appInfoProvider
+
+        let alertController = UIAlertController(title: "Metrics tag", message: nil, preferredStyle: .alert)
+        alertController.addTextField { tf in
+            tf.text = appInfoProvider.overridenVersion
+            tf.placeholder = InfoProvider.appVersion()
+        }
+        alertController.addAction(
+            UIAlertAction(
+                title: "OK",
+                style: .default,
+                handler: { _ in
+                    let input = alertController.textFields?[0].text
+                    appInfoProvider.overrideVersion(input?.isEmpty == true ? nil : input)
+                    completion()
+                    ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Restart the app to apply"))
                 }
             )
         )

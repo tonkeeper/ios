@@ -9,7 +9,7 @@ extension InsertAmountViewModel {
         case .deposit:
             return currency.fractionalDigits
         case .withdraw:
-            return asset.decimals
+            return assetContext.decimals
         }
     }
 
@@ -17,8 +17,8 @@ extension InsertAmountViewModel {
         var config = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
 
         config.content.title = .plainString(TKLocales.Actions.continueAction)
-        config.isEnabled = amountInputEnabled && isInputWithinMinMaxLimit && canContinueToProvider
-        config.showsLoader = isLoading
+        config.isEnabled = amountInputEnabled && isInputWithinMinMaxLimit && canContinueToProvider && !isLoading && !isContinueLoading
+        config.showsLoader = isLoading || isContinueLoading
 
         config.action = { [weak self]
             in self?.didTapContinueButton()
@@ -28,18 +28,21 @@ extension InsertAmountViewModel {
     }
 
     func buildProviderPickerItems() -> [ProviderPickerItem] {
-        return availableMerchants.map { merchant in
-            ProviderPickerItem(
+        return selectableMerchants.map { merchant in
+            let amountLimitText = minAmountText(for: merchant.id) ?? maxAmountText(for: merchant.id)
+            return ProviderPickerItem(
                 merchant: merchant,
                 isSelected: merchant.id == selectedMerchant?.id ?? "",
                 best: merchant.id == bestMerchantId,
-                rateText: calculateRate(for: merchant.id).map { makeDisplayText(rate: $0) },
-                amountLimitText: minAmountText(for: merchant.id) ?? maxAmountText(for: merchant.id)
+                rateText: amountLimitText == nil ? calculateRate(for: merchant.id).map { makeDisplayText(rate: $0) } : nil,
+                amountLimitText: amountLimitText
             )
         }
     }
 
     func minAmountText(for merchantId: String) -> String? {
+        guard inputAmount > 0 else { return nil }
+
         let limits = limitsForMerchant(id: merchantId)
 
         if let minFiat = limits?.min {
@@ -52,7 +55,7 @@ extension InsertAmountViewModel {
                 isBelowMin = inputAmount < minToken
             }
             return isBelowMin
-                ? TKLocales.Ramp.ProviderPicker.minAmount("\(minFiat)", flow == .withdraw ? asset.symbol : currency.code)
+                ? TKLocales.Ramp.ProviderPicker.minAmount("\(minFiat)", flow == .withdraw ? assetContext.symbol : currency.code)
                 : nil
         }
 
@@ -72,31 +75,63 @@ extension InsertAmountViewModel {
                 isAboveMax = inputAmount > maxToken
             }
             return isAboveMax
-                ? TKLocales.Ramp.ProviderPicker.maxAmount("\(maxFiat)", flow == .withdraw ? asset.symbol : currency.code)
+                ? TKLocales.Ramp.ProviderPicker.maxAmount("\(maxFiat)", flow == .withdraw ? assetContext.symbol : currency.code)
                 : nil
         }
 
         return nil
     }
 
-    var bestMerchantId: String? {
-        if let lastCalculateResult {
-            if !lastCalculateResult.quotes.isEmpty {
-                return lastCalculateResult.quotes.first?.merchantId
-            } else {
-                return lastCalculateResult.suggestedQuotes.first?.merchantId
-            }
-        } else {
-            return paymentMethod.providers.first?.slug
+    var selectableMerchants: [OnRampMerchantInfo] {
+        guard let lastQuotesState else { return availableMerchants }
+
+        let byId = Dictionary(uniqueKeysWithValues: availableMerchants.map { ($0.id, $0) })
+        var ordered: [OnRampMerchantInfo] = []
+        var seen = Set<String>()
+        let serverOrder = lastQuotesState.quotes.map(\.merchantId)
+            + lastQuotesState.suggestedQuotes.map(\.merchantId)
+        for id in serverOrder {
+            guard let merchant = byId[id], seen.insert(id).inserted else { continue }
+            ordered.append(merchant)
         }
+        return ordered
+    }
+
+    /// Server-order merchant ids: quotes → suggestedQuotes → layout providers.
+    private var orderedMerchantIds: [String] {
+        if lastQuotesState != nil {
+            return selectableMerchants.map(\.id)
+        } else {
+            return paymentMethodContext.providers.map(\.merchantId)
+        }
+    }
+
+    var bestMerchantId: String? {
+        let ordered = orderedMerchantIds
+        if let serviceable = ordered.first(where: { canMerchantServe(id: $0) }) {
+            return serviceable
+        }
+        return closestBelowMinMerchantId ?? ordered.first
+    }
+
+    /// When no merchant serves the amount: the one with the smallest `min` above `inputAmount`
+    /// (the min nearest the entered amount).
+    var closestBelowMinMerchantId: String? {
+        selectableMerchants
+            .compactMap { merchant -> (id: String, min: Double)? in
+                guard let min = limitsForMerchant(id: merchant.id)?.min,
+                      inputAmount < fiatToSmallestUnits(Decimal(min), roundingMode: .down)
+                else { return nil }
+                return (merchant.id, min)
+            }
+            .min(by: { $0.min < $1.min })?
+            .id
     }
 
     var providerConfiguration: TKListItemContentView.Configuration {
         guard let selectedMerchant else {
             return .default
         }
-
-        let rateText: String? = calculatedRate.map { makeDisplayText(rate: $0) }
 
         let iconConfig = TKListItemIconView.Configuration(
             content: .image(TKImageView.Model(
@@ -115,20 +150,20 @@ extension InsertAmountViewModel {
             : []
 
         var captionConfigs: [TKListItemTextView.Configuration] = []
-        if let rateText {
-            captionConfigs.append(
-                TKListItemTextView.Configuration(
-                    text: rateText,
-                    color: .Text.secondary,
-                    textStyle: .body2,
-                    numberOfLines: 0
-                )
-            )
-        } else if let amountLimitText = minAmountText(for: selectedMerchant.id) ?? maxAmountText(for: selectedMerchant.id) {
+        if let amountLimitText = minAmountText(for: selectedMerchant.id) ?? maxAmountText(for: selectedMerchant.id) {
             captionConfigs.append(
                 TKListItemTextView.Configuration(
                     text: amountLimitText,
                     color: .Accent.orange,
+                    textStyle: .body2,
+                    numberOfLines: 0
+                )
+            )
+        } else if let rateText = calculatedRate.map({ makeDisplayText(rate: $0) }) {
+            captionConfigs.append(
+                TKListItemTextView.Configuration(
+                    text: rateText,
+                    color: .Text.secondary,
                     textStyle: .body2,
                     numberOfLines: 0
                 )
@@ -156,34 +191,62 @@ extension InsertAmountViewModel {
         case .deposit:
             let displayRate = rate > 0 ? 1 / rate : rate
             let valueForOne = amountFormatter.string(for: NSDecimalNumber(decimal: displayRate)) ?? ""
-            return "1 \(currency.code) ≈ \(valueForOne) \(asset.symbol)"
+            return "1 \(currency.code) ≈ \(valueForOne) \(assetContext.symbol)"
         case .withdraw:
             let valueForOne = amountFormatter.string(for: NSDecimalNumber(decimal: rate)) ?? ""
-            return "1 \(asset.symbol) ≈ \(valueForOne) \(currency.code)"
+            return "1 \(assetContext.symbol) ≈ \(valueForOne) \(currency.code)"
+        }
+    }
+
+    func quoteForMerchant(id: String) -> InsertAmountMerchantQuote? {
+        lastQuotesState?.quotes.first { $0.merchantId == id }
+            ?? lastQuotesState?.suggestedQuotes.first { $0.merchantId == id }
+    }
+
+    /// Layout (`/offramp/asset`) provider limits are fiat, so they only bound the input when the input
+    /// is fiat too: deposit and the legacy flow. Multichain withdraw input is in asset units; its limits
+    /// come from quote responses (`min_amount`/`max_amount` in asset units).
+    var isLayoutLimitsInInputUnits: Bool {
+        switch (flow, assetContext) {
+        case (.withdraw, .multichain):
+            return false
+        default:
+            return true
         }
     }
 
     func limitsForMerchant(id: String) -> OnRampLimits? {
-        paymentMethod.providers.first(where: { $0.slug == id })?.limits
+        let layoutLimits = isLayoutLimitsInInputUnits
+            ? paymentMethodContext.providers.first(where: { $0.merchantId == id })?.limits
+            : nil
+        let quote = quoteForMerchant(id: id)
+
+        let min = quote?.minAmount ?? layoutLimits?.min
+        let max = quote?.maxAmount ?? layoutLimits?.max
+        let effectiveMin = min.flatMap { $0 > 0 ? $0 : nil }
+        let effectiveMax = max.flatMap { $0 > 0 ? $0 : nil }
+
+        guard effectiveMin != nil || effectiveMax != nil else {
+            return nil
+        }
+
+        return OnRampLimits(min: effectiveMin, max: effectiveMax)
     }
 
     var minOfMinLimit: Double? {
-        paymentMethod.providers.map { limitsForMerchant(id: $0.slug) }.compactMap(\.?.min).min()
+        paymentMethodContext.providers.compactMap(\.limits?.min).min()
     }
 
     var maxOfMinLimit: Double? {
-        paymentMethod.providers.compactMap(\.limits?.min).max()
+        paymentMethodContext.providers.compactMap(\.limits?.min).max()
     }
 
     var maxOfMaxLimit: Double? {
-        paymentMethod.providers.map { limitsForMerchant(id: $0.slug) }.compactMap(\.?.max).max()
+        paymentMethodContext.providers.compactMap(\.limits?.max).max()
     }
 
-    var currentMerchantQuote: OnRampQuoteResult? {
-        lastCalculateResult?.quotes.first { $0.merchantId == selectedMerchant?.id }
-    }
-
-    var currentQuoteWidgetURL: URL? {
-        currentMerchantQuote?.widgetUrl.flatMap(URL.init)
+    var currentMerchantQuote: InsertAmountMerchantQuote? {
+        guard let merchantId = selectedMerchant?.id else { return nil }
+        return quoteForMerchant(id: merchantId)
     }
 }

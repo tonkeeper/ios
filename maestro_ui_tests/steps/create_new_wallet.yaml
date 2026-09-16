@@ -13,12 +13,11 @@ appId: com.jbig.tonkeeper.dev
     commands:
       - tapOn: ${PASSWORD_KEY}
 
-- tapOn: Later
+- tapOn: Skip
+- tapOn: "Skip"
 
 - assertVisible: Customize your Wallet
 - assertVisible: Wallet
-- tapOn:
-    id: hand-raised-16
 - tapOn: "Continue"
 - assertVisible: "Your address: UQ.*"
 - assertVisible: "$\u20090.00"

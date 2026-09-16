@@ -7,8 +7,8 @@ import UIKit
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didTapScan: (() -> Void)?
-    var didLogout: (() -> Void)?
     var didTapWalletButton: (() -> Void)?
+    var didTapSend: ((Wallet) -> Void)?
     var didTapWithdraw: ((Wallet) -> Void)?
     var didTapDeposit: ((Wallet) -> Void)?
     var didTapSwap: ((Wallet) -> Void)?
@@ -18,6 +18,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     var didSelectTonDetails: ((Wallet) -> Void)?
     var didSelectJettonDetails: ((Wallet, JettonItem, Bool) -> Void)?
     var didSelectTronUSDTDetails: ((Wallet) -> Void)?
+    var didSelectTronTRXDetails: ((Wallet) -> Void)?
     var didSelectEthenaDetails: ((Wallet) -> Void)?
     var didSelectStakingItem: ((
         _ wallet: Wallet,
@@ -32,18 +33,25 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     var didTapBackup: ((Wallet) -> Void)?
     var didTapBattery: ((Wallet) -> Void)?
     var didRequestDeeplinkHandling: ((Deeplink) -> Void)?
+    var didRequestBannerDeeplinkHandling: ((Deeplink) -> Void)?
     var didTapOpenCryptoAssets: (() -> Void)?
+    var collectiblesDidOpenDapp: ((_ url: URL, _ title: String?) -> Void)?
+    var collectiblesDidRequestOpenBuySell: ((_ isInternalPurchasing: Bool, _ wallet: Wallet) -> Void)?
+    var collectiblesDidRequestDepositTon: ((_ wallet: Wallet) -> Void)?
 
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let collectiblesModule: CollectiblesModule
     private weak var walletContainerViewController: WalletContainerViewController?
+    private weak var collectiblesCoordinator: CollectiblesCoordinator?
+    private weak var collectiblesDetailsCoordinator: CollectiblesDetailsCoordinator?
 
-    var historyButtonTooltipSourceView: UIView? {
-        walletContainerViewController?.historyButtonTooltipSourceView
+    func historyButtonTooltipSourceView(_ completion: @escaping (UIView) -> Void) {
+        walletContainerViewController?.historyButtonTooltipSourceView(completion)
     }
 
-    private var configuration: Configuration {
-        keeperCoreMainAssembly.configurationAssembly.configuration
+    func walletButtonTooltipSourceView(_ completion: @escaping (UIView) -> Void) {
+        walletContainerViewController?.walletButtonTooltipSourceView(completion)
     }
 
     init(
@@ -53,6 +61,12 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     ) {
         self.coreAssembly = coreAssembly
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.collectiblesModule = CollectiblesModule(
+            dependencies: CollectiblesModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        )
         super.init(router: router)
         router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
         router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
@@ -61,14 +75,31 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     override public func start() {
         openWalletContainer()
     }
+
+    public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+        let deeplink = Deeplink.publish(sign: sign)
+        if let collectiblesDetailsCoordinator,
+           collectiblesDetailsCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
+        {
+            return true
+        }
+        if let collectiblesCoordinator,
+           collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
+        {
+            return true
+        }
+        return false
+    }
 }
 
 private extension WalletCoordinator {
     func openWalletContainer() {
+        guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+            return
+        }
         let module = WalletContainerAssembly.module(
-            walletBalanceModule: createWalletBalanceModule(),
-            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-            configuration: configuration
+            walletBalanceModule: createWalletBalanceModule(wallet: wallet),
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
         )
         walletContainerViewController = module.view
 
@@ -92,30 +123,25 @@ private extension WalletCoordinator {
     }
 
     func openManageTokens(wallet: Wallet) {
-        let updateQueue = DispatchQueue(label: "ManageTokensQueue")
-
-        let module = ManageTokensAssembly.module(
-            model: ManageTokensModel(
-                wallet: wallet,
-                tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
-                convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-                stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-                updateQueue: updateQueue
-            ),
-            mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter),
-            updateQueue: updateQueue,
-            configuration: keeperCoreMainAssembly.configurationAssembly.configuration
+        let coordinator = ManageTokensCoordinator(
+            router: router,
+            wallet: wallet,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            visibilityChangesController: keeperCoreMainAssembly.visibilityChangesController
         )
+        addChild(coordinator)
+        coordinator.didFinish = { [weak self, weak coordinator] _ in
+            self?.removeChild(coordinator)
+        }
 
-        let navigationController = TKNavigationController(rootViewController: module.view)
-        navigationController.setNavigationBarHidden(true, animated: false)
-
-        router.present(navigationController)
+        coordinator.start()
     }
 
     @MainActor
-    func createWalletBalanceModule() -> WalletBalanceModule {
+    func createWalletBalanceModule(wallet: Wallet) -> WalletBalanceModule {
         let module = WalletBalanceAssembly.module(
+            wallet: wallet,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly
         )
@@ -130,6 +156,10 @@ private extension WalletCoordinator {
 
         module.output.didSelectTronUSDT = { [weak self] wallet in
             self?.didSelectTronUSDTDetails?(wallet)
+        }
+
+        module.output.didSelectTronTRX = { [weak self] wallet in
+            self?.didSelectTronTRXDetails?(wallet)
         }
 
         module.output.didSelectEthena = { [weak self] wallet in
@@ -180,12 +210,115 @@ private extension WalletCoordinator {
             await self?.getPasscode()
         }
 
-        let homeBannersViewModel = module.output.homeBannersViewModel
-        homeBannersViewModel.onOpenDeeplink = { [weak self] deeplink in
-            self?.didRequestDeeplinkHandling?(deeplink)
+        let collectiblesViewModel = module.output.collectiblesViewModel
+        collectiblesViewModel.onTapOpenCollectibles = { [weak self] in
+            self?.openCollectibles()
+        }
+        collectiblesViewModel.onSelectNFT = { [weak self] nft in
+            guard let wallet = try? self?.keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else {
+                return
+            }
+            self?.openNFTDetails(wallet: wallet, nft: nft)
+        }
+
+        module.output.didRequestBannerDeeplinkHandling = { [weak self] deeplink in
+            self?.didRequestBannerDeeplinkHandling?(deeplink)
         }
 
         return module
+    }
+
+    func openCollectibles() {
+        guard collectiblesCoordinator == nil else { return }
+        let navigationController = router.rootViewController.tabBarHostNavigationController
+        let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            configuresTabBarItem: false
+        )
+        collectiblesCoordinator.didOpenDapp = { [weak self] url, title in
+            self?.collectiblesDidOpenDapp?(url, title)
+        }
+        collectiblesCoordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+            self?.didRequestDeeplinkHandling?(deeplink)
+        }
+        collectiblesCoordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing, wallet in
+            self?.collectiblesDidRequestOpenBuySell?(isInternalPurchasing, wallet)
+        }
+        collectiblesCoordinator.didRequestDepositTon = { [weak self] wallet in
+            self?.collectiblesDidRequestDepositTon?(wallet)
+        }
+
+        self.collectiblesCoordinator = collectiblesCoordinator
+
+        let removeCollectibles = { [weak self, weak collectiblesCoordinator] in
+            guard let self, let collectiblesCoordinator else { return }
+            self.removeChild(collectiblesCoordinator)
+            if self.collectiblesCoordinator === collectiblesCoordinator {
+                self.collectiblesCoordinator = nil
+            }
+        }
+
+        collectiblesCoordinator.didFinish = { _ in
+            removeCollectibles()
+        }
+
+        addChild(collectiblesCoordinator)
+        collectiblesCoordinator.push(
+            onBack: { [weak navigationController] in
+                navigationController?.popViewController(animated: true)
+            },
+            onPop: removeCollectibles
+        )
+    }
+
+    func openNFTDetails(wallet: Wallet, nft: NFT) {
+        guard let wallet = keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: wallet.id) else {
+            return
+        }
+
+        let navigationController = TKNavigationController()
+        navigationController.setNavigationBarHidden(true, animated: false)
+
+        let coordinator = CollectiblesDetailsCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            nft: nft,
+            wallet: wallet,
+            coreAssembly: coreAssembly,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+
+        coordinator.didOpenDapp = { [weak self] url, title in
+            self?.collectiblesDidOpenDapp?(url, title)
+        }
+
+        coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+            navigationController?.dismiss(animated: true)
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+            self?.collectiblesDetailsCoordinator = nil
+        }
+
+        coordinator.didRequestDeeplinkHandling = { [weak self] deeplink in
+            self?.didRequestDeeplinkHandling?(deeplink)
+        }
+
+        coordinator.didRequestOpenBuySell = { [weak self] isInternalPurchasing in
+            self?.collectiblesDidRequestOpenBuySell?(isInternalPurchasing, wallet)
+        }
+
+        coordinator.didRequestDepositTon = { [weak self] in
+            self?.collectiblesDidRequestDepositTon?(wallet)
+        }
+
+        collectiblesDetailsCoordinator = coordinator
+        coordinator.start()
+        addChild(coordinator)
+
+        router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+            self?.collectiblesDetailsCoordinator = nil
+        })
     }
 
     func getPasscode() async -> String? {
@@ -193,7 +326,8 @@ private extension WalletCoordinator {
             parentCoordinator: self,
             parentRouter: router,
             mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+            analyticsProvider: coreAssembly.analyticsProvider
         )
     }
 }

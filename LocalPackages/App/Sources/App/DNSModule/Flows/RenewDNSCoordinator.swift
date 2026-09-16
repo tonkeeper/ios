@@ -49,6 +49,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
             },
             resultHandler: nil,
             sendFrom: .tonconnectRemote,
+            initiatedBy: .user,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in

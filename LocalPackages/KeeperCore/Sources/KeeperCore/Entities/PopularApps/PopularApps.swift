@@ -6,13 +6,9 @@ public struct PopularAppsCategory: Codable {
     public let apps: [PopularApp]
 }
 
-public struct PopularApps: Codable {
-    public let categories: [PopularAppsCategory]
-    public let apps: [PopularApp]
-}
-
 public struct PopularApp: Codable, Identifiable, Equatable {
     public let id: String
+    public let bannerId: String?
     public let name: String
     public let description: String?
     public let icon: URL?
@@ -22,9 +18,11 @@ public struct PopularApp: Codable, Identifiable, Equatable {
     public let excludeCountries: [String]?
     public let includeCountries: [String]?
     public let button: Button?
+    public let chains: [MultichainChain]
 
     public init(
         id: String,
+        bannerId: String? = nil,
         name: String,
         description: String?,
         icon: URL?,
@@ -33,9 +31,11 @@ public struct PopularApp: Codable, Identifiable, Equatable {
         textColor: String?,
         excludeCountries: [String]?,
         includeCountries: [String]?,
-        button: Button?
+        button: Button?,
+        chains: [MultichainChain] = []
     ) {
         self.id = id
+        self.bannerId = bannerId
         self.name = name
         self.description = description
         self.icon = icon
@@ -45,11 +45,17 @@ public struct PopularApp: Codable, Identifiable, Equatable {
         self.excludeCountries = excludeCountries
         self.includeCountries = includeCountries
         self.button = button
+        self.chains = chains
     }
 
     public struct Button: Codable, Equatable {
         public let title: String
         public let type: ButtonType
+
+        public init(title: String, type: ButtonType) {
+            self.title = title
+            self.type = type
+        }
 
         enum CodingKeys: String, CodingKey {
             case type
@@ -106,10 +112,6 @@ public struct PopularAppsResponseData: Codable {
             categories: []
         )
     }
-}
-
-public struct PopularAppsResponse: Codable {
-    public let data: PopularAppsResponseData
 }
 
 public extension PopularAppsResponseData {

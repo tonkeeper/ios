@@ -10,48 +10,10 @@ struct AddressConfiguration {
 
 extension MultichainChain {
     var addressConfiguration: AddressConfiguration {
-        switch self {
-        case .ton:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Ton.title,
-                icon: .TKUIKit.Icons.Size20.tonChain
-            )
-        case .eth:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Ethereum.title,
-                icon: .TKUIKit.Icons.Size20.ethChain
-            )
-        case .btc:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Bitcoin.title,
-                icon: .TKUIKit.Icons.Size20.btcChain
-            )
-        case .base:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Base.title,
-                icon: .TKUIKit.Icons.Size20.baseChain
-            )
-        case .bsc:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Smartchain.title,
-                icon: .TKUIKit.Icons.Size20.bscChain
-            )
-        case .arb:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Arbitrum.title,
-                icon: .TKUIKit.Icons.Size20.arbitrumChain
-            )
-        case .tron:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Tron.title,
-                icon: .TKUIKit.Icons.Size20.trxChain
-            )
-        case .sol:
-            AddressConfiguration(
-                title: TKLocales.Receive.Multichain.Networks.Solana.title,
-                icon: .TKUIKit.Icons.Size20.solChain
-            )
-        }
+        AddressConfiguration(
+            title: shortDisplayTitle,
+            icon: tokenIcon20
+        )
     }
 
     var badgeTitle: String {
@@ -70,8 +32,6 @@ extension MultichainChain {
             "ARBITRUM"
         case .tron:
             "TRON"
-        case .sol:
-            "SOLANA"
         }
     }
 
@@ -91,8 +51,6 @@ extension MultichainChain {
             "ARB"
         case .tron:
             "TRON"
-        case .sol:
-            "SOL"
         }
     }
 
@@ -112,8 +70,57 @@ extension MultichainChain {
             "ERC20"
         case .tron:
             "TRC20"
-        case .sol:
-            "SPL"
         }
+    }
+
+    var tokenIcon20: UIImage {
+        switch self {
+        case .ton:
+            .TKUIKit.Icons.Size20.tonChain
+        case .eth:
+            .TKUIKit.Icons.Size20.ethChain
+        case .btc:
+            .TKUIKit.Icons.Size20.btcChain
+        case .base:
+            .TKUIKit.Icons.Size20.baseChain
+        case .bsc:
+            .TKUIKit.Icons.Size20.bscChain
+        case .arb:
+            .TKUIKit.Icons.Size20.arbitrumChain
+        case .tron:
+            .TKUIKit.Icons.Size20.trxChain
+        }
+    }
+
+    var tokenIcon44: UIImage {
+        switch self {
+        case .ton:
+            .TKUIKit.Icons.Size44.tonChain
+        case .eth:
+            .TKUIKit.Icons.Size44.ethChain
+        case .btc:
+            .TKUIKit.Icons.Size44.btcChain
+        case .base:
+            .TKUIKit.Icons.Size44.baseChain
+        case .bsc:
+            .TKUIKit.Icons.Size44.bscChain
+        case .arb:
+            .TKUIKit.Icons.Size44.arbitrumChain
+        case .tron:
+            .TKUIKit.Icons.Size44.trxChain
+        }
+    }
+}
+
+extension [MultichainChain] {
+    /// The app's network when it is unambiguous (exactly one); nil for multi-network or chain-agnostic apps.
+    var singleChain: MultichainChain? {
+        count == 1 ? first : nil
+    }
+
+    /// Icon for the network badge on an app card. Per design it is shown only when the app
+    /// targets exactly one network; multi-network and chain-agnostic apps show no badge.
+    var singleChainBadgeIcon: UIImage? {
+        singleChain?.tokenIcon20
     }
 }

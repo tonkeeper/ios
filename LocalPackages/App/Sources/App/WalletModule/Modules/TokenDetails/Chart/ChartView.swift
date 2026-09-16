@@ -81,8 +81,8 @@ final class UIKitChartCompatibilityView: UIView {
     )
     private let modelStore = ChartModelStore()
     private let interactionProxy = ChartInteractionProxy()
-    private lazy var hostingController = UIHostingController(
-        rootView: HostedChartRootView(
+    private lazy var hostingController = TKHostingController(
+        content: HostedChartRootView(
             headerStore: headerStore,
             modelStore: modelStore,
             interactionProxy: interactionProxy
@@ -150,7 +150,7 @@ final class UIKitChartCompatibilityView: UIView {
 
 private extension UIKitChartCompatibilityView {
     enum Layout {
-        static let height = TKUIKit.ChartView.height(showsBottonButtons: true)
+        static let height = TKUIKit.ChartView.height(showsBottomButtons: true)
     }
 }
 
@@ -257,7 +257,6 @@ private extension TokenChartViewState {
 
 struct TokenChartView: View {
     @ObservedObject private var state: TokenChartViewState
-
     init(state: TokenChartViewState) {
         self.state = state
     }
@@ -268,7 +267,7 @@ struct TokenChartView: View {
                 VStack {
                     Spacer(minLength: 0)
                     Rectangle()
-                        .fill(Color(uiColor: .Separator.common))
+                        .fill(.separatorCommon)
                         .frame(height: TKUIKit.Constants.separatorWidth)
                 }
                 .frame(maxWidth: .infinity)
@@ -276,7 +275,7 @@ struct TokenChartView: View {
             .frame(maxWidth: .infinity)
             .frame(
                 height: TKUIKit.ChartView.height(
-                    showsBottonButtons: true
+                    showsBottomButtons: true
                 )
             )
             .background(Color.clear)
@@ -288,10 +287,15 @@ struct TokenChartView: View {
     @ViewBuilder
     private var content: some View {
         if let errorModel = state.errorModel {
-            ChartErrorContentView(
-                title: errorModel.title,
-                subtitle: errorModel.subtitle
-            )
+            VStack(spacing: 0) {
+                ChartErrorContentView(
+                    title: errorModel.title
+                )
+
+                if let buttons = errorModel.buttons {
+                    ChartBottomButtonsView(config: buttons)
+                }
+            }
         } else if let model = state.model {
             TKUIKit.ChartView(
                 config: .init(

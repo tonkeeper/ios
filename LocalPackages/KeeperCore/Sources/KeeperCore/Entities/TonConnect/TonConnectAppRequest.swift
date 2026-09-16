@@ -27,9 +27,18 @@ public extension TonConnect {
         }
     }
 
+    struct DisconnectRequest: Decodable {
+        public let id: String
+
+        public init(id: String) {
+            self.id = id
+        }
+    }
+
     enum AppRequest: Decodable {
         case sendTransaction(SendTransactionRequest)
         case signData(SignDataRequest)
+        case disconnect(DisconnectRequest)
 
         enum CodingKeys: String, CodingKey {
             case method
@@ -56,11 +65,14 @@ public extension TonConnect {
                 let paramsArray = try container.decode([String].self, forKey: .params)
                 let jsonDecoder = JSONDecoder()
 
-                guard let param = paramsArray[0].data(using: .utf8) else {
+                guard let param = paramsArray.first?.data(using: .utf8) else {
                     throw AppRequestError.noParams
                 }
                 let params = try jsonDecoder.decode(TonConnectSignDataPayload.self, from: param)
                 self = .signData(SignDataRequest(params: params, id: id))
+
+            case "disconnect":
+                self = .disconnect(DisconnectRequest(id: id))
 
             default:
                 throw AppRequestError.unknownMethod(method: method)

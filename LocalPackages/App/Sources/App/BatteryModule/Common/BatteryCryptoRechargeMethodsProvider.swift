@@ -72,7 +72,9 @@ actor BatteryCryptoRechargeMethodsProvider {
         if !tonRechargeMethods.isEmpty {
             result.append(.token(token: .ton))
         }
-        if !result.isEmpty {
+        // A gift is a legacy TON transfer to someone else's battery, which a multichain wallet
+        // cannot sign here.
+        if !result.isEmpty, !wallet.isMultichain {
             let giftItem = result[0]
             result.append(.gift(token: giftItem.token))
         }

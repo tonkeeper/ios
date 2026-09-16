@@ -1,14 +1,12 @@
 import Foundation
 import TonSwift
 
-public enum TonConnect {}
+public enum TonConnect {
+    /// `0xffff` — the fixed prefix every TON Connect signature payload starts with.
+    static let signaturePrefix = Data([0xFF, 0xFF])
+}
 
 public extension TonConnect {
-    enum ConnectEvent: Encodable {
-        case success(ConnectEventSuccess)
-        case error(ConnectEventError)
-    }
-
     struct DeviceInfo: Encodable {
         public let platform = "iphone"
         public let appName = "Tonkeeper"
@@ -243,14 +241,6 @@ public extension TonConnect {
     struct Domain: Encodable {
         public let value: String
         public let lengthBytes: UInt32
-
-        public init(
-            lengthBytes: UInt32,
-            value: String
-        ) {
-            self.lengthBytes = lengthBytes
-            self.value = value
-        }
     }
 }
 
@@ -317,6 +307,9 @@ public extension TonConnect {
         public enum Result: Encodable {
             case String(String)
             case SignedData(SignedDataResult)
+            case empty
+
+            private struct EmptyObject: Encodable {}
 
             public func encode(to encoder: Encoder) throws {
                 var container = encoder.singleValueContainer()
@@ -326,6 +319,8 @@ public extension TonConnect {
                     try container.encode(a0)
                 case let .SignedData(a0):
                     try container.encode(a0)
+                case .empty:
+                    try container.encode(EmptyObject())
                 }
             }
         }
@@ -342,16 +337,16 @@ public extension TonConnect {
             self.result = .SignedData(result)
             self.id = id
         }
+
+        public init(id: String) {
+            result = .empty
+            self.id = id
+        }
     }
 
     struct FetchEventError: Encodable {
         public let code: ErrorCode
         public let message: String
-
-        public init(code: ErrorCode, message: String) {
-            self.code = code
-            self.message = message
-        }
 
         public enum ErrorCode: Int, Encodable {
             case unknownError = 0

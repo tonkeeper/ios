@@ -8,7 +8,6 @@ public enum TKPopupMenuPosition {
 }
 
 public enum TKPopupMenuController {
-    private static var window: UIWindow?
     private static var menuViewController: TKPopupMenuViewController?
     private weak static var sourceView: UIView?
 

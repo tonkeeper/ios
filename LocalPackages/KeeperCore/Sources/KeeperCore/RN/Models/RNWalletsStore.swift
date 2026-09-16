@@ -1,4 +1,5 @@
 import Foundation
+import KeeperCoreComponents
 import TonSwift
 
 public struct RNWalletsStore: Codable {
@@ -12,18 +13,6 @@ public struct RNWalletsStore: Codable {
         case selectedIdentifier
         case biometryEnabled
         case lockScreenEnabled
-    }
-
-    public init(
-        wallets: [RNWallet],
-        selectedIdentifier: String,
-        biometryEnabled: Bool,
-        lockScreenEnabled: Bool
-    ) {
-        self.wallets = wallets
-        self.selectedIdentifier = selectedIdentifier
-        self.biometryEnabled = biometryEnabled
-        self.lockScreenEnabled = lockScreenEnabled
     }
 
     public init(from decoder: any Decoder) throws {
@@ -71,23 +60,6 @@ public struct RNWallet: Codable {
         case v3R2
         case v3R1
         case LockupV1 = "lockup-0.1"
-
-        init(walletContractVersion: WalletContractVersion) {
-            switch walletContractVersion {
-            case .v3R1:
-                self = .v3R1
-            case .v3R2:
-                self = .v3R2
-            case .v4R1:
-                self = .v4R1
-            case .v4R2:
-                self = .v4R2
-            case .v5Beta:
-                self = .v5Beta
-            case .v5R1:
-                self = .v5R1
-            }
-        }
     }
 
     public struct Ledger: Codable {
@@ -111,84 +83,8 @@ public struct RNWallet: Codable {
 }
 
 public extension RNWallet {
-    init(wallet: Wallet) {
-        self.identifier = wallet.id
-        self.name = wallet.label
-        self.color = wallet.tintColor.rawValue
-        self.network = {
-            switch wallet.identity.network {
-            case .mainnet:
-                return .mainnet
-            case .testnet:
-                return .testnet
-            case .tetra: // impossible
-                return .testnet
-            }
-        }()
-        switch wallet.identity.kind {
-        case let .Keystone(publicKey, xfp, path, walletContractVersion):
-            self.type = .Keystone
-            self.pubkey = publicKey.data.hexString()
-            self.path = path
-            self.xfp = xfp
-            self.version = RNContractVersion(walletContractVersion: walletContractVersion)
-            self.ledger = nil
-        case let .Regular(publicKey, walletContractVersion):
-            self.type = .Regular
-            self.path = nil
-            self.xfp = nil
-            self.pubkey = publicKey.data.hexString()
-            self.version = RNContractVersion(walletContractVersion: walletContractVersion)
-            self.ledger = nil
-        case let .Lockup(publicKey, _):
-            self.type = .Lockup
-            self.path = nil
-            self.xfp = nil
-            self.pubkey = publicKey.data.hexString()
-            self.version = .LockupV1
-            self.ledger = nil
-        case .Watchonly:
-            self.type = .WatchOnly
-            self.path = nil
-            self.xfp = nil
-            self.version = .v3R1
-            self.ledger = nil
-            self.pubkey = ""
-        case let .Signer(publicKey, walletContractVersion):
-            self.type = .Signer
-            self.pubkey = publicKey.data.hexString()
-            self.version = RNContractVersion(walletContractVersion: walletContractVersion)
-            self.ledger = nil
-            self.path = nil
-            self.xfp = nil
-        case let .SignerDevice(publicKey, walletContractVersion):
-            self.type = .SignerDeeplink
-            self.pubkey = publicKey.data.hexString()
-            self.version = RNContractVersion(walletContractVersion: walletContractVersion)
-            self.ledger = nil
-            self.path = nil
-            self.xfp = nil
-        case let .Ledger(publicKey, walletContractVersion, ledgerDevice):
-            self.type = .Ledger
-            self.pubkey = publicKey.data.hexString()
-            self.ledger = Ledger(deviceId: ledgerDevice.deviceId, deviceModel: ledgerDevice.deviceModel, accountIndex: ledgerDevice.accountIndex)
-            self.path = nil
-            self.xfp = nil
-            self.version = RNContractVersion(walletContractVersion: walletContractVersion)
-        }
-        self.workchain = 0
-        self.emoji = {
-            switch wallet.icon {
-            case let .emoji(emoji):
-                return emoji
-            case let .icon(image):
-                return image.rnIconString
-            }
-        }()
-    }
-
     func getWallet(backupDate: Date?) throws -> Wallet {
-        guard let publicKeyData = Data(hex: pubkey) else {
+        guard let publicKeyData = Data(strictHex: pubkey) else {
             throw Error.failedToCreateWallet
         }
         let publicKey = TonSwift.PublicKey(data: publicKeyData)

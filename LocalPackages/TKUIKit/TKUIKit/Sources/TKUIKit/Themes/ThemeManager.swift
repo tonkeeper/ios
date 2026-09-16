@@ -1,3 +1,4 @@
+import Combine
 import UIKit
 
 public enum TKTheme: String, CaseIterable {
@@ -59,11 +60,19 @@ public enum TKTheme: String, CaseIterable {
     }
 }
 
-public final class TKThemeManager {
+public final class TKThemeManager: ObservableObject {
     public typealias didUpdateThemeClosure = (TKTheme) -> Void
 
+    public let objectWillChange = ObservableObjectPublisher()
+
     public var theme: TKTheme {
+        willSet {
+            assert(Thread.isMainThread, "TKThemeManager.theme must be set on the main thread")
+            guard newValue != theme else { return }
+            objectWillChange.send()
+        }
         didSet {
+            guard oldValue != theme else { return }
             didUpdateTheme()
         }
     }
@@ -88,6 +97,15 @@ public final class TKThemeManager {
 
     private var observations = [UUID: didUpdateThemeClosure]()
 
+    private var persistsTheme = true
+
+    func applyPreviewTheme(_ newTheme: TKTheme) {
+        guard newTheme != theme else { return }
+        persistsTheme = false
+        theme = newTheme
+        persistsTheme = true
+    }
+
     public func addEventObserver<T: AnyObject>(
         _ observer: T,
         closure: @escaping (T, TKTheme) -> Void
@@ -107,7 +125,9 @@ public final class TKThemeManager {
 
     private func didUpdateTheme() {
         themeAppearance = theme.themeAppaearance
-        userDefaults.setValue(theme.rawValue, forKey: .themeKey)
+        if persistsTheme {
+            userDefaults.setValue(theme.rawValue, forKey: .themeKey)
+        }
         observations.forEach { $0.value(theme) }
     }
 }

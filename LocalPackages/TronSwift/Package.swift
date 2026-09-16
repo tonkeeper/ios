@@ -14,6 +14,12 @@ let package = Package(
             name: "TronSwiftAPI",
             targets: ["TronSwiftAPI"]
         ),
+        // `KeeperCore` imports TKCryptoKit directly, so it has to be reachable as a product
+        // and not only as an internal target of `TronSwift`.
+        .library(
+            name: "TKCryptoKit",
+            targets: ["TKCryptoKit"]
+        ),
     ],
     dependencies: [
         .package(url: "https://github.com/tonkeeper/swift-secp256k1", revision: "6c50e65ec9959d9ab0039df9ffc31707ad19c01b"),
@@ -52,6 +58,7 @@ let package = Package(
             dependencies: [
                 .byName(name: "TronSwift"),
                 .byName(name: "TronSwiftAPI"),
+                .byName(name: "TKCryptoKit"),
             ],
 
             swiftSettings: [

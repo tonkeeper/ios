@@ -11,6 +11,8 @@ public struct TradingActivityView: View {
         }
     }
 
+    @Environment(\.tkPalette) private var palette
+
     let leftTitle: String
     let rightTitle: String
     let delta: Delta?
@@ -43,7 +45,7 @@ public struct TradingActivityView: View {
             HStack(spacing: Layout.headerSpacing) {
                 Text(leftTitle)
                     .textStyle(.body1)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
 
                 hintIconView
 
@@ -52,13 +54,13 @@ public struct TradingActivityView: View {
                 HStack(spacing: Layout.deltaSpacing) {
                     Text(rightTitle)
                         .textStyle(.label1)
-                        .foregroundStyle(Color(uiColor: .Text.primary))
+                        .foregroundStyle(.textPrimary)
 
                     if let delta {
                         Text(delta.title)
                             .textStyle(.body1)
                             .foregroundStyle(
-                                Color(uiColor: delta.isPositive ? .Accent.green : .Accent.red)
+                                delta.isPositive ? palette.accent.green : palette.accent.red
                             )
                     }
                 }
@@ -70,14 +72,14 @@ public struct TradingActivityView: View {
             GeometryReader { geometry in
                 HStack(spacing: Layout.barSpacing) {
                     RoundedRectExt(radius: Layout.barCornerRadius, corners: [.topLeft, .bottomLeft])
-                        .fill(Color(uiColor: .Accent.green))
+                        .fill(.accentGreen)
                         .frame(
                             width: geometry.size.width * buyFraction,
                             height: Layout.barHeight
                         )
 
                     RoundedRectExt(radius: Layout.barCornerRadius, corners: [.topRight, .bottomRight])
-                        .fill(Color(uiColor: .Accent.red))
+                        .fill(.accentRed)
                         .frame(height: Layout.barHeight)
                 }
             }
@@ -88,18 +90,18 @@ public struct TradingActivityView: View {
             HStack(spacing: Layout.footerSpacing) {
                 Text(buyText)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: .Accent.green))
+                    .foregroundStyle(.accentGreen)
                 Spacer(minLength: Layout.minimumSpacer)
                 Text(sellText)
                     .textStyle(.body2)
-                    .foregroundStyle(Color(uiColor: .Accent.red))
+                    .foregroundStyle(.accentRed)
             }
             .padding(.horizontal, Layout.horizontalPadding)
             .padding(.bottom, Layout.footerBottomPadding)
         }
         .background(
             RoundedRectangle(cornerRadius: Layout.cornerRadius, style: .continuous)
-                .fill(Color(uiColor: .Background.content))
+                .fill(.backgroundContent)
         )
     }
 
@@ -131,9 +133,9 @@ public struct TradingActivityView: View {
     }
 
     private var hintIcon: some View {
-        SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.informationCircle)
+        SwiftUI.Image.TKUIKit.Icons.Size16.informationCircle
             .renderingMode(.template)
-            .foregroundStyle(Color(uiColor: .Text.secondary))
+            .foregroundStyle(.textSecondary)
             .frame(width: Layout.hintIconSize, height: Layout.hintIconSize)
             .padding(.bottom, Layout.hintIconBottomPadding)
     }
@@ -145,15 +147,15 @@ extension TradingActivityView {
         static let headerSpacing: CGFloat = 4
         static let deltaSpacing: CGFloat = 4
         static let minimumSpacer: CGFloat = 12
-        static let headerTopPadding: CGFloat = 19
+        static let headerTopPadding: CGFloat = 17
         static let horizontalPadding: CGFloat = 16
-        static let headerBottomPadding: CGFloat = 18
+        static let headerBottomPadding: CGFloat = 16
         static let barSpacing: CGFloat = 4
         static let barCornerRadius: CGFloat = 99
         static let barHeight: CGFloat = 6
-        static let barBottomPadding: CGFloat = 10
+        static let barBottomPadding: CGFloat = 8
         static let footerSpacing: CGFloat = 8
-        static let footerBottomPadding: CGFloat = 16
+        static let footerBottomPadding: CGFloat = 15
         static let cornerRadius: CGFloat = 16
         static let hintMaximumWidth: CGFloat = 200
         static let hintIconBottomPadding: CGFloat = 2
@@ -195,7 +197,6 @@ extension TradingActivityView {
         )
     }
     .padding(.horizontal, 16)
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .debugPreview(background: .page)
+    .tkThemed()
 }

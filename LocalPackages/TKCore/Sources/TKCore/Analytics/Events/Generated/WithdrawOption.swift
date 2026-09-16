@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Which option the user tapped on the Withdraw screen: | send_tokens: Send tokens — To another TON/TRON wallet | sell_to_card: Sell to card — Or SEPA, PayPal &amp; other (international only) | get_usdt_other_networks: Get USDT on other networks — Withdraw to Ethereum, Tron etc  */
+/** Which option the user tapped on the Withdraw screen:  - send_tokens: Send tokens — To another TON/TRON wallet - sell_to_card: Sell to card — Or SEPA, PayPal &amp; other (international only) - get_usdt_other_networks: Get USDT on other networks — Withdraw to Ethereum, Tron etc  */
 public enum WithdrawOption: String, Codable, CaseIterable {
     case sendTokens = "send_tokens"
     case sellToCard = "sell_to_card"

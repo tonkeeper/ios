@@ -71,6 +71,19 @@ struct HintMessageBubble: Shape {
                 x: bubbleRect.maxX - tailOffset + tailSize.width / 2,
                 y: bubbleRect.maxY
             )
+        case .bottomCenter:
+            tailRight = CGPoint(
+                x: bubbleRect.midX - tailSize.width / 2,
+                y: bubbleRect.maxY
+            )
+            tailTop = CGPoint(
+                x: bubbleRect.midX,
+                y: bubbleRect.maxY + tailSize.height
+            )
+            tailLeft = CGPoint(
+                x: bubbleRect.midX + tailSize.width / 2,
+                y: bubbleRect.maxY
+            )
         case .topLeft:
             tailRight = CGPoint(
                 x: bubbleRect.minX + tailOffset - tailSize.width / 2,
@@ -95,6 +108,19 @@ struct HintMessageBubble: Shape {
             )
             tailLeft = CGPoint(
                 x: bubbleRect.maxX - tailOffset - tailSize.width / 2,
+                y: bubbleRect.minY
+            )
+        case .topCenter:
+            tailRight = CGPoint(
+                x: bubbleRect.midX - tailSize.width / 2,
+                y: bubbleRect.minY
+            )
+            tailTop = CGPoint(
+                x: bubbleRect.midX,
+                y: bubbleRect.minY - tailSize.height
+            )
+            tailLeft = CGPoint(
+                x: bubbleRect.midX + tailSize.width / 2,
                 y: bubbleRect.minY
             )
         }

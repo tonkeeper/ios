@@ -9,40 +9,36 @@ public protocol ScannerControllerConfigurator {
 
 public enum URError: Error {
     case noResult
-
-    public var errorDescription: String? {
-        switch self {
-        case .noResult:
-            return "URError: no result"
-        }
-    }
 }
 
 public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurator {
-    private let deeplinkParser = DeeplinkParser()
+    private let deeplinkParser: DeeplinkParser
     private let urDecoder = URDecoder()
     private let extensions: [QRScannerExtension]
+    private let isMultichainEnabled: Bool
 
-    public init(extensions: [QRScannerExtension]) {
+    public init(
+        extensions: [QRScannerExtension],
+        deeplinkParser: DeeplinkParser,
+        isMultichainEnabled: Bool
+    ) {
         self.extensions = extensions
+        self.deeplinkParser = deeplinkParser
+        self.isMultichainEnabled = isMultichainEnabled
     }
 
     public func handleQRCode(_ qrCode: String) throws -> Deeplink {
-        do {
-            _ = try TronRecipient(address: qrCode)
-            return createTransferDeeplink(for: qrCode)
-        } catch {}
+        let trimmedQRCode = qrCode.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        do {
-            _ = try Address.parse(qrCode)
-            return createTransferDeeplink(for: qrCode)
-        } catch {}
+        if let transferDeeplink = transferDeeplink(for: trimmedQRCode) {
+            return transferDeeplink
+        }
 
         if let extensionsDeeplink = processWithExtensions(qrCode) {
             return extensionsDeeplink
         }
 
-        return try deeplinkParser.parse(string: qrCode)
+        return try deeplinkParser.parse(string: qrCode, source: .qr)
     }
 
     public func handleQRCodeUR(_ qrCode: String) throws -> UR {
@@ -54,19 +50,36 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
         return try result.get()
     }
 
-    private func createTransferDeeplink(for recipient: String) -> Deeplink {
-        Deeplink.transfer(
+    private func transferDeeplink(for recipient: String) -> Deeplink? {
+        isMultichainEnabled
+            ? multichainTransferDeeplink(for: recipient)
+            : legacyTransferDeeplink(for: recipient)
+    }
+
+    private func legacyTransferDeeplink(for recipient: String) -> Deeplink? {
+        guard isTronRecipient(recipient) || isTonRecipient(recipient) else {
+            return nil
+        }
+        return .transfer(
             .sendTransfer(
                 Deeplink.TransferData(
                     recipient: recipient,
                     amount: nil,
                     comment: nil,
                     jettonAddress: nil,
+                    assetId: nil,
                     expirationTimestamp: nil,
                     successReturn: nil
                 )
             )
         )
+    }
+
+    private func multichainTransferDeeplink(for recipient: String) -> Deeplink? {
+        guard let candidates = MultichainRecipientCandidates(string: recipient) else {
+            return nil
+        }
+        return .transfer(.multichainSendTransfer(candidates))
     }
 
     private func processWithExtensions(_ qrCode: String) -> Deeplink? {
@@ -77,6 +90,14 @@ public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurato
         else { return nil }
 
         return QRScannerExtension.processors[matchedExtension.version]?.process(matchedExtension, qrCode: qrCode)
+    }
+
+    private func isTronRecipient(_ recipient: String) -> Bool {
+        (try? TronRecipient(address: recipient)) != nil
+    }
+
+    private func isTonRecipient(_ recipient: String) -> Bool {
+        (try? TonSwift.Address.parse(recipient)) != nil
     }
 }
 

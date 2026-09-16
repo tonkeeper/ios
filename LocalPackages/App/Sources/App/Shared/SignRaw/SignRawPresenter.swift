@@ -5,7 +5,7 @@ import TKUIKit
 import UIKit
 
 @MainActor
-public final class SignRawPresenter {
+final class SignRawPresenter {
     static var currentCoordinators = [UIWindowScene: SignRawConfirmationCoordinator]()
     static func presentSignRaw(
         windowScene: UIWindowScene,
@@ -15,6 +15,8 @@ public final class SignRawPresenter {
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
         appId: String? = nil,
+        initiatedBy: InitiatedBy,
+        dappUrl: String? = nil,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -32,6 +34,8 @@ public final class SignRawPresenter {
             resultHandler: resultHandler,
             sendFrom: sendFrom,
             appId: appId,
+            initiatedBy: initiatedBy,
+            dappUrl: dappUrl,
             redAnalyticsConfiguration: redAnalyticsConfiguration,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             coreAssembly: coreAssembly

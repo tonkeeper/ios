@@ -12,12 +12,14 @@ final class SignerSignView: UIView, ConfigurableView {
     let secondStepView = SignerSignStepView()
     let thirdStepView = SignerSignStepView()
     let scannerContainerView = UIView()
+    private let qrCodeHostingView = SwiftUIHostingView()
 
     struct Model {
         let firstStepModel: SignerSignStepView.Model
         let secondStepModel: SignerSignStepView.Model
         let thirdStepModel: SignerSignStepView.Model
         let qrCodeModel: TKFancyQRCodeView.Model
+        let qrCodeMatrices: [QrCodeMatrix]
     }
 
     func configure(model: Model) {
@@ -25,6 +27,10 @@ final class SignerSignView: UIView, ConfigurableView {
         secondStepView.configure(model: model.secondStepModel)
         thirdStepView.configure(model: model.thirdStepModel)
         qrCodeView.configure(model: model.qrCodeModel)
+        qrCodeHostingView.setContent {
+            QrCodeSequenceView(matrices: model.qrCodeMatrices)
+        }
+        qrCodeView.setQRCodeContentView(qrCodeHostingView)
     }
 
     override init(frame: CGRect) {

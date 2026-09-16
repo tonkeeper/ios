@@ -1,23 +1,28 @@
 import Foundation
 import KeeperCoreComponents
 
-public struct HomeBannersRepository {
-    let fileSystemVault: FileSystemVault<[String], String>
+struct HomeBannersRepository {
+    let fileSystemVault: FileSystemVault<[String: [String]], String>
 
-    public func getDismissedBannerIds() -> [String] {
-        let ids = try? fileSystemVault.loadItem(key: .dismissedHomeBannerIds)
-        return ids ?? []
+    func getDismissedBannerIds(walletId: String) -> [String] {
+        getAllDismissedBannerIds()[walletId] ?? []
     }
 
-    public func appendDismissedBannerId(_ id: String) {
-        var ids = getDismissedBannerIds()
+    func appendDismissedBannerId(_ id: String, walletId: String) {
+        var dismissedByWallet = getAllDismissedBannerIds()
+        var ids = dismissedByWallet[walletId] ?? []
         guard !ids.contains(id) else { return }
         ids.append(id)
-        try? fileSystemVault.saveItem(ids, key: .dismissedHomeBannerIds)
+        dismissedByWallet[walletId] = ids
+        try? fileSystemVault.saveItem(dismissedByWallet, key: .dismissedHomeBannerIds)
     }
 
-    public func resetDismissedBannerIds() {
-        try? fileSystemVault.saveItem([String](), key: .dismissedHomeBannerIds)
+    func resetDismissedBannerIds() {
+        try? fileSystemVault.saveItem([String: [String]](), key: .dismissedHomeBannerIds)
+    }
+
+    private func getAllDismissedBannerIds() -> [String: [String]] {
+        (try? fileSystemVault.loadItem(key: .dismissedHomeBannerIds)) ?? [:]
     }
 }
 

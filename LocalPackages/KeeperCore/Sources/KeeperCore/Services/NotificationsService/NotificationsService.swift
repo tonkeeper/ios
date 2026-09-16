@@ -16,10 +16,6 @@ public protocol NotificationsService {
 }
 
 final class NotificationsServiceImplementation: NotificationsService {
-    enum Error: Swift.Error {
-        case invalidDapp(String)
-    }
-
     private let pushNotificationAPI: PushNotificationsAPI
     private let walletNotificationsStore: WalletNotificationStore
     private let tonConnectAppsStore: TonConnectAppsStore

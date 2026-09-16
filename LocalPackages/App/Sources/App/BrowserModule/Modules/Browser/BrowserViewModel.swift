@@ -7,14 +7,17 @@ import UIKit
 
 @MainActor
 protocol BrowserModuleInput: AnyObject {
+    var selectedBrowserTab: DappBrowserTab { get }
+
     func openExplore()
+    func selectExploreNetworkFilter(_ chain: MultichainChain)
 }
 
 @MainActor
 protocol BrowserModuleOutput: AnyObject {
     var didTapSearch: (() -> Void)? { get set }
-    var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
-    var didSelectDapp: ((Dapp) -> Void)? { get set }
+    var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)? { get set }
+    var didSelectDapp: ((DappOpenIntent) -> Void)? { get set }
     var didOpenDeeplink: ((Deeplink) -> Void)? { get set }
 }
 
@@ -28,6 +31,8 @@ protocol BrowserViewModel: AnyObject {
     func viewDidLoad()
     func viewWillAppear()
     func didTapSearchBar()
+    func didTapExploreTab()
+    func didTapConnectedTab()
 }
 
 @MainActor
@@ -35,8 +40,8 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     // MARK: - BrowserModuleOutput
 
     var didTapSearch: (() -> Void)?
-    var didSelectCategory: ((PopularAppsCategory) -> Void)?
-    var didSelectDapp: ((Dapp) -> Void)?
+    var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)?
+    var didSelectDapp: ((DappOpenIntent) -> Void)?
     var didOpenDeeplink: ((Deeplink) -> Void)?
 
     // MARK: - BrowserViewModel
@@ -62,7 +67,8 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     private let exploreModuleInput: BrowserExploreModuleInput
     private let exploreModuleOutput: BrowserExploreModuleOutput
     private let connectedModuleOutput: BrowserConnectedModuleOutput
-    private let analyticsProvider: AnalyticsProvider
+    private let analyticsController: DappBrowserAnalyticsController
+    private var currentBrowserTab: DappBrowserTab = .explore
 
     // MARK: - Init
 
@@ -70,31 +76,31 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
         exploreModuleInput: BrowserExploreModuleInput,
         exploreModuleOutput: BrowserExploreModuleOutput,
         connectedModuleOutput: BrowserConnectedModuleOutput,
-        analyticsProvider: AnalyticsProvider
+        analyticsController: DappBrowserAnalyticsController
     ) {
         self.exploreModuleInput = exploreModuleInput
         self.exploreModuleOutput = exploreModuleOutput
         self.connectedModuleOutput = connectedModuleOutput
-        self.analyticsProvider = analyticsProvider
+        self.analyticsController = analyticsController
     }
 }
 
 private extension BrowserViewModelImplementation {
     func configure() {
-        exploreModuleOutput.didSelectCategory = { [weak self] category in
-            self?.didSelectCategory?(category)
+        exploreModuleOutput.didSelectCategory = { [weak self] category, chain in
+            self?.didSelectCategory?(category, chain)
         }
 
-        exploreModuleOutput.didSelectDapp = { [weak self] dapp in
-            self?.didSelectDapp?(dapp)
+        exploreModuleOutput.didSelectDapp = { [weak self] request in
+            self?.didSelectDapp?(request)
         }
 
         exploreModuleOutput.didOpenDeeplink = { [weak self] deeplink in
             self?.didOpenDeeplink?(deeplink)
         }
 
-        connectedModuleOutput.didSelectDapp = { [weak self] dapp in
-            self?.didSelectDapp?(dapp)
+        connectedModuleOutput.didSelectDapp = { [weak self] request in
+            self?.didSelectDapp?(request)
         }
 
         exploreModuleOutput.didUpdateExploreTabVisible = { [weak self] isVisible in
@@ -107,13 +113,13 @@ private extension BrowserViewModelImplementation {
             exploreButton: BrowserSegmentedControl.Model.Button(
                 title: TKLocales.Browser.Tab.explore,
                 tapAction: { [weak self] in
-                    self?.didSelectExplore?()
+                    self?.didTapExploreTab()
                 }
             ),
             connectedButton: BrowserSegmentedControl.Model.Button(
                 title: TKLocales.Browser.Tab.connected,
                 tapAction: { [weak self] in
-                    self?.didSelectConnected?()
+                    self?.didTapConnectedTab()
                 }
             ),
             isExploreTabVisible: exploreTabVisible
@@ -121,8 +127,44 @@ private extension BrowserViewModelImplementation {
 
         didUpdateSegmentedControl?(segmentedControlModel)
         if exploreTabVisible {
-            didSelectExplore?()
+            selectExplore()
         } else {
+            selectConnected()
+        }
+    }
+}
+
+extension BrowserViewModelImplementation {
+    func didTapExploreTab() {
+        didTap(tab: .explore)
+    }
+
+    func didTapConnectedTab() {
+        didTap(tab: .connected)
+    }
+
+    func selectExplore() {
+        select(tab: .explore)
+    }
+
+    func selectConnected() {
+        select(tab: .connected)
+    }
+}
+
+private extension BrowserViewModelImplementation {
+    func didTap(tab: DappBrowserTab) {
+        guard currentBrowserTab != tab else { return }
+        select(tab: tab)
+        analyticsController.logBrowserTabClick(tab: tab)
+    }
+
+    func select(tab: DappBrowserTab) {
+        currentBrowserTab = tab
+        switch tab {
+        case .explore:
+            didSelectExplore?()
+        case .connected:
             didSelectConnected?()
         }
     }
@@ -131,7 +173,15 @@ private extension BrowserViewModelImplementation {
 // MARK: -  BrowserModuleInput
 
 extension BrowserViewModelImplementation: BrowserModuleInput {
+    var selectedBrowserTab: DappBrowserTab {
+        currentBrowserTab
+    }
+
     func openExplore() {
-        didSelectExplore?()
+        selectExplore()
+    }
+
+    func selectExploreNetworkFilter(_ chain: MultichainChain) {
+        exploreModuleInput.selectNetworkFilter(chain)
     }
 }

@@ -16,16 +16,35 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/healthcheck`.
     /// - Remark: Generated from `#/paths//api/v1/healthcheck/get(healthcheck)`.
     func healthcheck(_ input: Operations.healthcheck.Input) async throws -> Operations.healthcheck.Output
+    /// Check the process is alive
+    ///
+    /// - Remark: HTTP `GET /api/v1/liveness`.
+    /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)`.
+    func liveness(_ input: Operations.liveness.Input) async throws -> Operations.liveness.Output
     /// Get manifest of supported chains
     ///
     /// - Remark: HTTP `GET /api/v1/nodes`.
     /// - Remark: Generated from `#/paths//api/v1/nodes/get(getNodes)`.
     func getNodes(_ input: Operations.getNodes.Input) async throws -> Operations.getNodes.Output
-    /// Get assets for an address on a chain
+    /// List the asset catalog
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)`.
+    func getAssets(_ input: Operations.getAssets.Input) async throws -> Operations.getAssets.Output
+    /// Search the swappable asset catalog
+    ///
+    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
     func searchAssets(_ input: Operations.searchAssets.Input) async throws -> Operations.searchAssets.Output
+    /// Get a single catalog asset by asset_id
+    ///
+    /// Catalog metadata for one asset, independent of any wallet: use it for a token screen opened from an activity or a deep link, where the client holds an asset_id and nothing else.
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets/{asset_id}`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)`.
+    func getAsset(_ input: Operations.getAsset.Input) async throws -> Operations.getAsset.Output
     /// Broadcast a signed transaction
     ///
     /// - Remark: HTTP `POST /api/v1/broadcast`.
@@ -36,16 +55,51 @@ public protocol APIProtocol: Sendable {
     /// - Remark: HTTP `GET /api/v1/fees/{chain}`.
     /// - Remark: Generated from `#/paths//api/v1/fees/{chain}/get(getFees)`.
     func getFees(_ input: Operations.getFees.Input) async throws -> Operations.getFees.Output
-    /// Register a wallet with its accounts
+    /// Proxy a whitelisted GET-style java-tron HTTP method to the TRON RPC node
     ///
-    /// - Remark: HTTP `POST /api/v1/wallets`.
-    /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)`.
-    func registerWallet(_ input: Operations.registerWallet.Input) async throws -> Operations.registerWallet.Output
+    /// GET counterpart of callTronRpc for the java-tron methods the mobile client calls without a JSON body: listwitnesses and the no-arg reads getnowblock and getchainparameters, which java-tron serves over GET as well as POST.
+    ///
+    /// - Remark: HTTP `GET /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)`.
+    func getTronRpc(_ input: Operations.getTronRpc.Input) async throws -> Operations.getTronRpc.Output
+    /// Proxy a whitelisted java-tron HTTP method to the TRON RPC node
+    ///
+    /// Drop-in analog of the TronGrid FullNode HTTP API for a fixed set of methods: the same request body, the node's response verbatim.
+    ///
+    /// - Remark: HTTP `POST /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)`.
+    func callTronRpc(_ input: Operations.callTronRpc.Input) async throws -> Operations.callTronRpc.Output
+    /// Resolve an account to an on-chain address
+    ///
+    /// - Remark: HTTP `GET /api/v1/account/{account}`.
+    /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)`.
+    func resolveAccountAddress(_ input: Operations.resolveAccountAddress.Input) async throws -> Operations.resolveAccountAddress.Output
     /// Get wallet by id
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/get(getWallet)`.
     func getWallet(_ input: Operations.getWallet.Input) async throws -> Operations.getWallet.Output
+    /// Poll per-chain freshness and backfill progress for a wallet
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/sync_status`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)`.
+    func getWalletSyncStatus(_ input: Operations.getWalletSyncStatus.Input) async throws -> Operations.getWalletSyncStatus.Output
+    /// Mint a realtime connection token for the calling device
+    ///
+    /// - Remark: HTTP `GET /api/v1/realtime/connection-token`.
+    /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)`.
+    func getRealtimeConnectionToken(_ input: Operations.getRealtimeConnectionToken.Input) async throws -> Operations.getRealtimeConnectionToken.Output
+    /// Mint a realtime subscription token for one wallet's channel
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/realtime-token`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)`.
+    func getWalletRealtimeToken(_ input: Operations.getWalletRealtimeToken.Input) async throws -> Operations.getWalletRealtimeToken.Output
+    /// Wipe and refetch a wallet's activity history
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/reindex`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)`.
+    @available(*, deprecated)
+    func reindexWallet(_ input: Operations.reindexWallet.Input) async throws -> Operations.reindexWallet.Output
     /// Get assets for all accounts of a registered wallet
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/assets`.
@@ -53,14 +107,108 @@ public protocol APIProtocol: Sendable {
     func getWalletAssets(_ input: Operations.getWalletAssets.Input) async throws -> Operations.getWalletAssets.Output
     /// Set wallet's assets hidden/shown settings
     ///
+    /// Writes the caller's own show/hide choices. Auth is **optional for now and becomes mandatory at release**: clients have not shipped the token on this call yet.
+    ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/assets`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)`.
     func saveWalletAssetsFilters(_ input: Operations.saveWalletAssetsFilters.Input) async throws -> Operations.saveWalletAssetsFilters.Output
+    /// Get a single asset of a registered wallet by asset_id
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/asset`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)`.
+    func getWalletAsset(_ input: Operations.getWalletAsset.Input) async throws -> Operations.getWalletAsset.Output
     /// Get activity history for a registered wallet
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/activities`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/activities/get(getWalletActivities)`.
     func getWalletActivities(_ input: Operations.getWalletActivities.Input) async throws -> Operations.getWalletActivities.Output
+    /// Record a locally-broadcast transaction as a pending activity for this wallet
+    ///
+    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins.
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/transactions/pending`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)`.
+    func addPendingTransactions(_ input: Operations.addPendingTransactions.Input) async throws -> Operations.addPendingTransactions.Output
+    /// Mint a stateless HMAC challenge for wallet registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/wallets/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/challenge/get(getWalletChallenge)`.
+    func getWalletChallenge(_ input: Operations.getWalletChallenge.Input) async throws -> Operations.getWalletChallenge.Output
+    /// List raffles with per-wallet progress
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/raffles`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)`.
+    func getWalletRaffles(_ input: Operations.getWalletRaffles.Input) async throws -> Operations.getWalletRaffles.Output
+    /// Mark wallet as migrated for raffle purposes; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/migration`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)`.
+    func completeWalletRaffleMigration(_ input: Operations.completeWalletRaffleMigration.Input) async throws -> Operations.completeWalletRaffleMigration.Output
+    /// Record that another wallet was imported from this one, for raffle tasks; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/import`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)`.
+    func markWalletRaffleImport(_ input: Operations.markWalletRaffleImport.Input) async throws -> Operations.markWalletRaffleImport.Output
+    /// QA-ONLY and deliberately unauthenticated. Force-runs the winner picker, and with a body assigns or clears a specific wallet's prize.
+    ///
+    /// - Remark: HTTP `POST /api/v1/raffles/{raffle_id}/pick-winners`.
+    /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)`.
+    func forcePickRaffleWinners(_ input: Operations.forcePickRaffleWinners.Input) async throws -> Operations.forcePickRaffleWinners.Output
+    /// Resolve device state and wallet membership for another service
+    ///
+    /// - Remark: HTTP `POST /internal/auth/introspect`.
+    /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)`.
+    func introspectAuth(_ input: Operations.introspectAuth.Input) async throws -> Operations.introspectAuth.Output
+    /// Get public keys for verifying device access tokens
+    ///
+    /// - Remark: HTTP `GET /auth/.well-known/jwks.json`.
+    /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)`.
+    func getJwks(_ input: Operations.getJwks.Input) async throws -> Operations.getJwks.Output
+    /// Mint a stateless HMAC challenge for device registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/devices/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)`.
+    func getDeviceChallenge(_ input: Operations.getDeviceChallenge.Input) async throws -> Operations.getDeviceChallenge.Output
+    /// Register a device and issue its first token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/register`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)`.
+    func registerDevice(_ input: Operations.registerDevice.Input) async throws -> Operations.registerDevice.Output
+    /// Rotate a device token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/refresh`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)`.
+    func refreshDevice(_ input: Operations.refreshDevice.Input) async throws -> Operations.refreshDevice.Output
+    /// Revoke a device and detach all its wallets
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/logout`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)`.
+    func logoutDevice(_ input: Operations.logoutDevice.Input) async throws -> Operations.logoutDevice.Output
+    /// Reconcile a client's wallet list with the device's bindings
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/bindings`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)`.
+    func getDeviceBindings(_ input: Operations.getDeviceBindings.Input) async throws -> Operations.getDeviceBindings.Output
+    /// Bind wallets to the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/register`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)`.
+    func registerWallets(_ input: Operations.registerWallets.Input) async throws -> Operations.registerWallets.Output
+    /// Detach wallets from the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/unregister`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)`.
+    func unregisterWallets(_ input: Operations.unregisterWallets.Input) async throws -> Operations.unregisterWallets.Output
+    /// Attach a device to its wallets' push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/subscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)`.
+    func subscribeDevicePush(_ input: Operations.subscribeDevicePush.Input) async throws -> Operations.subscribeDevicePush.Output
+    /// Detach a device from all push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/unsubscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)`.
+    func unsubscribeDevicePush(_ input: Operations.unsubscribeDevicePush.Input) async throws -> Operations.unsubscribeDevicePush.Output
 }
 
 /// Convenience overloads for operation inputs.
@@ -72,6 +220,13 @@ extension APIProtocol {
     public func healthcheck(headers: Operations.healthcheck.Input.Headers = .init()) async throws -> Operations.healthcheck.Output {
         try await healthcheck(Operations.healthcheck.Input(headers: headers))
     }
+    /// Check the process is alive
+    ///
+    /// - Remark: HTTP `GET /api/v1/liveness`.
+    /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)`.
+    public func liveness(headers: Operations.liveness.Input.Headers = .init()) async throws -> Operations.liveness.Output {
+        try await liveness(Operations.liveness.Input(headers: headers))
+    }
     /// Get manifest of supported chains
     ///
     /// - Remark: HTTP `GET /api/v1/nodes`.
@@ -79,7 +234,22 @@ extension APIProtocol {
     public func getNodes(headers: Operations.getNodes.Input.Headers = .init()) async throws -> Operations.getNodes.Output {
         try await getNodes(Operations.getNodes.Input(headers: headers))
     }
-    /// Get assets for an address on a chain
+    /// List the asset catalog
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)`.
+    public func getAssets(
+        query: Operations.getAssets.Input.Query = .init(),
+        headers: Operations.getAssets.Input.Headers = .init()
+    ) async throws -> Operations.getAssets.Output {
+        try await getAssets(Operations.getAssets.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Search the swappable asset catalog
+    ///
+    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -88,6 +258,23 @@ extension APIProtocol {
         headers: Operations.searchAssets.Input.Headers = .init()
     ) async throws -> Operations.searchAssets.Output {
         try await searchAssets(Operations.searchAssets.Input(
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Get a single catalog asset by asset_id
+    ///
+    /// Catalog metadata for one asset, independent of any wallet: use it for a token screen opened from an activity or a deep link, where the client holds an asset_id and nothing else.
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets/{asset_id}`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)`.
+    public func getAsset(
+        path: Operations.getAsset.Input.Path,
+        query: Operations.getAsset.Input.Query = .init(),
+        headers: Operations.getAsset.Input.Headers = .init()
+    ) async throws -> Operations.getAsset.Output {
+        try await getAsset(Operations.getAsset.Input(
+            path: path,
             query: query,
             headers: headers
         ))
@@ -118,17 +305,53 @@ extension APIProtocol {
             headers: headers
         ))
     }
-    /// Register a wallet with its accounts
+    /// Proxy a whitelisted GET-style java-tron HTTP method to the TRON RPC node
     ///
-    /// - Remark: HTTP `POST /api/v1/wallets`.
-    /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)`.
-    public func registerWallet(
-        headers: Operations.registerWallet.Input.Headers = .init(),
-        body: Components.RequestBodies.RegisterWallet
-    ) async throws -> Operations.registerWallet.Output {
-        try await registerWallet(Operations.registerWallet.Input(
+    /// GET counterpart of callTronRpc for the java-tron methods the mobile client calls without a JSON body: listwitnesses and the no-arg reads getnowblock and getchainparameters, which java-tron serves over GET as well as POST.
+    ///
+    /// - Remark: HTTP `GET /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)`.
+    public func getTronRpc(
+        path: Operations.getTronRpc.Input.Path,
+        query: Operations.getTronRpc.Input.Query = .init(),
+        headers: Operations.getTronRpc.Input.Headers = .init()
+    ) async throws -> Operations.getTronRpc.Output {
+        try await getTronRpc(Operations.getTronRpc.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Proxy a whitelisted java-tron HTTP method to the TRON RPC node
+    ///
+    /// Drop-in analog of the TronGrid FullNode HTTP API for a fixed set of methods: the same request body, the node's response verbatim.
+    ///
+    /// - Remark: HTTP `POST /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)`.
+    public func callTronRpc(
+        path: Operations.callTronRpc.Input.Path,
+        headers: Operations.callTronRpc.Input.Headers = .init(),
+        body: Operations.callTronRpc.Input.Body? = nil
+    ) async throws -> Operations.callTronRpc.Output {
+        try await callTronRpc(Operations.callTronRpc.Input(
+            path: path,
             headers: headers,
             body: body
+        ))
+    }
+    /// Resolve an account to an on-chain address
+    ///
+    /// - Remark: HTTP `GET /api/v1/account/{account}`.
+    /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)`.
+    public func resolveAccountAddress(
+        path: Operations.resolveAccountAddress.Input.Path,
+        query: Operations.resolveAccountAddress.Input.Query,
+        headers: Operations.resolveAccountAddress.Input.Headers = .init()
+    ) async throws -> Operations.resolveAccountAddress.Output {
+        try await resolveAccountAddress(Operations.resolveAccountAddress.Input(
+            path: path,
+            query: query,
+            headers: headers
         ))
     }
     /// Get wallet by id
@@ -137,11 +360,64 @@ extension APIProtocol {
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/get(getWallet)`.
     public func getWallet(
         path: Operations.getWallet.Input.Path,
+        query: Operations.getWallet.Input.Query = .init(),
         headers: Operations.getWallet.Input.Headers = .init()
     ) async throws -> Operations.getWallet.Output {
         try await getWallet(Operations.getWallet.Input(
             path: path,
+            query: query,
             headers: headers
+        ))
+    }
+    /// Poll per-chain freshness and backfill progress for a wallet
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/sync_status`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)`.
+    public func getWalletSyncStatus(
+        path: Operations.getWalletSyncStatus.Input.Path,
+        query: Operations.getWalletSyncStatus.Input.Query = .init(),
+        headers: Operations.getWalletSyncStatus.Input.Headers = .init()
+    ) async throws -> Operations.getWalletSyncStatus.Output {
+        try await getWalletSyncStatus(Operations.getWalletSyncStatus.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Mint a realtime connection token for the calling device
+    ///
+    /// - Remark: HTTP `GET /api/v1/realtime/connection-token`.
+    /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)`.
+    public func getRealtimeConnectionToken(headers: Operations.getRealtimeConnectionToken.Input.Headers = .init()) async throws -> Operations.getRealtimeConnectionToken.Output {
+        try await getRealtimeConnectionToken(Operations.getRealtimeConnectionToken.Input(headers: headers))
+    }
+    /// Mint a realtime subscription token for one wallet's channel
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/realtime-token`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)`.
+    public func getWalletRealtimeToken(
+        path: Operations.getWalletRealtimeToken.Input.Path,
+        headers: Operations.getWalletRealtimeToken.Input.Headers = .init()
+    ) async throws -> Operations.getWalletRealtimeToken.Output {
+        try await getWalletRealtimeToken(Operations.getWalletRealtimeToken.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Wipe and refetch a wallet's activity history
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/reindex`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)`.
+    @available(*, deprecated)
+    public func reindexWallet(
+        path: Operations.reindexWallet.Input.Path,
+        headers: Operations.reindexWallet.Input.Headers = .init(),
+        body: Components.RequestBodies.WalletReindex? = nil
+    ) async throws -> Operations.reindexWallet.Output {
+        try await reindexWallet(Operations.reindexWallet.Input(
+            path: path,
+            headers: headers,
+            body: body
         ))
     }
     /// Get assets for all accounts of a registered wallet
@@ -161,6 +437,8 @@ extension APIProtocol {
     }
     /// Set wallet's assets hidden/shown settings
     ///
+    /// Writes the caller's own show/hide choices. Auth is **optional for now and becomes mandatory at release**: clients have not shipped the token on this call yet.
+    ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/assets`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)`.
     public func saveWalletAssetsFilters(
@@ -172,6 +450,21 @@ extension APIProtocol {
             path: path,
             headers: headers,
             body: body
+        ))
+    }
+    /// Get a single asset of a registered wallet by asset_id
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/asset`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)`.
+    public func getWalletAsset(
+        path: Operations.getWalletAsset.Input.Path,
+        query: Operations.getWalletAsset.Input.Query,
+        headers: Operations.getWalletAsset.Input.Headers = .init()
+    ) async throws -> Operations.getWalletAsset.Output {
+        try await getWalletAsset(Operations.getWalletAsset.Input(
+            path: path,
+            query: query,
+            headers: headers
         ))
     }
     /// Get activity history for a registered wallet
@@ -188,6 +481,207 @@ extension APIProtocol {
             query: query,
             headers: headers
         ))
+    }
+    /// Record a locally-broadcast transaction as a pending activity for this wallet
+    ///
+    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins.
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/transactions/pending`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)`.
+    public func addPendingTransactions(
+        path: Operations.addPendingTransactions.Input.Path,
+        headers: Operations.addPendingTransactions.Input.Headers = .init(),
+        body: Components.RequestBodies.AddPendingTransaction
+    ) async throws -> Operations.addPendingTransactions.Output {
+        try await addPendingTransactions(Operations.addPendingTransactions.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Mint a stateless HMAC challenge for wallet registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/wallets/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/challenge/get(getWalletChallenge)`.
+    public func getWalletChallenge(headers: Operations.getWalletChallenge.Input.Headers = .init()) async throws -> Operations.getWalletChallenge.Output {
+        try await getWalletChallenge(Operations.getWalletChallenge.Input(headers: headers))
+    }
+    /// List raffles with per-wallet progress
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/raffles`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)`.
+    public func getWalletRaffles(
+        path: Operations.getWalletRaffles.Input.Path,
+        query: Operations.getWalletRaffles.Input.Query = .init(),
+        headers: Operations.getWalletRaffles.Input.Headers = .init()
+    ) async throws -> Operations.getWalletRaffles.Output {
+        try await getWalletRaffles(Operations.getWalletRaffles.Input(
+            path: path,
+            query: query,
+            headers: headers
+        ))
+    }
+    /// Mark wallet as migrated for raffle purposes; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/migration`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)`.
+    public func completeWalletRaffleMigration(
+        path: Operations.completeWalletRaffleMigration.Input.Path,
+        headers: Operations.completeWalletRaffleMigration.Input.Headers = .init()
+    ) async throws -> Operations.completeWalletRaffleMigration.Output {
+        try await completeWalletRaffleMigration(Operations.completeWalletRaffleMigration.Input(
+            path: path,
+            headers: headers
+        ))
+    }
+    /// Record that another wallet was imported from this one, for raffle tasks; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/import`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)`.
+    public func markWalletRaffleImport(
+        path: Operations.markWalletRaffleImport.Input.Path,
+        headers: Operations.markWalletRaffleImport.Input.Headers = .init(),
+        body: Components.RequestBodies.RaffleImport
+    ) async throws -> Operations.markWalletRaffleImport.Output {
+        try await markWalletRaffleImport(Operations.markWalletRaffleImport.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// QA-ONLY and deliberately unauthenticated. Force-runs the winner picker, and with a body assigns or clears a specific wallet's prize.
+    ///
+    /// - Remark: HTTP `POST /api/v1/raffles/{raffle_id}/pick-winners`.
+    /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)`.
+    public func forcePickRaffleWinners(
+        path: Operations.forcePickRaffleWinners.Input.Path,
+        headers: Operations.forcePickRaffleWinners.Input.Headers = .init(),
+        body: Components.RequestBodies.ForceRafflePick? = nil
+    ) async throws -> Operations.forcePickRaffleWinners.Output {
+        try await forcePickRaffleWinners(Operations.forcePickRaffleWinners.Input(
+            path: path,
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Resolve device state and wallet membership for another service
+    ///
+    /// - Remark: HTTP `POST /internal/auth/introspect`.
+    /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)`.
+    public func introspectAuth(
+        headers: Operations.introspectAuth.Input.Headers = .init(),
+        body: Components.RequestBodies.AuthIntrospect
+    ) async throws -> Operations.introspectAuth.Output {
+        try await introspectAuth(Operations.introspectAuth.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Get public keys for verifying device access tokens
+    ///
+    /// - Remark: HTTP `GET /auth/.well-known/jwks.json`.
+    /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)`.
+    public func getJwks(headers: Operations.getJwks.Input.Headers = .init()) async throws -> Operations.getJwks.Output {
+        try await getJwks(Operations.getJwks.Input(headers: headers))
+    }
+    /// Mint a stateless HMAC challenge for device registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/devices/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)`.
+    public func getDeviceChallenge(headers: Operations.getDeviceChallenge.Input.Headers = .init()) async throws -> Operations.getDeviceChallenge.Output {
+        try await getDeviceChallenge(Operations.getDeviceChallenge.Input(headers: headers))
+    }
+    /// Register a device and issue its first token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/register`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)`.
+    public func registerDevice(
+        headers: Operations.registerDevice.Input.Headers = .init(),
+        body: Components.RequestBodies.DeviceRegister
+    ) async throws -> Operations.registerDevice.Output {
+        try await registerDevice(Operations.registerDevice.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Rotate a device token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/refresh`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)`.
+    public func refreshDevice(
+        headers: Operations.refreshDevice.Input.Headers = .init(),
+        body: Components.RequestBodies.DeviceRefresh
+    ) async throws -> Operations.refreshDevice.Output {
+        try await refreshDevice(Operations.refreshDevice.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Revoke a device and detach all its wallets
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/logout`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)`.
+    public func logoutDevice(headers: Operations.logoutDevice.Input.Headers = .init()) async throws -> Operations.logoutDevice.Output {
+        try await logoutDevice(Operations.logoutDevice.Input(headers: headers))
+    }
+    /// Reconcile a client's wallet list with the device's bindings
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/bindings`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)`.
+    public func getDeviceBindings(
+        headers: Operations.getDeviceBindings.Input.Headers = .init(),
+        body: Components.RequestBodies.DeviceBindingsRequest
+    ) async throws -> Operations.getDeviceBindings.Output {
+        try await getDeviceBindings(Operations.getDeviceBindings.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Bind wallets to the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/register`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)`.
+    public func registerWallets(
+        headers: Operations.registerWallets.Input.Headers = .init(),
+        body: Components.RequestBodies.WalletRegisterBatch
+    ) async throws -> Operations.registerWallets.Output {
+        try await registerWallets(Operations.registerWallets.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Detach wallets from the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/unregister`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)`.
+    public func unregisterWallets(
+        headers: Operations.unregisterWallets.Input.Headers = .init(),
+        body: Components.RequestBodies.WalletUnregisterBatch
+    ) async throws -> Operations.unregisterWallets.Output {
+        try await unregisterWallets(Operations.unregisterWallets.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Attach a device to its wallets' push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/subscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)`.
+    public func subscribeDevicePush(
+        headers: Operations.subscribeDevicePush.Input.Headers = .init(),
+        body: Components.RequestBodies.WalletPushSubscribe
+    ) async throws -> Operations.subscribeDevicePush.Output {
+        try await subscribeDevicePush(Operations.subscribeDevicePush.Input(
+            headers: headers,
+            body: body
+        ))
+    }
+    /// Detach a device from all push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/unsubscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)`.
+    public func unsubscribeDevicePush(headers: Operations.unsubscribeDevicePush.Input.Headers = .init()) async throws -> Operations.unsubscribeDevicePush.Output {
+        try await unsubscribeDevicePush(Operations.unsubscribeDevicePush.Input(headers: headers))
     }
 }
 
@@ -220,44 +714,73 @@ public enum Components {
             case base = "base"
             case btc = "btc"
             case tron = "tron"
-            case sol = "sol"
             case arb = "arb"
             case bsc = "bsc"
+            case sol = "sol"
         }
         /// - Remark: Generated from `#/components/schemas/Network`.
         @frozen public enum Network: String, Codable, Hashable, Sendable {
             case mainnet = "mainnet"
             case testnet = "testnet"
         }
-        /// - Remark: Generated from `#/components/schemas/ChainNode`.
-        public struct ChainNode: Codable, Hashable, Sendable {
-            /// - Remark: Generated from `#/components/schemas/ChainNode/chain`.
-            public var chain: Components.Schemas.Chain
-            /// - Remark: Generated from `#/components/schemas/ChainNode/network`.
-            public var network: Components.Schemas.Network
-            /// Human-readable chain name
+        /// Connection info for a chain RPC node the client may call directly. Within a chain's list, nodes are ordered best-first by measured health so the client can fall back down the list.
+        ///
+        /// - Remark: Generated from `#/components/schemas/Node`.
+        public struct Node: Codable, Hashable, Sendable {
+            /// RPC endpoint URL the client calls directly.
             ///
-            /// - Remark: Generated from `#/components/schemas/ChainNode/name`.
-            public var name: Swift.String
-            /// Creates a new `ChainNode`.
+            /// - Remark: Generated from `#/components/schemas/Node/url`.
+            public var url: Swift.String
+            /// Suggested client-side request budget in requests per second. 0 means unlimited/unknown.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Node/rate_limit`.
+            public var rate_limit: Swift.Int
+            /// Auth token to present to the node when it requires one (currently only TON). Empty string for public nodes.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Node/token`.
+            public var token: Swift.String?
+            /// Node type, either main or fallback
+            ///
+            /// - Remark: Generated from `#/components/schemas/Node/type`.
+            @frozen public enum _typePayload: String, Codable, Hashable, Sendable {
+                case main = "main"
+                case fallback = "fallback"
+            }
+            /// Node type, either main or fallback
+            ///
+            /// - Remark: Generated from `#/components/schemas/Node/type`.
+            public var _type: Components.Schemas.Node._typePayload
+            /// True when the client must present its device JWT in the Authorization header to call this node. Set for nodes proxied through this backend; absent or false for nodes the client may call anonymously.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Node/is_device_token_required`.
+            public var is_device_token_required: Swift.Bool?
+            /// Creates a new `Node`.
             ///
             /// - Parameters:
-            ///   - chain:
-            ///   - network:
-            ///   - name: Human-readable chain name
+            ///   - url: RPC endpoint URL the client calls directly.
+            ///   - rate_limit: Suggested client-side request budget in requests per second. 0 means unlimited/unknown.
+            ///   - token: Auth token to present to the node when it requires one (currently only TON). Empty string for public nodes.
+            ///   - _type: Node type, either main or fallback
+            ///   - is_device_token_required: True when the client must present its device JWT in the Authorization header to call this node. Set for nodes proxied through this backend; absent or false for nodes the client may call anonymously.
             public init(
-                chain: Components.Schemas.Chain,
-                network: Components.Schemas.Network,
-                name: Swift.String
+                url: Swift.String,
+                rate_limit: Swift.Int,
+                token: Swift.String? = nil,
+                _type: Components.Schemas.Node._typePayload,
+                is_device_token_required: Swift.Bool? = nil
             ) {
-                self.chain = chain
-                self.network = network
-                self.name = name
+                self.url = url
+                self.rate_limit = rate_limit
+                self.token = token
+                self._type = _type
+                self.is_device_token_required = is_device_token_required
             }
             public enum CodingKeys: String, CodingKey {
-                case chain
-                case network
-                case name
+                case url
+                case rate_limit
+                case token
+                case _type = "type"
+                case is_device_token_required
             }
         }
         /// Balance envelope — token metadata + price + amount
@@ -270,25 +793,31 @@ public enum Components {
             public var price: Components.Schemas.AssetPrice
             /// - Remark: Generated from `#/components/schemas/SummaryAsset/market_cap`.
             public var market_cap: Components.Schemas.AssetMarketCap
+            /// - Remark: Generated from `#/components/schemas/SummaryAsset/reference_id`.
+            public var reference_id: Components.Schemas.AssetReferenceID?
             /// Creates a new `SummaryAsset`.
             ///
             /// - Parameters:
             ///   - asset:
             ///   - price:
             ///   - market_cap:
+            ///   - reference_id:
             public init(
                 asset: Components.Schemas.AssetInfo,
                 price: Components.Schemas.AssetPrice,
-                market_cap: Components.Schemas.AssetMarketCap
+                market_cap: Components.Schemas.AssetMarketCap,
+                reference_id: Components.Schemas.AssetReferenceID? = nil
             ) {
                 self.asset = asset
                 self.price = price
                 self.market_cap = market_cap
+                self.reference_id = reference_id
             }
             public enum CodingKeys: String, CodingKey {
                 case asset
                 case price
                 case market_cap
+                case reference_id
             }
         }
         /// Balance envelope — token metadata + price + amount
@@ -297,9 +826,17 @@ public enum Components {
         public struct Asset: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/Asset/asset`.
             public var asset: Components.Schemas.AssetInfo
+            /// Account address this balance belongs to. Lets clients distinguish multiple accounts on the same chain (e.g. TON v4R2 + v5R1).
+            ///
+            /// - Remark: Generated from `#/components/schemas/Asset/address`.
+            public var address: Swift.String
+            /// Account sub-type, mirrors WalletAccount.type (TON v4R2/v5R1, BTC p2wpkh/p2tr). Omitted for EVM/TRON.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Asset/type`.
+            public var _type: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Asset/price`.
             public var price: Components.Schemas.AssetPrice
-            /// Is asset showed or hidden
+            /// True when the user has hidden this asset from their balances; the row is still returned so the client can offer it back.
             ///
             /// - Remark: Generated from `#/components/schemas/Asset/is_hidden`.
             public var is_hidden: Swift.Bool
@@ -307,31 +844,49 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Asset/balance`.
             public var balance: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Asset/reference_id`.
+            public var reference_id: Components.Schemas.AssetReferenceID?
             /// Creates a new `Asset`.
             ///
             /// - Parameters:
             ///   - asset:
+            ///   - address: Account address this balance belongs to. Lets clients distinguish multiple accounts on the same chain (e.g. TON v4R2 + v5R1).
+            ///   - _type: Account sub-type, mirrors WalletAccount.type (TON v4R2/v5R1, BTC p2wpkh/p2tr). Omitted for EVM/TRON.
             ///   - price:
-            ///   - is_hidden: Is asset showed or hidden
+            ///   - is_hidden: True when the user has hidden this asset from their balances; the row is still returned so the client can offer it back.
             ///   - balance: Balance in minimal units (wei, nanoton, satoshi, sun)
+            ///   - reference_id:
             public init(
                 asset: Components.Schemas.AssetInfo,
+                address: Swift.String,
+                _type: Swift.String? = nil,
                 price: Components.Schemas.AssetPrice,
                 is_hidden: Swift.Bool,
-                balance: Swift.String
+                balance: Swift.String,
+                reference_id: Components.Schemas.AssetReferenceID? = nil
             ) {
                 self.asset = asset
+                self.address = address
+                self._type = _type
                 self.price = price
                 self.is_hidden = is_hidden
                 self.balance = balance
+                self.reference_id = reference_id
             }
             public enum CodingKeys: String, CodingKey {
                 case asset
+                case address
+                case _type = "type"
                 case price
                 case is_hidden
                 case balance
+                case reference_id
             }
         }
+        /// asset_id of the spot asset this one is linked to, e.g. the market a Lighter perp tracks. Omitted when there is no link.
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetReferenceID`.
+        public typealias AssetReferenceID = Swift.String
         /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
         ///
         /// - Remark: Generated from `#/components/schemas/AssetMarketCap`.
@@ -485,6 +1040,10 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/asset_id`.
             public var asset_id: Swift.String
+            /// Chain slug parsed from asset_id (ton, eth, base, arb, bsc, btc, tron, sol). Exposed explicitly so clients don't need to parse asset_id for chain badge rendering.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/chain`.
+            public var chain: Swift.String?
             /// Asset name
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/name`.
@@ -501,33 +1060,193 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/AssetInfo/image`.
             public var image: Swift.String
+            /// True when the asset appears on a curated list (main core coins, Trust Wallet assets, ton-blockchain jettons). Clients can use this for a verified badge and/or a 'show unverified' toggle.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/verified`.
+            @available(*, deprecated)
+            public var verified: Swift.Bool?
+            /// Backend-classified scam flag on the token itself (global, not per-wallet). Clients may render a warning badge or hide by default in balances and activities.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/is_scam`.
+            @available(*, deprecated)
+            public var is_scam: Swift.Bool?
+            /// Union of verify and is_scam
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/verification`.
+            @frozen public enum verificationPayload: String, Codable, Hashable, Sendable {
+                case blacklist = "blacklist"
+                case none = "none"
+                case whitelist = "whitelist"
+                case trusted = "trusted"
+            }
+            /// Union of verify and is_scam
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/verification`.
+            public var verification: Components.Schemas.AssetInfo.verificationPayload
+            /// - Remark: Generated from `#/components/schemas/AssetInfo/capabilities`.
+            public var capabilities: Components.Schemas.AssetCapabilities?
             /// Creates a new `AssetInfo`.
             ///
             /// - Parameters:
             ///   - asset_id: Universal asset ID in format chain/network/type/address (e.g. eth/mainnet/coin, ton/mainnet/jetton/EQC...)
+            ///   - chain: Chain slug parsed from asset_id (ton, eth, base, arb, bsc, btc, tron, sol). Exposed explicitly so clients don't need to parse asset_id for chain badge rendering.
             ///   - name: Asset name
             ///   - symbol: Asset symbol (ticker)
             ///   - decimals: Decimals of coin or token
             ///   - image: Asset image URL
+            ///   - verified: True when the asset appears on a curated list (main core coins, Trust Wallet assets, ton-blockchain jettons). Clients can use this for a verified badge and/or a 'show unverified' toggle.
+            ///   - is_scam: Backend-classified scam flag on the token itself (global, not per-wallet). Clients may render a warning badge or hide by default in balances and activities.
+            ///   - verification: Union of verify and is_scam
+            ///   - capabilities:
             public init(
                 asset_id: Swift.String,
+                chain: Swift.String? = nil,
                 name: Swift.String,
                 symbol: Swift.String,
                 decimals: Swift.Int,
-                image: Swift.String
+                image: Swift.String,
+                verified: Swift.Bool? = nil,
+                is_scam: Swift.Bool? = nil,
+                verification: Components.Schemas.AssetInfo.verificationPayload,
+                capabilities: Components.Schemas.AssetCapabilities? = nil
             ) {
                 self.asset_id = asset_id
+                self.chain = chain
                 self.name = name
                 self.symbol = symbol
                 self.decimals = decimals
                 self.image = image
+                self.verified = verified
+                self.is_scam = is_scam
+                self.verification = verification
+                self.capabilities = capabilities
             }
             public enum CodingKeys: String, CodingKey {
                 case asset_id
+                case chain
                 case name
                 case symbol
                 case decimals
                 case image
+                case verified
+                case is_scam
+                case verification
+                case capabilities
+            }
+        }
+        /// Capability flag. Clients must tolerate unknown values added later
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetCapability`.
+        public typealias AssetCapability = Swift.String
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityMerchants`.
+        public struct AssetCapabilityMerchants: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityMerchants/merchants`.
+            public var merchants: [Components.Schemas.ExchangeMerchantSlug]?
+            /// Creates a new `AssetCapabilityMerchants`.
+            ///
+            /// - Parameters:
+            ///   - merchants:
+            public init(merchants: [Components.Schemas.ExchangeMerchantSlug]? = nil) {
+                self.merchants = merchants
+            }
+            public enum CodingKeys: String, CodingKey {
+                case merchants
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ExchangeMerchantSlug`.
+        public typealias ExchangeMerchantSlug = Swift.String
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityAggregators`.
+        public struct AssetCapabilityAggregators: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityAggregators/aggregators`.
+            public var aggregators: [Swift.String]?
+            /// Creates a new `AssetCapabilityAggregators`.
+            ///
+            /// - Parameters:
+            ///   - aggregators:
+            public init(aggregators: [Swift.String]? = nil) {
+                self.aggregators = aggregators
+            }
+            public enum CodingKeys: String, CodingKey {
+                case aggregators
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityP2PInfo`.
+        public struct AssetCapabilityP2PInfo: Codable, Hashable, Sendable {
+            /// P2P symbol matched against this asset (e.g. `TON`, `USDT`)
+            ///
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityP2PInfo/symbol`.
+            public var symbol: Swift.String?
+            /// Creates a new `AssetCapabilityP2PInfo`.
+            ///
+            /// - Parameters:
+            ///   - symbol: P2P symbol matched against this asset (e.g. `TON`, `USDT`)
+            public init(symbol: Swift.String? = nil) {
+                self.symbol = symbol
+            }
+            public enum CodingKeys: String, CodingKey {
+                case symbol
+            }
+        }
+        /// Per-capability extra info. Keys appear only when meaningful for the listed capability
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails`.
+        public struct AssetCapabilityDetails: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/onramp`.
+            public var onramp: Components.Schemas.AssetCapabilityMerchants?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/offramp`.
+            public var offramp: Components.Schemas.AssetCapabilityMerchants?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/swap`.
+            public var swap: Components.Schemas.AssetCapabilityAggregators?
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilityDetails/p2p`.
+            public var p2p: Components.Schemas.AssetCapabilityP2PInfo?
+            /// Creates a new `AssetCapabilityDetails`.
+            ///
+            /// - Parameters:
+            ///   - onramp:
+            ///   - offramp:
+            ///   - swap:
+            ///   - p2p:
+            public init(
+                onramp: Components.Schemas.AssetCapabilityMerchants? = nil,
+                offramp: Components.Schemas.AssetCapabilityMerchants? = nil,
+                swap: Components.Schemas.AssetCapabilityAggregators? = nil,
+                p2p: Components.Schemas.AssetCapabilityP2PInfo? = nil
+            ) {
+                self.onramp = onramp
+                self.offramp = offramp
+                self.swap = swap
+                self.p2p = p2p
+            }
+            public enum CodingKeys: String, CodingKey {
+                case onramp
+                case offramp
+                case swap
+                case p2p
+            }
+        }
+        /// What the asset can be used for, as reported by the swap API and refreshed periodically by the indexer.
+        ///
+        /// - Remark: Generated from `#/components/schemas/AssetCapabilities`.
+        public struct AssetCapabilities: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilities/capabilities`.
+            public var capabilities: [Components.Schemas.AssetCapability]
+            /// - Remark: Generated from `#/components/schemas/AssetCapabilities/details`.
+            public var details: Components.Schemas.AssetCapabilityDetails?
+            /// Creates a new `AssetCapabilities`.
+            ///
+            /// - Parameters:
+            ///   - capabilities:
+            ///   - details:
+            public init(
+                capabilities: [Components.Schemas.AssetCapability],
+                details: Components.Schemas.AssetCapabilityDetails? = nil
+            ) {
+                self.capabilities = capabilities
+                self.details = details
+            }
+            public enum CodingKeys: String, CodingKey {
+                case capabilities
+                case details
             }
         }
         /// - Remark: Generated from `#/components/schemas/FeeEstimate`.
@@ -565,63 +1284,333 @@ public enum Components {
                 case fast
             }
         }
+        /// - Remark: Generated from `#/components/schemas/DnsResolution`.
+        public struct DnsResolution: Codable, Hashable, Sendable {
+            /// Resolved on-chain address the DNS name points to
+            ///
+            /// - Remark: Generated from `#/components/schemas/DnsResolution/address`.
+            public var address: Swift.String
+            /// True when the resolved account is flagged as part of scam activity by the upstream source
+            ///
+            /// - Remark: Generated from `#/components/schemas/DnsResolution/is_scam`.
+            public var is_scam: Swift.Bool
+            /// Creates a new `DnsResolution`.
+            ///
+            /// - Parameters:
+            ///   - address: Resolved on-chain address the DNS name points to
+            ///   - is_scam: True when the resolved account is flagged as part of scam activity by the upstream source
+            public init(
+                address: Swift.String,
+                is_scam: Swift.Bool
+            ) {
+                self.address = address
+                self.is_scam = is_scam
+            }
+            public enum CodingKeys: String, CodingKey {
+                case address
+                case is_scam
+            }
+        }
         /// - Remark: Generated from `#/components/schemas/WalletAccount`.
         public struct WalletAccount: Codable, Hashable, Sendable {
             /// - Remark: Generated from `#/components/schemas/WalletAccount/chain`.
             public var chain: Components.Schemas.Chain
+            /// - Remark: Generated from `#/components/schemas/WalletAccount/network`.
+            public var network: Components.Schemas.Network?
             /// - Remark: Generated from `#/components/schemas/WalletAccount/address`.
             public var address: Swift.String
+            /// Wallet sub-type. Optional — omit for chains with a single canonical form (EVM/TRON).
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletAccount/type`.
+            public var _type: Swift.String?
             /// Creates a new `WalletAccount`.
             ///
             /// - Parameters:
             ///   - chain:
+            ///   - network:
             ///   - address:
+            ///   - _type: Wallet sub-type. Optional — omit for chains with a single canonical form (EVM/TRON).
             public init(
                 chain: Components.Schemas.Chain,
-                address: Swift.String
+                network: Components.Schemas.Network? = nil,
+                address: Swift.String,
+                _type: Swift.String? = nil
             ) {
                 self.chain = chain
+                self.network = network
                 self.address = address
+                self._type = _type
             }
             public enum CodingKeys: String, CodingKey {
                 case chain
+                case network
                 case address
+                case _type = "type"
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WalletChallenge`.
+        public struct WalletChallenge: Codable, Hashable, Sendable {
+            /// Stateless HMAC challenge to bind into the next wallet_proof
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletChallenge/challenge`.
+            public var challenge: Swift.String
+            /// - Remark: Generated from `#/components/schemas/WalletChallenge/expires_at`.
+            public var expires_at: Foundation.Date
+            /// Creates a new `WalletChallenge`.
+            ///
+            /// - Parameters:
+            ///   - challenge: Stateless HMAC challenge to bind into the next wallet_proof
+            ///   - expires_at:
+            public init(
+                challenge: Swift.String,
+                expires_at: Foundation.Date
+            ) {
+                self.challenge = challenge
+                self.expires_at = expires_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case challenge
+                case expires_at
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RealtimeToken`.
+        public struct RealtimeToken: Codable, Hashable, Sendable {
+            /// JWT for the realtime transport
+            ///
+            /// - Remark: Generated from `#/components/schemas/RealtimeToken/token`.
+            public var token: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RealtimeToken/expires_at`.
+            public var expires_at: Foundation.Date
+            /// Creates a new `RealtimeToken`.
+            ///
+            /// - Parameters:
+            ///   - token: JWT for the realtime transport
+            ///   - expires_at:
+            public init(
+                token: Swift.String,
+                expires_at: Foundation.Date
+            ) {
+                self.token = token
+                self.expires_at = expires_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case token
+                case expires_at
             }
         }
         /// - Remark: Generated from `#/components/schemas/Wallet`.
         public struct Wallet: Codable, Hashable, Sendable {
+            /// Stable wallet identifier
+            ///
             /// - Remark: Generated from `#/components/schemas/Wallet/wallet_id`.
             public var wallet_id: Swift.String
             /// - Remark: Generated from `#/components/schemas/Wallet/accounts`.
             public var accounts: [Components.Schemas.WalletAccount]
             /// - Remark: Generated from `#/components/schemas/Wallet/created_at`.
             public var created_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/Wallet/sync_status`.
+            public var sync_status: Components.Schemas.SyncStatus
             /// Creates a new `Wallet`.
             ///
             /// - Parameters:
-            ///   - wallet_id:
+            ///   - wallet_id: Stable wallet identifier
             ///   - accounts:
             ///   - created_at:
+            ///   - sync_status:
             public init(
                 wallet_id: Swift.String,
                 accounts: [Components.Schemas.WalletAccount],
-                created_at: Foundation.Date
+                created_at: Foundation.Date,
+                sync_status: Components.Schemas.SyncStatus
             ) {
                 self.wallet_id = wallet_id
                 self.accounts = accounts
                 self.created_at = created_at
+                self.sync_status = sync_status
             }
             public enum CodingKeys: String, CodingKey {
                 case wallet_id
                 case accounts
                 case created_at
+                case sync_status
             }
         }
+        /// Wallet sync freshness, returned inline on `GET /wallets/{wallet_id}` and on its own from `GET /wallets/{wallet_id}/sync_status`, which the client polls until backfill completes.
+        ///
+        /// - Remark: Generated from `#/components/schemas/SyncStatus`.
+        public struct SyncStatus: Codable, Hashable, Sendable {
+            /// Top-level rollup over per-chain `chains[<chain>].status`. Same enum as per-chain so clients can render one shape.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SyncStatus/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                case ready = "ready"
+                case in_progress = "in_progress"
+                case failed = "failed"
+            }
+            /// Top-level rollup over per-chain `chains[<chain>].status`. Same enum as per-chain so clients can render one shape.
+            ///
+            /// - Remark: Generated from `#/components/schemas/SyncStatus/status`.
+            public var status: Components.Schemas.SyncStatus.statusPayload
+            /// Per-chain freshness, keyed by Chain enum value (e.g. "ton", "eth").
+            ///
+            /// - Remark: Generated from `#/components/schemas/SyncStatus/chains`.
+            public struct chainsPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Components.Schemas.ChainSyncStatus]
+                /// Creates a new `chainsPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Components.Schemas.ChainSyncStatus] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Per-chain freshness, keyed by Chain enum value (e.g. "ton", "eth").
+            ///
+            /// - Remark: Generated from `#/components/schemas/SyncStatus/chains`.
+            public var chains: Components.Schemas.SyncStatus.chainsPayload
+            /// Creates a new `SyncStatus`.
+            ///
+            /// - Parameters:
+            ///   - status: Top-level rollup over per-chain `chains[<chain>].status`. Same enum as per-chain so clients can render one shape.
+            ///   - chains: Per-chain freshness, keyed by Chain enum value (e.g. "ton", "eth").
+            public init(
+                status: Components.Schemas.SyncStatus.statusPayload,
+                chains: Components.Schemas.SyncStatus.chainsPayload
+            ) {
+                self.status = status
+                self.chains = chains
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+                case chains
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/ChainSyncStatus`.
+        public struct ChainSyncStatus: Codable, Hashable, Sendable {
+            /// Whether this chain has a renderable snapshot, is still fetching, or failed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                case ready = "ready"
+                case in_progress = "in_progress"
+                case failed = "failed"
+            }
+            /// Whether this chain has a renderable snapshot, is still fetching, or failed.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/status`.
+            public var status: Components.Schemas.ChainSyncStatus.statusPayload
+            /// When balances for this chain were last successfully snapshotted.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/balances_at`.
+            public var balances_at: Foundation.Date?
+            /// When the first activity page for this chain was last successfully fetched.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/activity_at`.
+            public var activity_at: Foundation.Date?
+            /// Present when the most recent fetch failed, regardless of the top-level `status`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/reason`.
+            @frozen public enum reasonPayload: String, Codable, Hashable, Sendable {
+                case provider_timeout = "provider_timeout"
+                case provider_5xx = "provider_5xx"
+                case rate_limited = "rate_limited"
+                case circuit_open = "circuit_open"
+                case capability_not_supported = "capability_not_supported"
+            }
+            /// Present when the most recent fetch failed, regardless of the top-level `status`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/reason`.
+            public var reason: Components.Schemas.ChainSyncStatus.reasonPayload?
+            /// Server-suggested backoff for the client when this chain is rate-limited.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/retry_after_ms`.
+            public var retry_after_ms: Swift.Int?
+            /// Deep-history catch-up state; clients poll until `complete`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/backfill`.
+            @frozen public enum backfillPayload: String, Codable, Hashable, Sendable {
+                case complete = "complete"
+                case in_progress = "in_progress"
+                case queued = "queued"
+            }
+            /// Deep-history catch-up state; clients poll until `complete`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/ChainSyncStatus/backfill`.
+            public var backfill: Components.Schemas.ChainSyncStatus.backfillPayload
+            /// Creates a new `ChainSyncStatus`.
+            ///
+            /// - Parameters:
+            ///   - status: Whether this chain has a renderable snapshot, is still fetching, or failed.
+            ///   - balances_at: When balances for this chain were last successfully snapshotted.
+            ///   - activity_at: When the first activity page for this chain was last successfully fetched.
+            ///   - reason: Present when the most recent fetch failed, regardless of the top-level `status`.
+            ///   - retry_after_ms: Server-suggested backoff for the client when this chain is rate-limited.
+            ///   - backfill: Deep-history catch-up state; clients poll until `complete`.
+            public init(
+                status: Components.Schemas.ChainSyncStatus.statusPayload,
+                balances_at: Foundation.Date? = nil,
+                activity_at: Foundation.Date? = nil,
+                reason: Components.Schemas.ChainSyncStatus.reasonPayload? = nil,
+                retry_after_ms: Swift.Int? = nil,
+                backfill: Components.Schemas.ChainSyncStatus.backfillPayload
+            ) {
+                self.status = status
+                self.balances_at = balances_at
+                self.activity_at = activity_at
+                self.reason = reason
+                self.retry_after_ms = retry_after_ms
+                self.backfill = backfill
+            }
+            public enum CodingKeys: String, CodingKey {
+                case status
+                case balances_at
+                case activity_at
+                case reason
+                case retry_after_ms
+                case backfill
+            }
+        }
+        /// Classified activity kind emitted by the indexer. Kept as a closed enum so clients can build exhaustive rendering / filters; new values require a coordinated backend release.
+        ///
         /// - Remark: Generated from `#/components/schemas/ActivityType`.
         @frozen public enum ActivityType: String, Codable, Hashable, Sendable {
             case send = "send"
             case receive = "receive"
             case swap = "swap"
+            case approve = "approve"
+            case revoke = "revoke"
+            case bridge = "bridge"
+            case stake = "stake"
+            case unstake = "unstake"
+            case claim = "claim"
+            case wrap = "wrap"
+            case unwrap = "unwrap"
+            case deploy = "deploy"
+            case contract_call = "contract_call"
+            case nft_purchase = "nft_purchase"
+            case auction_bid = "auction_bid"
+            case mint = "mint"
+            case burn = "burn"
+            case dns_renew = "dns_renew"
+            case subscribe = "subscribe"
+            case unsubscribe = "unsubscribe"
+            case freeze = "freeze"
+            case unfreeze = "unfreeze"
+            case delegate = "delegate"
+            case undelegate = "undelegate"
+            case vote = "vote"
+            case supply = "supply"
+            case withdraw = "withdraw"
+            case borrow = "borrow"
+            case repay = "repay"
+            case airdrop = "airdrop"
         }
         /// - Remark: Generated from `#/components/schemas/ActivityStatus`.
         @frozen public enum ActivityStatus: String, Codable, Hashable, Sendable {
@@ -635,6 +1624,45 @@ public enum Components {
             case _in = "in"
             case out = "out"
             case _self = "self"
+        }
+        /// How the fee was paid: the chain's native coin, a gasless relayer, or Tonkeeper Battery. Defaults to native.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ActivityFeeType`.
+        @frozen public enum ActivityFeeType: String, Codable, Hashable, Sendable {
+            case gasless = "gasless"
+            case native = "native"
+            case battery = "battery"
+        }
+        /// The fee in one place. The flat fee_token / fee_type / fee_amount fields carry the same values for older clients.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ActivityFee`.
+        public struct ActivityFee: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/ActivityFee/type`.
+            public var _type: Components.Schemas.ActivityFeeType?
+            /// - Remark: Generated from `#/components/schemas/ActivityFee/token`.
+            public var token: Components.Schemas.AssetInfo?
+            /// - Remark: Generated from `#/components/schemas/ActivityFee/amount`.
+            public var amount: Swift.String?
+            /// Creates a new `ActivityFee`.
+            ///
+            /// - Parameters:
+            ///   - _type:
+            ///   - token:
+            ///   - amount:
+            public init(
+                _type: Components.Schemas.ActivityFeeType? = nil,
+                token: Components.Schemas.AssetInfo? = nil,
+                amount: Swift.String? = nil
+            ) {
+                self._type = _type
+                self.token = token
+                self.amount = amount
+            }
+            public enum CodingKeys: String, CodingKey {
+                case _type = "type"
+                case token
+                case amount
+            }
         }
         /// - Remark: Generated from `#/components/schemas/Activity`.
         public struct Activity: Codable, Hashable, Sendable {
@@ -663,19 +1691,98 @@ public enum Components {
             /// - Remark: Generated from `#/components/schemas/Activity/out_amount`.
             public var out_amount: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Activity/out_amount_usd`.
+            @available(*, deprecated)
             public var out_amount_usd: Swift.Double?
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/out_fiat_price`.
+            public struct out_fiat_pricePayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `out_fiat_pricePayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/out_fiat_price`.
+            public var out_fiat_price: Components.Schemas.Activity.out_fiat_pricePayload?
             /// - Remark: Generated from `#/components/schemas/Activity/in_token`.
             public var in_token: Components.Schemas.AssetInfo?
             /// - Remark: Generated from `#/components/schemas/Activity/in_amount`.
             public var in_amount: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Activity/in_amount_usd`.
+            @available(*, deprecated)
             public var in_amount_usd: Swift.Double?
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/in_fiat_price`.
+            public struct in_fiat_pricePayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `in_fiat_pricePayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/in_fiat_price`.
+            public var in_fiat_price: Components.Schemas.Activity.in_fiat_pricePayload?
+            /// - Remark: Generated from `#/components/schemas/Activity/fee_type`.
+            public var fee_type: Components.Schemas.ActivityFeeType?
             /// - Remark: Generated from `#/components/schemas/Activity/fee_token`.
             public var fee_token: Components.Schemas.AssetInfo?
             /// - Remark: Generated from `#/components/schemas/Activity/fee_amount`.
             public var fee_amount: Swift.String?
             /// - Remark: Generated from `#/components/schemas/Activity/fee_amount_usd`.
+            @available(*, deprecated)
             public var fee_amount_usd: Swift.Double?
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/fee_fiat_price`.
+            public struct fee_fiat_pricePayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: [String: Swift.String]
+                /// Creates a new `fee_fiat_pricePayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: [String: Swift.String] = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/fee_fiat_price`.
+            public var fee_fiat_price: Components.Schemas.Activity.fee_fiat_pricePayload?
+            /// - Remark: Generated from `#/components/schemas/Activity/fee`.
+            public var fee: Components.Schemas.ActivityFee?
             /// DEX/bridge protocol name (uniswap_v3, stargate, etc.)
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/protocol`.
@@ -684,9 +1791,19 @@ public enum Components {
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/tx_ids`.
             public var tx_ids: [Swift.String]
+            /// Ready-to-open explorer URL for the primary tx (source chain for cross-chain bridges). Omitted when the chain has no known explorer template — clients should hide the link in that case.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/explorer_url`.
+            public var explorer_url: Swift.String?
+            /// Has the wallet owner acknowledged this activity in the app. Client-driven flag.
+            ///
             /// - Remark: Generated from `#/components/schemas/Activity/is_read`.
             public var is_read: Swift.Bool?
-            /// Chain-specific extras (memo, input data, etc.)
+            /// Backend-classified spam flag on this specific activity. Clients may hide by default or show a warning badge.
+            ///
+            /// - Remark: Generated from `#/components/schemas/Activity/is_spam`.
+            public var is_spam: Swift.Bool?
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public struct metaPayload: Codable, Hashable, Sendable {
@@ -706,7 +1823,7 @@ public enum Components {
                     try encoder.encodeAdditionalProperties(additionalProperties)
                 }
             }
-            /// Chain-specific extras (memo, input data, etc.)
+            /// Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
             ///
             /// - Remark: Generated from `#/components/schemas/Activity/meta`.
             public var meta: Components.Schemas.Activity.metaPayload?
@@ -726,16 +1843,23 @@ public enum Components {
             ///   - out_token:
             ///   - out_amount:
             ///   - out_amount_usd:
+            ///   - out_fiat_price: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
             ///   - in_token:
             ///   - in_amount:
             ///   - in_amount_usd:
+            ///   - in_fiat_price: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///   - fee_type:
             ///   - fee_token:
             ///   - fee_amount:
             ///   - fee_amount_usd:
+            ///   - fee_fiat_price: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+            ///   - fee:
             ///   - _protocol: DEX/bridge protocol name (uniswap_v3, stargate, etc.)
             ///   - tx_ids: On-chain tx identifiers, format: chain:txhash
-            ///   - is_read:
-            ///   - meta: Chain-specific extras (memo, input data, etc.)
+            ///   - explorer_url: Ready-to-open explorer URL for the primary tx (source chain for cross-chain bridges). Omitted when the chain has no known explorer template — clients should hide the link in that case.
+            ///   - is_read: Has the wallet owner acknowledged this activity in the app. Client-driven flag.
+            ///   - is_spam: Backend-classified spam flag on this specific activity. Clients may hide by default or show a warning badge.
+            ///   - meta: Chain-specific extras (memo, input data, etc.). Known fields: `comment` — plaintext memo attached to the transfer; `encrypted_comment` — `{encryption_type, cipher_text}` of a memo only the recipient can read; `tron_resource` — `{energy, bandwidth}`, what a TRON transaction cost its sender in resources. Energy and bandwidth are resource units, the two fees are sun of the TRX fee spent on each. A sender with staked energy or free bandwidth burns no TRX at all, so `fee_amount` of 0 is the normal case there and this object is the real cost.
             public init(
                 activity_type: Components.Schemas.ActivityType,
                 status: Components.Schemas.ActivityStatus,
@@ -750,15 +1874,22 @@ public enum Components {
                 out_token: Components.Schemas.AssetInfo? = nil,
                 out_amount: Swift.String? = nil,
                 out_amount_usd: Swift.Double? = nil,
+                out_fiat_price: Components.Schemas.Activity.out_fiat_pricePayload? = nil,
                 in_token: Components.Schemas.AssetInfo? = nil,
                 in_amount: Swift.String? = nil,
                 in_amount_usd: Swift.Double? = nil,
+                in_fiat_price: Components.Schemas.Activity.in_fiat_pricePayload? = nil,
+                fee_type: Components.Schemas.ActivityFeeType? = nil,
                 fee_token: Components.Schemas.AssetInfo? = nil,
                 fee_amount: Swift.String? = nil,
                 fee_amount_usd: Swift.Double? = nil,
+                fee_fiat_price: Components.Schemas.Activity.fee_fiat_pricePayload? = nil,
+                fee: Components.Schemas.ActivityFee? = nil,
                 _protocol: Swift.String? = nil,
                 tx_ids: [Swift.String],
+                explorer_url: Swift.String? = nil,
                 is_read: Swift.Bool? = nil,
+                is_spam: Swift.Bool? = nil,
                 meta: Components.Schemas.Activity.metaPayload? = nil
             ) {
                 self.activity_type = activity_type
@@ -774,15 +1905,22 @@ public enum Components {
                 self.out_token = out_token
                 self.out_amount = out_amount
                 self.out_amount_usd = out_amount_usd
+                self.out_fiat_price = out_fiat_price
                 self.in_token = in_token
                 self.in_amount = in_amount
                 self.in_amount_usd = in_amount_usd
+                self.in_fiat_price = in_fiat_price
+                self.fee_type = fee_type
                 self.fee_token = fee_token
                 self.fee_amount = fee_amount
                 self.fee_amount_usd = fee_amount_usd
+                self.fee_fiat_price = fee_fiat_price
+                self.fee = fee
                 self._protocol = _protocol
                 self.tx_ids = tx_ids
+                self.explorer_url = explorer_url
                 self.is_read = is_read
+                self.is_spam = is_spam
                 self.meta = meta
             }
             public enum CodingKeys: String, CodingKey {
@@ -799,16 +1937,1085 @@ public enum Components {
                 case out_token
                 case out_amount
                 case out_amount_usd
+                case out_fiat_price
                 case in_token
                 case in_amount
                 case in_amount_usd
+                case in_fiat_price
+                case fee_type
                 case fee_token
                 case fee_amount
                 case fee_amount_usd
+                case fee_fiat_price
+                case fee
                 case _protocol = "protocol"
                 case tx_ids
+                case explorer_url
                 case is_read
+                case is_spam
                 case meta
+            }
+        }
+        /// A locally-broadcast transaction, recorded as pending until the indexer observes it on-chain
+        ///
+        /// - Remark: Generated from `#/components/schemas/PendingTransaction`.
+        public struct PendingTransaction: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/chain`.
+            public var chain: Components.Schemas.Chain
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/network`.
+            public var network: Components.Schemas.Network
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/tx_hash`.
+            public var tx_hash: Swift.String
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/activity_type`.
+            public var activity_type: Components.Schemas.ActivityType
+            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/payload`.
+            public struct payloadPayload: Codable, Hashable, Sendable {
+                /// A container of undocumented properties.
+                public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+                /// Creates a new `payloadPayload`.
+                ///
+                /// - Parameters:
+                ///   - additionalProperties: A container of undocumented properties.
+                public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
+                    self.additionalProperties = additionalProperties
+                }
+                public init(from decoder: any Decoder) throws {
+                    additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                }
+                public func encode(to encoder: any Encoder) throws {
+                    try encoder.encodeAdditionalProperties(additionalProperties)
+                }
+            }
+            /// Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself.
+            ///
+            /// - Remark: Generated from `#/components/schemas/PendingTransaction/payload`.
+            public var payload: Components.Schemas.PendingTransaction.payloadPayload?
+            /// Creates a new `PendingTransaction`.
+            ///
+            /// - Parameters:
+            ///   - chain:
+            ///   - network:
+            ///   - tx_hash:
+            ///   - activity_type:
+            ///   - payload: Activity-type-specific extras the client knows at broadcast time but that are not derivable from the transaction itself.
+            public init(
+                chain: Components.Schemas.Chain,
+                network: Components.Schemas.Network,
+                tx_hash: Swift.String,
+                activity_type: Components.Schemas.ActivityType,
+                payload: Components.Schemas.PendingTransaction.payloadPayload? = nil
+            ) {
+                self.chain = chain
+                self.network = network
+                self.tx_hash = tx_hash
+                self.activity_type = activity_type
+                self.payload = payload
+            }
+            public enum CodingKeys: String, CodingKey {
+                case chain
+                case network
+                case tx_hash
+                case activity_type
+                case payload
+            }
+        }
+        /// Whitelisted java-tron HTTP methods the proxy forwards via POST — the set the mobile TronRpcClient uses.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TronRpcMethod`.
+        @frozen public enum TronRpcMethod: String, Codable, Hashable, Sendable {
+            case getaccount = "getaccount"
+            case getaccountresource = "getaccountresource"
+            case getchainparameters = "getchainparameters"
+            case getReward = "getReward"
+            case getnowblock = "getnowblock"
+            case gettransactionbyid = "gettransactionbyid"
+            case getcontract = "getcontract"
+            case getcontractinfo = "getcontractinfo"
+            case triggerconstantcontract = "triggerconstantcontract"
+            case broadcasttransaction = "broadcasttransaction"
+        }
+        /// java-tron methods the proxy also serves over GET — the no-arg reads (getnowblock, getchainparameters) plus listwitnesses, which takes only query params.
+        ///
+        /// - Remark: Generated from `#/components/schemas/TronRpcGetMethod`.
+        @frozen public enum TronRpcGetMethod: String, Codable, Hashable, Sendable {
+            case listwitnesses = "listwitnesses"
+            case getnowblock = "getnowblock"
+            case getchainparameters = "getchainparameters"
+        }
+        /// java-tron request body, forwarded to the node as-is (e.g. { address, visible } for getaccount, {} for getchainparameters)
+        ///
+        /// - Remark: Generated from `#/components/schemas/TronRpcCall`.
+        public struct TronRpcCall: Codable, Hashable, Sendable {
+            /// A container of undocumented properties.
+            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+            /// Creates a new `TronRpcCall`.
+            ///
+            /// - Parameters:
+            ///   - additionalProperties: A container of undocumented properties.
+            public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
+                self.additionalProperties = additionalProperties
+            }
+            public init(from decoder: any Decoder) throws {
+                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+            }
+            public func encode(to encoder: any Encoder) throws {
+                try encoder.encodeAdditionalProperties(additionalProperties)
+            }
+        }
+        /// java-tron response body, passed through verbatim; node-level failures are the node's own { Error: ... } shape
+        ///
+        /// - Remark: Generated from `#/components/schemas/TronRpcResult`.
+        public struct TronRpcResult: Codable, Hashable, Sendable {
+            /// A container of undocumented properties.
+            public var additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer
+            /// Creates a new `TronRpcResult`.
+            ///
+            /// - Parameters:
+            ///   - additionalProperties: A container of undocumented properties.
+            public init(additionalProperties: OpenAPIRuntime.OpenAPIObjectContainer = .init()) {
+                self.additionalProperties = additionalProperties
+            }
+            public init(from decoder: any Decoder) throws {
+                additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+            }
+            public func encode(to encoder: any Encoder) throws {
+                try encoder.encodeAdditionalProperties(additionalProperties)
+            }
+        }
+        /// Per-wallet relationship to the raffle
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleStatus`.
+        @frozen public enum RaffleStatus: String, Codable, Hashable, Sendable {
+            case not_joined = "not_joined"
+            case joined = "joined"
+            case ended_pending = "ended_pending"
+            case won = "won"
+            case lost = "lost"
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleHero`.
+        public struct RaffleHero: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleHero/image`.
+            public var image: Swift.String
+            /// Client-rendered icon id
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleHero/badge_icon_id`.
+            public var badge_icon_id: Swift.String?
+            /// Creates a new `RaffleHero`.
+            ///
+            /// - Parameters:
+            ///   - image:
+            ///   - badge_icon_id: Client-rendered icon id
+            public init(
+                image: Swift.String,
+                badge_icon_id: Swift.String? = nil
+            ) {
+                self.image = image
+                self.badge_icon_id = badge_icon_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case image
+                case badge_icon_id
+            }
+        }
+        /// Entry rendered in the wallet list
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleCompactBanner`.
+        public struct RaffleCompactBanner: Codable, Hashable, Sendable {
+            /// Title when user has no tickets
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleCompactBanner/default_title`.
+            public var default_title: Swift.String
+            /// Title when user has tickets
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleCompactBanner/active_title`.
+            public var active_title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleCompactBanner/icon_id`.
+            public var icon_id: Swift.String
+            /// Creates a new `RaffleCompactBanner`.
+            ///
+            /// - Parameters:
+            ///   - default_title: Title when user has no tickets
+            ///   - active_title: Title when user has tickets
+            ///   - icon_id:
+            public init(
+                default_title: Swift.String,
+                active_title: Swift.String,
+                icon_id: Swift.String
+            ) {
+                self.default_title = default_title
+                self.active_title = active_title
+                self.icon_id = icon_id
+            }
+            public enum CodingKeys: String, CodingKey {
+                case default_title
+                case active_title
+                case icon_id
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RafflePrize`.
+        public struct RafflePrize: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RafflePrize/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RafflePrize/image`.
+            public var image: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RafflePrize/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RafflePrize/subtitle`.
+            public var subtitle: Swift.String?
+            /// Creates a new `RafflePrize`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - image:
+            ///   - title:
+            ///   - subtitle:
+            public init(
+                id: Swift.String,
+                image: Swift.String,
+                title: Swift.String,
+                subtitle: Swift.String? = nil
+            ) {
+                self.id = id
+                self.image = image
+                self.title = title
+                self.subtitle = subtitle
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case image
+                case title
+                case subtitle
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleTask`.
+        public struct RaffleTask: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/icon_id`.
+            public var icon_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/subtitle`.
+            public var subtitle: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/reward_tickets`.
+            public var reward_tickets: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/deeplink`.
+            public var deeplink: Swift.String?
+            /// Per-wallet endpoint only
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleTask/done`.
+            public var done: Swift.Bool?
+            /// Creates a new `RaffleTask`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - icon_id:
+            ///   - title:
+            ///   - subtitle:
+            ///   - reward_tickets:
+            ///   - deeplink:
+            ///   - done: Per-wallet endpoint only
+            public init(
+                id: Swift.String,
+                icon_id: Swift.String,
+                title: Swift.String,
+                subtitle: Swift.String? = nil,
+                reward_tickets: Swift.Int,
+                deeplink: Swift.String? = nil,
+                done: Swift.Bool? = nil
+            ) {
+                self.id = id
+                self.icon_id = icon_id
+                self.title = title
+                self.subtitle = subtitle
+                self.reward_tickets = reward_tickets
+                self.deeplink = deeplink
+                self.done = done
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case icon_id
+                case title
+                case subtitle
+                case reward_tickets
+                case deeplink
+                case done
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleMilestone`.
+        public struct RaffleMilestone: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/icon_id`.
+            public var icon_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/subtitle`.
+            public var subtitle: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/reward_tickets`.
+            public var reward_tickets: Swift.Int
+            /// Per-wallet endpoint only
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleMilestone/done`.
+            public var done: Swift.Bool?
+            /// Creates a new `RaffleMilestone`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - icon_id:
+            ///   - title:
+            ///   - subtitle:
+            ///   - reward_tickets:
+            ///   - done: Per-wallet endpoint only
+            public init(
+                id: Swift.String,
+                icon_id: Swift.String,
+                title: Swift.String,
+                subtitle: Swift.String? = nil,
+                reward_tickets: Swift.Int,
+                done: Swift.Bool? = nil
+            ) {
+                self.id = id
+                self.icon_id = icon_id
+                self.title = title
+                self.subtitle = subtitle
+                self.reward_tickets = reward_tickets
+                self.done = done
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case icon_id
+                case title
+                case subtitle
+                case reward_tickets
+                case done
+            }
+        }
+        /// Bottom button, picked by backend by user state
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleCTA`.
+        public struct RaffleCTA: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleCTA/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleCTA/action`.
+            @frozen public enum actionPayload: String, Codable, Hashable, Sendable {
+                case deeplink = "deeplink"
+                case link = "link"
+            }
+            /// - Remark: Generated from `#/components/schemas/RaffleCTA/action`.
+            public var action: Components.Schemas.RaffleCTA.actionPayload
+            /// - Remark: Generated from `#/components/schemas/RaffleCTA/payload`.
+            public var payload: Swift.String
+            /// Creates a new `RaffleCTA`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - action:
+            ///   - payload:
+            public init(
+                title: Swift.String,
+                action: Components.Schemas.RaffleCTA.actionPayload,
+                payload: Swift.String
+            ) {
+                self.title = title
+                self.action = action
+                self.payload = payload
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case action
+                case payload
+            }
+        }
+        /// Standalone banner card (e.g. for opening a story), separate from hero/compact_banner
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleBanner`.
+        public struct RaffleBanner: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleBanner/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleBanner/description`.
+            public var description: Swift.String?
+            /// Own thumbnail for the banner card, separate from hero.image
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleBanner/image_url`.
+            public var image_url: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleBanner/button`.
+            public var button: Components.Schemas.RaffleCTA
+            /// Creates a new `RaffleBanner`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - description:
+            ///   - image_url: Own thumbnail for the banner card, separate from hero.image
+            ///   - button:
+            public init(
+                title: Swift.String,
+                description: Swift.String? = nil,
+                image_url: Swift.String,
+                button: Components.Schemas.RaffleCTA
+            ) {
+                self.title = title
+                self.description = description
+                self.image_url = image_url
+                self.button = button
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case description
+                case image_url
+                case button
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem`.
+        public struct RaffleHistoryItem: Codable, Hashable, Sendable {
+            /// raffle:{reason_kind}:{reason_id}
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem/awarded_at`.
+            public var awarded_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem/icon_id`.
+            public var icon_id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleHistoryItem/tickets`.
+            public var tickets: Swift.Int
+            /// Creates a new `RaffleHistoryItem`.
+            ///
+            /// - Parameters:
+            ///   - id: raffle:{reason_kind}:{reason_id}
+            ///   - awarded_at:
+            ///   - icon_id:
+            ///   - title:
+            ///   - tickets:
+            public init(
+                id: Swift.String,
+                awarded_at: Foundation.Date,
+                icon_id: Swift.String,
+                title: Swift.String,
+                tickets: Swift.Int
+            ) {
+                self.id = id
+                self.awarded_at = awarded_at
+                self.icon_id = icon_id
+                self.title = title
+                self.tickets = tickets
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case awarded_at
+                case icon_id
+                case title
+                case tickets
+            }
+        }
+        /// The actual prize awarded — may differ from the advertised prizes[] entry
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleWinningPrize`.
+        public struct RaffleWinningPrize: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleWinningPrize/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleWinningPrize/image`.
+            public var image: Swift.String
+            /// Creates a new `RaffleWinningPrize`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - image:
+            public init(
+                title: Swift.String,
+                image: Swift.String
+            ) {
+                self.title = title
+                self.image = image
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case image
+            }
+        }
+        /// Static promo card shown alongside the raffle
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard`.
+        public struct RaffleBenefitCard: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/id`.
+            public var id: Swift.String
+            /// Client-rendered icon id
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/icon_id`.
+            public var icon_id: Swift.String
+            /// Optional artwork rendered on the card
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/image_url`.
+            public var image_url: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/label`.
+            public var label: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleBenefitCard/subtitle`.
+            public var subtitle: Swift.String?
+            /// Creates a new `RaffleBenefitCard`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - icon_id: Client-rendered icon id
+            ///   - image_url: Optional artwork rendered on the card
+            ///   - label:
+            ///   - title:
+            ///   - subtitle:
+            public init(
+                id: Swift.String,
+                icon_id: Swift.String,
+                image_url: Swift.String? = nil,
+                label: Swift.String,
+                title: Swift.String,
+                subtitle: Swift.String? = nil
+            ) {
+                self.id = id
+                self.icon_id = icon_id
+                self.image_url = image_url
+                self.label = label
+                self.title = title
+                self.subtitle = subtitle
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case icon_id
+                case image_url
+                case label
+                case title
+                case subtitle
+            }
+        }
+        /// Onboarding-style story attached to a raffle. Phase can override.
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleStory`.
+        public struct RaffleStory: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleStory/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleStory/pages`.
+            public var pages: [Components.Schemas.RaffleStoryPage]
+            /// Creates a new `RaffleStory`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - pages:
+            public init(
+                id: Swift.String,
+                pages: [Components.Schemas.RaffleStoryPage]
+            ) {
+                self.id = id
+                self.pages = pages
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case pages
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/RaffleStoryPage`.
+        public struct RaffleStoryPage: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleStoryPage/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleStoryPage/description`.
+            public var description: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleStoryPage/image`.
+            public var image: Swift.String
+            /// - Remark: Generated from `#/components/schemas/RaffleStoryPage/buttons`.
+            public var buttons: [Components.Schemas.RaffleCTA]?
+            /// Creates a new `RaffleStoryPage`.
+            ///
+            /// - Parameters:
+            ///   - title:
+            ///   - description:
+            ///   - image:
+            ///   - buttons:
+            public init(
+                title: Swift.String,
+                description: Swift.String,
+                image: Swift.String,
+                buttons: [Components.Schemas.RaffleCTA]? = nil
+            ) {
+                self.title = title
+                self.description = description
+                self.image = image
+                self.buttons = buttons
+            }
+            public enum CodingKeys: String, CodingKey {
+                case title
+                case description
+                case image
+                case buttons
+            }
+        }
+        /// Per-wallet aggregate
+        ///
+        /// - Remark: Generated from `#/components/schemas/RaffleProgress`.
+        public struct RaffleProgress: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/RaffleProgress/tickets_total`.
+            public var tickets_total: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/RaffleProgress/history`.
+            public var history: [Components.Schemas.RaffleHistoryItem]
+            /// - Remark: Generated from `#/components/schemas/RaffleProgress/winning_prize`.
+            public var winning_prize: Components.Schemas.RaffleWinningPrize?
+            /// Optional, defaults client-side if absent
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleProgress/prize_delivery_days`.
+            public var prize_delivery_days: Swift.Int?
+            /// Zero-fee perk expiry; only set for wallets first registered during the raffle's first 7 days
+            ///
+            /// - Remark: Generated from `#/components/schemas/RaffleProgress/zero_fee_ends_at`.
+            public var zero_fee_ends_at: Foundation.Date?
+            /// Creates a new `RaffleProgress`.
+            ///
+            /// - Parameters:
+            ///   - tickets_total:
+            ///   - history:
+            ///   - winning_prize:
+            ///   - prize_delivery_days: Optional, defaults client-side if absent
+            ///   - zero_fee_ends_at: Zero-fee perk expiry; only set for wallets first registered during the raffle's first 7 days
+            public init(
+                tickets_total: Swift.Int,
+                history: [Components.Schemas.RaffleHistoryItem],
+                winning_prize: Components.Schemas.RaffleWinningPrize? = nil,
+                prize_delivery_days: Swift.Int? = nil,
+                zero_fee_ends_at: Foundation.Date? = nil
+            ) {
+                self.tickets_total = tickets_total
+                self.history = history
+                self.winning_prize = winning_prize
+                self.prize_delivery_days = prize_delivery_days
+                self.zero_fee_ends_at = zero_fee_ends_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case tickets_total
+                case history
+                case winning_prize
+                case prize_delivery_days
+                case zero_fee_ends_at
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Raffle`.
+        public struct Raffle: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Raffle/id`.
+            public var id: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Raffle/status`.
+            public var status: Components.Schemas.RaffleStatus
+            /// - Remark: Generated from `#/components/schemas/Raffle/hero`.
+            public var hero: Components.Schemas.RaffleHero
+            /// - Remark: Generated from `#/components/schemas/Raffle/title`.
+            public var title: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Raffle/subtitle`.
+            public var subtitle: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Raffle/starts_at`.
+            public var starts_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/Raffle/ends_at`.
+            public var ends_at: Foundation.Date
+            /// - Remark: Generated from `#/components/schemas/Raffle/prizes_reveal_at`.
+            public var prizes_reveal_at: Foundation.Date?
+            /// - Remark: Generated from `#/components/schemas/Raffle/compact_banner`.
+            public var compact_banner: Components.Schemas.RaffleCompactBanner
+            /// - Remark: Generated from `#/components/schemas/Raffle/prizes_header`.
+            public var prizes_header: Swift.String
+            /// Short state-dependent label shown above the hero (e.g. 'Active', 'You won')
+            ///
+            /// - Remark: Generated from `#/components/schemas/Raffle/status_badge`.
+            public var status_badge: Swift.String?
+            /// - Remark: Generated from `#/components/schemas/Raffle/benefit_cards`.
+            public var benefit_cards: [Components.Schemas.RaffleBenefitCard]?
+            /// - Remark: Generated from `#/components/schemas/Raffle/prizes`.
+            public var prizes: [Components.Schemas.RafflePrize]
+            /// - Remark: Generated from `#/components/schemas/Raffle/tasks`.
+            public var tasks: [Components.Schemas.RaffleTask]
+            /// - Remark: Generated from `#/components/schemas/Raffle/milestones`.
+            public var milestones: [Components.Schemas.RaffleMilestone]
+            /// - Remark: Generated from `#/components/schemas/Raffle/cta`.
+            public var cta: Components.Schemas.RaffleCTA
+            /// - Remark: Generated from `#/components/schemas/Raffle/banner`.
+            public var banner: Components.Schemas.RaffleBanner?
+            /// - Remark: Generated from `#/components/schemas/Raffle/stories`.
+            public var stories: [Components.Schemas.RaffleStory]?
+            /// - Remark: Generated from `#/components/schemas/Raffle/progress`.
+            public var progress: Components.Schemas.RaffleProgress?
+            /// Creates a new `Raffle`.
+            ///
+            /// - Parameters:
+            ///   - id:
+            ///   - status:
+            ///   - hero:
+            ///   - title:
+            ///   - subtitle:
+            ///   - starts_at:
+            ///   - ends_at:
+            ///   - prizes_reveal_at:
+            ///   - compact_banner:
+            ///   - prizes_header:
+            ///   - status_badge: Short state-dependent label shown above the hero (e.g. 'Active', 'You won')
+            ///   - benefit_cards:
+            ///   - prizes:
+            ///   - tasks:
+            ///   - milestones:
+            ///   - cta:
+            ///   - banner:
+            ///   - stories:
+            ///   - progress:
+            public init(
+                id: Swift.String,
+                status: Components.Schemas.RaffleStatus,
+                hero: Components.Schemas.RaffleHero,
+                title: Swift.String,
+                subtitle: Swift.String,
+                starts_at: Foundation.Date,
+                ends_at: Foundation.Date,
+                prizes_reveal_at: Foundation.Date? = nil,
+                compact_banner: Components.Schemas.RaffleCompactBanner,
+                prizes_header: Swift.String,
+                status_badge: Swift.String? = nil,
+                benefit_cards: [Components.Schemas.RaffleBenefitCard]? = nil,
+                prizes: [Components.Schemas.RafflePrize],
+                tasks: [Components.Schemas.RaffleTask],
+                milestones: [Components.Schemas.RaffleMilestone],
+                cta: Components.Schemas.RaffleCTA,
+                banner: Components.Schemas.RaffleBanner? = nil,
+                stories: [Components.Schemas.RaffleStory]? = nil,
+                progress: Components.Schemas.RaffleProgress? = nil
+            ) {
+                self.id = id
+                self.status = status
+                self.hero = hero
+                self.title = title
+                self.subtitle = subtitle
+                self.starts_at = starts_at
+                self.ends_at = ends_at
+                self.prizes_reveal_at = prizes_reveal_at
+                self.compact_banner = compact_banner
+                self.prizes_header = prizes_header
+                self.status_badge = status_badge
+                self.benefit_cards = benefit_cards
+                self.prizes = prizes
+                self.tasks = tasks
+                self.milestones = milestones
+                self.cta = cta
+                self.banner = banner
+                self.stories = stories
+                self.progress = progress
+            }
+            public enum CodingKeys: String, CodingKey {
+                case id
+                case status
+                case hero
+                case title
+                case subtitle
+                case starts_at
+                case ends_at
+                case prizes_reveal_at
+                case compact_banner
+                case prizes_header
+                case status_badge
+                case benefit_cards
+                case prizes
+                case tasks
+                case milestones
+                case cta
+                case banner
+                case stories
+                case progress
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/AuthChallenge`.
+        public struct AuthChallenge: Codable, Hashable, Sendable {
+            /// base64url of 73 bytes: `[ver:1][nonce:32][exp_be64:8][hmac:32]`.
+            ///
+            /// - Remark: Generated from `#/components/schemas/AuthChallenge/challenge`.
+            public var challenge: Swift.String
+            /// - Remark: Generated from `#/components/schemas/AuthChallenge/expires_at`.
+            public var expires_at: Foundation.Date
+            /// Creates a new `AuthChallenge`.
+            ///
+            /// - Parameters:
+            ///   - challenge: base64url of 73 bytes: `[ver:1][nonce:32][exp_be64:8][hmac:32]`.
+            ///   - expires_at:
+            public init(
+                challenge: Swift.String,
+                expires_at: Foundation.Date
+            ) {
+                self.challenge = challenge
+                self.expires_at = expires_at
+            }
+            public enum CodingKeys: String, CodingKey {
+                case challenge
+                case expires_at
+            }
+        }
+        /// `es256_raw` — ECDSA P-256 over SHA-256(M), signature as raw r‖s. Attested schemes are added later as new values.
+        ///
+        /// - Remark: Generated from `#/components/schemas/ProofType`.
+        @frozen public enum ProofType: String, Codable, Hashable, Sendable {
+            case es256_raw = "es256_raw"
+        }
+        /// - Remark: Generated from `#/components/schemas/DevicePlatform`.
+        @frozen public enum DevicePlatform: String, Codable, Hashable, Sendable {
+            case ios = "ios"
+            case android = "android"
+            case ios_pro = "ios_pro"
+            case web = "web"
+            case _extension = "extension"
+            case desktop = "desktop"
+        }
+        /// - Remark: Generated from `#/components/schemas/DeviceTokens`.
+        public struct DeviceTokens: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/DeviceTokens/device_id`.
+            public var device_id: Swift.String
+            /// Access token (JWT, ES256). Keep in memory only.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceTokens/device_jwt`.
+            public var device_jwt: Swift.String
+            /// Opaque single-use token, base64url of 32 random bytes. Never sent in `Authorization` — only in the /api/v2/devices/refresh body with a proof over it.
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceTokens/refresh_token`.
+            public var refresh_token: Swift.String
+            /// device_jwt lifetime in seconds
+            ///
+            /// - Remark: Generated from `#/components/schemas/DeviceTokens/expires_in`.
+            public var expires_in: Swift.Int
+            /// Creates a new `DeviceTokens`.
+            ///
+            /// - Parameters:
+            ///   - device_id:
+            ///   - device_jwt: Access token (JWT, ES256). Keep in memory only.
+            ///   - refresh_token: Opaque single-use token, base64url of 32 random bytes. Never sent in `Authorization` — only in the /api/v2/devices/refresh body with a proof over it.
+            ///   - expires_in: device_jwt lifetime in seconds
+            public init(
+                device_id: Swift.String,
+                device_jwt: Swift.String,
+                refresh_token: Swift.String,
+                expires_in: Swift.Int
+            ) {
+                self.device_id = device_id
+                self.device_jwt = device_jwt
+                self.refresh_token = refresh_token
+                self.expires_in = expires_in
+            }
+            public enum CodingKeys: String, CodingKey {
+                case device_id
+                case device_jwt
+                case refresh_token
+                case expires_in
+            }
+        }
+        /// A wallet to bind, named by a format 2 `wallet_id` and proved by `wallet_proof`, from which the root key is recovered — nothing else identifies it.
+        ///
+        /// - Remark: Generated from `#/components/schemas/WalletRegisterItem`.
+        public struct WalletRegisterItem: Codable, Hashable, Sendable {
+            /// Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 1 for multichain.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterItem/wallet_id`.
+            public var wallet_id: Swift.String?
+            /// Signature by the wallet root key: 65 bytes (130 hex) secp256k1 recoverable, laid out `R ‖ S ‖ V` as on EVM. Message layout is in BACKEND.md.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterItem/wallet_proof`.
+            public var wallet_proof: Swift.String?
+            /// `accounts_digest` = blake2b-256 over the compact JSON array of `{address, chain, network, type?}` objects, sorted by (address, chain, network, type).
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterItem/accounts`.
+            public var accounts: [Components.Schemas.WalletAccount]
+            /// Creates a new `WalletRegisterItem`.
+            ///
+            /// - Parameters:
+            ///   - wallet_id: Format 2 wallet_id: `base32(format ‖ kind_byte ‖ blake2b160(LP("keeper.wallet.id.v2") ‖ LP(kind) ‖ LP(rootPub)))`, where `format` = 2 and `kind_byte` = 1 for multichain.
+            ///   - wallet_proof: Signature by the wallet root key: 65 bytes (130 hex) secp256k1 recoverable, laid out `R ‖ S ‖ V` as on EVM. Message layout is in BACKEND.md.
+            ///   - accounts: `accounts_digest` = blake2b-256 over the compact JSON array of `{address, chain, network, type?}` objects, sorted by (address, chain, network, type).
+            public init(
+                wallet_id: Swift.String? = nil,
+                wallet_proof: Swift.String? = nil,
+                accounts: [Components.Schemas.WalletAccount]
+            ) {
+                self.wallet_id = wallet_id
+                self.wallet_proof = wallet_proof
+                self.accounts = accounts
+            }
+            public enum CodingKeys: String, CodingKey {
+                case wallet_id
+                case wallet_proof
+                case accounts
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/WalletRegisterResult`.
+        public struct WalletRegisterResult: Codable, Hashable, Sendable {
+            /// Position of this item in the request array
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/index`.
+            public var index: Swift.Int
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/status`.
+            @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                case ok = "ok"
+                case failed = "failed"
+            }
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/status`.
+            public var status: Components.Schemas.WalletRegisterResult.statusPayload
+            /// The id the wallet is filed under, present when status=ok.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/wallet_id`.
+            public var wallet_id: Swift.String?
+            /// Machine-readable reason when status=failed: invalid_proof, invalid_accounts, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
+            ///
+            /// - Remark: Generated from `#/components/schemas/WalletRegisterResult/error`.
+            public var error: Swift.String?
+            /// Creates a new `WalletRegisterResult`.
+            ///
+            /// - Parameters:
+            ///   - index: Position of this item in the request array
+            ///   - status:
+            ///   - wallet_id: The id the wallet is filed under, present when status=ok.
+            ///   - error: Machine-readable reason when status=failed: invalid_proof, invalid_accounts, invalid_wallet_id, missing_wallet_id, missing_wallet_proof, invalid_wallet_proof, storage_error, wallet_limit_reached, device_limit_reached.
+            public init(
+                index: Swift.Int,
+                status: Components.Schemas.WalletRegisterResult.statusPayload,
+                wallet_id: Swift.String? = nil,
+                error: Swift.String? = nil
+            ) {
+                self.index = index
+                self.status = status
+                self.wallet_id = wallet_id
+                self.error = error
+            }
+            public enum CodingKeys: String, CodingKey {
+                case index
+                case status
+                case wallet_id
+                case error
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/IntrospectResult`.
+        public struct IntrospectResult: Codable, Hashable, Sendable {
+            /// False for a revoked device and for one we have never seen — the two are deliberately indistinguishable.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IntrospectResult/active`.
+            public var active: Swift.Bool
+            /// Current refresh_version. Compare with the token's `rv` to spot a token issued before a rotation.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IntrospectResult/rv`.
+            public var rv: Swift.Int
+            /// Present only when wallet_id was supplied.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IntrospectResult/member`.
+            public var member: Swift.Bool?
+            /// Every wallet bound to the device. Returned only when no wallet_id was supplied, since the set can run to a couple of hundred.
+            ///
+            /// - Remark: Generated from `#/components/schemas/IntrospectResult/wallets`.
+            public var wallets: [Swift.String]?
+            /// Creates a new `IntrospectResult`.
+            ///
+            /// - Parameters:
+            ///   - active: False for a revoked device and for one we have never seen — the two are deliberately indistinguishable.
+            ///   - rv: Current refresh_version. Compare with the token's `rv` to spot a token issued before a rotation.
+            ///   - member: Present only when wallet_id was supplied.
+            ///   - wallets: Every wallet bound to the device. Returned only when no wallet_id was supplied, since the set can run to a couple of hundred.
+            public init(
+                active: Swift.Bool,
+                rv: Swift.Int,
+                member: Swift.Bool? = nil,
+                wallets: [Swift.String]? = nil
+            ) {
+                self.active = active
+                self.rv = rv
+                self.member = member
+                self.wallets = wallets
+            }
+            public enum CodingKeys: String, CodingKey {
+                case active
+                case rv
+                case member
+                case wallets
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Jwk`.
+        public struct Jwk: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Jwk/kty`.
+            @frozen public enum ktyPayload: String, Codable, Hashable, Sendable {
+                case EC = "EC"
+            }
+            /// - Remark: Generated from `#/components/schemas/Jwk/kty`.
+            public var kty: Components.Schemas.Jwk.ktyPayload
+            /// - Remark: Generated from `#/components/schemas/Jwk/crv`.
+            @frozen public enum crvPayload: String, Codable, Hashable, Sendable {
+                case P_hyphen_256 = "P-256"
+            }
+            /// - Remark: Generated from `#/components/schemas/Jwk/crv`.
+            public var crv: Components.Schemas.Jwk.crvPayload
+            /// base64url of the 32-byte X coordinate
+            ///
+            /// - Remark: Generated from `#/components/schemas/Jwk/x`.
+            public var x: Swift.String
+            /// base64url of the 32-byte Y coordinate
+            ///
+            /// - Remark: Generated from `#/components/schemas/Jwk/y`.
+            public var y: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Jwk/kid`.
+            public var kid: Swift.String
+            /// - Remark: Generated from `#/components/schemas/Jwk/alg`.
+            @frozen public enum algPayload: String, Codable, Hashable, Sendable {
+                case ES256 = "ES256"
+            }
+            /// - Remark: Generated from `#/components/schemas/Jwk/alg`.
+            public var alg: Components.Schemas.Jwk.algPayload
+            /// - Remark: Generated from `#/components/schemas/Jwk/use`.
+            @frozen public enum usePayload: String, Codable, Hashable, Sendable {
+                case sig = "sig"
+            }
+            /// - Remark: Generated from `#/components/schemas/Jwk/use`.
+            public var use: Components.Schemas.Jwk.usePayload
+            /// Creates a new `Jwk`.
+            ///
+            /// - Parameters:
+            ///   - kty:
+            ///   - crv:
+            ///   - x: base64url of the 32-byte X coordinate
+            ///   - y: base64url of the 32-byte Y coordinate
+            ///   - kid:
+            ///   - alg:
+            ///   - use:
+            public init(
+                kty: Components.Schemas.Jwk.ktyPayload,
+                crv: Components.Schemas.Jwk.crvPayload,
+                x: Swift.String,
+                y: Swift.String,
+                kid: Swift.String,
+                alg: Components.Schemas.Jwk.algPayload,
+                use: Components.Schemas.Jwk.usePayload
+            ) {
+                self.kty = kty
+                self.crv = crv
+                self.x = x
+                self.y = y
+                self.kid = kid
+                self.alg = alg
+                self.use = use
+            }
+            public enum CodingKeys: String, CodingKey {
+                case kty
+                case crv
+                case x
+                case y
+                case kid
+                case alg
+                case use
+            }
+        }
+        /// - Remark: Generated from `#/components/schemas/Jwks`.
+        public struct Jwks: Codable, Hashable, Sendable {
+            /// - Remark: Generated from `#/components/schemas/Jwks/keys`.
+            public var keys: [Components.Schemas.Jwk]
+            /// Creates a new `Jwks`.
+            ///
+            /// - Parameters:
+            ///   - keys:
+            public init(keys: [Components.Schemas.Jwk]) {
+                self.keys = keys
+            }
+            public enum CodingKeys: String, CodingKey {
+                case keys
             }
         }
     }
@@ -826,18 +3033,59 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/AssetIdsQuery`.
         public typealias AssetIdsQuery = [Swift.String]
-        /// Sort tokens by
+        /// - Remark: Generated from `#/components/parameters/CapabilitiesQuery`.
+        @frozen public enum CapabilitiesQueryPayload: String, Codable, Hashable, Sendable {
+            case swap = "swap"
+            case onramp = "onramp"
+            case offramp = "offramp"
+            case p2p = "p2p"
+        }
+        /// Filter by asset capabilities. An asset is returned only when it carries **every** capability listed here, so passing more values narrows the list.
+        ///
+        /// - Remark: Generated from `#/components/parameters/CapabilitiesQuery`.
+        public typealias CapabilitiesQuery = [Components.Parameters.CapabilitiesQueryPayload]
+        /// Asset identifier in chain/network/type[/address] format
+        ///
+        /// - Remark: Generated from `#/components/parameters/AssetIdQuery`.
+        public typealias AssetIdQuery = Swift.String
+        /// Asset identifier in chain/network/type[/address] format. The id itself contains slashes, so it has to be percent-encoded into a single path segment: `ton/mainnet/coin` is requested as `ton%2Fmainnet%2Fcoin`, and `eth/mainnet/erc20/0xdAC1...` as `eth%2Fmainnet%2Ferc20%2F0xdAC1...`.
+        ///
+        /// - Remark: Generated from `#/components/parameters/AssetIdPath`.
+        public typealias AssetIdPath = Swift.String
+        /// Filter activities by asset id (matched against the in or out token). Format chain/network/type[/address].
+        ///
+        /// - Remark: Generated from `#/components/parameters/AssetIdOptQuery`.
+        public typealias AssetIdOptQuery = Swift.String
+        /// Filter activities by spam classification. When true, only spam activities are returned; when false, only non-spam. When omitted, no spam filter is applied and both are returned.
+        ///
+        /// - Remark: Generated from `#/components/parameters/IsSpamOptQuery`.
+        public typealias IsSpamOptQuery = Swift.Bool
+        /// Sort tokens by. price_diff_* sort by the 24h price change in USD (ascending/descending).
         ///
         /// - Remark: Generated from `#/components/parameters/SortQuery`.
         @frozen public enum SortQuery: String, Codable, Hashable, Sendable {
             case market_cap = "market_cap"
             case volume = "volume"
+            case price_diff_asc = "price_diff_asc"
+            case price_diff_desc = "price_diff_desc"
         }
         /// Base currencies
         ///
         /// - Remark: Generated from `#/components/parameters/CurrenciesQuery`.
         public typealias CurrenciesQuery = [Swift.String]
-        /// Name or symbol of token
+        /// Base currencies
+        ///
+        /// - Remark: Generated from `#/components/parameters/CurrenciesOptQuery`.
+        public typealias CurrenciesOptQuery = [Swift.String]
+        /// Pagination limit
+        ///
+        /// - Remark: Generated from `#/components/parameters/CatalogLimitQuery`.
+        public typealias CatalogLimitQuery = Swift.Int
+        /// Unix timestamp in seconds. Return only assets created strictly after this moment
+        ///
+        /// - Remark: Generated from `#/components/parameters/FromDateQuery`.
+        public typealias FromDateQuery = Swift.Int64
+        /// Prefix of the token name or symbol, case-insensitive
         ///
         /// - Remark: Generated from `#/components/parameters/SearchQuery`.
         public typealias SearchQuery = Swift.String
@@ -845,6 +3093,14 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/AvailableOnlyQuery`.
         public typealias AvailableOnlyQuery = Swift.Bool
+        /// Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
+        ///
+        /// - Remark: Generated from `#/components/parameters/VerifiedOnlyQuery`.
+        public typealias VerifiedOnlyQuery = Swift.Bool
+        /// Mix Lighter perpetual markets into the unfiltered catalog. Ignored when `chain` is set.
+        ///
+        /// - Remark: Generated from `#/components/parameters/ShowPerpsQuery`.
+        public typealias ShowPerpsQuery = Swift.Bool
         /// Shows all possible assets
         ///
         /// - Remark: Generated from `#/components/parameters/ShowAllQuery`.
@@ -853,15 +3109,15 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/ShowHiddenQuery`.
         public typealias ShowHiddenQuery = Swift.Bool
+        /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+        ///
+        /// - Remark: Generated from `#/components/parameters/HideDustQuery`.
+        public typealias HideDustQuery = Swift.Bool
         /// Blockchain identifier
         ///
         /// - Remark: Generated from `#/components/parameters/ChainPath`.
         public typealias ChainPath = Components.Schemas.Chain
-        /// Wallet address on the chain
-        ///
-        /// - Remark: Generated from `#/components/parameters/AddressPath`.
-        public typealias AddressPath = Swift.String
-        /// Wallet identifier (client-generated)
+        /// Stable wallet identifier
         ///
         /// - Remark: Generated from `#/components/parameters/WalletIdPath`.
         public typealias WalletIdPath = Swift.String
@@ -869,6 +3125,24 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/ChainQuery`.
         public typealias ChainQuery = Components.Schemas.Chain
+        /// Filter by chain. `perps` selects Lighter perpetual markets (`lighter/...` assets) and nothing else.
+        ///
+        /// - Remark: Generated from `#/components/parameters/SearchChainQuery`.
+        @frozen public enum SearchChainQuery: String, Codable, Hashable, Sendable {
+            case ton = "ton"
+            case eth = "eth"
+            case base = "base"
+            case btc = "btc"
+            case tron = "tron"
+            case arb = "arb"
+            case bsc = "bsc"
+            case sol = "sol"
+            case perps = "perps"
+        }
+        /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+        ///
+        /// - Remark: Generated from `#/components/parameters/NetworkQuery`.
+        public typealias NetworkQuery = Components.Schemas.Network
         /// Filter by activity type
         ///
         /// - Remark: Generated from `#/components/parameters/ActivityTypeQuery`.
@@ -877,36 +3151,52 @@ public enum Components {
         ///
         /// - Remark: Generated from `#/components/parameters/IfNoneMatch`.
         public typealias IfNoneMatch = Swift.String
+        /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+        ///
+        /// - Remark: Generated from `#/components/parameters/FirebaseUserHeader`.
+        public typealias FirebaseUserHeader = Swift.String
+        /// Language code; falls back to en
+        ///
+        /// - Remark: Generated from `#/components/parameters/LangQuery`.
+        public typealias LangQuery = Swift.String
+        /// Filter by raffle ids
+        ///
+        /// - Remark: Generated from `#/components/parameters/RaffleIdsQuery`.
+        public typealias RaffleIdsQuery = [Swift.String]
+        /// Raffle identifier from configs/*.toml
+        ///
+        /// - Remark: Generated from `#/components/parameters/RaffleIdPath`.
+        public typealias RaffleIdPath = Swift.String
+        /// QA-ONLY. RFC3339 timestamp; server pretends "now" is this instant when picking the active phase and computing {days_left} in copy. When it is ahead of the real clock, task and milestone accrual windows shift back by the same offset, so activity made today counts towards a task whose starts_at is still in the future.
+        ///
+        /// - Remark: Generated from `#/components/parameters/DebugNowQuery`.
+        public typealias DebugNowQuery = Foundation.Date
+        /// - Remark: Generated from `#/components/parameters/IsNewUserQuery`.
+        public typealias IsNewUserQuery = Swift.Bool
     }
     /// Types generated from the `#/components/requestBodies` section of the OpenAPI document.
     public enum RequestBodies {
-        /// - Remark: Generated from `#/components/requestBodies/RegisterWallet`.
-        @frozen public enum RegisterWallet: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/requestBodies/RegisterWallet/json`.
+        /// - Remark: Generated from `#/components/requestBodies/WalletReindex`.
+        @frozen public enum WalletReindex: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/WalletReindex/json`.
             public struct jsonPayload: Codable, Hashable, Sendable {
-                /// - Remark: Generated from `#/components/requestBodies/RegisterWallet/json/wallet_id`.
-                public var wallet_id: Swift.String
-                /// - Remark: Generated from `#/components/requestBodies/RegisterWallet/json/accounts`.
-                public var accounts: [Components.Schemas.WalletAccount]
+                /// Chains to reindex. Omit or leave empty to reindex all chains on which the wallet has accounts.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/WalletReindex/json/chains`.
+                public var chains: [Components.Schemas.Chain]?
                 /// Creates a new `jsonPayload`.
                 ///
                 /// - Parameters:
-                ///   - wallet_id:
-                ///   - accounts:
-                public init(
-                    wallet_id: Swift.String,
-                    accounts: [Components.Schemas.WalletAccount]
-                ) {
-                    self.wallet_id = wallet_id
-                    self.accounts = accounts
+                ///   - chains: Chains to reindex. Omit or leave empty to reindex all chains on which the wallet has accounts.
+                public init(chains: [Components.Schemas.Chain]? = nil) {
+                    self.chains = chains
                 }
                 public enum CodingKeys: String, CodingKey {
-                    case wallet_id
-                    case accounts
+                    case chains
                 }
             }
-            /// - Remark: Generated from `#/components/requestBodies/RegisterWallet/content/application\/json`.
-            case json(Components.RequestBodies.RegisterWallet.jsonPayload)
+            /// - Remark: Generated from `#/components/requestBodies/WalletReindex/content/application\/json`.
+            case json(Components.RequestBodies.WalletReindex.jsonPayload)
         }
         /// - Remark: Generated from `#/components/requestBodies/BroadcastTx`.
         @frozen public enum BroadcastTx: Sendable, Hashable {
@@ -938,66 +3228,10 @@ public enum Components {
             /// - Remark: Generated from `#/components/requestBodies/BroadcastTx/content/application\/json`.
             case json(Components.RequestBodies.BroadcastTx.jsonPayload)
         }
-        /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets`.
-        @frozen public enum SearchBatchAssets: Sendable, Hashable {
-            /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json`.
-            public struct jsonPayload: Codable, Hashable, Sendable {
-                /// Base currencies
-                ///
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/currencies`.
-                public var currencies: [Swift.String]
-                /// Assets to show
-                ///
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/assets`.
-                public var assets: [Swift.String]?
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/sort`.
-                @frozen public enum sortPayload: String, Codable, Hashable, Sendable {
-                    case market_cap = "market_cap"
-                    case volume = "volume"
-                }
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/sort`.
-                public var sort: Components.RequestBodies.SearchBatchAssets.jsonPayload.sortPayload
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/search`.
-                public var search: Swift.String?
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/limit`.
-                public var limit: Swift.Int?
-                /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/json/cursor`.
-                public var cursor: Swift.String?
-                /// Creates a new `jsonPayload`.
-                ///
-                /// - Parameters:
-                ///   - currencies: Base currencies
-                ///   - assets: Assets to show
-                ///   - sort:
-                ///   - search:
-                ///   - limit:
-                ///   - cursor:
-                public init(
-                    currencies: [Swift.String],
-                    assets: [Swift.String]? = nil,
-                    sort: Components.RequestBodies.SearchBatchAssets.jsonPayload.sortPayload,
-                    search: Swift.String? = nil,
-                    limit: Swift.Int? = nil,
-                    cursor: Swift.String? = nil
-                ) {
-                    self.currencies = currencies
-                    self.assets = assets
-                    self.sort = sort
-                    self.search = search
-                    self.limit = limit
-                    self.cursor = cursor
-                }
-                public enum CodingKeys: String, CodingKey {
-                    case currencies
-                    case assets
-                    case sort
-                    case search
-                    case limit
-                    case cursor
-                }
-            }
-            /// - Remark: Generated from `#/components/requestBodies/SearchBatchAssets/content/application\/json`.
-            case json(Components.RequestBodies.SearchBatchAssets.jsonPayload)
+        /// - Remark: Generated from `#/components/requestBodies/AddPendingTransaction`.
+        @frozen public enum AddPendingTransaction: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/AddPendingTransaction/content/application\/json`.
+            case json(Components.Schemas.PendingTransaction)
         }
         /// - Remark: Generated from `#/components/requestBodies/SetAssetFilters`.
         @frozen public enum SetAssetFilters: Sendable, Hashable {
@@ -1031,14 +3265,18 @@ public enum Components {
                         case action
                     }
                 }
+                /// One entry per asset the user toggled. Capped so a single call cannot rewrite a whole catalogue.
+                ///
                 /// - Remark: Generated from `#/components/requestBodies/SetAssetFilters/json/changes`.
                 public typealias changesPayload = [Components.RequestBodies.SetAssetFilters.jsonPayload.changesPayloadPayload]
+                /// One entry per asset the user toggled. Capped so a single call cannot rewrite a whole catalogue.
+                ///
                 /// - Remark: Generated from `#/components/requestBodies/SetAssetFilters/json/changes`.
                 public var changes: Components.RequestBodies.SetAssetFilters.jsonPayload.changesPayload
                 /// Creates a new `jsonPayload`.
                 ///
                 /// - Parameters:
-                ///   - changes:
+                ///   - changes: One entry per asset the user toggled. Capped so a single call cannot rewrite a whole catalogue.
                 public init(changes: Components.RequestBodies.SetAssetFilters.jsonPayload.changesPayload) {
                     self.changes = changes
                 }
@@ -1048,6 +3286,292 @@ public enum Components {
             }
             /// - Remark: Generated from `#/components/requestBodies/SetAssetFilters/content/application\/json`.
             case json(Components.RequestBodies.SetAssetFilters.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/RaffleImport`.
+        @frozen public enum RaffleImport: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/RaffleImport/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/RaffleImport/json/imported_wallet_id`.
+                public var imported_wallet_id: Swift.String
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - imported_wallet_id:
+                public init(imported_wallet_id: Swift.String) {
+                    self.imported_wallet_id = imported_wallet_id
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case imported_wallet_id
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/RaffleImport/content/application\/json`.
+            case json(Components.RequestBodies.RaffleImport.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/ForceRafflePick`.
+        @frozen public enum ForceRafflePick: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/ForceRafflePick/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/ForceRafflePick/json/wallet_id`.
+                public var wallet_id: Swift.String?
+                /// Prize id from configs/*.toml [[prize]]
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/ForceRafflePick/json/prize_id`.
+                public var prize_id: Swift.String?
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id:
+                ///   - prize_id: Prize id from configs/*.toml [[prize]]
+                public init(
+                    wallet_id: Swift.String? = nil,
+                    prize_id: Swift.String? = nil
+                ) {
+                    self.wallet_id = wallet_id
+                    self.prize_id = prize_id
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case wallet_id
+                    case prize_id
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/ForceRafflePick/content/application\/json`.
+            case json(Components.RequestBodies.ForceRafflePick.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/DeviceRegister`.
+        @frozen public enum DeviceRegister: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/proof_type`.
+                public var proof_type: Components.Schemas.ProofType?
+                /// Device public key, hex. ECDSA P-256 compressed point, 33 bytes.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/device_pub`.
+                public var device_pub: Swift.String
+                /// raw r‖s over `LP("keeper.device.register.v1") ‖ LP(device_pub) ‖ LP(platform) ‖ LP(be64(app_id)) ‖ LP(client_version) ‖ LP(challenge)`. `LP(x)` = one length byte + x.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/device_proof`.
+                public var device_proof: Swift.String
+                /// Challenge from GET /api/v2/devices/challenge
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/challenge`.
+                public var challenge: Swift.String
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/platform`.
+                public var platform: Components.Schemas.DevicePlatform
+                /// Push application id. Immutable after the first registration.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/app_id`.
+                public var app_id: Swift.Int64?
+                /// Never affects token issuance or scope, but it does decide whether this device is held to a wallet proof: from 26.08.0 on `ios` and `android`, a wallet-scoped call needs one.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/json/client_version`.
+                public var client_version: Swift.String
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - proof_type:
+                ///   - device_pub: Device public key, hex. ECDSA P-256 compressed point, 33 bytes.
+                ///   - device_proof: raw r‖s over `LP("keeper.device.register.v1") ‖ LP(device_pub) ‖ LP(platform) ‖ LP(be64(app_id)) ‖ LP(client_version) ‖ LP(challenge)`. `LP(x)` = one length byte + x.
+                ///   - challenge: Challenge from GET /api/v2/devices/challenge
+                ///   - platform:
+                ///   - app_id: Push application id. Immutable after the first registration.
+                ///   - client_version: Never affects token issuance or scope, but it does decide whether this device is held to a wallet proof: from 26.08.0 on `ios` and `android`, a wallet-scoped call needs one.
+                public init(
+                    proof_type: Components.Schemas.ProofType? = nil,
+                    device_pub: Swift.String,
+                    device_proof: Swift.String,
+                    challenge: Swift.String,
+                    platform: Components.Schemas.DevicePlatform,
+                    app_id: Swift.Int64? = nil,
+                    client_version: Swift.String
+                ) {
+                    self.proof_type = proof_type
+                    self.device_pub = device_pub
+                    self.device_proof = device_proof
+                    self.challenge = challenge
+                    self.platform = platform
+                    self.app_id = app_id
+                    self.client_version = client_version
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case proof_type
+                    case device_pub
+                    case device_proof
+                    case challenge
+                    case platform
+                    case app_id
+                    case client_version
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/DeviceRegister/content/application\/json`.
+            case json(Components.RequestBodies.DeviceRegister.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh`.
+        @frozen public enum DeviceRefresh: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh/json/device_id`.
+                public var device_id: Swift.String
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh/json/refresh_token`.
+                public var refresh_token: Swift.String
+                /// raw r‖s over `LP("keeper.device.refresh.v1") ‖ LP(device_id) ‖ LP(blake2b256(refresh_token))`.
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh/json/device_proof`.
+                public var device_proof: Swift.String
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - device_id:
+                ///   - refresh_token:
+                ///   - device_proof: raw r‖s over `LP("keeper.device.refresh.v1") ‖ LP(device_id) ‖ LP(blake2b256(refresh_token))`.
+                public init(
+                    device_id: Swift.String,
+                    refresh_token: Swift.String,
+                    device_proof: Swift.String
+                ) {
+                    self.device_id = device_id
+                    self.refresh_token = refresh_token
+                    self.device_proof = device_proof
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case device_id
+                    case refresh_token
+                    case device_proof
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/DeviceRefresh/content/application\/json`.
+            case json(Components.RequestBodies.DeviceRefresh.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/WalletRegisterBatch`.
+        @frozen public enum WalletRegisterBatch: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/WalletRegisterBatch/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// Challenge from GET /api/v2/wallets/challenge
+                ///
+                /// - Remark: Generated from `#/components/requestBodies/WalletRegisterBatch/json/challenge`.
+                public var challenge: Swift.String
+                /// - Remark: Generated from `#/components/requestBodies/WalletRegisterBatch/json/wallets`.
+                public var wallets: [Components.Schemas.WalletRegisterItem]
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - challenge: Challenge from GET /api/v2/wallets/challenge
+                ///   - wallets:
+                public init(
+                    challenge: Swift.String,
+                    wallets: [Components.Schemas.WalletRegisterItem]
+                ) {
+                    self.challenge = challenge
+                    self.wallets = wallets
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case challenge
+                    case wallets
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/WalletRegisterBatch/content/application\/json`.
+            case json(Components.RequestBodies.WalletRegisterBatch.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/WalletUnregisterBatch`.
+        @frozen public enum WalletUnregisterBatch: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/WalletUnregisterBatch/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/WalletUnregisterBatch/json/wallet_ids`.
+                public var wallet_ids: [Swift.String]
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - wallet_ids:
+                public init(wallet_ids: [Swift.String]) {
+                    self.wallet_ids = wallet_ids
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case wallet_ids
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/WalletUnregisterBatch/content/application\/json`.
+            case json(Components.RequestBodies.WalletUnregisterBatch.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/DeviceBindingsRequest`.
+        @frozen public enum DeviceBindingsRequest: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/DeviceBindingsRequest/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/DeviceBindingsRequest/json/wallets`.
+                public var wallets: [Swift.String]
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - wallets:
+                public init(wallets: [Swift.String]) {
+                    self.wallets = wallets
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case wallets
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/DeviceBindingsRequest/content/application\/json`.
+            case json(Components.RequestBodies.DeviceBindingsRequest.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect`.
+        @frozen public enum AuthIntrospect: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json/device_id`.
+                public var device_id: Swift.String
+                /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/json/wallet_id`.
+                public var wallet_id: Swift.String?
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - device_id:
+                ///   - wallet_id:
+                public init(
+                    device_id: Swift.String,
+                    wallet_id: Swift.String? = nil
+                ) {
+                    self.device_id = device_id
+                    self.wallet_id = wallet_id
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case device_id
+                    case wallet_id
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/AuthIntrospect/content/application\/json`.
+            case json(Components.RequestBodies.AuthIntrospect.jsonPayload)
+        }
+        /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe`.
+        @frozen public enum WalletPushSubscribe: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe/json`.
+            public struct jsonPayload: Codable, Hashable, Sendable {
+                /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe/json/push_token`.
+                public var push_token: Swift.String
+                /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe/json/locale`.
+                public var locale: Swift.String?
+                /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe/json/wallet_ids`.
+                public var wallet_ids: [Swift.String]?
+                /// Creates a new `jsonPayload`.
+                ///
+                /// - Parameters:
+                ///   - push_token:
+                ///   - locale:
+                ///   - wallet_ids:
+                public init(
+                    push_token: Swift.String,
+                    locale: Swift.String? = nil,
+                    wallet_ids: [Swift.String]? = nil
+                ) {
+                    self.push_token = push_token
+                    self.locale = locale
+                    self.wallet_ids = wallet_ids
+                }
+                public enum CodingKeys: String, CodingKey {
+                    case push_token
+                    case locale
+                    case wallet_ids
+                }
+            }
+            /// - Remark: Generated from `#/components/requestBodies/WalletPushSubscribe/content/application\/json`.
+            case json(Components.RequestBodies.WalletPushSubscribe.jsonPayload)
         }
     }
     /// Types generated from the `#/components/responses` section of the OpenAPI document.
@@ -1092,6 +3616,92 @@ public enum Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.BadRequest.Body) {
+                self.body = body
+            }
+        }
+        public struct Unauthorized: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Unauthorized/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Unauthorized/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/Unauthorized/content/json/error`.
+                    public var error: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - error:
+                    public init(error: Swift.String) {
+                        self.error = error
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case error
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/Unauthorized/content/application\/json`.
+                case json(Components.Responses.Unauthorized.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.Unauthorized.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Unauthorized.Body
+            /// Creates a new `Unauthorized`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Unauthorized.Body) {
+                self.body = body
+            }
+        }
+        public struct Forbidden: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Forbidden/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Forbidden/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/Forbidden/content/json/error`.
+                    public var error: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - error:
+                    public init(error: Swift.String) {
+                        self.error = error
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case error
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/Forbidden/content/application\/json`.
+                case json(Components.Responses.Forbidden.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.Forbidden.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Forbidden.Body
+            /// Creates a new `Forbidden`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Forbidden.Body) {
                 self.body = body
             }
         }
@@ -1181,6 +3791,163 @@ public enum Components {
                 self.body = body
             }
         }
+        public struct Conflict: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Conflict/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Conflict/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/Conflict/content/json/error`.
+                    public var error: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - error:
+                    public init(error: Swift.String) {
+                        self.error = error
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case error
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/Conflict/content/application\/json`.
+                case json(Components.Responses.Conflict.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.Conflict.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Conflict.Body
+            /// Creates a new `Conflict`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Conflict.Body) {
+                self.body = body
+            }
+        }
+        public struct BadGateway: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/BadGateway/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/BadGateway/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/BadGateway/content/json/error`.
+                    public var error: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - error:
+                    public init(error: Swift.String) {
+                        self.error = error
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case error
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/BadGateway/content/application\/json`.
+                case json(Components.Responses.BadGateway.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.BadGateway.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.BadGateway.Body
+            /// Creates a new `BadGateway`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.BadGateway.Body) {
+                self.body = body
+            }
+        }
+        public struct TooManyRequests: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/TooManyRequests/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/TooManyRequests/content/json/error`.
+                    public var error: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - error:
+                    public init(error: Swift.String) {
+                        self.error = error
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case error
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/TooManyRequests/content/application\/json`.
+                case json(Components.Responses.TooManyRequests.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.TooManyRequests.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.TooManyRequests.Body
+            /// Creates a new `TooManyRequests`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.TooManyRequests.Body) {
+                self.body = body
+            }
+        }
+        public struct Ok: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Ok/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Ok/content/application\/json`.
+                case json(Components.Schemas.Ok)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.Ok {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Ok.Body
+            /// Creates a new `Ok`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Ok.Body) {
+                self.body = body
+            }
+        }
         public struct NotModified: Sendable, Hashable {
             /// Creates a new `NotModified`.
             public init() {}
@@ -1213,6 +3980,90 @@ public enum Components {
                 self.body = body
             }
         }
+        public struct WalletChallenge: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/WalletChallenge/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/WalletChallenge/content/application\/json`.
+                case json(Components.Schemas.WalletChallenge)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.WalletChallenge {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.WalletChallenge.Body
+            /// Creates a new `WalletChallenge`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.WalletChallenge.Body) {
+                self.body = body
+            }
+        }
+        public struct RealtimeToken: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/RealtimeToken/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/RealtimeToken/content/application\/json`.
+                case json(Components.Schemas.RealtimeToken)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.RealtimeToken {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.RealtimeToken.Body
+            /// Creates a new `RealtimeToken`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.RealtimeToken.Body) {
+                self.body = body
+            }
+        }
+        public struct WalletSyncStatus: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/WalletSyncStatus/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/WalletSyncStatus/content/application\/json`.
+                case json(Components.Schemas.SyncStatus)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.SyncStatus {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.WalletSyncStatus.Body
+            /// Creates a new `WalletSyncStatus`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.WalletSyncStatus.Body) {
+                self.body = body
+            }
+        }
         public struct ChainNodes: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/ChainNodes/headers`.
             public struct Headers: Sendable, Hashable {
@@ -1234,17 +4085,49 @@ public enum Components {
             @frozen public enum Body: Sendable, Hashable {
                 /// - Remark: Generated from `#/components/responses/ChainNodes/content/json`.
                 public struct jsonPayload: Codable, Hashable, Sendable {
-                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/nodes`.
-                    public var nodes: [Components.Schemas.ChainNode]
+                    /// Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/data`.
+                    public struct dataPayload: Codable, Hashable, Sendable {
+                        /// A container of undocumented properties.
+                        public var additionalProperties: [String: [Components.Schemas.Node]]
+                        /// Creates a new `dataPayload`.
+                        ///
+                        /// - Parameters:
+                        ///   - additionalProperties: A container of undocumented properties.
+                        public init(additionalProperties: [String: [Components.Schemas.Node]] = .init()) {
+                            self.additionalProperties = additionalProperties
+                        }
+                        public init(from decoder: any Decoder) throws {
+                            additionalProperties = try decoder.decodeAdditionalProperties(knownKeys: [])
+                        }
+                        public func encode(to encoder: any Encoder) throws {
+                            try encoder.encodeAdditionalProperties(additionalProperties)
+                        }
+                    }
+                    /// Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/data`.
+                    public var data: Components.Responses.ChainNodes.Body.jsonPayload.dataPayload
+                    /// Unix time (seconds) at which this node set was computed.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/ChainNodes/content/json/timestamp`.
+                    public var timestamp: Swift.Int64
                     /// Creates a new `jsonPayload`.
                     ///
                     /// - Parameters:
-                    ///   - nodes:
-                    public init(nodes: [Components.Schemas.ChainNode]) {
-                        self.nodes = nodes
+                    ///   - data: Per-chain node lists the client can call directly, keyed by chain id (e.g. "eth"). Each list is ordered best-first by measured health.
+                    ///   - timestamp: Unix time (seconds) at which this node set was computed.
+                    public init(
+                        data: Components.Responses.ChainNodes.Body.jsonPayload.dataPayload,
+                        timestamp: Swift.Int64
+                    ) {
+                        self.data = data
+                        self.timestamp = timestamp
                     }
                     public enum CodingKeys: String, CodingKey {
-                        case nodes
+                        case data
+                        case timestamp
                     }
                 }
                 /// - Remark: Generated from `#/components/responses/ChainNodes/content/application\/json`.
@@ -1272,6 +4155,78 @@ public enum Components {
             public init(
                 headers: Components.Responses.ChainNodes.Headers = .init(),
                 body: Components.Responses.ChainNodes.Body
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        public struct AssetCatalog: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/AssetCatalog/headers`.
+            public struct Headers: Sendable, Hashable {
+                /// Entity tag for cache validation
+                ///
+                /// - Remark: Generated from `#/components/responses/AssetCatalog/headers/ETag`.
+                public var ETag: Swift.String?
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - ETag: Entity tag for cache validation
+                public init(ETag: Swift.String? = nil) {
+                    self.ETag = ETag
+                }
+            }
+            /// Received HTTP response headers
+            public var headers: Components.Responses.AssetCatalog.Headers
+            /// - Remark: Generated from `#/components/responses/AssetCatalog/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json/assets`.
+                    public var assets: [Components.Schemas.AssetInfo]
+                    /// - Remark: Generated from `#/components/responses/AssetCatalog/content/json/next_cursor`.
+                    public var next_cursor: Swift.String
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - assets:
+                    ///   - next_cursor:
+                    public init(
+                        assets: [Components.Schemas.AssetInfo],
+                        next_cursor: Swift.String
+                    ) {
+                        self.assets = assets
+                        self.next_cursor = next_cursor
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case assets
+                        case next_cursor
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/AssetCatalog/content/application\/json`.
+                case json(Components.Responses.AssetCatalog.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.AssetCatalog.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.AssetCatalog.Body
+            /// Creates a new `AssetCatalog`.
+            ///
+            /// - Parameters:
+            ///   - headers: Received HTTP response headers
+            ///   - body: Received HTTP response body
+            public init(
+                headers: Components.Responses.AssetCatalog.Headers = .init(),
+                body: Components.Responses.AssetCatalog.Body
             ) {
                 self.headers = headers
                 self.body = body
@@ -1328,6 +4283,34 @@ public enum Components {
                 self.body = body
             }
         }
+        public struct AssetDetails: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/AssetDetails/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/AssetDetails/content/application\/json`.
+                case json(Components.Schemas.SummaryAsset)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.SummaryAsset {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.AssetDetails.Body
+            /// Creates a new `AssetDetails`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.AssetDetails.Body) {
+                self.body = body
+            }
+        }
         public struct WalletAssets: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/WalletAssets/content`.
             @frozen public enum Body: Sendable, Hashable {
@@ -1337,11 +4320,11 @@ public enum Components {
                     public var assets: [Components.Schemas.Asset]
                     /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
                     ///
-                    /// - Remark: Generated from `#/components/responses/WalletAssets/content/json/fiatPrice`.
-                    public struct fiatPricePayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/WalletAssets/content/json/fiat_price`.
+                    public struct fiat_pricePayload: Codable, Hashable, Sendable {
                         /// A container of undocumented properties.
                         public var additionalProperties: [String: Swift.String]
-                        /// Creates a new `fiatPricePayload`.
+                        /// Creates a new `fiat_pricePayload`.
                         ///
                         /// - Parameters:
                         ///   - additionalProperties: A container of undocumented properties.
@@ -1357,28 +4340,28 @@ public enum Components {
                     }
                     /// Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
                     ///
-                    /// - Remark: Generated from `#/components/responses/WalletAssets/content/json/fiatPrice`.
-                    public var fiatPrice: Components.Responses.WalletAssets.Body.jsonPayload.fiatPricePayload
+                    /// - Remark: Generated from `#/components/responses/WalletAssets/content/json/fiat_price`.
+                    public var fiat_price: Components.Responses.WalletAssets.Body.jsonPayload.fiat_pricePayload
                     /// - Remark: Generated from `#/components/responses/WalletAssets/content/json/next_cursor`.
                     public var next_cursor: Swift.String
                     /// Creates a new `jsonPayload`.
                     ///
                     /// - Parameters:
                     ///   - assets:
-                    ///   - fiatPrice: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
+                    ///   - fiat_price: Current price per currency, e.g. {"USD": "0.999", "TON": "0.789"}
                     ///   - next_cursor:
                     public init(
                         assets: [Components.Schemas.Asset],
-                        fiatPrice: Components.Responses.WalletAssets.Body.jsonPayload.fiatPricePayload,
+                        fiat_price: Components.Responses.WalletAssets.Body.jsonPayload.fiat_pricePayload,
                         next_cursor: Swift.String
                     ) {
                         self.assets = assets
-                        self.fiatPrice = fiatPrice
+                        self.fiat_price = fiat_price
                         self.next_cursor = next_cursor
                     }
                     public enum CodingKeys: String, CodingKey {
                         case assets
-                        case fiatPrice
+                        case fiat_price
                         case next_cursor
                     }
                 }
@@ -1404,6 +4387,34 @@ public enum Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.WalletAssets.Body) {
+                self.body = body
+            }
+        }
+        public struct WalletAsset: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/WalletAsset/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/WalletAsset/content/application\/json`.
+                case json(Components.Schemas.Asset)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.Asset {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.WalletAsset.Body
+            /// Creates a new `WalletAsset`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.WalletAsset.Body) {
                 self.body = body
             }
         }
@@ -1478,6 +4489,34 @@ public enum Components {
                 self.body = body
             }
         }
+        public struct DnsResolved: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/DnsResolved/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/DnsResolved/content/application\/json`.
+                case json(Components.Schemas.DnsResolution)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.DnsResolution {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.DnsResolved.Body
+            /// Creates a new `DnsResolved`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.DnsResolved.Body) {
+                self.body = body
+            }
+        }
         public struct Activities: Sendable, Hashable {
             /// - Remark: Generated from `#/components/responses/Activities/content`.
             @frozen public enum Body: Sendable, Hashable {
@@ -1487,23 +4526,23 @@ public enum Components {
                     public var activities: [Components.Schemas.Activity]
                     /// Cursor for next page, empty if no more data
                     ///
-                    /// - Remark: Generated from `#/components/responses/Activities/content/json/cursor`.
-                    public var cursor: Swift.String?
+                    /// - Remark: Generated from `#/components/responses/Activities/content/json/next_cursor`.
+                    public var next_cursor: Swift.String?
                     /// Creates a new `jsonPayload`.
                     ///
                     /// - Parameters:
                     ///   - activities:
-                    ///   - cursor: Cursor for next page, empty if no more data
+                    ///   - next_cursor: Cursor for next page, empty if no more data
                     public init(
                         activities: [Components.Schemas.Activity],
-                        cursor: Swift.String? = nil
+                        next_cursor: Swift.String? = nil
                     ) {
                         self.activities = activities
-                        self.cursor = cursor
+                        self.next_cursor = next_cursor
                     }
                     public enum CodingKeys: String, CodingKey {
                         case activities
-                        case cursor
+                        case next_cursor
                     }
                 }
                 /// - Remark: Generated from `#/components/responses/Activities/content/application\/json`.
@@ -1528,6 +4567,365 @@ public enum Components {
             /// - Parameters:
             ///   - body: Received HTTP response body
             public init(body: Components.Responses.Activities.Body) {
+                self.body = body
+            }
+        }
+        public struct Raffles: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Raffles/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Raffles/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/Raffles/content/json/raffles`.
+                    public var raffles: [Components.Schemas.Raffle]
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - raffles:
+                    public init(raffles: [Components.Schemas.Raffle]) {
+                        self.raffles = raffles
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case raffles
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/Raffles/content/application\/json`.
+                case json(Components.Responses.Raffles.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.Raffles.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Raffles.Body
+            /// Creates a new `Raffles`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Raffles.Body) {
+                self.body = body
+            }
+        }
+        public struct RaffleWinnersPicked: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content/json/raffle_id`.
+                    public var raffle_id: Swift.String
+                    /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content/json/status`.
+                    @frozen public enum statusPayload: String, Codable, Hashable, Sendable {
+                        case picked = "picked"
+                    }
+                    /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content/json/status`.
+                    public var status: Components.Responses.RaffleWinnersPicked.Body.jsonPayload.statusPayload
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - raffle_id:
+                    ///   - status:
+                    public init(
+                        raffle_id: Swift.String,
+                        status: Components.Responses.RaffleWinnersPicked.Body.jsonPayload.statusPayload
+                    ) {
+                        self.raffle_id = raffle_id
+                        self.status = status
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case raffle_id
+                        case status
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/RaffleWinnersPicked/content/application\/json`.
+                case json(Components.Responses.RaffleWinnersPicked.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.RaffleWinnersPicked.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.RaffleWinnersPicked.Body
+            /// Creates a new `RaffleWinnersPicked`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.RaffleWinnersPicked.Body) {
+                self.body = body
+            }
+        }
+        public struct AuthChallenge: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/AuthChallenge/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/AuthChallenge/content/application\/json`.
+                case json(Components.Schemas.AuthChallenge)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.AuthChallenge {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.AuthChallenge.Body
+            /// Creates a new `AuthChallenge`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.AuthChallenge.Body) {
+                self.body = body
+            }
+        }
+        public struct DeviceTokens: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/DeviceTokens/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/DeviceTokens/content/application\/json`.
+                case json(Components.Schemas.DeviceTokens)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.DeviceTokens {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.DeviceTokens.Body
+            /// Creates a new `DeviceTokens`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.DeviceTokens.Body) {
+                self.body = body
+            }
+        }
+        public struct WalletRegisterResults: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/WalletRegisterResults/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/WalletRegisterResults/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/WalletRegisterResults/content/json/results`.
+                    public var results: [Components.Schemas.WalletRegisterResult]
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - results:
+                    public init(results: [Components.Schemas.WalletRegisterResult]) {
+                        self.results = results
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case results
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/WalletRegisterResults/content/application\/json`.
+                case json(Components.Responses.WalletRegisterResults.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.WalletRegisterResults.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.WalletRegisterResults.Body
+            /// Creates a new `WalletRegisterResults`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.WalletRegisterResults.Body) {
+                self.body = body
+            }
+        }
+        public struct WalletUnregisterResult: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/WalletUnregisterResult/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/WalletUnregisterResult/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// - Remark: Generated from `#/components/responses/WalletUnregisterResult/content/json/detached`.
+                    public var detached: [Swift.String]
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - detached:
+                    public init(detached: [Swift.String]) {
+                        self.detached = detached
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case detached
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/WalletUnregisterResult/content/application\/json`.
+                case json(Components.Responses.WalletUnregisterResult.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.WalletUnregisterResult.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.WalletUnregisterResult.Body
+            /// Creates a new `WalletUnregisterResult`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.WalletUnregisterResult.Body) {
+                self.body = body
+            }
+        }
+        public struct DeviceBindingsResult: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content/json`.
+                public struct jsonPayload: Codable, Hashable, Sendable {
+                    /// Sent by the client and bound to this device. Echoed in the form the client sent: a wallet stored under the id of an earlier derivation is matched through it, not renamed.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content/json/known`.
+                    public var known: [Swift.String]
+                    /// Sent by the client but not bound here. Does not distinguish "absent from the registry" from "exists but not bound" — the action is the same: /api/v2/wallets/register.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content/json/unknown`.
+                    public var unknown: [Swift.String]
+                    /// Bound to this device but not sent by the client, in the id the backend stores. A wallet the client did send under another derivation of its id is not listed here. The server never detaches these on its own — the client calls /api/v2/wallets/unregister explicitly.
+                    ///
+                    /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content/json/extra`.
+                    public var extra: [Swift.String]
+                    /// Creates a new `jsonPayload`.
+                    ///
+                    /// - Parameters:
+                    ///   - known: Sent by the client and bound to this device. Echoed in the form the client sent: a wallet stored under the id of an earlier derivation is matched through it, not renamed.
+                    ///   - unknown: Sent by the client but not bound here. Does not distinguish "absent from the registry" from "exists but not bound" — the action is the same: /api/v2/wallets/register.
+                    ///   - extra: Bound to this device but not sent by the client, in the id the backend stores. A wallet the client did send under another derivation of its id is not listed here. The server never detaches these on its own — the client calls /api/v2/wallets/unregister explicitly.
+                    public init(
+                        known: [Swift.String],
+                        unknown: [Swift.String],
+                        extra: [Swift.String]
+                    ) {
+                        self.known = known
+                        self.unknown = unknown
+                        self.extra = extra
+                    }
+                    public enum CodingKeys: String, CodingKey {
+                        case known
+                        case unknown
+                        case extra
+                    }
+                }
+                /// - Remark: Generated from `#/components/responses/DeviceBindingsResult/content/application\/json`.
+                case json(Components.Responses.DeviceBindingsResult.Body.jsonPayload)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Responses.DeviceBindingsResult.Body.jsonPayload {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.DeviceBindingsResult.Body
+            /// Creates a new `DeviceBindingsResult`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.DeviceBindingsResult.Body) {
+                self.body = body
+            }
+        }
+        public struct IntrospectResult: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/IntrospectResult/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/IntrospectResult/content/application\/json`.
+                case json(Components.Schemas.IntrospectResult)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.IntrospectResult {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.IntrospectResult.Body
+            /// Creates a new `IntrospectResult`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.IntrospectResult.Body) {
+                self.body = body
+            }
+        }
+        public struct Jwks: Sendable, Hashable {
+            /// - Remark: Generated from `#/components/responses/Jwks/content`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/components/responses/Jwks/content/application\/json`.
+                case json(Components.Schemas.Jwks)
+                /// The associated value of the enum case if `self` is `.json`.
+                ///
+                /// - Throws: An error if `self` is not `.json`.
+                /// - SeeAlso: `.json`.
+                public var json: Components.Schemas.Jwks {
+                    get throws {
+                        switch self {
+                        case let .json(body):
+                            return body
+                        }
+                    }
+                }
+            }
+            /// Received HTTP response body
+            public var body: Components.Responses.Jwks.Body
+            /// Creates a new `Jwks`.
+            ///
+            /// - Parameters:
+            ///   - body: Received HTTP response body
+            public init(body: Components.Responses.Jwks.Body) {
                 self.body = body
             }
         }
@@ -1671,6 +5069,116 @@ public enum Operations {
             }
         }
     }
+    /// Check the process is alive
+    ///
+    /// - Remark: HTTP `GET /api/v1/liveness`.
+    /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)`.
+    public enum liveness {
+        public static let id: Swift.String = "liveness"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/liveness/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.liveness.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.liveness.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.liveness.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.liveness.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/api/v1/liveness/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/api/v1/liveness/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.Ok)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.Ok {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.liveness.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.liveness.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Process is alive
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/liveness/get(liveness)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.liveness.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.liveness.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get manifest of supported chains
     ///
     /// - Remark: HTTP `GET /api/v1/nodes`.
@@ -1708,7 +5216,7 @@ public enum Operations {
             }
         }
         @frozen public enum Output: Sendable, Hashable {
-            /// List of supported chains
+            /// Supported-chains manifest plus per-chain node connection sets
             ///
             /// - Remark: Generated from `#/paths//api/v1/nodes/get(getNodes)/responses/200`.
             ///
@@ -1808,7 +5316,205 @@ public enum Operations {
             }
         }
     }
-    /// Get assets for an address on a chain
+    /// List the asset catalog
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)`.
+    public enum getAssets {
+        public static let id: Swift.String = "getAssets"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/assets/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Unix timestamp in seconds. Return only assets created strictly after this moment
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/GET/query/from_date`.
+                public var from_date: Components.Parameters.FromDateQuery?
+                /// Pagination limit
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/GET/query/limit`.
+                public var limit: Components.Parameters.CatalogLimitQuery?
+                /// Cursor for pagination
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/GET/query/cursor`.
+                public var cursor: Components.Parameters.CursorQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - from_date: Unix timestamp in seconds. Return only assets created strictly after this moment
+                ///   - limit: Pagination limit
+                ///   - cursor: Cursor for pagination
+                public init(
+                    from_date: Components.Parameters.FromDateQuery? = nil,
+                    limit: Components.Parameters.CatalogLimitQuery? = nil,
+                    cursor: Components.Parameters.CursorQuery? = nil
+                ) {
+                    self.from_date = from_date
+                    self.limit = limit
+                    self.cursor = cursor
+                }
+            }
+            public var query: Operations.getAssets.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/assets/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                /// ETag value from previous response
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/GET/header/If-None-Match`.
+                public var If_hyphen_None_hyphen_Match: Components.Parameters.IfNoneMatch?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssets.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - If_hyphen_None_hyphen_Match: ETag value from previous response
+                ///   - accept:
+                public init(
+                    If_hyphen_None_hyphen_Match: Components.Parameters.IfNoneMatch? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAssets.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.If_hyphen_None_hyphen_Match = If_hyphen_None_hyphen_Match
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getAssets.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - query:
+            ///   - headers:
+            public init(
+                query: Operations.getAssets.Input.Query = .init(),
+                headers: Operations.getAssets.Input.Headers = .init()
+            ) {
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Asset catalog entries
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.AssetCatalog)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.AssetCatalog {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Content not modified (ETag match)
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)/responses/304`.
+            ///
+            /// HTTP response code: `304 notModified`.
+            case notModified(Components.Responses.NotModified)
+            /// The associated value of the enum case if `self` is `.notModified`.
+            ///
+            /// - Throws: An error if `self` is not `.notModified`.
+            /// - SeeAlso: `.notModified`.
+            public var notModified: Components.Responses.NotModified {
+                get throws {
+                    switch self {
+                    case let .notModified(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notModified",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/get(getAssets)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Search the swappable asset catalog
+    ///
+    /// Only assets with the `swap` capability are returned. Lighter perps are exempt.
     ///
     /// - Remark: HTTP `GET /api/v1/assets/search`.
     /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)`.
@@ -1817,15 +5523,27 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query`.
             public struct Query: Sendable, Hashable {
-                /// Filter by chain
+                /// - Remark: Generated from `#/components/parameters/SearchChainQuery`.
+                @frozen public enum SearchChainQuery: String, Codable, Hashable, Sendable {
+                    case ton = "ton"
+                    case eth = "eth"
+                    case base = "base"
+                    case btc = "btc"
+                    case tron = "tron"
+                    case arb = "arb"
+                    case bsc = "bsc"
+                    case sol = "sol"
+                    case perps = "perps"
+                }
+                /// Filter by chain. `perps` selects Lighter perpetual markets (`lighter/...` assets) and nothing else.
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/chain`.
-                public var chain: Components.Parameters.ChainQuery?
+                public var chain: Components.Parameters.SearchChainQuery?
                 /// Base currencies
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/currencies`.
                 public var currencies: Components.Parameters.CurrenciesQuery
-                /// Name or symbol of token
+                /// Prefix of the token name or symbol, case-insensitive
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/search`.
                 public var search: Components.Parameters.SearchQuery?
@@ -1833,8 +5551,10 @@ public enum Operations {
                 @frozen public enum SortQuery: String, Codable, Hashable, Sendable {
                     case market_cap = "market_cap"
                     case volume = "volume"
+                    case price_diff_asc = "price_diff_asc"
+                    case price_diff_desc = "price_diff_desc"
                 }
-                /// Sort tokens by
+                /// Sort tokens by. price_diff_* sort by the 24h price change in USD (ascending/descending).
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/sort`.
                 public var sort: Components.Parameters.SortQuery
@@ -1846,22 +5566,34 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/cursor`.
                 public var cursor: Components.Parameters.CursorQuery?
+                /// Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/verified_only`.
+                public var verified_only: Components.Parameters.VerifiedOnlyQuery?
+                /// Mix Lighter perpetual markets into the unfiltered catalog. Ignored when `chain` is set.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/query/show_perps`.
+                public var show_perps: Components.Parameters.ShowPerpsQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
-                ///   - chain: Filter by chain
+                ///   - chain: Filter by chain. `perps` selects Lighter perpetual markets (`lighter/...` assets) and nothing else.
                 ///   - currencies: Base currencies
-                ///   - search: Name or symbol of token
-                ///   - sort: Sort tokens by
+                ///   - search: Prefix of the token name or symbol, case-insensitive
+                ///   - sort: Sort tokens by. price_diff_* sort by the 24h price change in USD (ascending/descending).
                 ///   - limit: Pagination limit
                 ///   - cursor: Cursor for pagination
+                ///   - verified_only: Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
+                ///   - show_perps: Mix Lighter perpetual markets into the unfiltered catalog. Ignored when `chain` is set.
                 public init(
-                    chain: Components.Parameters.ChainQuery? = nil,
+                    chain: Components.Parameters.SearchChainQuery? = nil,
                     currencies: Components.Parameters.CurrenciesQuery,
                     search: Components.Parameters.SearchQuery? = nil,
                     sort: Components.Parameters.SortQuery,
                     limit: Components.Parameters.LimitQuery? = nil,
-                    cursor: Components.Parameters.CursorQuery? = nil
+                    cursor: Components.Parameters.CursorQuery? = nil,
+                    verified_only: Components.Parameters.VerifiedOnlyQuery? = nil,
+                    show_perps: Components.Parameters.ShowPerpsQuery? = nil
                 ) {
                     self.chain = chain
                     self.currencies = currencies
@@ -1869,17 +5601,28 @@ public enum Operations {
                     self.sort = sort
                     self.limit = limit
                     self.cursor = cursor
+                    self.verified_only = verified_only
+                    self.show_perps = show_perps
                 }
             }
             public var query: Operations.searchAssets.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/header`.
             public struct Headers: Sendable, Hashable {
+                /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/search/GET/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.searchAssets.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
+                ///   - F: Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.searchAssets.AcceptableContentType>] = .defaultValues()) {
+                public init(
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.searchAssets.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.F = F
                     self.accept = accept
                 }
             }
@@ -1947,6 +5690,197 @@ public enum Operations {
             /// Internal server error
             ///
             /// - Remark: Generated from `#/paths//api/v1/assets/search/get(searchAssets)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get a single catalog asset by asset_id
+    ///
+    /// Catalog metadata for one asset, independent of any wallet: use it for a token screen opened from an activity or a deep link, where the client holds an asset_id and nothing else.
+    ///
+    /// - Remark: HTTP `GET /api/v1/assets/{asset_id}`.
+    /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)`.
+    public enum getAsset {
+        public static let id: Swift.String = "getAsset"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/assets/{asset_id}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Asset identifier in chain/network/type[/address] format. The id itself contains slashes, so it has to be percent-encoded into a single path segment: `ton/mainnet/coin` is requested as `ton%2Fmainnet%2Fcoin`, and `eth/mainnet/erc20/0xdAC1...` as `eth%2Fmainnet%2Ferc20%2F0xdAC1...`.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/{asset_id}/GET/path/asset_id`.
+                public var asset_id: Components.Parameters.AssetIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - asset_id: Asset identifier in chain/network/type[/address] format. The id itself contains slashes, so it has to be percent-encoded into a single path segment: `ton/mainnet/coin` is requested as `ton%2Fmainnet%2Fcoin`, and `eth/mainnet/erc20/0xdAC1...` as `eth%2Fmainnet%2Ferc20%2F0xdAC1...`.
+                public init(asset_id: Components.Parameters.AssetIdPath) {
+                    self.asset_id = asset_id
+                }
+            }
+            public var path: Operations.getAsset.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/assets/{asset_id}/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Base currencies
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/assets/{asset_id}/GET/query/currencies`.
+                public var currencies: Components.Parameters.CurrenciesOptQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - currencies: Base currencies
+                public init(currencies: Components.Parameters.CurrenciesOptQuery? = nil) {
+                    self.currencies = currencies
+                }
+            }
+            public var query: Operations.getAsset.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/assets/{asset_id}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAsset.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getAsset.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getAsset.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getAsset.Input.Path,
+                query: Operations.getAsset.Input.Query = .init(),
+                headers: Operations.getAsset.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Single catalog asset
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.AssetDetails)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.AssetDetails {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/assets/{asset_id}/get(getAsset)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -2280,51 +6214,113 @@ public enum Operations {
             }
         }
     }
-    /// Register a wallet with its accounts
+    /// Proxy a whitelisted GET-style java-tron HTTP method to the TRON RPC node
     ///
-    /// - Remark: HTTP `POST /api/v1/wallets`.
-    /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)`.
-    public enum registerWallet {
-        public static let id: Swift.String = "registerWallet"
+    /// GET counterpart of callTronRpc for the java-tron methods the mobile client calls without a JSON body: listwitnesses and the no-arg reads getnowblock and getchainparameters, which java-tron serves over GET as well as POST.
+    ///
+    /// - Remark: HTTP `GET /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)`.
+    public enum getTronRpc {
+        public static let id: Swift.String = "getTronRpc"
         public struct Input: Sendable, Hashable {
-            /// - Remark: Generated from `#/paths/api/v1/wallets/POST/header`.
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// java-tron HTTP method name (case-sensitive)
+                ///
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/path/method`.
+                public var method: Components.Schemas.TronRpcGetMethod
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - method: java-tron HTTP method name (case-sensitive)
+                public init(method: Components.Schemas.TronRpcGetMethod) {
+                    self.method = method
+                }
+            }
+            public var path: Operations.getTronRpc.Input.Path
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Return addresses in base58 instead of hex
+                ///
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/query/visible`.
+                public var visible: Swift.Bool?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - visible: Return addresses in base58 instead of hex
+                public init(visible: Swift.Bool? = nil) {
+                    self.visible = visible
+                }
+            }
+            public var query: Operations.getTronRpc.Input.Query
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/header`.
             public struct Headers: Sendable, Hashable {
-                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerWallet.AcceptableContentType>]
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTronRpc.AcceptableContentType>]
                 /// Creates a new `Headers`.
                 ///
                 /// - Parameters:
                 ///   - accept:
-                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerWallet.AcceptableContentType>] = .defaultValues()) {
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getTronRpc.AcceptableContentType>] = .defaultValues()) {
                     self.accept = accept
                 }
             }
-            public var headers: Operations.registerWallet.Input.Headers
-            public var body: Components.RequestBodies.RegisterWallet
+            public var headers: Operations.getTronRpc.Input.Headers
             /// Creates a new `Input`.
             ///
             /// - Parameters:
+            ///   - path:
+            ///   - query:
             ///   - headers:
-            ///   - body:
             public init(
-                headers: Operations.registerWallet.Input.Headers = .init(),
-                body: Components.RequestBodies.RegisterWallet
+                path: Operations.getTronRpc.Input.Path,
+                query: Operations.getTronRpc.Input.Query = .init(),
+                headers: Operations.getTronRpc.Input.Headers = .init()
             ) {
+                self.path = path
+                self.query = query
                 self.headers = headers
-                self.body = body
             }
         }
         @frozen public enum Output: Sendable, Hashable {
-            /// Wallet details
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/GET/responses/200/content/application\/json`.
+                    case json(Components.Schemas.TronRpcResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.TronRpcResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.getTronRpc.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.getTronRpc.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Upstream node response, passed through verbatim
             ///
-            /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)/responses/200`.
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/200`.
             ///
             /// HTTP response code: `200 ok`.
-            case ok(Components.Responses.Wallets)
+            case ok(Operations.getTronRpc.Output.Ok)
             /// The associated value of the enum case if `self` is `.ok`.
             ///
             /// - Throws: An error if `self` is not `.ok`.
             /// - SeeAlso: `.ok`.
-            public var ok: Components.Responses.Wallets {
+            public var ok: Operations.getTronRpc.Output.Ok {
                 get throws {
                     switch self {
                     case let .ok(response):
@@ -2339,7 +6335,7 @@ public enum Operations {
             }
             /// Invalid request
             ///
-            /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)/responses/400`.
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/400`.
             ///
             /// HTTP response code: `400 badRequest`.
             case badRequest(Components.Responses.BadRequest)
@@ -2360,9 +6356,523 @@ public enum Operations {
                     }
                 }
             }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Internal server error
             ///
-            /// - Remark: Generated from `#/paths//api/v1/wallets/post(registerWallet)/responses/500`.
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Downstream service unreachable
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/get(getTronRpc)/responses/502`.
+            ///
+            /// HTTP response code: `502 badGateway`.
+            case badGateway(Components.Responses.BadGateway)
+            /// The associated value of the enum case if `self` is `.badGateway`.
+            ///
+            /// - Throws: An error if `self` is not `.badGateway`.
+            /// - SeeAlso: `.badGateway`.
+            public var badGateway: Components.Responses.BadGateway {
+                get throws {
+                    switch self {
+                    case let .badGateway(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badGateway",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Proxy a whitelisted java-tron HTTP method to the TRON RPC node
+    ///
+    /// Drop-in analog of the TronGrid FullNode HTTP API for a fixed set of methods: the same request body, the node's response verbatim.
+    ///
+    /// - Remark: HTTP `POST /tron/rpc/wallet/{method}`.
+    /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)`.
+    public enum callTronRpc {
+        public static let id: Swift.String = "callTronRpc"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// java-tron HTTP method name (case-sensitive)
+                ///
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/path/method`.
+                public var method: Components.Schemas.TronRpcMethod
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - method: java-tron HTTP method name (case-sensitive)
+                public init(method: Components.Schemas.TronRpcMethod) {
+                    self.method = method
+                }
+            }
+            public var path: Operations.callTronRpc.Input.Path
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.callTronRpc.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.callTronRpc.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.callTronRpc.Input.Headers
+            /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/requestBody`.
+            @frozen public enum Body: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/requestBody/content/application\/json`.
+                case json(Components.Schemas.TronRpcCall)
+            }
+            public var body: Operations.callTronRpc.Input.Body?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.callTronRpc.Input.Path,
+                headers: Operations.callTronRpc.Input.Headers = .init(),
+                body: Operations.callTronRpc.Input.Body? = nil
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Ok: Sendable, Hashable {
+                /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/responses/200/content`.
+                @frozen public enum Body: Sendable, Hashable {
+                    /// - Remark: Generated from `#/paths/tron/rpc/wallet/{method}/POST/responses/200/content/application\/json`.
+                    case json(Components.Schemas.TronRpcResult)
+                    /// The associated value of the enum case if `self` is `.json`.
+                    ///
+                    /// - Throws: An error if `self` is not `.json`.
+                    /// - SeeAlso: `.json`.
+                    public var json: Components.Schemas.TronRpcResult {
+                        get throws {
+                            switch self {
+                            case let .json(body):
+                                return body
+                            }
+                        }
+                    }
+                }
+                /// Received HTTP response body
+                public var body: Operations.callTronRpc.Output.Ok.Body
+                /// Creates a new `Ok`.
+                ///
+                /// - Parameters:
+                ///   - body: Received HTTP response body
+                public init(body: Operations.callTronRpc.Output.Ok.Body) {
+                    self.body = body
+                }
+            }
+            /// Upstream node response, passed through verbatim
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Operations.callTronRpc.Output.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Operations.callTronRpc.Output.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Downstream service unreachable
+            ///
+            /// - Remark: Generated from `#/paths//tron/rpc/wallet/{method}/post(callTronRpc)/responses/502`.
+            ///
+            /// HTTP response code: `502 badGateway`.
+            case badGateway(Components.Responses.BadGateway)
+            /// The associated value of the enum case if `self` is `.badGateway`.
+            ///
+            /// - Throws: An error if `self` is not `.badGateway`.
+            /// - SeeAlso: `.badGateway`.
+            public var badGateway: Components.Responses.BadGateway {
+                get throws {
+                    switch self {
+                    case let .badGateway(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badGateway",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Resolve an account to an on-chain address
+    ///
+    /// - Remark: HTTP `GET /api/v1/account/{account}`.
+    /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)`.
+    public enum resolveAccountAddress {
+        public static let id: Swift.String = "resolveAccountAddress"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/account/{account}/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// DNS name to resolve or address
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/account/{account}/GET/path/account`.
+                public var account: Swift.String
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - account: DNS name to resolve or address
+                public init(account: Swift.String) {
+                    self.account = account
+                }
+            }
+            public var path: Operations.resolveAccountAddress.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/account/{account}/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Blockchain to resolve the name on
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/account/{account}/GET/query/chain`.
+                public var chain: Components.Schemas.Chain
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - chain: Blockchain to resolve the name on
+                public init(chain: Components.Schemas.Chain) {
+                    self.chain = chain
+                }
+            }
+            public var query: Operations.resolveAccountAddress.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/account/{account}/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.resolveAccountAddress.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.resolveAccountAddress.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.resolveAccountAddress.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.resolveAccountAddress.Input.Path,
+                query: Operations.resolveAccountAddress.Input.Query,
+                headers: Operations.resolveAccountAddress.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Resolved DNS name
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.DnsResolved)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.DnsResolved {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/account/{account}/get(resolveAccountAddress)/responses/500`.
             ///
             /// HTTP response code: `500 internalServerError`.
             case internalServerError(Components.Responses.InternalError)
@@ -2423,19 +6933,34 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/GET/path`.
             public struct Path: Sendable, Hashable {
-                /// Wallet identifier (client-generated)
+                /// Stable wallet identifier
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/GET/path/wallet_id`.
                 public var wallet_id: Components.Parameters.WalletIdPath
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - wallet_id: Wallet identifier (client-generated)
+                ///   - wallet_id: Stable wallet identifier
                 public init(wallet_id: Components.Parameters.WalletIdPath) {
                     self.wallet_id = wallet_id
                 }
             }
             public var path: Operations.getWallet.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/GET/query/network`.
+                public var network: Components.Parameters.NetworkQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                public init(network: Components.Parameters.NetworkQuery? = nil) {
+                    self.network = network
+                }
+            }
+            public var query: Operations.getWallet.Input.Query
             /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/GET/header`.
             public struct Headers: Sendable, Hashable {
                 public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWallet.AcceptableContentType>]
@@ -2452,12 +6977,15 @@ public enum Operations {
             ///
             /// - Parameters:
             ///   - path:
+            ///   - query:
             ///   - headers:
             public init(
                 path: Operations.getWallet.Input.Path,
+                query: Operations.getWallet.Input.Query = .init(),
                 headers: Operations.getWallet.Input.Headers = .init()
             ) {
                 self.path = path
+                self.query = query
                 self.headers = headers
             }
         }
@@ -2503,6 +7031,29 @@ public enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/get(getWallet)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
                             response: self
                         )
                     }
@@ -2585,6 +7136,765 @@ public enum Operations {
             }
         }
     }
+    /// Poll per-chain freshness and backfill progress for a wallet
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/sync_status`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)`.
+    public enum getWalletSyncStatus {
+        public static let id: Swift.String = "getWalletSyncStatus"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/sync_status/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/sync_status/GET/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.getWalletSyncStatus.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/sync_status/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/sync_status/GET/query/network`.
+                public var network: Components.Parameters.NetworkQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                public init(network: Components.Parameters.NetworkQuery? = nil) {
+                    self.network = network
+                }
+            }
+            public var query: Operations.getWalletSyncStatus.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/sync_status/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletSyncStatus.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletSyncStatus.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getWalletSyncStatus.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getWalletSyncStatus.Input.Path,
+                query: Operations.getWalletSyncStatus.Input.Query = .init(),
+                headers: Operations.getWalletSyncStatus.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Wallet data freshness snapshot used by the client to track loader progress and backfill completion.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.WalletSyncStatus)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.WalletSyncStatus {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/sync_status/get(getWalletSyncStatus)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Mint a realtime connection token for the calling device
+    ///
+    /// - Remark: HTTP `GET /api/v1/realtime/connection-token`.
+    /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)`.
+    public enum getRealtimeConnectionToken {
+        public static let id: Swift.String = "getRealtimeConnectionToken"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/realtime/connection-token/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getRealtimeConnectionToken.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getRealtimeConnectionToken.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getRealtimeConnectionToken.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getRealtimeConnectionToken.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Short-lived token for the realtime transport.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.RealtimeToken)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.RealtimeToken {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/realtime/connection-token/get(getRealtimeConnectionToken)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Mint a realtime subscription token for one wallet's channel
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/realtime-token`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)`.
+    public enum getWalletRealtimeToken {
+        public static let id: Swift.String = "getWalletRealtimeToken"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/realtime-token/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/realtime-token/GET/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.getWalletRealtimeToken.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/realtime-token/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletRealtimeToken.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletRealtimeToken.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getWalletRealtimeToken.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.getWalletRealtimeToken.Input.Path,
+                headers: Operations.getWalletRealtimeToken.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Short-lived token for the realtime transport.
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.RealtimeToken)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.RealtimeToken {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/realtime-token/get(getWalletRealtimeToken)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Wipe and refetch a wallet's activity history
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/reindex`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)`.
+    public enum reindexWallet {
+        public static let id: Swift.String = "reindexWallet"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/reindex/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/reindex/POST/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.reindexWallet.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/reindex/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.reindexWallet.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.reindexWallet.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.reindexWallet.Input.Headers
+            public var body: Components.RequestBodies.WalletReindex?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.reindexWallet.Input.Path,
+                headers: Operations.reindexWallet.Input.Headers = .init(),
+                body: Components.RequestBodies.WalletReindex? = nil
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct Accepted: Sendable, Hashable {
+                /// Creates a new `Accepted`.
+                public init() {}
+            }
+            /// Reindex accepted
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/202`.
+            ///
+            /// HTTP response code: `202 accepted`.
+            case accepted(Operations.reindexWallet.Output.Accepted)
+            /// The associated value of the enum case if `self` is `.accepted`.
+            ///
+            /// - Throws: An error if `self` is not `.accepted`.
+            /// - SeeAlso: `.accepted`.
+            public var accepted: Operations.reindexWallet.Output.Accepted {
+                get throws {
+                    switch self {
+                    case let .accepted(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "accepted",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/reindex/post(reindexWallet)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get assets for all accounts of a registered wallet
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/assets`.
@@ -2594,14 +7904,14 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/path`.
             public struct Path: Sendable, Hashable {
-                /// Wallet identifier (client-generated)
+                /// Stable wallet identifier
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/path/wallet_id`.
                 public var wallet_id: Components.Parameters.WalletIdPath
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - wallet_id: Wallet identifier (client-generated)
+                ///   - wallet_id: Stable wallet identifier
                 public init(wallet_id: Components.Parameters.WalletIdPath) {
                     self.wallet_id = wallet_id
                 }
@@ -2613,11 +7923,28 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/asset_ids`.
                 public var asset_ids: Components.Parameters.AssetIdsQuery?
+                /// - Remark: Generated from `#/components/parameters/CapabilitiesQuery`.
+                @frozen public enum CapabilitiesQueryPayload: String, Codable, Hashable, Sendable {
+                    case swap = "swap"
+                    case onramp = "onramp"
+                    case offramp = "offramp"
+                    case p2p = "p2p"
+                }
+                /// - Remark: Generated from `#/components/parameters/CapabilitiesQuery`.
+                public typealias CapabilitiesQuery = [Components.Parameters.CapabilitiesQueryPayload]
+                /// Filter by asset capabilities. An asset is returned only when it carries **every** capability listed here, so passing more values narrows the list.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/capabilities`.
+                public var capabilities: Components.Parameters.CapabilitiesQuery?
                 /// Filter by chain
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/chain`.
                 public var chain: Components.Parameters.ChainQuery?
-                /// Name or symbol of token
+                /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/network`.
+                public var network: Components.Parameters.NetworkQuery?
+                /// Prefix of the token name or symbol, case-insensitive
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/search`.
                 public var search: Components.Parameters.SearchQuery?
@@ -2637,6 +7964,14 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/currencies`.
                 public var currencies: Components.Parameters.CurrenciesQuery
+                /// Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/verified_only`.
+                public var verified_only: Components.Parameters.VerifiedOnlyQuery?
+                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/hide_dust`.
+                public var hide_dust: Components.Parameters.HideDustQuery?
                 /// Pagination limit
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/GET/query/limit`.
@@ -2649,32 +7984,44 @@ public enum Operations {
                 ///
                 /// - Parameters:
                 ///   - asset_ids: Filter by asset IDs
+                ///   - capabilities: Filter by asset capabilities. An asset is returned only when it carries **every** capability listed here, so passing more values narrows the list.
                 ///   - chain: Filter by chain
-                ///   - search: Name or symbol of token
+                ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///   - search: Prefix of the token name or symbol, case-insensitive
                 ///   - available_only: Shows assets with 0 balances or not
                 ///   - show_hidden: Flag to show hidden tokens
                 ///   - show_all: Shows all possible assets
                 ///   - currencies: Base currencies
+                ///   - verified_only: Filter results to verified assets only. On the asset search that means main-list core coins + the Trust / ton-blockchain jetton list; on wallet assets it keeps assets whose `verification` is `whitelist` or `trusted`.
+                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
                 ///   - limit: Pagination limit
                 ///   - cursor: Cursor for pagination
                 public init(
                     asset_ids: Components.Parameters.AssetIdsQuery? = nil,
+                    capabilities: Components.Parameters.CapabilitiesQuery? = nil,
                     chain: Components.Parameters.ChainQuery? = nil,
+                    network: Components.Parameters.NetworkQuery? = nil,
                     search: Components.Parameters.SearchQuery? = nil,
                     available_only: Components.Parameters.AvailableOnlyQuery? = nil,
                     show_hidden: Components.Parameters.ShowHiddenQuery? = nil,
                     show_all: Components.Parameters.ShowAllQuery? = nil,
                     currencies: Components.Parameters.CurrenciesQuery,
+                    verified_only: Components.Parameters.VerifiedOnlyQuery? = nil,
+                    hide_dust: Components.Parameters.HideDustQuery? = nil,
                     limit: Components.Parameters.LimitQuery? = nil,
                     cursor: Components.Parameters.CursorQuery? = nil
                 ) {
                     self.asset_ids = asset_ids
+                    self.capabilities = capabilities
                     self.chain = chain
+                    self.network = network
                     self.search = search
                     self.available_only = available_only
                     self.show_hidden = show_hidden
                     self.show_all = show_all
                     self.currencies = currencies
+                    self.verified_only = verified_only
+                    self.hide_dust = hide_dust
                     self.limit = limit
                     self.cursor = cursor
                 }
@@ -2750,6 +8097,29 @@ public enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/get(getWalletAssets)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
                             response: self
                         )
                     }
@@ -2834,6 +8204,8 @@ public enum Operations {
     }
     /// Set wallet's assets hidden/shown settings
     ///
+    /// Writes the caller's own show/hide choices. Auth is **optional for now and becomes mandatory at release**: clients have not shipped the token on this call yet.
+    ///
     /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/assets`.
     /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)`.
     public enum saveWalletAssetsFilters {
@@ -2841,14 +8213,14 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/POST/path`.
             public struct Path: Sendable, Hashable {
-                /// Wallet identifier (client-generated)
+                /// Stable wallet identifier
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/assets/POST/path/wallet_id`.
                 public var wallet_id: Components.Parameters.WalletIdPath
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - wallet_id: Wallet identifier (client-generated)
+                ///   - wallet_id: Stable wallet identifier
                 public init(wallet_id: Components.Parameters.WalletIdPath) {
                     self.wallet_id = wallet_id
                 }
@@ -2934,6 +8306,29 @@ public enum Operations {
                     }
                 }
             }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Resource not found
             ///
             /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/assets/post(saveWalletAssetsFilters)/responses/404`.
@@ -3011,6 +8406,234 @@ public enum Operations {
             }
         }
     }
+    /// Get a single asset of a registered wallet by asset_id
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/asset`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)`.
+    public enum getWalletAsset {
+        public static let id: Swift.String = "getWalletAsset"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.getWalletAsset.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Asset identifier in chain/network/type[/address] format
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/query/asset_id`.
+                public var asset_id: Components.Parameters.AssetIdQuery
+                /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/query/network`.
+                public var network: Components.Parameters.NetworkQuery?
+                /// Base currencies
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/query/currencies`.
+                public var currencies: Components.Parameters.CurrenciesQuery
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - asset_id: Asset identifier in chain/network/type[/address] format
+                ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///   - currencies: Base currencies
+                public init(
+                    asset_id: Components.Parameters.AssetIdQuery,
+                    network: Components.Parameters.NetworkQuery? = nil,
+                    currencies: Components.Parameters.CurrenciesQuery
+                ) {
+                    self.asset_id = asset_id
+                    self.network = network
+                    self.currencies = currencies
+                }
+            }
+            public var query: Operations.getWalletAsset.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/asset/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletAsset.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletAsset.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getWalletAsset.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getWalletAsset.Input.Path,
+                query: Operations.getWalletAsset.Input.Query,
+                headers: Operations.getWalletAsset.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Single asset of the wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.WalletAsset)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.WalletAsset {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/asset/get(getWalletAsset)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
     /// Get activity history for a registered wallet
     ///
     /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/activities`.
@@ -3020,14 +8643,14 @@ public enum Operations {
         public struct Input: Sendable, Hashable {
             /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/path`.
             public struct Path: Sendable, Hashable {
-                /// Wallet identifier (client-generated)
+                /// Stable wallet identifier
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/path/wallet_id`.
                 public var wallet_id: Components.Parameters.WalletIdPath
                 /// Creates a new `Path`.
                 ///
                 /// - Parameters:
-                ///   - wallet_id: Wallet identifier (client-generated)
+                ///   - wallet_id: Stable wallet identifier
                 public init(wallet_id: Components.Parameters.WalletIdPath) {
                     self.wallet_id = wallet_id
                 }
@@ -3047,27 +8670,62 @@ public enum Operations {
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/chain`.
                 public var chain: Components.Parameters.ChainQuery?
+                /// Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/network`.
+                public var network: Components.Parameters.NetworkQuery?
                 /// Filter by activity type
                 ///
                 /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/activity_type`.
                 public var activity_type: Components.Parameters.ActivityTypeQuery?
+                /// Filter activities by asset id (matched against the in or out token). Format chain/network/type[/address].
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/asset_id`.
+                public var asset_id: Components.Parameters.AssetIdOptQuery?
+                /// Filter activities by spam classification. When true, only spam activities are returned; when false, only non-spam. When omitted, no spam filter is applied and both are returned.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/is_spam`.
+                public var is_spam: Components.Parameters.IsSpamOptQuery?
+                /// Base currencies
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/currencies`.
+                public var currencies: Components.Parameters.CurrenciesOptQuery?
+                /// Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/activities/GET/query/hide_dust`.
+                public var hide_dust: Components.Parameters.HideDustQuery?
                 /// Creates a new `Query`.
                 ///
                 /// - Parameters:
                 ///   - limit: Pagination limit
                 ///   - cursor: Cursor for pagination
                 ///   - chain: Filter by chain
+                ///   - network: Network to read. A wallet is network-agnostic — the network lives on its accounts. Defaults to mainnet.
                 ///   - activity_type: Filter by activity type
+                ///   - asset_id: Filter activities by asset id (matched against the in or out token). Format chain/network/type[/address].
+                ///   - is_spam: Filter activities by spam classification. When true, only spam activities are returned; when false, only non-spam. When omitted, no spam filter is applied and both are returned.
+                ///   - currencies: Base currencies
+                ///   - hide_dust: Hide dust entries. When true entries worth 0.01 USD or less are dropped: on wallet assets that is the fiat value of the held balance, on activities the larger of the incoming and outgoing amount value.
                 public init(
                     limit: Components.Parameters.LimitQuery? = nil,
                     cursor: Components.Parameters.CursorQuery? = nil,
                     chain: Components.Parameters.ChainQuery? = nil,
-                    activity_type: Components.Parameters.ActivityTypeQuery? = nil
+                    network: Components.Parameters.NetworkQuery? = nil,
+                    activity_type: Components.Parameters.ActivityTypeQuery? = nil,
+                    asset_id: Components.Parameters.AssetIdOptQuery? = nil,
+                    is_spam: Components.Parameters.IsSpamOptQuery? = nil,
+                    currencies: Components.Parameters.CurrenciesOptQuery? = nil,
+                    hide_dust: Components.Parameters.HideDustQuery? = nil
                 ) {
                     self.limit = limit
                     self.cursor = cursor
                     self.chain = chain
+                    self.network = network
                     self.activity_type = activity_type
+                    self.asset_id = asset_id
+                    self.is_spam = is_spam
+                    self.currencies = currencies
+                    self.hide_dust = hide_dust
                 }
             }
             public var query: Operations.getWalletActivities.Input.Query
@@ -3146,6 +8804,29 @@ public enum Operations {
                     }
                 }
             }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/activities/get(getWalletActivities)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
             /// Resource not found
             ///
             /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/activities/get(getWalletActivities)/responses/404`.
@@ -3187,6 +8868,2941 @@ public enum Operations {
                     default:
                         try throwUnexpectedResponseStatus(
                             expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Record a locally-broadcast transaction as a pending activity for this wallet
+    ///
+    /// The wallet must already be registered. `activity_type` is a hint, used only while the transaction is unknown to the chain — once the chain's own feed describes it, the feed wins.
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/transactions/pending`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)`.
+    public enum addPendingTransactions {
+        public static let id: Swift.String = "addPendingTransactions"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/transactions/pending/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/transactions/pending/POST/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.addPendingTransactions.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/transactions/pending/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.addPendingTransactions.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.addPendingTransactions.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.addPendingTransactions.Input.Headers
+            public var body: Components.RequestBodies.AddPendingTransaction
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.addPendingTransactions.Input.Path,
+                headers: Operations.addPendingTransactions.Input.Headers = .init(),
+                body: Components.RequestBodies.AddPendingTransaction
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/transactions/pending/post(addPendingTransactions)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Mint a stateless HMAC challenge for wallet registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/wallets/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/challenge/get(getWalletChallenge)`.
+    public enum getWalletChallenge {
+        public static let id: Swift.String = "getWalletChallenge"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/wallets/challenge/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletChallenge.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletChallenge.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getWalletChallenge.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getWalletChallenge.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Stateless HMAC challenge for /api/v2/wallets/register
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/challenge/get(getWalletChallenge)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.WalletChallenge)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.WalletChallenge {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/challenge/get(getWalletChallenge)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// List raffles with per-wallet progress
+    ///
+    /// - Remark: HTTP `GET /api/v1/wallets/{wallet_id}/raffles`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)`.
+    public enum getWalletRaffles {
+        public static let id: Swift.String = "getWalletRaffles"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.getWalletRaffles.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/query`.
+            public struct Query: Sendable, Hashable {
+                /// Language code; falls back to en
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/query/lang`.
+                public var lang: Components.Parameters.LangQuery?
+                /// Filter by raffle ids
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/query/ids`.
+                public var ids: Components.Parameters.RaffleIdsQuery?
+                /// QA-ONLY. RFC3339 timestamp; server pretends "now" is this instant when picking the active phase and computing {days_left} in copy. When it is ahead of the real clock, task and milestone accrual windows shift back by the same offset, so activity made today counts towards a task whose starts_at is still in the future.
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/query/_debug_now`.
+                public var _debug_now: Components.Parameters.DebugNowQuery?
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/query/is_new`.
+                public var is_new: Components.Parameters.IsNewUserQuery?
+                /// Creates a new `Query`.
+                ///
+                /// - Parameters:
+                ///   - lang: Language code; falls back to en
+                ///   - ids: Filter by raffle ids
+                ///   - _debug_now: QA-ONLY. RFC3339 timestamp; server pretends "now" is this instant when picking the active phase and computing {days_left} in copy. When it is ahead of the real clock, task and milestone accrual windows shift back by the same offset, so activity made today counts towards a task whose starts_at is still in the future.
+                ///   - is_new:
+                public init(
+                    lang: Components.Parameters.LangQuery? = nil,
+                    ids: Components.Parameters.RaffleIdsQuery? = nil,
+                    _debug_now: Components.Parameters.DebugNowQuery? = nil,
+                    is_new: Components.Parameters.IsNewUserQuery? = nil
+                ) {
+                    self.lang = lang
+                    self.ids = ids
+                    self._debug_now = _debug_now
+                    self.is_new = is_new
+                }
+            }
+            public var query: Operations.getWalletRaffles.Input.Query
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletRaffles.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getWalletRaffles.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getWalletRaffles.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - query:
+            ///   - headers:
+            public init(
+                path: Operations.getWalletRaffles.Input.Path,
+                query: Operations.getWalletRaffles.Input.Query = .init(),
+                headers: Operations.getWalletRaffles.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.query = query
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// List of raffles
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Raffles)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Raffles {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/get(getWalletRaffles)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Mark wallet as migrated for raffle purposes; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/migration`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)`.
+    public enum completeWalletRaffleMigration {
+        public static let id: Swift.String = "completeWalletRaffleMigration"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/migration/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/migration/POST/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.completeWalletRaffleMigration.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/migration/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.completeWalletRaffleMigration.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.completeWalletRaffleMigration.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.completeWalletRaffleMigration.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            public init(
+                path: Operations.completeWalletRaffleMigration.Input.Path,
+                headers: Operations.completeWalletRaffleMigration.Input.Headers = .init()
+            ) {
+                self.path = path
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// Migration recorded (or already recorded)
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.completeWalletRaffleMigration.Output.NoContent)
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.completeWalletRaffleMigration.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/migration/post(completeWalletRaffleMigration)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Record that another wallet was imported from this one, for raffle tasks; idempotent
+    ///
+    /// - Remark: HTTP `POST /api/v1/wallets/{wallet_id}/raffles/import`.
+    /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)`.
+    public enum markWalletRaffleImport {
+        public static let id: Swift.String = "markWalletRaffleImport"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/import/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Stable wallet identifier
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/import/POST/path/wallet_id`.
+                public var wallet_id: Components.Parameters.WalletIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - wallet_id: Stable wallet identifier
+                public init(wallet_id: Components.Parameters.WalletIdPath) {
+                    self.wallet_id = wallet_id
+                }
+            }
+            public var path: Operations.markWalletRaffleImport.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/wallets/{wallet_id}/raffles/import/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.markWalletRaffleImport.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.markWalletRaffleImport.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.markWalletRaffleImport.Input.Headers
+            public var body: Components.RequestBodies.RaffleImport
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.markWalletRaffleImport.Input.Path,
+                headers: Operations.markWalletRaffleImport.Input.Headers = .init(),
+                body: Components.RequestBodies.RaffleImport
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            public struct NoContent: Sendable, Hashable {
+                /// Creates a new `NoContent`.
+                public init() {}
+            }
+            /// Import recorded (or already recorded)
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/204`.
+            ///
+            /// HTTP response code: `204 noContent`.
+            case noContent(Operations.markWalletRaffleImport.Output.NoContent)
+            /// The associated value of the enum case if `self` is `.noContent`.
+            ///
+            /// - Throws: An error if `self` is not `.noContent`.
+            /// - SeeAlso: `.noContent`.
+            public var noContent: Operations.markWalletRaffleImport.Output.NoContent {
+                get throws {
+                    switch self {
+                    case let .noContent(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "noContent",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authenticated, but this device may not act on this wallet
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/403`.
+            ///
+            /// HTTP response code: `403 forbidden`.
+            case forbidden(Components.Responses.Forbidden)
+            /// The associated value of the enum case if `self` is `.forbidden`.
+            ///
+            /// - Throws: An error if `self` is not `.forbidden`.
+            /// - SeeAlso: `.forbidden`.
+            public var forbidden: Components.Responses.Forbidden {
+                get throws {
+                    switch self {
+                    case let .forbidden(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "forbidden",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/wallets/{wallet_id}/raffles/import/post(markWalletRaffleImport)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// QA-ONLY and deliberately unauthenticated. Force-runs the winner picker, and with a body assigns or clears a specific wallet's prize.
+    ///
+    /// - Remark: HTTP `POST /api/v1/raffles/{raffle_id}/pick-winners`.
+    /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)`.
+    public enum forcePickRaffleWinners {
+        public static let id: Swift.String = "forcePickRaffleWinners"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v1/raffles/{raffle_id}/pick-winners/POST/path`.
+            public struct Path: Sendable, Hashable {
+                /// Raffle identifier from configs/*.toml
+                ///
+                /// - Remark: Generated from `#/paths/api/v1/raffles/{raffle_id}/pick-winners/POST/path/raffle_id`.
+                public var raffle_id: Components.Parameters.RaffleIdPath
+                /// Creates a new `Path`.
+                ///
+                /// - Parameters:
+                ///   - raffle_id: Raffle identifier from configs/*.toml
+                public init(raffle_id: Components.Parameters.RaffleIdPath) {
+                    self.raffle_id = raffle_id
+                }
+            }
+            public var path: Operations.forcePickRaffleWinners.Input.Path
+            /// - Remark: Generated from `#/paths/api/v1/raffles/{raffle_id}/pick-winners/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.forcePickRaffleWinners.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.forcePickRaffleWinners.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.forcePickRaffleWinners.Input.Headers
+            public var body: Components.RequestBodies.ForceRafflePick?
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - path:
+            ///   - headers:
+            ///   - body:
+            public init(
+                path: Operations.forcePickRaffleWinners.Input.Path,
+                headers: Operations.forcePickRaffleWinners.Input.Headers = .init(),
+                body: Components.RequestBodies.ForceRafflePick? = nil
+            ) {
+                self.path = path
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Winners picked
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.RaffleWinnersPicked)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.RaffleWinnersPicked {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Resource not found
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)/responses/404`.
+            ///
+            /// HTTP response code: `404 notFound`.
+            case notFound(Components.Responses.NotFound)
+            /// The associated value of the enum case if `self` is `.notFound`.
+            ///
+            /// - Throws: An error if `self` is not `.notFound`.
+            /// - SeeAlso: `.notFound`.
+            public var notFound: Components.Responses.NotFound {
+                get throws {
+                    switch self {
+                    case let .notFound(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "notFound",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v1/raffles/{raffle_id}/pick-winners/post(forcePickRaffleWinners)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Resolve device state and wallet membership for another service
+    ///
+    /// - Remark: HTTP `POST /internal/auth/introspect`.
+    /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)`.
+    public enum introspectAuth {
+        public static let id: Swift.String = "introspectAuth"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/internal/auth/introspect/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.introspectAuth.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.introspectAuth.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.introspectAuth.Input.Headers
+            public var body: Components.RequestBodies.AuthIntrospect
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.introspectAuth.Input.Headers = .init(),
+                body: Components.RequestBodies.AuthIntrospect
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Device state and, optionally, wallet membership
+            ///
+            /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.IntrospectResult)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.IntrospectResult {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//internal/auth/introspect/post(introspectAuth)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Get public keys for verifying device access tokens
+    ///
+    /// - Remark: HTTP `GET /auth/.well-known/jwks.json`.
+    /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)`.
+    public enum getJwks {
+        public static let id: Swift.String = "getJwks"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/auth/.well-known/jwks.json/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getJwks.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getJwks.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getJwks.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getJwks.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Public keys for verifying device access tokens
+            ///
+            /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Jwks)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Jwks {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//auth/.well-known/jwks.json/get(getJwks)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Mint a stateless HMAC challenge for device registration
+    ///
+    /// - Remark: HTTP `GET /api/v2/devices/challenge`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)`.
+    public enum getDeviceChallenge {
+        public static let id: Swift.String = "getDeviceChallenge"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/devices/challenge/GET/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getDeviceChallenge.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getDeviceChallenge.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getDeviceChallenge.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.getDeviceChallenge.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Stateless HMAC challenge for the requested context
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.AuthChallenge)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.AuthChallenge {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/challenge/get(getDeviceChallenge)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Register a device and issue its first token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/register`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)`.
+    public enum registerDevice {
+        public static let id: Swift.String = "registerDevice"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/devices/register/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerDevice.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerDevice.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.registerDevice.Input.Headers
+            public var body: Components.RequestBodies.DeviceRegister
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.registerDevice.Input.Headers = .init(),
+                body: Components.RequestBodies.DeviceRegister
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Device id and a fresh token pair
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.DeviceTokens)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.DeviceTokens {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Conflict — the device row was revoked, so this keypair cannot be re-registered
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/409`.
+            ///
+            /// HTTP response code: `409 conflict`.
+            case conflict(Components.Responses.Conflict)
+            /// The associated value of the enum case if `self` is `.conflict`.
+            ///
+            /// - Throws: An error if `self` is not `.conflict`.
+            /// - SeeAlso: `.conflict`.
+            public var conflict: Components.Responses.Conflict {
+                get throws {
+                    switch self {
+                    case let .conflict(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "conflict",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/register/post(registerDevice)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Rotate a device token pair
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/refresh`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)`.
+    public enum refreshDevice {
+        public static let id: Swift.String = "refreshDevice"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/devices/refresh/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.refreshDevice.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.refreshDevice.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.refreshDevice.Input.Headers
+            public var body: Components.RequestBodies.DeviceRefresh
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.refreshDevice.Input.Headers = .init(),
+                body: Components.RequestBodies.DeviceRefresh
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Device id and a fresh token pair
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.DeviceTokens)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.DeviceTokens {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/refresh/post(refreshDevice)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Revoke a device and detach all its wallets
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/logout`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)`.
+    public enum logoutDevice {
+        public static let id: Swift.String = "logoutDevice"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/devices/logout/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.logoutDevice.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.logoutDevice.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.logoutDevice.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.logoutDevice.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/logout/post(logoutDevice)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Reconcile a client's wallet list with the device's bindings
+    ///
+    /// - Remark: HTTP `POST /api/v2/devices/bindings`.
+    /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)`.
+    public enum getDeviceBindings {
+        public static let id: Swift.String = "getDeviceBindings"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/devices/bindings/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/devices/bindings/POST/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getDeviceBindings.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - F: Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///   - accept:
+                public init(
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.getDeviceBindings.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.F = F
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.getDeviceBindings.Input.Headers
+            public var body: Components.RequestBodies.DeviceBindingsRequest
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.getDeviceBindings.Input.Headers = .init(),
+                body: Components.RequestBodies.DeviceBindingsRequest
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Diff between the client's wallet list and the device's bindings
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.DeviceBindingsResult)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.DeviceBindingsResult {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/devices/bindings/post(getDeviceBindings)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Bind wallets to the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/register`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)`.
+    public enum registerWallets {
+        public static let id: Swift.String = "registerWallets"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/wallets/register/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/wallets/register/POST/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerWallets.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - F: Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///   - accept:
+                public init(
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.registerWallets.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.F = F
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.registerWallets.Input.Headers
+            public var body: Components.RequestBodies.WalletRegisterBatch
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.registerWallets.Input.Headers = .init(),
+                body: Components.RequestBodies.WalletRegisterBatch
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Per-wallet registration outcome
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.WalletRegisterResults)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.WalletRegisterResults {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Rate limit exceeded — retry later
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)/responses/429`.
+            ///
+            /// HTTP response code: `429 tooManyRequests`.
+            case tooManyRequests(Components.Responses.TooManyRequests)
+            /// The associated value of the enum case if `self` is `.tooManyRequests`.
+            ///
+            /// - Throws: An error if `self` is not `.tooManyRequests`.
+            /// - SeeAlso: `.tooManyRequests`.
+            public var tooManyRequests: Components.Responses.TooManyRequests {
+                get throws {
+                    switch self {
+                    case let .tooManyRequests(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "tooManyRequests",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/register/post(registerWallets)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Detach wallets from the calling device
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/unregister`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)`.
+    public enum unregisterWallets {
+        public static let id: Swift.String = "unregisterWallets"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/wallets/unregister/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.unregisterWallets.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.unregisterWallets.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.unregisterWallets.Input.Headers
+            public var body: Components.RequestBodies.WalletUnregisterBatch
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.unregisterWallets.Input.Headers = .init(),
+                body: Components.RequestBodies.WalletUnregisterBatch
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// Wallets detached by this call
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.WalletUnregisterResult)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.WalletUnregisterResult {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/unregister/post(unregisterWallets)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Attach a device to its wallets' push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/subscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)`.
+    public enum subscribeDevicePush {
+        public static let id: Swift.String = "subscribeDevicePush"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/wallets/push/subscribe/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                /// Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///
+                /// - Remark: Generated from `#/paths/api/v2/wallets/push/subscribe/POST/header/F`.
+                public var F: Components.Parameters.FirebaseUserHeader?
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.subscribeDevicePush.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - F: Firebase user id supplied by the mobile client (opaque string). Sent with wallet registration it links the wallet to the install; analytics has no other way to resolve it.
+                ///   - accept:
+                public init(
+                    F: Components.Parameters.FirebaseUserHeader? = nil,
+                    accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.subscribeDevicePush.AcceptableContentType>] = .defaultValues()
+                ) {
+                    self.F = F
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.subscribeDevicePush.Input.Headers
+            public var body: Components.RequestBodies.WalletPushSubscribe
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            ///   - body:
+            public init(
+                headers: Operations.subscribeDevicePush.Input.Headers = .init(),
+                body: Components.RequestBodies.WalletPushSubscribe
+            ) {
+                self.headers = headers
+                self.body = body
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Invalid request
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)/responses/400`.
+            ///
+            /// HTTP response code: `400 badRequest`.
+            case badRequest(Components.Responses.BadRequest)
+            /// The associated value of the enum case if `self` is `.badRequest`.
+            ///
+            /// - Throws: An error if `self` is not `.badRequest`.
+            /// - SeeAlso: `.badRequest`.
+            public var badRequest: Components.Responses.BadRequest {
+                get throws {
+                    switch self {
+                    case let .badRequest(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badRequest",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Downstream service unreachable
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/subscribe/post(subscribeDevicePush)/responses/502`.
+            ///
+            /// HTTP response code: `502 badGateway`.
+            case badGateway(Components.Responses.BadGateway)
+            /// The associated value of the enum case if `self` is `.badGateway`.
+            ///
+            /// - Throws: An error if `self` is not `.badGateway`.
+            /// - SeeAlso: `.badGateway`.
+            public var badGateway: Components.Responses.BadGateway {
+                get throws {
+                    switch self {
+                    case let .badGateway(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badGateway",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Undocumented response.
+            ///
+            /// A response with a code that is not documented in the OpenAPI document.
+            case undocumented(statusCode: Swift.Int, OpenAPIRuntime.UndocumentedPayload)
+        }
+        @frozen public enum AcceptableContentType: AcceptableProtocol {
+            case json
+            case other(Swift.String)
+            public init?(rawValue: Swift.String) {
+                switch rawValue.lowercased() {
+                case "application/json":
+                    self = .json
+                default:
+                    self = .other(rawValue)
+                }
+            }
+            public var rawValue: Swift.String {
+                switch self {
+                case let .other(string):
+                    return string
+                case .json:
+                    return "application/json"
+                }
+            }
+            public static var allCases: [Self] {
+                [
+                    .json
+                ]
+            }
+        }
+    }
+    /// Detach a device from all push notifications
+    ///
+    /// - Remark: HTTP `POST /api/v2/wallets/push/unsubscribe`.
+    /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)`.
+    public enum unsubscribeDevicePush {
+        public static let id: Swift.String = "unsubscribeDevicePush"
+        public struct Input: Sendable, Hashable {
+            /// - Remark: Generated from `#/paths/api/v2/wallets/push/unsubscribe/POST/header`.
+            public struct Headers: Sendable, Hashable {
+                public var accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.unsubscribeDevicePush.AcceptableContentType>]
+                /// Creates a new `Headers`.
+                ///
+                /// - Parameters:
+                ///   - accept:
+                public init(accept: [OpenAPIRuntime.AcceptHeaderContentType<Operations.unsubscribeDevicePush.AcceptableContentType>] = .defaultValues()) {
+                    self.accept = accept
+                }
+            }
+            public var headers: Operations.unsubscribeDevicePush.Input.Headers
+            /// Creates a new `Input`.
+            ///
+            /// - Parameters:
+            ///   - headers:
+            public init(headers: Operations.unsubscribeDevicePush.Input.Headers = .init()) {
+                self.headers = headers
+            }
+        }
+        @frozen public enum Output: Sendable, Hashable {
+            /// OK
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)/responses/200`.
+            ///
+            /// HTTP response code: `200 ok`.
+            case ok(Components.Responses.Ok)
+            /// The associated value of the enum case if `self` is `.ok`.
+            ///
+            /// - Throws: An error if `self` is not `.ok`.
+            /// - SeeAlso: `.ok`.
+            public var ok: Components.Responses.Ok {
+                get throws {
+                    switch self {
+                    case let .ok(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "ok",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Authentication failed
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)/responses/401`.
+            ///
+            /// HTTP response code: `401 unauthorized`.
+            case unauthorized(Components.Responses.Unauthorized)
+            /// The associated value of the enum case if `self` is `.unauthorized`.
+            ///
+            /// - Throws: An error if `self` is not `.unauthorized`.
+            /// - SeeAlso: `.unauthorized`.
+            public var unauthorized: Components.Responses.Unauthorized {
+                get throws {
+                    switch self {
+                    case let .unauthorized(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "unauthorized",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Internal server error
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)/responses/500`.
+            ///
+            /// HTTP response code: `500 internalServerError`.
+            case internalServerError(Components.Responses.InternalError)
+            /// The associated value of the enum case if `self` is `.internalServerError`.
+            ///
+            /// - Throws: An error if `self` is not `.internalServerError`.
+            /// - SeeAlso: `.internalServerError`.
+            public var internalServerError: Components.Responses.InternalError {
+                get throws {
+                    switch self {
+                    case let .internalServerError(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "internalServerError",
+                            response: self
+                        )
+                    }
+                }
+            }
+            /// Downstream service unreachable
+            ///
+            /// - Remark: Generated from `#/paths//api/v2/wallets/push/unsubscribe/post(unsubscribeDevicePush)/responses/502`.
+            ///
+            /// HTTP response code: `502 badGateway`.
+            case badGateway(Components.Responses.BadGateway)
+            /// The associated value of the enum case if `self` is `.badGateway`.
+            ///
+            /// - Throws: An error if `self` is not `.badGateway`.
+            /// - SeeAlso: `.badGateway`.
+            public var badGateway: Components.Responses.BadGateway {
+                get throws {
+                    switch self {
+                    case let .badGateway(response):
+                        return response
+                    default:
+                        try throwUnexpectedResponseStatus(
+                            expectedStatus: "badGateway",
                             response: self
                         )
                     }

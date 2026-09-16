@@ -24,12 +24,18 @@ public enum ChainIconPosition: Sendable {
 }
 
 public struct AssetAvatarView: View {
-    public enum Size: Sendable {
+    public enum Size: Sendable, Hashable {
         case extraSmall
         case small
         case regular
+        case dapp
         case large
         case extraLarge
+    }
+
+    public enum Shape: Sendable, Hashable {
+        case circle
+        case rectangle(cornerRadius: CGFloat = 0)
     }
 
     public struct Configuration: Sendable, Equatable {
@@ -56,213 +62,83 @@ public struct AssetAvatarView: View {
 
     let imageSource: AssetAvatarViewImageSource
     let configuration: Configuration
+    let shape: Shape
     let chainIconPosition: ChainIconPosition
+    let chainIconBackgroundColor: Color
 
     public init(
         imageSource: AssetAvatarViewImageSource,
         size: Size? = nil,
-        chainIconPosition: ChainIconPosition? = nil
+        shape: Shape? = nil,
+        chainIconPosition: ChainIconPosition? = nil,
+        chainIconBackgroundColor: Color? = nil
     ) {
         self.init(
             imageSource: imageSource,
             configuration: (size ?? .small).configuration,
-            chainIconPosition: chainIconPosition
+            shape: shape,
+            chainIconPosition: chainIconPosition,
+            chainIconBackgroundColor: chainIconBackgroundColor
         )
     }
 
     public init(
         imageSource: AssetAvatarViewImageSource,
         configuration: Configuration,
-        chainIconPosition: ChainIconPosition? = nil
+        shape: Shape? = nil,
+        chainIconPosition: ChainIconPosition? = nil,
+        chainIconBackgroundColor: Color? = nil
     ) {
         self.imageSource = imageSource
         self.configuration = configuration
+        self.shape = shape ?? .circle
         self.chainIconPosition = chainIconPosition ?? .trailing
+        self.chainIconBackgroundColor = chainIconBackgroundColor ?? .clear
     }
 
-    struct ChainIconShape: Shape {
+    struct AvatarShape: SwiftUI.Shape {
+        var shape: AssetAvatarView.Shape
+
+        nonisolated func path(in rect: CGRect) -> Path {
+            switch shape {
+            case .circle:
+                Path(UIBezierPath(ovalIn: rect).cgPath)
+            case let .rectangle(cornerRadius):
+                Path(UIBezierPath(roundedRect: rect, cornerRadius: cornerRadius).cgPath)
+            }
+        }
+    }
+
+    struct ChainIconShape: SwiftUI.Shape {
         var chainIconPosition: ChainIconPosition
         var configuration: Configuration
 
         nonisolated func path(in rect: CGRect) -> Path {
-            let chainIconSize = configuration.chainIconSize
+            let path = UIBezierPath(rect: rect)
+            path.append(UIBezierPath(ovalIn: cutoutRect(in: rect)).reversing())
+            return Path(path.cgPath)
+        }
 
+        private nonisolated func cutoutRect(in rect: CGRect) -> CGRect {
+            let chainIconSize = configuration.chainIconSize
             let cutoutDiameter = (chainIconSize + configuration.chainIconPadding * 2)
-            let bigCenter = CGPoint(x: rect.midX, y: rect.midY)
-            let bigRadius = min(rect.width, rect.height) / 2
-            let cutoutRect: CGRect
+
             switch chainIconPosition {
             case .leading:
-                cutoutRect = CGRect(
+                return CGRect(
                     x: rect.minX - configuration.chainIconOffsetX - configuration.chainIconPadding,
                     y: rect.maxY - cutoutDiameter + configuration.chainIconOffsetY + configuration.chainIconPadding,
                     width: cutoutDiameter,
                     height: cutoutDiameter
                 )
             case .trailing:
-                cutoutRect = CGRect(
+                return CGRect(
                     x: rect.maxX - cutoutDiameter + configuration.chainIconOffsetX + configuration.chainIconPadding,
                     y: rect.maxY - cutoutDiameter + configuration.chainIconOffsetY + configuration.chainIconPadding,
                     width: cutoutDiameter,
                     height: cutoutDiameter
                 )
             }
-            let cutoutCenter = CGPoint(x: cutoutRect.midX, y: cutoutRect.midY)
-            let cutoutRadius = cutoutRect.width / 2
-
-            guard let intersections = intersections(
-                firstCenter: bigCenter,
-                firstRadius: bigRadius,
-                secondCenter: cutoutCenter,
-                secondRadius: cutoutRadius
-            ) else {
-                let path = UIBezierPath(ovalIn: rect)
-                if distance(from: bigCenter, to: cutoutCenter) < bigRadius - cutoutRadius {
-                    path.append(UIBezierPath(ovalIn: cutoutRect).reversing())
-                }
-                return Path(path.cgPath)
-            }
-
-            let firstIntersection = intersections.first
-            let secondIntersection = intersections.second
-
-            let bigStartAngle = angle(from: bigCenter, to: firstIntersection)
-            let bigEndAngle = angle(from: bigCenter, to: secondIntersection)
-            let bigClockwise = arcMidpoint(
-                center: bigCenter,
-                radius: bigRadius,
-                startAngle: bigStartAngle,
-                endAngle: bigEndAngle,
-                clockwise: true
-            )
-            .map { !contains($0, center: cutoutCenter, radius: cutoutRadius) } ?? true
-
-            let cutoutStartAngle = angle(from: cutoutCenter, to: secondIntersection)
-            let cutoutEndAngle = angle(from: cutoutCenter, to: firstIntersection)
-            let cutoutClockwise = arcMidpoint(
-                center: cutoutCenter,
-                radius: cutoutRadius,
-                startAngle: cutoutStartAngle,
-                endAngle: cutoutEndAngle,
-                clockwise: true
-            )
-            .map { contains($0, center: bigCenter, radius: bigRadius) } ?? false
-
-            let path = UIBezierPath()
-            path.move(to: firstIntersection)
-            path.addArc(
-                withCenter: bigCenter,
-                radius: bigRadius,
-                startAngle: bigStartAngle,
-                endAngle: bigEndAngle,
-                clockwise: bigClockwise
-            )
-            path.addArc(
-                withCenter: cutoutCenter,
-                radius: cutoutRadius,
-                startAngle: cutoutStartAngle,
-                endAngle: cutoutEndAngle,
-                clockwise: cutoutClockwise
-            )
-            path.close()
-
-            return Path(path.cgPath)
-        }
-
-        private nonisolated func intersections(
-            firstCenter: CGPoint,
-            firstRadius: CGFloat,
-            secondCenter: CGPoint,
-            secondRadius: CGFloat
-        ) -> (first: CGPoint, second: CGPoint)? {
-            let centerDistance = distance(from: firstCenter, to: secondCenter)
-            guard centerDistance > 0,
-                  centerDistance < firstRadius + secondRadius,
-                  centerDistance > abs(firstRadius - secondRadius)
-            else {
-                return nil
-            }
-
-            let a = (
-                firstRadius * firstRadius
-                    - secondRadius * secondRadius
-                    + centerDistance * centerDistance
-            ) / (2 * centerDistance)
-            let hSquared = firstRadius * firstRadius - a * a
-            guard hSquared >= 0 else {
-                return nil
-            }
-
-            let h = sqrt(hSquared)
-            let directionX = (secondCenter.x - firstCenter.x) / centerDistance
-            let directionY = (secondCenter.y - firstCenter.y) / centerDistance
-            let basePoint = CGPoint(
-                x: firstCenter.x + a * directionX,
-                y: firstCenter.y + a * directionY
-            )
-            let offset = CGPoint(
-                x: -directionY * h,
-                y: directionX * h
-            )
-
-            return (
-                CGPoint(x: basePoint.x + offset.x, y: basePoint.y + offset.y),
-                CGPoint(x: basePoint.x - offset.x, y: basePoint.y - offset.y)
-            )
-        }
-
-        private nonisolated func distance(from start: CGPoint, to end: CGPoint) -> CGFloat {
-            hypot(end.x - start.x, end.y - start.y)
-        }
-
-        private nonisolated func angle(from center: CGPoint, to point: CGPoint) -> CGFloat {
-            atan2(point.y - center.y, point.x - center.x)
-        }
-
-        private nonisolated func arcMidpoint(
-            center: CGPoint,
-            radius: CGFloat,
-            startAngle: CGFloat,
-            endAngle: CGFloat,
-            clockwise: Bool
-        ) -> CGPoint? {
-            let delta = angleDelta(
-                startAngle: startAngle,
-                endAngle: endAngle,
-                clockwise: clockwise
-            )
-            guard delta > 0 else {
-                return nil
-            }
-
-            let midpointAngle = clockwise
-                ? startAngle + delta / 2
-                : startAngle - delta / 2
-            return CGPoint(
-                x: center.x + radius * cos(midpointAngle),
-                y: center.y + radius * sin(midpointAngle)
-            )
-        }
-
-        private nonisolated func angleDelta(
-            startAngle: CGFloat,
-            endAngle: CGFloat,
-            clockwise: Bool
-        ) -> CGFloat {
-            let fullTurn = CGFloat.pi * 2
-            let rawDelta = clockwise
-                ? endAngle - startAngle
-                : startAngle - endAngle
-            let normalized = rawDelta.truncatingRemainder(dividingBy: fullTurn)
-            return normalized >= 0 ? normalized : normalized + fullTurn
-        }
-
-        private nonisolated func contains(
-            _ point: CGPoint,
-            center: CGPoint,
-            radius: CGFloat
-        ) -> Bool {
-            distance(from: point, to: center) < radius
         }
     }
 
@@ -272,27 +148,15 @@ public struct AssetAvatarView: View {
 
     public var body: some View {
         ZStack {
-            if imageSource.chainIcon != nil {
-                contentView
-                    .frame(width: size, height: size)
-                    .background(Color(uiColor: .Background.contentTint))
-                    .clipShape(
-                        ChainIconShape(
-                            chainIconPosition: chainIconPosition,
-                            configuration: configuration
-                        )
-                    )
-            } else {
-                contentView
-                    .frame(width: size, height: size)
-                    .background(Color(uiColor: .Background.contentTint))
-                    .clipShape(Circle())
-            }
+            clippedContentView
             if let chainIcon = imageSource.chainIcon {
                 let chainIconSize = configuration.chainIconSize
                 Image(uiImage: chainIcon)
                     .resizable()
                     .frame(width: chainIconSize, height: chainIconSize)
+                    .foregroundStyle(.iconPrimary)
+                    .background(chainIconBackgroundColor)
+                    .clipShape(Circle())
                     .offset(
                         x: {
                             switch chainIconPosition {
@@ -309,7 +173,35 @@ public struct AssetAvatarView: View {
     }
 
     @ViewBuilder
+    private var clippedContentView: some View {
+        let avatarContentView = contentView
+            .clipShape(AvatarShape(shape: shape))
+
+        if imageSource.chainIcon != nil {
+            avatarContentView
+                .clipShape(
+                    ChainIconShape(
+                        chainIconPosition: chainIconPosition,
+                        configuration: configuration
+                    )
+                )
+        } else {
+            avatarContentView
+        }
+    }
+
     private var contentView: some View {
+        AssetAvatarContentView(imageSource: imageSource, size: size)
+            .frame(width: size, height: size)
+            .background(.backgroundContentTint)
+    }
+}
+
+struct AssetAvatarContentView: View {
+    let imageSource: AssetAvatarViewImageSource
+    let size: CGFloat
+
+    var body: some View {
         switch imageSource {
         case let .url(url, _):
             if let url {
@@ -329,11 +221,59 @@ public struct AssetAvatarView: View {
                 size: size
             )
         case .shimmer:
-            ShimmerSwiftUIView(config: shimmerConfig)
+            ShimmerSwiftUIView(config: shimmerConfig())
         }
     }
 
-    fileprivate static func imageContentView(for image: UIImage, size: CGFloat) -> some View {
+    private struct URLAvatarImageView: View {
+        let url: URL
+        let size: CGFloat
+
+        @State private var didFail = false
+
+        var body: some View {
+            let iconSource = DappIconSource(url: url)
+            Group {
+                if didFail {
+                    imageContentView(
+                        for: .TKUIKit.Icons.Size44.placeholder,
+                        size: size
+                    )
+                } else {
+                    KFImage
+                        .source(iconSource.source)
+                        .alternativeSources(iconSource.alternativeSources)
+                        .setProcessor(
+                            DownsamplingImageProcessor(
+                                size: CGSize(
+                                    width: size * UIScreen.main.scale,
+                                    height: size * UIScreen.main.scale
+                                )
+                            )
+                        )
+                        .loadDiskFileSynchronously()
+                        .fade(duration: 0)
+                        .placeholder {
+                            ShimmerSwiftUIView(config: shimmerConfig())
+                        }
+                        .onSuccess { _ in
+                            didFail = false
+                        }
+                        .onFailure { _ in
+                            didFail = true
+                        }
+                        .cancelOnDisappear(true)
+                        .resizable()
+                        .scaledToFill()
+                }
+            }
+        }
+    }
+
+    fileprivate static func imageContentView(
+        for image: UIImage,
+        size: CGFloat
+    ) -> some View {
         Image(uiImage: image)
             .resizable()
             .scaledToFit()
@@ -368,6 +308,14 @@ extension AssetAvatarView.Size {
                 chainIconOffsetX: 4,
                 chainIconOffsetY: 4
             )
+        case .dapp:
+            AssetAvatarView.Configuration(
+                imageSize: 64,
+                chainIconSize: 20,
+                chainIconPadding: 2,
+                chainIconOffsetX: 4,
+                chainIconOffsetY: 4
+            )
         case .large:
             AssetAvatarView.Configuration(
                 imageSize: 72,
@@ -388,105 +336,78 @@ extension AssetAvatarView.Size {
     }
 }
 
-extension AssetAvatarView {
-    private struct URLAvatarImageView: View {
-        let url: URL
-        let size: CGFloat
-
-        @State private var didFail = false
-
-        var body: some View {
-            Group {
-                if didFail {
-                    AssetAvatarView.imageContentView(
-                        for: .TKUIKit.Icons.Size44.placeholder,
-                        size: size
-                    )
-                } else {
-                    KFImage
-                        .url(url)
-                        .setProcessor(
-                            DownsamplingImageProcessor(
-                                size: CGSize(
-                                    width: size * UIScreen.main.scale,
-                                    height: size * UIScreen.main.scale
-                                )
-                            )
-                        )
-                        .loadDiskFileSynchronously()
-                        .fade(duration: 0)
-                        .placeholder {
-                            ShimmerSwiftUIView(config: shimmerConfig)
-                        }
-                        .onSuccess { _ in
-                            didFail = false
-                        }
-                        .onFailure { _ in
-                            didFail = true
-                        }
-                        .cancelOnDisappear(true)
-                        .resizable()
-                        .scaledToFill()
-                }
-            }
-        }
-    }
+private func shimmerConfig() -> ShimmerSwiftUIView.Config {
+    ShimmerSwiftUIView.Config(color: .backgroundContentTint)
 }
 
-private var shimmerConfig: ShimmerSwiftUIView.Config {
-    ShimmerSwiftUIView.Config(color: .Background.contentTint)
+private var sampleShapes: [AssetAvatarView.Shape] {
+    [.circle, .rectangle(cornerRadius: 12)]
+}
+
+private var sampleSizesAndColors: [(AssetAvatarView.Size, Color)] {
+    [
+        (.extraSmall, .red),
+        (.small, .green),
+        (.regular, .brown),
+        (.large, .cyan),
+        (.extraLarge, .yellow),
+    ]
 }
 
 #Preview {
     VStack(spacing: 24) {
-        AssetAvatarView(
-            imageSource: .url(URL(string: "https://cryptologos.cc/logos/bitcoin-btc-logo.png?v=041")!)
-        )
-
-        AssetAvatarView(
-            imageSource: .url(nil, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-            chainIconPosition: .leading
-        )
-
-        AssetAvatarView(
-            imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain)
-        )
-
-        AssetAvatarView(
-            imageSource: .shimmer
-        )
-
-        HStack(alignment: .bottom, spacing: 12) {
-            AssetAvatarView(
-                imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-                size: .extraSmall
-            )
-
-            AssetAvatarView(
-                imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-                size: .small
-            )
-
-            AssetAvatarView(
-                imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-                size: .regular
-            )
-
-            AssetAvatarView(
-                imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-                size: .large
-            )
-
-            AssetAvatarView(
-                imageSource: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-                size: .extraLarge
-            )
+        HStack {
+            ForEach(sampleShapes, id: \.self) { shape in
+                AssetAvatarView(
+                    imageSource: .url(URL(string: "https://avatars.githubusercontent.com/u/88587596")!),
+                    shape: shape
+                )
+            }
         }
-
-        SwapPairAvatarView(
-            left: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain),
-            right: .image(.TKUIKit.Icons.Size44.btcChain, chainIcon: .TKUIKit.Icons.Size20.tonChain)
-        )
+        HStack {
+            ForEach(sampleShapes, id: \.self) { shape in
+                AssetAvatarView(
+                    imageSource: .url(nil, chainIcon: .TKUIKit.Icons.Size20.tonChain),
+                    shape: shape,
+                    chainIconPosition: .leading
+                )
+            }
+        }
+        HStack {
+            ForEach(sampleShapes, id: \.self) { shape in
+                AssetAvatarView(
+                    imageSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.tonChain),
+                    shape: shape
+                )
+            }
+        }
+        HStack {
+            ForEach(sampleShapes, id: \.self) { shape in
+                AssetAvatarView(
+                    imageSource: .shimmer,
+                    shape: shape
+                )
+            }
+        }
+        VStack {
+            ForEach(sampleShapes, id: \.self) { shape in
+                HStack(alignment: .bottom, spacing: 12) {
+                    ForEach(sampleSizesAndColors, id: \.0) { size, color in
+                        AssetAvatarView(
+                            imageSource: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.qrCodeSmall),
+                            size: size,
+                            shape: shape,
+                            chainIconBackgroundColor: color
+                        )
+                    }
+                }
+            }
+            SwapPairAvatarView(
+                left: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.tonChain),
+                right: .image(.TKUIKit.Icons.Size96.tonIcon, chainIcon: .TKUIKit.Icons.Size20.tonChain)
+            )
+            .padding(.top, 24)
+        }
     }
     .debugPreview()
 }

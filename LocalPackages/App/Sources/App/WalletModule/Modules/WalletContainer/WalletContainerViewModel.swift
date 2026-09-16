@@ -11,15 +11,13 @@ protocol WalletContainerModuleOutput: AnyObject {
 }
 
 protocol WalletContainerViewModel: AnyObject {
-    var didUpdateModel: ((WalletContainerView.Model) -> Void)? { get set }
+    var didUpdateModel: ((WalletContainerTopBarModel) -> Void)? { get set }
 
     func viewDidLoad()
     func didTapWalletButton()
 }
 
 final class WalletContainerViewModelImplementation: WalletContainerViewModel, WalletContainerModuleOutput {
-    typealias SettingsButtonModel = WalletContainerTopBarView.Model.SettingsButtonModel
-
     // MARK: - WalletContainerModuleOutput
 
     var walletButtonHandler: (() -> Void)?
@@ -29,7 +27,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
     // MARK: - WalletContainerViewModel
 
-    var didUpdateModel: ((WalletContainerView.Model) -> Void)?
+    var didUpdateModel: ((WalletContainerTopBarModel) -> Void)?
 
     func viewDidLoad() {
         walletsStore.addObserver(self) { observer, event in
@@ -37,9 +35,9 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
                 switch event {
                 case .didChangeActiveWallet,
                      .didUpdateWalletMetaData,
-                     .didUpdateWalletSetupSettings,
-                     .didUpdateWalletTron:
-                    self.wallet = try? observer.walletsStore.activeWallet
+                     .didUpdateWalletMultichain,
+                     .didUpdateWalletSetupSettings:
+                    observer.wallet = try? observer.walletsStore.activeWallet
                 default: break
                 }
             }
@@ -63,13 +61,11 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
     // MARK: - Dependencies
 
     private let walletsStore: WalletsStore
-    private let configuration: Configuration
 
     // MARK: - Init
 
-    init(walletsStore: WalletsStore, configuration: Configuration) {
+    init(walletsStore: WalletsStore) {
         self.walletsStore = walletsStore
-        self.configuration = configuration
     }
 
     private func setInitialState() {
@@ -79,8 +75,8 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 }
 
 private extension WalletContainerViewModelImplementation {
-    func createModel(wallet: Wallet) -> WalletContainerView.Model {
-        let icon: WalletContainerWalletButton.Model.Icon
+    func createModel(wallet: Wallet) -> WalletContainerTopBarModel {
+        let icon: WalletButtonConfig.Icon
         switch wallet.icon {
         case let .emoji(emoji):
             icon = .emoji(emoji)
@@ -88,72 +84,34 @@ private extension WalletContainerViewModelImplementation {
             icon = .image(image.image)
         }
 
-        let walletButtonConfiguration = WalletContainerWalletButton.Model(
-            title: wallet.label,
-            icon: icon,
-            color: wallet.tintColor.uiColor
-        )
-
-        var leadingButtonConfiguration = TKButton.Configuration.accentButtonConfiguration(
-            padding: UIEdgeInsets(
-                top: 10,
-                left: 10,
-                bottom: 10,
-                right: 10
-            )
-        )
-        leadingButtonConfiguration.iconTintColor = .Icon.secondary
-        leadingButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.qrViewFinderThin
-        leadingButtonConfiguration.action = { [weak self] in
-            self?.didTapScan?()
-        }
-
-        let historyButtonConfiguration: TKButton.Configuration?
-        if configuration.featureEnabled(.tradingUiEnabled) {
-            var buttonConfiguration = TKButton.Configuration.accentButtonConfiguration(
-                padding: UIEdgeInsets(
-                    top: 10,
-                    left: 10,
-                    bottom: 10,
-                    right: 10
-                )
-            )
-            buttonConfiguration.content.icon = .TKUIKit.Icons.Size28.clockOutline
-            buttonConfiguration.iconTintColor = .Icon.secondary
-            buttonConfiguration.action = { [weak self] in
-                self?.didTapHistoryButton?()
-            }
-            historyButtonConfiguration = buttonConfiguration
-        } else {
-            historyButtonConfiguration = nil
-        }
-
-        var settingsButtonConfiguration = TKButton.Configuration.accentButtonConfiguration(
-            padding: UIEdgeInsets(
-                top: 10,
-                left: 10,
-                bottom: 10,
-                right: 10
-            )
-        )
-        settingsButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.gearOutline
-        settingsButtonConfiguration.iconTintColor = .Icon.secondary
-        settingsButtonConfiguration.action = { [weak self] in
-            self?.didTapSettingsButton?(wallet)
-        }
-
-        let isNotificationIndicatorVisible = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
-        let topBarViewModel = WalletContainerTopBarView.Model(
-            walletButtonConfiguration: walletButtonConfiguration,
-            leadingButtonConfiguration: leadingButtonConfiguration,
-            historyButtonConfiguration: historyButtonConfiguration,
-            settingButtonConfiguration: SettingsButtonModel(
-                configuration: settingsButtonConfiguration,
-                isIndicatorVisible: isNotificationIndicatorVisible
-            )
-        )
-        return WalletContainerView.Model(
-            topBarViewModel: topBarViewModel
+        return WalletContainerTopBarModel(
+            walletButton: WalletButtonConfig(
+                title: wallet.label,
+                icon: icon,
+                color: wallet.tintColor.themedColor
+            ),
+            walletButtonAction: { [weak self] in
+                self?.didTapWalletButton()
+            },
+            scanButton: WalletContainerTopBarModel.IconButton(
+                icon: .TKUIKit.Icons.Size28.qrViewFinderThin,
+                action: { [weak self] in
+                    self?.didTapScan?()
+                }
+            ),
+            historyButton: WalletContainerTopBarModel.IconButton(
+                icon: .TKUIKit.Icons.Size28.clockOutline,
+                action: { [weak self] in
+                    self?.didTapHistoryButton?()
+                }
+            ),
+            settingsButton: WalletContainerTopBarModel.IconButton(
+                icon: .TKUIKit.Icons.Size28.gearOutline,
+                action: { [weak self] in
+                    self?.didTapSettingsButton?(wallet)
+                }
+            ),
+            isSettingsIndicatorVisible: wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
         )
     }
 }

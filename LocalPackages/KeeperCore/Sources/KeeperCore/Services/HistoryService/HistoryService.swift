@@ -29,13 +29,12 @@ final class HistoryServiceImplementation: HistoryService {
         case allEvents
         case tronUSDT
 
-        func cacheKeySuffix(tronBip39ImportFixEnabled: Bool) -> String {
-            let flagComponent = tronBip39ImportFixEnabled ? "enabled" : "disabled"
+        var cacheKeySuffix: String {
             switch self {
             case .allEvents:
-                return "history-all-events:tron-bip39-import-fix-" + flagComponent
+                return "history-all-events"
             case .tronUSDT:
-                return "history-tron-usdt:tron-bip39-import-fix-" + flagComponent
+                return "history-tron-usdt"
             }
         }
     }
@@ -43,18 +42,15 @@ final class HistoryServiceImplementation: HistoryService {
     private let apiProvider: APIProvider
     private let repository: HistoryRepository
     private let cacheNamespace: CacheNamespace?
-    private let tronBip39ImportFixEnabled: Bool
 
     init(
         apiProvider: APIProvider,
         repository: HistoryRepository,
-        cacheNamespace: CacheNamespace? = nil,
-        tronBip39ImportFixEnabled: Bool = false
+        cacheNamespace: CacheNamespace? = nil
     ) {
         self.apiProvider = apiProvider
         self.repository = repository
         self.cacheNamespace = cacheNamespace
-        self.tronBip39ImportFixEnabled = tronBip39ImportFixEnabled
     }
 
     func cachedEvents(wallet: Wallet) throws -> [HistoryEvent] {
@@ -121,9 +117,7 @@ final class HistoryServiceImplementation: HistoryService {
         guard let cacheNamespace else {
             return baseKey
         }
-        return baseKey + ":" + cacheNamespace.cacheKeySuffix(
-            tronBip39ImportFixEnabled: tronBip39ImportFixEnabled
-        )
+        return baseKey + ":" + cacheNamespace.cacheKeySuffix
     }
 
     private func cacheKey(

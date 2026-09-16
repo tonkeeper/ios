@@ -102,7 +102,7 @@ private enum Ed25519 {
     }
 
     static func getMasterKeyFromSeed(seed: String) throws -> Keys {
-        guard let seedData = Data(hex: seed) else {
+        guard let seedData = Data(strictHex: seed) else {
             throw Error.derivePathError("Invalid seed hex string")
         }
 

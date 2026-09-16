@@ -3,7 +3,6 @@ import KeeperCore
 import TKCoordinator
 import TKCore
 import TKLocalize
-import TKLogging
 import TKScreenKit
 import TKUIKit
 import TonSwift
@@ -12,8 +11,7 @@ import UIKit
 
 private struct SendAnalyticsContext {
     let source: SendAnalyticsSource
-    let assetNetwork: String
-    let tokenSymbol: String
+    let asset: String
     let amount: Double
 }
 
@@ -23,25 +21,21 @@ private struct WithdrawAnalyticsContext {
     let sellAsset: String
     let stablecoinSymbol: String
     let buyAsset: String
-    let assetNetwork: String
+    let asset: String
     let amount: Float
 }
 
-private enum SendFeePaidIn: String {
-    case ton
-    case trx
-    case battery
-    case gasless
-    case free
-}
-
-final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    var didSendSuccessfully: ((SendTokenCoordinator?) -> Void)?
+final class LegacySendTokenCoordinator: RouterCoordinator<NavigationControllerRouter>, SendCoordinator {
+    var didSendSuccessfully: ((RouterCoordinator<NavigationControllerRouter>?) -> Void)?
     var didRequestOpenBuySell: ((_ isInternalPurchasing: Bool) -> Void)?
-    var didRequestRefill: ((Token) -> Void)?
-    var didRequestOpenBattery: (() -> Void)?
+    var didRequestRefill: ((Token, _ onRefill: @escaping () -> Void) -> Void)?
+    var didRequestOpenBattery: ((@escaping () -> Void) -> Void)?
+    var didRequestFeeDeposit: ((_ assetId: String, _ onDismiss: @escaping () -> Void) -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+    private lazy var feePickerCoordinator = NetworkFeePickerCoordinator(
+        router: router
+    )
 
     private let wallet: Wallet
     private let coreAssembly: TKCore.CoreAssembly
@@ -49,7 +43,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
     private let recipientResolver: RecipientResolver
     private let sendInput: SendInput
     private let sendSource: SendAnalyticsSource
-    private let recipient: Recipient?
+    private let recipient: LegacyRecipient?
     private let comment: String?
     private let analyticsProvider: AnalyticsProvider
     private let transactionSentNotificationPatch: @Sendable (inout [String: Any]) -> Void
@@ -63,7 +57,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
         sendInput: SendInput,
         sendSource: SendAnalyticsSource,
         transactionSentNotificationPatch: @Sendable @escaping (inout [String: Any]) -> Void = { _ in },
-        recipient: Recipient? = nil,
+        recipient: LegacyRecipient? = nil,
         comment: String? = nil
     ) {
         self.wallet = wallet
@@ -87,7 +81,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
         // If amount and recipient are set, we should force confirmation screen (only for .direct)
         if case let .direct(sendItem) = sendInput,
            isReadyForConfirmation(sendItem: sendItem),
-           let sendData = SendData.sendData(
+           let sendData = LegacySendData.make(
                wallet: wallet,
                recipient: recipient,
                item: sendItem,
@@ -117,7 +111,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
     }
 }
 
-private extension SendTokenCoordinator {
+private extension LegacySendTokenCoordinator {
     func openSend(pushAnimated: Bool = false) {
         logSendOpen()
         let module = SendV3Assembly.module(
@@ -135,23 +129,11 @@ private extension SendTokenCoordinator {
             self?.openSendConfirmation(sendData: sendData, analyticsContext: context)
         }
 
-        module.output.didTapPicker = { [weak self] wallet, token in
-            var pickerToken: SendTokenPickerModel.PickerToken = .ton(.ton)
-            switch token {
-            case let .ton(ton):
-                switch ton {
-                case .nft: return
-                case let .token(token, _):
-                    pickerToken = .ton(token)
-                }
-            case let .tron(tron):
-                switch tron {
-                case .usdt:
-                    pickerToken = .tronUSDT
-                }
-            }
-
+        module.output.didTapPicker = { [weak self] wallet, item in
             guard let self else { return }
+            guard let pickerToken = self.selectedPickerToken(for: item) else {
+                return
+            }
             self.openTokenPicker(
                 wallet: wallet,
                 token: pickerToken,
@@ -165,28 +147,26 @@ private extension SendTokenCoordinator {
         module.output.didTapScan = { [weak self] in
             self?.openScan(completion: { deeplink in
                 Task { [weak self] in
-                    guard let self else { return }
-                    switch deeplink {
-                    case let .transfer(data):
-                        switch data {
-                        case let .sendTransfer(sendTransferData):
-                            let recipient = try await self.recipientResolver.resolverRecipient(
-                                string: sendTransferData.recipient,
-                                network: wallet.network
-                            )
-                            switch recipient {
-                            case .ton:
-                                module.input.setRecipient(string: sendTransferData.recipient)
-                                module.input.setAmount(amount: sendTransferData.amount)
-                                module.input.setComment(comment: sendTransferData.comment)
-                            case .tron:
-                                module.input.setRecipient(string: sendTransferData.recipient)
-                                module.input.updateWithToken(.tron(.usdt(amount: sendTransferData.amount ?? 0)))
-                                module.input.setComment(comment: sendTransferData.comment)
-                            }
-                        default: break
+                    guard let self, case let .transfer(.sendTransfer(data)) = deeplink else {
+                        return
+                    }
+                    do {
+                        let recipient = try await self.recipientResolver.resolverRecipient(
+                            string: data.recipient,
+                            network: wallet.network
+                        )
+                        switch recipient {
+                        case .ton:
+                            module.input.setRecipient(string: data.recipient)
+                            module.input.setAmount(amount: data.amount)
+                            module.input.setComment(comment: data.comment)
+                        case .tron:
+                            module.input.setRecipient(string: data.recipient)
+                            module.input.updateWithToken(.tron(.usdt(amount: data.amount ?? 0)))
+                            module.input.setComment(comment: data.comment)
                         }
-                    default: break
+                    } catch {
+                        ToastPresenter.showToast(configuration: .init(title: TKLocales.Send.invalidAddress))
                     }
                 }
             })
@@ -237,8 +217,10 @@ private extension SendTokenCoordinator {
                     case let .jetton(jettonInfo):
                         return .ton(.token(.jetton(jettonInfo), amount: 0))
                     }
-                case .tronUSDT:
+                case .tron(.usdt):
                     return .tron(.usdt(amount: 0))
+                case .tron(.trx):
+                    return .tron(.trx(amount: 0))
                 }
             }()
             completion(sendToken)
@@ -252,13 +234,18 @@ private extension SendTokenCoordinator {
     }
 
     func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
+        let scannerAssembly = keeperCoreMainAssembly.scannerAssembly()
         let scanModule = ScannerModule(
             dependencies: ScannerModule.Dependencies(
                 coreAssembly: coreAssembly,
-                scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+                scannerAssembly: scannerAssembly
             )
         ).createScannerModule(
-            configurator: DefaultScannerControllerConfigurator(extensions: []),
+            configurator: DefaultScannerControllerConfigurator(
+                extensions: [],
+                deeplinkParser: scannerAssembly.deeplinkParser,
+                isMultichainEnabled: false
+            ),
             uiConfiguration: ScannerUIConfiguration(
                 title: TKLocales.Scanner.title,
                 subtitle: nil,
@@ -300,7 +287,7 @@ private extension SendTokenCoordinator {
 
 // MARK: - SendConfirmation
 
-private extension SendTokenCoordinator {
+private extension LegacySendTokenCoordinator {
     func isReadyForConfirmation(sendItem: SendV3Item) -> Bool {
         switch sendItem {
         case let .ton(item):
@@ -311,10 +298,21 @@ private extension SendTokenCoordinator {
                 return recipient != nil && recipient?.isTon == true
             }
         case let .tron(item):
-            switch item {
-            case let .usdt(amount):
-                return !amount.isZero && recipient != nil && recipient?.isTron == true
+            return !item.amount.isZero && recipient != nil && recipient?.isTron == true
+        }
+    }
+
+    func selectedPickerToken(for item: SendV3Item) -> SendTokenPickerModel.PickerToken? {
+        switch item {
+        case let .ton(ton):
+            switch ton {
+            case let .token(token, _):
+                return .ton(token)
+            case .nft:
+                return nil
             }
+        case let .tron(item):
+            return .tron(item.token)
         }
     }
 
@@ -355,6 +353,42 @@ private extension SendTokenCoordinator {
         openInsufficientFundsPopup(configuration: configuration)
     }
 
+    func showInsufficientTRXPopup(
+        wallet: Wallet,
+        balance: BigUInt,
+        requiredAmount: BigUInt,
+        onRefresh: @escaping () -> Void
+    ) {
+        let trxFeeToken = TronUSDTFeeOptionsResolver.trxFeeToken
+        var getTrxButton = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+        getTrxButton.content = TKButton.Configuration.Content(
+            title: .plainString(TKLocales.TronUsdtFees.Common.Buttons.getTrx)
+        )
+        getTrxButton.action = { [weak self] in
+            self?.router.dismiss(animated: true) {
+                self?.handleFeeRefillRequest(
+                    extraType: .gasless(token: trxFeeToken),
+                    onRefresh: onRefresh
+                )
+            }
+        }
+
+        let builder = InfoPopupBottomSheetConfigurationBuilder(
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+        )
+        openInsufficientFundsPopup(
+            configuration: builder.insufficientTokenConfiguration(
+                walletLabel: wallet.metaData.label,
+                caption: nil,
+                tokenSymbol: TRX.symbol,
+                tokenFractionalDigits: TRX.fractionDigits,
+                required: requiredAmount,
+                available: balance,
+                buttons: [getTrxButton]
+            )
+        )
+    }
+
     func openInsufficientFundsPopup(configuration: InfoPopupBottomSheetViewController.Configuration) {
         let viewController = InfoPopupBottomSheetViewController()
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
@@ -362,9 +396,8 @@ private extension SendTokenCoordinator {
         bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
 
-    func openSendConfirmation(sendData: SendData, analyticsContext: SendAnalyticsContext?) {
+    func openSendConfirmation(sendData: LegacySendData, analyticsContext: SendAnalyticsContext?) {
         let withdrawAnalyticsContext = makeWithdrawAnalyticsContext(sendData: sendData)
-        let transactionSentEventType: TransactionSent.EventType = .from(sendData: sendData)
         let transactionConfirmationController: TransactionConfirmationController
         switch sendData {
         case let .ton(ton):
@@ -400,32 +433,30 @@ private extension SendTokenCoordinator {
                 )
             }
         case let .tron(tron):
-            switch tron.item {
-            case let .usdt(amount):
-                let confirmationController = keeperCoreMainAssembly.tronUSDTTransferTransactionConfirmationController(
-                    wallet: tron.wallet,
-                    recipient: tron.recipient,
-                    amount: amount,
-                    recipientDisplayAddress: tron.recipientDisplayAddress
-                )
-                let tronSignHandler = { [weak self, keeperCoreMainAssembly, coreAssembly] (txId: TronSwift.TxID, wallet: Wallet) async throws(TronTransferSignError) in
-                    guard let self else {
-                        throw .cancelled
-                    }
-                    let coordinator = TronUSDTTransferSignCoordinator(
-                        router: ViewControllerRouter(rootViewController: router.rootViewController),
-                        wallet: wallet,
-                        txID: txId,
-                        keeperCoreMainAssembly: keeperCoreMainAssembly,
-                        coreAssembly: coreAssembly
-                    )
-                    return try await coordinator
-                        .handleSign(parentCoordinator: self)
-                        .get()
+            let confirmationController = keeperCoreMainAssembly.tronTransferTransactionConfirmationController(
+                wallet: tron.wallet,
+                token: tron.item.token,
+                recipient: tron.recipient,
+                amount: tron.item.amount,
+                recipientDisplayAddress: tron.recipientDisplayAddress
+            )
+            let tronSignHandler = { [weak self, keeperCoreMainAssembly, coreAssembly] (txId: TronSwift.TxID, wallet: Wallet) async throws(TronTransferSignError) in
+                guard let self else {
+                    throw .cancelled
                 }
-                confirmationController.tronSignHandler = tronSignHandler
-                transactionConfirmationController = confirmationController
+                let coordinator = TronUSDTTransferSignCoordinator(
+                    router: ViewControllerRouter(rootViewController: router.rootViewController),
+                    wallet: wallet,
+                    txID: txId,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    coreAssembly: coreAssembly
+                )
+                return try await coordinator
+                    .handleSign(parentCoordinator: self)
+                    .get()
             }
+            confirmationController.tronSignHandler = tronSignHandler
+            transactionConfirmationController = confirmationController
         }
 
         let withdrawDisplayInfo: WithdrawDisplayInfo? = {
@@ -459,6 +490,11 @@ private extension SendTokenCoordinator {
             transactionSentNotificationPatch: transactionSentNotificationPatch,
             withdrawDisplayInfo: withdrawDisplayInfo
         )
+
+        module.output.didOpenFeePicker = { [weak self] presentation in
+            self?.feePickerCoordinator.start(presentation: presentation)
+        }
+
         module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet throws(WalletTransferSignError) in
             guard let self else {
                 throw .cancelled
@@ -517,8 +553,8 @@ private extension SendTokenCoordinator {
 
         module.output.didStartConfirmTransaction = { [weak self] model in
             guard let self else { return }
-            let feePaidIn = self.feePaidInValue(model: model, assetNetwork: analyticsContext?.assetNetwork ?? "ton")
-            let metadata = self.transferRedMetadata(context: analyticsContext, feePaidIn: feePaidIn.rawValue)
+            let feeAsset = FeeAsset(extraState: model.extraState, asset: analyticsContext?.asset)
+            let metadata = self.transferRedMetadata(context: analyticsContext, feePaidIn: feeAsset.rawValue)
             let redSession = RedAnalyticsSessionHolder(
                 analytics: self.analyticsProvider,
                 configurationAssembly: self.keeperCoreMainAssembly.configurationAssembly
@@ -562,7 +598,13 @@ private extension SendTokenCoordinator {
                 model: model,
                 context: withdrawAnalyticsContext
             )
-            self.analyticsProvider.log(TransactionSent(wallet: self.wallet, eventType: transactionSentEventType))
+            if let event = TransactionSent(
+                wallet: self.wallet,
+                model: model,
+                origin: self.sendSource.transactionOrigin
+            ) {
+                self.analyticsProvider.log(event)
+            }
             self.didSendSuccessfully?(self)
         }
 
@@ -593,6 +635,17 @@ private extension SendTokenCoordinator {
             switch error {
             case .unknownJetton:
                 ToastPresenter.showToast(configuration: .failed)
+                return
+            case let .tronFee(_, balance, requiredAmount):
+                // TRX pays for a TRX transfer, so topping up is the only way out of this one.
+                showInsufficientTRXPopup(
+                    wallet: self.wallet,
+                    balance: balance,
+                    requiredAmount: requiredAmount,
+                    onRefresh: { [weak output = module.output] in
+                        output?.refresh()
+                    }
+                )
                 return
             case let .blockchainFee(_, balance, requiredAmount):
                 let tonToken = TonToken.ton
@@ -639,63 +692,45 @@ private extension SendTokenCoordinator {
             )
         }
 
-        module.output.didRequestOpenFeeRefill = { [weak self] extraType in
-            self?.handleFeeRefillRequest(extraType: extraType)
+        module.output.didRequestOpenFeeRefill = { [weak self, weak output = module.output] extraType in
+            self?.handleFeeRefillRequest(extraType: extraType) {
+                output?.refresh()
+            }
         }
 
         router.push(viewController: module.view)
     }
 }
 
-private extension SendTokenCoordinator {
-    func handleFeeRefillRequest(extraType: TransactionConfirmationModel.ExtraType) {
-        switch extraType {
-        case .battery:
-            didRequestOpenBattery?()
-        case .default:
-            didRequestRefill?(.ton(.ton))
-        case let .gasless(token):
-            switch token.symbol?.uppercased() {
-            case TRX.symbol.uppercased():
-                didRequestRefill?(.tron(.trx))
-            default:
-                didRequestRefill?(.ton(.jetton(JettonItem(jettonInfo: token, walletAddress: token.address))))
-            }
-        }
-    }
-}
-
-private extension SendTokenCoordinator {
+private extension LegacySendTokenCoordinator {
     func logSendOpen() {
         analyticsProvider.log(SendOpen(from: sendSource.sendOpenFrom))
     }
 
-    func logSendClick(sendData: SendData) {
-        guard let context = makeSendAnalyticsContext(sendData: sendData) else { return }
+    func logSendClick(sendData: LegacySendData) {
+        let context = makeSendAnalyticsContext(sendData: sendData)
         analyticsProvider.log(SendClick(
             from: context.source.sendClickFrom,
-            assetNetwork: context.assetNetwork,
-            tokenSymbol: context.tokenSymbol,
+            asset: context.asset,
             amount: context.amount
         ))
     }
 
     func logSendConfirm(model: TransactionConfirmationModel, context: SendAnalyticsContext?) {
         guard let context else { return }
-        let feePaidIn = toSendConfirmFeePaidIn(feePaidInValue(model: model, assetNetwork: context.assetNetwork))
+        let feeAsset = FeeAsset(extraState: model.extraState, asset: context.asset)
         analyticsProvider.log(SendConfirm(
             from: context.source.sendConfirmFrom,
-            assetNetwork: context.assetNetwork,
-            tokenSymbol: context.tokenSymbol,
+            asset: context.asset,
             amount: context.amount,
-            feePaidIn: feePaidIn,
+            feeAsset: feeAsset,
             appId: context.source.appId
         ))
     }
 
     func logWithdrawSendConfirm(model: TransactionConfirmationModel, context: WithdrawAnalyticsContext?) {
         guard let context else { return }
-        let feePaidIn = toRampFeePaidIn(feePaidInValue(model: model, assetNetwork: context.assetNetwork))
+        let feeAsset = FeeAsset(extraState: model.extraState, asset: context.asset)
         analyticsProvider.log(WithdrawSendConfirm(
             from: context.from,
             withdrawOption: context.withdrawOption,
@@ -703,7 +738,7 @@ private extension SendTokenCoordinator {
             stablecoinSymbol: context.stablecoinSymbol,
             buyAsset: context.buyAsset,
             amount: context.amount,
-            feePaidIn: feePaidIn
+            feeAsset: feeAsset
         ))
     }
 
@@ -712,13 +747,12 @@ private extension SendTokenCoordinator {
         context: SendAnalyticsContext?
     ) {
         guard let context else { return }
-        let feePaidIn = toSendSuccessFeePaidIn(feePaidInValue(model: model, assetNetwork: context.assetNetwork))
+        let feeAsset = FeeAsset(extraState: model.extraState, asset: context.asset)
         analyticsProvider.log(SendSuccess(
             from: context.source.sendSuccessFrom,
-            assetNetwork: context.assetNetwork,
-            tokenSymbol: context.tokenSymbol,
+            asset: context.asset,
             amount: context.amount,
-            feePaidIn: feePaidIn,
+            feeAsset: feeAsset,
             appId: context.source.appId
         ))
     }
@@ -728,7 +762,7 @@ private extension SendTokenCoordinator {
         context: WithdrawAnalyticsContext?
     ) {
         guard let context else { return }
-        let feePaidIn = toRampFeePaidIn(feePaidInValue(model: model, assetNetwork: context.assetNetwork))
+        let feeAsset = FeeAsset(extraState: model.extraState, asset: context.asset)
         analyticsProvider.log(WithdrawSendSuccess(
             from: context.from,
             withdrawOption: context.withdrawOption,
@@ -736,7 +770,7 @@ private extension SendTokenCoordinator {
             stablecoinSymbol: context.stablecoinSymbol,
             buyAsset: context.buyAsset,
             amount: context.amount,
-            feePaidIn: feePaidIn
+            feeAsset: feeAsset
         ))
     }
 
@@ -746,87 +780,69 @@ private extension SendTokenCoordinator {
         context: SendAnalyticsContext?
     ) {
         guard let context else { return }
-        let feePaidIn = toSendFailedFeePaidIn(feePaidInValue(model: model, assetNetwork: context.assetNetwork))
+        let feeAsset = FeeAsset(extraState: model.extraState, asset: context.asset)
         analyticsProvider.log(SendFailed(
             from: context.source.sendFailedFrom,
-            assetNetwork: context.assetNetwork,
-            tokenSymbol: context.tokenSymbol,
+            asset: context.asset,
             amount: context.amount,
-            feePaidIn: feePaidIn,
+            feeAsset: feeAsset,
             errorCode: error.code,
             errorMessage: error.message,
             appId: context.source.appId
         ))
     }
 
-    func makeSendAnalyticsContext(sendData: SendData) -> SendAnalyticsContext? {
+    func makeSendAnalyticsContext(sendData: LegacySendData) -> SendAnalyticsContext {
         switch sendData {
         case let .ton(ton):
             switch ton.item {
             case let .token(token, amount):
-                let tokenSymbol: String
-                let fractionDigits: Int
-                switch token {
-                case .ton:
-                    tokenSymbol = TonInfo.symbol
-                    fractionDigits = TonInfo.fractionDigits
-                case let .jetton(jettonItem):
-                    tokenSymbol = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
-                    fractionDigits = jettonItem.jettonInfo.fractionDigits
-                }
-                let amountValue = amountDouble(value: amount, decimals: fractionDigits)
                 return SendAnalyticsContext(
                     source: sendSource,
-                    assetNetwork: "ton",
-                    tokenSymbol: tokenSymbol,
-                    amount: amountValue
+                    asset: Token.ton(token).assetId(network: wallet.network),
+                    amount: amountDouble(value: amount, decimals: token.fractionDigits)
                 )
             case let .nft(nft):
                 return SendAnalyticsContext(
                     source: sendSource,
-                    assetNetwork: "ton",
-                    tokenSymbol: nft.notNilName,
+                    asset: AssetId.nft(address: nft.address, network: wallet.network),
                     amount: 1
                 )
             }
         case let .tron(tron):
-            switch tron.item {
-            case let .usdt(amount):
-                let amountValue = amountDouble(value: amount, decimals: TronSwift.USDT.fractionDigits)
-                return SendAnalyticsContext(
-                    source: sendSource,
-                    assetNetwork: "trc20",
-                    tokenSymbol: TronSwift.USDT.symbol,
-                    amount: amountValue
-                )
-            }
+            let token = tron.item.token
+            return SendAnalyticsContext(
+                source: sendSource,
+                asset: Token.tron(token).assetId(network: wallet.network),
+                amount: amountDouble(value: tron.item.amount, decimals: token.fractionDigits)
+            )
         }
     }
 
-    func makeWithdrawAnalyticsContext(sendData: SendData) -> WithdrawAnalyticsContext? {
+    func makeWithdrawAnalyticsContext(sendData: LegacySendData) -> WithdrawAnalyticsContext? {
         guard
             let from = sendSource.withdrawSendConfirmFrom,
             let withdrawOption = withdrawSendOption(),
             case let .withdraw(sourceAsset, exchangeTo) = sendInput,
             let sellAsset = sourceAsset.withdrawAnalyticsAssetIdentifier,
-            let buyAsset = exchangeTo.withdrawAnalyticsAssetIdentifier,
-            let sendContext = makeSendAnalyticsContext(sendData: sendData)
+            let buyAsset = exchangeTo.withdrawAnalyticsAssetIdentifier
         else {
             return nil
         }
 
+        let sendContext = makeSendAnalyticsContext(sendData: sendData)
         return WithdrawAnalyticsContext(
             from: from,
             withdrawOption: withdrawOption,
             sellAsset: sellAsset,
             stablecoinSymbol: sourceAsset.symbol,
             buyAsset: buyAsset,
-            assetNetwork: sendContext.assetNetwork,
+            asset: sendContext.asset,
             amount: sendAmount(sendData)
         )
     }
 
-    func sendAmount(_ sendData: SendData) -> Float {
+    func sendAmount(_ sendData: LegacySendData) -> Float {
         switch sendData {
         case let .ton(ton):
             switch ton.item {
@@ -836,10 +852,7 @@ private extension SendTokenCoordinator {
                 return 1
             }
         case let .tron(tron):
-            switch tron.item {
-            case let .usdt(amount):
-                return Float(amountDouble(value: amount, decimals: TronSwift.USDT.fractionDigits))
-            }
+            return Float(amountDouble(value: tron.item.amount, decimals: tron.item.token.fractionDigits))
         }
     }
 
@@ -856,82 +869,6 @@ private extension SendTokenCoordinator {
         NSDecimalNumber.fromBigUInt(value: value, decimals: decimals).doubleValue
     }
 
-    func feePaidInValue(model: TransactionConfirmationModel, assetNetwork: String) -> SendFeePaidIn {
-        switch model.extraState {
-        case let .extra(extra):
-            switch extra.value {
-            case .default:
-                return .ton
-            case .battery:
-                return .battery
-            case .gasless:
-                return assetNetwork == "trc20" ? .trx : .gasless
-            }
-        case .none, .loading:
-            return assetNetwork == "trc20" ? .trx : .ton
-        }
-    }
-
-    func toSendConfirmFeePaidIn(_ value: SendFeePaidIn) -> SendConfirm.FeePaidIn {
-        switch value {
-        case .ton:
-            return .ton
-        case .trx:
-            return .trx
-        case .battery:
-            return .battery
-        case .gasless:
-            return .gasless
-        case .free:
-            return .free
-        }
-    }
-
-    func toSendSuccessFeePaidIn(_ value: SendFeePaidIn) -> SendSuccess.FeePaidIn {
-        switch value {
-        case .ton:
-            return .ton
-        case .trx:
-            return .trx
-        case .battery:
-            return .battery
-        case .gasless:
-            return .gasless
-        case .free:
-            return .free
-        }
-    }
-
-    func toRampFeePaidIn(_ value: SendFeePaidIn) -> FeePaidIn {
-        switch value {
-        case .ton:
-            return .ton
-        case .trx:
-            return .trx
-        case .battery:
-            return .battery
-        case .gasless:
-            return .gasless
-        case .free:
-            return .trxFree
-        }
-    }
-
-    func toSendFailedFeePaidIn(_ value: SendFeePaidIn) -> SendFailed.FeePaidIn {
-        switch value {
-        case .ton:
-            return .ton
-        case .trx:
-            return .trx
-        case .battery:
-            return .battery
-        case .gasless:
-            return .gasless
-        case .free:
-            return .free
-        }
-    }
-
     func transferRedMetadata(
         context: SendAnalyticsContext?,
         feePaidIn: String? = nil
@@ -939,8 +876,7 @@ private extension SendTokenCoordinator {
         context.flatMap { context in
             [
                 .source: context.source.redSourceValue,
-                .assetNetwork: context.assetNetwork,
-                .tokenSymbol: context.tokenSymbol,
+                .asset: context.asset,
                 .amount: context.amount,
                 .feePaidIn: feePaidIn,
                 .appId: context.source.appId,
@@ -949,7 +885,26 @@ private extension SendTokenCoordinator {
     }
 }
 
-private extension SendAnalyticsSource {
+extension SendAnalyticsSource {
+    var transactionOrigin: TransactionOrigin {
+        TransactionOrigin(initiatedBy: initiatedBy, appId: appId)
+    }
+
+    var initiatedBy: InitiatedBy {
+        switch self {
+        case .walletScreen, .jettonScreen:
+            .user
+        case .deepLink:
+            .deepLink
+        case .tonconnectLocal:
+            .tonconnectLocal
+        case .tonconnectRemote:
+            .tonconnectRemote
+        case .qrCode:
+            .qrCode
+        }
+    }
+
     var appId: String? {
         switch self {
         case let .tonconnectLocal(appId):

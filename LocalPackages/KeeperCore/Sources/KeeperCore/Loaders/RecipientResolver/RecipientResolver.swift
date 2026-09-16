@@ -2,12 +2,15 @@ import Foundation
 import TonSwift
 
 public protocol RecipientResolver {
-    func resolverRecipient(string: String, network: Network) async throws -> Recipient
+    func resolverRecipient(
+        string: String,
+        network: Network
+    ) async throws -> LegacyRecipient
     func resolverTonRecipient(string: String, network: Network) async throws -> TonRecipient
 }
 
-public struct RecipientResolverImplementation: RecipientResolver {
-    public enum Error: Swift.Error {
+struct RecipientResolverImplementation: RecipientResolver {
+    enum Error: Swift.Error {
         case failedResolve(string: String)
         case incorrectNet(sender: Network, recipient: Network)
     }
@@ -23,7 +26,10 @@ public struct RecipientResolverImplementation: RecipientResolver {
         self.accountService = accountService
     }
 
-    public func resolverRecipient(string: String, network: Network) async throws -> Recipient {
+    func resolverRecipient(
+        string: String,
+        network: Network
+    ) async throws -> LegacyRecipient {
         if let tronRecipient = resolveTronRecipient(string: string) {
             return .tron(tronRecipient)
         }
@@ -31,9 +37,9 @@ public struct RecipientResolverImplementation: RecipientResolver {
         return try .ton(await resolverTonRecipient(string: string, network: network))
     }
 
-    public func resolverTonRecipient(string: String, network: Network) async throws -> TonRecipient {
+    func resolverTonRecipient(string: String, network: Network) async throws -> TonRecipient {
         if let friendlyAddress = try? FriendlyAddress(string: string) {
-            guard friendlyAddress.isTestOnly == (network == .testnet) else {
+            guard network.matchesTonAddress(friendlyAddress) else {
                 throw Error.incorrectNet(
                     sender: network,
                     recipient: friendlyAddress.isTestOnly ? .testnet : .mainnet

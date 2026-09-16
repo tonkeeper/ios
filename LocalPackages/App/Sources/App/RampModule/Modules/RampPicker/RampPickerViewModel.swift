@@ -10,7 +10,6 @@ protocol RampPickerModuleOutput: AnyObject {
     var didTapClose: (() -> Void)? { get set }
     var didSelectCurrency: ((RemoteCurrency) -> Void)? { get set }
     var didSelectCryptoItem: ((CryptoPickerItem) -> Void)? { get set }
-    var didSelectPaymentMethod: ((OnRampLayoutCashMethod) -> Void)? { get set }
     var didSelectNetworkAsset: ((OnRampLayoutCryptoMethod) -> Void)? { get set }
     var didSelectAsset: ((RampAsset) -> Void)? { get set }
 }

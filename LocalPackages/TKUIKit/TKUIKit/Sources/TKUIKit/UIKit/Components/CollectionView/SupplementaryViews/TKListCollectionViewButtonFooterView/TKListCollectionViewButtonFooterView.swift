@@ -35,7 +35,7 @@ public final class TKListCollectionViewButtonFooterView: UICollectionReusableVie
         }
     }
 
-    let button = TKButton(configuration: .actionButtonConfiguration(category: .secondary, size: .small))
+    public let button = TKButton(configuration: .actionButtonConfiguration(category: .secondary, size: .small))
 
     override init(frame: CGRect) {
         super.init(frame: frame)

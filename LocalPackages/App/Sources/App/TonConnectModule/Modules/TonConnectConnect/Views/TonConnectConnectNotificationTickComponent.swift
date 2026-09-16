@@ -84,11 +84,13 @@ final class TonConnectConnectNotificationTickView: UIControl {
         tickView.setContentHuggingPriority(.required, for: .horizontal)
 
         backgroundView.snp.makeConstraints { make in
-            make.edges.equalTo(self).inset(16)
+            make.horizontalEdges.equalTo(self).inset(16)
+            make.verticalEdges.equalTo(self).inset(16)
         }
 
         stackView.snp.makeConstraints { make in
-            make.edges.equalTo(backgroundView).inset(16)
+            make.horizontalEdges.equalTo(backgroundView).inset(16)
+            make.verticalEdges.equalTo(backgroundView).inset(14)
         }
     }
 }

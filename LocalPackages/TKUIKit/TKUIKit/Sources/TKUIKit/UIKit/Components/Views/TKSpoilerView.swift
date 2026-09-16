@@ -30,7 +30,7 @@ public final class TKSpoilerView: TKEmitterView {
 
     private func setEmitterCell() {
         let emitterCell = CAEmitterCell()
-        emitterCell.contents = UIImage.TKUIKit.Images.text_spoiler.cgImage
+        emitterCell.contents = UIImage.TKUIKit.Textures.textSpoiler.cgImage
         emitterCell.color = spoilerColor.cgColor
         emitterCell.contentsScale = 1.8
         emitterCell.emissionRange = .pi * 2

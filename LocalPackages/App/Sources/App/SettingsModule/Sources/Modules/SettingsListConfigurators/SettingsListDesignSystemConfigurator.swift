@@ -3,6 +3,7 @@ import TKUIKit
 final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
     var didSelectCellsCatalog: (() -> Void)?
     var didSelectTransactionCellPreviews: (() -> Void)?
+    var didSelectNFTCardPreviews: (() -> Void)?
     var didSelectIconButtonViewPreviews: (() -> Void)?
     var didSelectWalletButtonPreviews: (() -> Void)?
     var didSelectBatterySwiftUIViewPreviews: (() -> Void)?
@@ -13,6 +14,8 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
     var didSelectTabCategoriesViewPreviews: (() -> Void)?
     var didSelectPlaceholderViewPreviews: (() -> Void)?
     var didSelectChartPreviews: (() -> Void)?
+    var didSelectCircularLoaderPreviews: (() -> Void)?
+    var didSelectColorsPreviews: (() -> Void)?
     var didUpdateState: ((SettingsListState) -> Void)?
 
     var title: String {
@@ -22,11 +25,12 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
     func getInitialState() -> SettingsListState {
         SettingsListState(
             sections: [
-                .listItems(
+                .items(
                     SettingsListItemsSection(
                         items: [
                             .listItem(createCellsCatalogItem()),
                             .listItem(createTransactionCellPreviewsItem()),
+                            .listItem(createNFTCardPreviewsItem()),
                             .listItem(createButtonViewPreviewsItem()),
                             .listItem(createIconButtonViewPreviewsItem()),
                             .listItem(createWalletButtonPreviewsItem()),
@@ -37,8 +41,10 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
                             .listItem(createTabCategoriesViewPreviewsItem()),
                             .listItem(createPlaceholderViewPreviewsItem()),
                             .listItem(createChartPreviewsItem()),
+                            .listItem(createCircularLoaderPreviewsItem()),
+                            .listItem(createColorsPreviewsItem()),
                         ],
-                        headerConfiguration: SettingsListSectionHeaderView.Configuration(
+                        header: SettingsListSectionHeader(
                             title: "Components"
                         )
                     )
@@ -62,6 +68,15 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
             id: .designSystemTransactionCellPreviewsItemIdentifier
         ) { [weak self] in
             self?.didSelectTransactionCellPreviews?()
+        }
+    }
+
+    private func createNFTCardPreviewsItem() -> SettingsListItem {
+        createNavigationItem(
+            title: "NFT Card",
+            id: .designSystemNFTCardPreviewsItemIdentifier
+        ) { [weak self] in
+            self?.didSelectNFTCardPreviews?()
         }
     }
 
@@ -155,26 +170,34 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
         }
     }
 
+    private func createCircularLoaderPreviewsItem() -> SettingsListItem {
+        createNavigationItem(
+            title: "Circular Loader",
+            id: .designSystemCircularLoaderPreviewsItemIdentifier
+        ) { [weak self] in
+            self?.didSelectCircularLoaderPreviews?()
+        }
+    }
+
+    private func createColorsPreviewsItem() -> SettingsListItem {
+        createNavigationItem(
+            title: "Colors",
+            id: .designSystemColorsPreviewsItemIdentifier
+        ) { [weak self] in
+            self?.didSelectColorsPreviews?()
+        }
+    }
+
     private func createNavigationItem(
         title: String,
         id: String,
         onSelection: @escaping () -> Void
     ) -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(
-                        title: title
-                    )
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: id,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle(title),
             accessory: .chevron,
-            onSelection: { _ in
+            onTap: { _ in
                 onSelection()
             }
         )
@@ -184,6 +207,7 @@ final class SettingsListDesignSystemConfigurator: SettingsListConfigurator {
 private extension String {
     static let designSystemCellsCatalogItemIdentifier = "designSystemCellsCatalogItemIdentifier"
     static let designSystemTransactionCellPreviewsItemIdentifier = "designSystemTransactionCellPreviewsItemIdentifier"
+    static let designSystemNFTCardPreviewsItemIdentifier = "designSystemNFTCardPreviewsItemIdentifier"
     static let designSystemIconButtonViewPreviewsItemIdentifier = "designSystemIconButtonViewPreviewsItemIdentifier"
     static let designSystemWalletButtonPreviewsItemIdentifier = "designSystemWalletButtonPreviewsItemIdentifier"
     static let designSystemBatterySwiftUIViewPreviewsItemIdentifier = "designSystemBatterySwiftUIViewPreviewsItemIdentifier"
@@ -194,4 +218,6 @@ private extension String {
     static let designSystemTabCategoriesViewPreviewsItemIdentifier = "designSystemTabCategoriesViewPreviewsItemIdentifier"
     static let designSystemPlaceholderViewPreviewsItemIdentifier = "designSystemPlaceholderViewPreviewsItemIdentifier"
     static let designSystemChartPreviewsItemIdentifier = "designSystemChartPreviewsItemIdentifier"
+    static let designSystemCircularLoaderPreviewsItemIdentifier = "designSystemCircularLoaderPreviewsItemIdentifier"
+    static let designSystemColorsPreviewsItemIdentifier = "designSystemColorsPreviewsItemIdentifier"
 }

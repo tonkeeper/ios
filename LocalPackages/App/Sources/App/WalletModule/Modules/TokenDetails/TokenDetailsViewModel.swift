@@ -8,7 +8,6 @@ import UIKit
 protocol TokenDetailsModuleOutput: AnyObject {
     var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
     var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
-    var didTapBuyOrSell: (() -> Void)? { get set }
     var didTapSwap: ((KeeperCore.Token) -> Void)? { get set }
     var didOpenURL: ((URL) -> Void)? { get set }
 }
@@ -74,7 +73,6 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
 
     var didTapSend: ((KeeperCore.Token) -> Void)?
     var didTapReceive: ((KeeperCore.Token) -> Void)?
-    var didTapBuyOrSell: (() -> Void)?
     var didTapSwap: ((KeeperCore.Token) -> Void)?
     var didOpenURL: ((URL) -> Void)?
 
@@ -99,7 +97,9 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
     }
 
     func reload() {
-        balanceLoader.loadWalletBalance(wallet: wallet)
+        Task { [balanceLoader, wallet] in
+            await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
+        }
         configurator.reload()
     }
 
@@ -108,8 +108,6 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
     private let syncQueue = DispatchQueue(label: "TokenDetailsViewModelImplementationQueue")
 
     // MARK: - Image Loading
-
-    private let imageLoader = ImageLoader()
 
     // MARK: - Dependencies
 
@@ -212,8 +210,6 @@ private extension TokenDetailsViewModelImplementation {
                         self?.didTapSend?(token)
                     case let .receive(token):
                         self?.didTapReceive?(token)
-                    case .buySell:
-                        self?.didTapBuyOrSell?()
                     case let .swap(token):
                         self?.didTapSwap?(token)
                     default:
@@ -243,7 +239,7 @@ private extension TokenDetailsViewModelImplementation {
             case .trc20:
                 return TKListItemIconView.Configuration.Badge(
                     configuration: TKListItemBadgeView.Configuration(
-                        item: .image(.image(.App.Currency.Vector.trc20)),
+                        item: .image(.image(.TKUIKit.Icons.Size44.currencyTrc20)),
                         size: .large,
                         backgroundColor: .Background.page
                     ),

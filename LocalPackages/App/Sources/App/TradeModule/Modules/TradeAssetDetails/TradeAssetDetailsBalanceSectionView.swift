@@ -10,7 +10,7 @@ struct TradeAssetDetailsBalanceSectionView: View {
             ListTitleView(
                 config: balance != nil ? .text(
                     TKLocales.Trade.AssetDetails.Balance.title
-                ) : .shimmer
+                ) : .shimmer()
             )
             AssetBalanceCell(
                 config: balance
@@ -26,6 +26,7 @@ struct TradeAssetDetailsBalanceSectionView: View {
                         )
                     } ?? .shimmer
             )
+            .balanceFreshness(balance?.freshness ?? .actual)
             .asCellsGroup(
                 config: .init(
                     horizontalPadding: 0

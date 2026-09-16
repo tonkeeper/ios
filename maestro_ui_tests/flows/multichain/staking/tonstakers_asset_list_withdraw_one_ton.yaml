@@ -1,0 +1,69 @@
+# Multichain Tonstakers withdraw: Wallet list Staked/Tonstakers → Unstake → MAX → confirm.
+# Uses MAX because liquid stake after a 1-unit deposit is often slightly under 1 (rate/fees).
+# Expands "More assets" when present — Tonstakers is hidden behind it on multichain wallets.
+# Preconditions: ≥ some liquid stake (run deposit first in the same shard).
+# API asserts run only when WALLET_WITH_MONEY_ADDR + auth are set (CI).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+# The Staked/Tonstakers row lives behind "More assets", which starts collapsed on every
+# launch and sits below the fold, so the list has to be scrolled before the state can be
+# read at all. The scroll is optional because a short asset list has no "More assets".
+- runFlow: "../../../steps/wallet/expand_more_assets.yaml"
+
+- scrollUntilVisible:
+    element: "Tonstakers"
+    direction: DOWN
+    centerElement: true
+    visibilityPercentage: 100
+    timeout: 120000
+- waitForAnimationToEnd:
+    timeout: 10000
+- tapOn: "Tonstakers"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_balance_unstake"
+    timeout: 30000
+- tapOn:
+    id: "staking_balance_unstake"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_amount_input"
+    timeout: 30000
+- tapOn: "MAX"
+- waitForAnimationToEnd:
+    timeout: 2000
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_continue"
+    timeout: 30000
+- tapOn:
+    id: "staking_deposit_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 60000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 180000

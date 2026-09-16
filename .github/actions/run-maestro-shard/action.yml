@@ -1,0 +1,146 @@
+name: Run Maestro shard tests
+description: Execute one Maestro CI shard (first run + optional per-flow retry) and upload artifacts.
+
+inputs:
+  shard-id:
+    description: Shard identifier for summaries and artifact names.
+    required: true
+  flow-rel-path:
+    description: Path under maestro_ui_tests/, e.g. flows/ton-state/backup or flows/multichain/history.
+    required: true
+  simulator-artifact:
+    description: Artifact name with the simulator .app zip.
+    required: true
+  artifacts-dir:
+    description: Relative artifacts directory under repo root.
+    required: true
+  cluster:
+    description: Cluster label for job summary (ton-state or multichain).
+    required: false
+    default: ton-state
+
+runs:
+  using: composite
+  steps:
+    - name: Restore Maestro failed-flow state (GitHub workflow re-run)
+      if: github.run_attempt > 1
+      continue-on-error: true
+      uses: actions/download-artifact@v6
+      with:
+        name: maestro-failed-state-${{ inputs.shard-id }}
+        path: ${{ github.workspace }}/build/maestro-retry-state/${{ inputs.shard-id }}
+
+    - name: Fetch simulator app
+      uses: ./.github/actions/fetch-simulator-app
+      with:
+        artifact-name: ${{ inputs.simulator-artifact }}
+
+    - name: Prepare Maestro simulator
+      uses: ./.github/actions/prepare-maestro-simulator
+      with:
+        artifacts-dir: ${{ inputs.artifacts-dir }}
+
+    - name: Run Maestro tests
+      id: run_maestro
+      shell: bash
+      env:
+        ART: ${{ github.workspace }}/${{ inputs.artifacts-dir }}
+        FLOW_DIR: ${{ github.workspace }}/maestro_ui_tests/${{ inputs.flow-rel-path }}
+        SHARD_ID: ${{ inputs.shard-id }}
+        REPO_ROOT: ${{ github.workspace }}
+        SCRIPTS: ${{ github.workspace }}/maestro_ui_tests/scripts
+        GHA_STATE_DIR: ${{ github.workspace }}/build/maestro-retry-state/${{ inputs.shard-id }}
+        MAESTRO_MNEMONIC_PHRASE: ${{ env.MAESTRO_MNEMONIC_PHRASE }}
+        MAESTRO_WALLET_WITH_MONEY: ${{ env.MAESTRO_WALLET_WITH_MONEY }}
+        MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ env.MAESTRO_WALLET_WITH_MONEY_ADDR }}
+        MAESTRO_AUTH: ${{ env.MAESTRO_AUTH }}
+        MAESTRO_RECIEVE_WALLET: ${{ env.MAESTRO_RECIEVE_WALLET }}
+        MAESTRO_TESTNET_MNEM: ${{ env.MAESTRO_TESTNET_MNEM }}
+        MAESTRO_TON_V4: ${{ env.MAESTRO_TON_V4 }}
+        MAESTRO_RETRY_FAILED_FLOWS: "1"
+      run: bash "${{ github.workspace }}/maestro_ui_tests/ci/run_maestro_shard.sh"
+
+    - name: Write Maestro CI summary
+      if: always()
+      shell: bash
+      env:
+        ART: ${{ github.workspace }}/${{ inputs.artifacts-dir }}
+        SCRIPTS: ${{ github.workspace }}/maestro_ui_tests/scripts
+        SHARD_ID: ${{ inputs.shard-id }}
+        FLOW_DIR: ${{ github.workspace }}/maestro_ui_tests/${{ inputs.flow-rel-path }}
+      run: bash "${{ github.workspace }}/maestro_ui_tests/ci/write_maestro_shard_summary.sh"
+
+    - name: Prepare Maestro GitHub re-run state artifact
+      if: ${{ !success() }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        OUT="${{ github.workspace }}/build/maestro-failed-state-upload/${{ inputs.shard-id }}"
+        ART="${{ github.workspace }}/${{ inputs.artifacts-dir }}"
+        FLOW_DIR="${{ github.workspace }}/maestro_ui_tests/${{ inputs.flow-rel-path }}"
+        mkdir -p "$OUT" "$ART"
+        python3 "${{ github.workspace }}/maestro_ui_tests/scripts/ci/write_maestro_github_retry_state.py" \
+          --repo-root "${{ github.workspace }}" \
+          --shard-id "${{ inputs.shard-id }}" \
+          --flow-dir "$FLOW_DIR" \
+          --artifacts-dir "$ART" \
+          --out-dir "$OUT"
+
+    - name: Upload Maestro GitHub re-run state artifact
+      if: ${{ !success() }}
+      uses: actions/upload-artifact@v6
+      with:
+        name: maestro-failed-state-${{ inputs.shard-id }}
+        path: build/maestro-failed-state-upload/${{ inputs.shard-id }}
+        if-no-files-found: warn
+        retention-days: 14
+
+    - name: Stop simulator screen recording and log stream
+      if: always()
+      uses: ./.github/actions/stop-maestro-recording
+      with:
+        artifacts-dir: ${{ inputs.artifacts-dir }}
+
+    # The recording only earns its upload minutes and storage when there is a
+    # failure to debug; a green shard's video is never watched.
+    - name: Drop screen recording for passing run
+      if: ${{ always() && steps.run_maestro.outcome == 'success' }}
+      shell: bash
+      run: rm -f "${{ github.workspace }}/${{ inputs.artifacts-dir }}/simulator-run.mp4"
+
+    - name: Stage Maestro log and screen recording for upload
+      if: always()
+      uses: ./.github/actions/stage-maestro-artifacts
+      with:
+        source-dir: ${{ github.workspace }}/${{ inputs.artifacts-dir }}
+        staging-dir: ${{ github.workspace }}/build/maestro-ci-upload/${{ inputs.shard-id }}
+        files: >-
+          maestro.log
+          maestro-ci-summary.txt
+          maestro-ci-summary-first.txt
+          maestro-ci-summary-retry.txt
+          maestro-exit.txt
+          maestro-exit-first.txt
+          maestro-retry.log
+          maestro-retry-flow-paths.txt
+          record-started-at.epoch
+          simulator-run.mp4
+          simulator-unified.log
+
+    - name: Upload Maestro log and screen recording
+      id: maestro_ci_upload
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: maestro-ci-${{ github.run_id }}-${{ inputs.shard-id }}
+        path: build/maestro-ci-upload/${{ inputs.shard-id }}
+        retention-days: 14
+        if-no-files-found: warn
+
+    - name: Link Maestro CI artifact in job summary
+      if: always()
+      uses: ./.github/actions/link-maestro-artifact
+      with:
+        artifact-url: ${{ steps.maestro_ci_upload.outputs.artifact-url }}
+        artifact-name: maestro-ci-${{ github.run_id }}-${{ inputs.shard-id }}
+        description: "`maestro.log`, failure screenshots, `simulator-run.mp4`, `maestro-ci-summary.txt`"

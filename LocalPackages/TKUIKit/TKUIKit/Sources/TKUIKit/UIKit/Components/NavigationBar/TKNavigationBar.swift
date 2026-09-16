@@ -2,16 +2,6 @@ import UIKit
 
 // TODO: Refactor
 public final class TKNavigationBar: UIView {
-    public var configuration = Configuration(rightButtonItems: []) {
-        didSet {
-            didUpdateConfiguration()
-        }
-    }
-
-    public var additionalInset: CGFloat {
-        bounds.height - safeAreaInsets.top
-    }
-
     public var title: String? {
         didSet {
             titleLabel.text = title
@@ -86,14 +76,6 @@ public final class TKNavigationBar: UIView {
         return stackView
     }()
 
-    public weak var scrollView: UIScrollView? {
-        didSet {
-            didSetScrollView()
-        }
-    }
-
-    private var contentOffsetToken: NSKeyValueObservation?
-
     // MARK: - Init
 
     override init(frame: CGRect) {
@@ -104,11 +86,6 @@ public final class TKNavigationBar: UIView {
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
-    }
-
-    public func setIsLarge(_ isLarge: Bool, animated: Bool) {
-        self.isLarge = isLarge
-        didChangeIsLarge(animated: animated)
     }
 }
 
@@ -175,24 +152,6 @@ private extension TKNavigationBar {
         ])
     }
 
-    func didSetScrollView() {
-        if let scrollView = scrollView {
-            setIsLarge(true, animated: false)
-            contentOffsetToken = scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
-                let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
-                self?.largeBarView.transform = CGAffineTransform(translationX: 0, y: -offset)
-                let isLarge = offset <= .largeBarHeight - 20
-                self?.setIsLarge(isLarge, animated: scrollView.isTracking)
-                self?.updateSeparatorVisibility(offset: offset)
-            }
-        } else {
-            contentOffsetToken = nil
-            separatorOffset = nil
-            largeBarView.transform = .identity
-            updateSeparatorVisibility()
-        }
-    }
-
     func updateSeparatorVisibility(offset: CGFloat? = nil) {
         if let offset {
             separatorOffset = offset
@@ -222,27 +181,6 @@ private extension TKNavigationBar {
 
             self.largeTitleView.alpha = largeBarContentViewAlpha
             self.largeBarRightButtonsStackView.alpha = largeBarContentViewAlpha
-        }
-    }
-
-    func didUpdateConfiguration() {
-        rightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        largeBarRightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
-        for rightButtonItem in configuration.rightButtonItems {
-            let button = TKUIHeaderIconButton()
-            button.padding = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
-            button.configure(model: rightButtonItem.model)
-            button.addTapAction(rightButtonItem.action)
-            rightButtonsStackView.addArrangedSubview(button)
-        }
-
-        for rightButtonItem in configuration.rightButtonItems {
-            let button = TKUIHeaderIconButton()
-            button.padding = UIEdgeInsets(top: 8, left: 6, bottom: 8, right: 6)
-            button.configure(model: rightButtonItem.model)
-            button.addTapAction(rightButtonItem.action)
-            largeBarRightButtonsStackView.addArrangedSubview(button)
         }
     }
 }

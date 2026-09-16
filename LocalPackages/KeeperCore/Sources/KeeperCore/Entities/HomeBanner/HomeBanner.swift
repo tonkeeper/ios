@@ -43,11 +43,6 @@ public struct HomeBanner: Codable, Equatable, Hashable, Identifiable {
             case title
         }
 
-        public init(title: String, type: ButtonType) {
-            self.title = title
-            self.type = type
-        }
-
         public init(from decoder: any Decoder) throws {
             let container = try decoder.container(keyedBy: CodingKeys.self)
             title = try container.decode(String.self, forKey: .title)
@@ -110,6 +105,6 @@ public struct HomeBanner: Codable, Equatable, Hashable, Identifiable {
     }
 }
 
-public struct HomeBannersResponse: Decodable {
-    public let banners: [HomeBanner]
+struct HomeBannersResponse: Decodable {
+    let banners: [HomeBanner]
 }

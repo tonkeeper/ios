@@ -6,17 +6,17 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class KeystoneImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didPrepareForPresent: (() -> Void)?
-    public var didCancel: (() -> Void)?
-    public var didImport: ((_ publicKey: TonSwift.PublicKey, _ revisions: [WalletContractVersion], _ model: CustomizeWalletModel) -> Void)?
+final class KeystoneImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didPrepareForPresent: (() -> Void)?
+    var didCancel: (() -> Void)?
+    var didImport: ((_ publicKey: TonSwift.PublicKey, _ revisions: [WalletContractVersion], _ model: CustomizeWalletModel) -> Void)?
 
     private let publicKey: TonSwift.PublicKey
     private let name: String?
     private let path: String?
     private let xfp: String?
     private let walletsUpdateAssembly: WalletsUpdateAssembly
-    private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+    private let customizeWalletModule: () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
 
     init(
         publicKey: TonSwift.PublicKey,
@@ -25,7 +25,7 @@ public final class KeystoneImportCoordinator: RouterCoordinator<NavigationContro
         name: String?,
         router: NavigationControllerRouter,
         walletsUpdateAssembly: WalletsUpdateAssembly,
-        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
+        customizeWalletModule: @escaping () -> MVVMModule<CustomizeWalletHostingViewController, CustomizeWalletModuleOutput, Void>
     ) {
         self.publicKey = publicKey
         self.name = name
@@ -36,10 +36,10 @@ public final class KeystoneImportCoordinator: RouterCoordinator<NavigationContro
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         Task {
             await MainActor.run {
-                openCustomizeWallet(publicKey: publicKey, revisions: [.v4R2])
+                openNotifications(publicKey: publicKey, revisions: [.v4R2])
                 didPrepareForPresent?()
             }
         }
@@ -47,6 +47,12 @@ public final class KeystoneImportCoordinator: RouterCoordinator<NavigationContro
 }
 
 private extension KeystoneImportCoordinator {
+    func openNotifications(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion]) {
+        OnboardingNotificationsStep.push(router: router) { [weak self] in
+            self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions)
+        }
+    }
+
     func openCustomizeWallet(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion]) {
         let module = customizeWalletModule()
 
@@ -55,11 +61,11 @@ private extension KeystoneImportCoordinator {
         }
 
         if router.rootViewController.viewControllers.isEmpty {
-            module.view.setupLeftCloseButton { [weak self] in
+            module.view.setupHeaderLeftCloseButton { [weak self] in
                 self?.didCancel?()
             }
         } else {
-            module.view.setupBackButton()
+            module.view.setupHeaderBackButton()
         }
 
         router.push(viewController: module.view, animated: true)

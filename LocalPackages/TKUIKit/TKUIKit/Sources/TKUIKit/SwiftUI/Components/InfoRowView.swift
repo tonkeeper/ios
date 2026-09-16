@@ -1,14 +1,6 @@
 import SwiftUI
 
 public struct InfoRowView: View {
-    public struct Hover {
-        var onTap: () -> Void
-
-        public init(onTap: @escaping () -> Void) {
-            self.onTap = onTap
-        }
-    }
-
     public struct Delta {
         var text: String
         var isPositive: Bool
@@ -18,6 +10,8 @@ public struct InfoRowView: View {
             self.isPositive = isPositive
         }
     }
+
+    @Environment(\.tkPalette) private var palette
 
     let title: String
     let valueText: String
@@ -41,7 +35,7 @@ public struct InfoRowView: View {
             VStack(spacing: 0) {
                 Text(title)
                     .textStyle(.body1)
-                    .foregroundStyle(Color(uiColor: .Text.secondary))
+                    .foregroundStyle(.textSecondary)
                     .padding(.top, Layout.titleTopPadding)
                 Spacer()
             }
@@ -78,13 +72,13 @@ public struct InfoRowView: View {
             HStack(spacing: Layout.deltaSpacing) {
                 Text(valueText)
                     .textStyle(.label1)
-                    .foregroundStyle(Color(uiColor: .Text.primary))
+                    .foregroundStyle(.textPrimary)
 
                 if let delta {
                     Text(delta.text)
                         .textStyle(.body1)
                         .foregroundStyle(
-                            Color(uiColor: delta.isPositive ? .Accent.green : .Accent.red)
+                            delta.isPositive ? palette.accent.green : palette.accent.red
                         )
                 }
             }
@@ -94,21 +88,21 @@ public struct InfoRowView: View {
     }
 
     private var hintIcon: some View {
-        SwiftUI.Image(uiImage: .TKUIKit.Icons.Size16.informationCircle)
+        SwiftUI.Image.TKUIKit.Icons.Size16.informationCircle
             .renderingMode(.template)
-            .foregroundStyle(Color(uiColor: .Text.secondary))
+            .foregroundStyle(.textSecondary)
             .frame(width: Layout.hintIconSize, height: Layout.hintIconSize)
     }
 }
 
 private extension InfoRowView {
     enum Layout {
-        static let titleTopPadding: CGFloat = 19
+        static let titleTopPadding: CGFloat = 17
         static let hoverTopPadding: CGFloat = 20
         static let hoverLeadingPadding: CGFloat = 4
         static let minimumSpacer: CGFloat = 10
         static let deltaSpacing: CGFloat = 4
-        static let valueTopPadding: CGFloat = 2
+        static let valueTopPadding: CGFloat = 0
         static let height: CGFloat = 56
         static let hintMaximumWidth: CGFloat = 200
         static let hintIconSize: CGFloat = 16
@@ -140,7 +134,6 @@ private extension InfoRowView {
         )
     }
     .padding(.horizontal, 12)
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .debugPreview(background: .page)
+    .tkThemed()
 }

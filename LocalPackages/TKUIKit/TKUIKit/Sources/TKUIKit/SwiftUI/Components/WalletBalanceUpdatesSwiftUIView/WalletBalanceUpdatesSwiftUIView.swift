@@ -14,11 +14,11 @@ public struct WalletBalanceUpdatesSwiftUIViewConfig: Hashable {
     }
 }
 
-public struct WalletBalanceUpdatesSwiftUIView: View {
-    public var config: WalletBalanceUpdatesSwiftUIViewConfig
+struct WalletBalanceUpdatesSwiftUIView: View {
+    var config: WalletBalanceUpdatesSwiftUIViewConfig
     private let action: (() -> Void)?
 
-    public init(
+    init(
         config: WalletBalanceUpdatesSwiftUIViewConfig,
         action: (() -> Void)? = nil
     ) {
@@ -26,7 +26,7 @@ public struct WalletBalanceUpdatesSwiftUIView: View {
         self.action = action
     }
 
-    public var body: some View {
+    var body: some View {
         SwiftUI.Button(action: {
             action?()
         }) {
@@ -50,15 +50,15 @@ private extension WalletBalanceUpdatesSwiftUIView {
 
             Text(config.title)
                 .textStyle(.body3Alternate)
-                .foregroundStyle(Color(uiColor: .Text.primary))
+                .foregroundStyle(.textPrimary)
                 .lineLimit(1)
                 .truncationMode(.tail)
 
-            Image(uiImage: .TKUIKit.Icons.Size16.chevronRight)
+            SwiftUI.Image.TKUIKit.Icons.Size16.chevronRight
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
-                .foregroundStyle(Color(uiColor: .Icon.tertiary))
+                .foregroundStyle(.iconTertiary)
                 .frame(
                     width: Layout.chevronSide,
                     height: Layout.chevronSide
@@ -82,7 +82,7 @@ private extension WalletBalanceUpdatesSwiftUIView {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
-                    .foregroundStyle(Color(uiColor: .Accent.blue))
+                    .foregroundStyle(.accentBlue)
             }
         case let .urlImage(url):
             if let url {
@@ -93,6 +93,7 @@ private extension WalletBalanceUpdatesSwiftUIView {
 }
 
 private struct WalletBalanceUpdatesURLIconView: View {
+    @Environment(\.tkPalette) private var palette
     let url: URL
     @State private var didFail = false
 
@@ -130,14 +131,14 @@ private struct WalletBalanceUpdatesURLIconView: View {
     }
 
     private var placeholder: some View {
-        Color(uiColor: .Background.contentTint)
+        palette.background.contentTint
     }
 }
 
 private struct WalletBalanceUpdatesSwiftUIViewButtonStyle: SwiftUI.ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .opacity(configuration.isPressed ? WalletBalanceUpdatesSwiftUIView.Layout.highlightedOpacity : 1)
+            .tkTapAnimation(isPressed: configuration.isPressed)
     }
 }
 
@@ -149,7 +150,6 @@ private extension WalletBalanceUpdatesSwiftUIView {
         static let iconSide: CGFloat = 20
         static let iconTrailingPadding: CGFloat = 6
         static let chevronSide: CGFloat = 16
-        static let highlightedOpacity: CGFloat = 0.8
     }
 }
 

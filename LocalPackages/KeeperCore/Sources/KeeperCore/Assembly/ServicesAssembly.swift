@@ -1,4 +1,5 @@
 import Foundation
+import TKFeatureFlags
 
 public final class ServicesAssembly {
     private let repositoriesAssembly: RepositoriesAssembly
@@ -12,11 +13,17 @@ public final class ServicesAssembly {
     private let tronUSDTAssembly: TronUSDTAssembly
     private let configurationAssembly: ConfigurationAssembly
     private let nativeSwapAPIAssembly: NativeSwapAPIAssembly
+    private let multichainSwapAPIAssembly: MultichainSwapAPIAssembly
+    private let multichainRampAPIAssembly: MultichainRampAPIAssembly
     private let currenciesAPIAssembly: CurrenciesAPIAssembly
     private let onRampAPIAssembly: OnRampAPIAssembly
     private let multichainAPIAssembly: MultichainAPIAssembly
     private let tradingAssembly: TradingAssembly
+    private let sharedTonProofTokenService: TonProofTokenService
     private let firebaseUserIdProvider: () -> String?
+
+    /// Stored rather than built per call: freshness and coalescing only work with one instance.
+    private let ratesServiceInstance: RatesService
 
     init(
         repositoriesAssembly: RepositoriesAssembly,
@@ -30,10 +37,13 @@ public final class ServicesAssembly {
         tronUSDTAssembly: TronUSDTAssembly,
         configurationAssembly: ConfigurationAssembly,
         nativeSwapAPIAssembly: NativeSwapAPIAssembly,
+        multichainSwapAPIAssembly: MultichainSwapAPIAssembly,
+        multichainRampAPIAssembly: MultichainRampAPIAssembly,
         currenciesAPIAssembly: CurrenciesAPIAssembly,
         onRampAPIAssembly: OnRampAPIAssembly,
         multichainAPIAssembly: MultichainAPIAssembly,
         tradingAssembly: TradingAssembly,
+        tonProofTokenService: TonProofTokenService,
         firebaseUserIdProvider: @escaping () -> String?
     ) {
         self.repositoriesAssembly = repositoriesAssembly
@@ -47,11 +57,24 @@ public final class ServicesAssembly {
         self.tronUSDTAssembly = tronUSDTAssembly
         self.configurationAssembly = configurationAssembly
         self.nativeSwapAPIAssembly = nativeSwapAPIAssembly
+        self.multichainSwapAPIAssembly = multichainSwapAPIAssembly
+        self.multichainRampAPIAssembly = multichainRampAPIAssembly
         self.currenciesAPIAssembly = currenciesAPIAssembly
         self.onRampAPIAssembly = onRampAPIAssembly
         self.multichainAPIAssembly = multichainAPIAssembly
         self.tradingAssembly = tradingAssembly
+        sharedTonProofTokenService = tonProofTokenService
         self.firebaseUserIdProvider = firebaseUserIdProvider
+        ratesServiceInstance = RatesServiceImplementation(
+            fetchRates: { [api = apiAssembly.api] jettons, currencies in
+                try await api.getRates(currencies: currencies, jettons: jettons)
+            },
+            ratesRepository: repositoriesAssembly.ratesRepository()
+        )
+    }
+
+    public func ratesService() -> RatesService {
+        ratesServiceInstance
     }
 
     public func walletsService() -> WalletsService {
@@ -72,7 +95,6 @@ public final class ServicesAssembly {
             tronBalanceService: tronUSDTAssembly.balanceService(),
             batteryService: batteryAssembly.batteryService(),
             stackingService: stackingService(),
-            tonProofTokenService: tonProofTokenService(),
             walletBalanceRepository: repositoriesAssembly.walletBalanceRepository()
         )
     }
@@ -116,13 +138,6 @@ public final class ServicesAssembly {
         )
     }
 
-    public func ratesService() -> RatesService {
-        RatesServiceImplementation(
-            api: apiAssembly.api,
-            ratesRepository: repositoriesAssembly.ratesRepository()
-        )
-    }
-
     func currencyService() -> CurrencyService {
         CurrencyServiceImplementation(
             keeperInfoRepository: repositoriesAssembly.keeperInfoRepository()
@@ -133,10 +148,7 @@ public final class ServicesAssembly {
         HistoryServiceImplementation(
             apiProvider: apiAssembly.apiProvider,
             repository: repositoriesAssembly.historyRepository(),
-            cacheNamespace: .allEvents,
-            tronBip39ImportFixEnabled: configurationAssembly
-                .configuration
-                .featureEnabled(.tronBip39ImportFix)
+            cacheNamespace: .allEvents
         )
     }
 
@@ -144,10 +156,7 @@ public final class ServicesAssembly {
         HistoryServiceImplementation(
             apiProvider: apiAssembly.apiProvider,
             repository: repositoriesAssembly.historyRepository(),
-            cacheNamespace: .tronUSDT,
-            tronBip39ImportFixEnabled: configurationAssembly
-                .configuration
-                .featureEnabled(.tronBip39ImportFix)
+            cacheNamespace: .tronUSDT
         )
     }
 
@@ -178,9 +187,19 @@ public final class ServicesAssembly {
     }
 
     func chartService() -> ChartService {
+        chartService(
+            repository: repositoriesAssembly.chartDataRepository()
+        )
+    }
+
+    func chartService(
+        repository: ChartDataRepository
+    ) -> ChartService {
         ChartServiceImplementation(
             apiProvider: apiAssembly.apiProvider,
-            repository: repositoriesAssembly.chartDataRepository()
+            tradingAPI: tradingAssembly.api,
+            tradingRequestContextProvider: tradingAssembly.requestContextProvider,
+            repository: repository
         )
     }
 
@@ -199,7 +218,8 @@ public final class ServicesAssembly {
     public func popularAppsService() -> PopularAppsService {
         PopularAppsServiceImplementation(
             api: tonkeeperAPIAssembly.api,
-            popularAppsRepository: repositoriesAssembly.popularAppsRepository()
+            popularAppsRepository: repositoriesAssembly.popularAppsRepository(),
+            walletsStore: storesAssembly.walletsStore
         )
     }
 
@@ -214,11 +234,7 @@ public final class ServicesAssembly {
     }
 
     public func tonProofTokenService() -> TonProofTokenService {
-        TonProofTokenServiceImplementation(
-            keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
-            tonProofTokenRepository: repositoriesAssembly.tonProofTokenRepository(),
-            api: apiAssembly.api
-        )
+        sharedTonProofTokenService
     }
 
     public func notificationsService(
@@ -241,6 +257,16 @@ public final class ServicesAssembly {
         NativeSwapServiceImplementation(nativeSwapAPI: nativeSwapAPIAssembly.nativeSwapAPI())
     }
 
+    public func multichainSwapService() -> MultichainSwapService {
+        MultichainSwapServiceImplementation(multichainSwapAPI: multichainSwapAPIAssembly.multichainSwapAPI())
+    }
+
+    public func multichainRampService() -> MultichainRampService {
+        MultichainRampServiceImplementation(
+            multichainRampAPI: multichainRampAPIAssembly.multichainRampAPI()
+        )
+    }
+
     public func currenciesService() -> CurrenciesService {
         CurrenciesServiceImplementation(
             api: currenciesAPIAssembly.api,
@@ -255,9 +281,54 @@ public final class ServicesAssembly {
         )
     }
 
+    private lazy var multichainClientAPI = multichainAPIAssembly.multichainAPI()
+
+    public private(set) lazy var visibilityChangesController = VisibilityChangesController(
+        vault: coreAssembly.fileSystemVault(),
+        writer: MultichainAssetVisibilityChangesClientWriter(
+            multichainClientAPI: multichainClientAPI
+        )
+    )
+
+    private lazy var pendingTransactionsServiceInstance: PendingTransactionsService = PendingTransactionsServiceImplementation(
+        writer: MultichainPendingTransactionClientWriter(
+            multichainClientAPI: multichainClientAPI
+        )
+    )
+
+    private lazy var multichainServiceInstance: MultichainService = MultichainServiceImplementation(
+        multichainClientAPI: multichainClientAPI,
+        visibilityChangesController: visibilityChangesController,
+        pendingTransactionsService: pendingTransactionsServiceInstance
+    )
+
     public func multichainService() -> MultichainService {
-        MultichainServiceImplementation(
-            multichainClientAPI: multichainAPIAssembly.multichainAPI()
+        multichainServiceInstance
+    }
+
+    public func pendingTransactionsService() -> PendingTransactionsService {
+        pendingTransactionsServiceInstance
+    }
+
+    public func walletMigrationService() -> WalletMigrationService {
+        WalletMigrationServiceImplementation(
+            apiProvider: apiAssembly.apiProvider,
+            configuration: configurationAssembly.configuration,
+            tonBalanceService: tonBalanceService(),
+            tronBalanceService: tronUSDTAssembly.balanceService(),
+            tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+            ratesService: ratesService(),
+            tonRatesStore: storesAssembly.tonRatesStore,
+            batteryService: batteryAssembly.batteryService()
+        )
+    }
+
+    public func walletMigrationExecutionService() -> WalletMigrationExecutionService {
+        WalletMigrationExecutionServiceImplementation(
+            sendService: sendService(),
+            batteryService: batteryAssembly.batteryService(),
+            tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+            configuration: configurationAssembly.configuration
         )
     }
 
@@ -271,6 +342,10 @@ public final class ServicesAssembly {
 
     public func assetDetailsService() -> TradingAssetDetailsService {
         tradingAssembly.assetDetailsService
+    }
+
+    public func tradingFavoriteAssetsService() -> TradingFavoriteAssetsService {
+        tradingAssembly.favoriteAssetsService
     }
 
     public private(set) lazy var tronUSDTFeesService: TronUsdtFeesService = TronUSDTFeesServiceImplementation(

@@ -4,8 +4,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsCellsCatalogViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: CellPreviewsView()
+    private let hostingController = TKHostingController(
+        content: CellPreviewsView()
     )
 
     override func viewDidLoad() {

@@ -23,15 +23,18 @@ final class TokenDetailsHeaderButtonsView: UIView, ConfigurableView {
             let configuration: TKUIIconButton.Model
             let isEnabled: Bool
             let action: () -> Void
+            let accessibilityIdentifier: String?
 
             init(
                 configuration: TKUIIconButton.Model,
                 isEnabled: Bool = true,
-                action: @escaping () -> Void
+                action: @escaping () -> Void,
+                accessibilityIdentifier: String? = nil
             ) {
                 self.configuration = configuration
                 self.isEnabled = isEnabled
                 self.action = action
+                self.accessibilityIdentifier = accessibilityIdentifier
             }
         }
 
@@ -49,6 +52,7 @@ final class TokenDetailsHeaderButtonsView: UIView, ConfigurableView {
             let button = TKUIIconButton()
             button.configure(model: item.configuration)
             button.isEnabled = item.isEnabled
+            button.accessibilityIdentifier = item.accessibilityIdentifier
             button.addTapAction(item.action)
             rowStackView.addArrangedSubview(button)
         }

@@ -35,8 +35,6 @@ final class BalanceHeaderBalanceAmountButton: UIControl {
         }
     }
 
-    private var tapHandler: (() -> Void)?
-
     private let balanceLabel = UILabel()
     private let secureLabel = UILabel()
     private let secureView = UIView()

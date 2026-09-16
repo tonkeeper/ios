@@ -1,4 +1,4 @@
-public enum RedAnalyticsErrorType: String {
+enum RedAnalyticsErrorType: String {
     case feeCalculationFailed = "fee_calculation_failed"
     case incorrectWalletKind = "incorrect_wallet_kind"
     case insufficientFunds = "insufficient_funds"

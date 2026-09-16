@@ -10,22 +10,25 @@ struct DappWalletKitAssembly {
     private init() {}
     static func module(
         dapp: Dapp,
-        analyticsProvider: AnalyticsProvider,
+        analyticsSession: DappOpenAnalyticsSession,
         deeplinkHandler: @escaping ((_ deeplink: Deeplink) -> Void),
+        deeplinkParser: DeeplinkParser,
         messageHandler: DappMessageHandler,
         wallet: Wallet?,
         walletKit: TONWalletKit,
-        eventsHandler: any TONBridgeEventsHandler
+        eventsHandler: any TONBridgeEventsHandler,
+        explorerURLMatcher: BlockchainExplorerURLMatcher
     )
         -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput>
     {
         let viewModel = DappWalletKitViewModel(
             dapp: dapp,
+            analyticsSession: analyticsSession,
             messageHandler: messageHandler,
             wallet: wallet,
-            analyticsProvider: analyticsProvider,
             walletKit: walletKit,
-            eventsHandler: eventsHandler
+            eventsHandler: eventsHandler,
+            explorerURLMatcher: explorerURLMatcher
         )
 
         let logger = Logger(subsystem: "com.tonkeeper.dapps", category: "dApps")
@@ -33,7 +36,8 @@ struct DappWalletKitAssembly {
         let viewController = DappViewController(
             viewModel: viewModel,
             logger: logger,
-            deeplinkHandler: deeplinkHandler
+            deeplinkHandler: deeplinkHandler,
+            deeplinkParser: deeplinkParser
         )
         return .init(view: viewController, output: viewModel, input: viewModel)
     }

@@ -1,12 +1,6 @@
 import UIKit
 
 public final class TKDividerBackgroundView: UIView {
-    public var numberOfRows = 0 {
-        didSet {
-            didUpdateNumberOfRows()
-        }
-    }
-
     private let leftVerticalDivider = TKVerticalDividerView()
     private let rightVerticalDivider = TKVerticalDividerView()
     private var horizontalDividers = [TKHorizontalDividerView]()
@@ -52,14 +46,6 @@ private extension TKDividerBackgroundView {
     func setup() {
         addSubview(leftVerticalDivider)
         addSubview(rightVerticalDivider)
-    }
-
-    func didUpdateNumberOfRows() {
-        self.horizontalDividers.forEach { $0.removeFromSuperview() }
-        let horizontalDividers = (1 ..< numberOfRows).map { _ in TKHorizontalDividerView() }
-        horizontalDividers.forEach { addSubview($0) }
-        self.horizontalDividers = horizontalDividers
-        setNeedsLayout()
     }
 }
 

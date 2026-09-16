@@ -1,8 +1,8 @@
 import Foundation
 import TronSwift
 
-public enum ContractCallRequest {
-    public static func request(contractAddress: Address, data: Data) -> JSONRpcRequest {
+enum ContractCallRequest {
+    static func request(contractAddress: Address, data: Data) -> JSONRpcRequest {
         JSONRpcRequest(
             method: "eth_call",
             params: [

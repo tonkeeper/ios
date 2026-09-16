@@ -4,6 +4,7 @@ import TKLocalize
 import TKUIKit
 
 struct TradeAssetsListView: View {
+    @Environment(\.tkPalette) private var palette
     private enum Constants {
         static let autoFocusDelayNanoseconds: UInt64 = 150_000_000
     }
@@ -13,7 +14,7 @@ struct TradeAssetsListView: View {
 
     var body: some View {
         ZStack {
-            Color(uiColor: .Background.page)
+            palette.background.page
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
@@ -48,17 +49,20 @@ struct TradeAssetsListView: View {
 
     private var header: some View {
         DefaultModalCardHeader(
-            config: DefaultModalCardHeader.Config(
-                title: DefaultModalCardHeader.Title(
-                    text: TKLocales.Trade.Assets.title
-                ),
-                rightIcon: .close(
-                    onTap: { _ in
-                        viewModel.close()
-                    }
-                )
+            config: .push(
+                title: headerTitle,
+                onBack: viewModel.back
             )
         )
+    }
+
+    private var headerTitle: String {
+        switch viewModel.selectedCategory {
+        case .all, .tokens:
+            TKLocales.Trade.Assets.title
+        case .stocks, .etfs:
+            title(for: viewModel.selectedCategory)
+        }
     }
 
     private var searchField: some View {
@@ -100,8 +104,8 @@ struct TradeAssetsListView: View {
         switch category {
         case .all:
             TKLocales.Trade.Assets.Categories.all
-        case .crypto:
-            TKLocales.Trade.Assets.Categories.crypto
+        case .tokens:
+            TKLocales.Trade.Assets.Categories.tokens
         case .stocks:
             TKLocales.Trade.Assets.Categories.stocks
         case .etfs:
@@ -110,7 +114,6 @@ struct TradeAssetsListView: View {
     }
 
     enum Layout {
-        static let horizontalPadding: CGFloat = 16
         static let searchFieldBottomPadding: CGFloat = 8
     }
 }

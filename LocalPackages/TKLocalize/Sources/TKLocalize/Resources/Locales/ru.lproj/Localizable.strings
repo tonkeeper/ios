@@ -29,13 +29,18 @@
 "result.failure" = "Ошибка";
 
 "toast.copied" = "Скопировано";
+"toast.copied_sensitive" = "Скопировано. Буфер обмена очистится через %d секунд";
 "toast.loading" = "Загрузка";
 "toast.link_expired" = "Срок действия ссылки истёк";
 "toast.service_unavailable" = "Сервис недоступен";
+"toast.sensitive_screenshot_warning" = "В целях безопасности не делайте скриншоты вашей секретной фразы. Запишите её.";
+"toast.sensitive_screenshot_warning_passcode" = "В целях безопасности не делайте скриншоты вашего passcode. Запомните его.";
 "toast.failed" = "Неуспешно";
+"toast.hidden" = "Скрыто";
+"toast.shown" = "Показано";
 
 "errors.unknown" = "Ошибка";
-"errors.multiaccount_error" = "Пожалуйста используйте Tonkeeper Desktop для аккаунта мульти-кошелька";
+"errors.multiaccount_error" = "Пожалуйста используйте Keeper Desktop для аккаунта мульти-кошелька";
 
 "dates.today" = "Сегодня";
 "dates.yesterday" = "Вчера";
@@ -44,7 +49,181 @@
 "tabs.history" = "История";
 "tabs.history.hint" = "История теперь здесь";
 "tabs.browser" = "Браузер";
+"tabs.perps" = "Perps";
+"perps.title" = "Перпетуалы";
+"perps.learn_basics" = "Изучить основы";
+"perps.balance" = "Баланс Perps";
+"perps.deposit" = "Пополнить";
+"perps.account_inactive" = "Аккаунт неактивен";
+"perps.activate" = "Активировать";
+"perps.activate_account" = "Активировать аккаунт";
+"perps.activating_toast" = "Активация аккаунта на этом устройстве";
+"perps.account_activated" = "Аккаунт успешно активирован";
+"perps.explore" = "Обзор Perps";
+"perps.volume" = "Объём";
+"perps.volume_short" = "vol";
+"perps.price_change" = "Изменение цены";
+"perps.open_interest" = "Открытый интерес";
+"perps.withdraw" = "Вывести";
+"perps.history" = "История";
+"perps.search" = "Поиск";
+"perps.search.placeholder" = "Поиск по тикеру или названию";
+"perps.search.empty_title" = "Ничего не найдено";
+"perps.search.empty_subtitle" = "Рынки не найдены.";
+"perps.search.empty_subtitle_for_query" = "Нет результатов по запросу «%@».";
+"perps.search.error_title" = "Что-то пошло не так";
+"perps.search.error" = "Не удалось загрузить рынки.";
+"perps.asset_page" = "Страница актива";
+"perps.placeholder.subtitle" = "Эта функция скоро появится.";
+"perps.asset.perpetual" = "Перпетуал";
+"perps.asset.info" = "Информация";
+"perps.asset.volume_24h" = "Объём за 24 ч";
+"perps.asset.funding" = "Фандинг";
+"perps.asset.about" = "Описание";
+"perps.asset.less" = "Свернуть";
+"perps.asset.long" = "Лонг";
+"perps.asset.short" = "Шорт";
+"perps.asset.your_position" = "Ваша позиция";
+"perps.asset.share" = "Поделиться";
+"perps.asset.size" = "Размер";
+"perps.asset.liquidation_price" = "Цена ликвидации";
+"perps.asset.liquidation_distance" = "%@ от текущей цены";
+"perps.asset.mark_price" = "Маркировочная цена";
+"perps.asset.entry_price" = "Цена входа";
+"perps.asset.adjust_margin" = "Изменить маржу";
+"perps.asset.set_auto_close" = "Настроить автозакрытие";
+"perps.asset.set_take_profit" = "Настроить тейк-профит";
+"perps.asset.set_stop_loss" = "Настроить стоп-лосс";
+"perps.asset.edit" = "Изменить";
+"perps.asset.cash_out" = "Вывести";
+"perps.asset.orders" = "Ордера";
+"perps.asset.transaction_history" = "История транзакций";
+"perps.asset.see_all" = "Показать все";
+"perps.asset.buy" = "Купить";
+"perps.asset.sell" = "Продать";
+"perps.asset.activity_opened" = "%@ открыт";
+"perps.asset.activity_closed" = "%@ закрыт";
+"perps.asset.activity_liquidated" = "%@ ликвидирован";
+"perps.asset.activity_funding" = "Финансирование";
+"perps.asset.failed_title" = "Не удалось загрузить рынок";
+"perps.asset.not_found_title" = "Рынок не найден";
+"perps.asset.retry" = "Повторить";
+"perps.chart.empty" = "Нет данных графика";
+"perps.chart.failed" = "Не удалось загрузить график";
+"perps.chart.open" = "Открытие";
+"perps.chart.close" = "Закрытие";
+"perps.chart.high" = "Максимум";
+"perps.chart.low" = "Минимум";
+"perps.chart.volume" = "Объём";
+"perps.open_position.price" = "Цена";
+"perps.open_position.market" = "Маркет";
+"perps.open_position.size" = "Размер:";
+"perps.open_position.max" = "MAX";
+"perps.open_position.balance" = "Баланс:";
+"perps.open_position.deposit" = "Пополнить";
+"perps.open_position.leverage" = "Плечо";
+"perps.open_position.auto_close" = "Автозакрытие";
+"perps.open_position.set" = "Задать";
+"perps.open_position.review" = "Проверить";
+"perps.open_position.min" = "Мин";
+"perps.open_position.max_leverage" = "Макс";
+"perps.open_position.liquidation_price" = "Цена ликвидации";
+"perps.open_position.leverage_risk" = "Более высокое плечо увеличивает риск ликвидации.";
+"perps.open_position.save" = "Сохранить";
+"perps.open_position.apply" = "Применить";
+"perps.open_position.min_short" = "MIN";
+"perps.open_position.take_profit" = "Тейк-профит";
+"perps.open_position.stop_loss" = "Стоп-лосс";
+"perps.open_position.tp" = "TP";
+"perps.open_position.sl" = "SL";
+"perps.open_position.auto_close_hint" = "Укажите цену для автоматического закрытия позиции.";
+"perps.open_position.auto_close_title" = "Автозакрытие";
+"perps.open_position.take_profit_when" = "Тейк-профит, когда";
+"perps.open_position.stop_loss_when" = "Стоп-лосс, когда";
+"perps.open_position.profit_percent" = "+ Прибыль %";
+"perps.open_position.loss_percent" = "− Убыток %";
+"perps.open_position.price_field" = "$ Цена";
+"perps.open_position.take_profit_must_be_above_current_price" = "Значение тейк-профита должно быть выше текущей цены.";
+"perps.open_position.take_profit_must_be_below_current_price" = "Значение тейк-профита должно быть ниже текущей цены.";
+"perps.open_position.stop_loss_must_be_above_current_price" = "Значение стоп-лосса должно быть выше текущей цены.";
+"perps.open_position.stop_loss_must_be_below_current_price" = "Значение стоп-лосса должно быть ниже текущей цены.";
+"perps.open_position.stop_loss_must_be_above_liquidation_price" = "Значение стоп-лосса должно быть выше цены ликвидации (%@).";
+"perps.open_position.stop_loss_must_be_below_liquidation_price" = "Значение стоп-лосса должно быть ниже цены ликвидации (%@).";
+"perps.order_type.title" = "Тип ордера";
+"perps.order_type.market" = "Маркет";
+"perps.order_type.market_description" = "Лонг или шорт по лучшей доступной рыночной цене";
+"perps.order_type.limit" = "Лимит";
+"perps.order_type.limit_description" = "Лонг или шорт по указанной цене или лучше";
+"perps.edit_position.title" = "Изменить позицию";
+"perps.edit_position.add" = "Добавить к позиции";
+"perps.edit_position.add_description" = "Увеличьте вашу текущую %@-экспозицию";
+"perps.edit_position.reduce" = "Уменьшить позицию";
+"perps.edit_position.reduce_description" = "Снизьте экспозицию, закрыв часть позиции";
+"perps.edit_position.add_title" = "Добавить к %@";
+"perps.edit_position.reduce_title" = "Уменьшить %@";
+"perps.edit_position.reduce_exceeds_margin" = "Сумма должна быть меньше маржи позиции (%@).";
+"perps.adjust_margin.title" = "Изменить маржу";
+"perps.adjust_margin.add" = "Добавить маржу";
+"perps.adjust_margin.add_description" = "Добавьте маржу, чтобы сделать позицию надёжнее и снизить риск ликвидации";
+"perps.adjust_margin.reduce" = "Уменьшить маржу";
+"perps.adjust_margin.reduce_description" = "Выведите часть маржи, когда позиция выглядит уверенно";
+"perps.adjust_margin.reduce_risk" = "С такой суммой позиция окажется под угрозой немедленной ликвидации.";
+"perps.adjust_margin.add_confirm_title" = "Добавить маржу к %@";
+"perps.adjust_margin.reduce_confirm_title" = "Уменьшить маржу для %@";
+"perps.set_limit_price.title" = "Задать лимитную цену";
+"perps.set_limit_price.set" = "Задать";
+"perps.set_limit_price.mid" = "MID";
+"perps.set_limit_price.warning_at_or_below_current_price" = "Лимитная цена должна быть не выше текущей цены.";
+"perps.set_limit_price.warning_at_or_above_current_price" = "Лимитная цена должна быть не ниже текущей цены.";
+"perps.confirm.title" = "Подтвердите действие";
+"perps.confirm.open" = "Открыть";
+"perps.confirm.you_pay" = "Вы платите";
+"perps.confirm.you_close" = "Вы закрываете";
+"perps.confirm.entry_price" = "Цена входа";
+"perps.confirm.leverage" = "Плечо";
+"perps.confirm.liquidation" = "Ликвидация";
+"perps.confirm.size" = "Размер";
+"perps.confirm.fee" = "Комиссия";
+"perps.confirm.auto_close" = "Автозакрытие";
+"perps.confirm.unavailable" = "Недоступно";
+"perps.confirm.confirm" = "Подтвердить";
+"perps.confirm.swipe" = "Свайп вправо";
+"perps.confirm.close" = "Закрыть";
+"perps.confirm.position" = "Позиция";
+"perps.confirm.pnl" = "P&L";
+"perps.confirm.you_receive" = "Вы получите";
+"perps.confirm.take_profit_needs_update_title" = "Take Profit нужно обновить";
+"perps.confirm.take_profit_needs_update_caption" = "Рыночная цена прошла уровень Take Profit. Установите новый TP перед подтверждением этого действия.";
+"perps.confirm.continue_without_take_profit" = "Продолжить без Take Profit";
+"perps.confirm.update_take_profit" = "Обновить Take Profit";
+"perps.confirm.stop_loss_needs_update_title" = "Stop Loss нужно обновить";
+"perps.confirm.stop_loss_needs_update_caption" = "Рыночная цена прошла уровень Stop Loss. Установите новый SL перед подтверждением этого действия.";
+"perps.confirm.continue_without_stop_loss" = "Продолжить без Stop Loss";
+"perps.confirm.update_stop_loss" = "Обновить Stop Loss";
+"perps.confirm.auto_close_needs_update_title" = "Auto Close нужно обновить";
+"perps.confirm.auto_close_needs_update_caption" = "Рыночная цена изменилась, и уровни Take Profit и Stop Loss больше недействительны. Обновите их перед подтверждением этого действия.";
+"perps.confirm.continue_without_auto_close" = "Продолжить без Auto Close";
+"perps.confirm.update_auto_close" = "Обновить Auto Close";
+"perps.toast.opening" = "Открытие";
+"perps.toast.closing" = "Закрытие";
+"perps.toast.opened" = "Открыто";
+"perps.toast.closed" = "Закрыто";
+"perps.toast.placing" = "Размещение";
+"perps.toast.order_placed" = "Ордер размещён";
+"perps.toast.increasing" = "Увеличение";
+"perps.toast.increased" = "Увеличено";
+"perps.toast.reducing" = "Уменьшение";
+"perps.toast.reduced" = "Уменьшено";
+"perps.toast.margin_adding" = "Добавляем маржу %@";
+"perps.toast.margin_added" = "Маржа %@ добавлена";
+"perps.toast.margin_reducing" = "Уменьшаем маржу на %@";
+"perps.toast.margin_reduced" = "Маржа уменьшена на %@";
+"perps.toast.open_failed" = "Не удалось открыть позицию";
+"perps.toast.close_failed" = "Не удалось закрыть позицию";
+"perps.toast.adjust_failed" = "Не удалось обновить позицию";
+"perps.toast.status_unknown" = "Статус ордера неизвестен";
 "tabs.trade" = "Трейд";
+"tabs.trade.hint" = "Торгуйте акциями США и ETF";
 "tabs.purchases" = "Покупки";
 "tabs.collectibles" = "Коллекции";
 
@@ -60,6 +239,9 @@
 "country_picker.all_regions" = "Все регионы";
 
 "collectibles.title" = "Коллекции";
+"collectibles.only_ton_collectibles_for_now" = "Пока только TON-коллекции";
+"collectibles.ton_collectibles_popup.title" = "Пока поддерживаются только TON-коллекции";
+"collectibles.ton_collectibles_popup.caption" = "Этот кошелёк сейчас поддерживает коллекции только в сети TON. Поддержка других сетей скоро появится.";
 "collectibles.collection_hidden" = "Коллекция скрыта";
 "collectibles.nft_hidden" = "Токен скрыт";
 "collectibles.collection_marked_as_spam" = "Коллекция помечена как спам";
@@ -76,10 +258,13 @@
 "history.placeholder.title" = "Ваша история\nбудет показана здесь";
 "history.placeholder.subtitle" = "Совершите первую транзакцию!";
 "history.placeholder.buttons.receive" = "Получить";
-"history.placeholder.buttons.buy" = "Купить Gram (ex-Toncoin)";
+"history.placeholder.buttons.buy" = "Купить GRAM";
+"multichain.asset_picker.choose_title" = "Выберите актив";
 "multichain_history.placeholder.title" = "Ваша активность\nбудет показана здесь";
 "multichain_history.placeholder.subtitle" = "Совершите первую транзакцию!";
 "multichain_history.placeholder.buttons.add_funds" = "Пополнить";
+"multichain_history.placeholder.filtered.title" = "Ничего не найдено";
+"multichain_history.placeholder.filtered.subtitle" = "Ничего не найдено под текущими фильтрами.";
 "history.tab.all" = "Все";
 "history.tab.all_types" = "Все типы";
 "history.tab.sent" = "Отправлено";
@@ -100,7 +285,7 @@
 "browser.list.all" = "Все";
 
 "browser.connected_apps.empty_title" = "Ваши приложения будут здесь";
-"browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Tonkeeper.";
+"browser.connected_apps.empty_description" = "Исследуйте приложения и\U00A0сервисы в\U00A0браузере Keeper.";
 "browser.connected_apps.disconnect.title" = "Отключить";
 "browser.connected_apps.disconnect.button" = "Отключить";
 
@@ -118,6 +303,8 @@
 "event_details.sender.title" = "Отправитель";
 "event_details.sender.address" = "Адрес отправителя";
 "event_details.fee" = "Комиссия";
+"event_details.tron_resource_energy" = "%@ Energy";
+"event_details.tron_resource_bandwidth" = "%@ Bandwidth";
 "event_details.refund" = "Возврат";
 "event_details.comment" = "Комментарий";
 "event_details.wallet_initialized" = "Кошелёк инициализирован";
@@ -125,14 +312,14 @@
 "settings.title" = "Настройки";
 "settings.items.language" = "Язык";
 "settings.items.security" = "Безопасность";
-"settings.items.backup" = "Резервная копия";
+"settings.items.backup" = "Секретная фраза";
 "settings.items.currency" = "Валюта";
 "settings.items.theme" = "Тема";
 "settings.items.search" = "Поиск";
 "settings.items.logout" = "Выйти";
 "settings.items.faq" = "FAQ";
 "settings.items.support" = "Поддержка";
-"settings.items.tk_news" = "Новости Tonkeeper";
+"settings.items.tk_news" = "Новости Keeper";
 "settings.items.contact_us" = "Написать команде";
 "settings.items.rate" = "Оценить %@";
 "settings.items.legal" = "Юридические документы";
@@ -148,17 +335,49 @@
 "settings.items.wallet_v4R2" = "Кошелёк v4R2";
 "settings.items.battery" = "Батарейка";
 "settings.items.connected_apps" = "Подключённые приложения";
+"settings.items.migration" = "Миграция";
+"settings.items.migration_description" = "Перенесите активы из TON‑кошельков";
+"settings.migration.title" = "Перенесите активы из TON‑кошельков";
+"settings.migration.description" = "Выберите один TON‑кошелёк, из которого нужно перенести активы. Они будут перемещены в этот мультичейн‑кошелёк.";
+"settings.migration.how_it_works" = "Как это работает?";
+"settings.migration.info.title" = "Как работает перенос";
+"settings.migration.info.caption" = "Мы перенесём поддерживаемые активы из вашего TON‑кошелька в мультичейн. Неподдерживаемые активы останутся в TON‑кошельке.";
+"settings.migration.info.will_migrate" = "Будут перенесены: верифицированные жетоны и NFT, NFT TON DNS, юзернеймы и номера Telegram, а также токены ликвидного стейкинга, например tsTON.";
+"settings.migration.info.will_stay" = "Останутся в TON‑кошельке: неверифицированные и заблокированные активы, позиции в лендинге, позиции неликвидного стейкинга, SBT и NFT Tonstakers.";
+"settings.migration.info.note" = "Обратите внимание: NFT TON DNS будут перенесены, но привязать их к новому адресу нужно вручную.";
+"settings.migration.nft_count" = "%d NFT";
+"settings.migration.nfts_count" = "%d NFT";
+"settings.migration.jettons_count" = "%d tokens";
+"settings.migration.empty.title" = "Нечего переносить";
+"settings.migration.empty.subtitle" = "Добавьте TON‑кошелёк с активами, чтобы перенести их в этот кошелёк.";
+"settings.migration.empty.add_wallet" = "Добавить TON‑кошелёк";
+"settings.migration.error.insufficient_ton.title" = "Недостаточно TON для комиссии в кошельке %@";
+"settings.migration.error.insufficient_ton.details" = "Необходимо: %@.\nВаш баланс: %@.";
+"settings.migration.error.insufficient_ton.description" = "Сейчас будут отправлены только TRON‑транзакции. TON‑транзакции будут приостановлены, пока вы не добавите TON.";
+"settings.migration.error.insufficient_ton.deposit" = "Пополнить TON";
+"settings.migration.error.insufficient_trx.title" = "Недостаточно TRX для комиссии в кошельке %@";
+"settings.migration.error.insufficient_trx.details" = "Необходимо: %@.\nВаш баланс: %@.";
+"settings.migration.error.insufficient_trx.description" = "Сейчас будут отправлены только TON‑транзакции. TRON‑транзакции будут приостановлены, пока вы не добавите TRX.";
+"settings.migration.error.insufficient_trx.deposit" = "Пополнить TRX";
+"settings.migration.error.insufficient_fees.title" = "Недостаточно средств для комиссий в кошельке %@";
+"settings.migration.error.insufficient_fees.details" = "Необходимо: %@ + %@.\nВаш баланс: %@ + %@.";
+"settings.migration.error.insufficient_fees.deposit" = "Пополнить кошелёк";
+"settings.migration.error.continue" = "Продолжить";
+"settings.migration.confirm.transaction_failed" = "Транзакция не удалась";
+"settings.migration.confirm.sending_transaction" = "Отправка транзакции";
+"settings.migration.usdt" = "USD₮";
+"settings.migration.trc20" = "TRC20";
+"settings.migration.trx" = "TRX";
+"settings.migration.ton_fee" = "Комиссия TON";
+"settings.migration.tron_fee" = "Комиссия TRON";
 
 "settings.logout.title" = "Выйти?";
-"settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
+"settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные фразы.";
 
 "settings.legal.title" = "Документы";
 "settings.legal.items.terms_of_service" = "Правила использования";
 "settings.legal.items.privacy_policy" = "Политика конфиденциальности";
-"settings.legal.items.montserrat_font" = "Шрифт Montserrat";
-"settings.legal.sections.licenses" = "Лицензии";
 
-"settings.trc20.description" = "Используйте USD₮ TRC20 без TRX. Комиссии оплачиваются с помощью батарейки Tonkeeper.";
 
 "settings.purchases.title" = "Покупки";
 "settings.purchases.sections.visible" = "Видимые";
@@ -202,6 +421,10 @@
 "settings.connected_apps.actions.cancel" = "Отмена";
 
 "settings.connected_apps.empty.title" = "Нет подключённых приложений";
+"settings.connected_apps.source.browser" = "Браузер телефона";
+"settings.connected_apps.source.dapp" = "Keeper";
+"settings.connected_apps.source.deeplink" = "Внешняя ссылка";
+"settings.connected_apps.source.qr" = "Другое устройство";
 
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
@@ -242,39 +465,41 @@
 "currency.items.UGX" = "Угандийский шиллинг";
 "currency.items.VES" = "Венесуэльский боливар";
 "currency.items.BTC" = "Bitcoin";
-"currency.items.TON" = "Gram (ex-Toncoin)";
+"currency.items.TON" = "Gram";
 "currency.items.AUD" = "Австралийский доллар";
 
-"backup.title" = "Резервная копия";
+"backup.title" = "Секретная фраза";
 "backup.information.title" = "Вручную";
-"backup.information.subtitle" = "Создайте резервную копию своего кошелька вручную, записав секретный ключ.";
-"backup.balance.warning" = "На вашем балансе %@ и он защищён только секретным ключом, который вы ещё не записали. Сделайте резервную копию ключа, чтобы не потерять средства в случае проблем с устройством.";
+"backup.information.subtitle" = "Создайте резервную копию своего кошелька вручную, записав секретную фразу.";
+"backup.balance.warning" = "На вашем балансе %@ и он защищён только секретной фразой, которую вы ещё не записали. Сохраните фразу, чтобы не потерять средства в случае проблем с устройством.";
 "backup.manually.button" = "Сделать копию вручную";
-"backup.show_phrase.title" = "Показать секретный ключ";
+"backup.show_phrase.title" = "Показать секретную фразу";
 "backup.done.title" = "Резервная копия сделана";
 
-"backup.warning.title" = "Внимание";
-"backup.warning.caption" = "Пожалуйста, внимательно прочитайте перед просмотром секретного ключа.";
-"backup.warning.list.item1" = "Никогда и нигде не вводите свой секретный ключ для доступа к кошельку, кроме Tonkeeper.";
-"backup.warning.list.item2" = "Поддержка Tonkeeper никогда не запрашивает секретный ключ.";
-"backup.warning.list.item3" = "Любой, кто знает ваш секретный ключ, сможет использовать ваш кошелёк.";
+"backup.safety_check.title" = "Проверка безопасности";
+"backup.safety_check.list.item1" = "Никогда никому не показывайте свою секретную фразу.";
+"backup.safety_check.list.item2" = "Любой, у кого есть ваша секретная фраза, может получить доступ к кошельку и вывести средства.";
+"backup.safety_check.list.item3" = "Поддержка Keeper никогда не запрашивает секретную фразу.";
+"backup.safety_check.agreement.text" = "Я понимаю, что передача секретной фразы может привести к %@";
+"backup.safety_check.agreement.highlighted" = "безвозвратной потере средств.";
 
-"backup.show.title" = "Секретный ключ";
+"backup.show.title" = "Секретная фраза";
 "backup.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
 "backup.show.button.title" = "Скопировать ключ";
 "backup.show.button.trc20" = "Экспорт TRC20 кошелька";
 
 "backup.trc20.show.title" = "TRC20 кошелёк";
 "backup.trc20.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
-"backup.trc20.show.banner" = "Этот ключ предназначен только для TRC20. Он не может восстановить ваш TON кошелёк. Для восстановления TON кошелька используйте ключ восстановления TON.";
+"backup.trc20.show.banner" = "Эта фраза предназначена только для TRC20. Она не может восстановить ваш TON кошелёк. Для восстановления TON кошелька используйте секретную фразу TON.";
 "backup.trc20.show.button.title" = "Скопировать ключ";
 
-"backup.check.title" = "Секретный ключ";
+"backup.check.title" = "Сохраните секретную фразу";
 "backup.check.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
 "backup.check.button.title" = "Проверить резервную копию";
 
 "backup.check.input.title" = "Проверка резервной копии";
-"backup.check.input.caption" = "Давайте проверим, все ли вы записали правильно. Введите слова %d, %d, и %d.";
+"backup.check.input.caption" = "Давайте проверим, все ли вы записали правильно. Выберите слова %d, %d и %d.";
+"backup.check.input.error" = "Некоторые слова не совпадают с вашей фразой. Проверьте фразу и попробуйте снова.";
 "backup.check.input.button.title" = "Готово";
 
 "security.title" = "Безопасность";
@@ -367,6 +592,7 @@
 "send.recepient.address" = "Адрес";
 "send.amount.placeholder" = "Сумма";
 "send.remaining" = "Доступно";
+"send.balance" = "Баланс:";
 
 "send.comment.placeholder" = "Комментарий";
 "send.comment.description" = "Будет виден всем.";
@@ -382,6 +608,8 @@
 "send.alert.message" = "Вы уверены, что хотите отправить весь свой баланс %@?";
 
 "send.invalid_address" = "Неверный адрес кошелька.";
+"send.trx_self_send_forbidden" = "Сеть TRON не поддерживает отправку TRX на собственный адрес.";
+"send.invalid_address_for_network" = "Неверный формат адреса для выбранной сети. Используйте корректный адрес %1$@.";
 "send.scam_address" = "Переводы на этот адрес не поддерживаются.";
 
 "confirm_send.token_transfer.title" = "Подтвердить действие";
@@ -394,6 +622,7 @@
 "confirm_send.recipient.address" = "Адрес получателя";
 "confirm_send.confirm_button" = "Подтвердить и отправить";
 "confirm_send.confirm" = "Подтвердить";
+"confirm_send.scroll_hint" = "Проверьте все для подтверждения";
 "confirm_send.risk.total" = "Итого: %@";
 "confirm_send.risk.total_nft" = "Итого: %@ + %ld NFT";
 "confirm_send.risk.total_nft_multiple" = "Итого: %@ + %ld NFT";
@@ -412,23 +641,29 @@
 "connection_status.no_internet" = "Нет сети";
 "connection_status.updated_at" = "Обновлён %@";
 
+"token.verified" = "Верифицированный токен";
 "token.unverified" = "Непроверенный токен";
+"token.scam" = "Scam";
 "token.view_details" = "Подробнее";
-"token.unverified_popup.caption" = "Токен выглядит подозрительно по одной или нескольким причинам.";
+"token.hide_in_wallet" = "Скрыть в кошельке";
+"token.show_in_wallet" = "Показать в кошельке";
+"token.verified_popup.caption" = "Этот токен активно торгуется и широко известен. Верификация не является рекомендацией Keeper.";
+"token.unverified_popup.caption" = "Токен выглядит подозрительно по одной или нескольким из следующих причин:";
 "token.unverified_popup.low_liquidity" = "Низкая ликвидность. У токена может быть какая-то стоимость, но она крайне мала.";
 "token.unverified_popup.not_listed" = "Токен не представлен на торговых площадках, имеет ограниченный спрос.";
 "token.unverified_popup.used_for_spam" = "Используется для спама. Применяется для отправки нерелевантных сообщений в больших масштабах.";
 "token.unverified_popup.used_for_scam" = "Используется в мошенничестве. Название токена или изображение может вводить пользователей в заблуждение.";
 
+"onboarding.title" = "Keeper";
 "onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
 "onboarding.buttons.create_new" = "Создать новый кошелёк";
 "onboarding.buttons.import_existing" = "Подключить существующий";
-"onboarding.backup_intro.title" = "Сохраните секретный ключ";
-"onboarding.backup_intro.caption" = "Без него вы не сможете получить доступ к кошельку";
-"onboarding.backup_intro.later" = "Позже";
+"onboarding.backup_intro.title" = "Сохраните секретную фразу";
+"onboarding.backup_intro.caption" = "Без этой фразы вы можете потерять доступ к своим средствам, если удалите приложение или смените устройство.";
+"onboarding.backup_intro.later" = "Пропустить";
 "onboarding.notifications.title" = "Включить уведомления";
-"onboarding.notifications.caption" = "Получайте уведомления при поступлении GRAM, токенов и NFT";
-"onboarding.notifications.button_title" = "Включить уведомления";
+"onboarding.notifications.caption" = "Получайте уведомления о новых транзакциях.";
+"onboarding.notifications.button_title" = "Включить";
 "onboarding.terms.caption" = "Продолжая, вы соглашаетесь с %@";
 "onboarding.terms.title" = "Условиями использования";
 
@@ -437,11 +672,15 @@
 "passcode.enter" = "Введите пин-код";
 "passcode.logout" = "Выйти";
 "passcode.logout_confirmation_title" = "🚧 🚨🚨🚨 🚧\nВыйти из всех кошельков?";
-"passcode.logout_confirmation_description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
+"passcode.logout_confirmation_description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные фразы.";
+"passcode.biometry_changed_description" = "Face ID или Touch ID на этом устройстве изменились.\nВведите код доступа для подтверждения.";
+"passcode.biometry_changed_face_id_description" = "Face ID на этом устройстве изменился.\nВведите код доступа для подтверждения.";
+"passcode.biometry_changed_touch_id_description" = "Touch ID на этом устройстве изменился.\nВведите код доступа для подтверждения.";
 
-"import_wallet.title" = "Введите секретный ключ";
+"import_wallet.title" = "Введите секретную фразу";
 "import_wallet.description" = "Чтобы восстановить доступ, введите 12 или 24 секретных слова, которые вы получили при создании кошелька.";
-"import_wallet.incorrect_phrase" = "Неверная сид-фраза";
+"import_wallet.incorrect_phrase" = "Неверная секретная фраза";
+"import_wallet.already_imported" = "У вас уже есть этот кошелёк";
 "import_wallet.set_12_words" = "12 слов";
 "import_wallet.set_24_words" = "24 слова";
 
@@ -450,14 +689,44 @@
 "choose_wallets.tokens" = "токены";
 "choose_wallets.alreadyAdded" = "Уже добавлен";
 
+"choose_wallet_version.title" = "Выберите версию кошелька";
+"choose_wallet_version.description" = "Эта секретная фраза содержит кошельки TON разных версий. Выберите одну для импорта сейчас.";
+"choose_wallet_version.learn_more" = "Узнать о версиях кошельков TON";
+"choose_wallet_version.info_title" = "О версиях кошельков TON";
+"choose_wallet_version.info_description" = "V4R2 и W5 используют разные публичные адреса TON. Вы можете импортировать одну версию сейчас и добавить другую позже как отдельный кошелёк.";
+"choose_wallet_version.w5_description" = "Мы рекомендуем W5, так как это новейшая версия кошелька TON. Она поддерживает транзакции без газа и пакетные отправки.";
+"choose_wallet_version.v4r2_description" = "V4R2 — более старая версия с более широкой совместимостью. Используйте её, если сервис ещё не поддерживает W5.";
+"choose_wallet_version.nfts_count" = "%ld NFT";
+
+"choose_wallet_kind.title" = "Выберите кошелёк";
+"choose_wallet_kind.description" = "Эта секретная фраза содержит два кошелька. Выберите один для импорта сейчас.";
+"choose_wallet_kind.ton_wallet" = "TON кошелёк";
+"choose_wallet_kind.multichain_wallet" = "Multichain кошелёк";
+"choose_wallet_kind.no_activity_yet" = "Активности пока нет";
+"choose_wallet_kind.nfts_count" = "%ld NFT";
+
+"filters.title" = "Фильтры";
+"filters.history.hide_dust" = "Скрыть мелкие переводы";
+"filters.history.hide_dust_caption" = "Переводы дешевле $0.01.";
+"filters.balances.hide_dust" = "Скрыть активы без стоимости";
+"filters.balances.hide_dust_caption" = "Активы дешевле $0.01.";
+
+"finish_setup.skip" = "Пропустить";
 "finish_setup.title" = "Завершить установку";
 "finish_setup.setup_biometry" = "Включите %@ для подтверждения транзакций";
 "finish_setup.biometry_unavailable" = "Биометрия недоступна";
-"finish_setup.backup.title" = "Сохраните секретный ключ";
+"finish_setup.backup.title" = "Сохраните секретную фразу";
 "finish_setup.backup.description" = "Без ключа восстановить кошелёк невозможно";
+"finish_setup.migration.title" = "Перенесите активы из TON-кошельков";
+"finish_setup.migration.wallets_left.zero" = "Осталось %d кошельков";
+"finish_setup.migration.wallets_left.one" = "Остался %d кошелёк";
+"finish_setup.migration.wallets_left.few" = "Осталось %d кошелька";
+"finish_setup.migration.wallets_left.many" = "Осталось %d кошельков";
+"finish_setup.migration.wallets_left.other" = "Осталось %d кошельков";
 
 "wallets_list.title" = "Кошельки";
 "wallets_list.add_wallet" = "Добавить кошелёк";
+"tooltip_add_multichain_wallet" = "Добавьте кошелёк для новых блокчейнов";
 
 "add_wallet.title" = "Добавить кошелёк";
 "add_wallet.description" = "Создайте новый кошелёк или добавьте существующий.";
@@ -466,16 +735,17 @@
 "add_wallet.items.new_wallet.subtitle" = "Создать новый кошелёк";
 
 "add_wallet.items.existing_wallet.title" = "Существующий кошелёк";
-"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 12 или 24 слов";
+"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретной фразы из 12 или 24 слов";
+"add_wallet.items.existing_wallet.subtitle_multichain" = "Импортируйте существующий TON или мультичейн кошелёк";
 
 "add_wallet.items.watch_only.title" = "Аккаунт для просмотра";
-"add_wallet.items.watch_only.subtitle" = "Для отслеживания активности кошелька без ввода секретного ключа";
+"add_wallet.items.watch_only.subtitle" = "Для отслеживания активности кошелька без ввода секретной фразы";
 
 "add_wallet.items.pair_signer.title" = "Пара для Signer";
 "add_wallet.items.pair_signer.subtitle" = "Более высокий уровень контроля и безопасности";
 
 "add_wallet.items.testnet.title" = "Аккаунт в Testnet";
-"add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов в Testnet";
+"add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретной фразы из 24 слов в Testnet";
 
 "add_wallet.items.tetra.title" = "Tetra L2";
 "add_wallet.items.tetra.subtitle" = "Добавить кошелёк в сети Tetra L2";
@@ -496,7 +766,7 @@
 "signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";
 "signer.scan.open_signer_button" = "Открыть Signer на этом устройстве";
 
-"keystone.scan.subtitle" = "Откройте Keystone » Программные кошельки » Tonkeeper";
+"keystone.scan.subtitle" = "Откройте Keystone » Программные кошельки » Keeper";
 "keystone.scan.about_keystone_button" = "О Keystone";
 
 "chart.last_day" = "Последний день";
@@ -506,6 +776,7 @@
 "chart.last_week" = "Последняя неделя";
 "chart.last_year" = "Последний год";
 "chart.price" = "Цена";
+"chart.error.title" = "Данные о цене недоступны.";
 
 "periods.hour" = "Ч";
 "periods.day" = "Д";
@@ -520,7 +791,6 @@
 "balance_header.address" = "Адрес: ";
 
 "balance_list.staking_item.title" = "Стейкинг";
-"balance_list.ton_item.title" = "GRAM (ex-TON)";
 "balance_list.staking_item.comment.ready" = "%@ GRAM готовы к выводу.\nНажмите, чтобы вывести";
 "balance_list.staking_item.comment.staked" = "%@ GRAM будет зачислено";
 "balance_list.staking_item.comment.unstaked" = "%@ GRAM будет выведено";
@@ -533,26 +803,32 @@
 "receive.segments.trc20" = "TRC20";
 
 "receive.multichain.address_title" = "Ваш адрес %@";
-"receive.multichain.disclaimer" = "Отправляйте на этот адрес только активы в сети %@, иначе вы можете потерять свои средства.";
+"receive.multichain.disclaimer" = "Отправляйте на этот адрес только %1$@ (%2$@) и токены в сети %3$@, иначе вы можете потерять свои средства.";
 "receive.multichain.network_picker.title" = "Выбрать сеть";
+"receive.multichain.network_picker.subtitle" = "Один адрес для всех токенов в каждой сети";
 "receive.multichain.networks.ton.title" = "TON";
+"receive.multichain.networks.ton.display_title" = "TON (TON)";
+"receive.multichain.networks.ton.disclaimer_title" = "Gram";
 "receive.multichain.networks.ethereum.title" = "Ethereum";
+"receive.multichain.networks.ethereum.display_title" = "Ethereum (ERC20)";
 "receive.multichain.networks.bitcoin.title" = "Bitcoin";
+"receive.multichain.networks.bitcoin.display_title" = "Bitcoin (BTC)";
 "receive.multichain.networks.base.title" = "Base";
+"receive.multichain.networks.base.display_title" = "Base (Base)";
 "receive.multichain.networks.smartchain.title" = "BSC";
+"receive.multichain.networks.smartchain.display_title" = "BNB Smart Chain (BEP20)";
 "receive.multichain.networks.smartchain.disclaimer_title" = "BNB Smart Chain";
 "receive.multichain.networks.arbitrum.title" = "Arbitrum";
+"receive.multichain.networks.arbitrum.display_title" = "Arbitrum (ARB)";
 "receive.multichain.networks.tron.title" = "TRON";
+"receive.multichain.networks.tron.display_title" = "TRON (TRC20)";
+"receive.multichain.networks.solana.title" = "Solana";
 
 "receive.trx.description" = "Отправляйте на этот адрес только Tron TRX, иначе вы можете потерять свои средства.";
 "receive.trc20.description" = "Отправляйте только USD₮ TRC20 на этот адрес, иначе вы можете потерять свои средства.";
-"receive.trc20.popup.title" = "USD₮ TRC20";
-"receive.trc20.popup.caption" = "Используйте USD₮ TRC20 без TRX. Комиссии оплачиваются с помощью батарейки Tonkeeper.";
-"receive.trc20.popup.buttons.enable" = "Включить USD₮ TRC20";
-"receive.trc20.popup.buttons.later" = "Позже";
 
 "watch_account.title" = "Аккаунт для просмотра";
-"watch_account.description" = "Отслеживайте активность, получайте уведомления о транзакциях этого кошелька без ввода секретного ключа.";
+"watch_account.description" = "Отслеживайте активность, получайте уведомления о транзакциях этого кошелька без ввода секретной фразы.";
 "watch_account.placeholder" = "Адрес или имя";
 
 "event_details.sender_address" = "Адрес отправителя";
@@ -561,14 +837,32 @@
 "event_details.recipient" = "Получатель";
 "event_details.recipient_address" = "Адрес получателя";
 "event_details.comment" = "Комментарий";
+"event_details.protocol" = "Протокол";
+"event_details.tx_hash" = "Хеш транзакции";
 "event_details.sent_on" = "Отправлено %@";
 "event_details.received_on" = "Получено %@";
+"event_details.burned_on" = "Сожжено %@";
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";
 "event_details.transaction" = "Транзакция ";
 "event_details.report_spam" = "Пожаловаться";
 "event_details.not_spam" = "Это не спам";
 "event_details.transaction_marked_as_spam" = "Транзакция помечена как спам";
+"event_details.description" = "Описание";
+"event_details.operation" = "Операция";
+"event_details.payload" = "Payload";
+"event_details.swapped" = "Операция";
+"event_details.unknown" = "Неизвестно";
+"event_details.unknown_description" = "Что-то произошло, но мы не понимаем, что именно.";
+"event_details.domain_renew" = "Продление домена";
+"event_details.unstake_request" = "Запрос на вывод";
+"event_details.unstake_amount" = "Сумма вывода";
+"event_details.called_contract_on" = "Вызов контракта %@";
+"event_details.purchased_on" = "Покупка %@";
+"event_details.renewed_on" = "Продление %@";
+"event_details.staked_on" = "Депозит %@";
+"event_details.swapped_on" = "Обмен %@";
+"event_details.unstake_on" = "Вывод %@";
 
 "action_types.future.send" = "Отправить";
 "action_types.future.receive" = "Получить";
@@ -598,17 +892,25 @@
 "action_types.unknown" = "Неизвестно";
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
 "action_types.pending" = "Обработка…";
+"action_types.sending" = "Отправляется";
+"action_types.receiving" = "Поступает";
+"action_types.swapping" = "Обменивается";
+"action_types.staking" = "Стейкается";
+"action_types.unstaking" = "Выводится";
+"action_types.burning" = "Сжигается";
+"action_types.domain_renewing" = "Домен продлевается";
 
 "ledger_connect.title" = "Подключить Ledger";
-"ledger_connect.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
-"ledger_connect.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
-"ledger_connect.items.ton_app.link" = "Установить приложение";
+"ledger_connect.steps.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_connect.steps.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_connect.steps.ton_app.link" = "Установить приложение TON";
 
 "ledger_confirm.title" = "Подтвердить действие";
-"ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
-"ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
-"ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";
 "ledger_confirm.steps.confirm_proof.description" = "Подпишите домен в Ledger";
+"ledger_confirm.steps.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_confirm.steps.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_confirm.steps.confirm.description" = "Подтвердите транзакцию в Ledger";
+"ledger_confirm.steps.confirm.description_numerated" = "Подтвердите транзакцию #%@ в Ledger";
 
 "ledger_version_update.title" = "Обновите TON приложение в Ledger до версии %@";
 "ledger_version_update.caption" = "Этот тип транзакции не поддерживается в вашей текущей версии приложения.";
@@ -622,16 +924,16 @@
 "bluetooth.permissions_alert.open_settings" = "Открыть настройки";
 
 "sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nВыйти из всех кошельков?";
-"sign_out_full.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
+"sign_out_full.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные фразы.";
 
 "sign_out_warning.title" = "Выйти";
 "sign_out_warning.caption" = "Ключи кошелька будут удалены с этого устройства.";
-"sign_out_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
+"sign_out_warning.tick_description" = "У меня есть копия секретной фразы кошелька ";
 "sign_out_warning.tick_back_up" = "Сделать резервную копию";
 
 "delete_wallet_warning.title" = "Удалить данные кошелька";
 "delete_wallet_warning.caption" = "Ключи кошелька и все личные данные будут удалены с этого устройства.";
-"delete_wallet_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
+"delete_wallet_warning.tick_description" = "У меня есть копия секретной фразы кошелька ";
 "delete_wallet_warning.tick_back_up" = "Сделать резервную копию";
 "delete_wallet_warning.button" = "Удалить данные кошелька";
 
@@ -665,8 +967,7 @@
 "nft_details.actions.not_spam" = "Это не спам";
 "nft_details.manage_button.title" = "Управлять";
 
-"buy_list_popup.do_not_show_again" = "Не показывать снова";
-"buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper.";
+"buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Keeper.";
 
 "ugly_buy_list.buy" = "Купить";
 
@@ -698,7 +999,7 @@
 "staking_list.minimal_deposit" = "Минимальный депозит";
 
 "staking_balance_details.minimal_deposit" = "Минимальный депозит";
-"staking_balance_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+"staking_balance_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Keeper не несет ответственности за стабильность и результат.";
 "staking_balance_details.jetton_button_description" = "Когда вы вносите GRAM в пул, вы получаете токен tsTON, который отображает вашу долю в пуле. По мере накопления прибыли в пуле, tsTON представляет всё большее число GRAM.";
 "staking_balance_details.pending_stake" = "Будет зачислено";
 "staking_balance_details.pending_unstake" = "Ожидают вывода";
@@ -716,6 +1017,9 @@
 "staking_deposit_input.other" = "Другие";
 "staking_deposit_input.continue_title" = "Продолжить";
 "staking_deposit_input.options" = "Options";
+"staking_deposit_input.your_apy" = "Ваш APY";
+"staking_deposit_input.after_stake" = "После стейкинга";
+"staking_deposit_input.current" = "Сейчас";
 
 "staking_deposit_pool_picker.max_apy" = "MAX APY";
 "staking_deposit_pool_picker.apy" = "APY";
@@ -731,7 +1035,7 @@
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Минимальный депозит";
-"staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+"staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Keeper не несет ответственности за стабильность и результат.";
 "staking_pool_details.choose" = "Выбрать";
 
 "ton_connect_mapper.connect_to" = "Войти в ";
@@ -744,9 +1048,53 @@
 "ton_connect.open_browser_and_connect" = "Открыть браузер и подключиться";
 "ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
 
+"wallet_connect.common.dapp" = "dApp";
+"wallet_connect.proposal.networks" = "Сети";
+"wallet_connect.proposal.networks_to_connect" = "Сети для подключения";
+"wallet_connect.proposal.permissions.title" = "Это приложение сможет:";
+"wallet_connect.proposal.permissions.info_and_activity" = "Просматривать информацию и активность кошелька";
+"wallet_connect.proposal.permissions.transaction_approval" = "Запрашивать подтверждение транзакций";
+"wallet_connect.proposal.permissions.message_sign" = "Подписывать сообщения";
+"wallet_connect.proposal.connect_wallet" = "Подключить кошелёк";
+"wallet_connect.proposal.connect_to" = "Подключиться к %@?";
+"wallet_connect.proposal.requesting_access" = "%@ запрашивает доступ к адресу вашего кошелька:";
+"wallet_connect.proposal.validation.valid_description" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
+"wallet_connect.proposal.validation.unknown_description" = "Этот домен не удалось проверить. Внимательно проверьте запрос перед подтверждением.";
+"wallet_connect.proposal.validation.invalid_description" = "Домен этого сайта не совпадает с отправителем запроса.";
+"wallet_connect.proposal.validation.scam_description" = "Этот домен отмечен несколькими провайдерами безопасности как небезопасный. Немедленно покиньте его.";
+"wallet_connect.request.confirm_action" = "Подтвердить действие";
+"wallet_connect.request.advanced_details" = "Дополнительные детали";
+"wallet_connect.request.actions.sign_message" = "Подписать сообщение";
+"wallet_connect.request.actions.transfer" = "Перевести %@";
+"wallet_connect.request.actions.send_transaction" = "Отправить транзакцию";
+"wallet_connect.request.actions.sign_transaction" = "Подписать транзакцию";
+"wallet_connect.request.rows.wallet" = "Кошелёк";
+"wallet_connect.request.rows.app" = "Приложение";
+"wallet_connect.request.rows.network" = "Сеть";
+"wallet_connect.request.rows.request" = "Запрос";
+"wallet_connect.request.rows.amount" = "Сумма";
+"wallet_connect.request.rows.address" = "Адрес: %@";
+"wallet_connect.request.rows.to" = "Кому: %@";
+"wallet_connect.request.rows.transaction_id" = "TxID: %@";
+"wallet_connect.request.rows.network_fee" = "Комиссия сети";
+"wallet_connect.request.rows.approximate_value" = "≈ %@";
+"wallet_connect.request.rows.provided_by_dapp" = "Предоставлено dApp";
+"wallet_connect.request.details.message" = "Сообщение";
+"wallet_connect.request.details.raw_data" = "Исходные данные";
+"wallet_connect.request.details.raw_data_hex" = "Исходные данные hex";
+"wallet_connect.request.values.tron_transaction" = "TRON-транзакция";
+"wallet_connect.request.signature.personal" = "Личная подпись";
+"wallet_connect.request.signature.typed_data" = "Типизированные данные";
+"wallet_connect.request.signature.tron_message" = "Сообщение TRON";
+
 "wallet_balance_list.transaction_notifications" = "Включите уведомления о транзакциях";
 "wallet_balance_list.stories_onboarding" = "Изучите возможности своего кошелька";
 "wallet_balance_list.manage_button.title" = "Управлять";
+"wallet_balance_list.all_assets_hidden.title" = "Все активы скрыты";
+"wallet_balance_list.all_assets_hidden.subtitle" = "Покажите их в разделе «Управлять»";
+"wallet_balance_list.all_collectibles_hidden.title" = "Все коллекции скрыты.";
+"wallet_balance_list.all_collectibles_hidden.subtitle" = "Покажите их в «настройках коллекций».";
+"wallet_balance_list.more_assets.title" = "Ещё активы";
 
 "buy_sell_list.buy" = "Купить";
 "buy_sell_list.sell" = "Продать";
@@ -755,8 +1103,8 @@
 "w5_stories.gasless.subtitle" = "Отправляйте USDT без необходимости иметь GRAM: комиссии за транзакцию будут автоматически покрыты несколькими центами USDT.";
 "w5_stories.messages.title" = "До 255 операций в одной транзакции";
 "w5_stories.messages.subtitle" = "W5 увеличивает количество одновременных операций с 4 до 255, что позволяет вам сэкономить на комиссиях.";
-"w5_stories.phrase.title" = "Ваш секретный ключ не меняется";
-"w5_stories.phrase.subtitle" = "Ваш старый и новый кошелёк W5 используют один и тот же секретный ключ: при восстановлении на новом устройстве оба кошелька появятся автоматически.";
+"w5_stories.phrase.title" = "Ваша секретная фраза не меняется";
+"w5_stories.phrase.subtitle" = "Ваш старый и новый кошелёк W5 используют одну и ту же секретную фразу: при восстановлении на новом устройстве оба кошелька появятся автоматически.";
 "w5_stories.phrase.button" = "Добавить кошелёк W5";
 
 "decrypt_comment_popup.title" = "Зашифрованный комментарий";
@@ -780,6 +1128,7 @@
 "transaction_confirmation.wallet" = "Кошелёк";
 "transaction_confirmation.recipient" = "Получатель";
 "transaction_confirmation.fee" = "Комиссия";
+"transaction_confirmation.fee_unavailable" = "Недоступно";
 "transaction_confirmation.amount" = "Сумма";
 "transaction_confirmation.unstake_amount" = "Сумма вывода";
 "transaction_confirmation.unstake" = "Вывод";
@@ -794,10 +1143,12 @@
 "transaction_confirmation.tap_to_pay" = "Оплатить в %@";
 "transaction_confirmation.change_payment_method" = "Изменить способ оплаты";
 
-"extra_type.battery" = "Батарейка Tonkeeper";
+"extra_type.battery" = "Батарейка Keeper";
+"extra_type.ton" = "GRAM";
 
-"battery.refill.title" = "Батарейка Tonkeeper";
+"battery.refill.title" = "Батарейка Keeper";
 "battery.refill.empty_caption" = "Легко меняйте и отправляйте TON токены и платите меньше комиссии в TRC-20";
+"battery.refill.negative_balance_caption" = "Заряды закончились из-за возвратов покупок. Пополните баланс, чтобы продолжить.";
 "battery.refill.supported_transactions" = "Поддерживаемые транзакции";
 "battery.refill.transactions" = "Транзакции";
 "battery.refill.refunded.few" = "вернутся";
@@ -827,8 +1178,8 @@
 "battery.refill.toast.recharged" = "Батарейка заряжена";
 
 "battery.settings.title" = "Настройки батарейки";
-"battery.settings.caption" = "Выбранные транзакции будут оплачены батарейкой Tonkeeper.";
-"battery.settings.items.swaps.title" = "Обмен через Tonkeeper";
+"battery.settings.caption" = "Выбранные транзакции будут оплачены батарейкой Keeper.";
+"battery.settings.items.swaps.title" = "Обмен через Keeper";
 "battery.settings.items.swaps.caption" = "за обмен";
 "battery.settings.items.token.title" = "Отправка токенов";
 "battery.settings.items.token.caption" = "за отправку";
@@ -851,11 +1202,11 @@
 "dapp.disconnect_toast.button" = "Отключить";
 
 "dapp.sharing_popup.title" = "Поделиться %@";
-"dapp.sharing_popup.caption" = "Эта ссылка откроет %@ напрямую в Tonkeeper. Вы можете сохранить её для себя или поделиться ею.";
+"dapp.sharing_popup.caption" = "Эта ссылка откроет %@ напрямую в Keeper. Вы можете сохранить её для себя или поделиться ею.";
 "dapp.sharing_popup.buttons.copy" = "Скопировать ссылку";
 "dapp.sharing_popup.buttons.share" = "Поделиться";
 
-"dapp.open_warning_popup.warning" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper. Переходите, только если доверяете источнику.";
+"dapp.open_warning_popup.warning" = "Вы открываете внешнее приложение, которым не управляет Keeper. Переходите, только если доверяете источнику.";
 
 "sign_data.title" = "Подписать данные";
 "sign_data.caption" = "Внимательно прочитайте сообщение и, если вы согласны, подпишите транзакцию.";
@@ -866,8 +1217,7 @@
 "sign_data.slider.title" = "Подписать";
 "sign_data.slider.subtitle" = "Свайп вправо";
 
-"token_details.trc20.usdt.battery_banner.title" = "Для USD₮ TRC20 требуется батарейка Tonkeeper";
-"token.ton_name" = "Gram (ex-Toncoin)";
+"token_details.trc20.usdt.battery_banner.title" = "Для USD₮ TRC20 требуется батарейка Keeper";
 "token_details.trc20.usdt.battery_banner.caption" = "Заряд батарейки покрывает комиссии за транзакции, упрощая и удешевляя переводы.";
 "token_details.trc20.usdt.battery_banner.charge_button" = "Зарядить батарейку";
 
@@ -892,7 +1242,6 @@
 "ethena.about_ethena" = "Подробнее про Ethena";
 "ethena.deposit_and_stake" = "Депозит и стейк";
 "ethena.operated_by" = "Через %@";
-"ethena.ethena_apy" = "Ethena APY";
 "ethena.boost_apy_in_ton" = "Boost APY in GRAM";
 "ethena.check_eligibility" = "Проверить статус";
 
@@ -914,18 +1263,35 @@
 "tokens_picker.market_cap_suffix" = "кап.";
 "tokens_picker.sort.market_cap" = "Рыночная капитализация";
 "tokens_picker.sort.volume" = "Объем";
+"tokens_picker.sort.top_gainers" = "Лидеры роста";
+"tokens_picker.sort.top_losers" = "Лидеры падения";
+"tokens_picker.placeholder.error_title" = "Что-то пошло не так";
+"tokens_picker.placeholder.error_subtitle" = "Не удалось загрузить содержимое.";
+"tokens_picker.placeholder.not_found_title" = "Не найдено";
+"tokens_picker.placeholder.no_results_subtitle" = "По запросу «%@» ничего не найдено.";
+"token_management.title" = "Управление криптой";
+"token_management.save_changes" = "Сохранить изменения";
 
 "native_swap.screen.swap.title" = "Обмен";
 "native_swap.balance" = "Баланс: %@";
 "native_swap.remaining" = "Осталось: %@";
 "native_swap.field.send" = "Отправить";
 "native_swap.field.receive" = "Получить";
+"native_swap.quote.no_quote" = "Нет котировки";
+"native_swap.quote.rate.enter_amount" = "Введите сумму";
+"native_swap.quote.rate.route_expired" = "Маршрут истёк";
+"native_swap.quote.rate.unavailable" = "Не удалось получить котировку. Измените сумму";
+"native_swap.quote.rate.pair_unavailable" = "Эта пара недоступна для обмена";
+"native_swap.quote.rate.updating" = "Получаем котировку";
 
 "native_swap.confirm.actions.edit" = "Изменить";
 
 "native_swap.screen.confirm.title" = "Подтверждение обмена";
 "native_swap.screen.confirm.field.rate" = "Курс обмена";
 "native_swap.screen.confirm.field.fee" = "Комиссия";
+"native_swap.screen.confirm.field.temporary_reserve" = "Временный резерв";
+"native_swap.screen.confirm.field.temporary_reserve.info" = "Дополнительно на время обработки транзакции будет заблокировано %@. Неиспользованная часть комиссии будет возвращена.";
+"native_swap.screen.confirm.field.temporary_reserve.battery_info" = "Дополнительно на время обработки транзакции будет заблокировано %@. Неиспользованная часть комиссии будет возвращена. Возможно, в GRAM.";
 "native_swap.screen.confirm.field.provider" = "Провайдер";
 "native_swap.screen.confirm.field.slippage" = "Допустимое проскальзывание";
 "native_swap.screen.confirm.field.value_difference" = "Разница стоимости";
@@ -938,6 +1304,55 @@
 "native_swap_screen.privacy.stonfi_terms_title" = "Условия";
 "native_swap_screen.privacy.stonfi_privacy_title" = "Политика";
 "native_swap.screen.confirm.field.expires" = "Истекает через";
+"native_swap.screen.confirm.price_impact_alert.title" = "Разница стоимости слишком большая";
+"native_swap.screen.confirm.price_impact_alert.subtitle" = "Обмен может пройти по курсу, который значительно отличается от рыночных цен.";
+"native_swap.screen.confirm.price_impact_alert.description" = "Подождите ещё немного перед совершением обмена или попробуйте изменить сумму обмена.";
+"native_swap.screen.confirm.price_impact_alert.confirm_button" = "Обменять по изменённой цене";
+"native_swap.screen.confirm.price_impact_alert.back_button" = "Вернуться к обмену";
+
+"multichain_swap.screen.confirm.field.rate" = "Курс";
+"multichain_swap.screen.confirm.field.slippage" = "Проскальзывание";
+"multichain_swap.screen.confirm.field.minimum_received" = "Минимум к получению";
+"multichain_swap.screen.confirm.field.value_difference" = "Разница стоимости";
+"multichain_swap.screen.confirm.field.route_fees" = "Комиссии маршрута";
+"multichain_swap.screen.confirm.field.warnings" = "Предупреждения";
+"multichain_swap.screen.confirm.field.network_fee" = "Сетевая комиссия";
+"multichain_swap.screen.confirm.field.status" = "Статус";
+"multichain_swap.screen.confirm.value.calculating" = "Расчёт";
+"multichain_swap.screen.confirm.value.unknown" = "Неизвестно";
+"multichain_swap.screen.confirm.network_fee.estimated_time" = "Примерное время: %@ мин";
+"multichain_swap.screen.confirm.network_fee.estimated_time_seconds" = "Примерное время: %@ сек";
+"multichain_swap.screen.confirm.network_fee.insufficient_native_token" = "Недостаточно %@ для оплаты комиссии сети";
+"multichain_swap.screen.confirm.battery_fee_shortage.title" = "Не хватает %@ на комиссию";
+"multichain_swap.screen.confirm.battery_fee_shortage.caption" = "Комиссия сети %1$@ %2$@. Её можно оплатить Батарейкой, %3$@ не понадобится.";
+"multichain_swap.screen.confirm.battery_fee_shortage.recharge_battery" = "Зарядить батарейку";
+"multichain_swap.screen.confirm.approval.avoid_extra_fees" = "Избегать лишних комиссий при будущих обменах";
+"multichain_swap.screen.confirm.error.unknown" = "Не удалось завершить обмен. Попробуйте ещё раз.";
+"multichain_swap.screen.confirm.error.insufficient_balance" = "Недостаточно средств";
+"multichain_swap.screen.confirm.error.invalid_address" = "Неверный адрес получателя";
+"multichain_swap.screen.confirm.error.unsupported_transaction" = "Этот тип транзакции не поддерживается";
+"multichain_swap.screen.confirm.error.unsupported_asset" = "Эта пара недоступна для обмена";
+"multichain_swap.screen.confirm.error.missing_field" = "Отсутствуют необходимые данные транзакции";
+"multichain_swap.screen.confirm.error.dust_amount" = "Слишком маленькая сумма для отправки";
+"multichain_swap.screen.confirm.error.verification_failed" = "Не удалось проверить подпись";
+"multichain_swap.screen.confirm.error.sign_internal_error" = "Не удалось подписать транзакцию";
+"multichain_swap.screen.confirm.error.unauthorized" = "Неавторизованный запрос к сети";
+"multichain_swap.screen.confirm.error.no_available_nodes" = "Нет доступных нод, попробуйте позже";
+"multichain_swap.screen.confirm.error.network_error" = "Ошибка сети, проверьте подключение";
+"multichain_swap.screen.confirm.error.bad_response" = "Получен некорректный ответ от ноды";
+"multichain_swap.screen.confirm.error.bitcoin_error" = "Ошибка сети Bitcoin, попробуйте позже";
+"multichain_swap.screen.confirm.error.mempool_conflict" = "Транзакция конфликтует с мемпулом";
+"multichain_swap.screen.confirm.error.utxo_error" = "Не удалось сформировать набор UTXO, попробуйте позже";
+"multichain_swap.screen.confirm.error.internal_error" = "Внутренняя ошибка, попробуйте ещё раз";
+"multichain_swap.screen.confirm.error.prepare_failed" = "Не удалось подготовить обмен. Попробуйте ещё раз.";
+"multichain_swap.screen.confirm.error.route_unavailable" = "Этот маршрут обмена больше недоступен. Попробуйте ещё раз.";
+"multichain_swap.screen.confirm.error.unsupported_provider" = "Этот провайдер обмена не поддерживается.";
+"multichain_swap.screen.swap.error.asset_unavailable" = "Этот токен недоступен для обмена";
+"multichain_swap.screen.swap.error.ton_max_amount_unavailable" = "Please enter amount greater than %@ GRAM";
+"multichain_swap.provider_error.min_amount_not_met" = "Слишком маленькая сумма для обмена. Попробуйте увеличить сумму.";
+"multichain_swap.provider_error.country_blocked" = "Обмен недоступен в вашем регионе.";
+"multichain_swap.provider_error.provider_unavailable" = "Провайдер обмена временно недоступен. Попробуйте ещё раз.";
+"multichain_swap.provider_error.unknown" = "Не удалось получить котировку. Попробуйте ещё раз.";
 
 "subscription_plugin_warning.title.zero" = "У вас есть %@ устаревших подписок от @donate";
 "subscription_plugin_warning.title.one" = "У вас есть %@ устаревшая подписка от @donate";
@@ -945,18 +1360,21 @@
 "subscription_plugin_warning.title.many" = "У вас есть %@ устаревших подписок от @donate";
 "subscription_plugin_warning.title.other" = "У вас есть %@ устаревших подписок от @donate";
 
-"subscription_plugin_warning.caption_one" = "Она может продолжать списывать средства с кошелька. Управляйте подписками в Tonkeeper Web — войдите с помощью секретного ключа.";
-"subscription_plugin_warning.caption_many" = "Подписки могут продолжать списывать средства с кошелька. Управляйте подписками в Tonkeeper Web — войдите с помощью секретного ключа.";
+"subscription_plugin_warning.caption_one" = "Она может продолжать списывать средства с кошелька. Управляйте подписками в Keeper Web — войдите с помощью секретной фразы.";
+"subscription_plugin_warning.caption_many" = "Подписки могут продолжать списывать средства с кошелька. Управляйте подписками в Keeper Web — войдите с помощью секретной фразы.";
 
-"subscription_plugin_warning.button" = "Открыть Tonkeeper Web";
+"subscription_plugin_warning.button" = "Открыть Keeper Web";
 
 "stories_updates.all_updates" = "Все новости";
 "actions.retry" = "Повторить";
-"trade.assets.title" = "Активы";
+"actions.try_again" = "Попробовать ещё раз";
+"trade.assets.title" = "Крипто";
 "trade.assets.categories.all" = "Все";
-"trade.assets.categories.crypto" = "Крипто";
+"trade.assets.categories.tokens" = "Токены";
 "trade.assets.categories.stocks" = "Акции";
 "trade.assets.categories.etfs" = "ETF";
+"trade.services.perps" = "Perps";
+"trade.perps_shelf.title" = "Популярные бессрочные фьючерсы";
 "trade.assets.errors.load" = "Не удалось загрузить активы.";
 "trade.assets.placeholder.empty" = "Активы не найдены.";
 "trade.errors.load_shelves" = "Не удалось загрузить торговые полки.";
@@ -965,10 +1383,18 @@
 "trade.placeholder.error_subtitle" = "Не удалось загрузить контент.";
 "trade.placeholder.not_found_title" = "Не найдено";
 "trade.placeholder.no_results_for_query" = "По запросу '%@' ничего не найдено.";
+"trade.favorites.title" = "Избранные токены";
+"trade.favorites.edit_title" = "Редактирование избранного";
+"trade.favorites.tooltip" = "Добавить в избранное";
 "trade.search.placeholder" = "Поиск по тикеру или названию";
 "trade.asset_details.apy_value" = "%@ APY";
 "trade.asset_details.earn_apy" = "Зарабатывайте %@ APY";
-"trade.asset_details.about_fallback" = "%@ доступен в торговом каталоге Tonkeeper.";
+"trade.asset_details.about_fallback" = "%@ доступен в торговом каталоге Keeper.";
+"trade.asset_details.actions.cash_buy" = "Купить с карты";
+"trade.asset_details.actions.cash_sell" = "Вывести на карту";
+"trade.asset_details.asset_type.tokenized_stock" = "Этот актив — токенизированная акция";
+"trade.asset_details.asset_type.tokenized_etf" = "Этот актив — токенизированный ETF";
+"trade.asset_details.asset_type.unverified" = "Этот актив — непроверенный токен";
 "trade.asset_details.balance.title" = "Ваш баланс";
 "trade.asset_details.common.not_available" = "Н/Д";
 "trade.asset_details.common.see_all" = "Смотреть все";
@@ -985,18 +1411,117 @@
 "trade.asset_details.sections.links" = "Ссылки";
 "trade.asset_details.sections.overview" = "Обзор";
 "trade.asset_details.sections.trading_activity" = "Торговая активность за 24 ч";
-"trade.asset_details.trading_activity.attribution" = "График цены, обзор и доходность предоставлены dyor.io.";
+"trade.asset_details.trading_activity.attribution" = "График цены, обзор и торговая активность предоставлены %@.";
 "trade.asset_details.trading_activity.volume_hint" = "Общий объем всех транзакций за последние 24 часа.";
 "trade.asset_details.trading_activity.volume_title" = "Объем";
 "trade.asset_details.tokenized.stock.badge" = "Токенизированная акция";
 "trade.asset_details.tokenized.stock.title" = "Что такое\nтокенизированные акции?";
 "trade.asset_details.tokenized.stock.caption" = "Токенизированные акции — это блокчейн-токены, обеспеченные реальными акциями в соотношении 1:1. Они позволяют покупать доли акций и связывают традиционные рынки с криптовалютой.";
 "trade.asset_details.tokenized.stock.point_one" = "Покупайте и продавайте 24/7, вне обычных торговых часов.";
-"trade.asset_details.tokenized.stock.point_two" = "Отправляйте этот актив по сети TON в любое время.";
+"trade.asset_details.tokenized.stock.point_two" = "Отправляйте этот актив ончейн в любое время.";
 "trade.asset_details.tokenized.stock.point_three" = "Покупайте доли акций всего от $1.";
 "trade.asset_details.tokenized.etf.badge" = "Токенизированный ETF";
 "trade.asset_details.tokenized.etf.title" = "Что такое\nтокенизированные ETF?";
 "trade.asset_details.tokenized.etf.caption" = "Токенизированные ETF — это блокчейн-токены, обеспеченные реальными ETF в соотношении 1:1. Они позволяют покупать доли фондов и связывают традиционные рынки с криптовалютой.";
 "trade.asset_details.tokenized.etf.point_one" = "Покупайте и продавайте 24/7, вне обычных торговых часов.";
-"trade.asset_details.tokenized.etf.point_two" = "Отправляйте этот актив по сети TON в любое время.";
+"trade.asset_details.tokenized.etf.point_two" = "Отправляйте этот актив ончейн в любое время.";
 "trade.asset_details.tokenized.etf.point_three" = "Покупайте доли ETF всего от $1.";
+
+"passcode.attempts_left" = "Осталось попыток: %d";
+"passcode.attempt_left" = "Осталась 1 попытка";
+"passcode.too_many_attempts" = "Слишком много попыток";
+"passcode.try_again_in" = "Повторите через %@";
+"perps.asset.share_position" = "Поделиться позицией";
+"perps.asset.entry" = "Вход";
+"perps.asset.current" = "Текущая";
+"perps.asset.date" = "Дата";
+"perps.toast.share_failed" = "Не удалось создать изображение";
+"perps.error.offline" = "Нет соединения с интернетом. Проверьте сеть и попробуйте ещё раз.";
+"perps.error.timeout" = "Время ожидания истекло. Попробуйте ещё раз.";
+"perps.error.rate_limited" = "Слишком много запросов. Подождите немного и повторите.";
+"perps.error.server_unavailable" = "Сервис временно недоступен. Попробуйте позже.";
+"perps.error.server_rejected" = "Ордер отклонён.";
+"perps.error.composite_blocked" = "Удалить оба ордера сразу пока нельзя. Уберите их по одному.";
+"perps.error.auth_expired" = "Сессия истекла. Попробуйте ещё раз.";
+"perps.error.credentials_revoked" = "Ключи доступа больше недействительны. Активируйте аккаунт заново.";
+"perps.error.activation_required" = "Перед торговлей нужна активация.";
+"perps.error.region_unavailable" = "Торговля недоступна в вашем регионе.";
+"perps.error.insufficient_balance" = "Недостаточно средств для этого ордера.";
+"perps.error.insufficient_liquidity" = "Недостаточно ликвидности рынка для такого объёма.";
+"perps.error.position_not_found" = "Позиция уже закрыта.";
+"perps.error.stale_inputs" = "Данные изменились. Проверьте параметры ещё раз.";
+"perps.error.submit_unknown" = "Не удалось подтвердить ордер. Проверьте позиции перед повторной попыткой.";
+"perps.error.generic" = "Что-то пошло не так. Попробуйте ещё раз.";
+
+"fee_method_picker.title" = "Сетевая комиссия";
+"fee_method_picker.subtitle" = "Выберите способ";
+"fee_method_picker.deposit" = "Пополнить";
+
+"p2p_express_popup.title" = "Покупка через Wallet P2P";
+"p2p_express_popup.caption" = "Чтобы купить криптовалюту за фиат, завершите оплату через Wallet в Telegram с помощью P2P, а затем переведите средства на свой кошелёк Keeper.";
+
+"tron_usdt_fees.common.buttons.all_fee_options" = "Пополнить";
+"tron_usdt_fees.common.buttons.get_trx" = "Получить TRX";
+"tron_usdt_fees.common.disclaimer" = "Комиссии меняются в реальном времени в зависимости от рыночных условий и других факторов.";
+"tron_usdt_fees.common.fee_options.title.default" = "Комиссии блокчейна";
+"tron_usdt_fees.common.fee_options.title.insufficient" = "Недостаточно средств для оплаты комиссий за транзакции";
+"tron_usdt_fees.common.fee_options.caption.default" = "Батарейка Keeper — самый простой способ оплачивать комиссии блокчейна. Также вы можете пополнить баланс монетами GRAM и TRX напрямую.";
+"tron_usdt_fees.common.fee_options.caption.insufficient" = "Выберите способ оплаты комиссии и пополните баланс.";
+"tron_usdt_fees.common.item_title.battery" = "Battery";
+"tron_usdt_fees.common.item_title.ton" = "GRAM";
+"tron_usdt_fees.common.item_title.trx" = "TRX";
+"tron_usdt_fees.common.item_caption.balance_required" = "Баланс: %@\nТребуется: %@";
+"tron_usdt_fees.common.links.learn_more" = " Подробнее";
+"tron_usdt_fees.insufficient_popup.title" = "Недостаточно средств для оплаты комиссий за транзакции";
+"tron_usdt_fees.insufficient_popup.caption" = "Необходимо для комиссий блокчейна ≈ %@ TRX.\nВаш баланс: %@ TRX";
+"tron_usdt_fees.token_details.title" = "Tether USD";
+"tron_usdt_fees.token_details.transfer_availability" = "Доступно переводов: %d";
+"tron_usdt_fees.token_details.banners.fee_options_insufficient.title" = "Недостаточно средств для оплаты комиссий";
+"tron_usdt_fees.token_details.banners.fee_options_insufficient.caption" = "Пополните баланс Battery, GRAM или TRX, чтобы оплатить комиссии за транзакции.";
+"tron_usdt_fees.token_details.banners.trx_insufficient.title" = "Недостаточно TRX для оплаты комиссий";
+"tron_usdt_fees.token_details.banners.trx_insufficient.caption" = "Необходимо для комиссий блокчейна ≈ %@ TRX. Ваш баланс: %@ TRX.";
+"tron_usdt_fees.transaction_confirmation.no_enough_funds" = "Недостаточно средств";
+"tron_usdt_fees.transaction_confirmation.out_of_available" = "из %@ доступно";
+"tron_usdt_fees.transaction_confirmation.refill" = "Пополнить";
+"tron_usdt_fees.trx_balance_popup.title" = "Баланс TRX";
+"tron_usdt_fees.trx_balance_popup.caption" = "Пополните баланс, чтобы оплачивать сетевые комиссии.";
+"tron_usdt_fees.trx_balance_popup.item_caption" = "Баланс: %@ (%@ переводов)\nТребуется: %@";
+"mystery_raffle.tickets.your_tickets" = "Ваши билеты";
+"mystery_raffle.tickets.final_count" = "Итоговое число билетов";
+"mystery_raffle.tickets.get_more" = "Получить ещё";
+"mystery_raffle.tickets.count.one" = "1 билет";
+"mystery_raffle.tickets.count.other" = "%d билетов";
+"mystery_raffle.countdown.ends_in" = "Завершение через";
+"mystery_raffle.countdown.day" = "день";
+"mystery_raffle.countdown.days" = "дн.";
+"mystery_raffle.more_on" = "Подробнее %@";
+"mystery_raffle.section.earn_tickets" = "Как получить билеты";
+"mystery_raffle.section.milestones" = "Бонусы за этапы";
+"mystery_raffle.section.history" = "История билетов";
+"mystery_raffle.swap_promo" = "Кросс-чейн свопы с 0%% комиссии";
+"mystery_raffle.faq.title" = "FAQ";
+"mystery_raffle.faq.about.question" = "Что такое Mystery Raffle?";
+"mystery_raffle.faq.about.answer" = "%1$@ мы запустим мультичейн-розыгрыш, в котором будет более 2 000 победителей. Билеты — ваши шансы на победу.\n\nМигрируйте на мультичейн до этой даты и получите %2$d билетов — наше спасибо за то, что вы давний пользователь Keeper.\n\nПризы, дополнительные способы заработать билеты и полную механику раскроем на следующей неделе.";
+"mystery_raffle.faq.migrate_before.question" = "Что я получу, если мигрирую до %@?";
+"mystery_raffle.faq.migrate_before.answer" = "• %d билетов\n• Кросс-чейн комиссия 0%%";
+"mystery_raffle.faq.migrate_after.question" = "Что я получу, если мигрирую после %@?";
+"mystery_raffle.faq.migrate_after.answer" = "• 5 билетов";
+"mystery_raffle.faq.fee_end.question" = "Когда закончится предложение с комиссией 0%%?";
+"mystery_raffle.faq.fee_end.answer" = "%@";
+"mystery_raffle.faq.earn.question" = "Как заработать билеты?";
+"mystery_raffle.faq.earn.answer" = "• %1$d билетов за миграцию из TON-кошелька в мультичейн-кошелёк\n• 1 билет за каждые $100 кросс-чейн свопов\n• До %2$d бонусных билетов за выполнение этапов\n• Дополнительные задания появятся по ходу кампании";
+"mystery_raffle.faq.prizes.question" = "Какие будут призы?";
+"mystery_raffle.faq.prizes.answer" = "• Призовой фонд $100 000\n• 2 000 победителей\n• Стейблкоины, NFT и Батарейки";
+"mystery_raffle.faq.end.question" = "Когда закончится розыгрыш?";
+"mystery_raffle.faq.end.answer" = "• Розыгрыш продлится 6 недель\n• Он закончится %@";
+"mystery_raffle.faq.winners.question" = "Когда вы объявите победителей?";
+"mystery_raffle.faq.winners.answer" = "В течение недели после завершения розыгрыша";
+"mystery_raffle.faq.rewards.question" = "Когда будут распределены награды?";
+"mystery_raffle.faq.rewards.answer" = "В течение двух недель после завершения розыгрыша";
+"multichain.insufficient_native_fee.title" = "Недостаточно %1$@ (%2$@) для комиссии в кошельке %3$@";
+"multichain.insufficient_native_fee.caption" = "Требуется: %@ %@.";
+"multichain.insufficient_native_fee.deposit" = "Пополнить %@";
+"multichain.transaction.error.failed_to_calculate_fee" = "Не удалось рассчитать комиссию сети. Попробуйте ещё раз.";
+"multichain.transaction.error.failed_to_prepare" = "Не удалось подготовить транзакцию. Попробуйте ещё раз.";
+"multichain.transaction.error.failed_to_send" = "Не удалось отправить транзакцию. Попробуйте ещё раз.";
+"multichain.transaction.error.unsupported_asset" = "Этот актив не поддерживается для переводов.";

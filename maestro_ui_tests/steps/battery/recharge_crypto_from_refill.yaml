@@ -1,0 +1,52 @@
+# Buys the smallest crypto pack (750 charges) on an already-open Battery refill screen.
+# Env: RECHARGE_TOKEN — symbol after "Recharge with ", e.g. GRAM / USD₮
+appId: com.jbig.tonkeeper
+---
+- extendedWaitUntil:
+    visible: Tonkeeper Battery
+    timeout: 30000
+
+- scrollUntilVisible:
+    element: ${"Recharge with " + RECHARGE_TOKEN}
+    direction: DOWN
+    timeout: 45000
+- tapOn: ${"Recharge with " + RECHARGE_TOKEN}
+- waitForAnimationToEnd:
+    timeout: 3000
+
+# Smallest prefilled pack. Tap the row title — radio accessory is not interactive.
+- scrollUntilVisible:
+    element: "750 charges"
+    direction: DOWN
+    timeout: 45000
+- tapOn: "750 charges"
+- scrollUntilVisible:
+    element: Continue
+    direction: DOWN
+    timeout: 20000
+- tapOn: Continue
+
+# Confirmation popup appears only after async fee emulation — wait for the slider.
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 60000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: ../password/enter_password.yaml
+
+# Signing returns to the refill screen, which stays on top of whatever opened it
+# (wallet header or the Deposit button in the fee picker). Close it so the caller
+# continues from its own screen.
+- extendedWaitUntil:
+    visible:
+      id: battery_refill_close
+    timeout: 60000
+- tapOn:
+    id: battery_refill_close
+- waitForAnimationToEnd:
+    timeout: 5000

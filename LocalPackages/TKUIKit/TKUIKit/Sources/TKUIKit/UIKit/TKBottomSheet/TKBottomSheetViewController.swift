@@ -8,6 +8,8 @@ public final class TKBottomSheetViewController: UIViewController {
     }
 
     public var didClose: ((_ interactivly: Bool) -> Void)?
+    public var willPresent: (() -> Void)?
+    public var willDismiss: (() -> Void)?
 
     let dimmingView = TKBottomSheetDimmingView()
     let containerView = UIView()
@@ -19,6 +21,8 @@ public final class TKBottomSheetViewController: UIViewController {
     private let ignoreBottomSafeArea: Bool
     private var isPreparingInitialPresentation = false
     private var needsDeferredContentHeightUpdate = false
+    private var isMeasuringSheetLayout = false
+    private var needsMeasurementSettlePass = false
 
     private lazy var tapGesture = UITapGestureRecognizer(
         target: self,
@@ -49,6 +53,22 @@ public final class TKBottomSheetViewController: UIViewController {
     }
 
     private var containerFrame: CGRect = .zero
+    /// Extra space reserved at the sheet's bottom. The sheet does not track the keyboard itself; an
+    /// external `TKBottomSheetKeyboardObserver` drives this.
+    public var additionalBottomInset: CGFloat = 0 {
+        didSet {
+            guard additionalBottomInset != oldValue,
+                  isViewLoaded, !isDismissing, !isPreparingInitialPresentation else { return }
+            guard !isMeasuringSheetLayout else {
+                needsMeasurementSettlePass = true
+                return
+            }
+            updateSheetLayout(animated: false)
+        }
+    }
+
+    /// Optional keyboard tracker, retained for the sheet's lifetime.
+    public var keyboardObserver: TKBottomSheetKeyboardObserver?
 
     public init(contentViewController: TKBottomSheetContentViewController, ignoreBottomSafeArea: Bool = false) {
         self.contentViewController = contentViewController
@@ -74,9 +94,15 @@ public final class TKBottomSheetViewController: UIViewController {
         navigationController.modalPresentationStyle = .overFullScreen
 
         fromViewController.present(navigationController, animated: false) {
-            self.setup()
-            self.performPresent()
+            self.startPresentation()
         }
+    }
+
+    /// Installs the sheet chrome and runs the entry animation. Split out of `present` so it can run
+    /// against a view already in a hierarchy.
+    func startPresentation() {
+        setup()
+        performPresent()
     }
 
     public func dismiss(completion: (() -> Void)? = nil) {
@@ -157,10 +183,28 @@ private extension TKBottomSheetViewController {
             return
         }
 
+        // Measuring lays the content out, and content can report its height from inside that pass
+        // (`TKModalCardViewController` notifies from `viewDidLayoutSubviews`). Re-entering measurement
+        // here would leave the outer, now stale, layout applied last, so settle it after this update.
+        if isMeasuringSheetLayout {
+            needsMeasurementSettlePass = true
+            return
+        }
+
         updateSheetLayout(animated: true)
     }
 
     func updateSheetLayout(animated: Bool) {
+        applySheetLayout(animated: animated)
+
+        // Exactly one extra pass, never a loop: a height reported while settling is dropped instead
+        // of queueing another pass. Content that reports only real changes converges within it.
+        guard needsMeasurementSettlePass else { return }
+        applySheetLayout(animated: animated)
+        needsMeasurementSettlePass = false
+    }
+
+    func applySheetLayout(animated: Bool) {
         let layout = measureSheetLayout()
         if animated {
             applyContentLayout(layout)
@@ -193,6 +237,7 @@ private extension TKBottomSheetViewController {
         containerView.frame = makeHiddenContainerFrame(from: finalFrame)
         dimmingView.prepareForPresentationTransition()
 
+        willPresent?()
         animateDragging {
             self.dimmingView.performPresentationTransition()
             self.containerView.frame = finalFrame
@@ -202,13 +247,15 @@ private extension TKBottomSheetViewController {
 
             if self.needsDeferredContentHeightUpdate {
                 self.needsDeferredContentHeightUpdate = false
-                self.updateSheetLayout(animated: false)
+                self.updateSheetLayout(animated: true)
             }
         }
     }
 
     func performDismiss(completion: (() -> Void)? = nil) {
         isDismissing = true
+        view.endEditing(true)
+        willDismiss?()
         dimmingView.prepareForDimissalTransition()
         animateDragging {
             self.containerView.frame.origin.y = self.view.bounds.height
@@ -220,20 +267,25 @@ private extension TKBottomSheetViewController {
     }
 
     private func measureSheetLayout() -> SheetLayout {
+        isMeasuringSheetLayout = true
+        defer { isMeasuringSheetLayout = false }
+
         let width = sheetWidth
         let headerHeight = measureHeaderHeight(forWidth: width)
+        // A non-zero inset (the keyboard) covers the home-indicator inset, so drop the bottom spacing.
+        let resolvedBottomSpacing = additionalBottomInset > 0 ? 0 : bottomSpacing
         let contentMaximumHeight = max(
-            view.bounds.height - view.safeAreaInsets.top - bottomSpacing - headerHeight,
+            view.bounds.height - view.safeAreaInsets.top - resolvedBottomSpacing - headerHeight - additionalBottomInset,
             0
         )
         let contentHeight = measureContentHeight(
             forWidth: width,
             maximumHeight: contentMaximumHeight
         )
-        let containerHeight = headerHeight + contentHeight + bottomSpacing
+        let containerHeight = headerHeight + contentHeight + resolvedBottomSpacing
         let containerFrame = CGRect(
             x: 0,
-            y: view.bounds.height - containerHeight,
+            y: view.bounds.height - additionalBottomInset - containerHeight,
             width: width,
             height: containerHeight
         )
@@ -285,6 +337,7 @@ private extension TKBottomSheetViewController {
     }
 
     private func measureHeaderHeight(forWidth width: CGFloat) -> CGFloat {
+        headerView.renderContent(forWidth: width)
         let fittingSize = headerView.systemLayoutSizeFitting(
             CGSize(width: width, height: UIView.layoutFittingCompressedSize.height),
             withHorizontalFittingPriority: .required,
@@ -391,7 +444,7 @@ private extension TKBottomSheetViewController {
             delay: .zero,
             usingSpringWithDamping: .animationSpringDamping,
             initialSpringVelocity: .animationSpringVelocity,
-            options: [.curveEaseInOut, .allowUserInteraction],
+            options: [.curveEaseInOut, .allowUserInteraction, .beginFromCurrentState],
             animations: animations,
             completion: completion
         )
@@ -400,9 +453,6 @@ private extension TKBottomSheetViewController {
 
 private extension CGFloat {
     static let maximumDragOffset: CGFloat = 24
-    static let dragOffsetRatio: CGFloat = 1 / 2
-    static let dragTreshold: CGFloat = 1 / 3
-    static let velocityTreshold: CGFloat = 1500
     static let animationSpringDamping: CGFloat = 2
     static let animationSpringVelocity: CGFloat = 0
 }

@@ -3,7 +3,6 @@ import Foundation
 public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
     public struct State {
         public let watched: [String]
-        public let stories: [Story]
     }
 
     public enum Event {
@@ -14,28 +13,11 @@ public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
 
     init(repository: StoriesRepository) {
         self.repository = repository
-        super.init(state: .init(watched: repository.getWatchedStories(), stories: []))
+        super.init(state: .init(watched: repository.getWatchedStories()))
     }
 
     override public func createInitialState() -> State {
-        .init(watched: self.repository.getWatchedStories(), stories: [])
-    }
-
-    public func setStories(_ stories: [Story]) async {
-        await withCheckedContinuation { continuation in
-            setStories(stories) {
-                continuation.resume()
-            }
-        }
-    }
-
-    public func setStories(_ stories: [Story], completion: (() -> Void)? = nil) {
-        updateState { state in
-            StateUpdate(newState: .init(watched: state.watched, stories: stories))
-        } completion: { [weak self] state in
-            self?.sendEvent(.didUpdateState(state: state))
-            completion?()
-        }
+        .init(watched: self.repository.getWatchedStories())
     }
 
     public func setStoryWatchedPageIndex(_ storyId: String, pageIndex: Int) {
@@ -55,8 +37,8 @@ public final class StoriesStore: Store<StoriesStore.Event, StoriesStore.State> {
             isWatched: true,
             watchedPageIndex: currentStatus?.watchedPageIndex
         )
-        updateState { state in
-            StateUpdate(newState: .init(watched: self.repository.getWatchedStories(), stories: state.stories))
+        updateState { _ in
+            StateUpdate(newState: .init(watched: self.repository.getWatchedStories()))
         } completion: { [weak self] state in
             self?.sendEvent(.didUpdateState(state: state))
         }

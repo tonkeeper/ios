@@ -11,7 +11,7 @@ public protocol TKListContainerItem {
     func getView() -> UIView
 }
 
-public protocol TKListContainerReconfigurableItem: TKListContainerItem {
+protocol TKListContainerReconfigurableItem: TKListContainerItem {
     var id: String? { get }
     func reconfigure(view: UIView)
 }

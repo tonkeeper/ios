@@ -3,6 +3,8 @@ import UIKit
 
 @MainActor
 final class HintContentLayoutTracker {
+    var onSourceViewLost: (() -> Void)?
+
     private weak var sourceView: UIView?
     private weak var sourceWindow: UIWindow?
     private weak var containerView: UIView?
@@ -87,7 +89,7 @@ final class HintContentLayoutTracker {
     }
 
     @objc
-    private func updateTrackedHintPosition() {
+    func updateTrackedHintPosition() {
         guard
             let sourceView,
             let sourceWindow,
@@ -96,6 +98,12 @@ final class HintContentLayoutTracker {
             var hintConfiguration,
             let resolvedHintPosition
         else {
+            return
+        }
+
+        guard sourceView.window === sourceWindow else {
+            stopHeartbeat()
+            onSourceViewLost?()
             return
         }
 
@@ -172,7 +180,13 @@ private extension HintContentLayoutTracker {
                 configuration.position.mirroredVertically,
                 configuration.position.mirroredHorizontally.mirroredVertically,
             ]
-            return base + base.flatMap(\.cornerOptions)
+            let centered = [
+                configuration.position.centered,
+                configuration.position.mirroredVertically.centered,
+            ]
+            // Centered variants keep the tail on the source; the corner options move the
+            // anchor to its edge, so they only come after everything else has been ruled out.
+            return base + centered + base.flatMap(\.cornerOptions)
         }()
 
         let validCandidate = positionCandidates
@@ -199,23 +213,32 @@ private extension HintContentLayoutTracker {
         let inadjustedOriginX = configuration
             .position
             .horizontal
-            .absoluteValue(in: sourceFrame)
+            .absoluteValue(
+                in: sourceFrame,
+                globalFrame: sourceWindow.bounds
+            )
         let originX: CGFloat
-        if let tailParameters = configuration.position.tailParameters {
-            switch configuration.position.direction {
-            case .bottomLeft, .topLeft:
+        switch configuration.position.direction {
+        case .bottomLeft, .topLeft:
+            if let tailParameters = configuration.position.tailParameters {
                 originX = inadjustedOriginX - contentSize.width + tailParameters.horizontalOffset
-            case .bottomRight, .topRight:
-                originX = inadjustedOriginX - tailParameters.horizontalOffset
+            } else {
+                originX = inadjustedOriginX
             }
-        } else {
-            originX = inadjustedOriginX
+        case .bottomCenter, .topCenter:
+            originX = inadjustedOriginX - contentSize.width / 2
+        case .bottomRight, .topRight:
+            if let tailParameters = configuration.position.tailParameters {
+                originX = inadjustedOriginX - tailParameters.horizontalOffset
+            } else {
+                originX = inadjustedOriginX
+            }
         }
         let originY: CGFloat
         switch configuration.position.direction {
-        case .topLeft, .topRight:
+        case .topLeft, .topCenter, .topRight:
             originY = sourceFrame.minY - contentSize.height - configuration.position.vertical.absolute
-        case .bottomLeft, .bottomRight:
+        case .bottomLeft, .bottomCenter, .bottomRight:
             originY = sourceFrame.maxY + configuration.position.vertical.absolute
         }
 

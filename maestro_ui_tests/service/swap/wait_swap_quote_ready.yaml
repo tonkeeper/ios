@@ -1,0 +1,15 @@
+appId: com.jbig.tonkeeper
+---
+# Native swap Continue stays visible while disabled: `getContinueButtonEnableState()` requires
+# `confirmation != nil`, and `handleContinueTap()` guards on the same value, so a tap fired before
+# the confirmation quote lands is a silent no-op and the confirmation popup never opens — the
+# `confirm_swipe` wait downstream then burns its whole ceiling and fails.
+# The button's enabled state is that exact signal, so wait on it instead of polling the receive
+# amount, which the preview quote fills in before `confirmation` exists.
+# Above the 15s house limit because the quote is a third-party provider round trip.
+- extendedWaitUntil:
+    visible:
+      id: native_swap_continue
+      enabled: true
+    timeout: 30000
+    label: Wait for the native swap confirmation quote to enable Continue

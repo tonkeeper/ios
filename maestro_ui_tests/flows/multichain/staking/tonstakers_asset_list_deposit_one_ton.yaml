@@ -1,0 +1,53 @@
+# Multichain Tonstakers deposit: Wallet → Stake → amount 1 → confirm.
+# Uses Stake action-row entry (Tonstakers list row appears only after an existing stake).
+# API asserts run only when WALLET_WITH_MONEY_ADDR + auth are set (CI).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- waitForAnimationToEnd:
+    timeout: 10000
+
+- extendedWaitUntil:
+    visible:
+      id: wallet_battery
+    timeout: 120000
+
+- extendedWaitUntil:
+    visible: "^Stake$"
+    timeout: 60000
+- tapOn:
+    text: "^Stake$"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_amount_input"
+    timeout: 60000
+- assertVisible: Tonstakers
+
+- tapOn:
+    id: "staking_amount_input"
+- inputText: "1"
+
+- extendedWaitUntil:
+    visible:
+      id: "staking_deposit_continue"
+    timeout: 30000
+- tapOn:
+    id: "staking_deposit_continue"
+
+- extendedWaitUntil:
+    visible:
+      id: confirm_swipe
+    timeout: 60000
+- swipe:
+    from:
+      id: confirm_swipe
+    direction: RIGHT
+    duration: 2000
+
+- runFlow: "../../../steps/password/enter_password.yaml"
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 180000

@@ -7,14 +7,12 @@ import UIKit
 final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
     var didSelect: (() -> Void)?
 
-    // MARK: - SettingsListV2Configurator
+    // MARK: - SettingsListConfigurator
 
     var didUpdateState: ((SettingsListState) -> Void)?
     var title: String {
         TKLocales.Currency.title
     }
-
-    var selectedItems = Set<SettingsListItem>()
 
     func getInitialState() -> SettingsListState {
         createState()
@@ -41,24 +39,15 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
             currencies.remove(.BYN)
         }
 
-        var items = [SettingsListItem]()
-        for currency in currencies {
-            let cellConfiguration = TKListItemCell.Configuration(
-                listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                    textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                        titleViewConfiguration: TKListItemTitleView.Configuration(
-                            title: currency.code,
-                            caption: currency.title
-                        )
-                    )
-                )
-            )
-            let item = SettingsListItem(
+        let items = currencies.map { currency in
+            SettingsListItem(
                 id: currency.code,
-                cellConfiguration: cellConfiguration,
-                accessory: .none,
-                selectAccessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.donemarkOutline, tintColor: .Accent.blue)),
-                onSelection: { [weak self] _ in
+                title: SettingsListItemTitle(currency.code),
+                inlineCaption: currency.title,
+                accessory: currency == selectedCurrency
+                    ? .icon(.TKUIKit.Icons.Size28.donemarkOutline, tintColor: .accentBlue)
+                    : .none,
+                onTap: { [weak self] _ in
                     guard let self else { return }
                     Task {
                         await self.currencyStore.setCurrency(currency)
@@ -68,15 +57,9 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
                     }
                 }
             )
-            items.append(item)
-
-            if currency == selectedCurrency {
-                selectedItems.removeAll()
-                selectedItems.insert(item)
-            }
         }
 
-        let section = SettingsListSection.listItems(
+        let section = SettingsListSection.items(
             SettingsListItemsSection(
                 items: items.map(SettingsListItemsSectionItem.listItem)
             )

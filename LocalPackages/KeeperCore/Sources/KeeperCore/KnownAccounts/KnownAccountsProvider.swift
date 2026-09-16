@@ -1,8 +1,6 @@
 import Foundation
 
 public final class KnownAccountsProvider {
-    private var _knownAccounts = [KnownAccount]()
-
     private var loadTask: Task<[KnownAccount], Never>?
 
     private let lock = NSLock()

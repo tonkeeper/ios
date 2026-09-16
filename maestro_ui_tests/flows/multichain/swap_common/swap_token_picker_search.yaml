@@ -1,0 +1,26 @@
+# Multichain Swap: token picker search finds USDT (adapted from ton-state swap_token_picker_search_test).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow: "../../../steps/swap/open_swap.yaml"
+
+- tapOn:
+    id: swap_receive_token
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 30000
+- extendedWaitUntil:
+    visible:
+      id: token_picker_search
+    timeout: 30000
+- tapOn:
+    id: token_picker_search
+- inputText: "usdt"
+- extendedWaitUntil:
+    visible:
+      id: token_picker_asset_tron_usdt
+    timeout: 30000
+- assertVisible:
+    id: token_picker_asset_tron_usdt

@@ -15,6 +15,7 @@ struct TransactionConfirmationAssembly {
     ) -> MVVMModule<TransactionConfirmationViewController, TransactionConfirmationOutput, Void> {
         let viewModel = TransactionConfirmationViewModelImplementation(
             confirmationController: transactionConfirmationController,
+            pendingTransactionsService: keeperCoreMainAssembly.servicesAssembly.pendingTransactionsService(),
             amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
             fundsValidator: keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator(),
             currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,

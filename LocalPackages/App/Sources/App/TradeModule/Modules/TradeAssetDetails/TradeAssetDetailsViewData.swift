@@ -3,21 +3,11 @@ import KeeperCore
 import TKUIKit
 import UIKit
 
-struct TradeAssetDetailsHeaderSubtitleViewData {
-    enum Action {
-        case tokenizedAssetInfo(TokenizedAssetInfoKind)
-        case unverifiedTokenInfo
-    }
-
-    let title: String
-    let color: UIColor
-    let action: Action
-}
-
 struct TradeAssetDetailsHeaderViewData {
     let title: String
     let imageSource: AssetAvatarViewImageSource
-    let subtitle: TradeAssetDetailsHeaderSubtitleViewData?
+    let subtitle: TradeAssetDetailsViewModel.HeaderSubtitleViewData?
+    let showsVerificationCheckmark: Bool
     let earnText: String?
 }
 
@@ -28,10 +18,6 @@ struct TradeAssetDetailsMetricViewData: Identifiable {
     let secondaryValue: String?
     let secondaryValuePositive: Bool
     let hint: String?
-
-    var showsInfoIcon: Bool {
-        hint != nil
-    }
 }
 
 struct TradeAssetDetailsTradingActivityViewData {
@@ -42,6 +28,7 @@ struct TradeAssetDetailsTradingActivityViewData {
     let buyText: String
     let sellText: String
     let buyFraction: Double
+    let attributionText: AttributedString
 }
 
 struct TradeAssetDetailsBalanceSectionViewData {
@@ -50,6 +37,7 @@ struct TradeAssetDetailsBalanceSectionViewData {
     let amountText: String
     let convertedAmountText: String?
     let chainTag: String?
+    let freshness: BalanceFreshness
 }
 
 struct TradeAssetDetailsLinkViewData: Identifiable {
@@ -73,6 +61,31 @@ struct TradeAssetDetailsHistorySectionViewData {
     let items: [TradeAssetDetailsHistoryItemViewData]
 }
 
+struct TradeAssetDetailsMultichainHistorySectionViewData {
+    let items: [MultichainHistoryActivityItem]
+}
+
+enum TradeAssetDetailsActionButton: Equatable {
+    case send
+    case receive
+    case cashBuy
+    case cashSell
+}
+
+enum TradeAssetDetailsActionBarState: Equatable {
+    case none
+    case buy
+    case buySell
+
+    init(supportsSwap: Bool, hasBalance: Bool) {
+        guard supportsSwap else {
+            self = .none
+            return
+        }
+        self = hasBalance ? .buySell : .buy
+    }
+}
+
 struct TradeAssetDetailsScreenViewData {
     let id: String
     let title: String
@@ -86,8 +99,13 @@ struct TradeAssetDetailsScreenViewData {
     let aboutParagraph: String
     let overview: [TradeAssetDetailsMetricViewData]
     let tradingActivity: TradeAssetDetailsTradingActivityViewData?
+    let assetType: TradeAssetDetailsAssetTypeSectionKind?
+    let tronFees: TradeAssetDetailsTronFeesViewData?
     let history: TradeAssetDetailsHistorySectionViewData?
+    let multichainHistory: TradeAssetDetailsMultichainHistorySectionViewData?
     let links: [TradeAssetDetailsLinkViewData]
     let primaryActionTitle: String
+    let actionBarState: TradeAssetDetailsActionBarState
+    let actionButtons: [TradeAssetDetailsActionButton]
     let isSendAvailable: Bool
 }

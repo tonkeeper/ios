@@ -1,4 +1,5 @@
 @testable import TKUIKit
+import UIKit
 import XCTest
 
 @MainActor
@@ -63,6 +64,34 @@ final class ChartTests: XCTestCase {
         XCTAssertEqual(sampledValues.last ?? .zero, points.last?.point.y ?? .zero, accuracy: 0.0001)
     }
 
+    func testLineChartAreaMaskModelUsesChartDataSampling() {
+        let chartData = TKLineChartCanvasView.ChartData(
+            mode: .linear,
+            coordinates: [
+                MockCoordinate(x: 20, y: 200),
+                MockCoordinate(x: 10, y: 100),
+                MockCoordinate(x: 30, y: 300),
+            ],
+            smoothing: .tension(0.42),
+            style: .active
+        )
+        let points = LineChartPointNormalizer.normalize(chartData.coordinates)
+
+        let maskModel = LineChartAreaMaskModel(
+            chartData: chartData,
+            points: points
+        )
+        let sampledValues = LineChartPointSampler.sample(
+            points: points,
+            mode: chartData.mode,
+            sampleCount: maskModel.yValues.values.count
+        )
+
+        XCTAssertEqual(maskModel.mode, .linear)
+        XCTAssertEqual(maskModel.smoothing, 0.42, accuracy: 0.0001)
+        assertEqual(maskModel.yValues.values, sampledValues)
+    }
+
     func testChartSubstrateGridPositionsAlignWithXAxisLabelOffsets() {
         let positions = ChartSubstrateGridLayout.lineXPositions(
             width: 390,
@@ -80,6 +109,63 @@ final class ChartTests: XCTestCase {
             201,
             accuracy: 0.0001
         )
+    }
+
+    func testChartVerticalGuideLayoutCombinesCanvasAndBottomPriceHeight() {
+        XCTAssertEqual(ChartView.Layout.chartHeight, 176, accuracy: 0.0001)
+        XCTAssertEqual(ChartBottomPriceView.Layout.height, 44, accuracy: 0.0001)
+        XCTAssertEqual(
+            ChartVerticalGuideLayout.chartAndBottomHeight,
+            220,
+            accuracy: 0.0001
+        )
+    }
+
+    func testChartSelectionGuideLayoutUsesRequestedHeightWhenProvided() {
+        XCTAssertEqual(
+            ChartSelectionGuideLayout.height(
+                requestedHeight: ChartVerticalGuideLayout.chartAndBottomHeight,
+                plotHeight: ChartView.Layout.chartHeight
+            ),
+            220,
+            accuracy: 0.0001
+        )
+    }
+
+    func testChartSelectionGuideLayoutFallsBackToPlotHeight() {
+        XCTAssertEqual(
+            ChartSelectionGuideLayout.height(
+                requestedHeight: nil,
+                plotHeight: ChartView.Layout.chartHeight
+            ),
+            176,
+            accuracy: 0.0001
+        )
+        XCTAssertEqual(
+            ChartSelectionGuideLayout.height(
+                requestedHeight: -1,
+                plotHeight: ChartView.Layout.chartHeight
+            ),
+            0,
+            accuracy: 0.0001
+        )
+    }
+
+    func testExtendedAreaMaskLayoutKeepsChartRectAtCanvasHeight() {
+        let layout = ChartExtendedAreaMaskLayout.layout(
+            in: CGRect(
+                x: 0,
+                y: 0,
+                width: 390,
+                height: ChartVerticalGuideLayout.chartAndBottomHeight
+            ),
+            chartHeight: ChartView.Layout.chartHeight
+        )
+
+        XCTAssertEqual(layout.chartRect.height, 176, accuracy: 0.0001)
+        XCTAssertEqual(layout.outputRect.height, 220, accuracy: 0.0001)
+        XCTAssertEqual(layout.chartRect.maxY, 176, accuracy: 0.0001)
+        XCTAssertEqual(layout.outputRect.maxY, 220, accuracy: 0.0001)
     }
 
     func testChartSubstrateGridLayoutHandlesInvalidInput() {
@@ -148,6 +234,61 @@ final class ChartTests: XCTestCase {
         XCTAssertEqual(selectedIndex, 1)
     }
 
+    func testLineChartTrendUsesChronologicalFirstAndLastSamples() {
+        let trend = LineChartTrendResolver.trend(for: [
+            MockCoordinate(x: 20, y: 200),
+            MockCoordinate(x: 10, y: 300),
+            MockCoordinate(x: 30, y: 100),
+        ])
+
+        XCTAssertEqual(trend, .down)
+    }
+
+    func testLineChartTrendTreatsFlatPeriodAsUpOrFlat() {
+        let trend = LineChartTrendResolver.trend(for: [
+            MockCoordinate(x: 10, y: 200),
+            MockCoordinate(x: 20, y: 150),
+            MockCoordinate(x: 30, y: 200),
+        ])
+
+        XCTAssertEqual(trend, .upOrFlat)
+    }
+
+    func testLineChartColorResolverKeepsStandardStyleBlue() {
+        let palette = TKResolvedTheme.light.palette
+        XCTAssertEqual(
+            LineChartColorResolver.color(
+                style: .active,
+                appearance: .standard,
+                trend: .down,
+                palette: palette
+            ),
+            palette.accent.blue
+        )
+    }
+
+    func testLineChartColorResolverUsesTrendColorsOnlyForTrendAppearance() {
+        let palette = TKResolvedTheme.light.palette
+        XCTAssertEqual(
+            LineChartColorResolver.color(
+                style: .active,
+                appearance: .trend,
+                trend: .down,
+                palette: palette
+            ),
+            palette.accent.red
+        )
+        XCTAssertEqual(
+            LineChartColorResolver.color(
+                style: .active,
+                appearance: .trend,
+                trend: .upOrFlat,
+                palette: palette
+            ),
+            palette.accent.green
+        )
+    }
+
     func testGestureDirectionTreatsPredominantlyHorizontalMovementAsHorizontal() {
         XCTAssertTrue(
             TKLineChartGestureDirection.isHorizontal(
@@ -174,6 +315,26 @@ final class ChartTests: XCTestCase {
         for (lhsValue, rhsValue) in zip(lhs, rhs) {
             XCTAssertEqual(lhsValue, rhsValue, accuracy: 0.0001, file: file, line: line)
         }
+    }
+
+    private func assertEqual(_ lhs: UIColor, _ rhs: UIColor, file: StaticString = #filePath, line: UInt = #line) {
+        let traits = UITraitCollection(userInterfaceStyle: .light)
+        var lhsRed: CGFloat = 0
+        var lhsGreen: CGFloat = 0
+        var lhsBlue: CGFloat = 0
+        var lhsAlpha: CGFloat = 0
+        var rhsRed: CGFloat = 0
+        var rhsGreen: CGFloat = 0
+        var rhsBlue: CGFloat = 0
+        var rhsAlpha: CGFloat = 0
+
+        lhs.resolvedColor(with: traits).getRed(&lhsRed, green: &lhsGreen, blue: &lhsBlue, alpha: &lhsAlpha)
+        rhs.resolvedColor(with: traits).getRed(&rhsRed, green: &rhsGreen, blue: &rhsBlue, alpha: &rhsAlpha)
+
+        XCTAssertEqual(lhsRed, rhsRed, accuracy: 0.0001, file: file, line: line)
+        XCTAssertEqual(lhsGreen, rhsGreen, accuracy: 0.0001, file: file, line: line)
+        XCTAssertEqual(lhsBlue, rhsBlue, accuracy: 0.0001, file: file, line: line)
+        XCTAssertEqual(lhsAlpha, rhsAlpha, accuracy: 0.0001, file: file, line: line)
     }
 
     private struct MockCoordinate: Coordinate {

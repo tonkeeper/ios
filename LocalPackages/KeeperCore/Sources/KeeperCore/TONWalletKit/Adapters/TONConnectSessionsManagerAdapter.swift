@@ -53,6 +53,13 @@ final class TONConnectSessionsManagerAdapter: TONConnectSessionsManager {
             connectionType: connectionType
         )
 
+        appsStore.recordConnectionMetadata(
+            wallet: wallet,
+            clientId: parameters.sessionId,
+            manifestURL: parameters.dAppInfo.manifestUrl ?? appUrl,
+            notifyObservers: false
+        )
+
         let now = ISO8601DateFormatter().string(from: Date())
         let walletAddress = parameters.wallet.address
 

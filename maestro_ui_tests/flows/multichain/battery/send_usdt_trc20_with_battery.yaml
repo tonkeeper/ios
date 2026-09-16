@@ -1,0 +1,19 @@
+# Multichain Battery: USD₮ TRC20 self-transfer paid with Tonkeeper Battery.
+# Requires enough charges (Deposit path: deposit_battery_from_fee_modal.yaml).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "TRON"
+      ADDRESS_TITLE: "Your TRON address"
+- runFlow:
+    file: "../../../steps/send/send_with_battery_fee.yaml"
+    env:
+      SEARCH_QUERY: "USDT"
+      CHAIN_ID: "token_picker_chain_tron"
+      ASSET_ID: "token_picker_asset_tron_usdt"
+      TOKEN_SYMBOL: "USDT"
+      AMOUNT: "0.01"
+      RECIPIENT: ${output.fullAddr}

@@ -14,7 +14,15 @@ public struct TradingAssetInfo: Equatable, Sendable {
     public var changePercent: BigInt?
     public var changeAmount: BigInt?
     public var earnAPY: Decimal?
-    public var isUnverified: Bool
+    public var verification: TradingVerification
+
+    public var isUnverified: Bool {
+        verification.isUnverified
+    }
+
+    public var isTrusted: Bool {
+        verification.isTrusted
+    }
 
     public init(
         assetId: String,
@@ -28,7 +36,7 @@ public struct TradingAssetInfo: Equatable, Sendable {
         changePercent: BigInt?,
         changeAmount: BigInt?,
         earnAPY: Decimal?,
-        isUnverified: Bool
+        verification: TradingVerification
     ) {
         self.assetId = assetId
         self.category = category
@@ -41,6 +49,6 @@ public struct TradingAssetInfo: Equatable, Sendable {
         self.changePercent = changePercent
         self.changeAmount = changeAmount
         self.earnAPY = earnAPY
-        self.isUnverified = isUnverified
+        self.verification = verification
     }
 }

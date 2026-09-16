@@ -5,13 +5,18 @@ public struct TonConnectApps: Codable {
     public let apps: [TonConnectApp]
 
     public func addApp(_ app: TonConnectApp) -> TonConnectApps {
-        var mutableApps = apps
+        var mutableApps = apps.filter { $0.clientId != app.clientId }
         mutableApps.append(app)
         return TonConnectApps(apps: mutableApps)
     }
 
     public func removeApp(_ app: TonConnectApp) -> TonConnectApps {
         let mutableApps = apps.filter { $0.manifest.host != app.manifest.host }
+        return TonConnectApps(apps: mutableApps)
+    }
+
+    public func removeApp(clientId: String) -> TonConnectApps {
+        let mutableApps = apps.filter { $0.clientId != clientId }
         return TonConnectApps(apps: mutableApps)
     }
 
@@ -56,7 +61,12 @@ public struct TonConnectApp: Codable, Equatable {
         }
     }
 
-    public init(clientId: String, manifest: TonConnectManifest, keyPair: TonSwift.KeyPair, connectionType: ConnectionType) {
+    public init(
+        clientId: String,
+        manifest: TonConnectManifest,
+        keyPair: TonSwift.KeyPair,
+        connectionType: ConnectionType
+    ) {
         self.clientId = clientId
         self.manifest = manifest
         self.keyPair = keyPair

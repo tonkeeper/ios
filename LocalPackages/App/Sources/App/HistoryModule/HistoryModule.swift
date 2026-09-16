@@ -47,7 +47,7 @@ struct HistoryModule {
             cacheProvider: HistoryListTonEventsCacheProvider(historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
-            filter: .none,
+            filter: .all,
             emptyViewProvider: nil
         )
     }
@@ -68,7 +68,7 @@ struct HistoryModule {
             ),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
-            filter: .none,
+            filter: .all,
             emptyViewProvider: nil
         )
     }
@@ -86,7 +86,7 @@ struct HistoryModule {
             ),
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
             historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()),
-            filter: .none,
+            filter: .all,
             emptyViewProvider: nil
         )
     }

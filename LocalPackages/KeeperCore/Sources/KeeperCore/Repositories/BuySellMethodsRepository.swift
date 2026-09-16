@@ -10,7 +10,3 @@ final class BuySellMethodsRepositoryImplementation: BuySellMethodsRepository {
         self.fileSystemVault = fileSystemVault
     }
 }
-
-private extension String {
-    static let key = "FiatMethods"
-}

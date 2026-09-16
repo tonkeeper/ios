@@ -1,72 +1,119 @@
+import Combine
 import Foundation
 import KeeperCore
-import TKLocalize
-import TKUIKit
 import TonSwift
 
 @MainActor
 protocol CollectiblesListModuleOutput: AnyObject {
     var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)? { get set }
+    var didRequestOpenTonCollectiblesPopup: (() -> Void)? { get set }
+    var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)? { get set }
 }
 
 @MainActor
-protocol CollectiblesListViewModel: AnyObject {
-    var didUpdateSnapshot: ((CollectiblesList.Snapshot) -> Void)? { get set }
-    var didUpdateEmptyViewModel: ((TKEmptyViewController.Model) -> Void)? { get set }
-    var didStopLoading: (() -> Void)? { get set }
+final class CollectiblesListViewModelImplementation: ObservableObject, CollectiblesListModuleOutput {
+    struct RowData: Equatable {
+        var nfts: WalletNFTs
+        var items: [CollectiblesListItem]
 
-    func viewDidLoad()
-    func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model?
-    func didSelectNftAt(index: Int)
-    func reload()
-}
+        static var initial: RowData {
+            RowData(
+                nfts: .empty,
+                items: []
+            )
+        }
+    }
 
-@MainActor
-final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, CollectiblesListModuleOutput {
+    enum State {
+        case idle
+        case refreshing(
+            rowData: RowData
+        )
+        case loaded(
+            rowData: RowData
+        )
+    }
+
     // MARK: - CollectiblesListModuleOutput
 
     var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)?
+    var didRequestOpenTonCollectiblesPopup: (() -> Void)?
+    var didTapCollectiblesSettings: ((_ isSpam: Bool) -> Void)?
 
-    // MARK: - CollectiblesListViewModel
+    // MARK: - State
 
-    var didUpdateSnapshot: ((CollectiblesList.Snapshot) -> Void)?
-    var didUpdateEmptyViewModel: ((TKEmptyViewController.Model) -> Void)?
-    var didStopLoading: (() -> Void)?
+    let isMultichain: Bool
+    @Published private(set) var state: State
+    @Published private(set) var hasBackButton = false
+    @Published private(set) var scrollToTopRequestID = UUID()
+
+    private var onTapBack: (() -> Void)?
+    private var loadTask: Task<Void, Never>?
+    private var didLoad = false
 
     func viewDidLoad() {
+        guard !didLoad else { return }
+        didLoad = true
+
         Task { await walletNFTsStore.addObserver(self) }
 
         appSettingsStore.addObserver(self) { observer, event in
             switch event {
             case .didUpdateIsSecureMode:
-                observer.update()
+                Task { @MainActor in
+                    observer.update()
+                }
             default: break
             }
         }
 
-        updateEmptyView()
-        update()
+        loadIfNeeded()
     }
 
-    func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model? {
-        models[identifier]
+    func openTonCollectiblesPopup() {
+        didRequestOpenTonCollectiblesPopup?()
     }
 
-    func didSelectNftAt(index: Int) {
-        guard let nft = nfts[safe: index] else {
+    func configureHeader(onTapBack: (() -> Void)?) {
+        self.onTapBack = onTapBack
+        hasBackButton = onTapBack != nil
+    }
+
+    func tapBack() {
+        onTapBack?()
+    }
+
+    func tapSettings() {
+        didTapCollectiblesSettings?(false)
+    }
+
+    func selectItem(id: String) {
+        guard let nft = currentRowData?.nfts.visible.first(where: { $0.address.toRaw() == id }) else {
             return
         }
         didSelectNFT?(nft, wallet)
     }
 
-    func reload() {
-        Task { await walletNFTsStore.loadNFTs() }
+    func refresh() async {
+        let rowData: RowData
+        switch state {
+        case .refreshing:
+            await loadTask?.value
+            return
+        case .idle:
+            rowData = makeRowData(nfts: walletNFTsStore.state.value.nfts)
+        case let .loaded(data):
+            rowData = data
+        }
+
+        state = .refreshing(rowData: rowData)
+        startLoadTask()
+        await loadTask?.value
     }
 
-    // MARK: - State
-
-    private var models = [String: CollectibleCollectionViewCell.Model]()
-    private var nfts = [NFT]()
+    func requestScrollToTop() {
+        scrollToTopRequestID = UUID()
+    }
 
     // MARK: - Mapper
 
@@ -93,67 +140,83 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
         self.walletNFTsStore = walletNFTsStore
         self.walletNftManagementStore = walletNftManagementStore
         self.appSettingsStore = appSettingsStore
+        self.state = .idle
+        self.isMultichain = wallet.isMultichain
+    }
+
+    deinit {
+        loadTask?.cancel()
     }
 }
 
 private extension CollectiblesListViewModelImplementation {
+    var currentRowData: RowData? {
+        switch state {
+        case .idle:
+            return nil
+        case let .refreshing(rowData),
+             let .loaded(rowData):
+            return rowData
+        }
+    }
+
+    func loadIfNeeded() {
+        guard case .idle = state else { return }
+
+        state = .refreshing(rowData: makeRowData(nfts: walletNFTsStore.state.value.nfts))
+        startLoadTask()
+    }
+
+    func startLoadTask() {
+        loadTask = Task { [weak self, walletNFTsStore] in
+            let nfts = await walletNFTsStore.loadNFTs()
+            guard !Task.isCancelled else {
+                return
+            }
+            self?.finishLoading(nfts: nfts)
+        }
+    }
+
+    func finishLoading(nfts: WalletNFTs) {
+        state = .loaded(rowData: makeRowData(nfts: nfts))
+        loadTask = nil
+    }
+
     func update() {
-        let nfts = walletNFTsStore.state.value.nfts.visible
+        update(nfts: walletNFTsStore.state.value.nfts)
+    }
+
+    func update(nfts: WalletNFTs) {
+        let rowData = makeRowData(nfts: nfts)
+
+        switch state {
+        case .idle:
+            state = rowData == .initial
+                ? .idle
+                : .loaded(rowData: rowData)
+        case .refreshing:
+            state = .refreshing(rowData: rowData)
+        case .loaded:
+            state = .loaded(rowData: rowData)
+        }
+    }
+
+    func makeRowData(nfts: WalletNFTs) -> RowData {
         let isSecureMode = appSettingsStore.getState().isSecureMode
-        update(nfts: nfts, isSecureMode: isSecureMode)
-    }
-
-    func update(nfts: [NFT], isSecureMode: Bool) {
-        let snapshot = self.createSnapshot(state: nfts)
-        let models = self.createModels(state: nfts, isSecureMode: isSecureMode)
-        self.nfts = nfts
-        self.models = models
-        self.didUpdateSnapshot?(snapshot)
-    }
-
-    func updateEmptyView() {
-        didUpdateEmptyViewModel?(TKEmptyViewController.Model(
-            title: TKLocales.Purchases.emptyPlaceholder,
-            caption: nil,
-            buttons: []
-        ))
-    }
-
-    func createSnapshot(state: [NFT]) -> CollectiblesList.Snapshot {
-        var snapshot = CollectiblesList.Snapshot()
-        if state.isEmpty {
-            snapshot.appendSections([.empty])
-            snapshot.appendItems([.empty], toSection: .empty)
-        } else {
-            snapshot.appendSections([.all])
-            snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+        let items = nfts.visible.map {
+            collectiblesListMapper.map(nft: $0, isSecureMode: isSecureMode)
         }
-
-        if #available(iOS 15.0, *) {
-            snapshot.reconfigureItems(snapshot.itemIdentifiers)
-        } else {
-            snapshot.reloadItems(snapshot.itemIdentifiers)
-        }
-
-        return snapshot
-    }
-
-    func createModels(state: [NFT], isSecureMode: Bool) -> [String: CollectibleCollectionViewCell.Model] {
-        return state.reduce(into: [String: CollectibleCollectionViewCell.Model]()) { result, item in
-            let model = collectiblesListMapper.map(nft: item, isSecureMode: isSecureMode)
-            let identifier = item.address.toString()
-            result[identifier] = model
-        }
+        return RowData(
+            nfts: nfts,
+            items: items
+        )
     }
 }
 
 extension CollectiblesListViewModelImplementation: WalletNFTStoreObserver {
     nonisolated func didUpdateNFTs(_ nfts: WalletNFTs) {
-        Task { @MainActor in update() }
-    }
-
-    nonisolated func didUpdateLoadingState(_ loadingState: WalletNFTStore.LoadingState) {
-        guard loadingState == .idle else { return }
-        Task { @MainActor [weak self] in self?.didStopLoading?() }
+        Task { @MainActor in
+            update(nfts: nfts)
+        }
     }
 }

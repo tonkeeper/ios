@@ -1,11 +1,21 @@
 import BigInt
 import Foundation
+import KeeperCoreComponents
 import TonSwift
 
-public struct TonkeeperDeeplinkParser {
-    public func parse(string: String?) throws -> Deeplink {
+struct TonkeeperDeeplinkParser {
+    private let walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator
+
+    init(walletConnectDeeplinkValidator: WalletConnectDeeplinkValidator) {
+        self.walletConnectDeeplinkValidator = walletConnectDeeplinkValidator
+    }
+
+    func parse(
+        string: String?,
+        tonConnectSource: DappConnectionSource = .deeplink
+    ) throws(DeeplinkParserError) -> Deeplink {
         guard let string else {
-            throw DeeplinkParserError.unsupportedDeeplink(code: .nilValue, string: string)
+            throw .unsupportedDeeplink(code: .nilValue, string: string)
         }
 
         if string.isEmpty {
@@ -13,7 +23,7 @@ public struct TonkeeperDeeplinkParser {
         }
 
         guard var url = URL(string: string) else {
-            throw DeeplinkParserError.unsupportedDeeplink(code: .notUrl, string: string)
+            throw .unsupportedDeeplink(code: .notUrl, string: string)
         }
 
         if let cleaned = string.removingPercentEncoding,
@@ -29,7 +39,7 @@ public struct TonkeeperDeeplinkParser {
         }
 
         guard let firstPathComponent = url.pathComponents.first else {
-            throw DeeplinkParserError.unsupportedDeeplink(
+            throw .unsupportedDeeplink(
                 code: .firstPathComponent,
                 string: string
             )
@@ -38,14 +48,10 @@ public struct TonkeeperDeeplinkParser {
         switch firstPathComponent {
         case "transfer":
             return try .transfer(parseTransfer(url: url))
-        case "buy-ton":
-            return .buyTon
         case "staking":
             return .staking
         case "pool":
             return try .pool(parsePool(url: url))
-        case "exchange":
-            return .exchange(provider: parseExchange(url: url))
         case "swap":
             return .swap(parseSwap(url: url))
         case "deposit":
@@ -59,13 +65,23 @@ public struct TonkeeperDeeplinkParser {
         case "signer":
             return try .externalSign(parseExternalSign(url: url))
         case "ton-connect":
-            return try .tonconnect(parseTonconnect(url: url))
+            return try .tonconnect(
+                parseTonconnect(
+                    url: url,
+                    source: tonConnectSource
+                )
+            )
+        case "wc":
+            return try .walletConnect(parseWalletConnect(url: url))
         case "dapp":
             return try .dapp(parseDapp(url: url))
         case "battery":
             return .battery(parseBattery(url: url))
         case "browser":
-            return .browser
+            return .browser(network: parseBrowserNetwork(url: url))
+        // Raffle CTAs and tasks come from the backend as `migrate`; universal links use `migration`.
+        case "migration", "migrate":
+            return .migration
         case "trading":
             return .trading(gridID: parseTradingGridID(url: url))
         case "assets":
@@ -76,35 +92,46 @@ public struct TonkeeperDeeplinkParser {
             return .receive
         case "backup":
             return .backup
+        case "add-wallet":
+            return .addWallet
         case "main":
             return .main
+        case "raffle":
+            switch url.pathComponents.count {
+            case 1:
+                return .raffle
+            case 2 where url.pathComponents[1] == "mystery_raffle":
+                return .raffle
+            default:
+                throw .unsupportedDeeplink(code: .notSupportedPath, string: string)
+            }
         default:
-            throw DeeplinkParserError.unsupportedDeeplink(
+            throw .unsupportedDeeplink(
                 code: .notSupportedPath,
                 string: string
             )
         }
     }
 
-    func parseTransfer(url: URL) throws -> Deeplink.Transfer {
+    func parseTransfer(url: URL) throws(DeeplinkParserError) -> Deeplink.Transfer {
         let components = URLComponents(
             url: url,
             resolvingAgainstBaseURL: true
         )
 
-        let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "exp", "success_ret"]
+        let validQueryItems: Set<String> = ["amount", "text", "bin", "init", "jetton", "asset_id", "exp", "success_ret"]
 
         if let queryItems = components?.queryItems {
             for item in queryItems {
                 if !validQueryItems.contains(item.name) {
-                    throw DeeplinkParserError.unknownQueryItem(name: item.name)
+                    throw .unknownQueryItem(name: item.name)
                 }
             }
         }
 
-        let recipient: String = try {
+        let recipient: String = try { () throws(DeeplinkParserError) in
             guard url.pathComponents.count > 1 else {
-                throw DeeplinkParserError.invalidParameters
+                throw .invalidParameters
             }
             return url.pathComponents[1]
         }()
@@ -129,6 +156,14 @@ public struct TonkeeperDeeplinkParser {
             return try? Address.parse(jettonAddressParameter)
         }()
 
+        let assetId: String? = {
+            guard let value = components?.queryItems?.first(where: { $0.name == "asset_id" })?.value else {
+                return nil
+            }
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            return trimmed.isEmpty ? nil : trimmed
+        }()
+
         let expirationTimestamp: Int64? = {
             guard let exp = components?.queryItems?.first(where: { $0.name == "exp" })?.value else {
                 return nil
@@ -147,7 +182,7 @@ public struct TonkeeperDeeplinkParser {
 
         if bin != nil || stateInit != nil {
             if comment != nil && bin != nil {
-                throw DeeplinkParserError.invalidParameters
+                throw .invalidParameters
             }
             let bin: String? = {
                 if let bin {
@@ -170,21 +205,18 @@ public struct TonkeeperDeeplinkParser {
                 amount: amount,
                 comment: comment,
                 jettonAddress: jettonAddress,
+                assetId: assetId,
                 expirationTimestamp: expirationTimestamp,
                 successReturn: successReturn
             )
         )
     }
 
-    func parsePool(url: URL) throws -> Address {
-        try Address.parse(url.lastPathComponent)
-    }
-
-    func parseExchange(url: URL) -> String? {
-        if url.pathComponents.count == 2 {
-            return url.lastPathComponent
-        } else {
-            return nil
+    func parsePool(url: URL) throws(DeeplinkParserError) -> Address {
+        do {
+            return try Address.parse(url.lastPathComponent)
+        } catch {
+            throw .invalidParameters
         }
     }
 
@@ -229,7 +261,10 @@ public struct TonkeeperDeeplinkParser {
         url.lastPathComponent
     }
 
-    func parseTonconnect(url: URL) throws -> TonConnectPayload {
+    func parseTonconnect(
+        url: URL,
+        source: DappConnectionSource = .deeplink
+    ) throws(DeeplinkParserError) -> TonConnectPayload {
         let components = URLComponents(
             url: url,
             resolvingAgainstBaseURL: true
@@ -251,26 +286,46 @@ public struct TonkeeperDeeplinkParser {
             version: version,
             clientId: clientId,
             requestPayload: requestPayload,
-            returnStrategy: returnStrategy
+            returnStrategy: returnStrategy,
+            source: source
         ), url)
     }
 
-    func parsePublish(url: URL) throws -> Data {
+    func parseWalletConnect(url: URL) throws(DeeplinkParserError) -> WalletConnectDeeplink {
+        guard let wrappedURI = WalletConnectURIParser.wrappedURI(from: url.absoluteString) else {
+            throw .ignoredWalletConnectWakeUp
+        }
+
+        let uri = WalletConnectURIParser.normalized(wrappedURI)
+        guard walletConnectDeeplinkValidator.isPairingURI(uri) else {
+            if WalletConnectURIParser.wakeUpTopic(from: uri) != nil {
+                throw .ignoredWalletConnectWakeUp
+            }
+            throw .invalidParameters
+        }
+
+        return WalletConnectDeeplink(
+            uri: uri,
+            source: .deeplink
+        )
+    }
+
+    func parsePublish(url: URL) throws(DeeplinkParserError) -> Data {
         let components = URLComponents(
             url: url,
             resolvingAgainstBaseURL: true
         )
 
         guard let signHex = components?.queryItems?.first(where: { $0.name == "sign" })?.value,
-              let signData = Data(hex: signHex)
+              let signData = Data(strictHex: signHex)
         else {
-            throw DeeplinkParserError.invalidParameters
+            throw .invalidParameters
         }
 
         return signData
     }
 
-    func parseExternalSign(url: URL) throws -> ExternalSignDeeplink {
+    func parseExternalSign(url: URL) throws(DeeplinkParserError) -> ExternalSignDeeplink {
         let components = URLComponents(
             url: url,
             resolvingAgainstBaseURL: true
@@ -278,22 +333,22 @@ public struct TonkeeperDeeplinkParser {
         switch components?.path {
         case "signer/link":
             guard let pkHex = components?.queryItems?.first(where: { $0.name == "pk" })?.value,
-                  let pkData = Data(hex: pkHex),
+                  let pkData = Data(strictHex: pkHex),
                   let name = components?.queryItems?.first(where: { $0.name == "name" })?.value
             else {
-                throw DeeplinkParserError.invalidParameters
+                throw .invalidParameters
             }
             let publicKey = TonSwift.PublicKey(data: pkData)
             return ExternalSignDeeplink.link(publicKey: publicKey, name: name)
         default:
-            throw DeeplinkParserError.unsupportedDeeplink(
+            throw .unsupportedDeeplink(
                 code: .notSupportedPath,
                 string: url.absoluteString
             )
         }
     }
 
-    private func parseDapp(url: URL) throws -> URL {
+    private func parseDapp(url: URL) throws(DeeplinkParserError) -> URL {
         let dappPrefix = "dapp/"
         var stringURL = url
             .absoluteString
@@ -311,7 +366,7 @@ public struct TonkeeperDeeplinkParser {
         let components = URLComponents(string: "\(stringURL)")
 
         guard let resultURL = components?.url else {
-            throw DeeplinkParserError.unsupportedDeeplink(
+            throw .unsupportedDeeplink(
                 code: .notUrl,
                 string: url.absoluteString
             )
@@ -340,13 +395,24 @@ public struct TonkeeperDeeplinkParser {
         )
     }
 
-    private func parseStory(url: URL) throws -> String {
-        return try {
+    private func parseStory(url: URL) throws(DeeplinkParserError) -> String {
+        return try { () throws(DeeplinkParserError) in
             guard url.pathComponents.count > 1 else {
-                throw DeeplinkParserError.invalidParameters
+                throw .invalidParameters
             }
             return url.pathComponents[1]
         }()
+    }
+
+    private func parseBrowserNetwork(url: URL) -> MultichainChain? {
+        let components = URLComponents(
+            url: url,
+            resolvingAgainstBaseURL: true
+        )
+        guard let value = components?.queryItems?.first(where: { $0.name == "network" })?.value else {
+            return nil
+        }
+        return MultichainChain(assetIdChain: value)
     }
 
     private func parseTradingGridID(url: URL) -> String? {
@@ -356,12 +422,12 @@ public struct TonkeeperDeeplinkParser {
         return url.pathComponents[1]
     }
 
-    private func parseTradeAssetID(url: URL) throws -> String {
+    private func parseTradeAssetID(url: URL) throws(DeeplinkParserError) -> String {
         let assetID = url.pathComponents
             .dropFirst()
             .joined(separator: "/")
         guard !assetID.isEmpty else {
-            throw DeeplinkParserError.invalidParameters
+            throw .invalidParameters
         }
         return assetID
     }

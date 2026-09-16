@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 
 public protocol BuySellMethodsService {
-    func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
+    func loadFiatMethods(countryCode: String?, walletId: String?) async throws -> FiatMethods
 }
 
 final class BuySellMethodsServiceImplementation: BuySellMethodsService {
@@ -17,11 +17,7 @@ final class BuySellMethodsServiceImplementation: BuySellMethodsService {
         self.buySellMethodsRepository = buySellMethodsRepository
     }
 
-    func loadFiatMethods(countryCode: String?) async throws -> FiatMethods {
-        do {
-            return try await api.loadFiatMethods(countryCode: countryCode)
-        } catch {
-            throw error
-        }
+    func loadFiatMethods(countryCode: String?, walletId: String?) async throws -> FiatMethods {
+        try await api.loadFiatMethods(countryCode: countryCode, walletId: walletId)
     }
 }

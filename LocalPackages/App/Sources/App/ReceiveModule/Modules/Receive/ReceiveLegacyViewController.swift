@@ -45,7 +45,7 @@ private extension ReceiveLegacyViewController {
             }
         }
         viewModel.didChangeIndex = { [weak self] index in
-            self?.customView.segmentedControl.setSelectedIndex(index, animated: true)
+            self?.customView.segmentedControl.setSelectedIndex(index, animated: false)
         }
     }
 

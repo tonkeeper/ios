@@ -7,7 +7,6 @@
 
 import App
 import CoreSpotlight
-import TKAppInfo
 import TKCore
 import TKFeatureFlags
 import TKLogging
@@ -70,7 +69,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
     }
 
     private func indexMainAppSearchItem() {
-        let appName = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? "Tonkeeper"
+        let appName = (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? "Keeper"
 
         let attributeSet = CSSearchableItemAttributeSet(contentType: .item)
         attributeSet.title = appName
@@ -88,51 +87,5 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             guard let error else { return }
             Log.e("Failed to index main app Spotlight item: \(error.localizedDescription)")
         }
-    }
-}
-
-private extension AppDelegate {
-    func configureLogging(application: UIApplication) {
-        let minimumSeverity = resolvedMinimumSeverity(application: application)
-        let configuration: LoggingConfiguration
-        if !application.isDebug, application.isAppStoreEnvironment {
-            configuration = LoggingConfiguration(
-                minimumSeverity: minimumSeverity,
-                backends: [
-                    CrashlyticsLogBackend(
-                        reporter: CrashlyticsReporter(),
-                        minimumCrashlyticsSeverity: .error
-                    ),
-                ]
-            )
-        } else {
-            configuration = LoggingConfiguration(
-                minimumSeverity: minimumSeverity,
-                backends: [
-                    CrashlyticsLogBackend(
-                        reporter: CrashlyticsReporter(),
-                        minimumCrashlyticsSeverity: .error
-                    ),
-                    OSLogBackend(),
-                ]
-            )
-        }
-        Log.configuration = configuration
-    }
-
-    func resolvedMinimumSeverity(application: UIApplication) -> LogSeverity {
-        let defaultSeverity: LogSeverity = if !application.isDebug, application.isAppStoreEnvironment {
-            .error
-        } else {
-            .debug
-        }
-
-        guard let rawValue = TKAppPreferences.minimumLogSeverityRawValue,
-              let severity = LogSeverity(rawValue: rawValue)
-        else {
-            return defaultSeverity
-        }
-
-        return severity
     }
 }

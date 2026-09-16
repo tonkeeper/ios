@@ -36,7 +36,7 @@ enum ProviderPickerModule {
             captionConfigs.append(
                 TKListItemTextView.Configuration(
                     text: amountLimitText,
-                    color: .Text.secondary,
+                    color: .Accent.orange,
                     textStyle: .body2,
                     numberOfLines: 0
                 )

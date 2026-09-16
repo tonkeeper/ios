@@ -1,0 +1,33 @@
+appId: com.jbig.tonkeeper
+---
+- openLink:
+    link: "tonkeeper://backup"
+
+- tapOn:
+    text: "Open"
+    optional: true
+
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- extendedWaitUntil:
+    visible: "Show Recovery Phrase"
+    timeout: 20000
+
+- tapOn: "Show Recovery Phrase"
+
+- extendedWaitUntil:
+    visible: "Safety Check"
+    timeout: 10000
+
+- tapOn: "I understand that sharing my Recovery Phrase could result in permanent loss of funds."
+
+# Scoped below the agreement: the backup screen behind the sheet carries the same title.
+- tapOn:
+    text: "Show Recovery Phrase"
+    below: "I understand that sharing my Recovery Phrase could result in permanent loss of funds."
+    waitToSettleTimeoutMs: 4000
+
+- extendedWaitUntil:
+    visible: "Enter passcode"
+    timeout: 10000

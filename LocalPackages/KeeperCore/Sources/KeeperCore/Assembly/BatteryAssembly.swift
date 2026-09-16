@@ -4,21 +4,42 @@ public final class BatteryAssembly {
     private let batteryAPIAssembly: BatteryAPIAssembly
     private let coreAssembly: CoreAssembly
     private let configurationAssembly: ConfigurationAssembly
+    private let tonProofTokenService: TonProofTokenService
+    private let deviceAuth: DeviceAuthProviding
+    private let walletAuthTokenProvider: WalletAuthTokenProviding
 
     init(
         batteryAPIAssembly: BatteryAPIAssembly,
         coreAssembly: CoreAssembly,
-        configurationAssembly: ConfigurationAssembly
+        configurationAssembly: ConfigurationAssembly,
+        tonProofTokenService: TonProofTokenService,
+        deviceAuth: DeviceAuthProviding,
+        walletAuthTokenProvider: WalletAuthTokenProviding
     ) {
         self.batteryAPIAssembly = batteryAPIAssembly
         self.coreAssembly = coreAssembly
         self.configurationAssembly = configurationAssembly
+        self.tonProofTokenService = tonProofTokenService
+        self.deviceAuth = deviceAuth
+        self.walletAuthTokenProvider = walletAuthTokenProvider
     }
 
     public func batteryService() -> BatteryService {
         BatteryServiceImplementation(
             batteryAPIProvider: batteryAPIAssembly.apiProvider,
-            rechargeMethodsRepository: rechargeMethodsRepository()
+            rechargeMethodsRepository: rechargeMethodsRepository(),
+            authorizationService: BatteryAuthorizationService(
+                tonProofTokenService: tonProofTokenService,
+                deviceAuth: deviceAuth,
+                walletAuthTokenProvider: walletAuthTokenProvider
+            )
+        )
+    }
+
+    public func batteryWebAuthorizationService() -> BatteryWebAuthorizationService {
+        BatteryWebAuthorizationServiceImplementation(
+            deviceAuth: deviceAuth,
+            walletAuthTokenProvider: walletAuthTokenProvider
         )
     }
 

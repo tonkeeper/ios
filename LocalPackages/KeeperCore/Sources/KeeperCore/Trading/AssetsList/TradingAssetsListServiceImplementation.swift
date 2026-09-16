@@ -4,16 +4,16 @@ import TKTradingAPI
 
 actor TradingAssetsListServiceImplementation {
     private let api: TradingAPI
-    private let repository: TradingAssetsListRepository
+    private let cache: InMemoryKeyedCache<QueryDescriptor, TradingAssetListSnapshot>
     private let requestContextProvider: TradingRequestContextProvider
 
     init(
         api: TradingAPI,
-        repository: TradingAssetsListRepository,
+        cache: InMemoryKeyedCache<QueryDescriptor, TradingAssetListSnapshot>,
         requestContextProvider: TradingRequestContextProvider
     ) {
         self.api = api
-        self.repository = repository
+        self.cache = cache
         self.requestContextProvider = requestContextProvider
     }
 }
@@ -24,10 +24,7 @@ extension TradingAssetsListServiceImplementation: TradingAssetsListService {
         category: TradingAssetCategory
     ) async -> TradingAssetListSnapshot? {
         let descriptor = descriptor(query: query, category: category)
-        return await repository.assetsListSnapshot(
-            query: descriptor.query,
-            category: descriptor.category
-        )
+        return await cache.get(descriptor)
     }
 
     func load(
@@ -37,11 +34,7 @@ extension TradingAssetsListServiceImplementation: TradingAssetsListService {
         let descriptor = descriptor(query: query, category: category)
         Log.trade.i("load assets list for category \(descriptor.category.rawValue), query \(descriptor.query ?? "nil")")
         let snapshot = try await loadPage(descriptor: descriptor, cursor: nil)
-        await repository.setAssetsListSnapshot(
-            snapshot,
-            query: descriptor.query,
-            category: descriptor.category
-        )
+        await cache.set(snapshot, for: descriptor)
         Log.trade.i("load assets list for category \(descriptor.category.rawValue), query \(descriptor.query ?? "nil") - success, new cursor: \(snapshot.nextCursor?.pretty.masked ?? "nil")")
         return snapshot
     }
@@ -51,10 +44,9 @@ extension TradingAssetsListServiceImplementation: TradingAssetsListService {
         category: TradingAssetCategory
     ) async throws(TradingAssetsListServiceFailure) -> TradingAssetListSnapshot? {
         let descriptor = descriptor(query: query, category: category)
-        guard let cachedSnapshot = await repository.assetsListSnapshot(
-            query: descriptor.query,
-            category: descriptor.category
-        ), let nextCursor = cachedSnapshot.nextCursor else {
+        guard let cachedSnapshot = await cache.get(descriptor),
+              let nextCursor = cachedSnapshot.nextCursor
+        else {
             return nil
         }
         Log.trade.i(
@@ -65,11 +57,7 @@ extension TradingAssetsListServiceImplementation: TradingAssetsListService {
             cursor: nextCursor
         )
         let mergedSnapshot = cachedSnapshot.merged(with: nextPage)
-        await repository.setAssetsListSnapshot(
-            mergedSnapshot,
-            query: descriptor.query,
-            category: descriptor.category
-        )
+        await cache.set(mergedSnapshot, for: descriptor)
         Log.trade.i(
             "load next assets list page for category \(descriptor.category.rawValue), query \(descriptor.query ?? "nil"), cursor \(nextCursor.pretty.masked) - success. new cursor: \(mergedSnapshot.nextCursor?.pretty.masked ?? "nil")"
         )

@@ -51,7 +51,7 @@ public final class TKTabsView: UIView {
     }
 
     private var selectedItemTitle: String?
-    private var hostingController: UIHostingController<AnyView>?
+    private var hostingController: TKHostingController<AnyView>?
 
     override public init(frame: CGRect) {
         super.init(frame: frame)
@@ -86,15 +86,15 @@ public final class TKTabsView: UIView {
                     self?.didSelect(title: title)
                 }
             )
-            .background(Color(uiColor: .Background.page))
+            .background(.backgroundPage)
         )
 
         if let hostingController {
-            hostingController.rootView = rootView
+            hostingController.content = rootView
             return
         }
 
-        let hostingController = UIHostingController(rootView: rootView)
+        let hostingController = TKHostingController(content: rootView)
         hostingController.view.backgroundColor = .clear
         hostingController.view.translatesAutoresizingMaskIntoConstraints = false
         addSubview(hostingController.view)

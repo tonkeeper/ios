@@ -1,116 +1,107 @@
 import KeeperCore
+import SwiftUI
 import TKUIKit
 import UIKit
 
 extension WalletTintColor {
-    var uiColor: UIColor {
+    private struct Variants {
+        let light: UIColor
+        let dark: UIColor
+        let deepBlue: UIColor
+
+        init(light: String, dark: String, deepBlue: String) {
+            self.light = UIColor(hex: light)
+            self.dark = UIColor(hex: dark)
+            self.deepBlue = UIColor(hex: deepBlue)
+        }
+
+        init(constant: String) {
+            let color = UIColor(hex: constant)
+            light = color
+            dark = color
+            deepBlue = color
+        }
+
+        var isConstant: Bool {
+            light == dark && light == deepBlue
+        }
+    }
+
+    private var variants: Variants {
         switch self {
         case .SteelGray:
-            UIColor { traitCollection in
-                switch TKThemeManager.shared.theme {
-                case .deepBlue:
-                    UIColor(hex: "293342")
-                case .dark:
-                    UIColor(hex: "2F2F33")
-                case .light:
-                    UIColor(hex: "818C99")
-                case .system:
-                    switch traitCollection.userInterfaceStyle {
-                    case .dark:
-                        UIColor(hex: "2F2F33")
-                    case .light:
-                        UIColor(hex: "818C99")
-                    case .unspecified:
-                        UIColor(hex: "818C99")
-                    @unknown default:
-                        UIColor(hex: "2F2F33")
-                    }
-                }
-            }
+            Variants(light: "818C99", dark: "2F2F33", deepBlue: "293342")
         case .LightSteelGray:
-            UIColor { traitCollection in
-                switch TKThemeManager.shared.theme {
-                case .deepBlue:
-                    UIColor(hex: "424C5C")
-                case .dark:
-                    UIColor(hex: "4E4E52")
-                case .light:
-                    UIColor(hex: "95A0AD")
-                case .system:
-                    switch traitCollection.userInterfaceStyle {
-                    case .dark:
-                        UIColor(hex: "4E4E52")
-                    case .light:
-                        UIColor(hex: "95A0AD")
-                    case .unspecified:
-                        UIColor(hex: "95A0AD")
-                    @unknown default:
-                        UIColor(hex: "4E4E52")
-                    }
-                }
-            }
+            Variants(light: "95A0AD", dark: "4E4E52", deepBlue: "424C5C")
         case .Gray:
-            UIColor { traitCollection in
-                switch TKThemeManager.shared.theme {
-                case .deepBlue:
-                    UIColor(hex: "9DA2A4")
-                case .dark:
-                    UIColor(hex: "8D8D93")
-                case .light:
-                    UIColor(hex: "B6BBC2")
-                case .system:
-                    switch traitCollection.userInterfaceStyle {
-                    case .dark:
-                        UIColor(hex: "8D8D93")
-                    case .light:
-                        UIColor(hex: "B6BBC2")
-                    case .unspecified:
-                        UIColor(hex: "B6BBC2")
-                    @unknown default:
-                        UIColor(hex: "8D8D93")
-                    }
-                }
-            }
+            Variants(light: "B6BBC2", dark: "8D8D93", deepBlue: "9DA2A4")
         case .LightRed:
-            UIColor(hex: "FF8585")
+            Variants(constant: "FF8585")
         case .LightOrange:
-            UIColor(hex: "FFA970")
+            Variants(constant: "FFA970")
         case .LightYellow:
-            UIColor(hex: "FFC95C")
+            Variants(constant: "FFC95C")
         case .LightGreen:
-            UIColor(hex: "85CC7A")
+            Variants(constant: "85CC7A")
         case .LightBlue:
-            UIColor(hex: "70A0FF")
+            Variants(constant: "70A0FF")
         case .LightAquamarine:
-            UIColor(hex: "6CCCF5")
+            Variants(constant: "6CCCF5")
         case .LightPurple:
-            UIColor(hex: "AD89F5")
+            Variants(constant: "AD89F5")
         case .LightViolet:
-            UIColor(hex: "F57FF5")
+            Variants(constant: "F57FF5")
         case .LightMagenta:
-            UIColor(hex: "F576B1")
+            Variants(constant: "F576B1")
         case .LightFireOrange:
-            UIColor(hex: "F57F87")
+            Variants(constant: "F57F87")
         case .Red:
-            UIColor(hex: "FF5252")
+            Variants(constant: "FF5252")
         case .Orange:
-            UIColor(hex: "FF8B3D")
+            Variants(constant: "FF8B3D")
         case .Yellow:
-            UIColor(hex: "FFB92E")
+            Variants(constant: "FFB92E")
         case .Green:
-            UIColor(hex: "69CC5A")
+            Variants(constant: "69CC5A")
         case .Blue:
-            UIColor(hex: "528BFF")
+            Variants(constant: "528BFF")
         case .Aquamarine:
-            UIColor(hex: "47C8FF")
+            Variants(constant: "47C8FF")
         case .Purple:
-            UIColor(hex: "925CFF")
+            Variants(constant: "925CFF")
         case .Violet:
-            UIColor(hex: "FF5CFF")
+            Variants(constant: "FF5CFF")
         case .Magenta:
-            UIColor(hex: "FF479D")
+            Variants(constant: "FF479D")
         case .FireOrange:
-            UIColor(hex: "FF525D")
+            Variants(constant: "FF525D")
         }
+    }
+
+    var uiColor: UIColor {
+        let variants = variants
+        guard !variants.isConstant else { return variants.light }
+        return UIColor { traitCollection in
+            switch TKThemeManager.shared.theme {
+            case .deepBlue:
+                variants.deepBlue
+            case .dark:
+                variants.dark
+            case .light:
+                variants.light
+            case .system:
+                traitCollection.userInterfaceStyle == .dark ? variants.dark : variants.light
+            }
+        }
+    }
+
+    var themedColor: TKColor {
+        let variants = variants
+        guard !variants.isConstant else { return .fixed(Color(uiColor: variants.light)) }
+        return .perTheme(
+            light: Color(uiColor: variants.light),
+            dark: Color(uiColor: variants.dark),
+            deepBlue: Color(uiColor: variants.deepBlue)
+        )
     }
 }

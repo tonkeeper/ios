@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsChartPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: ChartPreviews()
+    private let hostingController = TKHostingController(
+        content: ChartPreviews()
     )
 
     override func viewDidLoad() {

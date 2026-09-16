@@ -12,18 +12,25 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
 
     private var walletBalanceViewController: WalletContainerBalanceViewController
 
-    /// for system navigation bar
-    private lazy var walletButton = WalletContainerWalletButton()
-    private var onTapLeadingButton: (() -> Void)?
-    private var onTapHistoryButton: (() -> Void)?
-    private var onTapSettingsButton: (() -> Void)?
+    private let topBarState = WalletContainerTopBarState()
+    private lazy var topBarHostingController = TKHostingController(
+        content: WalletContainerTopBarView(state: topBarState)
+    )
 
-    var historyButtonTooltipSourceView: UIView? {
-        guard isViewLoaded, !UIApplication.useSystemBarsAppearance else {
-            return nil
+    func historyButtonTooltipSourceView(_ completion: @escaping (UIView) -> Void) {
+        guard isViewLoaded else {
+            return
         }
         view.layoutIfNeeded()
-        return customView.topBarView.historyButtonTooltipSourceView
+        topBarState.waitForHistoryButtonAnchorView(completion)
+    }
+
+    func walletButtonTooltipSourceView(_ completion: @escaping (UIView) -> Void) {
+        guard isViewLoaded else {
+            return
+        }
+        view.layoutIfNeeded()
+        topBarState.waitForWalletButtonAnchorView(completion)
     }
 
     init(
@@ -43,6 +50,7 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        setupTopBar()
         setupBindings()
         viewModel.viewDidLoad()
 
@@ -55,24 +63,22 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
         }
 
         walletBalanceViewController.didScroll = { [weak self] yOffset in
-            self?.customView.topBarView.isSeparatorHidden = yOffset <= 0
+            self?.topBarState.setSeparatorHidden(yOffset <= 0)
         }
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        if !UIApplication.useSystemBarsAppearance {
-            navigationController?.setNavigationBarHidden(true, animated: true)
-        }
+        navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         customView.layoutIfNeeded()
 
-        if !UIApplication.useSystemBarsAppearance {
-            walletBalanceViewController.additionalSafeAreaInsets.top = customView.topBarView.frame.height - customView.safeAreaInsets.top
+        if let topBarView = customView.topBarView {
+            walletBalanceViewController.additionalSafeAreaInsets.top = topBarView.frame.height - customView.safeAreaInsets.top
         }
     }
 
@@ -82,87 +88,16 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
 }
 
 private extension WalletContainerViewController {
+    func setupTopBar() {
+        addChild(topBarHostingController)
+        topBarHostingController.view.backgroundColor = .clear
+        customView.setTopBarView(topBarHostingController.view)
+        topBarHostingController.didMove(toParent: self)
+    }
+
     func setupBindings() {
-        viewModel.didUpdateModel = { [customView, weak self] model in
-            self?.setupNavigationBarIfNeeded(with: model)
-            customView.configure(model: model)
+        viewModel.didUpdateModel = { [weak self] model in
+            self?.topBarState.model = model
         }
-
-        customView.topBarView.walletButton.didTap = { [weak viewModel] in
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-            viewModel?.didTapWalletButton()
-        }
-    }
-}
-
-// MARK: - System Navigation Bar
-
-private extension WalletContainerViewController {
-    func setupNavigationBarIfNeeded(with model: WalletContainerView.Model) {
-        guard UIApplication.useSystemBarsAppearance else {
-            return
-        }
-
-        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: walletButton)
-        walletButton.configure(model: model.topBarViewModel.walletButtonConfiguration)
-        walletButton.didTap = { [weak self] in
-            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-            self?.viewModel.didTapWalletButton()
-        }
-
-        let barButtonItems = [
-            UIBarButtonItem(
-                image: model.topBarViewModel.settingButtonConfiguration.configuration.content.icon,
-                style: .plain,
-                target: self,
-                action: #selector(didTapSettingsButton)
-            ),
-            model.topBarViewModel.historyButtonConfiguration.map { historyButtonConfiguration in
-                UIBarButtonItem(
-                    image: historyButtonConfiguration.content.icon,
-                    style: .plain,
-                    target: self,
-                    action: #selector(didTapHistoryButton)
-                )
-            },
-            UIBarButtonItem(
-                image: model.topBarViewModel.leadingButtonConfiguration.content.icon,
-                style: .plain,
-                target: self,
-                action: #selector(didTapLeadingButton)
-            ),
-        ].compactMap { $0 }
-
-        let window = windowScene?.windows.first
-        let width = window?.screen.bounds.width ?? 0
-        walletButton.snp.makeConstraints { make in
-            let multiplicator: CGFloat
-            if barButtonItems.count <= 2 {
-                multiplicator = 0.5
-            } else {
-                multiplicator = 0.33
-            }
-            make.width.lessThanOrEqualTo(max(width * multiplicator, 160))
-        }
-        navigationItem.rightBarButtonItems = barButtonItems
-
-        onTapSettingsButton = model.topBarViewModel.settingButtonConfiguration.configuration.action
-        onTapLeadingButton = model.topBarViewModel.leadingButtonConfiguration.action
-        onTapHistoryButton = model.topBarViewModel.historyButtonConfiguration?.action
-    }
-
-    @objc
-    func didTapSettingsButton() {
-        onTapSettingsButton?()
-    }
-
-    @objc
-    func didTapLeadingButton() {
-        onTapLeadingButton?()
-    }
-
-    @objc
-    func didTapHistoryButton() {
-        onTapHistoryButton?()
     }
 }

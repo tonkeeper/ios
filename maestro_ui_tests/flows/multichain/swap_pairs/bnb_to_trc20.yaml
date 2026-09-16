@@ -1,0 +1,17 @@
+# Multichain Swap success: BNB → TRC20 USDT at $3 fiat send amount.
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow: "../../../steps/swap/open_swap.yaml"
+- runFlow:
+    file: "../../../steps/swap/select_pair.yaml"
+    env:
+      SEND_QUERY: "BNB"
+      SEND_ASSET_ID: "token_picker_asset_bsc_bnb"
+      RECEIVE_QUERY: "USDT"
+      RECEIVE_ASSET_ID: "token_picker_asset_tron_usdt"
+- runFlow:
+    file: "../../../steps/swap/enter_fiat_amount.yaml"
+    env:
+      FIAT_AMOUNT: "3"
+- runFlow: "../../../steps/swap/confirm_and_sign.yaml"

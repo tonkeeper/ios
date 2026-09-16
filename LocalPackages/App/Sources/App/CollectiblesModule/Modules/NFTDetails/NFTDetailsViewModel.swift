@@ -1,3 +1,4 @@
+import AppUI
 import KeeperCore
 import TKLocalize
 import TKUIKit
@@ -19,13 +20,7 @@ protocol NFTDetailsModuleOutput: AnyObject {
 }
 
 protocol NFTDetailsViewModel: AnyObject {
-    var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
-    var didUpdateManageNFTViewIsHidden: ((_ isHidden: Bool) -> Void)? { get set }
-    var didUpdateInformationView: ((NFTDetailsInformationView.Model) -> Void)? { get set }
-    var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)? { get set }
-    var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)? { get set }
-    var didUpdateDetailsView: ((NFTDetailsDetailsView.Model) -> Void)? { get set }
-    var didUpdateMenuItems: (([TKPopupMenuItem]) -> Void)? { get set }
+    var didUpdateState: ((NFTDetailsScreenState) -> Void)? { get set }
 
     func viewDidLoad()
     func didTapClose()
@@ -68,31 +63,28 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 
     private var nft: NFT
     private let wallet: Wallet
-    private let configuration: Configuration
+    private let navigationButton: NFTDetailsNavigationButton
     private let dnsService: DNSService
     private let appSetttingsStore: AppSettingsStore
     private let walletNftManagementStore: WalletNFTsManagementStore
-    private let nftService: NFTService
-    private let nftDetailsManageNFTOutput: NFTDetailsManageNFTOutput
+    private let manageNFTModel: NFTDetailsManageNFTModel
 
     init(
         nft: NFT,
         wallet: Wallet,
-        configuration: Configuration,
+        navigationButton: NFTDetailsNavigationButton,
         dnsService: DNSService,
         appSetttingsStore: AppSettingsStore,
         walletNftManagementStore: WalletNFTsManagementStore,
-        nftService: NFTService,
-        nftDetailsManageNFTOutput: NFTDetailsManageNFTOutput
+        manageNFTModel: NFTDetailsManageNFTModel
     ) {
         self.nft = nft
         self.wallet = wallet
-        self.configuration = configuration
+        self.navigationButton = navigationButton
         self.dnsService = dnsService
         self.appSetttingsStore = appSetttingsStore
         self.walletNftManagementStore = walletNftManagementStore
-        self.nftService = nftService
-        self.nftDetailsManageNFTOutput = nftDetailsManageNFTOutput
+        self.manageNFTModel = manageNFTModel
     }
 
     // MARK: - NFTDetailsModuleOutput
@@ -111,13 +103,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 
     // MARK: - NFTDetailsViewModel
 
-    var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
-    var didUpdateManageNFTViewIsHidden: ((Bool) -> Void)?
-    var didUpdateInformationView: ((NFTDetailsInformationView.Model) -> Void)?
-    var didUpdateButtonsView: ((NFTDetailsButtonsView.Model?) -> Void)?
-    var didUpdatePropertiesView: ((NFTDetailsPropertiesView.Model?) -> Void)?
-    var didUpdateDetailsView: ((NFTDetailsDetailsView.Model) -> Void)?
-    var didUpdateMenuItems: (([TKPopupMenuItem]) -> Void)?
+    var didUpdateState: ((NFTDetailsScreenState) -> Void)?
 
     var currentState: NFTsManagementState.NFTState? {
         if let collection = nft.collection {
@@ -146,10 +132,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 
         update()
 
-        nftDetailsManageNFTOutput.didUpdateState = { [weak self] in
-            self?.updateNFTManagement()
-        }
-        nftDetailsManageNFTOutput.didMarkAsSpam = { [weak self] in
+        manageNFTModel.didMarkAsSpam = { [weak self] in
             self?.didTapReportSpam?()
         }
     }
@@ -162,22 +145,50 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 
     private func update() {
         let isSecureMode = appSetttingsStore.getState().isSecureMode
-        didUpdateTitleView?(createTitleViewModel(isSecureMode: isSecureMode))
-        updateNFTManagement()
-        didUpdateInformationView?(createInformationViewModel(isSecureMode: isSecureMode))
-        didUpdateButtonsView?(createButtonsViewModel())
-        didUpdateDetailsView?(createDetailsViewModel())
-        didUpdatePropertiesView?(createPropertiesViewModel(isSecureMode: isSecureMode))
-        didUpdateMenuItems?(composeMenuItems())
+        didUpdateState?(
+            NFTDetailsScreenState(
+                header: createHeader(isSecureMode: isSecureMode),
+                spamActions: createSpamActions(),
+                information: createInformation(isSecureMode: isSecureMode),
+                buttons: createButtons(),
+                properties: createProperties(isSecureMode: isSecureMode),
+                details: createDetails()
+            )
+        )
     }
 
-    private func updateNFTManagement() {
-        switch nftDetailsManageNFTOutput.getState() {
-        case .hidden:
-            didUpdateManageNFTViewIsHidden?(true)
-        case .visible:
-            didUpdateManageNFTViewIsHidden?(false)
-        }
+    private func createHeader(isSecureMode: Bool) -> NFTDetailsScreenState.Header {
+        let caption: NFTDetailsScreenState.Header.Caption? = {
+            guard nft.isUnverified else { return nil }
+            return NFTDetailsScreenState.Header.Caption(
+                title: .unverifiedNFT,
+                color: currentState == .approved ? .textSecondary : .accentOrange,
+                action: { [weak self] in
+                    self?.didTapUnverifiedNftDetails?()
+                }
+            )
+        }()
+
+        return NFTDetailsScreenState.Header(
+            title: isSecureMode ? .secureModeValueShort : nft.notNilName,
+            leftButton: navigationButton.headerLeftButton,
+            caption: caption,
+            menuItems: composeMenuItems()
+        )
+    }
+
+    private func createSpamActions() -> NFTDetailsScreenState.SpamActions? {
+        guard manageNFTModel.isVisible else { return nil }
+        return NFTDetailsScreenState.SpamActions(
+            reportSpamTitle: TKLocales.NftDetails.Actions.reportSpam,
+            notSpamTitle: TKLocales.NftDetails.Actions.notSpam,
+            onReportSpam: { [manageNFTModel] in
+                manageNFTModel.markSpamNFT()
+            },
+            onNotSpam: { [manageNFTModel] in
+                manageNFTModel.approveNFT()
+            }
+        )
     }
 
     private func composeMenuItems() -> [TKPopupMenuItem] {
@@ -235,253 +246,134 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return menuItems
     }
 
-    private func createTitleViewModel(isSecureMode: Bool) -> TKUINavigationBarTitleView.Model {
-        let captionModel: TKPlainButton.Model? = {
-            if nft.isUnverified {
-                let accentColor: UIColor = currentState == .approved ? .Text.secondary : .Accent.orange
-                return TKPlainButton.Model(
-                    title: String.unverifiedNFT.withTextStyle(
-                        .body2,
-                        color: accentColor,
-                        alignment: .center,
-                        lineBreakMode: .byTruncatingTail
-                    ),
-                    icon: TKPlainButton.Model.Icon(
-                        image: .TKUIKit.Icons.Size12.informationCircle,
-                        tintColor: accentColor,
-                        padding: UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 0)
-                    ),
-                    action: { [weak self] in
-                        self?.didTapUnverifiedNftDetails?()
-                    }
-                )
-            } else {
-                return nil
-            }
-        }()
-
-        return TKUINavigationBarTitleView.Model(
-            title: isSecureMode ? .secureModeValueShort : nft.notNilName,
-            caption: captionModel
-        )
-    }
-
-    private func createInformationViewModel(isSecureMode: Bool) -> NFTDetailsInformationView.Model {
-        if let lottieUrl = nft.proxyLottieURL {
-            _ = NFTDetailsInformationView.Model.Item.lottieAnimation(lottieUrl)
-        } else {
-            _ = NFTDetailsInformationView.Model.Item.image(TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none))
-        }
-
-        let itemInformationViewModel: NFTDetailsItemInformationView.Model = {
-            let name: String = isSecureMode ? .secureModeValueLong : nft.notNilName
-            let collectionName: String = isSecureMode ? .secureModeValueShort : nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft
-            let nftDescription: String? = isSecureMode ? .secureModeValueShort : nft.description
-            return NFTDetailsItemInformationView.Model(
-                name: name,
-                collectionName: collectionName,
-                isCollectionVerified: nft.trust == .whitelist,
-                itemDescriptionModel: NFTDetailsMoreTextView.Model(
-                    text: nftDescription,
-                    readMoreText: TKLocales.Actions.more
-                )
-            )
-        }()
-
-        let collectionInformationViewModel: NFTDetailsCollectionInformationView.Model? = {
+    private func createInformation(isSecureMode: Bool) -> NFTDetailsScreenState.Information {
+        let collectionSection: NFTDetailsScreenState.Information.CollectionSection? = {
             guard let collection = nft.collection else { return nil }
-            return NFTDetailsCollectionInformationView.Model(
+            return NFTDetailsScreenState.Information.CollectionSection(
                 title: .aboutCollection,
-                collectionDescriptionModel: NFTDetailsMoreTextView.Model(
-                    text: isSecureMode ? .secureModeValueShort : collection.description,
-                    readMoreText: TKLocales.Actions.more
-                )
+                description: isSecureMode ? .secureModeValueShort : collection.description
             )
         }()
 
-        return NFTDetailsInformationView.Model(
-            image: TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none),
-            lottieAnimation: nft.proxyLottieURL,
-            isBlurVisible: isSecureMode,
-            itemInformationViewModel: itemInformationViewModel,
-            collectionInformationViewModel: collectionInformationViewModel
+        return NFTDetailsScreenState.Information(
+            imageSource: .url(nft.preview.size500),
+            lottieURL: nft.proxyLottieURL,
+            isBlurred: isSecureMode,
+            isOnSale: nft.sale != nil,
+            name: isSecureMode ? .secureModeValueLong : nft.notNilName,
+            collectionName: isSecureMode
+                ? .secureModeValueShort
+                : nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft,
+            isCollectionVerified: nft.trust == .whitelist,
+            description: isSecureMode ? .secureModeValueShort : nft.description,
+            collectionSection: collectionSection,
+            moreTitle: TKLocales.Actions.more
         )
     }
 
-    private func createDetailsViewModel() -> NFTDetailsDetailsView.Model {
-        let buttonTitle = TKLocales.NftDetails.viewInExplorer
-            .withTextStyle(
-                .label1,
-                color: .Accent.blue,
-                alignment: .left,
-                lineBreakMode: .byTruncatingTail
+    private func createDetails() -> NFTDetailsScreenState.Details {
+        var items = [NFTDetailsScreenState.Details.Item]()
+        items.append(
+            NFTDetailsScreenState.Details.Item(
+                id: Constants.ownerItemIdentifier,
+                title: TKLocales.NftDetails.owner,
+                value: nft.owner?.address.toShortString(bounceable: false) ?? "",
+                copyValue: nft.owner?.address.toString(bounceable: false)
             )
-
-        let buttonModel = TKPlainButton.Model(title: buttonTitle, icon: nil, action: { [weak self] in
-            guard let self else {
-                return
-            }
-
-            self.didTapOpenInTonviewer?(.nftDetails(nft: self.nft))
-        })
-
-        let headerViewModel = NFTDetailsSectionHeaderView.Model(
-            title: TKLocales.NftDetails.details,
-            buttonModel: buttonModel
         )
 
-        var items = [TKListContainerItemView.Model]()
-        items.append(TKListContainerItemView.Model(
-            title: TKLocales.NftDetails.owner,
-            value: .value(
-                TKListContainerItemDefaultValueView.Model(
-                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.owner?.address.toShortString(bounceable: false))
+        if case let .resolved(data) = dnsExpiringDateState,
+           let date = try? data.get()
+        {
+            items.append(
+                NFTDetailsScreenState.Details.Item(
+                    id: Constants.expirationDateItemIdentifier,
+                    title: TKLocales.NftDetails.expirationDate,
+                    value: dateFormatter.string(from: date)
                 )
-            ),
-            action: .copy(copyValue: nft.owner?.address.toString(bounceable: false))
-        ))
-
-        switch dnsExpiringDateState {
-        case let .resolved(data):
-            guard let date = try? data.get() else { break }
-            let dateFormatted = dateFormatter.string(from: date)
-            items.append(TKListContainerItemView.Model(
-                title: TKLocales.NftDetails.expirationDate,
-                value: .value(
-                    TKListContainerItemDefaultValueView.Model(
-                        topValue: TKListContainerItemDefaultValueView.Model.Value(value: dateFormatted)
-                    )
-                ),
-                action: nil
-            ))
-        default:
-            break
+            )
         }
 
-        items.append(TKListContainerItemView.Model(
-            title: TKLocales.NftDetails.contractAddress,
-            value: .value(
-                TKListContainerItemDefaultValueView.Model(
-                    topValue: TKListContainerItemDefaultValueView.Model.Value(value: nft.address.toShortString(bounceable: true))
-                )
-            ),
-            action: .copy(copyValue: nft.address.toString(bounceable: true))
-        ))
-
-        let listViewConfiguration = TKListContainerView.Configuration(
-            items: items,
-            copyToastConfiguration: .copied
+        items.append(
+            NFTDetailsScreenState.Details.Item(
+                id: Constants.contractAddressItemIdentifier,
+                title: TKLocales.NftDetails.contractAddress,
+                value: nft.address.toShortString(bounceable: true),
+                copyValue: nft.address.toString(bounceable: true)
+            )
         )
 
-        return NFTDetailsDetailsView.Model(
-            headerViewModel: headerViewModel,
-            listViewConfiguration: listViewConfiguration
+        return NFTDetailsScreenState.Details(
+            title: TKLocales.NftDetails.details,
+            explorerButtonTitle: TKLocales.NftDetails.viewInExplorer,
+            items: items,
+            onOpenExplorer: { [weak self] in
+                guard let self else { return }
+                didTapOpenInTonviewer?(.nftDetails(nft: nft))
+            }
         )
     }
 
-    private func createPropertiesViewModel(isSecureMode: Bool) -> NFTDetailsPropertiesView.Model? {
+    private func createProperties(isSecureMode: Bool) -> NFTDetailsScreenState.Properties? {
         guard !nft.attributes.isEmpty, !isSecureMode else { return nil }
 
-        let headerViewModel = NFTDetailsSectionHeaderView.Model(
+        return NFTDetailsScreenState.Properties(
             title: TKLocales.NftDetails.properties,
-            buttonModel: nil
-        )
-
-        let propertyViewsModels = nft.attributes.map {
-            NFTDetailsPropertyView.Model(
-                title: $0.key,
-                value: $0.value
-            )
-        }
-
-        return NFTDetailsPropertiesView.Model(
-            headerViewModel: headerViewModel,
-            propertyViewsModels: propertyViewsModels
+            properties: nft.attributes.enumerated().map { index, attribute in
+                NFTDetailsScreenState.Properties.Property(
+                    id: "\(index)-\(attribute.key)",
+                    title: attribute.key,
+                    value: attribute.value
+                )
+            }
         )
     }
 
-    private func createButtonsViewModel() -> NFTDetailsButtonsView.Model? {
-        guard wallet.kind != .watchonly else { return nil }
-        var buttonsConfigurations = [NFTDetailsButtonView.Model]()
-        if let transferButtonConfiguration = createTransferButtonConfiguration() {
-            buttonsConfigurations.append(transferButtonConfiguration)
-        }
-
-        buttonsConfigurations.append(contentsOf: createLinkButtons())
+    private func createButtons() -> [NFTDetailsScreenState.Button] {
+        guard wallet.kind != .watchonly else { return [] }
+        var buttons = [NFTDetailsScreenState.Button]()
+        buttons.append(createTransferButton())
+        buttons.append(contentsOf: createLinkButtons())
 
         switch dnsExpiringDateState {
         case let .resolved(result):
-            buttonsConfigurations.append(createRenewButton(result: result))
+            buttons.append(createRenewButton(result: result))
         case .loading:
-            buttonsConfigurations.append(createLoadingButton())
+            buttons.append(createLoadingButton(id: Constants.renewLoadingButtonIdentifier))
         default:
             break
         }
 
-        buttonsConfigurations.append(contentsOf: composeProgrammaticButtons())
+        buttons.append(contentsOf: composeProgrammaticButtons())
 
-        guard !buttonsConfigurations.isEmpty else {
-            return nil
-        }
-
-        return NFTDetailsButtonsView.Model(buttonViewModels: buttonsConfigurations)
+        return buttons
     }
 
-    private func createTransferButtonConfiguration() -> NFTDetailsButtonView.Model? {
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .primary,
-            size: .large
-        )
-        buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.NftDetails.transfer))
-        buttonConfiguration.action = { [weak self, nft, wallet] in
-            self?.didTapTransfer?(wallet, nft)
-        }
+    private func createTransferButton() -> NFTDetailsScreenState.Button {
+        let description: String? = {
+            guard nft.sale != nil else { return nil }
+            return nft.dns == nil ? .nftOnSaleDescription : .domainOnSaleDescription
+        }()
 
-        var description: NSAttributedString?
-        if nft.sale != nil {
-            let value: String = nft.dns == nil ? .nftOnSaleDescription : .domainOnSaleDescription
-            description = value.withTextStyle(
-                .body2,
-                color: .Text.secondary,
-                alignment: .center,
-                lineBreakMode: .byWordWrapping
-            )
-        }
-
-        return NFTDetailsButtonView.Model(
-            buttonConfiguration: buttonConfiguration,
-            description: description
+        return NFTDetailsScreenState.Button(
+            id: Constants.transferButtonIdentifier,
+            title: TKLocales.NftDetails.transfer,
+            appearance: .primary,
+            isEnabled: nft.sale == nil && isNFTOwner,
+            description: description,
+            action: { [weak self, nft, wallet] in
+                self?.didTapTransfer?(wallet, nft)
+            }
         )
     }
 
-    private func composeProgrammaticButtons() -> [NFTDetailsButtonView.Model] {
+    private func composeProgrammaticButtons() -> [NFTDetailsScreenState.Button] {
         guard let buttons = nft.programmaticButtons, nft.trust == .whitelist else {
             return []
         }
 
-        return buttons.enumerated().compactMap { button -> NFTDetailsButtonView.Model? in
-            guard var label = button.element.label else { return nil }
-
-            let isPrimary = button.offset == 0
-            let category = TKActionButtonCategory.secondary
-
-            let backgroundColors: [TKButtonState: UIColor]
-            if isPrimary {
-                backgroundColors = [
-                    .normal: UIColor.Button.primaryBackgroundGreen,
-                    .highlighted: UIColor.Button.primaryBackgroundGreenHighlighted,
-                    .disabled: UIColor.Button.primaryBackgroundGreenDisabled,
-                ]
-            } else {
-                backgroundColors = [
-                    .normal: category.backgroundColor,
-                    .highlighted: category.highlightedBackgroundColor,
-                    .disabled: category.disabledBackgroundColor,
-                ]
-            }
-
-            let contentColor: UIColor = isPrimary ? .Button.primaryForeground : category.titleColor
+        return buttons.enumerated().compactMap { index, button -> NFTDetailsScreenState.Button? in
+            guard var label = button.label else { return nil }
 
             // https://linear.app/tonkeeper/issue/IOS-279
             // Если заголовок у кнопки - "Manage", то брать из локализации
@@ -489,59 +381,47 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
                 label = TKLocales.NftDetails.ManageButton.title
             }
 
-            let size = TKActionButtonSize.large
-            let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
-            var contentPadding = size.padding
-            contentPadding.left += 28
-            var configuration = TKButton.Configuration(
-                content: content,
-                contentPadding: contentPadding,
-                textStyle: TKActionButtonSize.large.textStyle,
-                textColor: contentColor,
-                iconTintColor: contentColor,
-                backgroundColors: backgroundColors,
-                cornerRadius: size.cornerRadius,
-                loaderSize: size.loaderViewSize
-            )
-
-            configuration.iconPosition = .right
-            configuration.action = { [weak self] in
-                guard let url = button.element.url else {
-                    return
+            return NFTDetailsScreenState.Button(
+                id: "\(Constants.programmaticButtonIdentifierPrefix)-\(index)",
+                title: label,
+                appearance: index == 0 ? .primaryGreen : .secondary,
+                icon: ButtonView.Icon(
+                    image: .TKUIKit.Icons.Size16.linkSmall,
+                    alignment: .trailing
+                ),
+                action: { [weak self] in
+                    guard let url = button.url else {
+                        return
+                    }
+                    self?.didTapProgrammaticButton?(url)
                 }
-
-                self?.didTapProgrammaticButton?(url)
-            }
-            return .init(buttonConfiguration: configuration, description: nil)
+            )
         }
     }
 
-    private func createLinkButtons() -> [NFTDetailsButtonView.Model] {
+    private func createLinkButtons() -> [NFTDetailsScreenState.Button] {
         switch dnsResolveState {
         case .idle:
             return []
         case .loading:
-            return [createLoadingButton()]
+            return [createLoadingButton(id: Constants.linkLoadingButtonIdentifier)]
         case let .resolved(data):
             return [createLinkedButton(result: data.linkedAddressResult)]
         }
     }
 
-    private func createLoadingButton() -> NFTDetailsButtonView.Model {
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .secondary,
-            size: .large
+    private func createLoadingButton(id: String) -> NFTDetailsScreenState.Button {
+        NFTDetailsScreenState.Button(
+            id: id,
+            title: " ",
+            appearance: .secondary,
+            isEnabled: false,
+            showsLoader: true,
+            action: {}
         )
-        buttonConfiguration.isEnabled = false
-        buttonConfiguration.showsLoader = true
-        buttonConfiguration.loaderSize = .medium
-        buttonConfiguration.loaderStyle = .primary
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(" "))
-
-        return NFTDetailsButtonView.Model(buttonConfiguration: buttonConfiguration, description: nil)
     }
 
-    private func createLinkedButton(result: Result<FriendlyAddress, Swift.Error>) -> NFTDetailsButtonView.Model {
+    private func createLinkedButton(result: Result<FriendlyAddress, Swift.Error>) -> NFTDetailsScreenState.Button {
         let title: String
         let action: () -> Void
         switch result {
@@ -557,18 +437,16 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
             }
         }
 
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .secondary,
-            size: .large
+        return NFTDetailsScreenState.Button(
+            id: Constants.linkButtonIdentifier,
+            title: title,
+            appearance: .secondary,
+            isEnabled: nft.sale == nil && isNFTOwner,
+            action: action
         )
-        buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(title))
-        buttonConfiguration.action = action
-
-        return NFTDetailsButtonView.Model(buttonConfiguration: buttonConfiguration, description: nil)
     }
 
-    private func createRenewButton(result: Result<Date?, Swift.Error>) -> NFTDetailsButtonView.Model {
+    private func createRenewButton(result: Result<Date?, Swift.Error>) -> NFTDetailsScreenState.Button {
         let dateFormatted: String = {
             if let date = Calendar.current.date(byAdding: .year, value: 1, to: Date()) {
                 return dateFormatter.string(from: date)
@@ -576,32 +454,23 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
                 return " "
             }
         }()
-        let title = TKLocales.NftDetails.renewUntil(dateFormatted)
 
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
-            category: .secondary,
-            size: .large
-        )
-        buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(title))
-        buttonConfiguration.action = { [weak self, wallet, nft] in
-            self?.didTapRenewDomain?(wallet, nft)
-        }
-
-        var description: NSAttributedString?
-        if let expiresData = try? result.get() {
+        let description: String? = {
+            guard let expiresData = try? result.get() else { return nil }
             let numberOfDays = Calendar.current.dateComponents([.day], from: Date(), to: expiresData).day ?? 0
-            let value = TKLocales.NftDetails.expiresInDays(numberOfDays)
+            return TKLocales.NftDetails.expiresInDays(numberOfDays)
+        }()
 
-            description = value.withTextStyle(
-                .body2,
-                color: .Text.secondary,
-                alignment: .center,
-                lineBreakMode: .byWordWrapping
-            )
-        }
-
-        return NFTDetailsButtonView.Model(buttonConfiguration: buttonConfiguration, description: description)
+        return NFTDetailsScreenState.Button(
+            id: Constants.renewButtonIdentifier,
+            title: TKLocales.NftDetails.renewUntil(dateFormatted),
+            appearance: .secondary,
+            isEnabled: nft.sale == nil && isNFTOwner,
+            description: description,
+            action: { [weak self, wallet, nft] in
+                self?.didTapRenewDomain?(wallet, nft)
+            }
+        )
     }
 
     private var isNFTOwner: Bool {
@@ -671,11 +540,33 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
 }
 
+private extension NFTDetailsNavigationButton {
+    var headerLeftButton: NFTDetailsScreenState.Header.LeftButton {
+        switch self {
+        case .back:
+            .back
+        case .swipeDown:
+            .swipeDown
+        }
+    }
+}
+
+private enum Constants {
+    static let transferButtonIdentifier = "transfer"
+    static let linkButtonIdentifier = "link"
+    static let linkLoadingButtonIdentifier = "linkLoading"
+    static let renewButtonIdentifier = "renew"
+    static let renewLoadingButtonIdentifier = "renewLoading"
+    static let programmaticButtonIdentifierPrefix = "programmatic"
+    static let ownerItemIdentifier = "owner"
+    static let expirationDateItemIdentifier = "expirationDate"
+    static let contractAddressItemIdentifier = "contractAddress"
+}
+
 private extension String {
     static let unverifiedNFT = TKLocales.NftDetails.unverifiedNft
     static let aboutCollection = TKLocales.NftDetails.aboutCollection
     static let domainOnSaleDescription = TKLocales.NftDetails.domainOnSaleDescription
     static let nftOnSaleDescription = TKLocales.NftDetails.nftOnSaleDescription
-    static let expirationDateTitle = TKLocales.NftDetails.expirationDate
     static let manageButtonTitle = "Manage"
 }

@@ -5,19 +5,21 @@ struct TronUSDTTransactionSender {
     struct InstantFeePayment {
         let instantFeeTx: String
         let userPublicKey: String
+
+        init(instantFeeTx: String, userPublicKey: String) {
+            self.instantFeeTx = instantFeeTx
+            self.userPublicKey = userPublicKey
+        }
     }
 
     private let tronUsdtApi: TronUSDTAPI
-    private let tonProofService: TonProofTokenService
     private let feeOptionsResolver: TronUSDTFeeOptionsResolver
 
     init(
         tronUsdtApi: TronUSDTAPI,
-        tonProofService: TonProofTokenService,
         feeOptionsResolver: TronUSDTFeeOptionsResolver
     ) {
         self.tronUsdtApi = tronUsdtApi
-        self.tonProofService = tonProofService
         self.feeOptionsResolver = feeOptionsResolver
     }
 
@@ -34,9 +36,8 @@ struct TronUSDTTransactionSender {
             return
         }
 
-        let tonProof = try tonProofService.getWalletToken(wallet)
         _ = try await tronUsdtApi.sendTransaction(
-            tonProofToken: tonProof,
+            wallet: wallet,
             address: address,
             signedTransaction: signedTransaction,
             energy: resources.energy,

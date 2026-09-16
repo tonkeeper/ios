@@ -20,7 +20,7 @@ final class BrowserExploreSectionHeaderView: UICollectionReusableView, ReusableV
     }
 
     override var intrinsicContentSize: CGSize {
-        CGSize(width: UIView.noIntrinsicMetric, height: 56)
+        CGSize(width: UIView.noIntrinsicMetric, height: 48)
     }
 
     struct Model {
@@ -31,7 +31,7 @@ final class BrowserExploreSectionHeaderView: UICollectionReusableView, ReusableV
 
     func configure(model: Model) {
         titleLabel.attributedText = model.title.withTextStyle(
-            .h3,
+            .label1,
             color: .Text.primary,
             alignment: .left,
             lineBreakMode: .byTruncatingTail

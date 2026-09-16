@@ -1,0 +1,93 @@
+# Sends AMOUNT of an asset to RECIPIENT, pays the fee with Tonkeeper Battery, signs,
+# and verifies History opens.
+# Env: SEARCH_QUERY, ASSET_ID, AMOUNT, TOKEN_SYMBOL, RECIPIENT, CHAIN_ID (optional,
+# see steps/token_picker/select_asset.yaml)
+appId: com.jbig.tonkeeper
+env:
+  CHAIN_ID: ""
+---
+- extendedWaitUntil:
+    visible: Send
+    timeout: 60000
+- tapOn: Send
+- waitForAnimationToEnd:
+    timeout: 5000
+
+# Send opens the asset picker directly on a multichain wallet; elsewhere it lands on
+# the send form, where the token capsule opens the same picker.
+- runFlow:
+    when:
+      notVisible: Choose asset
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: send_token
+          timeout: 30000
+      - tapOn:
+          id: send_token
+      - waitForAnimationToEnd:
+          timeout: 3000
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 30000
+- runFlow:
+    file: ../token_picker/select_asset.yaml
+    env:
+      SEARCH_QUERY: ${SEARCH_QUERY}
+      ASSET_ID: ${ASSET_ID}
+      CHAIN_ID: ${CHAIN_ID}
+
+- extendedWaitUntil:
+    visible:
+      id: input_field
+    timeout: 15000
+- tapOn:
+    id: input_field
+- inputText: ${RECIPIENT}
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- tapOn:
+    id: amount
+- inputText: ${AMOUNT}
+- waitForAnimationToEnd:
+    timeout: 3000
+
+- extendedWaitUntil:
+    visible: Continue
+    timeout: 30000
+- tapOn: Continue
+
+# The app joins amount and ticker with a plain space only for pure ASCII-latin symbols
+# (GRAM, BTC); anything else — "USD₮" — gets a thin space (U+2009). Accept both.
+- assertVisible: ${AMOUNT + "[ \u2009]" + TOKEN_SYMBOL}
+- runFlow: ../battery/select_battery_fee.yaml
+
+# Only sign once Battery actually pays the fee — signing on the fallback method would
+# spend the asset and still report a green Battery test.
+- runFlow:
+    when:
+      true: ${output.batteryFeeSelected}
+    commands:
+      - extendedWaitUntil:
+          visible:
+            id: confirm_swipe
+          timeout: 180000
+      - swipe:
+          from:
+            id: confirm_swipe
+          direction: RIGHT
+          duration: 2000
+      - runFlow: ../password/enter_password.yaml
+      - extendedWaitUntil:
+          visible: History
+          timeout: 180000
+      - assertVisible: History
+
+# Undercharged wallet: assert the offered recovery path instead of sending.
+- runFlow:
+    when:
+      true: ${!output.batteryFeeSelected}
+    commands:
+      - assertVisible: Tonkeeper Battery
+      - assertVisible: Deposit

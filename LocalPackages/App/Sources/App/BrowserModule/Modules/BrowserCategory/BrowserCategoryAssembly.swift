@@ -4,12 +4,12 @@ import TKCore
 
 struct BrowserCategoryAssembly {
     private init() {}
-    static func module(category: PopularAppsCategory)
+    static func module(
+        category: PopularAppsCategory
+    )
         -> MVVMModule<BrowserCategoryViewController, BrowserCategoryModuleOutput, Void>
     {
-        let viewModel = BrowserCategoryViewModelImplementation(
-            category: category
-        )
+        let viewModel = BrowserCategoryViewModelImplementation(category: category)
         let viewController = BrowserCategoryViewController(
             viewModel: viewModel
         )

@@ -12,7 +12,9 @@ struct KeystoneImportScanAssembly {
     ) -> MVVMModule<UIViewController, KeystoneImportScanModuleOutput, Void> {
         let scannerModule = ScannerAssembly.module(
             scannerController: scannerAssembly.scannerController(
-                configurator: KeystoneScannerControllerConfigurator()
+                configurator: KeystoneScannerControllerConfigurator(
+                    deeplinkParser: scannerAssembly.deeplinkParser
+                )
             ),
             urlOpener: coreAssembly.urlOpener(),
             uiConfiguration: ScannerUIConfiguration(

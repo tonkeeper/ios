@@ -14,6 +14,8 @@ extension InsufficientFundsError: AnalyticsError {
             return "Insufficient balance to cover blockchain fee"
         case .insufficientFunds:
             return "Insufficient funds"
+        case .tronFee:
+            return "Insufficient TRX to cover the transfer and its fee"
         }
     }
 
@@ -25,6 +27,8 @@ extension InsufficientFundsError: AnalyticsError {
             2
         case .insufficientFunds:
             3
+        case .tronFee:
+            4
         }
     }
 }

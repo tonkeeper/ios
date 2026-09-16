@@ -86,10 +86,6 @@ private extension TKPaddingContainerView {
 }
 
 public extension TKPaddingContainerView {
-    static var buttonsContainerPadding: UIEdgeInsets {
-        UIEdgeInsets(top: 16, left: 32, bottom: 32, right: 32)
-    }
-
     static var buttonsContainerSpacing: CGFloat {
         16
     }

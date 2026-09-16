@@ -100,6 +100,7 @@ private extension NativeSwapTokenPickerModel {
                 tonBalance: tonBalance,
                 jettonBalances: filteredJettons,
                 tronUSDTBalance: nil,
+                tronTRXBalance: nil,
                 selectedToken: selectedToken,
                 scrollToSelected: scrollToSelected,
                 mode: .balance(showConverted: true, currency: currencyStore.state)
@@ -152,6 +153,7 @@ private extension NativeSwapTokenPickerModel {
                 tonBalance: tonBalance,
                 jettonBalances: jettonBalances,
                 tronUSDTBalance: nil,
+                tronTRXBalance: nil,
                 selectedToken: selectedToken,
                 scrollToSelected: scrollToSelected,
                 mode: .name

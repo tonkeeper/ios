@@ -8,12 +8,15 @@ import UIKit
 @MainActor
 protocol BrowserExploreModuleInput: AnyObject {
     var isExploreTabVisible: Bool { get }
+    var canShowExploreTab: Bool { get }
+
+    func selectNetworkFilter(_ chain: MultichainChain)
 }
 
 @MainActor
 protocol BrowserExploreModuleOutput: AnyObject {
-    var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
-    var didSelectDapp: ((Dapp) -> Void)? { get set }
+    var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)? { get set }
+    var didSelectDapp: ((DappOpenIntent) -> Void)? { get set }
     var didOpenDeeplink: ((Deeplink) -> Void)? { get set }
     var didUpdateExploreTabVisible: ((Bool) -> Void)? { get set }
 }
@@ -25,7 +28,7 @@ protocol BrowserExploreViewModel: AnyObject {
     var didUpdateIsRefreshEnable: ((_ isEnable: Bool) -> Void)? { get set }
 
     func viewDidLoad()
-    func selectFeaturedApp(dapp: Dapp)
+    func selectFeaturedApp(_ app: PopularApp)
     func reload()
 }
 
@@ -42,17 +45,22 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
     // MARK: - BrowserExploreModuleInput
 
     var isExploreTabVisible: Bool {
-        let network: Network = (try? walletStore.activeWallet)?.network ?? .mainnet
-        let dappsDisabled = configuration.flag(\.dappsDisabled, network: network)
-        if dappsDisabled { return false }
+        if isDappsDisabled { return false }
         if case .empty = state { return false }
         return true
     }
 
+    var canShowExploreTab: Bool {
+        !isDappsDisabled
+    }
+
+    /// TON-only explore has no network filter.
+    func selectNetworkFilter(_: MultichainChain) {}
+
     // MARK: - BrowserExploreModuleOutput
 
-    var didSelectCategory: ((PopularAppsCategory) -> Void)?
-    var didSelectDapp: ((Dapp) -> Void)?
+    var didSelectCategory: ((PopularAppsCategory, MultichainChain?) -> Void)?
+    var didSelectDapp: ((DappOpenIntent) -> Void)?
     var didOpenDeeplink: ((Deeplink) -> Void)?
     var didUpdateExploreTabVisible: ((Bool) -> Void)?
 
@@ -64,13 +72,8 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 
     private var selectedCountry: SelectedCountry = .auto
 
-    func selectFeaturedApp(dapp: Dapp) {
-        didSelectDapp?(dapp)
-        analyticsProvider.logClickDappEvent(
-            name: dapp.name,
-            url: dapp.url.absoluteString,
-            from: .banner
-        )
+    func selectFeaturedApp(_ app: PopularApp) {
+        didSelectDapp?(.popularApp(source: .banner, app: app, catalogMode: .ton))
     }
 
     // MARK: - State
@@ -83,16 +86,13 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 
     private var loadingTask: Task<Void, Never>?
 
-    private var categories = [PopularAppsCategory]()
-    private var featuredCategory: PopularAppsCategory?
-
     // MARK: - Dependencies
 
     private let browserExploreController: BrowserExploreController
     private let walletStore: WalletsStore
     private let regionStore: RegionStore
-    private let analyticsProvider: AnalyticsProvider
     private let configuration: Configuration
+    private let deeplinkParser: DeeplinkParser
 
     // MARK: - Init
 
@@ -100,14 +100,14 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
         browserExploreController: BrowserExploreController,
         walletStore: WalletsStore,
         regionStore: RegionStore,
-        analyticsProvider: AnalyticsProvider,
-        configuration: Configuration
+        configuration: Configuration,
+        deeplinkParser: DeeplinkParser
     ) {
         self.browserExploreController = browserExploreController
         self.walletStore = walletStore
         self.regionStore = regionStore
-        self.analyticsProvider = analyticsProvider
         self.configuration = configuration
+        self.deeplinkParser = deeplinkParser
     }
 
     func viewDidLoad() {
@@ -180,6 +180,11 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 }
 
 private extension BrowserExploreViewModelImplementation {
+    var isDappsDisabled: Bool {
+        let network: Network = (try? walletStore.activeWallet)?.network ?? .mainnet
+        return configuration.flag(\.dappsDisabled, network: network)
+    }
+
     func didUpdateRegion() {
         didUpdateState()
     }
@@ -276,9 +281,15 @@ private extension BrowserExploreViewModelImplementation {
                         ) { [weak self] in
                             switch button.type {
                             case let .deeplink(url):
+                                guard let self else { return }
                                 do {
-                                    let deeplink = try DeeplinkParser().parse(string: url.absoluteString)
-                                    self?.didOpenDeeplink?(deeplink)
+                                    let deeplink = try self.deeplinkParser.parse(
+                                        string: url.absoluteString,
+                                        source: .browser
+                                    )
+                                    self.didOpenDeeplink?(deeplink)
+                                } catch let error as DeeplinkParserError where error.isSilent {
+                                    break
                                 } catch {
                                     break
                                 }
@@ -347,14 +358,7 @@ private extension BrowserExploreViewModelImplementation {
                     id: UUID().uuidString,
                     configuration: mapApp(app, isTwoLinesTitle: isTwoLinesTitle),
                     selectionHandler: { [weak self] in
-                        guard let dapp = Dapp(popularApp: app) else { return }
-
-                        self?.analyticsProvider.logClickDappEvent(
-                            name: dapp.name,
-                            url: dapp.url.absoluteString,
-                            from: .browser
-                        )
-                        self?.didSelectDapp?(dapp)
+                        self?.didSelectDapp?(.popularApp(source: .browser, app: app, catalogMode: .ton))
                     },
                     longPressHandler: {}
                 ))
@@ -369,7 +373,7 @@ private extension BrowserExploreViewModelImplementation {
                     title: category.title ?? "",
                     hasAll: category.apps.count > Constants.chunkSize,
                     allTapHandler: { [weak self] in
-                        self?.didSelectCategory?(category)
+                        self?.didSelectCategory?(category, nil)
                     }
                 )
             }

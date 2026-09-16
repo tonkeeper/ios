@@ -4,22 +4,36 @@ import TKCore
 
 struct WalletsListAssembly {
     private init() {}
+    @MainActor
     static func module(
         model: WalletsListModel,
-        balanceLoader: BalanceLoader,
-        totalBalancesStore: TotalBalanceStore,
-        appSettingsStore: AppSettingsStore,
-        amountFormatter: AmountFormatter
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        raffleStore: RaffleStore? = nil,
+        isMysteryRaffleEnabled: Bool = false,
+        analyticsProvider: AnalyticsProvider? = nil,
+        tooltipsService: TooltipsService? = nil,
+        shouldShowAddMultichainWalletTooltip: Bool = false
     ) -> MVVMModule<WalletsListViewController, WalletsListModuleOutput, Void> {
         let viewModel = WalletsListViewModelImplementation(
             model: model,
-            balanceLoader: balanceLoader,
-            totalBalancesStore: totalBalancesStore,
-            appSettingsStore: appSettingsStore,
-            amountFormatter: amountFormatter
+            balanceLoader: keeperCoreMainAssembly.loadersAssembly.balanceLoader,
+            totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+            multichainPortfolioStore: keeperCoreMainAssembly.storesAssembly.multichainPortfolioStore,
+            currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+            appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+            amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+            homeBannersStore: keeperCoreMainAssembly.storesAssembly.homeBannersStore,
+            walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+            raffleStore: raffleStore,
+            isMysteryRaffleEnabled: isMysteryRaffleEnabled,
+            analyticsProvider: analyticsProvider
         )
 
-        let viewController = WalletsListViewController(viewModel: viewModel)
+        let viewController = WalletsListViewController(
+            viewModel: viewModel,
+            tooltipsService: tooltipsService,
+            shouldShowAddMultichainWalletTooltip: shouldShowAddMultichainWalletTooltip
+        )
         return .init(view: viewController, output: viewModel, input: ())
     }
 }

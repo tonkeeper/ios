@@ -1,10 +1,11 @@
 import Foundation
 import SwapAPI
 import TKLocalize
+import TKLogging
 
 protocol OnRampAPI {
-    func getMerchants() async throws -> [OnRampMerchantInfo]
-    func getLayout(flow: String, currency: String?) async throws -> OnRampLayout
+    func getMerchants(walletId: String?) async throws -> [OnRampMerchantInfo]
+    func getLayout(flow: String, currency: String?, walletId: String?) async throws -> OnRampLayout
     func calculate(
         from: String,
         to: String,
@@ -13,7 +14,8 @@ protocol OnRampAPI {
         purchaseType: OnRampPurchaseType,
         fromNetwork: String?,
         toNetwork: String?,
-        paymentMethodType: String?
+        paymentMethodType: String?,
+        walletId: String?
     ) async throws -> OnRampCalculateResult
     func createOnRampExchange(
         from: String,
@@ -30,20 +32,26 @@ protocol OnRampAPI {
 final class OnRampAPIImplementation: OnRampAPI {
     private let swapAPIClient: SwapAPI.Client
     private let appInfoProvider: AppInfoProvider
+    private let firebaseUserIdProvider: @Sendable () -> String?
 
     init(
         swapAPIClient: SwapAPI.Client,
-        appInfoProvider: AppInfoProvider
+        appInfoProvider: AppInfoProvider,
+        firebaseUserIdProvider: @escaping @Sendable () -> String?
     ) {
         self.swapAPIClient = swapAPIClient
         self.appInfoProvider = appInfoProvider
+        self.firebaseUserIdProvider = firebaseUserIdProvider
     }
 
-    func getMerchants() async throws -> [OnRampMerchantInfo] {
+    func getMerchants(walletId: String?) async throws -> [OnRampMerchantInfo] {
         let query = await buildMerchantsQuery()
-        let input = SwapAPI.Operations.getExchangeMerchants.Input(query: query)
+        let input = SwapAPI.Operations.getExchangeMerchants.Input(
+            query: query,
+            headers: .init(X_hyphen_Wallet_hyphen_ID: walletId, F: firebaseUserIdProvider())
+        )
         do {
-            let output = try await swapAPIClient.getExchangeMerchants(input)
+            let output = try await apiCall(await swapAPIClient.getExchangeMerchants(input))
             let apiList = try output.ok.body.json
             return apiList.map { OnRampMerchantInfo(api: $0) }
         } catch {
@@ -51,10 +59,13 @@ final class OnRampAPIImplementation: OnRampAPI {
         }
     }
 
-    func getLayout(flow: String, currency: String?) async throws -> OnRampLayout {
+    func getLayout(flow: String, currency: String?, walletId: String?) async throws -> OnRampLayout {
         let query = await buildLayoutQuery(flow: flow, currency: currency)
-        let input = SwapAPI.Operations.getExchangeLayout.Input(query: query)
-        let output = try await swapAPIClient.getExchangeLayout(input)
+        let input = SwapAPI.Operations.getExchangeLayout.Input(
+            query: query,
+            headers: .init(X_hyphen_Wallet_hyphen_ID: walletId, F: firebaseUserIdProvider())
+        )
+        let output = try await apiCall(await swapAPIClient.getExchangeLayout(input))
         let apiResult = try output.ok.body.json
         return OnRampLayout(api: apiResult)
     }
@@ -67,7 +78,8 @@ final class OnRampAPIImplementation: OnRampAPI {
         purchaseType: OnRampPurchaseType,
         fromNetwork: String?,
         toNetwork: String?,
-        paymentMethodType: String?
+        paymentMethodType: String?,
+        walletId: String?
     ) async throws -> OnRampCalculateResult {
         let query = await buildCalculateQuery()
         let purchaseTypeAPI = SwapAPI.Components.Schemas.ExchangeDirection(rawValue: purchaseType.rawValue) ?? .buy
@@ -84,8 +96,12 @@ final class OnRampAPIImplementation: OnRampAPI {
             payment_method: paymentMethodAPI
         ))
 
-        let input = SwapAPI.Operations.exchangeCalculate.Input(query: query, body: body)
-        let output = try await swapAPIClient.exchangeCalculate(input)
+        let input = SwapAPI.Operations.exchangeCalculate.Input(
+            query: query,
+            headers: .init(X_hyphen_Wallet_hyphen_ID: walletId, F: firebaseUserIdProvider()),
+            body: body
+        )
+        let output = try await apiCall(await swapAPIClient.exchangeCalculate(input))
         let apiResult = try output.ok.body.json
         let quotes = apiResult.items.map { OnRampQuoteResult(api: $0) }
         let suggestedQuotes = apiResult.suggested.map { OnRampQuoteResult(api: $0) }
@@ -116,7 +132,7 @@ final class OnRampAPIImplementation: OnRampAPI {
         )
 
         let input = SwapAPI.Operations.createExchange.Input(query: query, body: body)
-        let output = try await swapAPIClient.createExchange(input)
+        let output = try await apiCall(await swapAPIClient.createExchange(input))
         let apiResult = try requireOnRampOk(output)
         return OnRampExchangeResult(api: apiResult)
     }
@@ -125,14 +141,15 @@ final class OnRampAPIImplementation: OnRampAPI {
         let body = SwapAPI.Components.RequestBodies.CreateP2PSession.json(
             .init(
                 wallet: data.wallet,
-                network: data.network,
+                asset_id: data.assetId,
                 crypto_currency: data.cryptoCurrency,
+                network: data.network,
                 fiat_currency: data.fiatCurrency,
                 amount: data.amount.map { Double($0) }
             )
         )
         let input = SwapAPI.Operations.createP2PSession.Input(body: body)
-        let output = try await swapAPIClient.createP2PSession(input)
+        let output = try await apiCall(await swapAPIClient.createP2PSession(input))
         let apiResult = try requireOnRampOk(output)
         return P2PSessionResult(
             deeplinkUrl: apiResult.deeplink_url,
@@ -164,6 +181,20 @@ final class OnRampAPIImplementation: OnRampAPI {
             build: appInfoProvider.version,
             platform: platform
         )
+    }
+
+    /// The generated client throws its own runtime errors for a dead connection or a body it
+    /// cannot decode; surfaced as-is they reach the user as an English runtime description.
+    private func apiCall<T>(_ block: @autoclosure () async throws -> T) async throws -> T {
+        do {
+            return try await block()
+        } catch {
+            guard !error.isCancelledError else {
+                throw error
+            }
+            Log.api.w("onramp request failed", error: error)
+            throw OnRampAPIClientError.unknown
+        }
     }
 
     private func buildMerchantsQuery() async -> SwapAPI.Operations.getExchangeMerchants.Input.Query {
@@ -205,6 +236,10 @@ private enum OnRampAPIClientError {
 
     static func nsError(internalServerError: SwapAPI.Components.Responses.InternalError) throws -> NSError {
         try NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: internalServerError.body.json.error])
+    }
+
+    static var unknown: NSError {
+        NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: TKLocales.Errors.unknown])
     }
 
     static func nsError(undocumentedStatusCode: Int) -> NSError {

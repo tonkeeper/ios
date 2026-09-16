@@ -1,6 +1,8 @@
 import SwiftUI
 
 public struct ModalCardHeaderPreviews: View {
+    @Environment(\.tkPalette) private var palette
+
     public init() {}
 
     public var body: some View {
@@ -20,12 +22,25 @@ public struct ModalCardHeaderPreviews: View {
                     config: DefaultModalCardHeader.Config(
                         leftIcon: .close(),
                         title: DefaultModalCardHeader.Title(
+                            text: "A long header title that wraps onto multiple lines",
+                            alignment: .center
+                        ),
+                        subtitle: DefaultModalCardHeader.Subtitle(
+                            text: "A long description that wraps onto multiple lines without expanding the header to the available height"
+                        ),
+                        rightIcon: .close()
+                    )
+                )
+                DefaultModalCardHeader(
+                    config: DefaultModalCardHeader.Config(
+                        leftIcon: .close(),
+                        title: DefaultModalCardHeader.Title(
                             text: "Tesla",
                             alignment: .center
                         ),
                         subtitle: DefaultModalCardHeader.Subtitle(
                             text: "Tokenized Stock",
-                            color: .Accent.blue,
+                            color: .accentBlue,
                             icon: nil
                         ),
                         rightIcon: .close()
@@ -40,7 +55,7 @@ public struct ModalCardHeaderPreviews: View {
                         ),
                         subtitle: DefaultModalCardHeader.Subtitle(
                             text: "Tokenized Stock",
-                            color: .Accent.blue,
+                            color: .accentBlue,
                             icon: DefaultModalCardHeader.SubtitleIcon(
                                 image: .TKUIKit.Icons.Size12.informationCircle,
                                 size: 12,
@@ -73,8 +88,9 @@ public struct ModalCardHeaderPreviews: View {
                 )
             }
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.content)
+            palette.background.content
                 .ignoresSafeArea()
         )
     }
@@ -82,7 +98,6 @@ public struct ModalCardHeaderPreviews: View {
 
 #Preview {
     ModalCardHeaderPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

@@ -1,5 +1,4 @@
 import TKCoordinator
-import TKLocalize
 import TKUIKit
 import UIKit
 
@@ -10,27 +9,6 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
 
     private let exploreViewController: BrowserExploreViewController
     private let connectedViewController: BrowserConnectedViewController
-
-    /// for system navigation bar
-    private var selectedTab: SelectedTab = .explore {
-        didSet {
-            updateSelectedButton()
-        }
-    }
-
-    private lazy var exploreButton = UIBarButtonItem(
-        title: TKLocales.Browser.Tab.explore,
-        style: .plain,
-        target: self,
-        action: #selector(didTapExploreButton)
-    )
-
-    private lazy var connectedButton = UIBarButtonItem(
-        title: TKLocales.Browser.Tab.connected,
-        style: .plain,
-        target: self,
-        action: #selector(didTapConnectedButton)
-    )
 
     init(
         viewModel: BrowserViewModel,
@@ -59,9 +37,7 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
 
-        if !UIApplication.useSystemBarsAppearance {
-            navigationController?.setNavigationBarHidden(true, animated: true)
-        }
+        navigationController?.setNavigationBarHidden(true, animated: true)
 
         viewModel.viewWillAppear()
     }
@@ -74,24 +50,14 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
         super.viewDidLayoutSubviews()
         customView.headerView.layoutIfNeeded()
 
-        let systemBars = UIApplication.useSystemBarsAppearance
-
-        exploreViewController.setListContentInsets(
-            UIEdgeInsets(
-                top: systemBars ? 0 : customView.headerView.bounds.height,
-                left: 0,
-                bottom: (systemBars ? 0 : customView.safeAreaInsets.bottom) + customView.searchBar.bounds.height,
-                right: 0
-            )
+        let listContentInsets = UIEdgeInsets(
+            top: customView.headerView.bounds.height,
+            left: 0,
+            bottom: customView.safeAreaInsets.bottom + customView.searchBar.bounds.height,
+            right: 0
         )
-        connectedViewController.setListContentInsets(
-            UIEdgeInsets(
-                top: systemBars ? 0 : customView.headerView.bounds.height,
-                left: 0,
-                bottom: (systemBars ? 0 : customView.safeAreaInsets.bottom) + customView.searchBar.bounds.height,
-                right: 0
-            )
-        )
+        exploreViewController.setListContentInsets(listContentInsets)
+        connectedViewController.setListContentInsets(listContentInsets)
     }
 }
 
@@ -120,7 +86,6 @@ private extension BrowserViewController {
     func setupBindings() {
         viewModel.didUpdateSegmentedControl = { [weak self] model in
             self?.customView.headerView.segmentedControlView.configure(model: model)
-            self?.setupNavigationBarIfNeeded(isExploreVisible: model.isExploreTabVisible)
         }
 
         viewModel.didSelectExplore = { [weak self] in
@@ -142,77 +107,16 @@ private extension BrowserViewController {
         customView.exploreContainer.isHidden = false
         customView.connectedContainer.isHidden = true
         selectedViewController = exploreViewController
-        selectedTab = .explore
     }
 
     func showConnected() {
         customView.connectedContainer.isHidden = false
         customView.exploreContainer.isHidden = true
         selectedViewController = connectedViewController
-        selectedTab = .connected
     }
 
     @objc
     func didTapSearchBar() {
         viewModel.didTapSearchBar()
-    }
-}
-
-// MARK: - System Navigation Bar
-
-private extension BrowserViewController {
-    enum SelectedTab {
-        case explore
-        case connected
-    }
-
-    func setupNavigationBarIfNeeded(isExploreVisible: Bool) {
-        guard UIApplication.useSystemBarsAppearance else {
-            return
-        }
-
-        if isExploreVisible {
-            navigationItem.title = nil
-            navigationItem.leftBarButtonItems = [
-                exploreButton,
-                connectedButton,
-            ]
-
-            exploreButton.tintColor = .Accent.blue
-            connectedButton.tintColor = .Accent.blue
-
-            exploreButton.setTitleTextAttributes([.font: TKTextStyle.label2.font], for: .normal)
-            exploreButton.setTitleTextAttributes([.font: TKTextStyle.label2.font], for: .highlighted)
-            connectedButton.setTitleTextAttributes([.font: TKTextStyle.label2.font], for: .normal)
-            connectedButton.setTitleTextAttributes([.font: TKTextStyle.label2.font], for: .highlighted)
-
-            updateSelectedButton()
-        } else {
-            navigationItem.title = TKLocales.Browser.Tab.connected
-            navigationItem.leftBarButtonItems = nil
-        }
-    }
-
-    func updateSelectedButton() {
-        if #available(iOS 26.0, *) {
-            switch selectedTab {
-            case .explore:
-                exploreButton.style = .prominent
-                connectedButton.style = .plain
-            case .connected:
-                exploreButton.style = .plain
-                connectedButton.style = .prominent
-            }
-        }
-    }
-
-    @objc
-    func didTapExploreButton() {
-        viewModel.didSelectExplore?()
-    }
-
-    @objc
-    func didTapConnectedButton() {
-        viewModel.didSelectConnected?()
     }
 }

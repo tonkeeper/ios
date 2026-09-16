@@ -1,3 +1,4 @@
+import TKAppInfo
 import TKCore
 import TKFeatureFlags
 import TKLogging

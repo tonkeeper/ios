@@ -29,6 +29,10 @@ public final class MainAssembly {
     public let featureFlags: TKFeatureFlags
     public let transactionsManagementAssembly: TransactionsManagementAssembly
     public let tronUSDTAssembly: TronUSDTAssembly
+    public let multichainAssembly: MultichainAssembly
+    public let deeplinkParser: DeeplinkParser
+    public let walletConnectAssembly: WalletConnectAssembly
+    let tradingAssembly: TradingAssembly
 
     init(
         appInfoProvider: AppInfoProvider,
@@ -53,7 +57,11 @@ public final class MainAssembly {
         rnAssembly: RNAssembly,
         featureFlags: TKFeatureFlags,
         transactionsManagementAssembly: TransactionsManagementAssembly,
-        tronUSDTAssembly: TronUSDTAssembly
+        tronUSDTAssembly: TronUSDTAssembly,
+        multichainAssembly: MultichainAssembly,
+        tradingAssembly: TradingAssembly,
+        deeplinkParser: DeeplinkParser,
+        walletConnectAssembly: WalletConnectAssembly
     ) {
         self.appInfoProvider = appInfoProvider
         self.repositoriesAssembly = repositoriesAssembly
@@ -85,29 +93,80 @@ public final class MainAssembly {
         self.featureFlags = featureFlags
         self.transactionsManagementAssembly = transactionsManagementAssembly
         self.tronUSDTAssembly = tronUSDTAssembly
+        self.multichainAssembly = multichainAssembly
+        self.tradingAssembly = tradingAssembly
+        self.deeplinkParser = deeplinkParser
+        self.walletConnectAssembly = walletConnectAssembly
     }
 
     public func scannerAssembly() -> ScannerAssembly {
-        ScannerAssembly()
+        ScannerAssembly(deeplinkParser: deeplinkParser)
     }
 
     public var mnemonicAccess: MnemonicAccess {
         secureAssembly.mnemonicAccess
     }
 
+    public private(set) lazy var perpsAssembly = PerpsAssembly(
+        configurationAssembly: configurationAssembly,
+        tradingAPI: tradingAssembly.api,
+        tradingRequestContextProvider: tradingAssembly.requestContextProvider,
+        mnemonicAccess: secureAssembly.mnemonicAccess,
+        keychainVault: coreAssembly.keychainVault
+    )
+
+    public var perpsChartService: PerpsChartProviding {
+        perpsAssembly.chartService
+    }
+
+    public var visibilityChangesController: VisibilityChangesController {
+        servicesAssembly.visibilityChangesController
+    }
+
+    /// Lives here rather than in `MultichainAssembly` because a battery fee method needs both
+    /// halves of the graph: the ChainKit swap pipeline and the TON transfer/battery services.
+    public private(set) lazy var multichainSwapExecutionService: MultichainSwapExecutionService =
+        MultichainSwapExecutionServiceImplementation(
+            swapService: servicesAssembly.multichainSwapService(),
+            swapPipeline: multichainAssembly.chainKitSwapPipeline,
+            pendingTransactionsService: servicesAssembly.pendingTransactionsService(),
+            feeMethodResolver: MultichainSwapFeeMethodResolver(
+                engines: [
+                    MultichainSwapTonBatteryFeeEngine(
+                        transferService: transferAssembly.transferService(),
+                        balanceService: servicesAssembly.balanceService(),
+                        batteryService: batteryAssembly.batteryService(),
+                        batteryCalculation: batteryAssembly.batteryCalculation,
+                        configuration: configurationAssembly.configuration,
+                        chainKitService: multichainAssembly.chainKitService,
+                        mnemonicAccess: secureAssembly.mnemonicAccess
+                    ),
+                    MultichainSwapTronBatteryFeeEngine(
+                        tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+                        batteryService: batteryAssembly.batteryService(),
+                        batteryCalculation: batteryAssembly.batteryCalculation,
+                        configuration: configurationAssembly.configuration,
+                        chainKitService: multichainAssembly.chainKitService,
+                        mnemonicAccess: secureAssembly.mnemonicAccess
+                    ),
+                ]
+            )
+        )
+
     public func mainController() -> MainController {
         MainController(
             backgroundUpdate: backgroundUpdateAssembly.backgroundUpdate,
             tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
             tonConnectService: tonConnectAssembly.tonConnectService(),
-            deeplinkParser: DeeplinkParser(),
+            deeplinkParser: deeplinkParser,
+            walletsStore: storesAssembly.walletsStore,
             balanceLoader: loadersAssembly.balanceLoader,
             internalNotificationsLoader: loadersAssembly.internalNotificationsLoader,
             homeBannersLoader: loadersAssembly.homeBannersLoader,
             walletInfoLoader: loadersAssembly.walletInfoLoader,
-            storiesLoader: loadersAssembly.storiesLoader,
             tronUSDTFeesService: servicesAssembly.tronUSDTFeesService,
-            configurationAssembly: configurationAssembly
+            configurationAssembly: configurationAssembly,
+            multichainRealtimeManager: multichainAssembly.realtimeManager
         )
     }
 
@@ -115,20 +174,51 @@ public final class MainAssembly {
         WalletDeleteController(
             walletStore: storesAssembly.walletsStore,
             keeperInfoStore: storesAssembly.keeperInfoStore,
-            mnemonicAccess: mnemonicAccess
+            mnemonicAccess: mnemonicAccess,
+            securityStore: storesAssembly.securityStore,
+            walletAuthTokenProvider: multichainAssembly.walletAuthTokenProvider,
+            lighterCredentialsCleanup: { [perpsAssembly] wallet in
+                perpsAssembly.clearLighterCredentials(wallet: wallet)
+            },
+            multichainBindingCleanup: { [multichainAssembly, storesAssembly, configurationAssembly] wallets in
+                // The detach authenticates with the device JWT, so the feature kill switch has to
+                // gate it too. A binding left behind is picked up by the stale-binding reconcile
+                // once the feature is back on.
+                guard configurationAssembly.configuration.featureEnabled(.multichainEnabled) else { return }
+                // Wallets differing only in TON contract version share a multichain walletId,
+                // so a binding is only stale once no local wallet maps to it.
+                let remaining = Set(storesAssembly.walletsStore.wallets.compactMap { $0.multichainWalletState?.walletId })
+                let walletIds = Set(wallets.compactMap { $0.multichainWalletState?.walletId })
+                    .subtracting(remaining)
+                guard !walletIds.isEmpty else { return }
+                multichainAssembly.multichainAuthService
+                    .enqueueUnregisterWallets(walletIds: Array(walletIds))
+            }
         )
     }
 
-    public func chartV2Controller(token: Token) -> ChartV2Controller {
-        chartV2Controller(chartIdentifier: token.chartIdentifier)
+    public func chartV2Controller(token: Token, wallet: Wallet) -> ChartV2Controller {
+        chartV2Controller(
+            asset: ChartAsset(token: token, wallet: wallet),
+            wallet: wallet
+        )
     }
 
-    public func chartV2Controller(chartIdentifier: String) -> ChartV2Controller {
+    public func chartV2Controller(assetId: String, wallet: Wallet) -> ChartV2Controller? {
+        ChartAsset(assetId: assetId, wallet: wallet).map {
+            chartV2Controller(asset: $0, wallet: wallet)
+        }
+    }
+
+    private func chartV2Controller(
+        asset: ChartAsset,
+        wallet: Wallet
+    ) -> ChartV2Controller {
         ChartV2Controller(
-            chartIdentifier: chartIdentifier,
+            asset: asset,
+            network: wallet.network,
             chartService: servicesAssembly.chartService(),
-            currencyStore: storesAssembly.currencyStore,
-            walletsService: servicesAssembly.walletsService()
+            currencyStore: storesAssembly.currencyStore
         )
     }
 
@@ -140,7 +230,8 @@ public final class MainAssembly {
             tonRatesStore: storesAssembly.tonRatesStore,
             currencyStore: storesAssembly.currencyStore,
             recipientResolver: loadersAssembly.recipientResolver(),
-            amountFormatter: formattersAssembly.amountFormatter
+            amountFormatter: formattersAssembly.amountFormatter,
+            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider
         )
     }
 
@@ -164,7 +255,6 @@ public final class MainAssembly {
             ratesStore: storesAssembly.tonRatesStore,
             currencyStore: storesAssembly.currencyStore,
             transferService: transferAssembly.transferService(),
-            ratesService: servicesAssembly.ratesService(),
             balanceService: servicesAssembly.balanceService(),
             settingsRepository: repositoriesAssembly.settingsRepository(),
             batteryCalculation: batteryAssembly.batteryCalculation
@@ -190,8 +280,7 @@ public final class MainAssembly {
             blockchainService: servicesAssembly.blockchainService(),
             ratesStore: storesAssembly.tonRatesStore,
             currencyStore: storesAssembly.currencyStore,
-            transferService: transferAssembly.transferService(),
-            ratesService: servicesAssembly.ratesService()
+            transferService: transferAssembly.transferService()
         )
     }
 
@@ -213,31 +302,76 @@ public final class MainAssembly {
             ratesStore: storesAssembly.tonRatesStore,
             currencyStore: storesAssembly.currencyStore,
             transferService: transferAssembly.transferService(),
-            ratesService: servicesAssembly.ratesService(),
             settingsRepository: repositoriesAssembly.settingsRepository(),
             batteryCalculation: batteryAssembly.batteryCalculation
         )
     }
 
-    public func tronUSDTTransferTransactionConfirmationController(
+    public func tronTransferTransactionConfirmationController(
         wallet: Wallet,
+        token: TronToken,
         recipient: TronRecipient,
         amount: BigUInt,
         recipientDisplayAddress: String? = nil
     ) -> TronUSDTTransactionConfirmationController {
         let walletBalance = try? servicesAssembly.balanceService().getBalance(wallet: wallet)
-        let tronUSDTBalance = walletBalance?.tronBalance?.amount ?? 0
+        let balance = switch token {
+        case .usdt:
+            walletBalance?.tronBalance?.amount ?? 0
+        case .trx:
+            walletBalance?.tronBalance?.trxAmount ?? 0
+        }
         return TronUSDTTransactionConfirmationController(
             wallet: wallet,
+            token: token,
             recipient: recipient,
             amount: amount,
-            tronUSDTBalance: tronUSDTBalance,
+            balance: balance,
             recipientDisplayAddress: recipientDisplayAddress,
             tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
-            tonProofService: servicesAssembly.tonProofTokenService(),
             sendService: servicesAssembly.sendService(),
             balanceService: servicesAssembly.balanceService(),
             configuration: configurationAssembly.configuration
+        )
+    }
+
+    public func multichainTransferTransactionConfirmationController(
+        wallet: Wallet,
+        recipient: MultichainRecipient,
+        asset: MultichainAsset,
+        amount: BigUInt,
+        comment: String?,
+        isMaxAmount: Bool,
+        passcodeProvider: @escaping () async -> String?
+    ) -> MultichainTransactionConfirmationController {
+        MultichainTransactionConfirmationController(
+            wallet: wallet,
+            recipient: recipient,
+            asset: asset,
+            amount: amount,
+            comment: comment,
+            isMaxAmount: isMaxAmount,
+            chainKitService: multichainAssembly.chainKitService,
+            passcodeProvider: passcodeProvider,
+            engineResolver: MultichainFeeEngineResolver(),
+            tonJettonEngineFactory: MultichainTonJettonEngineFactory(
+                api: apiAssembly.api,
+                sendService: servicesAssembly.sendService(),
+                blockchainService: servicesAssembly.blockchainService(),
+                ratesStore: storesAssembly.tonRatesStore,
+                currencyStore: storesAssembly.currencyStore,
+                transferService: transferAssembly.transferService(),
+                balanceService: servicesAssembly.balanceService(),
+                settingsRepository: repositoriesAssembly.settingsRepository(),
+                batteryCalculation: batteryAssembly.batteryCalculation
+            ),
+            tronUsdtApi: tronUSDTAssembly.tronUsdtApi,
+            sendService: servicesAssembly.sendService(),
+            balanceService: servicesAssembly.balanceService(),
+            configuration: configurationAssembly.configuration,
+            batteryService: batteryAssembly.batteryService(),
+            batteryCalculation: batteryAssembly.batteryCalculation,
+            multichainAssetBalanceProvider: multichainAssembly.multichainAssetBalanceProvider
         )
     }
 
@@ -295,7 +429,9 @@ public final class MainAssembly {
         LinkDNSController(
             wallet: wallet,
             nft: nft,
-            sendService: servicesAssembly.sendService()
+            sendService: servicesAssembly.sendService(),
+            balanceStore: storesAssembly.balanceStore,
+            balanceService: servicesAssembly.balanceService()
         )
     }
 
@@ -308,8 +444,7 @@ public final class MainAssembly {
         transferService: TransferService,
         tonConnectService: TonConnectService,
         balanceService: BalanceService,
-        settingsRepository: SettingsRepository,
-        batteryCalculation: BatteryCalculation
+        settingsRepository: SettingsRepository
     ) -> TransactionConfirmationController {
         NativeSwapTransactionConfirmationController(
             wallet: wallet,
@@ -320,8 +455,7 @@ public final class MainAssembly {
             transferService: transferService,
             tonConnectService: tonConnectService,
             balanceService: balanceService,
-            settingsRepository: settingsRepository,
-            batteryCalculation: batteryCalculation
+            settingsRepository: settingsRepository
         )
     }
 

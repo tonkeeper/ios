@@ -91,6 +91,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
 
     private var firstReload = true
     private let queue = DispatchQueue(label: "HistoryListViewModelImplementationQueue")
+    private var historyLoaderEventsTask: Task<Void, Never>?
 
     private var eventCellConfigurations = [AccountEvent.EventID: HistoryCell.Model]()
     private var paginationCellConfiguration = HistoryListPaginationCell.Model(state: .none)
@@ -145,6 +146,10 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         self._filter = filter
     }
 
+    deinit {
+        historyLoaderEventsTask?.cancel()
+    }
+
     // MARK: - HistoryListModuleOutput
 
     var didSelectEvent: ((HistoryListSelectedEvent) -> Void)?
@@ -166,9 +171,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         }
         backgroundUpdate.addEventObserver(self) { observer, wallet, _ in
             guard wallet == observer.wallet else { return }
-            observer.queue.async {
-                observer.reload(force: true)
-            }
+            observer.reload(reason: .streamingUpdate)
         }
         nftManagmentStore.addObserver(self) { observer, event in
             switch event {
@@ -180,22 +183,39 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
             }
         }
         transactionsManagementStore.addObserver(self)
-        historyLoader.eventHandler = { [weak self] event in
-            self?.didGetHistoryLoaderEvent(event)
+        observeHistoryLoaderEvents()
+        Task { [historyLoader] in
+            await historyLoader.reload(reason: .immediate)
         }
-        historyLoader.reload(force: true)
     }
 
     func reload(force: Bool) {
-        queue.async { [weak self] in
+        reload(reason: force ? .immediate : .refresh)
+    }
+
+    private func reload(reason: HistoryPaginationLoader.ReloadReason) {
+        // Derived state is reset when a load actually delivers: a throttled reload may be
+        // coalesced or skipped, and wiping it here would leave the list without cell models.
+        Task { [weak self] in
             guard let self else { return }
-            resetSectionsCalculationState()
-            historyLoader.reload(force: force)
+            await historyLoader.reload(reason: reason)
         }
     }
 
     func loadNextPage() {
-        historyLoader.loadNext()
+        Task { [historyLoader] in
+            await historyLoader.loadNext()
+        }
+    }
+
+    private func observeHistoryLoaderEvents() {
+        guard historyLoaderEventsTask == nil else { return }
+        historyLoaderEventsTask = Task { [weak self, events = historyLoader.events] in
+            for await event in events {
+                guard !Task.isCancelled else { return }
+                self?.didGetHistoryLoaderEvent(event)
+            }
+        }
     }
 
     func getEventCellConfiguration(eventID: HistoryList.EventID) -> HistoryCell.Model? {
@@ -223,7 +243,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         let transactionsManagementState = transactionsManagementStore.state
         let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
         let sections = calculateSections(sections: [], events: filteredEvents)
-        update(withEvents: filteredEvents)
+        update(withEvents: filteredEvents, replacing: true)
         listState = .content(State.Content(sections: sections), pagination: pagination)
     }
 
@@ -245,7 +265,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         let transactionsManagementState = transactionsManagementStore.state
         let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
         let sections = calculateSections(sections: [], events: filteredEvents)
-        update(withEvents: filteredEvents)
+        update(withEvents: filteredEvents, replacing: true)
         listState = .content(State.Content(sections: sections), pagination: pagination)
         DispatchQueue.main.async {
             self.scrollToTop?(false)
@@ -282,12 +302,13 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                         return self.events
                     }
                 }()
+                resetSectionsCalculationState()
                 if !events.isEmpty || !firstReload {
                     self.events = events
                     let transactionsManagementState = transactionsManagementStore.state
                     let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
                     let sections = calculateSections(sections: [], events: filteredEvents)
-                    update(withEvents: filteredEvents)
+                    update(withEvents: filteredEvents, replacing: true)
                     listState = .content(State.Content(sections: sections), pagination: .none)
                 } else {
                     listState = .loading
@@ -297,7 +318,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                 let transactionsManagementState = transactionsManagementStore.state
                 let filteredEvents = filterEvents(events, filter: _filter, transactionsManagementState: transactionsManagementState)
                 let sections = calculateSections(sections: [], events: filteredEvents)
-                update(withEvents: filteredEvents)
+                update(withEvents: filteredEvents, replacing: true)
                 listState = .content(State.Content(sections: sections), pagination: .none)
             case let .initialLoaded(events, hasMore):
                 let uniqueEvents = uniqueEvents(events)
@@ -306,7 +327,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                 let transactionsManagementState = transactionsManagementStore.state
                 let filteredEvents = filterEvents(uniqueEvents, filter: _filter, transactionsManagementState: transactionsManagementState)
                 let sections = calculateSections(sections: [], events: filteredEvents)
-                update(withEvents: filteredEvents)
+                update(withEvents: filteredEvents, replacing: true)
 
                 listState = .content(State.Content(sections: sections), pagination: hasMore ? .loading : .none)
             case let .pageLoaded(events, hasMore):
@@ -325,10 +346,16 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         }
     }
 
-    private func update(withEvents events: [HistoryEvent]) {
+    /// `eventCellConfigurations` is owned by the main queue: a full rebuild replaces it outright
+    /// instead of clearing it from `queue` and merging back.
+    private func update(withEvents events: [HistoryEvent], replacing: Bool = false) {
         let configurations = mapHistoryEventsCellConfigurations(events, relativeDate: relativeDate)
         DispatchQueue.main.async {
-            self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+            if replacing {
+                self.eventCellConfigurations = configurations
+            } else {
+                self.eventCellConfigurations.merge(configurations, uniquingKeysWith: { $1 })
+            }
         }
     }
 
@@ -381,8 +408,6 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
         relativeDate = Date()
         eventsMap = [:]
         sectionsMap = [:]
-        eventCellConfigurations = [:]
-        paginationCellConfiguration = .init(state: .none)
     }
 
     private func calculateSections(
@@ -401,10 +426,8 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                 let section = sections[sectionIndex]
                 var sectionEvents = section.events
 
-                let isEventExist = eventsMap[event.identifier] != nil
-                if isEventExist, let index = sectionEvents.firstIndex(where: { $0.eventId == event.eventId }) {
-                    sectionEvents.remove(at: index)
-                    sectionEvents.insert(event, at: index)
+                if let index = sectionEvents.firstIndex(where: { $0.eventId == event.eventId }) {
+                    sectionEvents[index] = event
                 } else {
                     if let indexToInsert = sectionEvents.firstIndex(where: { event.date > $0.date }) {
                         sectionEvents.insert(event, at: indexToInsert)
@@ -540,7 +563,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
                     state: .error(
                         title: TKLocales.State.failed,
                         retryButtonAction: { [weak self] in
-                            self?.historyLoader.loadNext()
+                            self?.loadNextPage()
                         }
                     )
                 )

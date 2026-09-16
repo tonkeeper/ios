@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsTransactionCellPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: TransactionCellPreviews()
+    private let hostingController = TKHostingController(
+        content: TransactionCellPreviews()
     )
 
     override func viewDidLoad() {

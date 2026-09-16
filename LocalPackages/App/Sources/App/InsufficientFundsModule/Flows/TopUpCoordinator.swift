@@ -250,7 +250,7 @@ extension TopUpCoordinator {
 
 extension TopUpCoordinator {
     private func openReceive(token: Token) {
-        let coordinator = ReceiveModule(
+        guard let coordinator = ReceiveModule(
             dependencies: .init(
                 coreAssembly: coreAssembly,
                 keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -258,10 +258,11 @@ extension TopUpCoordinator {
         )
         .createReceiveCoordinator(
             router: router,
-            tokens: [token],
-            wallet: wallet,
-            passcodeProvider: getPasscode
-        )
+            token: token,
+            wallet: wallet
+        ) else {
+            return
+        }
 
         coordinator.didClose = { [weak self, weak coordinator] in
             self?.removeChild(coordinator)
@@ -269,35 +270,5 @@ extension TopUpCoordinator {
 
         addChild(coordinator)
         coordinator.start()
-    }
-
-    func openReceiveTRC20Popup(
-        wallet: Wallet,
-        enableCompletion: (() -> Void)? = nil
-    ) {
-        let module = ReceiveTRC20PopupAssembly.module(
-            wallet: wallet,
-            keeperCoreAssembly: keeperCoreMainAssembly,
-            passcodeProvider: getPasscode
-        )
-        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-        bottomSheetViewController.present(fromViewController: router.rootViewController.topPresentedViewController())
-
-        module.output.didFinish = { [weak bottomSheetViewController] in
-            bottomSheetViewController?.dismiss()
-        }
-
-        module.output.didEnable = {
-            enableCompletion?()
-        }
-    }
-
-    private func getPasscode() async -> String? {
-        return await PasscodeInputCoordinator.getPasscode(
-            parentCoordinator: self,
-            parentRouter: router,
-            mnemonicAccess: keeperCoreMainAssembly.mnemonicAccess,
-            securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
-        )
     }
 }

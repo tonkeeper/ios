@@ -1,0 +1,38 @@
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+
+- extendedWaitUntil:
+    visible: BTC
+    timeout: 60000
+- tapOn: BTC
+- waitForAnimationToEnd:
+    timeout: 5000
+- runFlow: "../../../steps/trade/open_asset_details_menu_hide_item.yaml"
+- tapOn: Hide in Wallet
+
+- tapOn:
+    id: trade_asset_details_back
+- extendedWaitUntil:
+    notVisible: BTC
+    timeout: 30000
+- tapOn: Manage
+- extendedWaitUntil:
+    visible: Manage crypto
+    timeout: 30000
+- tapOn: Search by ticker or name
+- inputText: BTC
+- extendedWaitUntil:
+    visible: BTC
+    timeout: 30000
+- tapOn:
+    id: token_management_item_BTC
+- tapOn: Save Changes
+
+- extendedWaitUntil:
+    visible: BTC
+    timeout: 30000
+- tapOn: BTC
+- waitForAnimationToEnd:
+    timeout: 5000
+

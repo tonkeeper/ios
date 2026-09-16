@@ -16,12 +16,18 @@ public struct LogDomain: Sendable {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
         let configuration = Log.configuration
 
         guard severity >= configuration.minimumSeverity else {
             return
+        }
+
+        var extraInfo = extraInfo
+        if let error {
+            extraInfo["error"] = error.logDescription
         }
 
         let record = LogRecord(
@@ -44,9 +50,10 @@ public struct LogDomain: Sendable {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        log(.debug, message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        log(.debug, message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public func i(
@@ -54,9 +61,10 @@ public struct LogDomain: Sendable {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        log(.info, message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        log(.info, message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public func w(
@@ -64,9 +72,10 @@ public struct LogDomain: Sendable {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        log(.warning, message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        log(.warning, message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 
     public func e(
@@ -74,8 +83,9 @@ public struct LogDomain: Sendable {
         file: StaticString = #fileID,
         function: StaticString = #function,
         line: UInt = #line,
+        error: (any Error)? = nil,
         extraInfo: [String: String] = [:]
     ) {
-        log(.error, message(), file: file, function: function, line: line, extraInfo: extraInfo)
+        log(.error, message(), file: file, function: function, line: line, error: error, extraInfo: extraInfo)
     }
 }

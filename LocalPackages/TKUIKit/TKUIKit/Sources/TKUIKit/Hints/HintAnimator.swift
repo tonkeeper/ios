@@ -85,9 +85,9 @@ private extension BouncingHintAnimator {
         for position: HintPosition
     ) -> CGFloat {
         switch position.direction {
-        case .topLeft, .topRight:
+        case .topLeft, .topCenter, .topRight:
             16
-        case .bottomLeft, .bottomRight:
+        case .bottomLeft, .bottomCenter, .bottomRight:
             -16
         }
     }
@@ -120,7 +120,7 @@ private extension BouncingHintAnimator {
         for position: HintPosition,
         in size: CGSize
     ) -> CGAffineTransform {
-        let anchorPoint = position.hintAnimationAnchorPoint(in: size)
+        let anchorPoint = position.tailAnchorPoint(in: size)
         let translation = CGPoint(
             x: (1 - scale) * (anchorPoint.x - size.width / 2),
             y: (1 - scale) * (anchorPoint.y - size.height / 2)
@@ -138,7 +138,7 @@ private extension BouncingHintAnimator {
 }
 
 extension HintPosition {
-    func hintAnimationAnchorPoint(in size: CGSize) -> CGPoint {
+    func tailAnchorPoint(in size: CGSize) -> CGPoint {
         guard
             let tailParameters,
             size.width > 0,
@@ -152,15 +152,17 @@ extension HintPosition {
         switch direction {
         case .topLeft, .bottomLeft:
             anchorX = size.width - tailOffset
+        case .topCenter, .bottomCenter:
+            anchorX = size.width / 2
         case .topRight, .bottomRight:
             anchorX = tailOffset
         }
 
         let anchorY: CGFloat
         switch direction {
-        case .topLeft, .topRight:
+        case .topLeft, .topCenter, .topRight:
             anchorY = size.height
-        case .bottomLeft, .bottomRight:
+        case .bottomLeft, .bottomCenter, .bottomRight:
             anchorY = 0
         }
 

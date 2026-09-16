@@ -68,7 +68,7 @@ public enum RampDeeplinkMatching {
         guard !trimmedTt.isEmpty else { return nil }
 
         let ttUpper = trimmedTt.uppercased()
-        var candidates = methods.filter { $0.symbol.uppercased() == ttUpper }
+        let candidates = methods.filter { $0.symbol.uppercased() == ttUpper }
         guard !candidates.isEmpty else { return nil }
 
         let tnTrimmed = tn?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

@@ -1,15 +1,15 @@
 import Foundation
 import KeeperCoreComponents
 
-public struct WebAPIResponse: Encodable {
-    public let body: String
-    public let ok: Bool
-    public let status: Int
-    public let statusText: String
-    public let type: String
-    public let headers: [String: String]
-    public let redirected: Bool
-    public let url: URL
+struct WebAPIResponse: Encodable {
+    let body: String
+    let ok: Bool
+    let status: Int
+    let statusText: String
+    let type: String
+    let headers: [String: String]
+    let redirected: Bool
+    let url: URL
 }
 
 public protocol DappFetchService {

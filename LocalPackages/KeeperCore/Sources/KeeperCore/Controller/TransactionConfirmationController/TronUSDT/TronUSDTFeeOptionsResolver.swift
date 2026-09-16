@@ -3,48 +3,51 @@ import Foundation
 import TonSwift
 import TronSwift
 
-struct TronUSDTFeeOptionsResolver {
-    struct Result {
-        let availableTypes: [TransactionConfirmationModel.ExtraType]
-        let selectedType: TransactionConfirmationModel.ExtraType
-        let extraOptions: [TransactionConfirmationModel.ExtraOption]
-        let selectedExtra: TransactionConfirmationModel.Extra
-        let resources: TronUSDTTransactionConfirmationState.Resources
-        let tonFeeAddress: String?
+public struct TronUSDTFeeOptionsResolver {
+    public struct Result {
+        public let availableTypes: [TransactionConfirmationModel.ExtraType]
+        public let selectedType: TransactionConfirmationModel.ExtraType
+        public let extraOptions: [TransactionConfirmationModel.ExtraOption]
+        public let selectedExtra: TransactionConfirmationModel.Extra
+        public let resources: TronUSDTTransactionConfirmationState.Resources
+        public let tonFeeAddress: String?
     }
 
     private let configuration: Configuration
 
-    init(configuration: Configuration) {
+    public init(configuration: Configuration) {
         self.configuration = configuration
     }
 
-    func canSelect(extraType: TransactionConfirmationModel.ExtraType) -> Bool {
+    public func canSelect(extraType: TransactionConfirmationModel.ExtraType) -> Bool {
         switch extraType {
         case .default, .battery:
             return true
         case .gasless:
             return isTRXType(extraType)
-        }
-    }
-
-    func isTRXType(_ extraType: TransactionConfirmationModel.ExtraType) -> Bool {
-        guard case let .gasless(token) = extraType else {
+        case .multichain:
             return false
         }
-        return token.symbol?.uppercased() == TRX.symbol.uppercased()
     }
 
-    func resolve(
+    public func isTRXType(_ extraType: TransactionConfirmationModel.ExtraType) -> Bool {
+        extraType.isTRXGasless
+    }
+
+    /// - Parameter requiresSelfPaidTRX: the transfer moves TRX itself, so its fee comes out of the
+    /// same balance and is paid in TRX. Account creation forces the same thing on any transfer.
+    public func resolve(
         estimate: TronTransferFeeEstimate,
         wallet: Wallet,
-        preferredExtraType: TransactionConfirmationModel.ExtraType?
+        preferredExtraType: TransactionConfirmationModel.ExtraType?,
+        requiresSelfPaidTRX: Bool = false
     ) -> Result {
         let requiredTONAmountNano = estimate.requiredTONAmountNano
 
-        let availableTypes = makeAvailableTypes(
+        let availableTypes = Self.availableTypes(
             isTRXOnlyRegion: configuration.isTRXOnlyRegion(network: wallet.network),
-            isTONBillingAvailable: estimate.tonFeeAddress?.isEmpty == false && requiredTONAmountNano != nil
+            isTONBillingAvailable: estimate.tonFeeAddress?.isEmpty == false && requiredTONAmountNano != nil,
+            requiresSelfPaidTRX: requiresSelfPaidTRX || estimate.requiresSelfPaidTRX
         )
         let selectedType = resolveSelectedType(
             preferredExtraType: preferredExtraType,
@@ -73,12 +76,15 @@ struct TronUSDTFeeOptionsResolver {
         )
     }
 
-    private func makeAvailableTypes(
+    /// A cost the sender has to pay in TRX leaves no room for a sponsor, so the relayer's options
+    /// are dropped rather than quoted for a fee they cannot settle.
+    static func availableTypes(
         isTRXOnlyRegion: Bool,
-        isTONBillingAvailable: Bool
+        isTONBillingAvailable: Bool,
+        requiresSelfPaidTRX: Bool
     ) -> [TransactionConfirmationModel.ExtraType] {
-        if isTRXOnlyRegion {
-            return [.gasless(token: Self.trxFeeToken)]
+        if isTRXOnlyRegion || requiresSelfPaidTRX {
+            return [.gasless(token: trxFeeToken)]
         }
         var types: [TransactionConfirmationModel.ExtraType] = [.battery]
         if isTONBillingAvailable {
@@ -114,13 +120,15 @@ struct TronUSDTFeeOptionsResolver {
             return .default(amount: requiredTONAmountNano ?? 0)
         case let .gasless(token):
             if token.symbol?.uppercased() == TRX.symbol.uppercased() {
-                return .gasless(token: Self.trxFeeToken, amount: estimate.requiredTRXSun)
+                return .gasless(token: Self.trxFeeToken, amount: estimate.selfPaidTRXSun)
             }
             return .battery(charges: estimate.requiredBatteryCharges, excess: nil)
+        case let .multichain(token):
+            return .multichain(token: token, amount: 0)
         }
     }
 
-    private static let trxFeeToken: JettonInfo = JettonInfo(
+    public static let trxFeeToken: JettonInfo = JettonInfo(
         isTransferable: true,
         hasCustomPayload: false,
         address: try! Address.parse("0:0000000000000000000000000000000000000000000000000000000000000001"),

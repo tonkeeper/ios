@@ -86,6 +86,13 @@ final class WalletBalanceBalanceModel {
                 await self.actor.addTask(block: { await self.updateItems() })
             case .didUpdateWalletMetaData:
                 await self.actor.addTask(block: { await self.updateItems() })
+            case let .didUpdateWalletMultichain(wallet):
+                switch walletsStore.getState() {
+                case .empty: break
+                case let .wallets(state):
+                    guard state.activeWallet == wallet else { return }
+                    await self.actor.addTask(block: { await self.updateItems() })
+                }
             default: break
             }
         }

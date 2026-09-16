@@ -1,7 +1,7 @@
 
 #include "TonkeeperRelease.xcconfig"
 
-APP_NAME = Tonkeeper UK
+APP_NAME = Keeper UK
 
 BUNDLE_DISPLAY_NAME = $(APP_NAME)
 ICON_NAME = AppIcon

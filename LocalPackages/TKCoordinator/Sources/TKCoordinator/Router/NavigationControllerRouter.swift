@@ -41,34 +41,6 @@ public final class NavigationControllerRouter: ContainerViewControllerRouter<UIN
             completion: completion
         )
     }
-
-    public func popTo(
-        viewController: UIViewController,
-        animated: Bool = true,
-        completion: (() -> Void)? = nil
-    ) {
-        rootViewController.popToViewController(
-            viewController,
-            animated: animated,
-            completion: completion
-        )
-    }
-
-    public func setViewControllers(
-        _ items: [(viewController: UIViewController, onPopClosure: (() -> Void)?)],
-        animated: Bool = true,
-        completion: (() -> Void)? = nil
-    ) {
-        let viewControllers = items.map { $0.viewController }
-        for item in items {
-            onPopClosures[item.viewController] = item.onPopClosure
-        }
-        rootViewController.setViewControllers(
-            viewControllers,
-            animated: animated,
-            completion: completion
-        )
-    }
 }
 
 extension NavigationControllerRouter: UINavigationControllerDelegate {
@@ -77,13 +49,15 @@ extension NavigationControllerRouter: UINavigationControllerDelegate {
         didShow viewController: UIViewController,
         animated: Bool
     ) {
-        guard let fromViewController = navigationController.transitionCoordinator?.viewController(forKey: .from),
-              !navigationController.viewControllers.contains(fromViewController)
-        else {
-            return
+        // Sweep every tracked controller instead of reading transitionCoordinator's
+        // .from: multi-pop transitions (popToRoot, popTo, setViewControllers) report
+        // only the top controller, and non-animated ones have no coordinator at all —
+        // intermediate screens would keep their closures forever.
+        guard !onPopClosures.isEmpty else { return }
+        let stack = navigationController.viewControllers
+        let poppedViewControllers = onPopClosures.keys.filter { !stack.contains($0) }
+        for poppedViewController in poppedViewControllers {
+            onPopClosures.removeValue(forKey: poppedViewController)?()
         }
-
-        onPopClosures[fromViewController]?()
-        onPopClosures.removeValue(forKey: fromViewController)
     }
 }

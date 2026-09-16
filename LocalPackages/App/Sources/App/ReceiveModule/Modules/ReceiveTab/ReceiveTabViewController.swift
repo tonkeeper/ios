@@ -23,14 +23,6 @@ final class ReceiveTabViewController: GenericViewViewController<ReceiveTabView> 
         setupBindings()
         viewModel.viewDidLoad()
     }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
-        customView.qrCodeView.setNeedsLayout()
-        customView.qrCodeView.layoutIfNeeded()
-        viewModel.generateQRCode(size: customView.qrCodeView.qrCodeImageView.frame.size)
-    }
 }
 
 private extension ReceiveTabViewController {
@@ -54,17 +46,8 @@ private extension ReceiveTabViewController {
             self.customView.configure(model: model)
         }
 
-        viewModel.didGenerateQRCode = { [weak customView] image in
-            customView?.qrCodeView.qrCodeImageView.image = image
-        }
-
-        viewModel.didTapCopy = { address in
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            UIPasteboard.general.string = address
-        }
-
-        viewModel.showToast = { configuration in
-            ToastPresenter.showToast(configuration: configuration)
+        viewModel.didGenerateQRCode = { [weak customView] matrix in
+            customView?.qrCodeView.setQrCodeMatrix(matrix)
         }
 
         viewModel.didTapShare = { [weak self] address in

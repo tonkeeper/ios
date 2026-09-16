@@ -8,12 +8,12 @@ public struct WalletButtonConfig: Hashable {
 
     public var title: String
     public var icon: Icon
-    public var color: UIColor
+    public var color: TKColor
 
     public init(
         title: String,
         icon: Icon,
-        color: UIColor
+        color: TKColor
     ) {
         self.title = title
         self.icon = icon
@@ -22,14 +22,19 @@ public struct WalletButtonConfig: Hashable {
 }
 
 public struct WalletButton: View {
+    @Environment(\.tkPalette) private var palette
+
     public var config: WalletButtonConfig
+    private let haptic: TKTapAnimationHaptic
     private let action: () -> Void
 
     public init(
         config: WalletButtonConfig,
+        haptic: TKTapAnimationHaptic = .none,
         action: @escaping () -> Void
     ) {
         self.config = config
+        self.haptic = haptic
         self.action = action
     }
 
@@ -39,7 +44,8 @@ public struct WalletButton: View {
         }
         .buttonStyle(
             WalletButtonStyle(
-                backgroundColor: backgroundColor
+                backgroundColor: backgroundColor,
+                haptic: haptic
             )
         )
         .accessibilityLabel(config.title)
@@ -53,17 +59,17 @@ private extension WalletButton {
 
             Text(config.title)
                 .textStyle(Layout.titleTextStyle)
-                .foregroundStyle(Color(uiColor: foregroundColor))
+                .foregroundStyle(foregroundColor)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .padding(.leading, Layout.iconTitleSpacing)
 
-            Image(uiImage: .TKUIKit.Icons.Size16.chevronDown)
+            SwiftUI.Image.TKUIKit.Icons.Size16.chevronDown
                 .renderingMode(.template)
                 .resizable()
                 .scaledToFit()
                 .foregroundStyle(
-                    Color(uiColor: foregroundColor)
+                    foregroundColor
                         .opacity(Layout.chevronOpacity)
                 )
                 .frame(
@@ -87,7 +93,7 @@ private extension WalletButton {
                 Image(uiImage: image)
                     .resizable()
                     .scaledToFit()
-                    .foregroundStyle(Color(uiColor: foregroundColor))
+                    .foregroundStyle(foregroundColor)
                     .frame(
                         width: Layout.iconSize,
                         height: Layout.iconSize
@@ -102,26 +108,27 @@ private extension WalletButton {
         }
     }
 
-    var backgroundColor: UIColor {
-        UIApplication.useSystemBarsAppearance ? .clear : config.color
+    var backgroundColor: Color {
+        config.color.resolve(palette)
     }
 
-    var foregroundColor: UIColor {
-        UIApplication.useSystemBarsAppearance ? .Text.primary : .white
+    var foregroundColor: Color {
+        .white
     }
 }
 
 private struct WalletButtonStyle: SwiftUI.ButtonStyle {
-    var backgroundColor: UIColor
+    var backgroundColor: Color
+    var haptic: TKTapAnimationHaptic
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(
                 Capsule()
-                    .fill(Color(uiColor: backgroundColor))
-                    .opacity(configuration.isPressed ? WalletButton.Layout.highlightedOpacity : 1)
+                    .fill(backgroundColor)
             )
             .contentShape(Capsule())
+            .tkTapAnimation(isPressed: configuration.isPressed, haptic: haptic)
     }
 }
 
@@ -138,7 +145,6 @@ extension WalletButton {
         static let iconTitleSpacing: CGFloat = 5
         static let titleChevronSpacing: CGFloat = 6
         static let chevronOpacity: CGFloat = 0.64
-        static let highlightedOpacity: CGFloat = 0.88
         static let titleTextStyle: TKTextStyle = .label2
         static let emojiFont: Font = .system(size: 17)
     }

@@ -1,18 +1,22 @@
 import Foundation
 import KeeperCore
-import StoreKit
 import TKFeatureFlags
 import UIKit
 
 public struct AppInfoProvider: KeeperCore.AppInfoProvider {
     private let userDefaults: UserDefaults
+    private let storefrontCountryCodeCache: StorefrontCountryCodeCache
 
-    init(userDefaults: UserDefaults) {
+    init(
+        userDefaults: UserDefaults,
+        storefrontCountryCodeCache: StorefrontCountryCodeCache
+    ) {
         self.userDefaults = userDefaults
+        self.storefrontCountryCodeCache = storefrontCountryCodeCache
     }
 
     public var version: String {
-        InfoProvider.appVersion()
+        overridenVersion ?? InfoProvider.appVersion()
     }
 
     public var userAgent: String {
@@ -63,13 +67,16 @@ public struct AppInfoProvider: KeeperCore.AppInfoProvider {
                 return overridenStoreCountryCode
             }
 
-            let countryCodeAlpha3 = await Storefront.current?.countryCode
-
-            guard let countryCodeAlpha3 else {
-                return nil
-            }
-            return Locale.current.alpha2Code(from: countryCodeAlpha3)
+            return await storefrontCountryCodeCache.countryCode()
         }
+    }
+
+    var cachedStoreCountryCode: String? {
+        if let overridenStoreCountryCode {
+            return overridenStoreCountryCode
+        }
+
+        return storefrontCountryCodeCache.cachedCountryCode
     }
 
     public var deviceCountryCode: String? {
@@ -96,12 +103,20 @@ public struct AppInfoProvider: KeeperCore.AppInfoProvider {
         userDefaults.set(countryCode, forKey: .overridenStoreCountryCodeKey)
     }
 
+    public func overrideVersion(_ version: String?) {
+        userDefaults.set(version, forKey: .overridenVersionKey)
+    }
+
     public var overridenDeviceCountryCode: String? {
         userDefaults.string(forKey: .overridenDeviceCountryCodeKey)
     }
 
     public var overridenStoreCountryCode: String? {
         userDefaults.string(forKey: .overridenStoreCountryCodeKey)
+    }
+
+    public var overridenVersion: String? {
+        userDefaults.string(forKey: .overridenVersionKey)
     }
 
     private var operatingSystemName: String {
@@ -117,38 +132,8 @@ public struct AppInfoProvider: KeeperCore.AppInfoProvider {
     }
 }
 
-private extension Locale {
-    private static var availableRegions: [Locale] = Locale.availableIdentifiers.map { Locale(identifier: $0) }
-
-    init?(isoCode: String, from: Locale = .autoupdatingCurrent) {
-        guard let locale = from.locale(isoCode: isoCode) else { return nil }
-        self = locale
-    }
-
-    func alpha2Code(from isoCode: String) -> String? {
-        let regionName = localizedString(forRegionCode: isoCode) ?? ""
-        return Self.availableRegions.first(where: { localizedString(forRegionCode: $0.regionCode ?? "") == regionName })?.regionCode
-    }
-
-    func locale(isoCode: String) -> Locale? {
-        let alpha2Code = alpha2Code(from: isoCode)
-        var matchingLocale: Locale?
-
-        for region in Self.availableRegions {
-            if region.regionCode == alpha2Code {
-                if region.languageCode == languageCode {
-                    return region
-                } else if matchingLocale == nil {
-                    matchingLocale = region
-                }
-            }
-        }
-
-        return matchingLocale
-    }
-}
-
 private extension String {
     static let overridenDeviceCountryCodeKey = "tkcore_overridenDeviceCountryCode"
     static let overridenStoreCountryCodeKey = "tkcore_overridenStoreCountryCode"
+    static let overridenVersionKey = "tkcore_overridenVersion"
 }

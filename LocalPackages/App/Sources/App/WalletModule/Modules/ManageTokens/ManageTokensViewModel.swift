@@ -19,11 +19,6 @@ protocol ManageTokensViewModel: AnyObject {
     func movePinnedItem(from: Int, to: Int)
 }
 
-enum ManageTokensItemState {
-    case pinned
-    case unpinned(isHidden: Bool)
-}
-
 final class ManageTokensViewModelImplementation: ManageTokensViewModel {
     struct ListModel {
         let snapshot: ManageTokensViewController.Snapshot
@@ -113,12 +108,7 @@ private extension ManageTokensViewModelImplementation {
 
         snapshot.appendSections([.pinned, .allAssets])
 
-        let isMultichainWallet: Bool
-        if case .addresses = model.wallet.multichain {
-            isMultichainWallet = true
-        } else {
-            isMultichainWallet = false
-        }
+        let isMultichainWallet = model.wallet.isMultichain
 
         for pinnedItem in state.pinnedItems {
             switch pinnedItem {
@@ -132,7 +122,7 @@ private extension ManageTokensViewModelImplementation {
                 itemCellConfigurations[item] = cellConfiguration
                 snapshot.appendItems([item], toSection: .pinned)
             case let .jetton(jetton):
-                let isNetworkBadgeVisible = model.wallet.isTronTurnOn && (isMultichainWallet || jetton.jetton.jettonInfo.isTonUSDT)
+                let isNetworkBadgeVisible = model.wallet.tron != nil && (isMultichainWallet || jetton.jetton.jettonInfo.isTonUSDT)
                 let cellConfiguration = mapper.mapJettonItem(
                     jetton,
                     isNetworkBadgeVisible: isNetworkBadgeVisible
@@ -164,6 +154,15 @@ private extension ManageTokensViewModelImplementation {
                 )
                 itemCellConfigurations[item] = cellConfiguration
                 snapshot.appendItems([item], toSection: .pinned)
+            case let .tronTRX(model):
+                let cellConfiguration = mapper.mapTronTRXItem(model)
+                let item = ManageTokensListItem(
+                    identifier: model.id,
+                    canReorder: true,
+                    accessories: createPinnedItemAccessories(identifier: model.id)
+                )
+                itemCellConfigurations[item] = cellConfiguration
+                snapshot.appendItems([item], toSection: .pinned)
             }
         }
         for unpinnedItem in state.unpinnedItems {
@@ -178,7 +177,7 @@ private extension ManageTokensViewModelImplementation {
                 itemCellConfigurations[item] = cellConfiguration
                 snapshot.appendItems([item], toSection: .allAssets)
             case let .jetton(jetton):
-                let isNetworkBadgeVisible = model.wallet.isTronTurnOn && (isMultichainWallet || jetton.jetton.jettonInfo.isTonUSDT)
+                let isNetworkBadgeVisible = model.wallet.tron != nil && (isMultichainWallet || jetton.jetton.jettonInfo.isTonUSDT)
                 let cellConfiguration = mapper.mapJettonItem(jetton, isNetworkBadgeVisible: isNetworkBadgeVisible)
                 let item = ManageTokensListItem(
                     identifier: jetton.id,
@@ -200,6 +199,15 @@ private extension ManageTokensViewModelImplementation {
                 if configuration.flag(\.tronDisabled, network: self.model.wallet.network), model.amount.isZero { continue }
 
                 let cellConfiguration = mapper.mapTronUSDTItem(model)
+                let item = ManageTokensListItem(
+                    identifier: model.id,
+                    canReorder: false,
+                    accessories: createUnpinnedItemAccessories(identifier: model.id, isHidden: unpinnedItem.isHidden)
+                )
+                itemCellConfigurations[item] = cellConfiguration
+                snapshot.appendItems([item], toSection: .allAssets)
+            case let .tronTRX(model):
+                let cellConfiguration = mapper.mapTronTRXItem(model)
                 let item = ManageTokensListItem(
                     identifier: model.id,
                     canReorder: false,

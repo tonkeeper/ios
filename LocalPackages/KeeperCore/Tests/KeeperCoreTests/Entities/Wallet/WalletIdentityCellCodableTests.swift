@@ -1,11 +1,12 @@
 @testable import KeeperCore
+import KeeperCoreComponents
 import TonSwift
 import XCTest
 
 final class WalletIdentityCellCodableTests: XCTestCase {
     func test_wallet_identitty_coding() throws {
         // GIVEN
-        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
+        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(strictHex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
         let walletKind = WalletKind.Regular(publicKey, .v4R2)
         let walletIdentity = WalletIdentity(network: .testnet, kind: walletKind)
         let builder = Builder()
@@ -32,7 +33,7 @@ final class WalletIdentityCellCodableTests: XCTestCase {
 extension WalletIdentityCellCodableTests {
     func test_wallet_kind_regular_coding() throws {
         // GIVEN
-        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
+        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(strictHex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
         let walletKind = WalletKind.Regular(publicKey, .v4R2)
         let builder = Builder()
 
@@ -54,7 +55,7 @@ extension WalletIdentityCellCodableTests {
     func test_wallet_kind_lockup_coding() throws {
         // GIVEN
         let lockupConfig = LockupConfig()
-        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
+        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(strictHex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
         let walletKind = WalletKind.Lockup(publicKey, lockupConfig)
         let builder = Builder()
 
@@ -97,7 +98,7 @@ extension WalletIdentityCellCodableTests {
 
     func test_wallet_kind_external_coding() throws {
         // GIVEN
-        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(hex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
+        let publicKey = try TonSwift.PublicKey(data: XCTUnwrap(Data(strictHex: "5754865e86d0ade1199301bbb0319a25ed6b129c4b0a57f28f62449b3df9c522")))
         let walletKind = WalletKind.Signer(publicKey, .v4R2)
         let builder = Builder()
 

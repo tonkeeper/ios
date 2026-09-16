@@ -111,10 +111,10 @@ final class HistoryEventDetailsTronMapper {
             headerImage: .transfer(
                 TransactionConfirmationHeaderImageItem(
                     configuration: TransactionConfirmationHeaderImageItemView.Configuration(
-                        image: .image(.App.Currency.Size96.usdt),
+                        image: .image(.TKUIKit.Icons.Size96.currencyUsdt),
                         corners: .circle,
                         badge: TransactionConfirmationHeaderImageItemView.Configuration.Badge(
-                            image: .image(.App.Currency.Vector.trc20)
+                            image: .image(.TKUIKit.Icons.Size44.currencyTrc20)
                         )
                     ),
                     bottomSpace: 20

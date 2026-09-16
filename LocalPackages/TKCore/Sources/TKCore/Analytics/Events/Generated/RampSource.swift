@@ -10,7 +10,7 @@ import Foundation
 import AnyCodable
 #endif
 
-/** Source location where the deposit/withdraw flow was opened: | wallet_screen: main wallet screen | jetton_screen: jetton info screen | deep_link: from deep link | qr_code: user scans a QR code */
+/** Source location where the deposit/withdraw flow was opened:  - wallet_screen: main wallet screen - jetton_screen: jetton info screen - deep_link: from deep link - qr_code: user scans a QR code */
 public enum RampSource: String, Codable, CaseIterable {
     case walletScreen = "wallet_screen"
     case jettonScreen = "jetton_screen"

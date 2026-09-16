@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsModalCardHeaderPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: ModalCardHeaderPreviews()
+    private let hostingController = TKHostingController(
+        content: ModalCardHeaderPreviews()
     )
 
     override func viewDidLoad() {

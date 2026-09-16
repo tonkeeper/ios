@@ -16,7 +16,7 @@ public struct DepositClickRampInsertAmountContinue: Codable, JSONEncodable, Hash
     public var eventName: String = "deposit_click_ramp_insert_amount_continue"
     public var from: RampSource
     public var addFundsOption: AddFundsOption
-    /** Carried from deposit_click_asset */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var buyAsset: String
     /** Carried from deposit_view_fiat_payment_method */
     public var sellAsset: String

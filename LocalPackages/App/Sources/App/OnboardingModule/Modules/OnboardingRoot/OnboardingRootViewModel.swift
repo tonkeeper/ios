@@ -1,57 +1,39 @@
+import AppUI
 import Foundation
-import TKCore
 import TKLocalize
-import TKUIKit
 
 protocol OnboardingRootModuleOutput: AnyObject {
     var didTapCreateButton: (() -> Void)? { get set }
     var didTapImportButton: (() -> Void)? { get set }
+    var didShowWelcome: (() -> Void)? { get set }
 }
 
-protocol OnboardingRootViewModel: AnyObject {
-    var didUpdateModel: ((OnboardingRootView.Model) -> Void)? { get set }
-
-    func viewDidLoad()
-}
-
-final class OnboardingRootViewModelImplementation: OnboardingRootViewModel, OnboardingRootModuleOutput {
+final class OnboardingRootViewModelImplementation: OnboardingRootModuleOutput {
     // MARK: - OnboardingRootModuleOutput
 
     var didTapCreateButton: (() -> Void)?
     var didTapImportButton: (() -> Void)?
+    var didShowWelcome: (() -> Void)?
 
-    // MARK: - OnboardingRootViewModel
+    let state = OnboardingRootScreenState(
+        title: TKLocales.Onboarding.title,
+        caption: TKLocales.Onboarding.caption,
+        createButtonTitle: TKLocales.Onboarding.Buttons.createNew,
+        importButtonTitle: TKLocales.Onboarding.Buttons.importExisting,
+        termsCaption: TKLocales.Onboarding.Terms.caption(TKLocales.Onboarding.Terms.title),
+        termsLinkTitle: TKLocales.Onboarding.Terms.title,
+        termsURL: URL(string: "https://tonkeeper.com/terms")
+    )
 
-    var didUpdateModel: ((OnboardingRootView.Model) -> Void)?
-
-    func viewDidLoad() {
-        didUpdateModel?(createModel())
+    func didTapCreate() {
+        didTapCreateButton?()
     }
-}
 
-private extension OnboardingRootViewModelImplementation {
-    func createModel() -> OnboardingRootView.Model {
-        let titleDescriptionModel = TKTitleDescriptionView.Model(
-            title: InfoProvider.appName(),
-            bottomDescription: TKLocales.Onboarding.caption
-        )
+    func didTapImport() {
+        didTapImportButton?()
+    }
 
-        var createButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-        createButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.createNew)
-        createButtonConfiguration.action = { [weak self] in
-            self?.didTapCreateButton?()
-        }
-
-        var importButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-        importButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.importExisting)
-        importButtonConfiguration.action = { [weak self] in
-            self?.didTapImportButton?()
-        }
-
-        return OnboardingRootView.Model(
-            titleDescriptionModel: titleDescriptionModel,
-            createButtonConfiguration: createButtonConfiguration,
-            importButtonConfiguration: importButtonConfiguration
-        )
+    func viewDidAppear() {
+        didShowWelcome?()
     }
 }

@@ -3,17 +3,20 @@ import TKTradingAPI
 
 actor TradingAssetDetailsServiceImplementation {
     private let api: TradingAPI
-    private let repository: TradingAssetDetailsRepository
+    private let cache: InMemoryKeyedCache<String, TradingAssetDetails>
     private let requestContextProvider: TradingRequestContextProvider
+    private let isMultichainEnabled: Bool
 
     init(
         api: TradingAPI,
-        repository: TradingAssetDetailsRepository,
-        requestContextProvider: TradingRequestContextProvider
+        cache: InMemoryKeyedCache<String, TradingAssetDetails>,
+        requestContextProvider: TradingRequestContextProvider,
+        isMultichainEnabled: Bool
     ) {
         self.api = api
-        self.repository = repository
+        self.cache = cache
         self.requestContextProvider = requestContextProvider
+        self.isMultichainEnabled = isMultichainEnabled
     }
 }
 
@@ -21,7 +24,7 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
     func assetDetails(
         for assetId: String
     ) async -> TradingAssetDetails? {
-        await repository.assetDetails(for: assetId)
+        await cache.get(assetId)
     }
 
     func loadAssetDetails(
@@ -31,10 +34,17 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
         let requestContext = await requestContextProvider.makeRequestContext()
         let response: Components.Schemas.AssetDetailsResponse
         do {
-            response = try await api.getAssetsDetails(
-                requestContext: requestContext,
-                assetId: id
-            )
+            if isMultichainEnabled {
+                response = try await api.getAssetsDetailsV2(
+                    requestContext: requestContext,
+                    assetId: id
+                )
+            } else {
+                response = try await api.getAssetsDetails(
+                    requestContext: requestContext,
+                    assetId: id
+                )
+            }
         } catch {
             Log.trade.i("load details failed \(error.localizedDescription)")
             switch error {
@@ -48,7 +58,7 @@ extension TradingAssetDetailsServiceImplementation: TradingAssetDetailsService {
             response: response,
             currency: requestContext.currency
         )
-        await repository.setAssetDetails(details, for: id)
+        await cache.set(details, for: id)
         Log.trade.i("load details for asset \(id) - success")
         return details
     }

@@ -55,8 +55,3 @@ private extension ReceiveButtonsView {
         ])
     }
 }
-
-private extension CGFloat {
-    static let containerPadding: CGFloat = 24
-    static let addressTopInset: CGFloat = 12
-}

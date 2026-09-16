@@ -130,6 +130,9 @@ private extension BrowserSearchBar {
             textFieldContainer.backgroundColor = .Background.content
             textFieldContainer.layer.masksToBounds = true
             textFieldContainer.layer.cornerRadius = 16
+            // `SearchField` rounds with `RoundedRectangle(style: .continuous)`; the default circular
+            // curve reads visibly tighter at this radius next to it.
+            textFieldContainer.layer.cornerCurve = .continuous
             glassView.isHidden = true
         }
 
@@ -178,7 +181,9 @@ private extension BrowserSearchBar {
         textField.snp.makeConstraints { make in
             make.left.equalTo(glassImageView.snp.right).offset(12)
             make.top.bottom.equalTo(textFieldContainer)
-            make.right.equalTo(clearButton.snp.left).inset(-8)
+            // 12 to match `SearchField`'s stack spacing, and negative so long text stops before the
+            // clear button rather than running underneath it.
+            make.right.equalTo(clearButton.snp.left).offset(-12)
         }
 
         cancelButton.snp.makeConstraints { make in

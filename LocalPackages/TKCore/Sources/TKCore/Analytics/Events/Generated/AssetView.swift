@@ -20,21 +20,24 @@ public struct AssetView: Codable, JSONEncodable, Hashable {
         case tradeScreen = "trade_screen"
     }
     public var eventName: String = "asset_view"
-    /** Source location where the asset view was opened: | wallet_screen: main wallet screen | deep_link: from deep link | qr_code: user scans a QR code | trade_screen: from Trade UI (via trade_click_asset or trade_search_click)  */
+    /** Source location where the asset view was opened:  - wallet_screen: main wallet screen - deep_link: from deep link - qr_code: user scans a QR code - trade_screen: from Trade UI (via trade_click_asset or trade_search_click)  */
     public var from: From
-    /** Asset clicked, in chain/network/type format: ton/mainnet/coin, ton/mainnet/jetton/{addr}  */
+    /** On-chain asset identifier (Asset ID), in chain/network/type[/addr] format (e.g. ton/mainnet/coin, ton/mainnet/jetton/{addr}, tron/mainnet/trc20/{addr}, eth/mainnet/erc20/{addr}, btc/mainnet/coin). Chain and network are read from the first two segments — there are no separate chain / network fields. See docs/ASSET_ID.md.  */
     public var asset: String
+    public var walletMode: WalletMode
 
-    public init(eventName: String = "asset_view", from: From, asset: String) {
+    public init(eventName: String = "asset_view", from: From, asset: String, walletMode: WalletMode) {
         self.eventName = eventName
         self.from = from
         self.asset = asset
+        self.walletMode = walletMode
     }
 
     public enum CodingKeys: String, CodingKey, CaseIterable {
         case eventName
         case from
         case asset
+        case walletMode = "wallet_mode"
     }
 
     // Encodable protocol methods
@@ -44,6 +47,7 @@ public struct AssetView: Codable, JSONEncodable, Hashable {
         try container.encode(eventName, forKey: .eventName)
         try container.encode(from, forKey: .from)
         try container.encode(asset, forKey: .asset)
+        try container.encode(walletMode, forKey: .walletMode)
     }
 }
 

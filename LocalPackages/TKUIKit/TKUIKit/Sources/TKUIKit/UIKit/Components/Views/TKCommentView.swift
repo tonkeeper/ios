@@ -32,16 +32,6 @@ public final class TKCommentView: UIControl, ConfigurableView, ReusableView {
         let tapClosure: (() -> Void)?
 
         public init(
-            comment: NSAttributedString,
-            isEnable: Bool,
-            tapClosure: (() -> Void)? = nil
-        ) {
-            self.comment = comment
-            self.isEnable = isEnable
-            self.tapClosure = tapClosure
-        }
-
-        public init(
             comment: String,
             isEnable: Bool,
             tapClosure: (() -> Void)? = nil

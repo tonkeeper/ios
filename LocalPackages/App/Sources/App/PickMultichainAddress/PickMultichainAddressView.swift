@@ -1,5 +1,44 @@
 import SwiftUI
+import TKLocalize
 import TKUIKit
+
+struct PickMultichainAddressScreen: View {
+    @ObservedObject var viewModel: PickMultichainAddressViewModelImplementation
+
+    var body: some View {
+        VStack(spacing: 0) {
+            DefaultModalCardHeader(
+                config: DefaultModalCardHeader.Config(
+                    title: DefaultModalCardHeader.Title(
+                        text: TKLocales.Receive.Multichain.NetworkPicker.title
+                    ),
+                    subtitle: DefaultModalCardHeader.Subtitle(
+                        text: TKLocales.Receive.Multichain.NetworkPicker.subtitle
+                    ),
+                    rightIcon: .close(
+                        onTap: { _ in
+                            viewModel.close()
+                        }
+                    )
+                )
+            )
+            .fixedSize(horizontal: false, vertical: true)
+
+            ScrollView(showsIndicators: false) {
+                PickMultichainAddressView(viewModel: viewModel)
+                    .padding(.bottom, Layout.bottomPadding)
+            }
+            .tkImmediateButtonPresses()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(.backgroundPage)
+        .ignoresSafeArea(.container, edges: .top)
+    }
+
+    private enum Layout {
+        static let bottomPadding: CGFloat = 24
+    }
+}
 
 struct PickMultichainAddressView: View {
     @ObservedObject var viewModel: PickMultichainAddressViewModelImplementation
@@ -9,7 +48,6 @@ struct PickMultichainAddressView: View {
             ForEach(Array(viewModel.items.enumerated()), id: \.element.id) { index, item in
                 PickMultichainAddressRowView(
                     item: item,
-                    isSelected: item.address == viewModel.selectedAddress,
                     onSelect: { viewModel.selectAddress(item.address) },
                     onCopy: { viewModel.copyAddress(item.address) },
                     showDivider: index < viewModel.items.count - 1
@@ -23,7 +61,6 @@ struct PickMultichainAddressView: View {
 
 struct PickMultichainAddressRowView: View {
     let item: PickMultichainAddressItem
-    let isSelected: Bool
     let onSelect: () -> Void
     let onCopy: () -> Void
     let showDivider: Bool
@@ -32,7 +69,8 @@ struct PickMultichainAddressRowView: View {
         Cell(
             config: .init(
                 style: .grouped,
-                showsDivider: showDivider
+                showsDivider: showDivider,
+                action: onSelect
             ),
             leading: {
                 CellAssetLeading {
@@ -46,7 +84,8 @@ struct PickMultichainAddressRowView: View {
                     primaryRow: CellCenterPrimaryRow(
                         config: .content(
                             .init(
-                                title: item.title
+                                title: item.title,
+                                tags: item.versionTag.map { [.tag(text: $0)] }
                             )
                         )
                     ),
@@ -66,10 +105,8 @@ struct PickMultichainAddressRowView: View {
                     Button(action: onSelect) {
                         CellTrailingAccessory(
                             config: .init(
-                                color: .Icon.primary,
-                                icon: .init(
-                                    uiImage: .TKUIKit.Icons.Size28.qrCodeAlternate
-                                )
+                                color: .iconPrimary,
+                                icon: SwiftUI.Image.TKUIKit.Icons.Size28.qrCodeAlternate
                             )
                         )
                     }
@@ -78,10 +115,8 @@ struct PickMultichainAddressRowView: View {
                     Button(action: onCopy) {
                         CellTrailingAccessory(
                             config: .init(
-                                color: .Icon.primary,
-                                icon: .init(
-                                    uiImage: .TKUIKit.Icons.Size28.copyOutline
-                                )
+                                color: .iconPrimary,
+                                icon: SwiftUI.Image.TKUIKit.Icons.Size28.copyOutline
                             )
                         )
                     }
@@ -90,15 +125,5 @@ struct PickMultichainAddressRowView: View {
             }
         )
         .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(
-                cornerRadius: PickMultichainAddressPresentation.rowHighlightCornerRadius,
-                style: .continuous
-            )
-            .fill(isSelected ? Color(uiColor: .Background.highlighted) : Color.clear)
-            .padding(.horizontal, PickMultichainAddressPresentation.rowHighlightHorizontalInset)
-        )
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onSelect)
     }
 }

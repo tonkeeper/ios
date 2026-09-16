@@ -1,4 +1,5 @@
 import Foundation
+import TKLogging
 
 public final class WidgetAssembly {
     private let repositoriesAssembly: RepositoriesAssembly
@@ -7,7 +8,6 @@ public final class WidgetAssembly {
     private let coreAssembly: CoreAssembly
     private let formattersAssembly: FormattersAssembly
     private let walletsUpdateAssembly: WalletsUpdateAssembly
-    private let configurationAssembly: ConfigurationAssembly
     private let apiAssembly: APIAssembly
     private let loadersAssembly: LoadersAssembly
 
@@ -18,7 +18,6 @@ public final class WidgetAssembly {
         storesAssembly: StoresAssembly,
         formattersAssembly: FormattersAssembly,
         walletsUpdateAssembly: WalletsUpdateAssembly,
-        configurationAssembly: ConfigurationAssembly,
         apiAssembly: APIAssembly,
         loadersAssembly: LoadersAssembly
     ) {
@@ -28,7 +27,6 @@ public final class WidgetAssembly {
         self.storesAssembly = storesAssembly
         self.formattersAssembly = formattersAssembly
         self.walletsUpdateAssembly = walletsUpdateAssembly
-        self.configurationAssembly = configurationAssembly
         self.apiAssembly = apiAssembly
         self.loadersAssembly = loadersAssembly
     }
@@ -47,23 +45,43 @@ public final class WidgetAssembly {
     }
 
     public func chartV2Controller(token: Token) -> ChartV2Controller {
-        chartV2Controller(chartIdentifier: token.chartIdentifier)
+        guard let wallet = activeWallet() else {
+            return chartV2Controller(
+                asset: .legacy(token: token.chartIdentifier),
+                network: .mainnet
+            )
+        }
+        return chartV2Controller(
+            asset: ChartAsset(token: token, wallet: wallet),
+            network: wallet.network
+        )
     }
 
-    public func chartV2Controller(chartIdentifier: String) -> ChartV2Controller {
+    private func chartV2Controller(
+        asset: ChartAsset,
+        network: Network
+    ) -> ChartV2Controller {
         ChartV2Controller(
-            chartIdentifier: chartIdentifier,
+            asset: asset,
+            network: network,
             chartService: widgetChartService(),
-            currencyStore: storesAssembly.currencyStore,
-            walletsService: servicesAssembly.walletsService()
+            currencyStore: storesAssembly.currencyStore
         )
+    }
+
+    private func activeWallet() -> Wallet? {
+        do {
+            return try servicesAssembly.walletsService().getActiveWallet()
+        } catch {
+            Log.w("failed to resolve active wallet for widget chart", error: error)
+            return nil
+        }
     }
 }
 
 private extension WidgetAssembly {
     func widgetChartService() -> ChartService {
-        ChartServiceImplementation(
-            apiProvider: apiAssembly.apiProvider,
+        servicesAssembly.chartService(
             repository: repositoriesAssembly.persistentChartDataRepository()
         )
     }

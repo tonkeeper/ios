@@ -16,6 +16,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
     private let withdrawTooltipSettings: WithdrawButtonTooltipRepository
     private let newHistoryEntryPointTooltipSettings: NewHistoryEntryPointTooltipRepository
     private let tradeTabTooltipSettings: TradeTabTooltipRepository
+    private let favoriteTooltipSettings: FavoriteTooltipRepository
+    private let addMultichainWalletTooltipSettings: AddMultichainWalletTooltipRepository
     private let calendar: Calendar
     private let dateFormatter: DateFormatter
 
@@ -25,6 +27,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         withdrawTooltipSettings: WithdrawButtonTooltipRepository,
         newHistoryEntryPointTooltipSettings: NewHistoryEntryPointTooltipRepository,
         tradeTabTooltipSettings: TradeTabTooltipRepository,
+        favoriteTooltipSettings: FavoriteTooltipRepository,
+        addMultichainWalletTooltipSettings: AddMultichainWalletTooltipRepository,
         calendar: Calendar = .current
     ) {
         self.commonTooltipSettings = commonTooltipSettings
@@ -32,6 +36,8 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         self.withdrawTooltipSettings = withdrawTooltipSettings
         self.newHistoryEntryPointTooltipSettings = newHistoryEntryPointTooltipSettings
         self.tradeTabTooltipSettings = tradeTabTooltipSettings
+        self.favoriteTooltipSettings = favoriteTooltipSettings
+        self.addMultichainWalletTooltipSettings = addMultichainWalletTooltipSettings
         self.calendar = calendar
 
         let dateFormatter = DateFormatter()
@@ -63,34 +69,53 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
             .listItem(createNewHistoryEntryPointShownCountItem()),
             .listItem(createNewHistoryEntryPointTargetActionPerformedItem()),
         ]
+        let favoriteItems: [SettingsListItemsSectionItem] = [
+            .listItem(createFavoriteHasBeenShownItem()),
+        ]
+        let addMultichainWalletItems: [SettingsListItemsSectionItem] = [
+            .listItem(createAddMultichainWalletShownCountItem()),
+            .listItem(createAddMultichainWalletLastShownDateItem()),
+        ]
 
         return SettingsListState(
             sections: [
-                .listItems(
+                .items(
                     SettingsListItemsSection(
                         items: commonItems,
-                        headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Common")
+                        header: SettingsListSectionHeader(title: "Common")
                     )
                 ),
-                .listItems(
+                .items(
                     SettingsListItemsSection(
                         items: withdrawButtonItems,
-                        headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Withdraw Button")
+                        header: SettingsListSectionHeader(title: "Withdraw Button")
                     )
                 ),
-                .listItems(
+                .items(
                     SettingsListItemsSection(
                         items: newHistoryEntryPointItems,
-                        headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "History Entry Point")
+                        header: SettingsListSectionHeader(title: "History Entry Point")
                     )
                 ),
-                .listItems(
+                .items(
                     SettingsListItemsSection(
                         items: tradeTabItems,
-                        headerConfiguration: SettingsListSectionHeaderView.Configuration(title: "Trade Tab")
+                        header: SettingsListSectionHeader(title: "Trade Tab")
                     )
                 ),
-                .listItems(
+                .items(
+                    SettingsListItemsSection(
+                        items: favoriteItems,
+                        header: SettingsListSectionHeader(title: "Favorite")
+                    )
+                ),
+                .items(
+                    SettingsListItemsSection(
+                        items: addMultichainWalletItems,
+                        header: SettingsListSectionHeader(title: "Add Multichain Wallet")
+                    )
+                ),
+                .items(
                     SettingsListItemsSection(items: [
                         .button(createResetStateItem()),
                     ])
@@ -100,85 +125,37 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
     }
 
     private func createNewHistoryEntryPointShownCountItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Shown count")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        createValueItem(
             id: .newHistoryEntryPointTooltipShownCountItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: String(newHistoryEntryPointTooltipSettings.shownCount),
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
+            title: "Shown count",
+            value: String(newHistoryEntryPointTooltipSettings.shownCount)
         )
     }
 
     private func createNewHistoryEntryPointTargetActionPerformedItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Target action performed")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        createValueItem(
             id: .newHistoryEntryPointTooltipTargetActionPerformedItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: newHistoryEntryPointTooltipSettings.isTargetActionPerformed ? "true" : "false",
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
+            title: "Target action performed",
+            value: newHistoryEntryPointTooltipSettings.isTargetActionPerformed ? "true" : "false"
         )
     }
 
     private func createFirstLaunchDateItem() -> SettingsListItem {
         let isOverriden = tooltipOverrides.firstLaunchDate != nil
 
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "First launch date override"),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(
-                            text: "status: \(isOverriden ? "overridden" : "default")",
-                            color: .Text.secondary,
-                            textStyle: .body2
-                        ),
-                        TKListItemTextView.Configuration(
-                            text: "value: \(formatted(commonTooltipSettings.firstLaunchDate))",
-                            color: .Text.secondary,
-                            textStyle: .body2
-                        ),
-                    ]
-                )
-            )
-        )
-
         return SettingsListItem(
             id: .tooltipFirstLaunchDateItemIdentifier,
-            cellConfiguration: cellConfiguration,
+            title: SettingsListItemTitle("First launch date override"),
+            captions: [
+                SettingsListItemCaption("status: \(isOverriden ? "overridden" : "default")"),
+                SettingsListItemCaption("value: \(formatted(commonTooltipSettings.firstLaunchDate))"),
+            ],
             accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: isOverriden ? "Update" : "Override",
-                    color: .Text.primary,
-                    textStyle: .body2
+                SettingsListItemTextAccessory(
+                    text: isOverriden ? "Update" : "Override"
                 )
             ),
-            onSelection: { [weak self] _ in
+            onTap: { [weak self] _ in
                 guard let self else { return }
                 self.didSelectFirstLaunchDate?(
                     commonTooltipSettings.firstLaunchDate ?? Date()
@@ -190,115 +167,95 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
     }
 
     private func createResetFirstLaunchDateOverrideItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Reset first launch date override"),
-                    captionViewsConfigurations: [
-                        TKListItemTextView.Configuration(
-                            text: "Use original app first launch date",
-                            color: .Text.secondary,
-                            textStyle: .body2
-                        ),
-                    ]
-                )
-            )
-        )
-
-        return SettingsListItem(
+        SettingsListItem(
             id: .tooltipResetFirstLaunchDateOverrideItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .none,
-            onSelection: { [weak self] _ in
+            title: SettingsListItemTitle("Reset first launch date override"),
+            captions: [SettingsListItemCaption("Use original app first launch date")],
+            onTap: { [weak self] _ in
                 self?.resetFirstLaunchDateOverride()
             }
         )
     }
 
     private func createTradeTabShownCountItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Shown count")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        createValueItem(
             id: .tradeTabTooltipShownCountItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: String(tradeTabTooltipSettings.shownCount),
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
+            title: "Shown count",
+            value: String(tradeTabTooltipSettings.shownCount)
         )
     }
 
     private func createShownCountItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Shown count")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        createValueItem(
             id: .tooltipShownCountItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: String(withdrawTooltipSettings.shownCount),
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
+            title: "Shown count",
+            value: String(withdrawTooltipSettings.shownCount)
         )
     }
 
     private func createTargetActionPerformedItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Target action performed")
-                )
-            )
-        )
-
-        return SettingsListItem(
+        createValueItem(
             id: .tooltipTargetActionPerformedItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: withdrawTooltipSettings.isTargetActionPerformed ? "true" : "false",
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
+            title: "Target action performed",
+            value: withdrawTooltipSettings.isTargetActionPerformed ? "true" : "false"
         )
     }
 
-    private func createResetStateItem() -> SettingsButtonListItem {
-        var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Reset tooltip state"))
-        buttonConfiguration.action = { [weak self] in
-            guard let self else { return }
-            self.withdrawTooltipSettings.resetPersistentState()
-            self.newHistoryEntryPointTooltipSettings.resetPersistentState()
-            self.tradeTabTooltipSettings.resetPersistentState()
-            self.didUpdateState?(self.createState())
-            ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reset"))
-        }
+    private func createFavoriteHasBeenShownItem() -> SettingsListItem {
+        createValueItem(
+            id: .favoriteTooltipHasBeenShownItemIdentifier,
+            title: "Has been shown",
+            value: favoriteTooltipSettings.hasBeenShown ? "true" : "false"
+        )
+    }
 
-        return SettingsButtonListItem(
+    private func createTradeTabTargetActionPerformedItem() -> SettingsListItem {
+        createValueItem(
+            id: .tradeTabTooltipTargetActionPerformedItemIdentifier,
+            title: "Target action performed",
+            value: tradeTabTooltipSettings.isTargetActionPerformed ? "true" : "false"
+        )
+    }
+
+    private func createAddMultichainWalletShownCountItem() -> SettingsListItem {
+        createValueItem(
+            id: .addMultichainWalletTooltipShownCountItemIdentifier,
+            title: "Shown count",
+            value: String(addMultichainWalletTooltipSettings.shownCount)
+        )
+    }
+
+    private func createAddMultichainWalletLastShownDateItem() -> SettingsListItem {
+        createValueItem(
+            id: .addMultichainWalletTooltipLastShownDateItemIdentifier,
+            title: "Last shown date",
+            value: formatted(addMultichainWalletTooltipSettings.lastShownDate)
+        )
+    }
+
+    private func createResetStateItem() -> SettingsListButtonItem {
+        SettingsListButtonItem(
             id: .tooltipResetStateItemIdentifier,
-            cellConfiguration: TKButtonCollectionViewCell.Configuration(buttonConfiguration: buttonConfiguration)
+            title: "Reset tooltip state",
+            appearance: .secondary,
+            action: { [weak self] in
+                guard let self else { return }
+                self.withdrawTooltipSettings.resetPersistentState()
+                self.newHistoryEntryPointTooltipSettings.resetPersistentState()
+                self.tradeTabTooltipSettings.resetPersistentState()
+                self.favoriteTooltipSettings.resetPersistentState()
+                self.addMultichainWalletTooltipSettings.resetPersistentState()
+                self.didUpdateState?(self.createState())
+                ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Reset"))
+            }
+        )
+    }
+
+    private func createValueItem(id: String, title: String, value: String) -> SettingsListItem {
+        SettingsListItem(
+            id: id,
+            title: SettingsListItemTitle(title),
+            accessory: .text(SettingsListItemTextAccessory(text: value))
         )
     }
 
@@ -315,29 +272,6 @@ final class SettingsListTooltipsConfigurator: SettingsListConfigurator {
         tooltipOverrides.firstLaunchDate = nil
         didUpdateState?(createState())
         ToastPresenter.showToast(configuration: .defaultConfiguration(text: "Override reset"))
-    }
-
-    private func createTradeTabTargetActionPerformedItem() -> SettingsListItem {
-        let cellConfiguration = TKListItemCell.Configuration(
-            listItemContentViewConfiguration: TKListItemContentView.Configuration(
-                textContentViewConfiguration: TKListItemTextContentView.Configuration(
-                    titleViewConfiguration: TKListItemTitleView.Configuration(title: "Target action performed")
-                )
-            )
-        )
-
-        return SettingsListItem(
-            id: .tradeTabTooltipTargetActionPerformedItemIdentifier,
-            cellConfiguration: cellConfiguration,
-            accessory: .text(
-                TKListItemTextAccessoryView.Configuration(
-                    text: tradeTabTooltipSettings.isTargetActionPerformed ? "true" : "false",
-                    color: .Text.primary,
-                    textStyle: .body2
-                )
-            ),
-            onSelection: nil
-        )
     }
 
     private func formatted(_ date: Date?) -> String {
@@ -357,5 +291,8 @@ private extension String {
     static let newHistoryEntryPointTooltipTargetActionPerformedItemIdentifier = "newHistoryEntryPointTooltipTargetActionPerformedItemIdentifier"
     static let tradeTabTooltipShownCountItemIdentifier = "tradeTabTooltipShownCountItemIdentifier"
     static let tradeTabTooltipTargetActionPerformedItemIdentifier = "tradeTabTooltipTargetActionPerformedItemIdentifier"
+    static let favoriteTooltipHasBeenShownItemIdentifier = "favoriteTooltipHasBeenShownItemIdentifier"
+    static let addMultichainWalletTooltipShownCountItemIdentifier = "addMultichainWalletTooltipShownCountItemIdentifier"
+    static let addMultichainWalletTooltipLastShownDateItemIdentifier = "addMultichainWalletTooltipLastShownDateItemIdentifier"
     static let tooltipResetStateItemIdentifier = "tooltipResetStateItemIdentifier"
 }

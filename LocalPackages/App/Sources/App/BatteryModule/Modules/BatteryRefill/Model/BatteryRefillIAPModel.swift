@@ -33,7 +33,32 @@ final class BatteryRefillIAPModel: NSObject {
         }
     }
 
+    /// A store refund cannot be reverted from our side, so a customer who has taken charges back
+    /// twice loses the in-app packs. Crypto recharge and promocodes stay available.
+    private static let refundsLimit = 2
+
+    static func isDisabledByRefunds(purchases: [BatteryPurchase]) -> Bool {
+        purchases.filter { $0.kind.isStorePurchase && $0.isRefunded }.count >= refundsLimit
+    }
+
+    /// Whether the packs may be bought. Unknown until `/purchases` answers — the packs stay
+    /// disabled meanwhile, so a tap cannot reach the payment queue before the refunds are counted.
+    private enum PurchasesAvailability {
+        case unknown
+        case allowed
+        case disabledByRefunds
+    }
+
     private var products = [SKProduct]()
+    private var purchasesAvailability: PurchasesAvailability = .unknown {
+        didSet {
+            guard purchasesAvailability != oldValue else { return }
+            didUpdateState()
+        }
+    }
+
+    private var isLoadingPurchasesAvailability = false
+
     private var state: State = .loading {
         didSet {
             didUpdateState()
@@ -49,7 +74,6 @@ final class BatteryRefillIAPModel: NSObject {
 
     private let wallet: Wallet
     private let batteryService: BatteryService
-    private let tonProofService: TonProofTokenService
     private let balanceStore: BalanceStore
     private let configuration: Configuration
     private let tonRatesStore: TonRatesStore
@@ -58,7 +82,6 @@ final class BatteryRefillIAPModel: NSObject {
     init(
         wallet: Wallet,
         batteryService: BatteryService,
-        tonProofService: TonProofTokenService,
         balanceStore: BalanceStore,
         configuration: Configuration,
         tonRatesStore: TonRatesStore,
@@ -66,7 +89,6 @@ final class BatteryRefillIAPModel: NSObject {
     ) {
         self.wallet = wallet
         self.batteryService = batteryService
-        self.tonProofService = tonProofService
         self.balanceStore = balanceStore
         self.configuration = configuration
         self.tonRatesStore = tonRatesStore
@@ -90,8 +112,32 @@ final class BatteryRefillIAPModel: NSObject {
         self.request = productRequest
     }
 
+    /// The refund count is not part of the balance, so it is read once per screen. A failure
+    /// leaves the packs buyable: the count is an app-side guard and the service validates the
+    /// purchase anyway.
+    func loadPurchasesAvailability() {
+        Task { @MainActor [weak self] in
+            guard let self, !isLoadingPurchasesAvailability else { return }
+            isLoadingPurchasesAvailability = true
+            defer { isLoadingPurchasesAvailability = false }
+            do {
+                let purchases = try await batteryService.loadPurchases(wallet: wallet)
+                let isDisabled = Self.isDisabledByRefunds(purchases: purchases)
+                purchasesAvailability = isDisabled ? .disabledByRefunds : .allowed
+                logger.i("Loaded purchases: count=\(purchases.count), iapDisabled=\(isDisabled)")
+            } catch {
+                purchasesAvailability = .allowed
+                logger.w("Failed to load purchases: \(String(describing: error))")
+            }
+        }
+    }
+
     func startProcessing(identifier: String) {
         logger.i("Start processing purchase for product id=\(identifier)")
+        guard purchasesAvailability == .allowed else {
+            logger.w("Purchase rejected: packs are \(String(describing: purchasesAvailability))")
+            return
+        }
         guard SKPaymentQueue.canMakePayments(),
               let product = products.first(where: { $0.productIdentifier == identifier }) else { return }
         logger.d("Found product in loaded list, proceeding to add payment")
@@ -105,22 +151,26 @@ final class BatteryRefillIAPModel: NSObject {
         completion: @escaping (_ success: Bool) -> Void
     ) {
         logger.i("Handling purchased/restored transaction id=\(transaction.transactionIdentifier ?? "nil")")
-        guard let id = transaction.transactionIdentifier,
-              let tonProof = try? tonProofService.getWalletToken(wallet)
-        else {
-            logger.e("Missing transaction id or tonProof; cannot make purchase")
+        guard let id = transaction.transactionIdentifier else {
+            logger.e("Missing transaction id; cannot make purchase")
             completion(false)
             return
         }
         Task { @MainActor in
             do {
                 logger.i("Calling batteryService.makePurchase")
-                let purchaseStatus = try await batteryService.makePurchase(wallet: wallet, tonProofToken: tonProof, transactionId: id, promocode: promocode)
+                let purchaseStatus = try await batteryService.makePurchase(
+                    wallet: wallet,
+                    transactionId: id,
+                    promocode: promocode
+                )
 
                 if let transactionResult = purchaseStatus.transactions.first(where: { $0.transaction_id == id }) {
                     if transactionResult.success {
                         logger.i("batteryService.makePurchase succeeded")
-                        balanceLoader.loadActiveWalletBalance()
+                        Task { [balanceLoader, wallet] in
+                            await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
+                        }
                         completion(true)
                     } else {
                         logger.w("Transaction confirmation failed. Msg: \(String(describing: transactionResult.error?.msg)), code: \(String(describing: transactionResult.error?.code.rawValue))")
@@ -166,6 +216,9 @@ final class BatteryRefillIAPModel: NSObject {
     }
 
     private func getItems() -> [BatteryIAPItem] {
+        guard purchasesAvailability != .disabledByRefunds else { return [] }
+        let isItemEnable = state.isItemEnable && purchasesAvailability == .allowed
+
         let batteryBalance = balanceStore.getState()[wallet]?.walletBalance.batteryBalance
         let tonPriceUSD: NSDecimalNumber? = {
             let rates = self.tonRatesStore.getState()
@@ -175,7 +228,7 @@ final class BatteryRefillIAPModel: NSObject {
 
         return BatteryIAPPack.allCases.compactMap { pack -> BatteryIAPItem? in
             guard !state.isLoading else {
-                return BatteryIAPItem(pack: pack, isEnable: state.isItemEnable, state: .loading)
+                return BatteryIAPItem(pack: pack, isEnable: isItemEnable, state: .loading)
             }
 
             guard let product = products.first(where: { $0.productIdentifier == pack.productIdentifier }),
@@ -198,7 +251,7 @@ final class BatteryRefillIAPModel: NSObject {
 
             return BatteryIAPItem(
                 pack: pack,
-                isEnable: state.isItemEnable,
+                isEnable: isItemEnable,
                 state: BatteryIAPItem.State.amount(amount)
             )
         }
@@ -310,16 +363,11 @@ final class BatteryRefillIAPModel: NSObject {
             logger.i("Nothing to restore from receipt")
             return .failure(.nothingToRestore)
         }
-        guard let tonProof = try? tonProofService.getWalletToken(wallet) else {
-            logger.e("Failed to get tonProof token for restore")
-            return .failure(.batteryPurchaseFailed)
-        }
         for purchase in purchases {
             do {
                 logger.i("Restoring purchase")
                 _ = try await batteryService.makePurchase(
                     wallet: wallet,
-                    tonProofToken: tonProof,
                     transactionId: purchase.originalTransactionId,
                     promocode: promocode
                 )
@@ -329,7 +377,7 @@ final class BatteryRefillIAPModel: NSObject {
             }
         }
         try? await Task.sleep(nanoseconds: 1_000_000_000)
-        balanceLoader.loadActiveWalletBalance()
+        await balanceLoader.reloadBalance(wallet: wallet, priority: .userInitiated)
         logger.i("Restore flow completed successfully")
         return .success(())
     }

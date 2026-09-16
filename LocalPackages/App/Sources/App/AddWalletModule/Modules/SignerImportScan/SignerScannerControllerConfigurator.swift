@@ -7,13 +7,15 @@ struct SignerScannerControllerConfigurator: ScannerControllerConfigurator {
         case unsupportedDeeplink(deeplink: Deeplink)
     }
 
-    private let deeplinkParser = DeeplinkParser()
+    private let deeplinkParser: DeeplinkParser
     private let urDecoder = URDecoder()
 
-    init() {}
+    init(deeplinkParser: DeeplinkParser) {
+        self.deeplinkParser = deeplinkParser
+    }
 
     func handleQRCode(_ qrCode: String) throws -> Deeplink {
-        let deeplink = try deeplinkParser.parse(string: qrCode)
+        let deeplink = try deeplinkParser.parse(string: qrCode, source: .qr)
 
         guard case let .externalSign(externalSign) = deeplink,
               case .link = externalSign

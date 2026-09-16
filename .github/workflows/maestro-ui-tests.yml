@@ -2,411 +2,468 @@ name: Maestro UI Tests
 
 on:
   workflow_dispatch:
+    inputs:
+      clusters:
+        description: Which Maestro clusters to run (schedule always runs all)
+        type: choice
+        options:
+          - all
+          - ton-state
+          - multichain
+        default: all
   schedule:
-    - cron: "0 2 * * 2-6"  
+    - cron: "0 2 * * 2-6"
 
 env:
   DERIVED_DATA: build/DerivedData-maestro
+  # Schedule has no inputs; manual dispatch uses the choice above.
+  MAESTRO_CLUSTERS: ${{ github.event_name == 'workflow_dispatch' && inputs.clusters || 'all' }}
 
 jobs:
-  discover-flow-groups:
-    name: Resolve Maestro flow shards from config
+  discover-maestro-clusters:
+    name: Resolve Maestro clusters and shards
+    if: ${{ github.repository != 'tonkeeper/ios' }}
     runs-on: ubuntu-latest
     outputs:
-      flow_groups: ${{ steps.set.outputs.flow_groups }}
+      clusters: ${{ steps.discover.outputs.clusters }}
+      ton_state_shards: ${{ steps.discover.outputs.ton_state_shards }}
+      multichain_shards: ${{ steps.discover.outputs.multichain_shards }}
+      has_ton_state_shards: ${{ steps.discover.outputs.has_ton_state_shards }}
+      has_multichain_shards: ${{ steps.discover.outputs.has_multichain_shards }}
     steps:
       - uses: actions/checkout@v6
 
-      - id: set
+      - name: Install PyYAML
+        run: pip install pyyaml
+
+      - name: Check API runtime in sync
+        run: python3 maestro_ui_tests/scripts/ci/sync_api_runtime.py --check
+
+      - name: Test Maestro CI tooling
+        run: |
+          python3 -m unittest discover -s maestro_ui_tests/ci/slack_bot -p 'test_*.py'
+          python3 -m unittest discover -s maestro_ui_tests/scripts/ci -p 'test_*.py'
+
+      - name: Discover Maestro clusters
+        id: discover
         shell: bash
         run: |
           set -euo pipefail
-          cfg="maestro_ui_tests/config.yaml"
-          if [[ ! -f "$cfg" ]]; then
-            echo "::error::maestro_ui_tests/config.yaml not found"
-            exit 1
-          fi
-          mapfile -t groups < <(
-            sed -n 's/^[[:space:]]*-[[:space:]]*["'\'']*flows\/\([^/"*[:space:]]*\)\/.*/\1/p' "$cfg" | sort -u
-          )
-          if [[ ${#groups[@]} -eq 0 ]]; then
-            echo "::error::No flow shard folders under 'flows:' in maestro_ui_tests/config.yaml (expected '  - flows/<folder>/*')"
-            exit 1
-          fi
-          for g in "${groups[@]}"; do
-            if [[ ! -d "maestro_ui_tests/flows/${g}" ]]; then
-              echo "::error::Flow folder from config missing on disk: maestro_ui_tests/flows/${g}"
-              exit 1
-            fi
-          done
-          json="$(printf '%s\n' "${groups[@]}" | jq -R . | jq -s -c .)"
-          echo "flow_groups=$json" >> "$GITHUB_OUTPUT"
+          echo "MAESTRO_CLUSTERS=${MAESTRO_CLUSTERS}"
+          python3 maestro_ui_tests/scripts/ci/discover_maestro_clusters.py \
+            --repo-root "${{ github.workspace }}" \
+            --clusters "${MAESTRO_CLUSTERS}" \
+            --github-output
+          echo "### Resolve MaestroFlow (\`${MAESTRO_CLUSTERS}\`)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          python3 maestro_ui_tests/scripts/ci/discover_maestro_clusters.py \
+            --repo-root "${{ github.workspace }}" \
+            --clusters "${MAESTRO_CLUSTERS}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
 
-  maestro-build-simulator:
-    name: Build iOS Simulator app for Maestro
+  # One compile serves both clusters: they differ only by FlagsOverride.json,
+  # a plain bundle resource, so the ton-state artifact is repacked from the
+  # multichain build (JSON swap + ad-hoc re-sign) instead of a second ~50-min
+  # xcodebuild. The multichain variant is the base because it outlives the
+  # planned ton-state cluster removal.
+  maestro-build:
+    name: Build simulator app (both flag variants)
+    needs: discover-maestro-clusters
+    if: ${{ needs.discover-maestro-clusters.outputs.has_ton_state_shards == 'true' || needs.discover-maestro-clusters.outputs.has_multichain_shards == 'true' }}
     runs-on: macos-26-xlarge
     timeout-minutes: 120
+    env:
+      MAESTRO_FEATURE_FLAG_OVERRIDES: ${{ secrets.MAESTRO_FEATURE_FLAG_OVERRIDES }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Generate ios_keys access token
-        id: generate_token
-        uses: actions/create-github-app-token@v3
+      - uses: ./.github/actions/prepare-maestro-build
         with:
-          app-id: ${{ secrets.GH_APP_ID }}
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          owner: tonkeeper
-          repositories: ios_keys
+          gh-app-id: ${{ secrets.GH_APP_ID }}
+          gh-app-private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          dev-certificate-p12-base64: ${{ secrets.DEV_CERTIFICATE_P12_BASE64 }}
+          dev-certificate-p12-password: ${{ secrets.DEV_CERTIFICATE_P12_PASSWORD }}
+          dev-provisioning-profile-base64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
 
-      - name: Clone ios_keys
-        shell: bash
-        env:
-          GH_TOKEN: ${{ steps.generate_token.outputs.token }}
-        run: |
-          set -euo pipefail
-          git clone --branch main --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/tonkeeper/ios_keys.git" ./ios_keys
-
-      - name: Select Xcode 26.3
-        shell: bash
-        run: |
-          set -euo pipefail
-          XCODE_PATH="/Applications/Xcode_26.3.app/Contents/Developer"
-          if [[ ! -d "$XCODE_PATH" ]]; then
-            echo "Xcode 26.3 is not available at $XCODE_PATH"
-            exit 1
-          fi
-          export DEVELOPER_DIR="$XCODE_PATH"
-          echo "DEVELOPER_DIR=$XCODE_PATH" >> "$GITHUB_ENV"
-          xcodebuild -version
-
-      - name: Import Development certificate and provisioning profile
-        shell: bash
-        env:
-          DEV_CERTIFICATE_P12_BASE64: ${{ secrets.DEV_CERTIFICATE_P12_BASE64 }}
-          DEV_CERTIFICATE_P12_PASSWORD: ${{ secrets.DEV_CERTIFICATE_P12_PASSWORD }}
-          DEV_PROVISIONING_PROFILE_BASE64: ${{ secrets.DEV_PROVISIONING_PROFILE_BASE64 }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${DEV_CERTIFICATE_P12_BASE64:-}" || -z "${DEV_CERTIFICATE_P12_PASSWORD:-}" ]]; then
-            echo "Set repository secrets DEV_CERTIFICATE_P12_BASE64 and DEV_CERTIFICATE_P12_PASSWORD."
-            exit 1
-          fi
-          if [[ -z "${DEV_PROVISIONING_PROFILE_BASE64:-}" ]]; then
-            echo "Set repository secret DEV_PROVISIONING_PROFILE_BASE64 (base64 of the .mobileprovision file)."
-            exit 1
-          fi
-          KEYCHAIN_PATH="$RUNNER_TEMP/maestro-signing.keychain-db"
-          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
-          echo -n "$DEV_CERTIFICATE_P12_BASE64" | base64 --decode > "$RUNNER_TEMP/dev_cert.p12"
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | sed 's/"//g')
-          security default-keychain -s "$KEYCHAIN_PATH"
-          security import "$RUNNER_TEMP/dev_cert.p12" -P "$DEV_CERTIFICATE_P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH" -T /usr/bin/codesign -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          rm -f "$RUNNER_TEMP/dev_cert.p12"
-
-          echo -n "$DEV_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$RUNNER_TEMP/dev.mobileprovision"
-          security cms -D -i "$RUNNER_TEMP/dev.mobileprovision" > "$RUNNER_TEMP/dev_profile.plist"
-          PROFILE_UUID="$(plutil -extract UUID raw "$RUNNER_TEMP/dev_profile.plist")"
-          PP_RUNNER="$HOME/Library/MobileDevice/Provisioning Profiles"
-          PP_CODEX="${{ github.workspace }}/build/codex_home/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PP_RUNNER" "$PP_CODEX"
-          cp "$RUNNER_TEMP/dev.mobileprovision" "$PP_RUNNER/${PROFILE_UUID}.mobileprovision"
-          cp "$RUNNER_TEMP/dev.mobileprovision" "$PP_CODEX/${PROFILE_UUID}.mobileprovision"
-          rm -f "$RUNNER_TEMP/dev.mobileprovision" "$RUNNER_TEMP/dev_profile.plist"
-
-          {
-            echo "KEYCHAIN_PATH<<MAESTRO_KC_EOF"
-            echo "$KEYCHAIN_PATH"
-            echo "MAESTRO_KC_EOF"
-            echo "KEYCHAIN_PASSWORD<<MAESTRO_KC_EOF"
-            echo "$KEYCHAIN_PASSWORD"
-            echo "MAESTRO_KC_EOF"
-          } >> "$GITHUB_ENV"
-
-      - name: Copy Firebase resources
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [[ ! -d ./ios_keys/Firebase ]]; then
-            echo "ios_keys/Firebase not found"
-            exit 1
-          fi
-          rm -rf ./Tonkeeper/Resources/Firebase
-          cp -R ./ios_keys/Firebase ./Tonkeeper/Resources/Firebase
-          rm -rf ./ios_keys
-
-      - name: Configure Swift package SCM
-        shell: bash
-        run: |
-          set -euo pipefail
-          defaults write com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM -bool NO
-          defaults read com.apple.dt.Xcode IDEPackageSupportUseBuiltinSCM
-
-      - name: Resolve Swift packages
-        shell: bash
-        env:
-          GIT_TERMINAL_PROMPT: "0"
-          GCM_INTERACTIVE: Never
-          HOME: ${{ github.workspace }}/build/codex_home
-          SWIFTPM_CACHE_PATH: ${{ github.workspace }}/build/swiftpm-cache
-          SWIFTPM_CONFIG_DIR: ${{ github.workspace }}/build/swiftpm-config
-          CLANG_MODULE_CACHE_PATH: ${{ github.workspace }}/build/clang-module-cache
-          CLONED_SOURCE_PACKAGES_DIR: ${{ github.workspace }}/build/SourcePackages
-        run: |
-          set -euo pipefail
-          export NSUnbufferedIO=YES
-          mkdir -p "$HOME" "$SWIFTPM_CACHE_PATH" "$SWIFTPM_CONFIG_DIR" "$CLANG_MODULE_CACHE_PATH" "$CLONED_SOURCE_PACKAGES_DIR"
-          xcodebuild \
-            -scmProvider system \
-            -resolvePackageDependencies \
-            -onlyUsePackageVersionsFromResolvedFile \
-            -skipPackageUpdates \
-            -project Tonkeeper.xcodeproj \
-            -scheme Tonkeeper \
-            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR"
-
-      - name: Build Tonkeeper for iOS Simulator
-        shell: bash
-        env:
-          GIT_TERMINAL_PROMPT: "0"
-          GCM_INTERACTIVE: Never
-          HOME: ${{ github.workspace }}/build/codex_home
-          SWIFTPM_CACHE_PATH: ${{ github.workspace }}/build/swiftpm-cache
-          SWIFTPM_CONFIG_DIR: ${{ github.workspace }}/build/swiftpm-config
-          CLANG_MODULE_CACHE_PATH: ${{ github.workspace }}/build/clang-module-cache
-          CLONED_SOURCE_PACKAGES_DIR: ${{ github.workspace }}/build/SourcePackages
-        run: |
-          set -euo pipefail
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          export NSUnbufferedIO=YES
-          xcodebuild \
-            -scmProvider system \
-            -disableAutomaticPackageResolution \
-            -onlyUsePackageVersionsFromResolvedFile \
-            -project Tonkeeper.xcodeproj \
-            -scheme Tonkeeper \
-            -configuration TonkeeperDebug \
-            -destination 'generic/platform=iOS Simulator' \
-            -derivedDataPath "${{ github.workspace }}/$DERIVED_DATA" \
-            -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR" \
-            ARCHS=arm64 \
-            build
-
-      - name: Zip Tonkeeper.app for Maestro CI
-        shell: bash
-        run: |
-          set -euo pipefail
-          APP="$(find "${{ github.workspace }}/$DERIVED_DATA/Build/Products" -type d -name 'Tonkeeper.app' -print -quit)"
-          if [[ -z "$APP" ]]; then
-            echo "Tonkeeper.app not found"
-            exit 1
-          fi
-          mkdir -p build
-          (cd "$(dirname "$APP")" && zip -rq "${{ github.workspace }}/build/TonkeeperSimulator.zip" "$(basename "$APP")")
-
-      - name: Upload simulator app
-        uses: actions/upload-artifact@v6
+      - name: Build multichain app and repack ton-state variant
+        uses: ./.github/actions/build-maestro-simulator
         with:
-          name: maestro-ios-tonkeeper-app
-          path: build/TonkeeperSimulator.zip
-          if-no-files-found: error
+          artifact-name: maestro-ios-tonkeeper-app-multichain
+          overlay-flags-file: maestro_ui_tests/ci/multichain-flags.json
+          ensure-multichain-enabled: "true"
+          second-artifact-name: ${{ needs.discover-maestro-clusters.outputs.has_ton_state_shards == 'true' && 'maestro-ios-tonkeeper-app' || '' }}
+          second-overlay-flags-file: maestro_ui_tests/ci/ton-state-flags.json
+          second-ensure-multichain-disabled: "true"
 
-  maestro-ui-tests:
-    name: Maestro — ${{ matrix.flow_group }}
-    needs: [discover-flow-groups, maestro-build-simulator]
+  unit-tests:
+    name: Run unit tests
+    # Decoupled from the app build on purpose. Unit tests need a *testable*
+    # (`@testable import`) build of the SPM package graph — a different artifact
+    # than the app build that feeds the Maestro shards — so the two can never
+    # share compiled products. Running them as their own job (no `needs:`) lets
+    # the unit graph compile and run in parallel with the app build and the
+    # Maestro UI shards instead of serializing ahead of them on the critical
+    # path. Non-blocking (`non_blocking: true`): a unit failure does NOT redden
+    # this run; the result is still surfaced in Slack via the
+    # maestro-unit-test-results artifact. Reuses the exact job definition of the
+    # standalone `unit-tests.yml` via workflow_call, so the two paths can't drift.
+    if: ${{ github.repository != 'tonkeeper/ios' }}
+    uses: ./.github/workflows/unit-tests.yml
+    secrets: inherit
+    with:
+      non_blocking: true
+
+  # Canary jobs: one import-to-home smoke per cluster, gating that cluster's
+  # shard matrix. An app-wide breakage of wallet setup (the preamble of every
+  # flow) fails once here in ~one job instead of burning the timeout budget of
+  # every shard plus their per-flow retries. run-maestro-shard's built-in retry
+  # gives the canary one flake-resistant second attempt.
+  maestro-canary-ton-state:
+    name: "[ton] – canary"
+    needs: [discover-maestro-clusters, maestro-build]
+    if: ${{ needs.discover-maestro-clusters.outputs.has_ton_state_shards == 'true' }}
+    runs-on: macos-26-xlarge
+    timeout-minutes: 45
+    env:
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: "180000"
+      MAESTRO_CLI_LOG_PATTERN_CONSOLE: '%d{HH:mm:ss.SSS} [%level] %msg%n'
+      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-canary-ton-state
+      MAESTRO_MNEMONIC_PHRASE: ${{ secrets.MAESTRO_MNEMONIC_PHRASE }}
+      MAESTRO_WALLET_WITH_MONEY: ${{ secrets.MAESTRO_WALLET_WITH_MONEY }}
+      MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ secrets.MAESTRO_WALLET_WITH_MONEY_ADDR }}
+      MAESTRO_AUTH: ${{ secrets.MAESTRO_AUTH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Install Maestro CLI
+        uses: ./.github/actions/install-maestro-cli
+
+      - name: Run Maestro canary (ton-state)
+        uses: ./.github/actions/run-maestro-shard
+        with:
+          shard-id: canary-ton-state
+          flow-rel-path: flows/canary/ton-state
+          simulator-artifact: maestro-ios-tonkeeper-app
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          cluster: ton-state
+
+  maestro-canary-multichain:
+    name: "[multichain] – canary"
+    needs: [discover-maestro-clusters, maestro-build]
+    if: ${{ needs.discover-maestro-clusters.outputs.has_multichain_shards == 'true' }}
+    runs-on: macos-26-xlarge
+    timeout-minutes: 45
+    env:
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: "180000"
+      MAESTRO_CLI_LOG_PATTERN_CONSOLE: '%d{HH:mm:ss.SSS} [%level] %msg%n'
+      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-canary-multichain
+      MAESTRO_MNEMONIC_PHRASE: ${{ secrets.MAESTRO_MNEMONIC_PHRASE }}
+      MAESTRO_WALLET_WITH_MONEY: ${{ secrets.MAESTRO_MC_WALLET_MONEY }}
+      MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ secrets.MAESTRO_MC_WALLET_MONEY_ADDR }}
+      MAESTRO_AUTH: ${{ secrets.MAESTRO_AUTH }}
+      MAESTRO_TON_V4: ${{ secrets.MAESTRO_TON_V4 }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Install Maestro CLI
+        uses: ./.github/actions/install-maestro-cli
+
+      - name: Run Maestro canary (multichain)
+        uses: ./.github/actions/run-maestro-shard
+        with:
+          shard-id: canary-multichain
+          flow-rel-path: flows/canary/multichain
+          simulator-artifact: maestro-ios-tonkeeper-app-multichain
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          cluster: multichain
+
+  maestro-ui-tests-ton-state:
+    name: "[ton] – ${{ matrix.label }}"
+    needs: [discover-maestro-clusters, maestro-build, maestro-canary-ton-state]
+    if: ${{ needs.discover-maestro-clusters.outputs.has_ton_state_shards == 'true' }}
     runs-on: macos-26-xlarge
     timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: 2
       matrix:
-        flow_group: ${{ fromJson(needs.discover-flow-groups.outputs.flow_groups) }}
+        include: ${{ fromJson(needs.discover-maestro-clusters.outputs.ton_state_shards) }}
     env:
       MAESTRO_DRIVER_STARTUP_TIMEOUT: "180000"
       MAESTRO_CLI_LOG_PATTERN_CONSOLE: '%d{HH:mm:ss.SSS} [%level] %msg%n'
-      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-${{ matrix.flow_group }}
+      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-ton-state-${{ matrix.id }}
+      MAESTRO_MNEMONIC_PHRASE: ${{ secrets.MAESTRO_MNEMONIC_PHRASE }}
+      MAESTRO_WALLET_WITH_MONEY: ${{ secrets.MAESTRO_WALLET_WITH_MONEY }}
+      MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ secrets.MAESTRO_WALLET_WITH_MONEY_ADDR }}
+      MAESTRO_AUTH: ${{ secrets.MAESTRO_AUTH }}
+      MAESTRO_RECIEVE_WALLET: ${{ secrets.MAESTRO_RECIEVE_WALLET }}
+      MAESTRO_TESTNET_MNEM: ${{ secrets.MAESTRO_TESTNET_MNEM }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Select Xcode 26.3
-        shell: bash
-        run: |
-          set -euo pipefail
-          XCODE_PATH="/Applications/Xcode_26.3.app/Contents/Developer"
-          if [[ ! -d "$XCODE_PATH" ]]; then
-            echo "Xcode 26.3 is not available at $XCODE_PATH"
-            exit 1
-          fi
-          export DEVELOPER_DIR="$XCODE_PATH"
-          echo "DEVELOPER_DIR=$XCODE_PATH" >> "$GITHUB_ENV"
-          xcodebuild -version
-
-      - name: Set up Java
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "17"
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
 
       - name: Install Maestro CLI
+        uses: ./.github/actions/install-maestro-cli
+
+      - name: Run Maestro shard (ton-state)
+        uses: ./.github/actions/run-maestro-shard
+        with:
+          shard-id: ${{ matrix.id }}
+          flow-rel-path: ${{ matrix.path }}
+          simulator-artifact: maestro-ios-tonkeeper-app
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          cluster: ton-state
+
+  maestro-ui-tests-multichain:
+    name: "[multichain] – ${{ matrix.label }}"
+    needs: [discover-maestro-clusters, maestro-build, maestro-canary-multichain]
+    if: ${{ needs.discover-maestro-clusters.outputs.has_multichain_shards == 'true' }}
+    runs-on: macos-26-xlarge
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJson(needs.discover-maestro-clusters.outputs.multichain_shards) }}
+    env:
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: "180000"
+      MAESTRO_CLI_LOG_PATTERN_CONSOLE: '%d{HH:mm:ss.SSS} [%level] %msg%n'
+      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-multichain-${{ matrix.id }}
+      MAESTRO_MNEMONIC_PHRASE: ${{ secrets.MAESTRO_MNEMONIC_PHRASE }}
+      MAESTRO_WALLET_WITH_MONEY: ${{ secrets.MAESTRO_MC_WALLET_MONEY }}
+      MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ secrets.MAESTRO_MC_WALLET_MONEY_ADDR }}
+      MAESTRO_AUTH: ${{ secrets.MAESTRO_AUTH }}
+      MAESTRO_RECIEVE_WALLET: ${{ secrets.MAESTRO_RECIEVE_WALLET }}
+      MAESTRO_TESTNET_MNEM: ${{ secrets.MAESTRO_TESTNET_MNEM }}
+      MAESTRO_TON_V4: ${{ secrets.MAESTRO_TON_V4 }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Install Maestro CLI
+        uses: ./.github/actions/install-maestro-cli
+
+      - name: Run Maestro shard (multichain)
+        uses: ./.github/actions/run-maestro-shard
+        with:
+          shard-id: ${{ matrix.id }}
+          flow-rel-path: ${{ matrix.path }}
+          simulator-artifact: maestro-ios-tonkeeper-app-multichain
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          cluster: multichain
+
+  discover-failed-shards:
+    name: Discover failed Maestro shards for auto-rerun
+    needs: [discover-maestro-clusters, maestro-ui-tests-ton-state, maestro-ui-tests-multichain]
+    runs-on: ubuntu-latest
+    if: ${{ always() && !cancelled() && github.repository != 'tonkeeper/ios' }}
+    outputs:
+      failed_shards: ${{ steps.collect.outputs.failed_shards }}
+      has_failed_shards: ${{ steps.collect.outputs.has_failed_shards }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download per-shard failed-state artifacts
+        uses: actions/download-artifact@v6
+        continue-on-error: true
+        with:
+          pattern: maestro-failed-state-*
+          merge-multiple: false
+          path: build/maestro-failed-states
+
+      - name: Collect failed shards (both clusters)
+        id: collect
+        shell: bash
+        env:
+          TON_STATE_SHARDS: ${{ needs.discover-maestro-clusters.outputs.ton_state_shards }}
+          MULTICHAIN_SHARDS: ${{ needs.discover-maestro-clusters.outputs.multichain_shards }}
         run: |
-          curl -fsSL "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> "$GITHUB_PATH"
+          set -euo pipefail
+          ROOT="${{ github.workspace }}/build/maestro-failed-states"
+          mkdir -p "$ROOT"
+          json="$(python3 maestro_ui_tests/scripts/ci/list_failed_shards.py --root "$ROOT")"
+          json="${json//$'\n'/}"
+          failed="$(ALL_FAILED="$json" python3 - <<'PY'
+          import json, os
+          all_failed = json.loads(os.environ["ALL_FAILED"])
+          ton = {s["id"]: s for s in json.loads(os.environ.get("TON_STATE_SHARDS") or "[]")}
+          mc = {s["id"]: s for s in json.loads(os.environ.get("MULTICHAIN_SHARDS") or "[]")}
+          artifacts = {
+              "ton-state": "maestro-ios-tonkeeper-app",
+              "multichain": "maestro-ios-tonkeeper-app-multichain",
+          }
+          out = []
+          skipped = []
+          for sid in all_failed:
+              if sid in ton:
+                  meta = ton[sid]
+                  cluster = "ton-state"
+              elif sid in mc:
+                  meta = mc[sid]
+                  cluster = "multichain"
+              else:
+                  continue
+              if meta.get("skip_auto_rerun"):
+                  skipped.append(sid)
+                  continue
+              out.append({
+                  "id": sid,
+                  "path": meta["path"],
+                  "cluster": cluster,
+                  "artifact": artifacts[cluster],
+              })
+          if skipped:
+              print(f"skip_auto_rerun: {', '.join(skipped)}", file=__import__('sys').stderr)
+          # A majority of shards failing is a systemic breakage (app-wide UI or
+          # environment change), not per-flow flakiness — an auto-rerun would
+          # replay the same failure at full price. Surface it and skip the rerun.
+          total = len(ton) + len(mc)
+          if out and total and len(out) * 2 > total:
+              import sys
+              print(f"systemic failure: {len(out)} of {total} shards failed; skipping auto-rerun", file=sys.stderr)
+              summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
+              if summary_path:
+                  with open(summary_path, "a") as fh:
+                      fh.write(f"Systemic failure: {len(out)} of {total} shards failed — auto-rerun skipped (a rerun cannot fix an app-wide breakage).\n\n")
+              out = []
+          print(json.dumps(out))
+          PY
+          )"
+          [[ -n "$failed" ]] || failed="[]"
+          echo "failed_shards=${failed}" >> "$GITHUB_OUTPUT"
+          if [[ "$failed" == "[]" ]]; then
+            echo "has_failed_shards=false" >> "$GITHUB_OUTPUT"
+            echo "No failed shards eligible for auto-rerun." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "has_failed_shards=true" >> "$GITHUB_OUTPUT"
+            echo "Failed shards queued for auto-rerun: $failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      - name: Verify Maestro installation
-        run: maestro --version
+  maestro-rerun-failed-shards:
+    name: Maestro auto-rerun — ${{ matrix.id }}
+    needs:
+      - discover-maestro-clusters
+      - maestro-build
+      - maestro-ui-tests-ton-state
+      - maestro-ui-tests-multichain
+      - discover-failed-shards
+    if: ${{ always() && !cancelled() && github.repository != 'tonkeeper/ios' && needs.discover-failed-shards.outputs.has_failed_shards == 'true' }}
+    runs-on: macos-26-xlarge
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        include: ${{ fromJson(needs.discover-failed-shards.outputs.failed_shards) }}
+    env:
+      MAESTRO_DRIVER_STARTUP_TIMEOUT: "180000"
+      MAESTRO_CLI_LOG_PATTERN_CONSOLE: '%d{HH:mm:ss.SSS} [%level] %msg%n'
+      MAESTRO_CI_ARTIFACTS_DIR: build/maestro-ci-artifacts-rerun-${{ matrix.id }}
 
-      - name: Download simulator app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Select Xcode
+        uses: ./.github/actions/select-xcode
+
+      - name: Install Maestro CLI
+        uses: ./.github/actions/install-maestro-cli
+
+      - name: Download failed-state artifact for this shard
         uses: actions/download-artifact@v6
         with:
-          name: maestro-ios-tonkeeper-app
-          path: build/app-download
+          name: maestro-failed-state-${{ matrix.id }}
+          path: ${{ github.workspace }}/build/maestro-rerun-state/${{ matrix.id }}
 
-      - name: Unzip app bundle
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/maestro-app"
-          unzip -q -o "$(find build/app-download -name '*.zip' -print -quit)" -d "$RUNNER_TEMP/maestro-app"
-          APP="$(find "$RUNNER_TEMP/maestro-app" -type d -name '*.app' -print -quit)"
-          if [[ -z "$APP" ]]; then
-            echo "No .app inside zip"
-            find "$RUNNER_TEMP/maestro-app" -type d || true
-            exit 1
-          fi
-          echo "MAESTRO_APP_PATH=$APP" >> "$GITHUB_ENV"
+      - name: Fetch simulator app
+        uses: ./.github/actions/fetch-simulator-app
+        with:
+          artifact-name: ${{ matrix.artifact }}
 
-      - name: Select iOS Simulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          SIMULATOR_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }' | tr -d '[:space:]')"
-          if [[ -z "$SIMULATOR_UDID" ]]; then
-            echo "No available iPhone simulator found"
-            exit 1
-          fi
-          echo "SIMULATOR_UDID=$SIMULATOR_UDID" >> "$GITHUB_ENV"
-          echo "Using simulator: $SIMULATOR_UDID"
+      - name: Prepare Maestro simulator
+        uses: ./.github/actions/prepare-maestro-simulator
+        with:
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
 
-      - name: Simulator host defaults (hardware keyboard)
+      - name: Re-run failed Maestro flows for ${{ matrix.id }}
+        id: rerun
         shell: bash
+        env:
+          ART: ${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          MAESTRO_NATIVE_TOKEN_ENV: ${{ github.workspace }}/maestro_ui_tests/ci/native_token_env.sh
+          PB_COPY_SCRIPT: ${{ github.workspace }}/maestro_ui_tests/scripts/ci/simulator_pbcopy_phrase.sh
+          PASSWORD_KEY: "5"
+          MAESTRO_MNEMONIC_PHRASE: ${{ secrets.MAESTRO_MNEMONIC_PHRASE }}
+          MAESTRO_WALLET_WITH_MONEY: ${{ matrix.cluster == 'multichain' && secrets.MAESTRO_MC_WALLET_MONEY || secrets.MAESTRO_WALLET_WITH_MONEY }}
+          MAESTRO_WALLET_WITH_MONEY_ADDR: ${{ matrix.cluster == 'multichain' && secrets.MAESTRO_MC_WALLET_MONEY_ADDR || secrets.MAESTRO_WALLET_WITH_MONEY_ADDR }}
+          MAESTRO_AUTH: ${{ secrets.MAESTRO_AUTH }}
+          MAESTRO_RECIEVE_WALLET: ${{ secrets.MAESTRO_RECIEVE_WALLET }}
+          MAESTRO_TESTNET_MNEM: ${{ secrets.MAESTRO_TESTNET_MNEM }}
+          MAESTRO_TON_V4: ${{ secrets.MAESTRO_TON_V4 }}
         run: |
-          set -euo pipefail
-          defaults write com.apple.iphonesimulator ConnectHardwareKeyboard -bool true
-
-      - name: Boot iOS Simulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcrun simctl boot "$SIMULATOR_UDID" || true
-          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
-
-      - name: Set simulator locale en_US
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcrun simctl shutdown "$SIMULATOR_UDID" || true
-          sleep 2
-          PLIST="${HOME}/Library/Developer/CoreSimulator/Devices/${SIMULATOR_UDID}/data/Library/Preferences/.GlobalPreferences.plist"
-          if [[ ! -f "$PLIST" ]]; then
-            echo "Missing $PLIST"
-            exit 1
-          fi
-          if plutil -replace AppleLocale -string "en_US" "$PLIST" 2>/dev/null; then
-            :
-          else
-            plutil -insert AppleLocale -string "en_US" "$PLIST"
-          fi
-          if plutil -replace AppleLanguages -json '["en-US"]' "$PLIST" 2>/dev/null; then
-            :
-          else
-            plutil -insert AppleLanguages -json '["en-US"]' "$PLIST"
-          fi
-          if plutil -replace Country -string "US" "$PLIST" 2>/dev/null; then
-            :
-          else
-            plutil -insert Country -string "US" "$PLIST" 2>/dev/null || true
-          fi
-          xcrun simctl boot "$SIMULATOR_UDID" || true
-          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
-          open -a Simulator || true
-          sleep 8
-
-      - name: Install app on booted simulator
-        shell: bash
-        run: |
-          set -euo pipefail
-          xcrun simctl install booted "$MAESTRO_APP_PATH"
-          sleep 12
-
-      - name: Prepare Maestro CI artifact directory
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
-
-      - name: Start simulator screen recording
-        shell: bash
-        run: |
-          set -euo pipefail
-          VIDEO_PATH="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}/simulator-run.mp4"
-          PID_PATH="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}/record.pid"
-          xcrun simctl io booted recordVideo --codec h264 "$VIDEO_PATH" &
-          echo $! > "$PID_PATH"
-
-      - name: Start Simulator log stream (Tonkeeper process)
-        shell: bash
-        run: |
-          set -euo pipefail
-          ART="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
-          LOG_OUT="$ART/simulator-unified.log"
-          PID_FILE="$ART/log-stream.pid"
-          xcrun simctl spawn booted log stream \
-            --style compact \
-            --level default \
-            --predicate 'processImagePath CONTAINS[c] "Tonkeeper.app"' \
-            > "$LOG_OUT" 2>&1 &
-          echo $! > "$PID_FILE"
-
-      - name: Run Maestro tests
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/maestro-test-output"
-          ART="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
+          set -uo pipefail
           mkdir -p "$ART"
-          FLOW_DIR="${{ github.workspace }}/maestro_ui_tests/flows/${{ matrix.flow_group }}"
-          maestro --version
+          STATE_DIR="${{ github.workspace }}/build/maestro-rerun-state/${{ matrix.id }}"
+          PATHS_FILE="$STATE_DIR/failed_paths.txt"
+          if [[ ! -s "$PATHS_FILE" ]]; then
+            echo "::warning::Auto-rerun received no failed paths for ${{ matrix.id }}; nothing to do."
+            printf '%s' "0" > "$ART/maestro-exit.txt"
+            exit 0
+          fi
+          FLOW_DIR="${{ github.workspace }}/maestro_ui_tests/${{ matrix.path }}"
+          resolved=()
+          while IFS= read -r raw || [[ -n "$raw" ]]; do
+            raw="${raw//$'\r'/}"
+            [[ -n "$raw" ]] || continue
+            base="$(basename "$raw")"
+            candidate="$FLOW_DIR/$base"
+            if [[ -f "$candidate" ]]; then
+              resolved+=("$candidate")
+            else
+              echo "::warning::Auto-rerun: ${base} not found under ${FLOW_DIR}; skipping."
+            fi
+          done < "$PATHS_FILE"
+          if [[ ${#resolved[@]} -eq 0 ]]; then
+            echo "::warning::Auto-rerun: no resolvable failed paths after mapping; nothing to do."
+            printf '%s' "0" > "$ART/maestro-exit.txt"
+            exit 0
+          fi
+          printf '%s\n' "${resolved[@]}" > "$ART/maestro-retry-flow-paths.txt"
+          echo "::notice::Auto-rerun ${{ matrix.id }}: ${#resolved[@]} flow(s)"
           set +e
-          maestro --verbose test \
-            -e PASSWORD_KEY=5 \
-            -e "MNEMONIC_PHRASE=${{ secrets.MAESTRO_MNEMONIC_PHRASE }}" \
-            -e "WALLET_WITH_MONEY=${{ secrets.MAESTRO_WALLET_WITH_MONEY }}" \
-            -e "WALLET_WITH_MONEY_ADDR=${{ secrets.MAESTRO_WALLET_WITH_MONEY_ADDR }}" \
-            -e "auth=${{ secrets.MAESTRO_AUTH }}" \
-            -e "RECIEVE_WALLET=${{ secrets.MAESTRO_RECIEVE_WALLET }}" \
-            -e "TESTNET_MNEM=${{ secrets.MAESTRO_TESTNET_MNEM }}" \
-            -p ios \
-            --test-output-dir "$RUNNER_TEMP/maestro-test-output" \
-            --debug-output "$ART" \
-            --flatten-debug-output \
-            "$FLOW_DIR"
-          MAESTRO_EXIT=$?
+          bash "${{ github.workspace }}/maestro_ui_tests/ci/run_maestro_failed_paths.sh" "${resolved[@]}"
+          exit_code=$?
           set -e
-          printf '%s' "$MAESTRO_EXIT" > "$ART/maestro-exit.txt"
-          exit "$MAESTRO_EXIT"
+          printf '%s' "$exit_code" > "$ART/maestro-rerun-exit.txt"
+          exit "$exit_code"
 
-      - name: Write Maestro CI summary
+      - name: Write Maestro CI summary (rerun)
         if: always()
         shell: bash
         run: |
           set -euo pipefail
           ART="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
+          SCRIPTS="${{ github.workspace }}/maestro_ui_tests/scripts"
           CODE=1
           if [[ -f "$ART/maestro-exit.txt" ]]; then
             read -r _code < "$ART/maestro-exit.txt" || _code=1
@@ -414,68 +471,172 @@ jobs:
               CODE="$_code"
             fi
           fi
-          if [[ -f "$ART/maestro.log" ]]; then
-            python3 "${{ github.workspace }}/maestro_ui_tests/scripts/summarize_maestro_log.py" \
-              --log "$ART/maestro.log" \
+          if [[ -f "$ART/maestro-retry.log" ]]; then
+            python3 "$SCRIPTS/ci/summarize_maestro_log.py" \
+              --log "$ART/maestro-retry.log" \
               --out "$ART/maestro-ci-summary.txt" \
-              --flow-group "${{ matrix.flow_group }}" \
+              --flow-group "${{ matrix.id }}" \
+              --flow-dir "${{ github.workspace }}/maestro_ui_tests/${{ matrix.path }}" \
               --exit "$CODE"
-            if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
-              echo "### Maestro (${{ matrix.flow_group }})" >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-              cat "$ART/maestro-ci-summary.txt" >> "$GITHUB_STEP_SUMMARY"
-              echo '```' >> "$GITHUB_STEP_SUMMARY"
-            fi
+            cp -f "$ART/maestro-ci-summary.txt" "$ART/maestro-ci-summary-retry.txt"
           else
-            echo "No $ART/maestro.log; skipping maestro-ci-summary." >&2
+            echo "No $ART/maestro-retry.log; auto-rerun produced no summary." >&2
+          fi
+          if [[ -f "$ART/maestro-ci-summary.txt" && -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+            echo "### Maestro auto-rerun (${{ matrix.id }})" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat "$ART/maestro-ci-summary.txt" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 
       - name: Stop simulator screen recording and log stream
         if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          ART="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
-          PID_PATH="$ART/record.pid"
-          LOG_PID_PATH="$ART/log-stream.pid"
-          if [[ -f "$PID_PATH" ]]; then
-            kill -SIGINT "$(cat "$PID_PATH")" 2>/dev/null || true
-            sleep 5
-          fi
-          if [[ -f "$LOG_PID_PATH" ]]; then
-            kill -SIGTERM "$(cat "$LOG_PID_PATH")" 2>/dev/null || true
-            sleep 2
-          fi
+        uses: ./.github/actions/stop-maestro-recording
+        with:
+          artifacts-dir: ${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
 
-      - name: Stage Maestro log and screen recording for upload
+      # Same rule as run-maestro-shard: a green rerun's video is never watched.
+      - name: Drop screen recording for passing rerun
+        if: ${{ always() && steps.rerun.outcome == 'success' }}
+        shell: bash
+        run: rm -f "${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}/simulator-run.mp4"
+
+      - name: Stage rerun artifacts for upload
         if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          STAGING="${{ github.workspace }}/build/maestro-ci-upload/${{ matrix.flow_group }}"
-          SRC="${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}"
-          mkdir -p "$STAGING"
-          if [[ -f "$SRC/maestro.log" ]]; then
-            cp -f "$SRC/maestro.log" "$STAGING/"
-          fi
-          if [[ -f "$SRC/maestro-ci-summary.txt" ]]; then
-            cp -f "$SRC/maestro-ci-summary.txt" "$STAGING/"
-          fi
-          if [[ -f "$SRC/maestro-exit.txt" ]]; then
-            cp -f "$SRC/maestro-exit.txt" "$STAGING/"
-          fi
-          if [[ -f "$SRC/simulator-run.mp4" ]]; then
-            cp -f "$SRC/simulator-run.mp4" "$STAGING/"
-          fi
-          if [[ -f "$SRC/simulator-unified.log" ]]; then
-            cp -f "$SRC/simulator-unified.log" "$STAGING/"
-          fi
+        uses: ./.github/actions/stage-maestro-artifacts
+        with:
+          source-dir: ${{ github.workspace }}/${{ env.MAESTRO_CI_ARTIFACTS_DIR }}
+          staging-dir: ${{ github.workspace }}/build/maestro-ci-rerun-upload/${{ matrix.id }}
+          files: >-
+            maestro-retry.log
+            maestro-ci-summary.txt
+            maestro-ci-summary-retry.txt
+            maestro-exit.txt
+            maestro-rerun-exit.txt
+            maestro-retry-flow-paths.txt
+            record-started-at.epoch
+            simulator-run.mp4
+            simulator-unified.log
 
-      - name: Upload Maestro log and screen recording
+      - name: Upload Maestro auto-rerun artifacts
+        id: maestro_ci_rerun_upload
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: maestro-ci-${{ github.run_id }}-${{ matrix.flow_group }}
-          path: build/maestro-ci-upload/${{ matrix.flow_group }}
+          name: maestro-ci-rerun-${{ github.run_id }}-${{ matrix.id }}
+          path: build/maestro-ci-rerun-upload/${{ matrix.id }}
           retention-days: 14
           if-no-files-found: warn
+
+      - name: Link auto-rerun artifact in job summary
+        if: always()
+        uses: ./.github/actions/link-maestro-artifact
+        with:
+          artifact-url: ${{ steps.maestro_ci_rerun_upload.outputs.artifact-url }}
+          artifact-name: maestro-ci-rerun-${{ github.run_id }}-${{ matrix.id }}
+          description: "auto-rerun `maestro-retry.log`, screenshots, `simulator-run.mp4`, `maestro-ci-summary.txt`"
+
+  pipeline-gate:
+    name: Maestro pipeline gate
+    needs:
+      - maestro-build
+      - maestro-canary-ton-state
+      - maestro-canary-multichain
+      - maestro-ui-tests-ton-state
+      - maestro-ui-tests-multichain
+      - discover-failed-shards
+      - maestro-rerun-failed-shards
+    if: ${{ always() && !cancelled() && github.repository != 'tonkeeper/ios' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Maestro jobs to pass
+        shell: bash
+        run: |
+          set -euo pipefail
+          check_job() {
+            local name="$1"
+            local result="$2"
+            if [[ "$result" == "success" || "$result" == "skipped" ]]; then
+              echo "$name: $result"
+              return 0
+            fi
+            echo "::error::$name failed with result=$result (blocks pipeline gate)"
+            return 1
+          }
+          check_job "maestro-build" "${{ needs.maestro-build.result }}"
+          # A failed canary skips its whole shard matrix, and "skipped" passes
+          # check_job — the canaries must be checked here or the gate would go
+          # green on a run where nothing was tested.
+          check_job "maestro-canary-ton-state" "${{ needs.maestro-canary-ton-state.result }}"
+          check_job "maestro-canary-multichain" "${{ needs.maestro-canary-multichain.result }}"
+          check_job "maestro-ui-tests-ton-state" "${{ needs.maestro-ui-tests-ton-state.result }}"
+          check_job "maestro-ui-tests-multichain" "${{ needs.maestro-ui-tests-multichain.result }}"
+          check_job "discover-failed-shards" "${{ needs.discover-failed-shards.result }}"
+          check_job "maestro-rerun-failed-shards" "${{ needs.maestro-rerun-failed-shards.result }}"
+
+  maestro-slack-notify:
+    name: Post Maestro results to Slack
+    runs-on: ubuntu-latest
+    needs:
+      - maestro-build
+      - maestro-ui-tests-ton-state
+      - maestro-ui-tests-multichain
+      - unit-tests
+      - discover-failed-shards
+      - maestro-rerun-failed-shards
+      - pipeline-gate
+    if: ${{ always() && !cancelled() && github.repository != 'tonkeeper/ios' }}
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download unit-test results
+        uses: actions/download-artifact@v6
+        continue-on-error: true
+        with:
+          name: maestro-unit-test-results
+          path: build/maestro-slack-unit-tests
+
+      - name: Download Maestro CI first-attempt artifacts
+        uses: actions/download-artifact@v6
+        continue-on-error: true
+        with:
+          pattern: maestro-ci-${{ github.run_id }}-*
+          merge-multiple: false
+          path: build/maestro-slack-artifacts/first-attempt
+
+      - name: Download Maestro CI auto-rerun artifacts
+        uses: actions/download-artifact@v6
+        continue-on-error: true
+        with:
+          pattern: maestro-ci-rerun-${{ github.run_id }}-*
+          merge-multiple: false
+          path: build/maestro-slack-artifacts/rerun
+
+      - name: Post status to tk-autotests-status
+        continue-on-error: true
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL: ${{ secrets.SLACK_AUTOTESTS_CHANNEL }}
+          MAESTRO_BUILD_OK: ${{ (needs.maestro-build.result == 'success' || needs.maestro-build.result == 'skipped') && 'true' || 'false' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${SLACK_BOT_TOKEN:-}" ]]; then
+            echo "::warning::SLACK_BOT_TOKEN is not set; skipping tk-autotests-status notification."
+            exit 0
+          fi
+          CHANNEL="${SLACK_CHANNEL:-tk-autotests-status}"
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          python3 maestro_ui_tests/ci/slack_bot/post_maestro_slack_status.py \
+            --artifacts-dir "${{ github.workspace }}/build/maestro-slack-artifacts" \
+            --run-url "$RUN_URL" \
+            --platform "iOS" \
+            --channel "$CHANNEL" \
+            --build-ok "$MAESTRO_BUILD_OK" \
+            --unit-tests-dir "${{ github.workspace }}/build/maestro-slack-unit-tests"

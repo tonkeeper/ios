@@ -32,10 +32,6 @@ extension HistoryCellActionView {
         struct Configuration: Hashable {
             let comment: NSAttributedString
 
-            init(comment: NSAttributedString) {
-                self.comment = comment
-            }
-
             init(comment: String) {
                 self.comment = comment.withTextStyle(.body2, color: .Text.primary)
             }

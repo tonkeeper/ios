@@ -7,25 +7,29 @@ struct DappAssembly {
     private init() {}
     static func module(
         dapp: Dapp,
-        analyticsProvider: AnalyticsProvider,
+        analyticsSession: DappOpenAnalyticsSession,
         deeplinkHandler: @escaping ((_ deeplink: Deeplink) -> Void),
+        deeplinkParser: DeeplinkParser,
         messageHandler: DappMessageHandler,
-        wallet: Wallet?
+        wallet: Wallet?,
+        explorerURLMatcher: BlockchainExplorerURLMatcher
     )
         -> MVVMModule<DappViewController, DappModuleOutput, DappModuleInput>
     {
         let logger = Logger(subsystem: "com.tonkeeper.dapps", category: "dApps")
         let viewModel = DappViewModelImplementation(
             dapp: dapp,
+            analyticsSession: analyticsSession,
             messageHandler: messageHandler,
             wallet: wallet,
-            analyticsProvider: analyticsProvider
+            explorerURLMatcher: explorerURLMatcher
         )
 
         let viewController = DappViewController(
             viewModel: viewModel,
             logger: logger,
-            deeplinkHandler: deeplinkHandler
+            deeplinkHandler: deeplinkHandler,
+            deeplinkParser: deeplinkParser
         )
         return .init(view: viewController, output: viewModel, input: viewModel)
     }

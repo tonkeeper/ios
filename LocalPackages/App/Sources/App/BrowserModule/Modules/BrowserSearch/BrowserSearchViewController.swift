@@ -79,27 +79,18 @@ private extension BrowserSearchViewController {
     func setup() {
         title = TKLocales.Browser.Search.title
 
-        if UIApplication.useSystemBarsAppearance {
-            navigationItem.rightBarButtonItem = UIBarButtonItem(
-                title: TKLocales.Actions.cancel,
-                style: .plain,
-                target: self,
-                action: #selector(didTapCancelButton)
+        let cancelButton = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))
+        cancelButton.configuration.padding.top = 4
+        cancelButton.configuration.padding.bottom = 4
+        cancelButton.configuration.content = TKButton.Configuration.Content(
+            title: .plainString(
+                TKLocales.Actions.cancel
             )
-        } else {
-            let cancelButton = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))
-            cancelButton.configuration.padding.top = 4
-            cancelButton.configuration.padding.bottom = 4
-            cancelButton.configuration.content = TKButton.Configuration.Content(
-                title: .plainString(
-                    TKLocales.Actions.cancel
-                )
-            )
-            cancelButton.configuration.action = { [weak self] in
-                self?.dismiss(animated: true)
-            }
-            navigationItem.rightBarButtonItem = UIBarButtonItem(customView: cancelButton)
+        )
+        cancelButton.configuration.action = { [weak self] in
+            self?.closeSearch()
         }
+        navigationItem.rightBarButtonItem = .customView(cancelButton, pinnedTo: .trailing)
 
         customView.collectionView.setCollectionViewLayout(createLayout(), animated: false)
         customView.collectionView.registerHeaderViewClass(BrowserSearchListSectionHeaderView.self)
@@ -141,8 +132,8 @@ private extension BrowserSearchViewController {
         dataSource.snapshot().itemIdentifiers.first?.onSelection()
     }
 
-    @objc
-    func didTapCancelButton() {
+    func closeSearch() {
+        viewModel.cancelSearch()
         dismiss(animated: true)
     }
 

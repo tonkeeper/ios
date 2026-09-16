@@ -27,9 +27,9 @@ struct TronEventMapper {
         let icon: UIImage
         switch eventType {
         case .send:
-            icon = .Resources.Icons.Size28.trayArrowUp
+            icon = .TKUIKit.Icons.Size28.trayArrowUp
         case .receive:
-            icon = .Resources.Icons.Size28.trayArrowDown
+            icon = .TKUIKit.Icons.Size28.trayArrowDown
         }
         let title: String = {
             guard !event.isPending else { return TKLocales.ActionTypes.pending }

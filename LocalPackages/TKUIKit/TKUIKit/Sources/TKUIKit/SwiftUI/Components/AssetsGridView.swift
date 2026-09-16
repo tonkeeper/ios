@@ -23,33 +23,55 @@ public struct AssetsGridView<
     public var body: some View {
         VStack(spacing: 0) {
             header()
-            VStack(spacing: 0) {
-                ForEach(0 ..< rowCount, id: \.self) { rowIndex in
-                    HStack(spacing: 0) {
-                        ForEach(0 ..< columnCount, id: \.self) { columnIndex in
-                            if let item = item(rowIndex: rowIndex, columnIndex: columnIndex) {
-                                itemByModel(item)
-                                    .frame(maxWidth: .infinity)
-                            } else {
-                                Spacer(minLength: 0)
-                                    .frame(maxWidth: .infinity)
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
+            AssetsGridRowsView(
+                items: items,
+                itemByModel: itemByModel
+            )
         }
         .padding(.top, 8)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color(uiColor: .Background.content))
+                .fill(.backgroundContent)
         )
     }
 }
 
-private extension AssetsGridView {
+/// The row/column layout of an assets grid without the card chrome. Use directly
+/// when the card background is provided by a container (e.g. `ShelfTransitionCardView`).
+public struct AssetsGridRowsView<ItemModel: Identifiable, ItemView: View>: View {
+    private let items: [ItemModel]
+    private let itemByModel: (ItemModel) -> ItemView
+
+    public init(
+        items: [ItemModel],
+        itemByModel: @escaping (ItemModel) -> ItemView
+    ) {
+        self.items = items
+        self.itemByModel = itemByModel
+    }
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            ForEach(0 ..< rowCount, id: \.self) { rowIndex in
+                HStack(spacing: 0) {
+                    ForEach(0 ..< columnCount, id: \.self) { columnIndex in
+                        if let item = item(rowIndex: rowIndex, columnIndex: columnIndex) {
+                            itemByModel(item)
+                                .frame(maxWidth: .infinity)
+                        } else {
+                            Spacer(minLength: 0)
+                                .frame(maxWidth: .infinity)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.bottom, 8)
+    }
+}
+
+private extension AssetsGridRowsView {
     var columnCount: Int {
         min(max(items.count, 1), 4)
     }
@@ -84,25 +106,33 @@ private struct ItemModel<ID: Hashable>: Identifiable {
     var symbol: String
     var imageSource: AssetAvatarViewImageSource
     var changeText: String?
-    var changeColor: Color
+    var changeColor: TKColor
 
+    @MainActor
     static func sample(id: ID) -> ItemModel<ID> {
         ItemModel(
             id: id,
             symbol: "TON",
             imageSource: .url(nil, chainIcon: nil),
             changeText: "+ 1.23 %",
-            changeColor: Color(uiColor: .Accent.green)
+            changeColor: .accentGreen
         )
     }
 
     func createView() -> some View {
-        AssetItemView(
-            symbol: symbol,
-            imageSource: imageSource,
-            changeText: changeText,
-            changeColor: changeColor,
-            action: {}
+        ServiceCardView(
+            config: .content(
+                ServiceCardContent(
+                    title: symbol,
+                    imageSource: imageSource,
+                    changeConfiguration: changeText.map {
+                        .content(
+                            text: $0,
+                            color: changeColor
+                        )
+                    }
+                )
+            )
         )
     }
 }
@@ -123,7 +153,7 @@ private struct ItemModel<ID: Hashable>: Identifiable {
             }
         }
     }
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .tkImmediateButtonPresses()
+    .debugPreview(background: .page)
+    .tkThemed()
 }

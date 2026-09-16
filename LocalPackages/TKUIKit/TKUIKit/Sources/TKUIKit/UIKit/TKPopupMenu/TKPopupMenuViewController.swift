@@ -11,6 +11,7 @@ final class TKPopupMenuViewController: UIViewController {
         super.viewDidLoad()
 
         view.backgroundColor = .clear
+        view.accessibilityViewIsModal = true
         view.addSubview(dismissView)
         view.addSubview(menuView)
 
@@ -139,12 +140,5 @@ final class TKPopupMenuViewController: UIViewController {
 }
 
 private extension CGFloat {
-    static let menuItemHeight: CGFloat = 48
-    static let heightCoeff: CGFloat = 4.5
-    static let cornerRadius: CGFloat = 16
     static let hideAlpha: CGFloat = 0.3
-}
-
-private extension Int {
-    static let maximumRows = 4
 }

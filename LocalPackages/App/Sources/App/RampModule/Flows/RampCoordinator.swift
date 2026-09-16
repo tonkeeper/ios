@@ -6,7 +6,7 @@ import TKCore
 import TKUIKit
 import UIKit
 
-public final class RampCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class RampCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didClose: (() -> Void)?
 
     private weak var rampModuleInput: RampModuleInput?
@@ -24,7 +24,6 @@ public final class RampCoordinator: RouterCoordinator<NavigationControllerRouter
     var didTapSend: ((Wallet, TonToken) -> Void)?
     var didTapOpenSendFromWithdraw: ((Wallet, SendInput) -> Void)?
     var didTapOpenMerchant: ((URL) -> Void)?
-    var didRequestTRC20Enable: ((Wallet, @escaping () -> Void) -> Void)?
 
     var wallet: Wallet {
         keeperCoreMainAssembly.storesAssembly.walletsStore.getWallet(id: initialWallet.id) ?? initialWallet
@@ -52,7 +51,7 @@ public final class RampCoordinator: RouterCoordinator<NavigationControllerRouter
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openRamp()
     }
 }
@@ -152,13 +151,7 @@ private extension RampCoordinator {
     ) {
         logAssetClickIfNeeded(asset: asset)
         fireAssetPickerSelectionEvent(asset: asset, rampLayoutItem: rampLayoutItem)
-        if asset.isTronNetwork, !wallet.isTronTurnOn {
-            didRequestTRC20Enable?(wallet) { [weak self] in
-                self?.openPaymentMethod(asset: asset, rampLayoutItem: rampLayoutItem, initialDeeplink: initialDeeplink)
-            }
-        } else {
-            openPaymentMethod(asset: asset, rampLayoutItem: rampLayoutItem, initialDeeplink: initialDeeplink)
-        }
+        openPaymentMethod(asset: asset, rampLayoutItem: rampLayoutItem, initialDeeplink: initialDeeplink)
     }
 
     func openPaymentMethod(asset: RampAsset, rampLayoutItem: OnRampLayoutItem, initialDeeplink: RampDeeplinkParameters?) {
@@ -171,10 +164,11 @@ private extension RampCoordinator {
             flow: flow,
             asset: asset,
             rampLayoutItem: rampLayoutItem,
-            isTRC20Available: wallet.isTronAvailable,
+            isTRC20Available: wallet.tron != nil,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             initialDeeplink: initialDeeplink,
-            fiatCurrency: fiatCurrency
+            fiatCurrency: fiatCurrency,
+            walletId: wallet.multichainWalletId
         )
 
         firePaymentMethodScreenViewEvent(asset: asset, rampLayoutItem: rampLayoutItem)
@@ -312,7 +306,10 @@ private extension RampCoordinator {
     }
 
     func openPaymentQRCode(data: PaymentQRCodeData) {
-        let module = PaymentQRCodeAssembly.module(data: data)
+        let module = PaymentQRCodeAssembly.module(
+            data: data,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
         fireDepositViewQrCode()
         let bottomSheetViewController = TKBottomSheetViewController(
             contentViewController: module.view
@@ -395,7 +392,8 @@ private extension RampCoordinator {
         fireDepositViewP2pAlert()
 
         let walletAddress: String
-        if asset.isTronNetwork, let address = wallet.tron?.address.base58 {
+        if asset.isTronNetwork {
+            guard let address = wallet.tron?.address.base58 else { return }
             walletAddress = address
         } else if let address = try? self.wallet.friendlyAddress.toString() {
             walletAddress = address
@@ -405,11 +403,13 @@ private extension RampCoordinator {
 
         let params = P2PExpressParams(
             wallet: walletAddress,
+            assetId: nil,
             network: asset.network.lowercased(),
             cryptoCurrency: asset.symbol,
             fiatCurrency: currencyCode,
             amount: nil,
-            requestNetwork: wallet.network
+            requestNetwork: wallet.network,
+            walletId: wallet.multichainWalletId
         )
 
         let p2pModule = P2PExpressModule(

@@ -1,0 +1,53 @@
+# Periphery unused-code scan over the app + all LocalPackages.
+# Driver: generic (file->target mapping) — the Xcode driver can't see nested
+# local-package targets.
+#
+# Full scan, matching how the baseline was recorded:
+#   make compile QUIET=1                       # app targets -> index store
+#   xcodebuild -scheme TonkeeperUnitTests \    # test bundles -> same store
+#     -derivedDataPath build/DerivedData ... build-for-testing
+#   INCLUDE_TESTS=1 scripts/periphery/gen_file_targets.sh
+#   periphery scan --baseline .periphery.baseline.json
+#
+# Index the test bundles. Two things depend on it: unused-import analysis only
+# reports once every target that imports a module is in the store, and without
+# them every declaration that just its own tests exercise reads as dead.
+# Dropping INCLUDE_TESTS is still useful as a second, deliberate pass — the
+# difference between the two runs is exactly the API nothing but tests uses.
+#
+# The baseline pins deliberately-kept findings: unused function parameters,
+# API covered only by unit tests, lifecycle-bearing strong references (stores
+# are weak-cached in assemblies), the not-yet-wired multichain surface,
+# protocol requirements whose witness periphery reports on its own, and the
+# unused imports left for a follow-up pass.
+# NOTE: --auto-remove is unreliable here — its rewriter matches shifted node
+# positions against stale locations when a file has several findings (phantom
+# removals), and it rewrites redundantProtocol conformance references even in
+# report-excluded (generated) files. Prefer reviewing the report by hand.
+file_targets_path:
+  - build/periphery/file_targets.json
+index_store_path:
+  - build/DerivedData/Index.noindex/DataStore
+skip_build: true
+retain_objc_accessible: true
+retain_swift_ui_previews: true
+retain_codable_properties: true
+# Assign-only analysis is off by default in this codebase: assemblies cache
+# stores/Configuration weakly, so a consumer's write-only strong reference is
+# frequently the only thing keeping the object (and its subscriptions) alive.
+retain_assign_only_properties: true
+# Codegen-managed analytics events (incl. the JSONEncodable support types in
+# Events.swift) — auto-remove must never rewrite them.
+retain_files:
+  - "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/**/*.swift"
+  - "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/*.swift"
+# Generated / vendored code stays indexed (its references count) but out of the report.
+report_exclude:
+  - "LocalPackages/KeeperCore/Packages/**/*.swift"
+  - "LocalPackages/KeeperCore/Packages/*/Sources/*.swift"
+  - "LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Generated/*.swift"
+  - "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Generated/*.swift"
+  - "LocalPackages/TKCore/Sources/TKCore/Analytics/Events/Deprecated/*.swift"
+  - "LocalPackages/TKLocalize/Sources/TKLocalize/TKLocales.swift"
+  - "LocalPackages/LightweightCharts/**/*.swift"
+  - "LocalPackages/LightweightCharts/Sources/**/*.swift"

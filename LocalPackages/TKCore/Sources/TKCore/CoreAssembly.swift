@@ -5,6 +5,8 @@
 //  Created by Grigory on 29.9.23..
 //
 
+import KeeperCore
+import TKAppInfo
 import TKFeatureFlags
 import TKKeychain
 import TKLogging
@@ -41,21 +43,52 @@ public final class CoreAssembly {
     }
 
     public lazy var analyticsProvider: AnalyticsProvider = {
+        let aptabaseService = AptabaseConfigurator.configurator.makeAnalyticsService(
+            persistentCacheEnabled: featureFlags[.analyticsPersistentCache],
+            cohortSource: AptabaseCohortSource(
+                devOverride: featureFlags.devOverride(for: .analyticsPersistentCache),
+                remoteValue: featureFlags.allValues[.analyticsPersistentCache]?.remoteValue
+            ),
+            installId: uniqueIdProvider.uniqueInstallId.uuidString,
+            sendStatsImmediately: TKAppPreferences.sendStatsImmediately,
+            reachabilityTracker: reachabilityTracker
+        )
         let analyticsServices: [AnalyticsService]
         #if DEBUG
-            analyticsServices = [ConsoleAnalyticsLogger(), AptabaseService()]
+            analyticsServices = [ConsoleAnalyticsLogger(), aptabaseService]
         #else
-            analyticsServices = [AptabaseService()]
+            analyticsServices = [aptabaseService]
         #endif
 
         return AnalyticsProvider(
             analyticsServices: analyticsServices,
             uniqueIdProvider: uniqueIdProvider,
-            appInfoProvider: appInfoProvider
+            deviceIdProvider: { [keeperCoreAssembly] in keeperCoreAssembly.totalAuthDeviceId },
+            appInfoProvider: appInfoProvider,
+            keysCountryCodeProvider: keysCountryCodeProvider
         )
     }()
 
-    public lazy var crashlyticsReporter: CrashlyticsReporting = CrashlyticsReporter()
+    public private(set) lazy var keeperCoreAssembly = KeeperCore.Assembly(
+        dependencies: KeeperCore.Assembly.Dependencies(
+            cacheURL: cacheURL,
+            sharedCacheURL: sharedCacheURL,
+            appInfoProvider: appInfoProvider,
+            featureFlags: featureFlags,
+            tkAppSettings: tkAppSettings,
+            seedProvider: seedProvider,
+            firebaseUserIdProvider: { [uniqueIdProvider] in uniqueIdProvider.uniqueDeviceId.uuidString },
+            pushAppIdProvider: { FirebasePushAppId.current }
+        )
+    )
+
+    public var keysCountryCodeProvider: KeysCountryCodeProvider {
+        KeysCountryCodeProvider(
+            countryCodeSource: { [weak self] in
+                self?.keeperCoreAssembly.configurationAssembly.configuration.value(\.region)
+            }
+        )
+    }
 
     public var cacheURL: URL {
         documentsURL
@@ -81,17 +114,17 @@ public final class CoreAssembly {
         return documentsDirectory
     }
 
-    public var keychainAccessGroupIdentifier: String {
-        guard let keychainAccessGroup: String = InfoProvider.keychainAccessGroup(),
-              let appIdentifierPrefix: String = InfoProvider.appIdentifierPrefix()
-        else {
-            return ""
-        }
-        return appIdentifierPrefix + keychainAccessGroup
-    }
+    private lazy var storefrontCountryCodeCache: StorefrontCountryCodeCache = {
+        let cache = StorefrontCountryCodeCache()
+        cache.warmUp()
+        return cache
+    }()
 
     public var appInfoProvider: AppInfoProvider {
-        AppInfoProvider(userDefaults: .standard)
+        AppInfoProvider(
+            userDefaults: .standard,
+            storefrontCountryCodeCache: storefrontCountryCodeCache
+        )
     }
 
     public var fileManager: FileManager {

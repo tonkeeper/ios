@@ -69,10 +69,6 @@ final class SwiftUIHostingTableViewCell: UITableViewCell {
         }
     }
 
-    func setContent<Content: View>(@ViewBuilder _ content: () -> Content) {
-        hostingView.setContent(content)
-    }
-
     func setContent<ID: Hashable, Content: View>(
         id: ID,
         @ViewBuilder _ content: () -> Content

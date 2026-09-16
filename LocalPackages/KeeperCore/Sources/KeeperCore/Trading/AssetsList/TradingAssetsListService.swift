@@ -6,11 +6,6 @@ public enum TradingAssetsListServiceFailure: Error {
 }
 
 public protocol TradingAssetsListService {
-    func get(
-        query: String?,
-        category: TradingAssetCategory
-    ) async -> TradingAssetListSnapshot?
-
     func load(
         query: String?,
         category: TradingAssetCategory

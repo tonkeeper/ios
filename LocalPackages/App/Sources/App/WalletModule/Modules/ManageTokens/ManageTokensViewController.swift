@@ -227,7 +227,3 @@ extension ManageTokensViewController: UICollectionViewDelegate {
         return proposedIndexPath
     }
 }
-
-private extension String {
-    static let sectionHeaderElementKind = "SectionHeaderElementKind"
-}

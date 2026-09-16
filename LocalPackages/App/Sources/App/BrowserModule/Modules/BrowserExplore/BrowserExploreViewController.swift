@@ -8,6 +8,8 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
     private lazy var dataSource: BrowserExplore.DataSource = createDataSource()
     lazy var layout = createLayout()
 
+    private var sections: [BrowserExplore.Section] = []
+
     private let refreshControl = UIRefreshControl()
 
     private let viewModel: BrowserExploreViewModel
@@ -52,9 +54,7 @@ extension BrowserExploreViewController: UICollectionViewDelegate {
         _ collectionView: UICollectionView,
         didSelectItemAt indexPath: IndexPath
     ) {
-        let item = dataSource
-            .snapshot()
-            .itemIdentifiers(inSection: dataSource.snapshot().sectionIdentifiers[indexPath.section])[indexPath.item]
+        guard let item = dataSource.itemIdentifier(for: indexPath) else { return }
         switch item {
         case let .app(appItem):
             appItem.selectionHandler?()
@@ -79,19 +79,21 @@ private extension BrowserExploreViewController {
             self?.viewModel.reload()
         }), for: .valueChanged)
 
-        featuredView.didSelectApp = { [weak self] dapp in
-            self?.viewModel.selectFeaturedApp(dapp: dapp)
+        featuredView.didSelectPopularApp = { [weak self] app in
+            self?.viewModel.selectFeaturedApp(app)
         }
     }
 
     func setupBindings() {
         viewModel.didUpdateSnapshot = { [weak self] snapshot in
+            guard let self else { return }
+            sections = snapshot.sectionIdentifiers
             if #available(iOS 15.0, *) {
-                self?.dataSource.applySnapshotUsingReloadData(snapshot)
+                dataSource.applySnapshotUsingReloadData(snapshot)
             } else {
-                self?.dataSource.apply(snapshot, animatingDifferences: false)
+                dataSource.apply(snapshot, animatingDifferences: false)
             }
-            self?.refreshControl.endRefreshing()
+            refreshControl.endRefreshing()
         }
 
         viewModel.didUpdateFeaturedItems = { [weak self] dapps in
@@ -115,10 +117,8 @@ private extension BrowserExploreViewController {
 
         return UICollectionViewCompositionalLayout(sectionProvider: {
             [weak self] sectionIndex, _ -> NSCollectionLayoutSection? in
-            guard let self = self else { return nil }
+            guard let self, let section = sections[safe: sectionIndex] else { return nil }
 
-            let snapshot = dataSource.snapshot()
-            let section = snapshot.sectionIdentifiers[sectionIndex]
             switch section {
             case let .apps(_, header, twoLinesAppsTitle):
                 return BrowserCollectionLayout.appsSectionLayout(
@@ -211,8 +211,8 @@ private extension BrowserExploreViewController {
             elementKind: BrowserExploreSectionHeaderView.reuseIdentifier
         ) { _, _, _ in }
         dataSource.supplementaryViewProvider = {
-            collectionView, _, indexPath in
-            let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
+            [weak self] collectionView, _, indexPath in
+            guard let section = self?.sections[safe: indexPath.section] else { return nil }
             switch section {
             case let .apps(_, header, _):
                 guard let header = header else { return nil }

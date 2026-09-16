@@ -12,6 +12,7 @@ final class TooltipsServiceImplementation {
         let sourceView: UIView
         let targetActionViews: [UIView]
         let configuration: HintConfiguration
+        let onTargetAction: (() -> Void)?
     }
 
     private enum State {
@@ -42,7 +43,8 @@ extension TooltipsServiceImplementation: TooltipsService {
         id: TooltipID,
         sourceView: UIView,
         targetActionViews: [UIView] = [],
-        configuration: HintConfiguration
+        configuration: HintConfiguration,
+        onTargetAction: (() -> Void)? = nil
     ) {
         let order = pendingRequestOrder
         pendingRequestOrder += 1
@@ -51,7 +53,8 @@ extension TooltipsServiceImplementation: TooltipsService {
             id: id,
             sourceView: sourceView,
             targetActionViews: targetActionViews,
-            configuration: configuration
+            configuration: configuration,
+            onTargetAction: onTargetAction
         )
         Task {
             try? await Task.sleep(nanoseconds: 150_000_000)
@@ -84,13 +87,14 @@ extension TooltipsServiceImplementation {
         guard case .idle = state else {
             return
         }
-        guard let request = pendingRequests.first else {
+        // Pick the first reachable request rather than bailing on the head of the
+        // queue. Otherwise a stale request whose source view never becomes
+        // reachable (e.g. it belongs to another screen) would block every later
+        // request indefinitely.
+        guard let index = pendingRequests.firstIndex(where: { $0.sourceView.isReachableByUser }) else {
             return
         }
-        guard request.sourceView.isReachableByUser else {
-            return
-        }
-        pendingRequests.removeFirst()
+        let request = pendingRequests.remove(at: index)
         Log.tooltips.i("tooltip request \(request.id.logName) is preparing")
         state = .preparing(request)
         Task {
@@ -138,8 +142,10 @@ extension TooltipsServiceImplementation {
             switch interaction {
             case .hintContentTap:
                 controller.didPerformTargetAction()
+                request.onTargetAction?()
             case .performedTargetAction:
                 controller.didPerformTargetAction()
+                request.onTargetAction?()
             case .outsideTap:
                 controller.didDismiss()
             }
@@ -167,6 +173,12 @@ private extension TooltipID {
             "newHistoryEntryPoint"
         case .tradeTab:
             "tradeTab"
+        case .tradeFavorite:
+            "tradeFavorite"
+        case .addMultichainWalletMain:
+            "addMultichainWalletMain"
+        case .addMultichainWalletWalletsList:
+            "addMultichainWalletWalletsList"
         }
     }
 }

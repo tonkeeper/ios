@@ -94,7 +94,5 @@ private extension PasscodeDotRowView {
 }
 
 private extension CGFloat {
-    static let side: CGFloat = 12
-    static let bigSide: CGFloat = 16
     static let interDotSpace: CGFloat = 16
 }

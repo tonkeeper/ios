@@ -15,6 +15,17 @@ public enum ModalCardHeaderContentAlignment {
             .trailing
         }
     }
+
+    var textAlignment: TextAlignment {
+        switch self {
+        case .leading:
+            .leading
+        case .center:
+            .center
+        case .trailing:
+            .trailing
+        }
+    }
 }
 
 public struct ModalCardHeader<Leading: View, Center: View, Trailing: View>: View {
@@ -53,12 +64,13 @@ public struct ModalCardHeader<Leading: View, Center: View, Trailing: View>: View
                 .offset(x: centerLayoutMinX)
                 .clipped()
 
-            HStack(alignment: .top, spacing: 0) {
+            HStack(alignment: config.accessoriesAlignment, spacing: 0) {
                 leading
                     .measureWidth(.leading)
                     .layoutPriority(1)
 
                 Spacer(minLength: 0)
+                    .frame(maxHeight: .infinity)
 
                 trailing
                     .measureWidth(.trailing)
@@ -66,6 +78,7 @@ public struct ModalCardHeader<Leading: View, Center: View, Trailing: View>: View
             }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
+        .fixedSize(horizontal: false, vertical: true)
         .measureWidth(.container)
         .onPreferenceChange(ModalCardHeaderWidthPreferenceKey.self) { newValue in
             guard measuredWidths != newValue else { return }
@@ -76,10 +89,15 @@ public struct ModalCardHeader<Leading: View, Center: View, Trailing: View>: View
 
 public extension ModalCardHeader {
     struct Config {
-        public var alignment: ModalCardHeaderContentAlignment
+        public var headerContentAlignment: ModalCardHeaderContentAlignment
+        public var accessoriesAlignment: VerticalAlignment
 
-        public init(alignment: ModalCardHeaderContentAlignment = .center) {
-            self.alignment = alignment
+        public init(
+            headerContentAlignment: ModalCardHeaderContentAlignment = .center,
+            accessoriesAlignment: VerticalAlignment = .top
+        ) {
+            self.headerContentAlignment = headerContentAlignment
+            self.accessoriesAlignment = accessoriesAlignment
         }
     }
 
@@ -116,7 +134,7 @@ private extension ModalCardHeader {
             return nil
         }
 
-        switch config.alignment {
+        switch config.headerContentAlignment {
         case .center:
             let reservedSideWidth = max(leadingWidth, trailingWidth)
             return max(0, containerWidth - reservedSideWidth * 2)
@@ -126,7 +144,7 @@ private extension ModalCardHeader {
     }
 
     var centerLayoutMinX: CGFloat {
-        switch config.alignment {
+        switch config.headerContentAlignment {
         case .center:
             return max(leadingWidth, trailingWidth)
         case .leading, .trailing:
@@ -135,7 +153,7 @@ private extension ModalCardHeader {
     }
 
     var centerFrameAlignment: Alignment {
-        switch config.alignment {
+        switch config.headerContentAlignment {
         case .leading:
             return .leading
         case .center:

@@ -23,11 +23,28 @@ public struct TabCategoriesViewPreviews: View {
                     onSelectionChange: { _ in },
                     shimmer: true
                 )
+
+                TabCategoriesView(
+                    items: items,
+                    initialSelection: selectedItem,
+                    onSelectionChange: { selectedItem in
+                        self.selectedItem = selectedItem
+                    },
+                    style: .custom(
+                        TabCategoryView.Colors(
+                            selectedForegroundColor: .constantWhite,
+                            unselectedForegroundColor: .accentBlue,
+                            selectedBackgroundColor: .accentGreen,
+                            unselectedBackgroundColor: .backgroundContent
+                        )
+                    )
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .tkImmediateButtonPresses()
         .background(
-            Color(uiColor: .Background.page)
+            TKColor.backgroundPage
                 .ignoresSafeArea()
         )
     }
@@ -63,7 +80,6 @@ private extension TabCategoriesViewPreviews {
 
 #Preview {
     TabCategoriesViewPreviews()
-        .debugPreview(
-            backgroundColor: Color(uiColor: .Background.page)
-        )
+        .debugPreview(background: .page)
+        .tkThemed()
 }

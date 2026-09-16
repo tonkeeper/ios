@@ -1,5 +1,4 @@
 import TKUIKit
-import UIComponents
 import UIKit
 
 final class SignRawContentView: UIView {

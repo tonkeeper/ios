@@ -1,0 +1,5 @@
+{
+  "bootConfigurationFlags": {
+    "disable_battery_crypto_recharge_module": false
+  }
+}

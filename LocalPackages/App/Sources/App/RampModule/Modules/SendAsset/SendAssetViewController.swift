@@ -85,9 +85,7 @@ private extension SendAssetViewController {
         }
 
         viewModel.didTapCopy = { address in
-            UIPasteboard.general.string = address
-            ToastPresenter.showToast(configuration: .copied)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            Pasteboard.copy(value: address)
         }
 
         viewModel.didShowError = { message in

@@ -5,7 +5,7 @@ import UIKit
 extension TKListItemIconView.Configuration {
     static func tonConfiguration() -> TKListItemIconView.Configuration {
         return TKListItemIconView.Configuration(
-            content: .image(TKImageView.Model(image: .image(.TKCore.Icons.Size44.tonLogo))),
+            content: .image(TKImageView.Model(image: .image(.TKUIKit.Icons.Size44.tonLogo))),
             alignment: .center,
             cornerRadius: 22,
             backgroundColor: .Background.contentTint,

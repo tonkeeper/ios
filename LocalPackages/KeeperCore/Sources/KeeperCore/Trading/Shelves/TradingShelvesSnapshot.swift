@@ -18,4 +18,15 @@ extension TradingShelvesSnapshot {
             shelves: response.groups.compactMap(TradingShelf.init(shelf:))
         )
     }
+
+    init(
+        response: Components.Schemas.ShelvesConfigResponseV2,
+        currency: Currency
+    ) {
+        self.init(
+            generatedAt: response.generated_at,
+            currency: currency,
+            shelves: response.groups.compactMap(TradingShelf.init(multichainShelf:))
+        )
+    }
 }

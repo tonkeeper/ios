@@ -136,23 +136,17 @@ private extension LinksListView {
         items: [
             LinksListView.Item(
                 id: "1",
-                icon: Image(
-                    uiImage: .TKUIKit.Icons.Size16.telegram
-                ),
+                icon: SwiftUI.Image.TKUIKit.Icons.Size16.telegram,
                 title: "Community in Telegram"
             ),
             LinksListView.Item(
                 id: "2",
-                icon: Image(
-                    uiImage: .TKUIKit.Icons.Size16.globe
-                ),
+                icon: SwiftUI.Image.TKUIKit.Icons.Size16.globe,
                 title: "ton.org"
             ),
             LinksListView.Item(
                 id: "3",
-                icon: Image(
-                    uiImage: .TKUIKit.Icons.Size16.x
-                ),
+                icon: SwiftUI.Image.TKUIKit.Icons.Size16.x,
                 title: "Community in X"
             ),
         ],
@@ -160,7 +154,6 @@ private extension LinksListView {
     )
     .border(.cyan)
     .padding(.horizontal, 16)
-    .debugPreview(
-        backgroundColor: Color(uiColor: .Background.page)
-    )
+    .debugPreview(background: .page)
+    .tkThemed()
 }

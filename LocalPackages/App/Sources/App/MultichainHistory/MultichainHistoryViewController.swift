@@ -1,17 +1,22 @@
+import Foundation
 import SwiftUI
+import TKUIKit
 import UIKit
 
 final class MultichainHistoryViewController: UIViewController {
-    private let hostingController: UIHostingController<MultichainHistoryView>
+    private let hostingController: TKHostingController<MultichainHistoryView>
+    private var wasNavigationBarHidden: Bool?
 
     init(
         viewModel: MultichainHistoryViewModelImplementation,
-        onClose: @escaping () -> Void = {}
+        onClose: (() -> Void)? = nil,
+        onOpenTransaction: @escaping (URL, String?) -> Void = { _, _ in }
     ) {
-        self.hostingController = UIHostingController(
-            rootView: MultichainHistoryView(
+        self.hostingController = TKHostingController(
+            content: MultichainHistoryView(
                 viewModel: viewModel,
-                onClose: onClose
+                onClose: onClose,
+                onOpenTransaction: onOpenTransaction
             )
         )
         super.init(nibName: nil, bundle: nil)
@@ -44,11 +49,15 @@ final class MultichainHistoryViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+        if wasNavigationBarHidden == nil {
+            wasNavigationBarHidden = navigationController?.isNavigationBarHidden
+        }
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        navigationController?.setNavigationBarHidden(false, animated: animated)
+        guard let wasNavigationBarHidden else { return }
+        navigationController?.setNavigationBarHidden(wasNavigationBarHidden, animated: animated)
     }
 }

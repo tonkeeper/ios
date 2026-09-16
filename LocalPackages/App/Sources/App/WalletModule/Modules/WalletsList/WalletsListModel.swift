@@ -28,7 +28,8 @@ final class WalletsPickerListModel: WalletsListModel {
                      .didDeleteWallet,
                      .didChangeActiveWallet,
                      .didMoveWallet,
-                     .didUpdateWalletMetaData:
+                     .didUpdateWalletMetaData,
+                     .didUpdateWalletMultichain:
                     observer.updateState()
                 default: break
                 }

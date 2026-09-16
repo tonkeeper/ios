@@ -44,15 +44,6 @@ final class InsertAmountView: TKView {
     private let detailsContainer = UIView()
     private let amountInputContainer = UIView()
 
-    let amountErrorLabel: UILabel = {
-        let label = UILabel()
-        label.font = TKTextStyle.body2.font
-        label.textColor = .Accent.red
-        label.numberOfLines = 0
-        label.isHidden = true
-        return label
-    }()
-
     func setAmountInputView(_ view: UIView) {
         amountInputContainer.addSubview(view)
         view.snp.makeConstraints { make in
@@ -88,8 +79,6 @@ final class InsertAmountView: TKView {
         scrollView.addSubview(contentStackView)
         contentStackView.addArrangedSubview(amountInputContainer)
         contentStackView.setCustomSpacing(8, after: amountInputContainer)
-        contentStackView.addArrangedSubview(amountErrorLabel)
-        contentStackView.setCustomSpacing(16, after: amountErrorLabel)
         contentStackView.addArrangedSubview(detailsViewContainer)
 
         setupConstraints()

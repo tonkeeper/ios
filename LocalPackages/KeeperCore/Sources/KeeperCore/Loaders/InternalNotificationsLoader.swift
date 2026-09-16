@@ -1,38 +1,36 @@
 import Foundation
+import TKLogging
 
-actor InternalNotificationsLoader {
-    private var taskInProgress: Task<Void, Never>?
-
-    private let tonkeeperAPI: TonkeeperAPI
-    private let notificationsStore: InternalNotificationsStore
+final class InternalNotificationsLoader {
+    private let loader: WalletScopedLoader<[InternalNotification]?>
 
     init(
         tonkeeperAPI: TonkeeperAPI,
-        notificationsStore: InternalNotificationsStore
+        notificationsStore: InternalNotificationsStore,
+        walletsStore: WalletsStore
     ) {
-        self.tonkeeperAPI = tonkeeperAPI
-        self.notificationsStore = notificationsStore
+        loader = WalletScopedLoader(
+            walletsStore: walletsStore,
+            fetch: { walletId in
+                do {
+                    return try await tonkeeperAPI.loadNotifications(walletId: walletId)
+                } catch {
+                    Log.w("Failed to load internal notifications for wallet \(walletId ?? "none"): \(error)")
+                    return nil
+                }
+            },
+            apply: { _, notifications in
+                guard let notifications else { return }
+                var seen = Set<InternalNotification>()
+                let models = notifications
+                    .filter { seen.insert($0).inserted }
+                    .map { NotificationModel(internalNotification: $0) }
+                await notificationsStore.addNotifications(models)
+            }
+        )
     }
 
-    nonisolated func loadNotifications() {
-        Task {
-            await loadNotifications()
-        }
-    }
-
-    private func loadNotifications() async {
-        if let taskInProgress {
-            taskInProgress.cancel()
-            self.taskInProgress = nil
-        }
-
-        let task = Task {
-            guard let notifications = try? await tonkeeperAPI.loadNotifications() else { return }
-            guard !Task.isCancelled else { return }
-            var set = Set<InternalNotification>()
-            let notificationModels = notifications.filter { set.insert($0).inserted }.map { NotificationModel(internalNotification: $0) }
-            await notificationsStore.addNotifications(notificationModels)
-        }
-        self.taskInProgress = task
+    func loadNotifications(scope: WalletScope, force: Bool) async {
+        await loader.reload(scope: scope, force: force)
     }
 }

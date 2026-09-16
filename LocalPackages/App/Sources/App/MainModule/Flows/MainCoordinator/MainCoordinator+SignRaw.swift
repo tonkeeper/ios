@@ -3,6 +3,7 @@ import KeeperCore
 import SignRaw
 import TKCoordinator
 import TKCore
+import TKLogging
 import TonSwift
 import UIKit
 
@@ -13,6 +14,8 @@ extension MainCoordinator {
         resultHandler: SignRawControllerResultHandler?,
         sendFrom: SendOpen.From,
         appId: String? = nil,
+        initiatedBy: InitiatedBy,
+        dappUrl: String? = nil,
         redAnalyticsConfiguration: RedAnalyticsConfiguration? = nil
     ) {
         guard let windowScene = router.rootViewController.windowScene else { return }
@@ -25,6 +28,8 @@ extension MainCoordinator {
             resultHandler: resultHandler,
             sendFrom: sendFrom,
             appId: appId,
+            initiatedBy: initiatedBy,
+            dappUrl: dappUrl,
             redAnalyticsConfiguration: redAnalyticsConfiguration,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -53,7 +58,8 @@ extension MainCoordinator {
         amount: BigUInt,
         payload: String?,
         stateInit: String?,
-        sendFrom: SendOpen.From
+        sendFrom: SendOpen.From,
+        initiatedBy: InitiatedBy
     ) {
         let signRaw: () async throws -> SignRawRequest = {
             try await self.createTransferSignRaw(
@@ -69,7 +75,7 @@ extension MainCoordinator {
             try .signRaw(
                 await signRaw(), forceRelayer: true
             )
-        }, resultHandler: nil, sendFrom: sendFrom)
+        }, resultHandler: nil, sendFrom: sendFrom, initiatedBy: initiatedBy)
     }
 
     private func createTransferSignRaw(
@@ -142,7 +148,11 @@ struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
 
     func didConfirm(boc: String) {
         Task {
-            try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
+            do {
+                try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
+            } catch {
+                Log.w("failed to confirm Ton Connect request due to error: \(error)")
+            }
         }
     }
 
@@ -151,7 +161,11 @@ struct BridgeSignRawResultHandler: SignRawControllerResultHandler {
     func didCancel() {
         didCancelHandler?()
         Task {
-            try await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
+            do {
+                try await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
+            } catch {
+                Log.w("failed to cancel Ton Connect request due to error: \(error)")
+            }
         }
     }
 }
@@ -162,13 +176,21 @@ struct BridgeSignDataResultHandler: SignDataResultHandler {
     func didCancel() {
         didCancelHandler?()
         Task {
-            try await tonConnectService.cancelSignRequest(appRequest: appRequest, app: app)
+            do {
+                try await tonConnectService.cancelSignRequest(appRequest: appRequest, app: app)
+            } catch {
+                Log.w("failed to cancel Ton Connect sign request due to error: \(error)")
+            }
         }
     }
 
     func didSign(signedData: SignedDataResult) {
         Task {
-            try await tonConnectService.confirmSignRequest(signed: signedData, appRequest: appRequest, app: app)
+            do {
+                try await tonConnectService.confirmSignRequest(signed: signedData, appRequest: appRequest, app: app)
+            } catch {
+                Log.w("failed to confirm Ton Connect sign request due to error: \(error)")
+            }
         }
     }
 

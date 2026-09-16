@@ -1,0 +1,41 @@
+# Keeps the wallet's Battery below MAX_CHARGES, refunding the balance when it is higher.
+# Deposit-path flows need this: the network fee picker only offers Deposit while the
+# wallet cannot pay the fee in charges, and charges are shared state that earlier runs or
+# manual QA may have topped up. A small leftover is harmless, so refund only real balances
+# instead of burning a run on every stray charge.
+# Params: MAX_CHARGES (refund threshold, in charges).
+# Prerequisite: wallet screen. Leaves the Battery refill screen open — the caller
+# relaunches the app to get back to the wallet.
+appId: com.jbig.tonkeeper
+env:
+  MAX_CHARGES: "100"
+---
+- runFlow: open_battery.yaml
+
+- evalScript: ${output.batteryCharges = 0}
+
+# "Battery Settings" renders only while the wallet holds charges; the empty state shows
+# the "Supported transactions" link in its place, and the header carries no charge count.
+- runFlow:
+    when:
+      visible: Battery Settings
+    commands:
+      # Recharge packs below carry the same "N charges" wording — read the header caption,
+      # which sits between the screen title and the settings row.
+      - copyTextFrom:
+          text: "[0-9]+ charge[s]?"
+          below: Tonkeeper Battery
+          above: Battery Settings
+      - evalScript: ${output.batteryCharges = parseInt(maestro.copiedText.replace(/[^0-9]/g, ""), 10)}
+
+- runFlow:
+    when:
+      true: ${output.batteryCharges >= parseInt(MAX_CHARGES, 10)}
+    commands:
+      - runFlow: return_charges.yaml
+      # The refund is a transaction: the header keeps the old charge count until it lands.
+      # Scrolling up also brings the header back after the history section.
+      - scrollUntilVisible:
+          element: Supported transactions
+          direction: UP
+          timeout: 180000

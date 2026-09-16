@@ -1,18 +1,10 @@
 import SwiftUI
 
-public struct SwapPairAvatarView: View {
+struct SwapPairAvatarView: View {
     let left: AssetAvatarViewImageSource
     let right: AssetAvatarViewImageSource
 
-    public init(
-        left: AssetAvatarViewImageSource,
-        right: AssetAvatarViewImageSource
-    ) {
-        self.left = left
-        self.right = right
-    }
-
-    public var body: some View {
+    var body: some View {
         HStack(spacing: Layout.spacing) {
             AssetAvatarView(
                 imageSource: left,

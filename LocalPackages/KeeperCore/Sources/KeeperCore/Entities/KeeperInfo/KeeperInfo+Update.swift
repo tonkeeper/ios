@@ -62,7 +62,9 @@ extension KeeperInfo {
             notificationSettings: wallet.notificationSettings,
             backupSettings: wallet.backupSettings,
             addressBook: wallet.addressBook,
-            batterySettings: wallet.batterySettings
+            batterySettings: wallet.batterySettings,
+            tron: wallet.tron,
+            multichain: wallet.multichain
         )
         return (updateWallet(updatedWallet), updatedWallet)
     }
@@ -79,7 +81,9 @@ extension KeeperInfo {
             notificationSettings: wallet.notificationSettings,
             backupSettings: wallet.backupSettings,
             addressBook: wallet.addressBook,
-            batterySettings: wallet.batterySettings
+            batterySettings: wallet.batterySettings,
+            tron: wallet.tron,
+            multichain: wallet.multichain
         )
         return (updateWallet(updatedWallet), updatedWallet)
     }
@@ -96,7 +100,9 @@ extension KeeperInfo {
             notificationSettings: notificationSettings,
             backupSettings: wallet.backupSettings,
             addressBook: wallet.addressBook,
-            batterySettings: wallet.batterySettings
+            batterySettings: wallet.batterySettings,
+            tron: wallet.tron,
+            multichain: wallet.multichain
         )
         return (updateWallet(updatedWallet), updatedWallet)
     }
@@ -113,7 +119,9 @@ extension KeeperInfo {
             notificationSettings: wallet.notificationSettings,
             backupSettings: wallet.backupSettings,
             addressBook: wallet.addressBook,
-            batterySettings: batterySettings
+            batterySettings: batterySettings,
+            tron: wallet.tron,
+            multichain: wallet.multichain
         )
         return (updateWallet(updatedWallet), updatedWallet)
     }
@@ -131,7 +139,27 @@ extension KeeperInfo {
             backupSettings: wallet.backupSettings,
             addressBook: wallet.addressBook,
             batterySettings: wallet.batterySettings,
-            tron: tron
+            tron: tron,
+            multichain: wallet.multichain
+        )
+        return (updateWallet(updatedWallet), updatedWallet)
+    }
+
+    func updateWallet(
+        _ wallet: Wallet,
+        multichain: MultichainWallet?
+    ) -> (keeperInfo: KeeperInfo, wallet: Wallet) {
+        let updatedWallet = Wallet(
+            id: wallet.id,
+            identity: wallet.identity,
+            metaData: wallet.metaData,
+            setupSettings: wallet.setupSettings,
+            notificationSettings: wallet.notificationSettings,
+            backupSettings: wallet.backupSettings,
+            addressBook: wallet.addressBook,
+            batterySettings: wallet.batterySettings,
+            tron: wallet.tron,
+            multichain: multichain
         )
         return (updateWallet(updatedWallet), updatedWallet)
     }
@@ -202,11 +230,11 @@ extension KeeperInfo {
     }
 
     func updateSearchEngine(_ searchEngine: SearchEngine) -> KeeperInfo {
-        let appSettings = AppSettings(
-            isSecureMode: self.appSettings.isSecureMode,
-            searchEngine: searchEngine
-        )
-        return KeeperInfo(
+        updateAppSettings(appSettings.updating(searchEngine: searchEngine))
+    }
+
+    func updateAppSettings(_ appSettings: AppSettings) -> KeeperInfo {
+        KeeperInfo(
             wallets: self.wallets,
             currentWallet: self.currentWallet,
             currency: currency,
@@ -222,40 +250,27 @@ extension KeeperInfo {
     // MARK: - SecuritySettings
 
     func updateIsBiometryEnable(_ isBiometryEnable: Bool) -> KeeperInfo {
-        let securitySettings = SecuritySettings(
-            isBiometryEnabled: isBiometryEnable,
-            isLockScreen: securitySettings.isLockScreen
-        )
-        return updateSecuritySettings(securitySettings)
+        updateSecuritySettings(securitySettings.updating(isBiometryEnabled: isBiometryEnable))
     }
 
     func updateIsLockScreen(_ isLockScreen: Bool) -> KeeperInfo {
-        let securitySettings = SecuritySettings(
-            isBiometryEnabled: securitySettings.isBiometryEnabled,
-            isLockScreen: isLockScreen
-        )
-        return updateSecuritySettings(securitySettings)
+        updateSecuritySettings(securitySettings.updating(isLockScreen: isLockScreen))
+    }
+
+    func updatePasscodeBruteForce(
+        failedAttempts: Int,
+        lockoutEndDate: Date?
+    ) -> KeeperInfo {
+        updateSecuritySettings(securitySettings.updating(
+            failedPasscodeAttempts: failedAttempts,
+            passcodeLockoutEndDate: .some(lockoutEndDate)
+        ))
     }
 
     // MARK: - Settings
 
     func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
-        let appSettings = AppSettings(
-            isSecureMode: isSecureMode,
-            searchEngine: self.appSettings.searchEngine
-        )
-
-        return KeeperInfo(
-            wallets: self.wallets,
-            currentWallet: self.currentWallet,
-            currency: self.currency,
-            securitySettings: self.securitySettings,
-            appSettings: appSettings,
-            country: country,
-            batterySettings: self.batterySettings,
-            assetsPolicy: self.assetsPolicy,
-            appCollection: self.appCollection
-        )
+        updateAppSettings(appSettings.updating(isSecureMode: isSecureMode))
     }
 
     // MARK: - Notifications

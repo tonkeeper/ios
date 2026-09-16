@@ -1,11 +1,13 @@
 import Foundation
 import TKCore
+import TKUIKit
+import UIKit
 
 struct OnboardingRootAssembly {
     private init() {}
-    static func module() -> MVVMModule<OnboardingRootViewController, OnboardingRootModuleOutput, Void> {
+
+    static func module() -> MVVMModule<UIViewController, OnboardingRootModuleOutput, Void> {
         let viewModel = OnboardingRootViewModelImplementation()
-        let viewController = OnboardingRootViewController(viewModel: viewModel)
-        return .init(view: viewController, output: viewModel, input: ())
+        return .init(view: OnboardingRootViewController(viewModel: viewModel), output: viewModel, input: ())
     }
 }

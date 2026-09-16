@@ -3,6 +3,7 @@ import Foundation
 import KeeperCore
 import TKFeatureFlags
 import TKLocalize
+import TKUIKit
 
 struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
     var didUpdate: (() -> Void)?
@@ -56,7 +57,7 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
         return TokenDetailsModel(
             title: TonInfo.name,
             caption: nil,
-            image: .image(.App.Currency.Vector.ton),
+            image: .image(.TKUIKit.Icons.Size44.currencyTon),
             network: .none,
             tokenAmount: tokenAmount,
             convertedAmount: convertedAmount,

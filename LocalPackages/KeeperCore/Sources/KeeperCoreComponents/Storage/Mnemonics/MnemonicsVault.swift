@@ -118,8 +118,47 @@ public struct MnemonicsVault {
     }
 
     public func savePassword(_ password: String) throws {
-        let query = getPasswordQuery()
-        try keychainVault.set(password, query: query)
+        try keychainVault.recreateItem(password, query: getPasswordQuery())
+        // Mark that the password item now uses biometryCurrentSet, so the unlock
+        // path stops forcing the one-time biometryAny → biometryCurrentSet re-save.
+        // Best-effort: the password is already saved, so a marker write failure
+        // only costs one extra (idempotent) re-save on the next unlock.
+        do {
+            try keychainVault.set(Data([1]), query: getBiometryMigratedMarkerQuery())
+        } catch {
+            logger.e("🪵 failed to write biometry-migrated marker: \(error)")
+        }
+    }
+
+    public func hasPassword() -> Bool {
+        do {
+            return try keychainVault.exists(query: getPasswordQuery())
+        } catch {
+            logger.e("🪵 native password presence check failed: \(error)")
+            return false
+        }
+    }
+
+    /// Whether the password item is known to use the `biometryCurrentSet` access
+    /// control. The marker is written by `savePassword`; its absence means a
+    /// legacy `biometryAny` item still needs the one-time migration, performed by
+    /// re-saving the password on the next successful unlock.
+    public func isBiometryItemMigrated() -> Bool {
+        do {
+            return try keychainVault.exists(query: getBiometryMigratedMarkerQuery())
+        } catch {
+            // Be conservative: an unexpected error must not strand a legacy
+            // biometryAny item unmigrated, so report not-migrated and let the
+            // unlock path re-save it with biometryCurrentSet.
+            return false
+        }
+    }
+
+    /// Non-interactive probe of the biometry-protected password item, so a failed
+    /// biometric unlock can tell an invalidated enrolled set (recoverable by
+    /// re-saving after a passcode entry) apart from a plain absent item.
+    public func probeBiometryAccess() -> TKKeychainBiometryAccess {
+        keychainVault.biometricAccessState(query: getPasswordQuery())
     }
 
     public func getPassword() throws -> String {
@@ -128,8 +167,18 @@ public struct MnemonicsVault {
     }
 
     public func deletePassword() throws {
-        let query = getPasswordQuery()
-        try keychainVault.delete(query)
+        // The marker must never outlive the password item: a marker left behind
+        // makes an absent cache look like one invalidated by an enrollment change.
+        // Deleting an already-absent password item throws, so run this regardless.
+        defer {
+            do {
+                try keychainVault.delete(getBiometryMigratedMarkerQuery())
+            } catch TKKeychainError.noItem {
+            } catch {
+                logger.e("🪵 failed to remove biometry-migrated marker: \(error)")
+            }
+        }
+        try keychainVault.delete(getPasswordQuery())
     }
 
     public func getMnemonics(password: String) async throws -> Mnemonics {
@@ -170,12 +219,25 @@ private extension MnemonicsVault {
         )
     }
 
+    /// Non-biometric marker recording that the password item uses
+    /// `biometryCurrentSet`. Shares the password's service so it lives in the same
+    /// keychain domain; it holds no secret.
+    func getBiometryMigratedMarkerQuery() -> TKKeychainQuery {
+        let service = "\(String.passwordVaultKey)_\(seedProvider())"
+        return TKKeychainQuery(
+            item: .genericPassword(service: service, account: .passwordBiometryMigratedKey),
+            accessGroup: nil,
+            biometry: .none,
+            accessible: .whenUnlockedThisDeviceOnly
+        )
+    }
+
     func getPasswordQuery() -> TKKeychainQuery {
         let service = "\(String.passwordVaultKey)_\(seedProvider())"
         return TKKeychainQuery(
             item: .genericPassword(service: service, account: .passwordKey),
             accessGroup: nil,
-            biometry: .any,
+            biometry: .current,
             accessible: .whenUnlockedThisDeviceOnly
         )
     }
@@ -291,6 +353,7 @@ private extension String {
     static let encryptedMnemonicsChunksCountKey = "encrypted_chunks_count"
     static let encryptedMnemonicsChunkKey = "encrypted_chunk"
     static let passwordKey = "biometry_passcode"
+    static let passwordBiometryMigratedKey = "biometry_passcode_current_set_migrated"
 
     var redactedMnemonicIdentifier: String {
         let prefixLength = Swift.min(8, count)

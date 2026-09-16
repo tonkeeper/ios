@@ -43,3 +43,15 @@ public extension TKLocales.SubscriptionPluginWarning {
         }
     }
 }
+
+public extension TKLocales.FinishSetup.Migration {
+    static func walletsLeftCount(_ count: Int) -> String {
+        switch plural(count: count) {
+        case .few: return WalletsLeft.few(count)
+        case .many: return WalletsLeft.many(count)
+        case .one: return WalletsLeft.one(count)
+        case .other: return WalletsLeft.other(count)
+        case .zero: return WalletsLeft.zero(count)
+        }
+    }
+}

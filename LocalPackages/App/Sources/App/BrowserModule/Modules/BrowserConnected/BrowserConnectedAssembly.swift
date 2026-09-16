@@ -1,7 +1,9 @@
 import Foundation
 import KeeperCore
 import TKCore
+import TKFeatureFlags
 
+@MainActor
 struct BrowserConnectedAssembly {
     private init() {}
     static func module(
@@ -17,12 +19,22 @@ struct BrowserConnectedAssembly {
         let viewModel = BrowserConnectedViewModelImplementation(
             walletsStore: keeperCoreAssembly.storesAssembly.walletsStore,
             connectedAppsStore: connectedAppsStore,
+            tonConnectConnectionMetadataStore: keeperCoreAssembly.tonConnectAssembly.tonConnectConnectionMetadataStore,
+            walletConnectSessionsStoreProvider: {
+                guard keeperCoreAssembly.configurationAssembly.configuration.featureEnabled(.multichainEnabled) else {
+                    return nil
+                }
+
+                let walletConnectService = await keeperCoreAssembly.walletConnectAssembly.walletConnectService
+                return keeperCoreAssembly.storesAssembly.walletConnectSessionsStore(
+                    walletConnectService: walletConnectService
+                )
+            },
             notificationsService: keeperCoreAssembly.servicesAssembly.notificationsService(
                 walletNotificationsStore: keeperCoreAssembly.storesAssembly.walletNotificationStore,
                 tonConnectAppsStore: keeperCoreAssembly.tonConnectAssembly.tonConnectAppsStore
             ),
-            pushTokenProvider: PushNotificationTokenProvider(),
-            analyticsProvider: coreAssembly.analyticsProvider
+            pushTokenProvider: PushNotificationTokenProvider()
         )
         let viewController = BrowserConnectedViewController(
             viewModel: viewModel

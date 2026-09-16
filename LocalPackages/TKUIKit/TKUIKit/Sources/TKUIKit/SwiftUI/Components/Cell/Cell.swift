@@ -2,6 +2,9 @@ import SwiftUI
 import UIKit
 
 public struct Cell<Leading: View, Center: View, Trailing: View>: View {
+    @Environment(\.tkPalette) private var palette
+    @Environment(\.cellsGroupSingleCellConfig) private var cellsGroupSingleCellConfig
+
     private let config: Config
     private let leading: Leading
     private let center: Center
@@ -20,21 +23,45 @@ public struct Cell<Leading: View, Center: View, Trailing: View>: View {
     }
 
     public var body: some View {
+        tappableContent
+            .padding(.horizontal, cellsGroupSingleCellConfig?.horizontalPadding ?? 0)
+    }
+
+    @ViewBuilder
+    private var tappableContent: some View {
         if let action = config.action {
             Button(action: action) {
-                content()
+                contentBody
             }
-            .buttonStyle(
-                CellButtonModifier { isPressed in
-                    content(isPressed: isPressed)
-                }
-            )
+            .buttonStyle(TKTapAnimationButtonStyle(haptic: config.haptic))
         } else {
-            content()
+            contentBody
         }
     }
 
-    private func content(isPressed: Bool = false) -> some View {
+    @ViewBuilder
+    private var contentBody: some View {
+        if let cellsGroupSingleCellConfig {
+            cellContent
+                .background(
+                    RoundedRectangle(
+                        cornerRadius: cellsGroupSingleCellConfig.cornerRadius,
+                        style: .continuous
+                    )
+                    .fill(cellsGroupSingleCellConfig.backgroundColor)
+                )
+                .clipShape(
+                    RoundedRectangle(
+                        cornerRadius: cellsGroupSingleCellConfig.cornerRadius,
+                        style: .continuous
+                    )
+                )
+        } else {
+            cellContent
+        }
+    }
+
+    private var cellContent: some View {
         HStack(alignment: config.verticalAlignment, spacing: 0) {
             leading
 
@@ -44,24 +71,30 @@ public struct Cell<Leading: View, Center: View, Trailing: View>: View {
             trailing
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            isPressed
-                ? config.style.highlightedBackgroundColor
-                : config.style.backgroundColor
-        )
-        .overlay {
-            if config.showsDivider && !isPressed {
-                VStack {
-                    Spacer(minLength: 0)
-                    Rectangle()
-                        .fill(config.style.separatorColor)
-                        .frame(height: TKUIKit.Constants.separatorWidth)
-                        .padding(.leading, config.style.dividerLeadingInset)
-                }
-                .frame(maxWidth: .infinity)
-            }
-        }
+        .background(config.style.backgroundColor.resolve(palette))
+        .overlay { divider }
         .contentShape(Rectangle())
+        .preference(
+            key: CellsGroupCellsPreferenceKey.self,
+            value: .init(
+                total: 1,
+                tappable: config.action == nil ? 0 : 1
+            )
+        )
+    }
+
+    @ViewBuilder
+    private var divider: some View {
+        if config.showsDivider {
+            VStack {
+                Spacer(minLength: 0)
+                Rectangle()
+                    .fill(config.style.separatorColor)
+                    .frame(height: TKUIKit.Constants.separatorWidth)
+                    .padding(.leading, config.style.dividerLeadingInset)
+            }
+            .frame(maxWidth: .infinity)
+        }
     }
 }
 
@@ -70,36 +103,36 @@ public extension Cell {
         public var style: Style
         public var showsDivider: Bool
         public var verticalAlignment: VerticalAlignment
+        public var haptic: TKTapAnimationHaptic
         public var action: (() -> Void)?
 
         public init(
             style: Style = .regular,
             showsDivider: Bool = false,
             verticalAlignment: VerticalAlignment = .center,
+            haptic: TKTapAnimationHaptic = .none,
             action: (() -> Void)? = nil
         ) {
             self.style = style
             self.showsDivider = showsDivider
             self.verticalAlignment = verticalAlignment
+            self.haptic = haptic
             self.action = action
         }
     }
 
     struct Style {
         public var dividerLeadingInset: CGFloat
-        public var backgroundColor: Color
-        public var highlightedBackgroundColor: Color
-        public var separatorColor: Color
+        public var backgroundColor: TKColor
+        public var separatorColor: TKColor
 
         public init(
             dividerLeadingInset: CGFloat,
-            backgroundColor: Color = Color(uiColor: .Background.content),
-            highlightedBackgroundColor: Color = Color(uiColor: .Background.highlighted),
-            separatorColor: Color = Color(uiColor: .Separator.common)
+            backgroundColor: TKColor = .backgroundContent,
+            separatorColor: TKColor = .separatorCommon
         ) {
             self.dividerLeadingInset = dividerLeadingInset
             self.backgroundColor = backgroundColor
-            self.highlightedBackgroundColor = highlightedBackgroundColor
             self.separatorColor = separatorColor
         }
 
@@ -112,16 +145,7 @@ public extension Cell {
         public static var grouped: Style {
             Style(
                 dividerLeadingInset: 16,
-                backgroundColor: .clear,
-                highlightedBackgroundColor: Color(uiColor: .Background.highlighted)
-            )
-        }
-
-        public static var clear: Style {
-            Style(
-                dividerLeadingInset: 0,
-                backgroundColor: .clear,
-                highlightedBackgroundColor: .clear
+                backgroundColor: .clear
             )
         }
     }

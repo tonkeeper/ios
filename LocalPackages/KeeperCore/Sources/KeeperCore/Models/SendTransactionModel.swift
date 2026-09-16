@@ -8,12 +8,6 @@ public struct SendTransactionModel {
     public let fee: Int64
     public let extra: Int64
 
-    init(accountEvent: AccountEvent, fee: Int64, extra: Int64) {
-        self.accountEvent = accountEvent
-        self.fee = fee
-        self.extra = extra
-    }
-
     init(
         accountEvent: TonAPI.AccountEvent,
         risk: TonAPI.Risk,

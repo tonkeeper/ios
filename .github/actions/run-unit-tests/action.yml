@@ -1,0 +1,190 @@
+name: Run unit tests
+description: >-
+  Build and run the unified TonkeeperUnitTests scheme through xcbeautify, emit
+  a JUnit report plus a job summary, and upload them as the
+  maestro-unit-test-results artifact. The scheme builds a testable
+  (`@testable import`) copy of the SPM package graph from scratch and shares no
+  compiled products with the Maestro app build, so it is meant to run as its own
+  job, in parallel with the app build and UI shards.
+inputs:
+  fail-on-error:
+    description: >-
+      Exit non-zero when any unit test fails, so the job status reflects the
+      unit-test result directly. Both the standalone workflow and the nightly
+      run it as a dedicated job and pass "true"; the default stays "false" for
+      any caller that prefers to read build/unit-tests-exit.txt itself.
+    required: false
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Prepare unit-test outputs
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p build build/unit-test-reports
+        # Pessimistic default written BEFORE anything that can fail (brew, simctl,
+        # xcodebuild). If any later step dies early, the `if: always()` upload
+        # still ships a non-zero exit code, so the gate reddens the run and the
+        # error is never silently lost. Overwritten with the real code once
+        # xcodebuild finishes.
+        printf '1\n' > build/unit-tests-exit.txt
+
+    - name: Install xcbeautify
+      shell: bash
+      run: |
+        set -euo pipefail
+        command -v xcbeautify >/dev/null 2>&1 || brew install xcbeautify
+        xcbeautify --version
+
+    - name: Run unit tests
+      shell: bash
+      env:
+        GIT_TERMINAL_PROMPT: "0"
+        GCM_INTERACTIVE: Never
+        HOME: ${{ github.workspace }}/build/codex_home
+        SWIFTPM_CACHE_PATH: ${{ github.workspace }}/build/swiftpm-cache
+        SWIFTPM_CONFIG_DIR: ${{ github.workspace }}/build/swiftpm-config
+        CLANG_MODULE_CACHE_PATH: ${{ github.workspace }}/build/clang-module-cache
+        CLONED_SOURCE_PACKAGES_DIR: ${{ github.workspace }}/build/SourcePackages
+        DERIVED_DATA: build/DerivedData-maestro
+        FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
+      run: |
+        set -euo pipefail
+        export NSUnbufferedIO=YES
+        # Unlock the signing keychain if a prior step created one (harmless otherwise).
+        if [[ -n "${KEYCHAIN_PATH:-}" && -n "${KEYCHAIN_PASSWORD:-}" ]]; then
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH" || true
+        fi
+
+        # `test` needs a concrete simulator. Reuse the "first available iPhone"
+        # resolution from prepare-maestro-simulator; fall back to a device name.
+        SIM_UDID="$(xcrun simctl list devices available | awk -F '[()]' '/iPhone/ { print $2; exit }' | tr -d '[:space:]')"
+        if [[ -n "$SIM_UDID" ]]; then
+          DESTINATION="platform=iOS Simulator,id=$SIM_UDID"
+        else
+          echo "::warning::No available iPhone simulator found; falling back to name=iPhone 17"
+          DESTINATION="platform=iOS Simulator,name=iPhone 17"
+        fi
+        echo "Unit-test destination: $DESTINATION"
+
+        mkdir -p build/unit-test-reports
+
+        # xcodebuild refuses to write -resultBundlePath if it already exists.
+        # Clear any bundle left by a prior run on a reused runner.
+        rm -rf "${{ github.workspace }}/build/UnitTests.xcresult"
+
+        # COMPILER_INDEX_STORE_ENABLE=NO: CI never reads the index store, so
+        # skip generating it. Compilation mode stays incremental (the default):
+        # a whole-module A/B (SWIFT_COMPILATION_MODE=wholemodule) measured ~2%
+        # SLOWER on this cold unit build (4m54s vs 4m48s), so it was not adopted.
+        BUILD_SETTINGS=(ARCHS=arm64 COMPILER_INDEX_STORE_ENABLE=NO)
+        echo "Unit-test build settings: ${BUILD_SETTINGS[*]}"
+
+        set +e
+        # -parallel-testing-enabled YES distributes XCTest classes across
+        # simulator clones (swift-testing already runs in parallel in-process);
+        # suites that aren't parallel-safe can opt out with the `.serialized`
+        # trait.
+        xcodebuild \
+          -scmProvider system \
+          -disableAutomaticPackageResolution \
+          -onlyUsePackageVersionsFromResolvedFile \
+          -project Tonkeeper.xcodeproj \
+          -scheme TonkeeperUnitTests \
+          -configuration TonkeeperDebug \
+          -destination "$DESTINATION" \
+          -derivedDataPath "${{ github.workspace }}/$DERIVED_DATA" \
+          -clonedSourcePackagesDirPath "$CLONED_SOURCE_PACKAGES_DIR" \
+          -resultBundlePath "${{ github.workspace }}/build/UnitTests.xcresult" \
+          -parallel-testing-enabled YES \
+          "${BUILD_SETTINGS[@]}" \
+          test \
+          2>&1 | tee build/unit-tests-raw.log \
+          | xcbeautify --renderer github-actions \
+                       --report junit \
+                       --report-path build/unit-test-reports
+        CODE=${PIPESTATUS[0]}
+        set -e
+        printf '%s\n' "$CODE" > build/unit-tests-exit.txt
+        echo "Unit tests xcodebuild exit code: $CODE"
+
+        # Human + agent readable summary; lists failed tests parsed from junit.xml.
+        python3 maestro_ui_tests/scripts/ci/summarize_unit_tests.py \
+          --junit build/unit-test-reports/junit.xml \
+          --exit-code "$CODE" >> "$GITHUB_STEP_SUMMARY"
+
+        # Recover real per-test failure messages from the xcresult. xcbeautify's
+        # JUnit collapses parallel swift-testing failures into a generic
+        # "Parallel test failed", so the assertion text lives only in the result
+        # bundle. Shipped as unit-test-failures.json (read by the Slack poster,
+        # which runs on Linux and has no xcrun). Report-only: a missing/garbled
+        # bundle just yields an empty list.
+        python3 - "${{ github.workspace }}/build/UnitTests.xcresult" \
+          build/unit-test-reports/unit-test-failures.json <<'PY' || true
+        import json, subprocess, sys
+        xcresult, out = sys.argv[1], sys.argv[2]
+        failures = []
+        try:
+            blob = subprocess.run(
+                ["xcrun", "xcresulttool", "get", "test-results", "tests",
+                 "--path", xcresult, "--format", "json"],
+                capture_output=True, text=True, check=True,
+            ).stdout
+
+            def walk(node):
+                if node.get("nodeType") == "Test Case" and node.get("result") == "Failed":
+                    messages = []
+
+                    def collect(n):
+                        if n.get("nodeType") == "Failure Message":
+                            messages.append((n.get("name") or "").strip())
+                        for child in n.get("children") or []:
+                            collect(child)
+
+                    collect(node)
+                    failures.append({
+                        "identifier": node.get("nodeIdentifier") or node.get("name", ""),
+                        "name": node.get("name", ""),
+                        "messages": [m for m in messages if m],
+                    })
+                for child in node.get("children") or []:
+                    walk(child)
+
+            data = json.loads(blob)
+            for root in data.get("testNodes") or data.get("children") or []:
+                walk(root)
+        except Exception as exc:
+            print(f"extract unit failures: {exc}", file=sys.stderr)
+
+        with open(out, "w") as handle:
+            json.dump(failures, handle)
+        print(f"Extracted {len(failures)} failed unit test(s) -> {out}")
+        PY
+
+        if [[ "$FAIL_ON_ERROR" == "true" ]]; then
+          exit "$CODE"
+        fi
+        exit 0
+
+    - name: Zip unit-test xcresult
+      if: always()
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [[ -d build/UnitTests.xcresult ]]; then
+          (cd build && zip -rq UnitTests.xcresult.zip UnitTests.xcresult)
+        fi
+
+    - name: Upload unit-test results
+      if: always()
+      uses: actions/upload-artifact@v6
+      with:
+        name: maestro-unit-test-results
+        path: |
+          build/unit-tests-exit.txt
+          build/unit-tests-raw.log
+          build/unit-test-reports/
+          build/UnitTests.xcresult.zip
+        if-no-files-found: warn
+        retention-days: 14

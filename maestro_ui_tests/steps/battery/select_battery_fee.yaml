@@ -1,0 +1,29 @@
+# Selects Tonkeeper Battery as the network fee method when the wallet has enough charges.
+# Prerequisite: confirmation screen is visible (Network fee / Fee row).
+#
+# Sets output.batteryFeeSelected so the caller can tell the two outcomes apart:
+# - true  — Battery is now the fee method, fee reads in charges.
+# - false — Battery is listed but undercharged (picker offers Deposit); picker stays open.
+# Charges are shared wallet state that other flows and manual QA spend, so an
+# undercharged wallet is an expected state and must not read as a product failure.
+appId: com.jbig.tonkeeper
+---
+- runFlow: open_network_fee_picker.yaml
+
+- extendedWaitUntil:
+    visible: Tonkeeper Battery
+    timeout: 30000
+
+- evalScript: ${output.batteryFeeSelected = false}
+- runFlow:
+    when:
+      notVisible: Deposit
+    commands:
+      - tapOn: Tonkeeper Battery
+      - waitForAnimationToEnd:
+          timeout: 3000
+      # Fee value switches to charges once Battery is selected.
+      - extendedWaitUntil:
+          visible: ".*charge.*"
+          timeout: 60000
+      - evalScript: ${output.batteryFeeSelected = true}

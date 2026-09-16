@@ -27,6 +27,14 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>wc</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
 				<string>ton</string>
 			</array>
 		</dict>
@@ -94,10 +102,10 @@
 		<string>ChartWidgetIntent</string>
 		<string>RateWidgetIntent</string>
 	</array>
-		<key>OLD_APP_GROUP_IDENTIFIER</key>
-		<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
-		<key>PLATFORM</key>
-		<string>$(PLATFORM)</string>
+	<key>OLD_APP_GROUP_IDENTIFIER</key>
+	<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
+	<key>PLATFORM</key>
+	<string>$(PLATFORM)</string>
 	<key>PrivacyPolicyURL</key>
 	<string>$(PRIVACY_POLICY_URL)</string>
 	<key>TermsOfServiceURL</key>
@@ -125,8 +133,6 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
-	<key>UIDesignRequiresCompatibility</key>
-	<true/>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

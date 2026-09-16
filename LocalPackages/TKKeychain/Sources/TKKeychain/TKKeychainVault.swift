@@ -7,6 +7,9 @@ public enum TKKeychainVaultError: Swift.Error {
 }
 
 public protocol TKKeychainVault {
+    func exists(query: TKKeychainQuery) throws -> Bool
+    func biometricAccessState(query: TKKeychainQuery) -> TKKeychainBiometryAccess
+
     func get(query: TKKeychainQuery) throws -> Data
     func get(query: TKKeychainQuery) throws -> String
     func get<T: Codable>(query: TKKeychainQuery) throws -> T
@@ -23,6 +26,14 @@ public struct TKKeychainVaultImplementation: TKKeychainVault {
 
     public init(keychain: TKKeychain) {
         self.keychain = keychain
+    }
+
+    public func exists(query: TKKeychainQuery) throws -> Bool {
+        try keychain.exists(query: query)
+    }
+
+    public func biometricAccessState(query: TKKeychainQuery) -> TKKeychainBiometryAccess {
+        keychain.biometricAccessState(query: query)
     }
 
     public func get(query: TKKeychainQuery) throws -> Data {

@@ -43,13 +43,10 @@ public class TonTransport {
 
     static let LEDGER_SYSTEM: UInt8 = 0xB0
     static let LEDGER_CLA: UInt8 = 0xE0
-    static let INS_VERSION: UInt8 = 0x03
     static let INS_OPEN_APP: UInt8 = 0xD8
     static let INS_ADDRESS: UInt8 = 0x05
     static let INS_SIGN_TX: UInt8 = 0x06
     static let INS_PROOF: UInt8 = 0x08
-    static let INS_SIGN_DATA: UInt8 = 0x09
-
     public static func isVersion(_ version: String, greaterThanOrEqualTo targetVersion: String) -> Bool {
         return version.compare(targetVersion, options: .numeric) != .orderedAscending
     }

@@ -6,34 +6,40 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class PairSignerCoordinator: RouterCoordinator<NavigationControllerRouter> {
-    public var didCancel: (() -> Void)?
-    public var didPaired: (() -> Void)?
+final class PairSignerCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    var didCancel: (() -> Void)?
+    var didPaired: (() -> Void)?
 
     private let scannerAssembly: KeeperCore.ScannerAssembly
     private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+    private let multichainAssembly: MultichainAssembly
     private let coreAssembly: TKCore.CoreAssembly
+    private let analyticsContext: WalletFlowAnalyticsContext
     private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
 
     init(
         scannerAssembly: KeeperCore.ScannerAssembly,
         walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+        multichainAssembly: MultichainAssembly,
         coreAssembly: TKCore.CoreAssembly,
         router: NavigationControllerRouter,
+        analyticsContext: WalletFlowAnalyticsContext,
         publicKeyImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
     ) {
         self.scannerAssembly = scannerAssembly
         self.walletUpdateAssembly = walletUpdateAssembly
+        self.multichainAssembly = multichainAssembly
         self.coreAssembly = coreAssembly
+        self.analyticsContext = analyticsContext
         self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openScanner()
     }
 
-    override public func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
         guard let signerDeeplink = deeplink as? Deeplink else { return false }
         switch signerDeeplink {
         case let .externalSign(externalSign):
@@ -88,6 +94,11 @@ private extension PairSignerCoordinator {
                         model: model,
                         isDevice: isDevice
                     )
+                    self.coreAssembly.analyticsProvider.logWalletImportSuccess(
+                        walletMode: .single,
+                        walletSource: .signer,
+                        from: self.analyticsContext.from
+                    )
                     await MainActor.run {
                         self.didPaired?()
                     }
@@ -95,6 +106,12 @@ private extension PairSignerCoordinator {
                     Log.e("pair signer: wallet import failed", extraInfo: [
                         "error": error.localizedDescription,
                     ])
+                    self.coreAssembly.analyticsProvider.logWalletImportError(
+                        walletMode: .single,
+                        walletSource: .signer,
+                        from: self.analyticsContext.from,
+                        error: error
+                    )
                 }
             }
         }
@@ -109,7 +126,9 @@ private extension PairSignerCoordinator {
         model: CustomizeWalletModel,
         isDevice: Bool
     ) async throws {
-        let addController = walletUpdateAssembly.walletAddController()
+        let addController = walletUpdateAssembly.walletAddController(
+            multichainAssembly: multichainAssembly
+        )
         let metaData = WalletMetaData(
             label: model.name,
             tintColor: model.tintColor,

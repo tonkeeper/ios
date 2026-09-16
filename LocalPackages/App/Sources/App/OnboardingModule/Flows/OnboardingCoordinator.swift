@@ -5,23 +5,39 @@ import TKUIKit
 import UIKit
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    public enum Completion {
+        case walletCreated
+        case walletImported
+    }
+
     private weak var addWalletCoordinator: AddWalletCoordinator?
 
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
+    private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    private let multichainAssembly: MultichainAssembly
     private let configurationAssembly: ConfigurationAssembly
+    private let analyticsContext: WalletFlowAnalyticsContext
 
-    public var didFinishOnboarding: (() -> Void)?
+    public var didFinishOnboarding: ((Completion) -> Void)?
 
     init(
         router: NavigationControllerRouter,
         coreAssembly: TKCore.CoreAssembly,
         keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly,
+        keeperCoreMainAssembly: KeeperCore.MainAssembly,
+        multichainAssembly: MultichainAssembly,
         configurationAssembly: ConfigurationAssembly
     ) {
         self.coreAssembly = coreAssembly
         self.keeperCoreOnboardingAssembly = keeperCoreOnboardingAssembly
+        self.keeperCoreMainAssembly = keeperCoreMainAssembly
+        self.multichainAssembly = multichainAssembly
         self.configurationAssembly = configurationAssembly
+        self.analyticsContext = WalletFlowAnalyticsContext(
+            from: .onboarding,
+            multichainEnabled: configurationAssembly.configuration.featureEnabled(.importMultichainEnabled)
+        )
         super.init(router: router)
     }
 
@@ -40,6 +56,10 @@ private extension OnboardingCoordinator {
     func openOnboardingStart() {
         let module = OnboardingRootAssembly.module()
 
+        module.output.didShowWelcome = { [weak self] in
+            self?.coreAssembly.analyticsProvider.log(OnboardingViewWelcome())
+        }
+
         module.output.didTapCreateButton = { [weak self] in
             self?.openCreate()
         }
@@ -53,25 +73,39 @@ private extension OnboardingCoordinator {
     }
 
     func openCreate() {
+        beginRaffleUserResolution(isNewUser: true)
         let coordinator = AddWalletModule(
             dependencies: AddWalletModule.Dependencies(
                 walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
                 storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: multichainAssembly,
                 scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
                 configurationAssembly: configurationAssembly
             )
         ).createCreateWalletCoordinator(
-            router: ViewControllerRouter(rootViewController: router.rootViewController)
+            router: ViewControllerRouter(rootViewController: router.rootViewController),
+            mode: .multichain,
+            analyticsContext: analyticsContext
         )
 
         coordinator.didCancel = { [weak self, weak coordinator] in
+            self?.cancelPendingRaffleUserResolution()
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }
 
+        coordinator.didRequestBack = { [weak self, weak coordinator] in
+            self?.router.dismiss(animated: true) { [weak self, weak coordinator] in
+                self?.cancelPendingRaffleUserResolution()
+                guard let coordinator else { return }
+                self?.removeChild(coordinator)
+            }
+        }
+
         coordinator.didCreateWallet = { [weak self, weak coordinator] in
-            self?.didFinishOnboarding?()
+            self?.didFinishOnboarding?(.walletCreated)
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }
@@ -81,11 +115,14 @@ private extension OnboardingCoordinator {
     }
 
     func openAddWallet(router: ViewControllerRouter) {
+        beginRaffleUserResolution(isNewUser: false)
         let module = AddWalletModule(
             dependencies: AddWalletModule.Dependencies(
                 walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
                 storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
                 coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                multichainAssembly: multichainAssembly,
                 scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
                 configurationAssembly: configurationAssembly
             )
@@ -98,17 +135,18 @@ private extension OnboardingCoordinator {
                 .keystone,
                 .ledger,
                 .importWatchOnly,
-                .importTestnet,
                 .importTetra,
             ],
-            router: router
+            router: router,
+            analyticsContext: analyticsContext
         )
         coordinator.didAddWallets = { [weak self, weak coordinator] in
-            self?.didFinishOnboarding?()
+            self?.didFinishOnboarding?(.walletImported)
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }
         coordinator.didCancel = { [weak self, weak coordinator] in
+            self?.cancelPendingRaffleUserResolution()
             guard let coordinator else { return }
             self?.removeChild(coordinator)
         }
@@ -135,6 +173,7 @@ private extension OnboardingCoordinator {
     }
 
     func handleSignerDeeplink(_ deeplink: ExternalSignDeeplink) {
+        beginRaffleUserResolution(isNewUser: false)
         let navigationController = TKNavigationController()
         navigationController.configureTransparentAppearance()
 
@@ -145,6 +184,8 @@ private extension OnboardingCoordinator {
                     walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
                     storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
                     coreAssembly: coreAssembly,
+                    keeperCoreMainAssembly: keeperCoreMainAssembly,
+                    multichainAssembly: multichainAssembly,
                     scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
                     configurationAssembly: configurationAssembly
                 )
@@ -153,7 +194,8 @@ private extension OnboardingCoordinator {
                 name: name,
                 router: NavigationControllerRouter(
                     rootViewController: navigationController
-                )
+                ),
+                analyticsContext: analyticsContext
             )
 
             coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
@@ -162,12 +204,13 @@ private extension OnboardingCoordinator {
             }
 
             coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
-                self?.didFinishOnboarding?()
+                self?.didFinishOnboarding?(.walletImported)
                 navigationController?.dismiss(animated: true)
                 self?.removeChild(coordinator)
             }
 
             coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+                self?.cancelPendingRaffleUserResolution()
                 navigationController?.dismiss(animated: true)
                 self?.removeChild(coordinator)
             }
@@ -175,5 +218,13 @@ private extension OnboardingCoordinator {
             addChild(coordinator)
             coordinator.start()
         }
+    }
+
+    func beginRaffleUserResolution(isNewUser: Bool) {
+        coreAssembly.tkAppSettings.beginRaffleUserResolution(isNewUser: isNewUser)
+    }
+
+    func cancelPendingRaffleUserResolution() {
+        coreAssembly.tkAppSettings.cancelPendingRaffleUserResolution()
     }
 }

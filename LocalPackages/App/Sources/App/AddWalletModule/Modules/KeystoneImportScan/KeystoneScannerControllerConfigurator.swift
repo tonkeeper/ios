@@ -3,13 +3,15 @@ import KeeperCore
 import URKit
 
 struct KeystoneScannerControllerConfigurator: ScannerControllerConfigurator {
-    init() {}
-
-    private let deeplinkParser = DeeplinkParser()
+    private let deeplinkParser: DeeplinkParser
     private var urDecoder = URDecoder()
 
+    init(deeplinkParser: DeeplinkParser) {
+        self.deeplinkParser = deeplinkParser
+    }
+
     func handleQRCode(_ qrCode: String) throws -> Deeplink {
-        return try deeplinkParser.parse(string: qrCode)
+        return try deeplinkParser.parse(string: qrCode, source: .qr)
     }
 
     func handleQRCodeUR(_ qrCode: String) throws -> UR {

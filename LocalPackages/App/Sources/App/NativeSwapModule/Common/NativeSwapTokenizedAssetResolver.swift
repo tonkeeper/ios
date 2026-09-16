@@ -192,7 +192,7 @@ private extension NativeSwapAssetClassification {
             self = .stock
         case .etfs:
             self = .etf
-        case .all, .crypto:
+        case .all, .tokens:
             self = .crypto
         }
     }

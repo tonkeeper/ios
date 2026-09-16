@@ -9,14 +9,17 @@ final class TKBottomSheetScrollController {
 
     weak var scrollView: UIScrollView? {
         didSet {
+            guard oldValue !== scrollView else { return }
+            oldValue?.panGestureRecognizer.removeTarget(
+                self,
+                action: #selector(scrollViewPanGestureHander)
+            )
             setup()
         }
     }
 
     // MARK: - State
 
-    private var isMoving = false
-    private var previousTranslation: CGFloat = .zero
     private var startTranslationOffset: CGFloat = .zero
     private var isDragging = false
 }

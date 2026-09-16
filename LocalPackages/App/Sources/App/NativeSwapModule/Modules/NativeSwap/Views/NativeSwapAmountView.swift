@@ -122,6 +122,8 @@ final class NativeSwapAmountView: UIControl {
         textTextField.font = TKTextStyle.num2.font
         textTextField.keyboardType = .decimalPad
         textTextField.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        textTextField.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        textTextField.clipsToBounds = true
         textTextField.placeholder = "0"
 
         textTextField.didUpdateText = { [weak self] text in
@@ -178,8 +180,8 @@ final class NativeSwapAmountView: UIControl {
         shimmerLabel.isHidden = true
         shimmerLabel.label.font = TKTextStyle.num2.font
         shimmerLabel.label.numberOfLines = 1
-        shimmerLabel.clipsToBounds = false
-        shimmerLabel.label.lineBreakMode = .byClipping
+        shimmerLabel.clipsToBounds = true
+        shimmerLabel.label.lineBreakMode = .byTruncatingTail
     }
 
     private func setupConstraints() {
@@ -204,7 +206,7 @@ final class NativeSwapAmountView: UIControl {
         shimmerLabel.snp.makeConstraints { make in
             make.left.equalTo(stackView.snp.left)
             make.top.bottom.equalTo(textTextField)
-            make.right.equalTo(tokenView).inset(-8)
+            make.right.equalTo(tokenView.snp.left).offset(-8)
         }
     }
 
@@ -249,7 +251,7 @@ final class NativeSwapAmountView: UIControl {
             .num2,
             color: .Text.primary,
             alignment: .left,
-            lineBreakMode: .byClipping
+            lineBreakMode: .byTruncatingTail
         )
     }
 }

@@ -1,14 +1,14 @@
 import SwiftUI
 
 public struct HintAppearance {
-    let backgroundColor: Color
+    let backgroundColor: TKColor
     let cornerRadius: CGFloat
     let shadowColor: Color
     let shadowRadius: CGFloat
     let shadowYOffset: CGFloat
 
     public init(
-        backgroundColor: Color,
+        backgroundColor: TKColor,
         cornerRadius: CGFloat,
         shadowColor: Color,
         shadowRadius: CGFloat,
@@ -22,15 +22,14 @@ public struct HintAppearance {
     }
 }
 
-public protocol HintView: View {
-    static var tailParameters: HintTailParameters? { get }
+protocol HintView: View {
     static var appearance: HintAppearance { get }
 }
 
-public extension HintView {
+extension HintView {
     static var appearance: HintAppearance {
         HintAppearance(
-            backgroundColor: Color(uiColor: .Background.contentTint),
+            backgroundColor: .backgroundContentTint,
             cornerRadius: 12,
             shadowColor: Color.black.opacity(0.04),
             shadowRadius: 8,
@@ -61,16 +60,10 @@ private struct TailModifier: ViewModifier {
     private func padded(content: some View) -> some View {
         if let direction, let tailParameters {
             switch direction {
-            case .topLeft:
+            case .topLeft, .topCenter, .topRight:
                 content
                     .padding(.bottom, tailParameters.size.height)
-            case .topRight:
-                content
-                    .padding(.bottom, tailParameters.size.height)
-            case .bottomLeft:
-                content
-                    .padding(.top, tailParameters.size.height)
-            case .bottomRight:
+            case .bottomLeft, .bottomCenter, .bottomRight:
                 content
                     .padding(.top, tailParameters.size.height)
             }
@@ -86,11 +79,17 @@ private struct TailModifier: ViewModifier {
             case .topLeft:
                 bubble(side: .bottomRight, parameters: tailParameters)
                     .fill(appearance.backgroundColor)
+            case .topCenter:
+                bubble(side: .bottomCenter, parameters: tailParameters)
+                    .fill(appearance.backgroundColor)
             case .topRight:
                 bubble(side: .bottomLeft, parameters: tailParameters)
                     .fill(appearance.backgroundColor)
             case .bottomLeft:
                 bubble(side: .topRight, parameters: tailParameters)
+                    .fill(appearance.backgroundColor)
+            case .bottomCenter:
+                bubble(side: .topCenter, parameters: tailParameters)
                     .fill(appearance.backgroundColor)
             case .bottomRight:
                 bubble(side: .topLeft, parameters: tailParameters)

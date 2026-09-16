@@ -1,17 +1,26 @@
 import Foundation
 import KeeperCore
 import KeeperCoreSensitive
-import TKFeatureFlags
 import TKLogging
 import UIKit
 import UserNotifications
 
 final class WalletBalanceSetupModel {
     struct State {
-        enum Item: String {
+        enum Item: Equatable {
             case notifications
             case backup
+            case migration(walletsLeft: Int)
             case biometry
+
+            var identifier: String {
+                switch self {
+                case .notifications: "notifications"
+                case .backup: "backup"
+                case .migration: "migration"
+                case .biometry: "biometry"
+                }
+            }
         }
 
         let wallet: Wallet
@@ -21,9 +30,15 @@ final class WalletBalanceSetupModel {
 
     private let syncQueue = DispatchQueue(label: "WalletBalanceSetupModelQueue")
 
+    /// Written only on `syncQueue`; atomic because `getState()` is read from the caller's thread.
+    @Atomic private var isPushAuthorizationGranted = false
+    private var pushAuthorizationGeneration = 0
+    private var didBecomeActiveObserver: NSObjectProtocol?
+
     var didUpdateState: ((State?) -> Void)?
 
     private let walletsStore: WalletsStore
+    private let processedBalanceStore: ProcessedBalanceStore
     private let securityStore: SecurityStore
     private let walletNotificationStore: WalletNotificationStore
     private let mnemonicsAccess: MnemonicAccess
@@ -31,12 +46,14 @@ final class WalletBalanceSetupModel {
 
     init(
         walletsStore: WalletsStore,
+        processedBalanceStore: ProcessedBalanceStore,
         securityStore: SecurityStore,
         walletNotificationStore: WalletNotificationStore,
         mnemonicsAccess: MnemonicAccess,
         configuration: Configuration
     ) {
         self.walletsStore = walletsStore
+        self.processedBalanceStore = processedBalanceStore
         self.securityStore = securityStore
         self.walletNotificationStore = walletNotificationStore
         self.mnemonicsAccess = mnemonicsAccess
@@ -54,11 +71,24 @@ final class WalletBalanceSetupModel {
             observer.didGetWalletNotificationStoreEvent(event)
         }
 
-        configuration.addUpdateObserver(self) { observer in
-            observer.syncQueue.async { [weak observer] in
-                observer?.updateState()
-            }
+        processedBalanceStore.addObserver(self) { observer, event in
+            observer.didGetProcessedBalanceStoreEvent(event)
         }
+
+        // `didBecomeActive`, not `willEnterForeground`: the system permission prompt only makes the
+        // app inactive, so a grant given while this screen is alive posts no foreground transition.
+        didBecomeActiveObserver = NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.refreshPushAuthorization()
+        }
+        refreshPushAuthorization()
+    }
+
+    deinit {
+        didBecomeActiveObserver.map(NotificationCenter.default.removeObserver)
     }
 
     func getState() -> State? {
@@ -72,7 +102,8 @@ final class WalletBalanceSetupModel {
             wallet: wallet,
             isSetupFinished: isSetupFinished,
             isBiometryEnable: isBiometryEnable,
-            isNotificationsOn: isNotificationsOn
+            isNotificationsOn: isNotificationsOn,
+            isPushAuthorizationGranted: isPushAuthorizationGranted
         )
     }
 
@@ -104,19 +135,66 @@ final class WalletBalanceSetupModel {
     func turnOnNotifications() async {
         guard let wallet = try? walletsStore.activeWallet else { return }
         let current = UNUserNotificationCenter.current()
-
         let settings = await current.notificationSettings()
-        if settings.authorizationStatus == .denied {
-            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else { return }
 
+        switch settings.authorizationStatus {
+        case .denied:
+            guard let settingsUrl = URL(string: UIApplication.openSettingsURLString) else { return }
             if await UIApplication.shared.canOpenURL(settingsUrl) {
-                DispatchQueue.main.async {
+                await MainActor.run {
                     UIApplication.shared.open(settingsUrl)
                 }
             }
             return
+        case .notDetermined:
+            guard await requestPushAuthorization() else { return }
+        case .authorized, .provisional, .ephemeral:
+            break
+        @unknown default:
+            guard await requestPushAuthorization() else { return }
         }
+
         await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
+    }
+
+    private func requestPushAuthorization() async -> Bool {
+        do {
+            guard try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            else {
+                return false
+            }
+        } catch {
+            Log.w("failed to request notification authorization: \(error)")
+            return false
+        }
+        await UIApplication.shared.registerForRemoteNotifications()
+        return true
+    }
+
+    private func refreshPushAuthorization() {
+        syncQueue.async { [weak self] in
+            guard let self else { return }
+            self.pushAuthorizationGeneration += 1
+            let generation = self.pushAuthorizationGeneration
+            Task { [weak self] in
+                let isGranted = await UNUserNotificationCenter.current()
+                    .notificationSettings().authorizationStatus.isPushAuthorized
+                self?.applyPushAuthorization(isGranted, generation: generation)
+            }
+        }
+    }
+
+    private func applyPushAuthorization(_ isGranted: Bool, generation: Int) {
+        syncQueue.async {
+            guard generation == self.pushAuthorizationGeneration,
+                  self.isPushAuthorizationGranted != isGranted
+            else {
+                return
+            }
+            self.isPushAuthorizationGranted = isGranted
+            self.updateState()
+        }
     }
 
     private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
@@ -125,6 +203,15 @@ final class WalletBalanceSetupModel {
             case .didChangeActiveWallet:
                 self.updateState()
             case .didUpdateWalletSetupSettings:
+                self.updateState()
+            case .didAddWallets, .didDeleteWallet:
+                self.updateState()
+            case let .didUpdateWalletMultichain(wallet):
+                guard let activeWallet = try? self.walletsStore.activeWallet,
+                      activeWallet == wallet
+                else {
+                    return
+                }
                 self.updateState()
             default: break
             }
@@ -151,6 +238,20 @@ final class WalletBalanceSetupModel {
         }
     }
 
+    private func didGetProcessedBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
+        syncQueue.async {
+            switch event {
+            case let .didUpdateProccessedBalance(wallet):
+                guard let activeWallet = try? self.walletsStore.activeWallet,
+                      activeWallet == wallet
+                else {
+                    return
+                }
+                self.updateState()
+            }
+        }
+    }
+
     private func updateState() {
         let walletsStoreState = walletsStore.getState()
         switch walletsStoreState {
@@ -163,7 +264,8 @@ final class WalletBalanceSetupModel {
                 wallet: walletsState.activeWallet,
                 isSetupFinished: isSetupFinished,
                 isBiometryEnable: isBiometryEnable,
-                isNotificationsOn: isNotificationsOn
+                isNotificationsOn: isNotificationsOn,
+                isPushAuthorizationGranted: isPushAuthorizationGranted
             )
             didUpdateState?(state)
         }
@@ -173,28 +275,41 @@ final class WalletBalanceSetupModel {
         wallet: Wallet,
         isSetupFinished: Bool,
         isBiometryEnable: Bool,
-        isNotificationsOn: Bool
+        isNotificationsOn: Bool,
+        isPushAuthorizationGranted: Bool
     ) -> State? {
-        if isSetupFinished, !wallet.isBackupAvailable || wallet.hasBackup {
+        let isBackupRequired = wallet.isBackupAvailable && !wallet.hasBackup
+        if isSetupFinished, !isBackupRequired {
+            return nil
+        }
+
+        let isBalanceFunded = isBalanceFunded(wallet: wallet)
+        if isSetupFinished, !isBalanceFunded {
             return nil
         }
 
         var items = [State.Item]()
 
-        let isFinishEnable: Bool = !wallet.isBackupAvailable || wallet.setupSettings.backupDate != nil
+        let isFinishEnable = !isBackupRequired || !isBalanceFunded
 
-        let isBackupVisible: Bool = wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
-        if isBackupVisible {
+        if isBackupRequired {
             items.append(.backup)
         }
 
-        if !isNotificationsOn {
-            items.append(.notifications)
+        if !isSetupFinished, let walletsLeft = migrationWalletsLeft(for: wallet) {
+            items.append(.migration(walletsLeft: walletsLeft))
         }
 
-        let isBiometryVisible: Bool = !isSetupFinished && wallet.isBiometryAvailable && !isBiometryEnable
-        if isBiometryVisible {
-            items.append(.biometry)
+        if !isSetupFinished {
+            // The step exists to ask for push permission; once it is granted the wallet is
+            // subscribed by default and turning it back off belongs to Settings.
+            if !isNotificationsOn, !isPushAuthorizationGranted {
+                items.append(.notifications)
+            }
+
+            if wallet.isBiometryAvailable, !isBiometryEnable {
+                items.append(.biometry)
+            }
         }
 
         guard !items.isEmpty else {
@@ -209,5 +324,23 @@ final class WalletBalanceSetupModel {
             isFinishEnable: isFinishEnable,
             items: items
         )
+    }
+
+    private func migrationWalletsLeft(for wallet: Wallet) -> Int? {
+        guard configuration.featureEnabled(.multichainEnabled),
+              configuration.featureEnabled(.migrationEnabled),
+              wallet.isMultichain
+        else {
+            return nil
+        }
+        let walletsLeft = WalletMigrationVisibility.legacyTonWalletCount(wallets: walletsStore.wallets)
+        return walletsLeft > 0 ? walletsLeft : nil
+    }
+
+    private func isBalanceFunded(wallet: Wallet) -> Bool {
+        guard let processedBalance = processedBalanceStore.getState()[wallet]?.balance else {
+            return false
+        }
+        return processedBalance.items.contains(where: { !$0.isZeroBalance })
     }
 }

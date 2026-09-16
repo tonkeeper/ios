@@ -36,8 +36,6 @@ final class SendAssetExchangeView: UIView {
     private let rateLabel = UILabel()
     private let rateShimmerView = TKShimmerView()
 
-    private var isSwapAnimationRunning = false
-
     override init(frame: CGRect) {
         super.init(frame: frame)
 

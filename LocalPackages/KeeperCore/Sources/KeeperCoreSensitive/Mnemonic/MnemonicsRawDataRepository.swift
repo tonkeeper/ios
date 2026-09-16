@@ -1,365 +1,349 @@
-//
-//  MnemonicsRawDataRepository.swift
-//  WalletCore
-//
-//  Created by rzmn on 09.02.2026.
-//
-
 import Foundation
+import Security
 import TKLogging
 
-public struct MnemonicsRawDataRepository<MnemonicItem: Codable> {
+public struct MnemonicsRawDataRepository {
     private let seedProvider: () -> String
+    private let storageSlotResolution: StorageSlotResolution
+    private let keychain: any SecureStorageKeychain
+    // Production callers always derive at production cost. The test target uses
+    // the internal `keychain:` initializer to inject a cheaper Argon2id cost.
+    private let argon2Cost: MnemonicsRepositoryV2Crypto.Argon2Cost
     private let logger = LogDomain.mnemonicStorage
 
     public init(seedProvider: @escaping () -> String) {
+        self.init(
+            seedProvider: seedProvider,
+            storageSlotResolution: .active,
+            keychain: SystemSecureStorageKeychain(),
+            argon2Cost: .production
+        )
+    }
+
+    init(
+        seedProvider: @escaping () -> String,
+        keychain: any SecureStorageKeychain,
+        argon2Cost: MnemonicsRepositoryV2Crypto.Argon2Cost = .production
+    ) {
+        self.init(
+            seedProvider: seedProvider,
+            storageSlotResolution: .active,
+            keychain: keychain,
+            argon2Cost: argon2Cost
+        )
+    }
+
+    private init(
+        seedProvider: @escaping () -> String,
+        storageSlotResolution: StorageSlotResolution,
+        keychain: any SecureStorageKeychain,
+        argon2Cost: MnemonicsRepositoryV2Crypto.Argon2Cost
+    ) {
         self.seedProvider = seedProvider
+        self.storageSlotResolution = storageSlotResolution
+        self.keychain = keychain
+        self.argon2Cost = argon2Cost
     }
 }
 
-extension MnemonicsRawDataRepository {
-    enum InternalDecodingFailure: Error {
-        case wrongValueType(String)
+private extension MnemonicsRawDataRepository {
+    enum StorageSlotResolution {
+        case active
+        case fixed(ABStorageSlot)
     }
 }
 
-extension MnemonicsRawDataRepository: RawMnemonicsDataRepositoryV2 where MnemonicItem == RawMnemonicsData {}
+public extension MnemonicsRawDataRepository {
+    func unlocked(passcode: String) throws(MnemonicsRepositoryV2Failure) -> DefaultMnemonicsRepositoryV2 {
+        try resolvedSlotStorage().unlocked(passcode: passcode)
+    }
 
-extension MnemonicsRawDataRepository: MnemonicsRepositoryV2 {
-    public func hasMnemonic() throws(MnemonicsRepositoryHasAnyFailure) -> Bool {
-        let query = keychainQuery(
-            for: .checkHasMnemonics
-        ) as CFDictionary
-        let status = SecItemCopyMatching(query, nil)
-        switch status {
-        case errSecSuccess:
-            return true
-        case errSecItemNotFound:
-            return false
-        default:
-            logger.e("Failed to check v2 mnemonics presence. status=\(status)")
-            throw .reading(
-                KeychainFailure.failure(code: status)
-            )
+    func rewrite(
+        mnemonics: [CoreMnemonicIdentifier: CoreMnemonic],
+        passcode: String
+    ) throws(MnemonicsRepositoryV2Failure) {
+        try commitMnemonicsRewrite(
+            mnemonics: mnemonics,
+            passcode: passcode,
+            stagedCleanupLog: "v2 staged rewrite cleanup failed",
+            activationCleanupLog: "v2 staged rewrite activation cleanup failed",
+            oldStorageCleanupLog: "v2 old storage cleanup failed after rewrite"
+        )
+    }
+
+    func changePasscode(
+        old: String,
+        new: String
+    ) throws(MnemonicsRepositoryV2Failure) {
+        guard try hasCommittedStorage() else {
+            return
         }
+        let oldPasscodeRepository = try unlocked(passcode: old)
+        let mnemonics = try oldPasscodeRepository.getAll()
+        try commitMnemonicsRewrite(
+            mnemonics: mnemonics,
+            passcode: new,
+            stagedCleanupLog: "v2 staged passcode change cleanup failed",
+            activationCleanupLog: "v2 staged passcode change activation cleanup failed",
+            oldStorageCleanupLog: "v2 old passcode storage cleanup failed after passcode change"
+        )
+    }
+
+    func deleteAllKnownStorageArtifacts() throws(MnemonicsRepositoryV2Failure) {
+        let cleaner = keychainCleaner
+        for serviceKey in keychainQueryBuilder.knownStorageServiceKeys {
+            try cleaner.deleteStorageArtifacts(serviceKey: serviceKey)
+        }
+        try encryptionSaltStore.deleteSalt()
+    }
+
+    func hasCommittedStorage() throws(MnemonicsRepositoryV2Failure) -> Bool {
+        switch try activeStorageSlotState() {
+        case .uninitialized:
+            false
+        case .initialized:
+            true
+        }
+    }
+}
+
+extension MnemonicsRawDataRepository: RawMnemonicsDataRepositoryV2 {
+    public func hasMnemonic() throws(MnemonicsRepositoryV2Failure) -> Bool {
+        let storage: MnemonicsRawDataSlotStorage
+        do {
+            storage = try resolvedSlotStorage()
+        } catch MnemonicsRepositoryV2Failure.notFound {
+            return false
+        } catch {
+            logger.e("Failed to resolve v2 mnemonics storage slot for presence check. error=\(error)")
+            throw error
+        }
+        return try storage.hasMnemonic()
     }
 
     public func add(
-        _ mnemonic: MnemonicItem,
+        _ mnemonic: RawMnemonicsData,
         id: CoreMnemonicIdentifier
-    ) throws(MnemonicsRepositoryV2SaveFailure) {
-        let data: Data
+    ) throws(MnemonicsRepositoryV2Failure) {
+        let storage: MnemonicsRawDataSlotStorage
         do {
-            data = try JSONEncoder().encode(mnemonic)
+            storage = try resolvedSlotStorage()
         } catch {
-            logger.e("Failed to encode mnemonic for add. id=\(id), type=\(MnemonicItem.self), error=\(error)")
-            throw .encoding(error)
+            logger.e("Failed to resolve v2 mnemonics storage slot for add. id=\(id), error=\(error)")
+            throw error
         }
-        let query = keychainQuery(
-            for: .addMnemonic(
-                id: id,
-                value: data
-            )
-        ) as CFDictionary
-        let status = SecItemAdd(query, nil)
-        switch status {
-        case errSecDuplicateItem:
-            logger.e("Duplicate mnemonic add attempt. id=\(id), status=\(status)")
-            throw .dublicate(
-                KeychainFailure.failure(code: status)
-            )
-        case errSecSuccess:
-            return
-        default:
-            logger.e("Failed to add mnemonic to keychain. id=\(id), status=\(status)")
-            throw .writing(
-                KeychainFailure.failure(code: status)
-            )
-        }
+        try storage.add(mnemonic, id: id)
     }
 
     public func upsert(
-        _ mnemonic: MnemonicItem,
+        _ mnemonic: RawMnemonicsData,
         id: CoreMnemonicIdentifier
-    ) throws(MnemonicsRepositoryV2UpsertFailure) {
-        let data: Data
+    ) throws(MnemonicsRepositoryV2Failure) {
+        let storage: MnemonicsRawDataSlotStorage
         do {
-            data = try JSONEncoder().encode(mnemonic)
+            storage = try resolvedSlotStorage()
         } catch {
-            logger.e("Failed to encode mnemonic for upsert. id=\(id), type=\(MnemonicItem.self), error=\(error)")
-            throw .encoding(error)
+            logger.e("Failed to resolve v2 mnemonics storage slot for upsert. id=\(id), error=\(error)")
+            throw error
         }
-        let addQuery = keychainQuery(
-            for: .addMnemonic(
-                id: id,
-                value: data
-            )
-        ) as CFDictionary
-        let status = SecItemAdd(addQuery, nil)
-        switch status {
-        case errSecDuplicateItem:
-            break
-        case errSecSuccess:
-            return
-        default:
-            logger.e("Failed to insert mnemonic during upsert. id=\(id), status=\(status)")
-            throw .writing(
-                KeychainFailure.failure(code: status)
-            )
-        }
-        let updateQuery = keychainQuery(
-            for: .updateMnemonic(id: id)
-        ) as CFDictionary
-        let attributesToUpdate: [CFString: Any] = [
-            kSecValueData: data as AnyObject,
-        ]
-        let updateStatus = SecItemUpdate(
-            updateQuery,
-            attributesToUpdate as CFDictionary
-        )
-        switch updateStatus {
-        case errSecSuccess:
-            return
-        default:
-            logger.e("Failed to update mnemonic during upsert. id=\(id), status=\(updateStatus)")
-            throw .writing(
-                KeychainFailure.failure(code: updateStatus)
-            )
-        }
+        try storage.upsert(mnemonic, id: id)
     }
 
     public func get(
         id: CoreMnemonicIdentifier
-    ) throws(MnemonicsRepositoryV2GetFailure) -> MnemonicItem {
-        let query = keychainQuery(
-            for: .getMnemonic(id: id)
-        ) as CFDictionary
-        var item: CFTypeRef?
-        let status = SecItemCopyMatching(query, &item)
-        switch status {
-        case errSecItemNotFound:
-            logger.e("Requested mnemonic is not found. id=\(id), status=\(status)")
-            throw .notFound(
-                KeychainFailure.failure(code: status)
-            )
-        case errSecSuccess:
-            break
-        default:
-            logger.e("Failed to read mnemonic from keychain. id=\(id), status=\(status)")
-            throw .reading(
-                KeychainFailure.failure(code: status)
-            )
-        }
-        guard let item else {
-            logger.e("Keychain returned empty result for mnemonic. id=\(id)")
-            throw .decoding(
-                InternalDecodingFailure.wrongValueType("nil")
-            )
-        }
-        guard
-            let attributes = item as? [String: Any],
-            let data = attributes[kSecValueData as String] as? Data
-        else {
-            logger.e("Keychain returned unexpected value type for mnemonic. id=\(id), type=\(type(of: item))")
-            throw .decoding(
-                InternalDecodingFailure.wrongValueType("\(type(of: item))")
-            )
-        }
-        let mnemonic: MnemonicItem
+    ) throws(MnemonicsRepositoryV2Failure) -> RawMnemonicsData {
+        let storage: MnemonicsRawDataSlotStorage
         do {
-            mnemonic = try JSONDecoder().decode(MnemonicItem.self, from: data)
+            storage = try resolvedSlotStorage()
         } catch {
-            logger.e("Failed to decode mnemonic payload. id=\(id), bytes=\(data.count), error=\(error)")
-            throw .decoding(error)
+            logger.e("Failed to resolve v2 mnemonics storage slot for get. id=\(id), error=\(error)")
+            throw error
         }
-        return mnemonic
+        return try storage.get(id: id)
     }
 
-    public func getAll() throws(MnemonicsRepositoryV2GetFailure) -> [CoreMnemonicIdentifier: MnemonicItem] {
-        let query = keychainQuery(
-            for: .getAllMnemonics
-        ) as CFDictionary
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching(query, &result)
-
-        switch status {
-        case errSecSuccess:
-            break
-        default:
-            logger.e("Failed to read all mnemonics from keychain. status=\(status)")
-            throw .reading(
-                KeychainFailure.failure(code: status)
-            )
+    public func getAll() throws(MnemonicsRepositoryV2Failure) -> [CoreMnemonicIdentifier: RawMnemonicsData] {
+        let storage: MnemonicsRawDataSlotStorage
+        do {
+            storage = try resolvedSlotStorage()
+        } catch {
+            logger.e("Failed to resolve v2 mnemonics storage slot for getAll. error=\(error)")
+            throw error
         }
-        guard let result else {
-            logger.e("Keychain returned empty result for all mnemonics.")
-            throw .decoding(
-                InternalDecodingFailure.wrongValueType("nil")
-            )
-        }
-
-        guard let rawValues = result as? [[String: Any]] else {
-            logger.e("Keychain returned unexpected value type for all mnemonics. type=\(type(of: result))")
-            throw .decoding(
-                InternalDecodingFailure.wrongValueType("\(type(of: result))")
-            )
-        }
-        var values: [CoreMnemonicIdentifier: Data] = [:]
-        for rawValue in rawValues {
-            guard
-                let account = rawValue[kSecAttrAccount as String] as? String,
-                let data = rawValue[kSecValueData as String] as? Data
-            else {
-                logger.e("Keychain returned malformed item for all mnemonics. item=\(rawValue)")
-                throw .decoding(
-                    InternalDecodingFailure.wrongValueType("Malformed keychain dictionary item")
-                )
-            }
-            values[account] = data
-        }
-
-        let decoder = JSONDecoder()
-        var mnemonics: [CoreMnemonicIdentifier: MnemonicItem] = [:]
-        for (account, data) in values {
-            do {
-                mnemonics[account] = try decoder.decode(MnemonicItem.self, from: data)
-            } catch {
-                logger.e("Failed to decode mnemonic during getAll. id=\(account), bytes=\(data.count), error=\(error)")
-                throw .decoding(error)
-            }
-        }
-        return mnemonics
+        return try storage.getAll()
     }
 
     public func delete(
         id: CoreMnemonicIdentifier
-    ) throws(MnemonicsRepositoryV2DeleteFailure) {
-        let query = keychainQuery(
-            for: .removeMnemonic(id: id)
-        ) as CFDictionary
-        let status = SecItemDelete(query)
-        switch status {
-        case errSecItemNotFound:
-            logger.e("Cannot delete mnemonic because it does not exist. id=\(id), status=\(status)")
-            throw .notFound(
-                KeychainFailure.failure(code: status)
+    ) throws(MnemonicsRepositoryV2Failure) {
+        let storage: MnemonicsRawDataSlotStorage
+        do {
+            storage = try resolvedSlotStorage()
+        } catch {
+            logger.e("Failed to resolve v2 mnemonics storage slot for delete. id=\(id), error=\(error)")
+            throw error
+        }
+        try storage.delete(id: id)
+    }
+}
+
+private extension MnemonicsRawDataRepository {
+    func commitMnemonicsRewrite(
+        mnemonics: [CoreMnemonicIdentifier: CoreMnemonic],
+        passcode: String,
+        stagedCleanupLog: String,
+        activationCleanupLog: String,
+        oldStorageCleanupLog: String
+    ) throws(MnemonicsRepositoryV2Failure) {
+        let input = MnemonicsRawDataSlotStorage.WriteInput(
+            mnemonics: mnemonics,
+            passcode: passcode
+        )
+        let commit: ABSlotCommit<MnemonicsRawDataSlotStorage>
+        do {
+            commit = try abSlotCoordinator.commit(input)
+        } catch {
+            try handleABSlotCoordinatorFailure(
+                error,
+                stagedCleanupLog: stagedCleanupLog,
+                activationCleanupLog: activationCleanupLog
             )
-        case errSecSuccess:
-            return
-        default:
-            logger.e("Failed to delete mnemonic from keychain. id=\(id), status=\(status)")
-            throw .writing(
-                KeychainFailure.failure(code: status)
-            )
+            throw .storageFailure(underlying: error)
+        }
+
+        do {
+            try commit.previousStorage?.prepare()
+        } catch {
+            logger.e("\(oldStorageCleanupLog): \(error)")
         }
     }
 
-    public func deleteAll() throws(MnemonicsRepositoryV2DeleteFailure) {
-        let query = keychainQuery(
-            for: .removeAll
-        ) as CFDictionary
-        let status = SecItemDelete(query)
-        switch status {
-        case errSecItemNotFound:
-            logger.e("Cannot delete all mnemonics because no entries exist. status=\(status)")
-            throw .notFound(
-                KeychainFailure.failure(code: status)
-            )
-        case errSecSuccess:
-            return
-        default:
-            logger.e("Failed to delete all mnemonics from keychain. status=\(status)")
-            throw .writing(
-                KeychainFailure.failure(code: status)
-            )
+    func handleABSlotCoordinatorFailure(
+        _ error: ABSlotCoordinatorFailure<MnemonicsRepositoryV2Failure>,
+        stagedCleanupLog: String,
+        activationCleanupLog: String
+    ) throws(MnemonicsRepositoryV2Failure) {
+        switch error {
+        case let .storage(error):
+            throw error
+        case let .activeSlot(error):
+            throw mnemonicsFailure(from: error)
+        case let .stagedDiscardFailed(_, discard):
+            logger.e("\(stagedCleanupLog): \(discard)")
+            throw .storageFailure(underlying: error)
+        case let .activationCleanupFailed(_, discard):
+            logger.e("\(activationCleanupLog): \(discard)")
+            throw .storageFailure(underlying: error)
+        case let .unexpectedStagedSlot(expected, actual):
+            logger.e("Unexpected v2 mnemonics staged slot. expected=\(expected), actual=\(actual)")
+            throw .securityFailure(code: errSecInternalComponent)
         }
     }
 }
 
-extension MnemonicsRawDataRepository {
-    enum KeychainFailure: Error {
-        case failure(code: OSStatus)
+private extension MnemonicsRawDataRepository {
+    func resolvedSlotStorage() throws(MnemonicsRepositoryV2Failure) -> MnemonicsRawDataSlotStorage {
+        try storage(slot: resolvedStorageSlot())
     }
 
-    enum KeychainQueryType {
-        case checkHasMnemonics
-        case addMnemonic(
-            id: CoreMnemonicIdentifier,
-            value: Data
-        )
-        case updateMnemonic(
-            id: CoreMnemonicIdentifier
-        )
-        case getAllMnemonics
-        case getMnemonic(
-            id: CoreMnemonicIdentifier
-        )
-        case removeMnemonic(
-            id: CoreMnemonicIdentifier
-        )
-        case removeAll
-    }
-
-    private func keychainQuery(
-        for type: KeychainQueryType
-    ) -> [CFString: Any] {
-        let seed = seedProvider()
-        let service = "v2mnemonics_\(seed)"
-
-        switch type {
-        case .checkHasMnemonics:
-            return [
-                kSecClass: securityClass,
-                kSecAttrService: service,
-                kSecMatchLimit: kSecMatchLimitOne,
-                kSecReturnAttributes: true,
-            ]
-        case let .addMnemonic(id, value):
-            return [
-                kSecClass: securityClass,
-                kSecAttrAccessible: keychainWriteAccessType,
-                kSecAttrService: service,
-                kSecAttrAccount: id,
-                kSecValueData: value as AnyObject,
-            ]
-        case let .getMnemonic(id):
-            return [
-                kSecClass: securityClass,
-                kSecAttrService: service,
-                kSecAttrAccount: id,
-                kSecMatchLimit: kSecMatchLimitOne,
-                kSecReturnData: true as AnyObject,
-                kSecReturnAttributes: true as AnyObject,
-            ]
-        case .getAllMnemonics:
-            return [
-                kSecClass: securityClass,
-                kSecAttrService: service,
-                kSecMatchLimit: kSecMatchLimitAll,
-                kSecReturnData: true as AnyObject,
-                kSecReturnAttributes: true as AnyObject,
-            ]
-        case let .removeMnemonic(id), let .updateMnemonic(id):
-            return [
-                kSecClass: securityClass,
-                kSecAttrAccessible: keychainWriteAccessType,
-                kSecAttrService: service,
-                kSecAttrAccount: id,
-            ]
-        case .removeAll:
-            return [
-                kSecClass: securityClass,
-                kSecAttrAccessible: keychainWriteAccessType,
-                kSecAttrService: service,
-            ]
+    func resolvedStorageSlot() throws(MnemonicsRepositoryV2Failure) -> ABStorageSlot {
+        switch storageSlotResolution {
+        case .active:
+            return try activeStorageSlot()
+        case let .fixed(slot):
+            return slot
         }
     }
 
-    private var keychainWriteAccessType: Any {
-        kSecAttrAccessibleWhenUnlocked
+    func activeStorageSlot() throws(MnemonicsRepositoryV2Failure) -> ABStorageSlot {
+        switch try activeStorageSlotState() {
+        case .uninitialized:
+            throw .notFound
+        case let .initialized(slot):
+            return slot
+        }
     }
 
-    private var securityClass: Any {
-        kSecClassGenericPassword
+    func activeStorageSlotState() throws(MnemonicsRepositoryV2Failure) -> ABActiveSlotState {
+        do {
+            return try activeSlotStore.activeSlotState()
+        } catch {
+            switch error {
+            case let .unexpectedStatus(status):
+                logger.e("Failed to read v2 active mnemonics storage slot. status=\(status)")
+                throw .securityFailure(code: status)
+            case let .invalidData(value):
+                logger.e("Keychain returned malformed v2 active mnemonics storage slot. value=\(value)")
+                throw .decodeFailure(message: "invalid active mnemonics storage slot: \(value)")
+            }
+        }
+    }
+
+    func mnemonicsFailure(
+        from error: ABActiveSlotKeychainStore.Error
+    ) -> MnemonicsRepositoryV2Failure {
+        switch error {
+        case let .unexpectedStatus(status):
+            logger.e("Failed to access v2 active mnemonics storage slot. status=\(status)")
+            return .securityFailure(code: status)
+        case let .invalidData(value):
+            logger.e("Keychain returned malformed v2 active mnemonics storage slot. value=\(value)")
+            return .decodeFailure(message: "invalid active mnemonics storage slot: \(value)")
+        }
+    }
+
+    func storage(slot: ABStorageSlot) -> MnemonicsRawDataSlotStorage {
+        let queryBuilder = keychainQueryBuilder
+        return MnemonicsRawDataSlotStorage(
+            keychain: keychain,
+            slot: slot,
+            serviceKeys: queryBuilder.storageServiceKeys(slot: slot),
+            encryptionSalt: { () throws(MnemonicsRepositoryV2Failure) -> Data in
+                try encryptionSaltStore.getSalt()
+            },
+            keychainQuery: {
+                queryBuilder.keychainQuery(for: $0)
+            },
+            argon2Cost: argon2Cost
+        )
+    }
+
+    var activeSlotStore: ABActiveSlotKeychainStore {
+        ABActiveSlotKeychainStore(
+            serviceKey: keychainQueryBuilder.activeStorageServiceKey,
+            keychainWriteAccessType: keychainQueryBuilder.keychainWriteAccessType,
+            keychain: keychain
+        )
+    }
+
+    var abSlotCoordinator: ABSlotCoordinator<MnemonicsRawDataSlotStorage> {
+        ABSlotCoordinator(
+            activeSlotStore: activeSlotStore,
+            makeStorage: { storage(slot: $0) }
+        )
+    }
+
+    var keychainCleaner: MnemonicsRawDataStorageKeychainCleaner {
+        let queryBuilder = keychainQueryBuilder
+        return MnemonicsRawDataStorageKeychainCleaner(
+            keychain: keychain,
+            keychainQuery: {
+                queryBuilder.keychainQuery(for: $0)
+            },
+            logger: logger
+        )
+    }
+
+    var encryptionSaltStore: MnemonicsEncryptionSaltStore {
+        MnemonicsEncryptionSaltStore(
+            seedProvider: seedProvider,
+            keychain: keychain
+        )
+    }
+
+    var keychainQueryBuilder: MnemonicsRawDataStorageKeychainQueryBuilder {
+        MnemonicsRawDataStorageKeychainQueryBuilder(
+            seedProvider: seedProvider
+        )
     }
 }

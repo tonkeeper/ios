@@ -38,34 +38,4 @@ public extension UINavigationController {
         popToRootViewController(animated: animated)
         CATransaction.commit()
     }
-
-    func popToViewController(
-        _ viewController: UIViewController,
-        animated: Bool,
-        completion: (() -> Void)? = nil
-    ) {
-        CATransaction.begin()
-        CATransaction.setCompletionBlock {
-            completion?()
-        }
-        popToViewController(
-            viewController,
-            animated: animated
-        )
-        CATransaction.commit()
-    }
-
-    func setViewControllers(
-        _ viewControllers: [UIViewController],
-        animated: Bool,
-        completion: (() -> Void)? = nil
-    ) {
-        CATransaction.begin()
-        CATransaction.setCompletionBlock(completion)
-        setViewControllers(
-            viewControllers,
-            animated: animated
-        )
-        CATransaction.commit()
-    }
 }

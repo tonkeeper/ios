@@ -4,13 +4,13 @@ import TKCore
 import TKUIKit
 
 @MainActor
-public struct WalletModule {
+struct WalletModule {
     private let dependencies: Dependencies
-    public init(dependencies: Dependencies) {
+    init(dependencies: Dependencies) {
         self.dependencies = dependencies
     }
 
-    public func createWalletCoordinator() -> WalletCoordinator {
+    func createWalletCoordinator() -> WalletCoordinator {
         let navigationController = TKNavigationController()
         navigationController.configureDefaultAppearance()
 
@@ -20,14 +20,25 @@ public struct WalletModule {
             keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
         )
     }
+
+    func createMultichainWalletCoordinator() -> MultichainWalletCoordinator {
+        let navigationController = TKNavigationController()
+        navigationController.configureDefaultAppearance()
+
+        return MultichainWalletCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            coreAssembly: dependencies.coreAssembly,
+            keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+        )
+    }
 }
 
-public extension WalletModule {
+extension WalletModule {
     struct Dependencies {
         let coreAssembly: TKCore.CoreAssembly
         let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
-        public init(
+        init(
             coreAssembly: TKCore.CoreAssembly,
             keeperCoreMainAssembly: KeeperCore.MainAssembly
         ) {

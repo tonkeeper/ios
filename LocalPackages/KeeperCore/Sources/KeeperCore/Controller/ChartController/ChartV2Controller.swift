@@ -1,39 +1,41 @@
 import Foundation
 
 public final class ChartV2Controller {
-    private let chartIdentifier: String
-    private let chartService: ChartService
-    private let currencyStore: CurrencyStore
-    private let walletsService: WalletsService
-    private let dateFormatter = DateFormatter()
-
-    init(
-        chartIdentifier: String,
-        chartService: ChartService,
-        currencyStore: CurrencyStore,
-        walletsService: WalletsService
-    ) {
-        self.chartIdentifier = chartIdentifier
-        self.chartService = chartService
-        self.currencyStore = currencyStore
-        self.walletsService = walletsService
+    public var isMultichainAsset: Bool {
+        asset.isMultichain
     }
 
-    public func getCachedChartData(period: Period, currency: Currency) -> [Coordinate] {
+    private let asset: ChartAsset
+    private let network: Network
+    private let chartService: ChartService
+    private let currencyStore: CurrencyStore
+    init(
+        asset: ChartAsset,
+        network: Network,
+        chartService: ChartService,
+        currencyStore: CurrencyStore
+    ) {
+        self.asset = asset
+        self.network = network
+        self.chartService = chartService
+        self.currencyStore = currencyStore
+    }
+
+    public func getCachedChartData(period: Period, currency: Currency) -> [Coordinate]? {
         return chartService.getChartData(
             period: period,
-            token: chartIdentifier,
+            asset: asset,
             currency: currency,
-            network: (try? walletsService.getActiveWallet().network) ?? .mainnet
+            network: network
         )
     }
 
     public func loadChartData(period: Period, currency: Currency) async throws -> [Coordinate] {
         return try await chartService.loadChartData(
             period: period,
-            token: chartIdentifier,
+            asset: asset,
             currency: currency,
-            network: (try? walletsService.getActiveWallet().network) ?? .mainnet
+            network: network
         )
     }
 

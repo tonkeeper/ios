@@ -1,0 +1,54 @@
+# Opens SYMBOL from the Core tokens shelf and asserts price / balance / activity.
+# Env: SYMBOL (BTC, ETH, BNB, TRX, GRAM, USD₮), EXPECT_TRANSACTION_HISTORY
+appId: com.jbig.tonkeeper
+---
+- scrollUntilVisible:
+    element: "Core tokens"
+    direction: DOWN
+    centerElement: true
+    timeout: 30000
+
+- extendedWaitUntil:
+    visible: ${SYMBOL}
+    timeout: 30000
+- tapOn:
+    text: ${SYMBOL}
+    below: "Core tokens"
+- waitForAnimationToEnd:
+    timeout: 5000
+
+- tapOn:
+    id: tooltip
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Your balance"
+    timeout: 60000
+- assertVisible: "Your balance"
+- assertVisible: Buy
+- assertVisible: "Last day"
+
+- runFlow:
+    when:
+      true: ${EXPECT_TRANSACTION_HISTORY == "true"}
+    commands:
+      - scrollUntilVisible:
+          element: "Transaction history"
+          direction: DOWN
+          timeout: 20000
+      - assertVisible: "Transaction history"
+
+# Market activity is always present for Core tokens.
+- scrollUntilVisible:
+    element: "24h Trading activity"
+    direction: DOWN
+    timeout: 20000
+- assertVisible: "24h Trading activity"
+
+- tapOn:
+    id: trade_asset_details_back
+- waitForAnimationToEnd:
+    timeout: 3000
+- extendedWaitUntil:
+    visible: "Core tokens"
+    timeout: 30000

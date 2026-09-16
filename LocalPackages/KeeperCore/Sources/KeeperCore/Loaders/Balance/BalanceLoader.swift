@@ -1,176 +1,56 @@
 import Foundation
-import TonSwift
 
-public final class BalanceLoader {
-    @Atomic private var observers = [UUID: (Wallet) -> Void]()
-    @Atomic private var balanceLoadTasks = [Wallet: Task<Void, Never>]()
-    @Atomic private var allWalletsBalanceLoadTask: Task<Void, Never>?
-    @Atomic private var reloadTask: Task<Void, Never>?
+/// Ordered by who is waiting. Quiet is a budget handed to an owner, and each owner names the lowest
+/// priority it still lets through, so the gate is a comparison rather than a case-by-case rule.
+public enum BalanceRefreshPriority: Int, Comparable, Sendable {
+    /// Streaming, the periodic tick, the wallets-list prefill. Nobody is watching an indicator.
+    case background
+    /// Settles a balance a screen is rendering as pending.
+    case userVisible
+    /// Someone is waiting on this exact data. Opening a screen does not qualify on its own.
+    case userInitiated
 
-    @Atomic private var walletBalanceLoaders = [Wallet: WalletBalanceLoader]()
-
-    private let walletStore: WalletsStore
-    private let currencyStore: CurrencyStore
-    private let ratesStore: TonRatesStore
-    private let ratesService: RatesService
-    private let walletStateLoaderProvider: (Wallet) -> WalletBalanceLoader
-
-    init(
-        walletStore: WalletsStore,
-        currencyStore: CurrencyStore,
-        ratesStore: TonRatesStore,
-        ratesService: RatesService,
-        walletStateLoaderProvider: @escaping (Wallet) -> WalletBalanceLoader
-    ) {
-        self.walletStore = walletStore
-        self.currencyStore = currencyStore
-        self.ratesStore = ratesStore
-        self.ratesService = ratesService
-        self.walletStateLoaderProvider = walletStateLoaderProvider
-
-        walletBalanceLoaders = walletStore.wallets.reduce(into: [Wallet: WalletBalanceLoader]()) {
-            $0[$1] = createWalletBalanceLoader(wallet: $1)
-        }
-
-        setupObservations()
+    public static func < (lhs: Self, rhs: Self) -> Bool {
+        lhs.rawValue < rhs.rawValue
     }
 
-    public func isLoadingBalance(wallet: Wallet) -> Bool {
-        walletBalanceLoaders[wallet]?.isLoading ?? false
-    }
-
-    public func loadWalletBalance(wallet: Wallet) {
-        balanceLoadTasks[wallet]?.cancel()
-        let walletBalanceLoader = walletBalanceLoaders[wallet]
-        let task = Task {
-            let currency = currencyStore.state
-            await loadRates(currency: currency)
-            await walletBalanceLoader?.reloadBalance(currency: currency)
-        }
-        balanceLoadTasks[wallet] = task
-    }
-
-    public func loadActiveWalletBalance() {
-        guard let activeWallet = try? walletStore.activeWallet else { return }
-        loadWalletBalance(wallet: activeWallet)
-    }
-
-    public func loadAllWalletsBalance() {
-        allWalletsBalanceLoadTask?.cancel()
-        let loaders = walletStore.wallets.compactMap { walletBalanceLoaders[$0] }
-        let task = Task {
-            let currency = currencyStore.state
-            await loadRates(currency: currency)
-            let chunks = loaders.chunked(into: 2)
-            for chunk in chunks {
-                await withTaskGroup(of: Void.self) { group in
-                    for loader in chunk {
-                        group.addTask {
-                            await loader.reloadBalance(currency: currency, includingTransferFees: false)
-                        }
-                    }
-                    await group.waitForAll()
-                }
-                try? await Task.sleep(nanoseconds: 500_000_000)
-            }
-        }
-        allWalletsBalanceLoadTask = task
-    }
-
-    public func startActiveWalletBalanceReload() {
-        reloadTask?.cancel()
-        let task = Task {
-            try? await Task.sleep(nanoseconds: 60_000_000_000)
-            guard !Task.isCancelled else { return }
-            await MainActor.run {
-                loadActiveWalletBalance()
-                startActiveWalletBalanceReload()
-            }
-        }
-        reloadTask = task
-    }
-
-    public func stopActiveWalletBalanceReload() {
-        reloadTask?.cancel()
-    }
-
-    public func addUpdateObserver<T: AnyObject>(
-        _ observer: T,
-        closure: @escaping (T, Wallet) -> Void
-    ) {
-        let id = UUID()
-        let observerClosure: (Wallet) -> Void = { [weak self, weak observer] wallet in
-            guard let self else { return }
-            guard let observer else {
-                self.observers.removeValue(forKey: id)
-                return
-            }
-            closure(observer, wallet)
-        }
-        self.observers[id] = observerClosure
-    }
-
-    private func setupObservations() {
-        walletStore.addObserver(self) { observer, event in
-            DispatchQueue.main.async {
-                switch event {
-                case let .didAddWallets(wallets):
-                    let loaders = wallets.reduce(into: [Wallet: WalletBalanceLoader]()) {
-                        $0[$1] = observer.createWalletBalanceLoader(wallet: $1)
-                    }
-                    observer.walletBalanceLoaders.merge(loaders, uniquingKeysWith: { old, _ in old })
-                case let .didDeleteWallet(wallet):
-                    observer.walletBalanceLoaders[wallet] = nil
-                case .didChangeActiveWallet:
-                    observer.loadActiveWalletBalance()
-                    observer.startActiveWalletBalanceReload()
-                case let .didUpdateWalletTron(wallet):
-                    observer.walletBalanceLoaders[wallet] = nil
-                    observer.walletBalanceLoaders[wallet] = observer.createWalletBalanceLoader(wallet: wallet)
-                    observer.loadActiveWalletBalance()
-                default: break
-                }
-            }
-        }
-
-        currencyStore.addObserver(self) { observer, event in
-            DispatchQueue.main.async {
-                switch event {
-                case .didUpdateCurrency:
-                    observer.loadActiveWalletBalance()
-                    observer.startActiveWalletBalanceReload()
-                }
-            }
-        }
-    }
-
-    private func createWalletBalanceLoader(wallet: Wallet) -> WalletBalanceLoader {
-        let loader = walletStateLoaderProvider(wallet)
-        loader.addUpdateObserver(self, closure: { observer in
-            observer.observers.forEach { $0.value(wallet) }
-        })
-        return loader
-    }
-
-    private func loadRates(currency: Currency) async {
-        do {
-            let rates = try await ratesService.loadRates(
-                jettons: [JettonMasterAddress.USDe.toRaw()],
-                currencies: [currency, .GRAM, .USD]
-            )
-            try Task.checkCancellation()
-            await ratesStore.setRates(ton: rates.ton, usdt: rates.usdt, jettonRates: rates.jettonRates)
-        } catch {
-            guard !error.isCancelledError else { return }
-            await ratesStore.setRates(ton: [], usdt: [], jettonRates: [:])
-        }
+    /// Whether landing on a run already in flight earns a follow-up run of its own. A refresh that
+    /// reports a change may have been read past by the run in flight, and someone pulling to
+    /// refresh is asking for an answer newer than the one it is fetching. A screen that has just
+    /// appeared wants no more than that answer, so it rides it — asking again would spend a second
+    /// request to be told the same thing, and leave the screen loading for both.
+    var earnsFollowUpRun: Bool {
+        self != .userVisible
     }
 }
 
-private extension Array {
-    func chunked(into size: Int) -> [[Element]] {
-        return stride(from: 0, to: count, by: size).map {
-            Array(self[$0 ..< Swift.min($0 + size, count)])
-        }
-    }
+public enum BalanceRefreshResult: Equatable {
+    case delivered(WalletBalanceState)
+    /// A reload ran and produced no new balance.
+    case failed
+    /// Nothing ran and nothing is coming, so this says nothing about the amount on screen.
+    case dropped
+}
+
+/// What the loader knew at the moment it notified, so a consumer that hops isolation domains no
+/// longer reads a flag that has since moved on.
+public struct BalanceLoaderUpdate {
+    public let wallet: Wallet
+    public let isLoading: Bool
+    /// `nil` on the start edge.
+    public let result: BalanceRefreshResult?
+}
+
+public protocol BalanceLoader: AnyObject {
+    /// Runs as soon as the current mode allows one. A request landing on a reload already queued or
+    /// in flight rides it and reports its result rather than adding its own. Always returns.
+    @discardableResult
+    func reloadBalance(wallet: Wallet, priority: BalanceRefreshPriority) async -> BalanceRefreshResult
+    /// Every wallet whose balance is stale enough to be worth a request. Results reach the screens
+    /// through the stores, since no single caller is waiting for a particular wallet here.
+    func reloadAllWalletsBalance(priority: BalanceRefreshPriority) async
+    func setQuiet(_ isQuiet: Bool, owner: BalanceQuietOwner)
+    func setRegularPollingPaused(_ paused: Bool)
+    func setIsRealtimeSubscribed(_ isSubscribed: @escaping @Sendable (String) -> Bool)
+    func addUpdateObserver<T: AnyObject>(_ observer: T, closure: @escaping (T, BalanceLoaderUpdate) -> Void)
 }

@@ -7,6 +7,7 @@
 
 import BigInt
 import Foundation
+import TKLocalize
 
 // MARK: - Public Types
 
@@ -35,12 +36,12 @@ public protocol CurrencyDisplayable {
     var currencyDisplayType: CurrencyDisplayType { get }
 }
 
-public struct AmountCurrency: CurrencyDisplayable {
-    public let symbol: String
-    public let symbolOnLeft: Bool
-    public let currencyDisplayType: CurrencyDisplayType
+struct AmountCurrency: CurrencyDisplayable {
+    let symbol: String
+    let symbolOnLeft: Bool
+    let currencyDisplayType: CurrencyDisplayType
 
-    public init(
+    init(
         symbol: String,
         symbolOnLeft: Bool = false,
         currencyDisplayType: CurrencyDisplayType
@@ -76,6 +77,51 @@ public enum AmountAccessoryType {
     }
 }
 
+public struct BalanceHeaderAmountFormat: Hashable {
+    public struct NumberPart: Hashable {
+        public enum Role: Hashable {
+            case primary
+            case fraction
+        }
+
+        public let text: String
+        public let role: Role
+
+        public init(text: String, role: Role) {
+            self.text = text
+            self.role = role
+        }
+    }
+
+    public enum TextSize: Hashable {
+        case regular
+        case reduced
+    }
+
+    public let leadingAccessory: String?
+    public let trailingAccessory: String?
+    public let numberParts: [NumberPart]
+    public let fullText: String
+    public let tooltipText: String?
+    public let textSize: TextSize
+
+    public init(
+        leadingAccessory: String? = nil,
+        trailingAccessory: String? = nil,
+        numberParts: [NumberPart],
+        fullText: String,
+        tooltipText: String? = nil,
+        textSize: TextSize
+    ) {
+        self.leadingAccessory = leadingAccessory
+        self.trailingAccessory = trailingAccessory
+        self.numberParts = numberParts
+        self.fullText = fullText
+        self.tooltipText = tooltipText
+        self.textSize = textSize
+    }
+}
+
 // MARK: - Amount Formatter
 
 /// A simplified amount formatter that supports compact, balance, and exact value formatting.
@@ -86,7 +132,8 @@ public enum AmountAccessoryType {
 /// - Values greater than or equal to 1: Up to 8 fraction digits
 ///
 /// Compact rules:
-/// - Same as regular for values lower than 1
+/// - Values lower than 1: Up to 3 significant fraction digits after leading zeros, but no more than
+///   8 fraction digits total; non-zero values below 0.00000001 display as "< 0.00000001"
 /// - Values greater than or equal to 1: Up to 2 fraction digits
 ///
 /// Fiat balance rules:
@@ -98,11 +145,16 @@ public class AmountFormatter: Formatter {
     private enum Constants {
         static let compactMaxFractionDigits = 2
         static let compactMaxSignificantFractionDigits = 3
+        static let compactSmallValueMaxFractionDigits = 8
         static let compactMinimumFractionDigits = 8
         static let fiatFractionDigits = 2
         static let fiatBalanceTokenFractionDigits = 8
         static let percentFractionDigits = 2
         static let groupingSeparator = " "
+        static let balanceReducedTextMinimum = "1000000"
+        static let balanceCompactMinimum = "10000000"
+        static let balanceCompactFractionDigits = 1
+        static let balanceCompactSuffixes = ["", "K", "M", "B", "T", "Q"]
     }
 
     private struct FormattedNumberParts {
@@ -232,7 +284,7 @@ public class AmountFormatter: Formatter {
             fraction: parts.fraction,
             isNegative: isNegative,
             accessory: accessory,
-            isLessThanMinimum: displayStyle == .fiatBalance && parts.isLessThanMinimum,
+            isLessThanMinimum: parts.isLessThanMinimum,
             isZero: parts.isZero,
             isPercent: displayStyle == .percent
         )
@@ -295,7 +347,7 @@ public class AmountFormatter: Formatter {
             fraction: parts.fraction,
             isNegative: isNegative,
             accessory: accessory,
-            isLessThanMinimum: displayStyle == .fiatBalance && parts.isLessThanMinimum,
+            isLessThanMinimum: parts.isLessThanMinimum,
             isZero: parts.isZero,
             isPercent: displayStyle == .percent
         )
@@ -314,7 +366,82 @@ public class AmountFormatter: Formatter {
         )
     }
 
+    public func formatBalanceHeaderAmount(
+        decimal: Decimal,
+        accessory: AmountAccessoryType = .none
+    ) -> BalanceHeaderAmountFormat {
+        let isNegative = decimal < 0
+        let magnitude = isNegative ? -decimal : decimal
+        let (integer, fraction) = splitAmount(decimal: magnitude)
+        return formatBalanceHeaderAmount(
+            integer: integer,
+            fraction: fraction,
+            accessory: accessory,
+            isNegative: isNegative
+        )
+    }
+
     // MARK: - Private Methods
+
+    private func formatBalanceHeaderAmount(
+        integer: String,
+        fraction: String,
+        accessory: AmountAccessoryType,
+        isNegative: Bool
+    ) -> BalanceHeaderAmountFormat {
+        let fiatBalanceParts = applyFiatBalanceRules(
+            integer: integer,
+            fraction: fraction,
+            fractionDigits: fiatBalanceFractionDigits(for: accessory)
+        )
+        let fullText = buildFormattedString(
+            integer: fiatBalanceParts.integer,
+            fraction: fiatBalanceParts.fraction,
+            isNegative: isNegative,
+            accessory: accessory,
+            isLessThanMinimum: fiatBalanceParts.isLessThanMinimum,
+            isZero: fiatBalanceParts.isZero
+        )
+
+        if isAtLeast(integer: integer, threshold: Constants.balanceCompactMinimum) {
+            let accessory = balanceAccessory(for: accessory)
+            return BalanceHeaderAmountFormat(
+                leadingAccessory: accessory.leading,
+                trailingAccessory: accessory.trailing,
+                numberParts: compactBalanceNumberParts(
+                    integer: integer,
+                    fraction: fraction,
+                    isNegative: isNegative
+                ),
+                fullText: fullText,
+                tooltipText: fullText,
+                textSize: .regular
+            )
+        }
+
+        if fiatBalanceParts.isLessThanMinimum {
+            return BalanceHeaderAmountFormat(
+                numberParts: splitNumberText(fullText),
+                fullText: fullText,
+                textSize: .regular
+            )
+        }
+
+        let accessory = balanceAccessory(for: accessory)
+        return BalanceHeaderAmountFormat(
+            leadingAccessory: accessory.leading,
+            trailingAccessory: accessory.trailing,
+            numberParts: balanceNumberParts(
+                integer: fiatBalanceParts.integer,
+                fraction: fiatBalanceParts.fraction,
+                isNegative: isNegative,
+                isLessThanMinimum: false,
+                isZero: fiatBalanceParts.isZero
+            ),
+            fullText: fullText,
+            textSize: isAtLeast(integer: integer, threshold: Constants.balanceReducedTextMinimum) ? .reduced : .regular
+        )
+    }
 
     /// Split BigUInt into integer and fraction string parts
     private func splitAmount(amount: BigUInt, fractionDigits: Int) -> (integer: String, fraction: String) {
@@ -338,6 +465,28 @@ public class AmountFormatter: Formatter {
         return (integerPart.isEmpty ? "0" : integerPart, fractionPart)
     }
 
+    private func splitAmount(decimal: Decimal) -> (integer: String, fraction: String) {
+        let formatter = NumberFormatter()
+        formatter.locale = config.locale
+        formatter.numberStyle = .decimal
+        formatter.usesGroupingSeparator = false
+        formatter.minimumFractionDigits = 0
+        formatter.maximumFractionDigits = 80
+        formatter.roundingMode = .down
+
+        let numberString = formatter.string(from: decimal as NSDecimalNumber) ?? "0"
+        let decimalSeparator = formatter.decimalSeparator ?? "."
+
+        if let separatorIndex = numberString.firstIndex(of: Character(decimalSeparator)) {
+            return (
+                String(numberString[..<separatorIndex]),
+                String(numberString[numberString.index(after: separatorIndex)...])
+            )
+        } else {
+            return (numberString, "")
+        }
+    }
+
     /// Apply regular token-like display rules
     private func applyRegularRules(integer: String, fraction: String) -> FormattedNumberParts {
         applyTokenLikeRules(
@@ -352,21 +501,26 @@ public class AmountFormatter: Formatter {
         applyTokenLikeRules(
             integer: integer,
             fraction: fraction,
-            maxGreaterThanOneFractionDigits: Constants.compactMaxFractionDigits
+            maxGreaterThanOneFractionDigits: Constants.compactMaxFractionDigits,
+            smallValueMaxFractionDigits: Constants.compactSmallValueMaxFractionDigits
         )
     }
 
     private func applyTokenLikeRules(
         integer: String,
         fraction: String,
-        maxGreaterThanOneFractionDigits: Int
+        maxGreaterThanOneFractionDigits: Int,
+        smallValueMaxFractionDigits: Int? = nil
     ) -> FormattedNumberParts {
         guard !isZero(integer: integer, fraction: fraction) else {
             return FormattedNumberParts(integer: "0", fraction: nil, isLessThanMinimum: false, isZero: true)
         }
 
         if integer == "0" {
-            return applyCompactLessThanOneRules(fraction: fraction)
+            return applyCompactLessThanOneRules(
+                fraction: fraction,
+                maxFractionDigits: smallValueMaxFractionDigits
+            )
         }
 
         let (truncatedInteger, truncatedFraction) = truncatedParts(
@@ -383,13 +537,29 @@ public class AmountFormatter: Formatter {
         )
     }
 
-    private func applyCompactLessThanOneRules(fraction: String) -> FormattedNumberParts {
+    private func applyCompactLessThanOneRules(
+        fraction: String,
+        maxFractionDigits: Int? = nil
+    ) -> FormattedNumberParts {
         guard let firstSignificantIndex = fraction.firstIndex(where: { $0 != "0" }) else {
             return FormattedNumberParts(integer: "0", fraction: nil, isLessThanMinimum: false, isZero: true)
         }
 
         let firstSignificantOffset = fraction.distance(from: fraction.startIndex, to: firstSignificantIndex)
-        let maximumEndOffset = firstSignificantOffset + Constants.compactMaxSignificantFractionDigits
+
+        if let maxFractionDigits, firstSignificantOffset >= maxFractionDigits {
+            return FormattedNumberParts(
+                integer: "0",
+                fraction: minimumFraction(digits: maxFractionDigits),
+                isLessThanMinimum: true,
+                isZero: false
+            )
+        }
+
+        var maximumEndOffset = firstSignificantOffset + Constants.compactMaxSignificantFractionDigits
+        if let maxFractionDigits {
+            maximumEndOffset = min(maximumEndOffset, maxFractionDigits)
+        }
         let endIndex = fraction.index(
             fraction.startIndex,
             offsetBy: min(maximumEndOffset, fraction.count)
@@ -449,6 +619,126 @@ public class AmountFormatter: Formatter {
             case .token:
                 return Constants.fiatBalanceTokenFractionDigits
             }
+        }
+    }
+
+    private func isAtLeast(integer: String, threshold: String) -> Bool {
+        let integer = normalizedInteger(integer)
+        if integer.count != threshold.count {
+            return integer.count > threshold.count
+        }
+        return integer >= threshold
+    }
+
+    private func normalizedInteger(_ integer: String) -> String {
+        let trimmed = integer.drop(while: { $0 == "0" })
+        return trimmed.isEmpty ? "0" : String(trimmed)
+    }
+
+    private func balanceAccessory(for accessory: AmountAccessoryType) -> (leading: String?, trailing: String?) {
+        switch accessory {
+        case .none:
+            return (nil, nil)
+        case let .token(currency),
+             let .fiat(currency):
+            return currency.symbolOnLeft
+                ? (currency.symbol, nil)
+                : (nil, currency.symbol)
+        }
+    }
+
+    private func balanceNumberParts(
+        integer: String,
+        fraction: String?,
+        isNegative: Bool,
+        isLessThanMinimum: Bool,
+        isZero: Bool
+    ) -> [BalanceHeaderAmountFormat.NumberPart] {
+        var primary = ""
+        let signPrefix = signPrefix(isNegative: isNegative, isZero: isZero)
+        if isLessThanMinimum {
+            primary += (signPrefix ?? "") + "< "
+        } else if let signPrefix {
+            primary += signPrefix
+        }
+
+        primary += applyGrouping(integer)
+
+        var parts = [
+            BalanceHeaderAmountFormat.NumberPart(text: primary, role: .primary),
+        ]
+
+        if let fraction, !fraction.isEmpty {
+            parts.append(
+                BalanceHeaderAmountFormat.NumberPart(
+                    text: (config.locale.decimalSeparator ?? ".") + fraction,
+                    role: .fraction
+                )
+            )
+        }
+
+        return parts
+    }
+
+    private func compactBalanceNumberParts(
+        integer: String,
+        fraction: String,
+        isNegative: Bool
+    ) -> [BalanceHeaderAmountFormat.NumberPart] {
+        let integer = normalizedInteger(integer)
+        let groupIndex = min(
+            (integer.count - 1) / 3,
+            Constants.balanceCompactSuffixes.count - 1
+        )
+        let suffix = Constants.balanceCompactSuffixes[groupIndex]
+        let suffixPower = groupIndex * 3
+        let wholeDigitCount = max(1, integer.count - suffixPower)
+        let wholeEndIndex = integer.index(integer.startIndex, offsetBy: wholeDigitCount)
+        let whole = String(integer[..<wholeEndIndex])
+        let compactFractionSource = String(integer[wholeEndIndex...]) + fraction
+        let compactFraction = String(compactFractionSource.prefix(Constants.balanceCompactFractionDigits))
+            .trimmingCharacters(in: CharacterSet(charactersIn: "0"))
+
+        var primary = (signPrefix(isNegative: isNegative, isZero: false) ?? "") + whole
+
+        if !compactFraction.isEmpty {
+            primary += (config.locale.decimalSeparator ?? ".") + compactFraction
+        }
+
+        if !suffix.isEmpty {
+            primary += suffix
+        }
+
+        return [BalanceHeaderAmountFormat.NumberPart(text: primary, role: .primary)]
+    }
+
+    private func splitNumberText(_ text: String) -> [BalanceHeaderAmountFormat.NumberPart] {
+        let decimalSeparator = Character(config.locale.decimalSeparator ?? ".")
+        guard let separatorIndex = text.firstIndex(of: decimalSeparator) else {
+            return [BalanceHeaderAmountFormat.NumberPart(text: text, role: .primary)]
+        }
+
+        return [
+            BalanceHeaderAmountFormat.NumberPart(
+                text: String(text[..<separatorIndex]),
+                role: .primary
+            ),
+            BalanceHeaderAmountFormat.NumberPart(
+                text: String(text[separatorIndex...]),
+                role: .fraction
+            ),
+        ]
+    }
+
+    private func signPrefix(isNegative: Bool, isZero: Bool) -> String? {
+        guard !isZero else { return nil }
+        switch config.signPolicy {
+        case .negativeOnly:
+            return isNegative ? String.Symbol.minus + config.space : nil
+        case .always:
+            return (isNegative ? String.Symbol.minus : String.Symbol.plus) + config.space
+        case .none:
+            return nil
         }
     }
 

@@ -8,7 +8,7 @@ import TKUIKit
 import TonSwift
 import UIKit
 
-public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
     var didClose: (() -> Void)?
 
     private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
@@ -19,7 +19,7 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
     private let coreAssembly: TKCore.CoreAssembly
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
 
-    public init(
+    init(
         wallet: Wallet,
         fromToken: String?,
         toToken: String?,
@@ -35,11 +35,11 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
         super.init(router: router)
     }
 
-    override public func start() {
+    override func start() {
         openSwap()
     }
 
-    public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
+    func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
         guard let walletTransferSignCoordinator else { return false }
 
         walletTransferSignCoordinator.externalSignHandler?(sign)
@@ -86,6 +86,7 @@ private extension WebSwapCoordinator {
             transferProvider: { .stonfiSwap(signRequest) },
             resultHandler: ResultHandler(completion: completion),
             sendFrom: .tonconnectRemote,
+            initiatedBy: .user,
             coreAssembly: coreAssembly,
             keeperCoreMainAssembly: keeperCoreMainAssembly,
             didRequireSign: { [weak self] transferData, wallet, coordinator, router throws(WalletTransferSignError) in

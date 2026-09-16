@@ -1,20 +1,91 @@
 import BigInt
 import KeeperCore
+import TKCoordinator
+import TKCore
 import TKFeatureFlags
 import TKLocalize
 import TKUIKit
 import TonSwift
 import UIKit
 
+/// In-app placement a deeplink was opened from, when it is not derivable from the deeplink itself.
+enum DeeplinkOrigin {
+    case app
+    case banner
+}
+
+/// Outcome of a send deeplink that cannot reach the send form, thrown so every handler reports it
+/// the same way.
+enum SendDeeplinkFailure: Error {
+    case scamRecipient
+    case invalidRecipient
+    case unsupported
+    case assetUnavailable
+}
+
+func modalFlowNavigationController(rootViewController: UIViewController) -> UINavigationController? {
+    if let navigationController = rootViewController as? UINavigationController {
+        return navigationController
+    }
+    if let tabBarController = rootViewController as? UITabBarController {
+        return tabBarController.selectedViewController as? UINavigationController
+    }
+    return rootViewController.navigationController
+}
+
 extension MainCoordinator {
+    func migrationSource(fromStories: Bool, origin: DeeplinkOrigin) -> MigrationSource {
+        if fromStories {
+            return .story
+        }
+        switch origin {
+        case .banner: return .banner
+        case .app: return .deeplink
+        }
+    }
+
     func openSendDeeplink(
-        recipient: String,
-        amount: BigUInt?,
-        comment: String?,
-        jettonAddress: Address?,
-        expirationTimestamp: Int64?,
-        successReturn: URL?,
+        transfer: Deeplink.TransferData,
         sendSource: SendAnalyticsSource
+    ) {
+        runSendDeeplinkTask(expirationTimestamp: transfer.expirationTimestamp) { wallet in
+            try await self.handleSendDeeplink(
+                transfer: transfer,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+        }
+    }
+
+    func openMultichainSendDeeplink(
+        candidates: MultichainRecipientCandidates,
+        sendSource: SendAnalyticsSource
+    ) {
+        runSendDeeplinkTask(expirationTimestamp: nil) { wallet in
+            try await self.handleMultichainSendDeeplink(
+                candidates: candidates,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+        }
+    }
+
+    func openEvmSendDeeplink(
+        transfer: Deeplink.EvmTransferData,
+        sendSource: SendAnalyticsSource
+    ) {
+        runSendDeeplinkTask(expirationTimestamp: nil) { wallet in
+            try await self.handleEvmSendDeeplink(
+                transfer: transfer,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+        }
+    }
+
+    private func runSendDeeplinkTask(
+        expirationTimestamp: Int64?,
+        handle: @escaping @Sendable (Wallet) async throws -> Void
     ) {
         deeplinkHandleTask?.cancel()
 
@@ -36,67 +107,9 @@ extension MainCoordinator {
         let deeplinkHandleTask = Task {
             do {
                 let wallet = try walletsStore.activeWallet
-                let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, network: wallet.network)
-
-                var token: SendV3Item = .ton(.token(.ton, amount: 0))
-
-                if recipient.isScam {
-                    ToastPresenter.hideAll()
-                    ToastPresenter.showToast(configuration: .init(title: TKLocales.Send.scamAddress))
-                    return
-                }
-
-                switch recipient {
-                case let .ton(tonRecipient):
-                    if let jettonAddress {
-                        let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
-                        let jettonBalance = try await fundsValidator.resolveJettonBalance(
-                            jettonAddress: jettonAddress, requiredAmount: amount ?? 0, wallet: wallet
-                        )
-
-                        let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
-                            wallet: wallet,
-                            recipient: tonRecipient,
-                            jettonItem: jettonBalance.item,
-                            amount: amount ?? 0,
-                            comment: nil
-                        )
-
-                        try await fundsValidator.validateFundsIfNeeded(
-                            wallet: wallet,
-                            confirmationController: jettonTransferController
-                        )
-
-                        token = .ton(.token(.jetton(jettonBalance.item), amount: amount ?? 0))
-                    } else {
-                        token = .ton(.token(.ton, amount: amount ?? 0))
-                    }
-
-                case .tron:
-                    if wallet.isTronTurnOn {
-                        token = .tron(TronSendData.Item.usdt(amount: amount ?? 0))
-                    } else if wallet.isTronAvailable {
-                        openReceiveTRC20Popup(wallet: wallet)
-                        self.deeplinkHandleTask = nil
-                        ToastPresenter.hideAll()
-                        return
-                    }
-                }
-
-                guard !Task.isCancelled else { return }
-                await MainActor.run {
-                    self.deeplinkHandleTask = nil
-                    ToastPresenter.hideAll()
-                    self.openSend(
-                        wallet: wallet,
-                        sendInput: .direct(item: token),
-                        sendSource: sendSource,
-                        recipient: recipient,
-                        comment: comment,
-                        successReturn: successReturn
-                    )
-                }
+                try await handle(wallet)
             } catch InsufficientFundsError.unknownJetton {
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.deeplinkHandleTask = nil
                     ToastPresenter.hideAll()
@@ -108,6 +121,7 @@ extension MainCoordinator {
                     )
                 }
             } catch let InsufficientFundsError.insufficientFunds(jettonInfo, balance, requiredAmount, wallet, isInternalPurchasing) {
+                guard !Task.isCancelled else { return }
                 await MainActor.run { [weak self] in
                     self?.deeplinkHandleTask = nil
 
@@ -124,6 +138,7 @@ extension MainCoordinator {
                     )
                 }
             } catch let InsufficientFundsError.blockchainFee(wallet, balance, amount) {
+                guard !Task.isCancelled else { return }
                 await MainActor.run { [weak self] in
                     self?.deeplinkHandleTask = nil
 
@@ -151,7 +166,15 @@ extension MainCoordinator {
                         isInternalPurchasing: true
                     )
                 }
+            } catch let failure as SendDeeplinkFailure {
+                guard !Task.isCancelled else { return }
+                await MainActor.run { [weak self] in
+                    self?.deeplinkHandleTask = nil
+                    ToastPresenter.hideAll()
+                    self?.showSendDeeplinkFailure(failure)
+                }
             } catch {
+                guard !Task.isCancelled else { return }
                 await MainActor.run {
                     self.deeplinkHandleTask = nil
                     ToastPresenter.hideAll()
@@ -161,6 +184,387 @@ extension MainCoordinator {
         }
 
         self.deeplinkHandleTask = deeplinkHandleTask
+    }
+
+    private func showSendDeeplinkFailure(_ failure: SendDeeplinkFailure) {
+        switch failure {
+        case .scamRecipient:
+            ToastPresenter.showToast(configuration: .init(title: TKLocales.Send.scamAddress))
+        case .invalidRecipient:
+            ToastPresenter.showToast(configuration: .init(title: TKLocales.Send.invalidAddress))
+        case .unsupported:
+            ToastPresenter.showToast(configuration: .failed)
+        case .assetUnavailable:
+            showMultichainSendLoadError()
+        }
+    }
+
+    /// `asset_id` wins over `jetton`; with neither, the asset is picked in the send flow instead of
+    /// defaulting to TON — the chains offered are the ones the recipient address is valid on.
+    private func handleSendDeeplink(
+        transfer: Deeplink.TransferData,
+        wallet: Wallet,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        guard let multichainState = multichainSendState(for: wallet) else {
+            try await handleLegacyWalletSendDeeplink(
+                transfer: transfer,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+            return
+        }
+
+        if let assetId = transfer.assetId {
+            try await handlePinnedAssetSendDeeplink(
+                transfer: transfer,
+                assetId: assetId,
+                wallet: wallet,
+                multichainState: multichainState,
+                sendSource: sendSource
+            )
+            return
+        }
+
+        if transfer.jettonAddress != nil {
+            try await handleLegacyWalletSendDeeplink(
+                transfer: transfer,
+                wallet: wallet,
+                sendSource: sendSource
+            )
+            return
+        }
+
+        try await handleAssetPickerSendDeeplink(
+            transfer: transfer,
+            wallet: wallet,
+            multichainState: multichainState,
+            sendSource: sendSource
+        )
+    }
+
+    private func handleLegacyWalletSendDeeplink(
+        transfer: Deeplink.TransferData,
+        wallet: Wallet,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        let recipient = try await recipientResolver.resolverRecipient(
+            string: transfer.recipient,
+            network: wallet.network
+        )
+
+        let plan = LegacySendDeeplinkPlan(
+            assetId: transfer.assetId,
+            jettonAddress: transfer.jettonAddress,
+            amount: transfer.amount,
+            recipientChain: recipient.isTon ? .ton : .tron
+        )
+
+        try await handleLegacySendDeeplink(
+            recipient: recipient,
+            wallet: wallet,
+            amount: plan.amount,
+            jettonAddress: plan.jettonAddress,
+            comment: transfer.comment,
+            successReturn: transfer.successReturn,
+            sendSource: sendSource
+        )
+    }
+
+    private func handlePinnedAssetSendDeeplink(
+        transfer: Deeplink.TransferData,
+        assetId: String,
+        wallet: Wallet,
+        multichainState: MultichainWalletState,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        guard let input = await multichainSendInput(
+            wallet: wallet,
+            multichainState: multichainState,
+            assetId: assetId,
+            amount: transfer.amount ?? 0
+        ),
+            let chain = input.item.asset.asset.chain,
+            multichainState.addresses.contains(where: { $0.chain == chain })
+        else {
+            throw SendDeeplinkFailure.assetUnavailable
+        }
+
+        let recipient = try await resolveMultichainRecipient(
+            transfer.recipient,
+            chain: chain,
+            wallet: wallet
+        )
+
+        finishSendDeeplinkTask {
+            self.openMultichainSend(
+                wallet: wallet,
+                multichainState: multichainState,
+                entry: .enterAmount(input),
+                sendSource: sendSource,
+                recipient: recipient,
+                comment: transfer.comment,
+                successReturn: transfer.successReturn
+            )
+        }
+    }
+
+    /// The amount is left behind: without a pinned asset it is denominated in a token the user has
+    /// not chosen yet, so it must not land on whatever they pick.
+    private func handleAssetPickerSendDeeplink(
+        transfer: Deeplink.TransferData,
+        wallet: Wallet,
+        multichainState: MultichainWalletState,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        if let candidates = MultichainRecipientCandidates(string: transfer.recipient),
+           !candidates.chains.contains(.ton)
+        {
+            try await handleMultichainSendDeeplink(
+                candidates: candidates,
+                wallet: wallet,
+                sendSource: sendSource,
+                comment: transfer.comment,
+                successReturn: transfer.successReturn
+            )
+            return
+        }
+
+        // A TON address or a domain becomes a recipient only through the resolver, which is also
+        // where scam recipients are rejected. The resolved recipient goes to the picker as it is:
+        // rebuilding it from its address alone would drop the DNS name the form and the
+        // confirmation screen display.
+        let recipient = try await resolveMultichainRecipient(
+            transfer.recipient,
+            chain: .ton,
+            wallet: wallet
+        )
+        guard multichainState.addresses.contains(where: { $0.chain == .ton }) else {
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+
+        finishSendDeeplinkTask {
+            self.openMultichainSend(
+                wallet: wallet,
+                multichainState: multichainState,
+                entry: .tokenPicker(allowedChains: [.ton], initialChain: .ton),
+                sendSource: sendSource,
+                recipient: recipient,
+                comment: transfer.comment,
+                successReturn: transfer.successReturn
+            )
+        }
+    }
+
+    private func resolveMultichainRecipient(
+        _ string: String,
+        chain: MultichainChain,
+        wallet: Wallet
+    ) async throws -> MultichainRecipient {
+        guard chain == .ton else {
+            guard let recipient = MultichainRecipient(string: string, chain: chain, network: wallet.network) else {
+                throw SendDeeplinkFailure.invalidRecipient
+            }
+            return recipient
+        }
+
+        let resolved = try await recipientResolver.resolverRecipient(
+            string: string,
+            network: wallet.network
+        )
+        guard case let .ton(tonRecipient) = resolved else {
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+        guard !tonRecipient.isScam else {
+            throw SendDeeplinkFailure.scamRecipient
+        }
+        return MultichainRecipient(
+            chain: .ton,
+            address: tonRecipient.recipientAddress.addressString,
+            domain: tonRecipient.recipientAddress.name
+        )
+    }
+
+    private func handleLegacySendDeeplink(
+        recipient: LegacyRecipient,
+        wallet: Wallet,
+        amount: BigUInt?,
+        jettonAddress: Address?,
+        comment: String?,
+        successReturn: URL?,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        if recipient.isScam {
+            throw SendDeeplinkFailure.scamRecipient
+        }
+
+        var token: SendV3Item = .ton(.token(.ton, amount: 0))
+
+        switch recipient {
+        case let .ton(tonRecipient):
+            if let jettonAddress {
+                let fundsValidator = keeperCoreMainAssembly.loadersAssembly.insufficientFundsValidator()
+                let jettonBalance = try await fundsValidator.resolveJettonBalance(
+                    jettonAddress: jettonAddress, requiredAmount: amount ?? 0, wallet: wallet
+                )
+
+                let jettonTransferController = keeperCoreMainAssembly.jettonTransferTransactionConfirmationController(
+                    wallet: wallet,
+                    recipient: tonRecipient,
+                    jettonItem: jettonBalance.item,
+                    amount: amount ?? 0,
+                    comment: nil
+                )
+
+                try await fundsValidator.validateFundsIfNeeded(
+                    wallet: wallet,
+                    confirmationController: jettonTransferController
+                )
+
+                token = .ton(.token(.jetton(jettonBalance.item), amount: amount ?? 0))
+            } else {
+                token = .ton(.token(.ton, amount: amount ?? 0))
+            }
+
+        case .tron:
+            guard wallet.tron != nil else {
+                throw SendDeeplinkFailure.unsupported
+            }
+            token = .tron(TronSendData.Item.usdt(amount: amount ?? 0))
+        }
+
+        guard !Task.isCancelled else { return }
+        await MainActor.run {
+            self.deeplinkHandleTask = nil
+            ToastPresenter.hideAll()
+            self.openSendResolvingMultichain(
+                wallet: wallet,
+                sendInput: .direct(item: token),
+                sendSource: sendSource,
+                recipient: recipient,
+                comment: comment,
+                successReturn: successReturn
+            )
+        }
+    }
+
+    private func handleMultichainSendDeeplink(
+        candidates: MultichainRecipientCandidates,
+        wallet: Wallet,
+        sendSource: SendAnalyticsSource,
+        comment: String? = nil,
+        successReturn: URL? = nil
+    ) async throws {
+        let multichainState = multichainSendState(for: wallet)
+        let resolution = MultichainSendRecipientResolver().resolveDeeplink(
+            candidates: candidates,
+            walletChains: multichainState.map { $0.addresses.map(\.chain) },
+            network: wallet.network
+        )
+
+        switch resolution {
+        case let .send(recipient, availableChains):
+            guard let multichainState else {
+                throw SendDeeplinkFailure.assetUnavailable
+            }
+            finishSendDeeplinkTask {
+                self.openMultichainSend(
+                    wallet: wallet,
+                    multichainState: multichainState,
+                    entry: .tokenPicker(
+                        allowedChains: availableChains,
+                        initialChain: recipient.chain
+                    ),
+                    sendSource: sendSource,
+                    recipient: recipient,
+                    comment: comment,
+                    successReturn: successReturn
+                )
+            }
+        case .legacy:
+            let legacyRecipient = try await recipientResolver.resolverRecipient(
+                string: candidates.address,
+                network: wallet.network
+            )
+            try await handleLegacySendDeeplink(
+                recipient: legacyRecipient,
+                wallet: wallet,
+                amount: nil,
+                jettonAddress: nil,
+                comment: comment,
+                successReturn: successReturn,
+                sendSource: sendSource
+            )
+        case .unsupported:
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+    }
+
+    private func handleEvmSendDeeplink(
+        transfer: Deeplink.EvmTransferData,
+        wallet: Wallet,
+        sendSource: SendAnalyticsSource
+    ) async throws {
+        guard let multichainState = multichainSendState(for: wallet) else {
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+
+        let assetResolver = MultichainSendAssetResolver(
+            multichainAssetBalanceProvider: keeperCoreMainAssembly.multichainAssembly.multichainAssetBalanceProvider,
+            assetDetailsService: keeperCoreMainAssembly.servicesAssembly.assetDetailsService()
+        )
+        let probeController = EvmSendAssetProbeController(
+            resolveAsset: { await assetResolver.resolveAsset(for: $0, multichainState: $1) },
+            isTransferSupported: keeperCoreMainAssembly.multichainAssembly.chainKitService.isTransferSupported(asset:)
+        )
+
+        let resolution = await probeController.resolve(
+            transfer: transfer,
+            multichainState: multichainState
+        )
+
+        switch resolution {
+        case let .send(asset, chain):
+            finishSendDeeplinkTask {
+                self.openMultichainSend(
+                    wallet: wallet,
+                    multichainState: multichainState,
+                    entry: .enterAmount(
+                        MultichainSendInput(
+                            item: MultichainSendItem(asset: asset, amount: transfer.amount ?? 0)
+                        )
+                    ),
+                    sendSource: sendSource,
+                    recipient: MultichainRecipient(chain: chain, address: transfer.recipient),
+                    comment: nil
+                )
+            }
+        case let .picker(allowedChains):
+            // The picked asset decides the chain, and the send form re-resolves the recipient onto
+            // it — the seed chain only has to be one the address is valid on.
+            let seedChain = MultichainChain.allCases.first(where: allowedChains.contains)
+            finishSendDeeplinkTask {
+                self.openMultichainSend(
+                    wallet: wallet,
+                    multichainState: multichainState,
+                    entry: .tokenPicker(allowedChains: allowedChains, initialChain: nil),
+                    sendSource: sendSource,
+                    recipient: seedChain.map { MultichainRecipient(chain: $0, address: transfer.recipient) },
+                    comment: nil
+                )
+            }
+        case .assetUnavailable:
+            throw SendDeeplinkFailure.assetUnavailable
+        case .unsupported:
+            throw SendDeeplinkFailure.invalidRecipient
+        }
+    }
+
+    private func finishSendDeeplinkTask(_ completion: () -> Void) {
+        guard !Task.isCancelled else { return }
+        deeplinkHandleTask = nil
+        ToastPresenter.hideAll()
+        completion()
     }
 
     private func configureAndShowInsufficientPopup(
@@ -205,7 +609,8 @@ extension MainCoordinator {
         amount: BigUInt?,
         bin: String?,
         stateInit: String?,
-        expirationTimestamp: Int64?
+        expirationTimestamp: Int64?,
+        sendSource: SendAnalyticsSource
     ) {
         deeplinkHandleTask?.cancel()
 
@@ -277,7 +682,8 @@ extension MainCoordinator {
                         amount: jettonRecipient != nil ? BigUInt(stringLiteral: "50000000") : amount,
                         payload: jettonTransferBin ?? bin,
                         stateInit: stateInit,
-                        sendFrom: .tonconnectRemote
+                        sendFrom: .tonconnectRemote,
+                        initiatedBy: sendSource.initiatedBy
                     )
                 }
             } catch {
@@ -292,18 +698,17 @@ extension MainCoordinator {
         self.deeplinkHandleTask = deeplinkHandleTask
     }
 
-    func openBuyDeeplink() {
-        deeplinkHandleTask?.cancel()
-        deeplinkHandleTask = nil
-        guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
-        openBuy(wallet: wallet)
-    }
-
     func openRampDeeplink(flow: RampFlow, parameters: RampDeeplinkParameters, entrySource: DepositAnalyticsSource) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
-        openRamp(flow: flow, wallet: wallet, initialDeeplink: parameters, entrySource: entrySource)
+
+        switch flow {
+        case .deposit:
+            openDeposit(wallet: wallet, entrySource: entrySource, initialDeeplink: parameters)
+        case .withdraw:
+            openWithdraw(wallet: wallet, entrySource: entrySource, initialDeeplink: parameters)
+        }
     }
 
     func openStakingDeeplink() {
@@ -388,15 +793,24 @@ extension MainCoordinator {
             }
 
             let appSettings = coreAssembly.appSettings
+            let catalogMode: DappCatalogMode = keeperCoreMainAssembly
+                .configurationAssembly
+                .configuration
+                .featureEnabled(.multichainEnabled) ? .multichain : .ton
             if let popularAppsResponse = try? await browserController.loadPopularApps(lang: lang),
                let app = getApp(url, popularAppsResponse)
             {
-                openDapp(title: app.name, url: url)
+                openDapp(
+                    popularApp: app,
+                    url: url,
+                    analyticsFrom: .deepLink,
+                    catalogMode: catalogMode
+                )
             } else if
                 let host = url.host,
                 appSettings.isDappOpenWarningDoNotShow(host) || appSettings.dappHostWhiteList.contains(host)
             {
-                openDapp(title: nil, url: url)
+                openDapp(title: nil, url: url, analyticsFrom: .deepLink)
             } else {
                 ToastPresenter.hideAll()
                 let warningModule = OpenDappWarningPopupAssembly.module(
@@ -408,7 +822,7 @@ extension MainCoordinator {
 
                 warningModule.output.didTapOpen = { [weak bottomSheetViewController] url, title in
                     bottomSheetViewController?.dismiss { [weak self = self] in
-                        self?.openDapp(title: title, url: url)
+                        self?.openDapp(title: title, url: url, analyticsFrom: .deepLink)
                     }
                 }
 
@@ -420,87 +834,44 @@ extension MainCoordinator {
         return true
     }
 
-    func openExchangeDeeplink(provider: String?) {
-        guard let provider else {
-            openBuyDeeplink()
-            return
-        }
-
-        deeplinkHandleTask?.cancel()
-
-        ToastPresenter.hideAll()
-        ToastPresenter.showToast(configuration: .loading)
-
-        let buySellService = keeperCoreMainAssembly.buySellAssembly.buySellMethodsService()
-        let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-        let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
-        let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
-        let tonkeeperAPI = keeperCoreMainAssembly.tonkeeperAPIAssembly.api
-
-        let deeplinkHandleTask = Task {
-            do {
-                let wallet = try walletsStore.activeWallet
-                let mercuryoSecret = await configuration.mercuryoSecret
-                let currency = currencyStore.getState()
-
-                let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
-                guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
-                      let methodURL = try await fiatMethod.actionURL(
-                          walletAddress: wallet.friendlyAddress,
-                          tronAddress: wallet.tron?.address,
-                          currency: currency,
-                          mercuryoParameters: FiatMethodItem.MercuryoParameters(
-                              secret: mercuryoSecret,
-                              ipProvider: { try? await tonkeeperAPI.getIP() }
-                          )
-                      )
-                else {
-                    await MainActor.run {
-                        self.deeplinkHandleTask = nil
-                        ToastPresenter.hideAll()
-                        ToastPresenter.showToast(configuration: .failed)
-                    }
-                    return
-                }
-
-                await MainActor.run {
-                    self.deeplinkHandleTask = nil
-                    ToastPresenter.hideAll()
-                    self.router.dismiss(animated: true) { [weak self = self] in
-                        guard let fromViewController = self?.router.rootViewController else { return }
-                        self?.openBuySellItemURL(methodURL, fromViewController: fromViewController)
-                    }
-                }
-
-            } catch {
-                await MainActor.run {
-                    self.deeplinkHandleTask = nil
-                    ToastPresenter.hideAll()
-                    ToastPresenter.showToast(configuration: .failed)
-                }
-            }
-        }
-
-        self.deeplinkHandleTask = deeplinkHandleTask
-    }
-
+    /// Catalog asset ids are multichain-only; legacy swaps fall back to defaults.
     func openSwapDeeplink(fromToken: String?, toToken: String?) {
         deeplinkHandleTask?.cancel()
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
         let configuration = keeperCoreMainAssembly.configurationAssembly.configuration
+        let carriesCatalogAssetIds = MultichainSwapInitialAssetSelection.isCatalogAssetId(fromToken)
+            || MultichainSwapInitialAssetSelection.isCatalogAssetId(toToken)
+
         if configuration.flag(\.nativeSwapDisabled, network: wallet.network) {
-            openWebSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
-        } else {
-            openNativeSwap(
+            openWebSwap(
                 wallet: wallet,
-                nativeSwapContext: NativeSwapContext(
-                    fromTokenSymbol: fromToken,
-                    toTokenSymbol: toToken
+                fromToken: carriesCatalogAssetIds ? nil : fromToken,
+                toToken: carriesCatalogAssetIds ? nil : toToken
+            )
+            return
+        }
+
+        if let multichainState = wallet.multichainWalletState {
+            openMultichainSwap(
+                wallet: wallet,
+                multichainState: multichainState,
+                initialSelection: MultichainSwapInitialAssetSelection(
+                    deeplinkSendAssetId: fromToken,
+                    deeplinkReceiveAssetId: toToken
                 )
             )
+            return
         }
+
+        openNativeSwap(
+            wallet: wallet,
+            nativeSwapContext: NativeSwapContext(
+                fromTokenSymbol: carriesCatalogAssetIds ? nil : fromToken,
+                toTokenSymbol: carriesCatalogAssetIds ? nil : toToken
+            )
+        )
     }
 
     func openActionDeeplink(eventId: String) {
@@ -563,13 +934,83 @@ extension MainCoordinator {
         deeplinkHandleTask = nil
         guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet else { return }
 
-        openBackup(wallet: wallet)
+        openBackup(wallet: wallet, source: .settings)
+    }
+
+    func openAddWalletDeeplink() {
+        deeplinkHandleTask?.cancel()
+        deeplinkHandleTask = nil
+        openAddWallet(router: ViewControllerRouter(rootViewController: router.rootViewController))
+    }
+
+    func openMysteryRaffleDeeplink() {
+        deeplinkHandleTask?.cancel()
+        deeplinkHandleTask = nil
+
+        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.mysteryRaffleEnabled),
+              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+              case .multichain = wallet.multichain
+        else {
+            return
+        }
+
+        let raffleStore = keeperCoreMainAssembly.storesAssembly.raffleStore
+        guard raffleStore.getState().isEmpty else {
+            openMysteryRaffle(source: .deepLink)
+            return
+        }
+
+        MysteryRaffleCoordinator.presentLoading(
+            from: self,
+            rootViewController: router.rootViewController,
+            source: .deepLink,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            openDeeplink: { [weak self] in self?.handleRaffleDeeplink($0) },
+            openMigration: { [weak self] onFinish in
+                self?.openMigrationDeeplink(source: .raffle, onFinish: onFinish)
+            }
+        )
+    }
+
+    func openMigrationDeeplink(source: MigrationSource, onFinish: (() -> Void)? = nil) {
+        deeplinkHandleTask?.cancel()
+        deeplinkHandleTask = nil
+        guard keeperCoreMainAssembly.configurationAssembly.configuration.featureEnabled(.migrationEnabled),
+              let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.activeWallet,
+              wallet.isMultichain,
+              let navigationController = modalFlowNavigationController(rootViewController: router.rootViewController)
+        else {
+            onFinish?()
+            return
+        }
+
+        let coordinator = WalletMigrationCoordinator(
+            wallet: wallet,
+            source: source,
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly,
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            depositPendingTracker: depositPendingTracker
+        )
+        coordinator.didRequestOpenMerchantURL = { [weak self] url, fromViewController in
+            self?.openBuySellItemURL(url, fromViewController: fromViewController)
+        }
+        coordinator.didFinish = { [weak self, weak coordinator] _ in
+            self?.removeChild(coordinator)
+            onFinish?()
+        }
+        migrationCoordinator = coordinator
+        addChild(coordinator)
+        coordinator.start()
     }
 
     func handleBatteryDeeplink(_ payload: Deeplink.Battery) {
         let walletStore = keeperCoreMainAssembly.storesAssembly.walletsStore
         guard let wallet = try? walletStore.activeWallet else { return }
-        if keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.batteryDisabled, network: wallet.network) { return }
+        if keeperCoreMainAssembly.configurationAssembly.configuration.flag(\.batteryDisabled, network: wallet.network) {
+            return
+        }
 
         let service = keeperCoreMainAssembly.batteryAssembly.batteryService()
         let promocodeStore = keeperCoreMainAssembly.batteryAssembly.batteryPromocodeStore()
@@ -601,7 +1042,10 @@ extension MainCoordinator {
 
         deeplinkHandleTask = Task { @MainActor in
             do {
-                try await mainCoordinatorStoriesController?.handleDeeplinkStory(storyId: storyId)
+                try await mainCoordinatorStoriesController?.handleDeeplinkStory(
+                    storyId: storyId,
+                    walletId: activeWalletScopeId
+                )
                 self.deeplinkHandleTask = nil
                 ToastPresenter.hideAll()
             } catch {

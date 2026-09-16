@@ -1,7 +1,7 @@
 import Foundation
 import TKBatteryAPI
 
-public struct BatteryAPI {
+struct BatteryAPI {
     private let hostProvider: APIHostProvider
     private let urlSession: URLSession
 
@@ -17,11 +17,16 @@ public struct BatteryAPI {
 // MARK: - Convenience
 
 extension BatteryAPI {
-    private func apiClient() async throws(ApiError) -> Client {
+    private func apiClient(
+        authorization: BatteryAuthorization = .none,
+        extraHeaders: [String: String] = [:]
+    ) async throws(ApiError) -> Client {
         do {
             return try await Client(
                 hostProvider: hostProvider,
-                urlSession: urlSession
+                urlSession: urlSession,
+                authorization: authorization,
+                extraHeaders: extraHeaders
             )
         } catch {
             switch error {
@@ -71,12 +76,11 @@ extension BatteryAPI {
         }
     }
 
-    func getBalance(tonProofToken: String) async throws(ApiError) -> BatteryBalance {
-        let client = try await apiClient()
+    func getBalance(authorization: BatteryAuthorization) async throws(ApiError) -> BatteryBalance {
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.getBalance(
-                query: .init(units: .ton),
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken)
+                query: .init(units: .ton)
             )
         )
         switch response {
@@ -84,6 +88,24 @@ extension BatteryAPI {
             return try BatteryBalance(
                 balance: decodeResponse(ok.body.json)
             )
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    /// Battery holds a send lock while `pending_transactions` is non-empty; the next sponsored
+    /// send is rejected until that list clears.
+    func getStatus(authorization: BatteryAuthorization) async throws(ApiError) -> Components.Schemas.Status {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.getStatus()
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json)
         case let .default(statusCode, error):
             throw try .badStatus(
                 status: statusCode,
@@ -114,14 +136,13 @@ extension BatteryAPI {
     }
 
     func emulate(
-        tonProofToken: String,
+        authorization: BatteryAuthorization,
         boc: String
     ) async throws(ApiError) -> (responseData: Data, isBatteryAvailable: Bool, excess: UInt?) {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.emulateMessageToWallet(
                 query: .init(enable_validation: true),
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken),
                 body: .json(.init(boc: boc))
             )
         )
@@ -142,15 +163,14 @@ extension BatteryAPI {
     }
 
     func gasslessEmulate(
-        tonProofToken: String,
+        authorization: BatteryAuthorization,
         jettonMasterAddress: String,
         boc: String
     ) async throws(ApiError) -> String {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.estimateGaslessCost(
                 path: .init(jetton_master: jettonMasterAddress),
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken),
                 body: .json(.init(battery: false, payload: boc))
             )
         )
@@ -165,12 +185,19 @@ extension BatteryAPI {
         }
     }
 
-    func sendMessage(tonProofToken: String, boc: String) async throws(ApiError) {
-        let client = try await apiClient()
+    func sendMessage(
+        authorization: BatteryAuthorization,
+        boc: String,
+        proof: String?,
+        extraHeaders: [String: String] = [:]
+    ) async throws(ApiError) {
+        let client = try await apiClient(
+            authorization: authorization,
+            extraHeaders: extraHeaders
+        )
         let response = try await apiCall(
             await client.sendMessage(
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken),
-                body: .json(.init(boc: boc))
+                body: .json(.init(boc: boc, proof: proof))
             )
         )
         if case let .default(statusCode, error) = response {
@@ -182,20 +209,36 @@ extension BatteryAPI {
     }
 
     func makePurchase(
-        tonProofToken: String,
+        authorization: BatteryAuthorization,
         transactionId: String,
         promocode: String?
     ) async throws(ApiError) -> Components.Schemas.iOSBatteryPurchaseStatus {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.iosBatteryPurchase(
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken),
                 body: .json(.init(transactions: [.init(id: transactionId, promo: promocode)]))
             )
         )
         switch response {
         case let .ok(ok):
             return try decodeResponse(ok.body.json)
+        case let .default(statusCode, error):
+            throw try .badStatus(
+                status: statusCode,
+                message: decodeResponse(error.body.json.error)
+            )
+        }
+    }
+
+    func getPurchases(authorization: BatteryAuthorization) async throws(ApiError) -> [BatteryPurchase] {
+        let client = try await apiClient(authorization: authorization)
+        let response = try await apiCall(
+            await client.getPurchases()
+        )
+        switch response {
+        case let .ok(ok):
+            return try decodeResponse(ok.body.json.purchases)
+                .map(BatteryPurchase.init(purchase:))
         case let .default(statusCode, error):
             throw try .badStatus(
                 status: statusCode,
@@ -236,11 +279,12 @@ extension BatteryAPI {
     }
 
     func getTronEstimate(
+        authorization: BatteryAuthorization,
         address: String,
         energy: Int,
         bandwidth: Int
     ) async throws(ApiError) -> Components.Schemas.EstimatedTronTx {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.tronEstimate(
                 query: .init(
@@ -262,18 +306,17 @@ extension BatteryAPI {
     }
 
     func getTronTransactions(
-        tonProofToken: String,
+        authorization: BatteryAuthorization,
         limit: Int,
         maxTimestamp: Int64? = nil
     ) async throws(ApiError) -> [TronTransaction] {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.getTronTransactions(
                 query: .init(
                     limit: limit,
                     max_timestamp: maxTimestamp
-                ),
-                headers: .init(X_hyphen_TonConnect_hyphen_Auth: tonProofToken)
+                )
             )
         )
         switch response {
@@ -291,7 +334,7 @@ extension BatteryAPI {
     }
 
     func tronSend(
-        tonProofToken: String,
+        authorization: BatteryAuthorization,
         wallet: String,
         tx: String,
         energy: Int,
@@ -299,14 +342,11 @@ extension BatteryAPI {
         instantFeeTx: String? = nil,
         userPublicKey: String? = nil
     ) async throws(ApiError) -> String {
-        let client = try await apiClient()
+        let client = try await apiClient(authorization: authorization)
         let response = try await apiCall(
             await client.tronSend(
                 query: Operations.tronSend.Input.Query(
                     user_public_key: userPublicKey
-                ),
-                headers: .init(
-                    X_hyphen_TonConnect_hyphen_Auth: tonProofToken
                 ),
                 body: .json(
                     .init(

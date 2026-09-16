@@ -29,6 +29,11 @@ open class TKBridgeWebViewController: UIViewController {
     public var didTapShare: ((URL) -> Void)?
 
     public var didLoadInitialURLHandler: (() -> Void)?
+
+    public var currentURL: URL? {
+        webView.url
+    }
+
     private let userContentController = WKUserContentController()
 
     private lazy var webView: WKWebView = {
@@ -105,7 +110,6 @@ open class TKBridgeWebViewController: UIViewController {
     }
 
     private var bridgeMessageObservers = [String: [(Any) -> Void]]()
-    private var webViewObserver: NSKeyValueObservation?
 
     // MARK: - Dependencies
 

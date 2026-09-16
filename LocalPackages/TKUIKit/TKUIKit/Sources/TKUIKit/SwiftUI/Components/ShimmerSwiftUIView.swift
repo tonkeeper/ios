@@ -13,12 +13,16 @@ public struct ShimmerSwiftUIView: View {
     public var body: some View {
         switch config.cornerRadius {
         case let .value(radius):
-            Color(uiColor: config.color)
+            fillColor
                 .clipShape(RoundedRectangle(cornerRadius: radius))
         case .capsule:
-            Color(uiColor: config.color)
+            fillColor
                 .clipShape(Capsule())
         }
+    }
+
+    private var fillColor: TKColor {
+        config.color
     }
 }
 
@@ -29,11 +33,11 @@ public extension ShimmerSwiftUIView {
     }
 
     struct Config {
-        public var color: UIColor
+        public var color: TKColor
         public var cornerRadius: CornerRadius
 
         public init(
-            color: UIColor = .Background.content,
+            color: TKColor = .backgroundContent,
             cornerRadius: CornerRadius = .value(12)
         ) {
             self.color = color

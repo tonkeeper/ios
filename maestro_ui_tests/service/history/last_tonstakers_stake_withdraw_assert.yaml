@@ -1,0 +1,30 @@
+# TonAPI → formatted string matching History list (WithdrawStakeRequest tsTON outcome).
+appId: com.jbig.tonkeeper
+---
+- runScript:
+    file: ../../scripts/api/v2/accounts/getLastTonstakersStakeWithdrawEvent.js
+    env:
+      addr: ${WALLET_WITH_MONEY_ADDR}
+      auth_token: ${auth}
+      fresh_within_sec: "600"
+      events_limit: "15"
+      poll_attempts: "8"
+      poll_delay_ms: "12000"
+
+- runScript: ../../scripts/utils/formatter.js
+
+- evalScript: ${output.tsTonWithdrawHistoryLine = output.formatter.toExactVisiblePattern(output.formatter.formatHistoryJettonOutcomeLine(output.tonstakersWithdrawTsTonAmount, output.tonstakersWithdrawTsTonDecimals, "tsTON"))}
+
+- extendedWaitUntil:
+    visible: History
+    timeout: 120000
+
+- extendedWaitUntil:
+    visible: Unstake Request
+    timeout: 120000
+
+- scrollUntilVisible:
+    element: ${output.tsTonWithdrawHistoryLine}
+    direction: DOWN
+    timeout: 120000
+- assertVisible: ${output.tsTonWithdrawHistoryLine}

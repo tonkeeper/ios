@@ -90,10 +90,6 @@ private extension TokenPickerViewController {
             )
         }
 
-        customView.searchBar.cancelButtonAction = { [weak self] in
-            self?.searchTextChanged()
-        }
-
         customView.searchBar.clearButtonAction = { [weak self] in
             self?.searchTextChanged()
         }

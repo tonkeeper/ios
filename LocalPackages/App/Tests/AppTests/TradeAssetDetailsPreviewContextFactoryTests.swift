@@ -15,12 +15,12 @@ final class TradeAssetDetailsPreviewContextFactoryTests: XCTestCase {
             )
 
         XCTAssertEqual(preview.assetID, "ton/testnet/coin")
-        XCTAssertEqual(preview.assetCategory, .crypto)
+        XCTAssertEqual(preview.assetCategory, .tokens)
         XCTAssertEqual(preview.title, TonInfo.name)
         XCTAssertNil(preview.imageURL)
         XCTAssertEqual(preview.isUnverified, false)
-        XCTAssertNil(AssetIdResolver.tag(for: preview.assetID))
-        XCTAssertNil(AssetIdResolver.chainIcon(for: preview.assetID))
+        XCTAssertNil(AssetIdResolver.tag(for: preview.assetID, multichainEnabled: false))
+        XCTAssertNil(AssetIdResolver.chain(for: preview.assetID, multichainEnabled: false))
     }
 
     func test_makeJettonPreviewContext_usesJettonAddressAndImage() throws {
@@ -47,12 +47,15 @@ final class TradeAssetDetailsPreviewContextFactoryTests: XCTestCase {
             )
 
         XCTAssertEqual(preview.assetID, "ton/mainnet/jetton/\(JettonMasterAddress.tonUSDT.toRaw())")
-        XCTAssertEqual(preview.assetCategory, .crypto)
+        XCTAssertEqual(preview.assetCategory, .tokens)
         XCTAssertEqual(preview.title, "Tether USD")
         XCTAssertEqual(preview.imageURL, imageURL)
         XCTAssertEqual(preview.isUnverified, false)
-        XCTAssertEqual(AssetIdResolver.tag(for: preview.assetID), "TON")
-        XCTAssertNotNil(AssetIdResolver.chainIcon(for: preview.assetID))
+        XCTAssertEqual(
+            AssetIdResolver.tag(for: preview.assetID, multichainEnabled: false),
+            TonInfo.symbol
+        )
+        XCTAssertEqual(AssetIdResolver.chain(for: preview.assetID, multichainEnabled: false), .ton)
     }
 
     func test_makeJettonPreviewContext_usesTitleFallbackWhenSymbolMissing() throws {
@@ -78,8 +81,8 @@ final class TradeAssetDetailsPreviewContextFactoryTests: XCTestCase {
             )
 
         XCTAssertEqual(preview.isUnverified, false)
-        XCTAssertNil(AssetIdResolver.tag(for: preview.assetID))
-        XCTAssertNil(AssetIdResolver.chainIcon(for: preview.assetID))
+        XCTAssertNil(AssetIdResolver.tag(for: preview.assetID, multichainEnabled: false))
+        XCTAssertNil(AssetIdResolver.chain(for: preview.assetID, multichainEnabled: false))
     }
 
     func test_makeJettonPreviewContext_marksUnverifiedJetton() throws {
@@ -117,13 +120,34 @@ final class TradeAssetDetailsPreviewContextFactoryTests: XCTestCase {
                 walletTron: walletTron
             )
 
-        XCTAssertEqual(preview.assetID, "tron/mainnet/token/\(TronSwift.USDT.address.base58)")
-        XCTAssertEqual(preview.assetCategory, .crypto)
+        XCTAssertEqual(preview.assetID, "tron/mainnet/trc20/\(TronSwift.USDT.address.base58)")
+        XCTAssertEqual(preview.assetCategory, .tokens)
         XCTAssertEqual(preview.title, TronSwift.USDT.name)
         XCTAssertNil(preview.imageURL)
         XCTAssertEqual(preview.isUnverified, false)
-        XCTAssertEqual(AssetIdResolver.tag(for: preview.assetID), TronSwift.USDT.tag)
-        XCTAssertNotNil(AssetIdResolver.chainIcon(for: preview.assetID))
+        XCTAssertEqual(
+            AssetIdResolver.tag(for: preview.assetID, multichainEnabled: false),
+            TronSwift.USDT.tag
+        )
+        XCTAssertEqual(AssetIdResolver.chain(for: preview.assetID, multichainEnabled: false), .tron)
+    }
+
+    func test_makeTrxPreviewContext_usesTronCoinIdentifier() throws {
+        let wallet = try makeWallet(id: "trx-wallet", network: .mainnet)
+        let walletTron = makeWalletTron()
+
+        let preview = AssetIdResolver
+            .trxPreviewContext(
+                wallet: wallet,
+                walletTron: walletTron
+            )
+
+        XCTAssertEqual(preview.assetID, "tron/mainnet/coin")
+        XCTAssertEqual(preview.assetCategory, .tokens)
+        XCTAssertEqual(preview.title, TronSwift.TRX.name)
+        XCTAssertEqual(preview.symbol, TronSwift.TRX.symbol)
+        XCTAssertNil(preview.imageURL)
+        XCTAssertEqual(preview.isUnverified, false)
     }
 }
 
@@ -148,8 +172,7 @@ private extension TradeAssetDetailsPreviewContextFactoryTests {
     func makeWalletTron() -> WalletTron {
         WalletTron(
             publicKey: TronSwift.PublicKey(data: Data(repeating: 1, count: 33)),
-            address: TronSwift.USDT.address,
-            isOn: true
+            address: TronSwift.USDT.address
         )
     }
 }

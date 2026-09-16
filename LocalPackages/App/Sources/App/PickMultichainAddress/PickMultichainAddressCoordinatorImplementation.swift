@@ -7,34 +7,28 @@ import UIKit
 @MainActor
 final class PickMultichainAddressCoordinatorImplementation<V: UIViewController>: RouterCoordinator<ContainerViewControllerRouter<V>> {
     private let addresses: [MultichainWalletAddress]
-    private let selectedAddress: MultichainWalletAddress?
 
-    private weak var presentedBottomSheetViewController: TKBottomSheetViewController?
+    private weak var presentedViewController: PickMultichainAddressViewController?
     private var streamContinuation: AsyncStream<PickMultichainAddressCoordinatorEvent>.Continuation?
     private var didFinishStream = false
 
     init(
         router: ContainerViewControllerRouter<V>,
-        addresses: [MultichainWalletAddress],
-        selectedAddress: MultichainWalletAddress?
+        addresses: [MultichainWalletAddress]
     ) {
         self.addresses = addresses
-        self.selectedAddress = selectedAddress
         super.init(router: router)
     }
 
     override func start() {
         let module = module()
-
-        let bottomSheetViewController = TKBottomSheetViewController(
-            contentViewController: module.view
-        )
-        bottomSheetViewController.didClose = { [weak self] _ in
+        module.view.didDismissInteractively = { [weak self] in
             self?.finishStream()
         }
-        presentedBottomSheetViewController = bottomSheetViewController
-        bottomSheetViewController.present(
-            fromViewController: router.rootViewController.topPresentedViewController()
+        presentedViewController = module.view
+        router.rootViewController.topPresentedViewController().present(
+            module.view,
+            animated: true
         )
     }
 }
@@ -63,10 +57,7 @@ private extension PickMultichainAddressCoordinatorImplementation {
         PickMultichainAddressModuleOutput,
         PickMultichainAddressModuleInput
     > {
-        let viewModel = PickMultichainAddressViewModelImplementation(
-            addresses: addresses,
-            selectedAddress: selectedAddress
-        )
+        let viewModel = PickMultichainAddressViewModelImplementation(addresses: addresses)
         viewModel.didSelectAddress = { [weak self] address in
             self?.streamContinuation?.yield(.select(address))
         }
@@ -74,7 +65,7 @@ private extension PickMultichainAddressCoordinatorImplementation {
             self?.streamContinuation?.yield(.copy(address))
         }
         viewModel.didRequestClose = { [weak self] in
-            self?.dismissBottomSheet {
+            self?.dismissPresentedViewController {
                 self?.finishStream()
             }
         }
@@ -86,8 +77,16 @@ private extension PickMultichainAddressCoordinatorImplementation {
         )
     }
 
-    func dismissBottomSheet(completion: (() -> Void)? = nil) {
-        presentedBottomSheetViewController?.dismiss(completion: completion)
+    func dismissPresentedViewController(completion: (() -> Void)? = nil) {
+        guard let presentedViewController else {
+            completion?()
+            return
+        }
+
+        presentedViewController.dismissFromCoordinator(
+            animated: true,
+            completion: completion
+        )
     }
 
     func finishStream() {

@@ -132,7 +132,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         set {
             _sourceAmount = newValue
             recalculateDestination()
-            isMax = (_sourceAmount == sourceBalance) && !_sourceAmount.isZero && !sourceBalance.isZero
+            updateIsMax()
         }
     }
 
@@ -269,6 +269,10 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         didUpdateMaxButtonIsSelected?(isMax)
     }
 
+    private func updateIsMax() {
+        isMax = (_sourceAmount == sourceBalance) && !_sourceAmount.isZero && !sourceBalance.isZero
+    }
+
     private func updateIsEnableState() {
         var isEnable = true
 
@@ -362,7 +366,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         case .source:
             amountFormatter.format(
                 amount: destinationAmount,
-                fractionDigits: sourceUnit.fractionalDigits
+                fractionDigits: destinationUnit.fractionalDigits
             )
         case .destination:
             amountFormatter.format(
@@ -412,13 +416,11 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
             let title = TKLocales.Common.Numbers.max
             maxButtonConfiguration?.content = TKButton.Configuration.Content(title: .plainString(title))
             maxButtonConfiguration?.action = { [weak self] in
-                guard let self else { return }
-                isMax.toggle()
-                let isMax = isMax
-                if isMax {
-                    sourceAmount = sourceBalance
-                } else {
+                guard let self, !sourceBalance.isZero else { return }
+                if sourceAmount == sourceBalance {
                     sourceAmount = 0
+                } else {
+                    sourceAmount = sourceBalance
                 }
 
                 updateValueView()
@@ -446,7 +448,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
             case .destination:
                 inputString(
                     amount: destinationAmount,
-                    fractionDigits: sourceUnit.fractionalDigits
+                    fractionDigits: destinationUnit.fractionalDigits
                 )
             }
         }()
@@ -479,16 +481,19 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
         let converted = RateConverter().convertFromCurrency(
             amount: destinationAmount,
             amountFractionLength: destinationUnit.fractionalDigits,
-            rate: rate
+            rate: rate,
+            targetFractionLength: sourceUnit.fractionalDigits
         )
         _sourceAmount = converted
+        updateIsMax()
     }
 
     func recalculateDestination() {
         let converted = RateConverter().convert(
             amount: sourceAmount,
             amountFractionLength: sourceUnit.fractionalDigits,
-            rate: rate
+            rate: rate,
+            targetFractionLength: destinationUnit.fractionalDigits
         )
         _destinationAmount = converted
     }
@@ -499,7 +504,7 @@ final class AmountInputViewModelImplementation: AmountInputViewModel, AmountInpu
             case .source:
                 sourceUnit.fractionalDigits
             case .destination:
-                sourceUnit.fractionalDigits
+                destinationUnit.fractionalDigits
             }
         }()
         return AmountInputFormatter.amount(

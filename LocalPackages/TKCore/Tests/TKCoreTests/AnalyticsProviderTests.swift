@@ -1,12 +1,13 @@
 import Foundation
 @testable import TKCore
+import TKFeatureFlags
 import TKKeychain
 import XCTest
 
 final class AnalyticsProviderTests: XCTestCase {
     func testLegacyLogEventKeyIncludesAnalyticsEventMobileNativeFields() throws {
         let (provider, service) = makeSubject()
-        let eventKey = EventKey.importWallet
+        let eventKey = EventKey.deleteWallet
         let customKey = "source"
         let customValue = "test"
 
@@ -37,7 +38,7 @@ final class AnalyticsProviderTests: XCTestCase {
         let platform = AnalyticsEventMobileNative.CodingKeys.platform.rawValue
 
         provider.log(
-            eventKey: .importWallet,
+            eventKey: .deleteWallet,
             args: [
                 schemaVersion: "override",
                 firebaseUserId: "external-id",
@@ -80,23 +81,22 @@ final class AnalyticsProviderTests: XCTestCase {
         )
     }
 
-    func testLogEncodableWithFeatureFlagsIncludesThemOnBaseEvent() throws {
+    func testLogEncodableWithFeatureFlagsSendsEnabledOnesAsFlatOffSchemaFields() throws {
         let (provider, service) = makeSubject()
 
-        let featureFlags = #"{"alpha":"","beta":"42"}"#
+        let featureFlags: [FeatureFlag: Bool] = [.perpsEnabled: true, .multichainEnabled: false]
 
-        provider.log(LaunchApp(), featureFlags: featureFlags)
+        provider.log(LaunchApp().withExtraValues(featureFlags.analyticsParameters))
 
         let call = try XCTUnwrap(service.calls.first)
 
-        XCTAssertEqual(
-            call.args[AnalyticsEventMobileNative.CodingKeys.featureFlags.rawValue] as? String,
-            featureFlags
-        )
+        XCTAssertEqual(call.args["ff_ios_perps_enabled"] as? String, "true")
+        XCTAssertNil(call.args["ff_ios_multichain_enabled"])
     }
 
     func testLogEncodableIncludesAnalyticsEventMobileNativeFields() throws {
-        let (provider, service) = makeSubject()
+        let deviceId = "total-auth-device-id"
+        let (provider, service) = makeSubject(deviceId: deviceId)
 
         let event = CustomError(
             severity: .warning,
@@ -118,6 +118,10 @@ final class AnalyticsProviderTests: XCTestCase {
             TestData.uniqueDeviceId.uuidString
         )
         XCTAssertEqual(
+            call.args[AnalyticsEventMobileNative.CodingKeys.deviceId.rawValue] as? String,
+            deviceId
+        )
+        XCTAssertEqual(
             call.args[AnalyticsEventMobileNative.CodingKeys.platform.rawValue] as? String,
             AnalyticsEventMobileNative.Platform.iosNative.rawValue
         )
@@ -135,11 +139,36 @@ final class AnalyticsProviderTests: XCTestCase {
             "US"
         )
     }
+
+    func testLogPrefillsUppercasedKeysCountryCode() throws {
+        let (provider, service) = makeSubject(keysCountryCode: "de")
+
+        provider.log(LaunchApp())
+
+        let call = try XCTUnwrap(service.calls.first)
+
+        XCTAssertEqual(
+            call.args[AnalyticsEventMobileNative.CodingKeys.keysCountryCode.rawValue] as? String,
+            "DE"
+        )
+    }
+
+    func testLogOmitsKeysCountryCodeWhenSourceReturnsNil() throws {
+        let (provider, service) = makeSubject()
+
+        provider.log(LaunchApp())
+
+        let call = try XCTUnwrap(service.calls.first)
+
+        XCTAssertNil(call.args[AnalyticsEventMobileNative.CodingKeys.keysCountryCode.rawValue])
+    }
 }
 
 private extension AnalyticsProviderTests {
     func makeSubject(
-        deviceCountryCode: String? = nil
+        deviceId: String? = nil,
+        deviceCountryCode: String? = nil,
+        keysCountryCode: String? = nil
     ) -> (AnalyticsProvider, AnalyticsServiceSpy) {
         let service = AnalyticsServiceSpy()
         let userDefaults = UserDefaults(suiteName: UUID().uuidString) ?? .standard
@@ -150,7 +179,10 @@ private extension AnalyticsProviderTests {
             )
         )
 
-        let appInfoProvider = AppInfoProvider(userDefaults: userDefaults)
+        let appInfoProvider = AppInfoProvider(
+            userDefaults: userDefaults,
+            storefrontCountryCodeCache: StorefrontCountryCodeCache()
+        )
         if let deviceCountryCode {
             appInfoProvider.overrideDeviceCountryCode(deviceCountryCode)
         }
@@ -158,7 +190,9 @@ private extension AnalyticsProviderTests {
         let provider = AnalyticsProvider(
             analyticsServices: [service],
             uniqueIdProvider: uniqueIdProvider,
-            appInfoProvider: appInfoProvider
+            deviceIdProvider: { deviceId },
+            appInfoProvider: appInfoProvider,
+            keysCountryCodeProvider: KeysCountryCodeProvider(countryCodeSource: { keysCountryCode })
         )
 
         return (provider, service)
@@ -182,6 +216,14 @@ private final class KeychainVaultMock: TKKeychainVault {
 
     init(storedUUID: UUID) {
         storedData = try? JSONEncoder().encode(storedUUID)
+    }
+
+    func exists(query: TKKeychainQuery) throws -> Bool {
+        storedData != nil
+    }
+
+    func biometricAccessState(query: TKKeychainQuery) -> TKKeychainBiometryAccess {
+        storedData != nil ? .accessible : .missing
     }
 
     func get(query: TKKeychainQuery) throws -> Data {

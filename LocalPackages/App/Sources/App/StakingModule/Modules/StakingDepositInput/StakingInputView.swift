@@ -64,7 +64,7 @@ final class StakingInputView: TKView {
 
         navigationBar.centerView = titleView
 
-        detailsViewContainer.padding.top = 16
+        detailsViewContainer.padding.top = 0
         detailsViewContainer.setViews([detailsContainer])
 
         continueButtonContainer.setViews([continueButton])
@@ -77,7 +77,6 @@ final class StakingInputView: TKView {
         addSubview(navigationBar)
         scrollView.addSubview(contentStackView)
         contentStackView.addArrangedSubview(amountInputContainer)
-        contentStackView.setCustomSpacing(16, after: amountInputContainer)
         contentStackView.addArrangedSubview(detailsViewContainer)
 
         setupConstraints()
@@ -108,5 +107,4 @@ final class StakingInputView: TKView {
 
 private extension CGFloat {
     static let contentPadding: CGFloat = 16
-    static let amountInputHeight: CGFloat = 188
 }

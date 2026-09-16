@@ -3,8 +3,8 @@ import TKUIKit
 import UIKit
 
 final class SettingsWalletButtonPreviewsViewController: UIViewController {
-    private let hostingController = UIHostingController(
-        rootView: WalletButtonPreviews()
+    private let hostingController = TKHostingController(
+        content: WalletButtonPreviews()
     )
 
     override func viewDidLoad() {

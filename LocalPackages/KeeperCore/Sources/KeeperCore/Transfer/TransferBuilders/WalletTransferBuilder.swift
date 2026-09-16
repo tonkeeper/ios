@@ -1,10 +1,10 @@
 import Foundation
 import TonSwift
 
-public struct WalletTransferBuilder {
+struct WalletTransferBuilder {
     private init() {}
 
-    public static func buildWalletTransfer(
+    static func buildWalletTransfer(
         wallet: Wallet,
         sender: Address,
         sendMode: SendMode = .walletDefault(),

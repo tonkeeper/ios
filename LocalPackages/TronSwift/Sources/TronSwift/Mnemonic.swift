@@ -43,12 +43,6 @@ public enum Mnemonic {
     }
 }
 
-public extension Data {
-    func subdata(in range: ClosedRange<Index>) -> Data {
-        return subdata(in: range.lowerBound ..< range.upperBound)
-    }
-}
-
 extension Data {
     func hexString() -> String {
         map { String(format: "%02hhx", $0) }.joined()

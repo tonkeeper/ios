@@ -1,5 +1,4 @@
 import KeeperCore
-import TKCore
 import TKLocalize
 import TKLogging
 import TKUIKit
@@ -37,29 +36,26 @@ final class KeystoneSignViewModelImplementation: KeystoneSignViewModel, Keystone
         update()
     }
 
-    func generateQRCodes(width: CGFloat) {
+    func generateQRCodes(width _: CGFloat) {
         createQrCodeTask?.cancel()
         let task = Task {
-            let encoder = UREncoder(keystoneSignController.transaction, maxFragmentLen: 1000)
+            let encoder = UREncoder(keystoneSignController.transaction, maxFragmentLen: 400)
 
             var chunks = [String]()
             while !encoder.isComplete {
                 chunks.append(encoder.nextPart())
             }
 
-            var images = [UIImage]()
+            var matrices = [QrCodeMatrix]()
             for chunk in chunks {
                 Log.d("\(chunk)")
-                guard let image = await self.qrCodeGenerator.generate(
-                    string: chunk,
-                    size: CGSize(width: width, height: width)
-                ) else { continue }
-                images.append(image)
+                guard let matrix = self.qrCodeGenerator.generateMatrix(string: chunk) else { continue }
+                matrices.append(matrix)
             }
-            let result = images
+            let result = matrices
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                self.qrCodeImages = result
+                self.qrCodeMatrices = result
                 self.update()
             }
         }
@@ -69,19 +65,19 @@ final class KeystoneSignViewModelImplementation: KeystoneSignViewModel, Keystone
     // MARK: - State
 
     private var createQrCodeTask: Task<Void, Never>?
-    private var qrCodeImages = [UIImage]()
+    private var qrCodeMatrices = [QrCodeMatrix]()
 
     // MARK: - Dependencies
 
     private let keystoneSignController: KeystoneSignController
-    private let qrCodeGenerator: QRCodeGenerator
+    private let qrCodeGenerator: QrCodeMatrixGenerator
     private let scannerOutput: ScannerViewModuleOutput
 
     // MARK: - Init
 
     init(
         keystoneSignController: KeystoneSignController,
-        qrCodeGenerator: QRCodeGenerator,
+        qrCodeGenerator: QrCodeMatrixGenerator,
         scannerOutput: ScannerViewModuleOutput
     ) {
         self.keystoneSignController = keystoneSignController
@@ -122,10 +118,10 @@ private extension KeystoneSignViewModelImplementation {
                 isLast: false
             ),
             qrCodeModel: TKFancyQRCodeView.Model(
-                images: qrCodeImages,
                 topString: TKLocales.KeystoneSign.transaction.uppercased(),
                 bottomLeftString: keystoneSignController.wallet.metaData.label
-            )
+            ),
+            qrCodeMatrices: qrCodeMatrices
         )
     }
 

@@ -67,13 +67,22 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
     }
 
     func viewDidAppear() {
-        if didSetup {
-            startRunning()
+        isViewVisible = true
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            isVisible = true
+            startSessionIfNeeded()
         }
     }
 
     func viewDidDisappear() {
-        stopRunning()
+        isViewVisible = false
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
+            isVisible = false
+            guard captureSession.isRunning else { return }
+            captureSession.stopRunning()
+        }
     }
 
     func didTapSettingsButton() {
@@ -94,11 +103,21 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
 
     // MARK: - State
 
+    private let sessionQueue = DispatchQueue(label: "com.tonkeeper.scanner.session")
     private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
     private let captureSession = AVCaptureSession()
-    private var didSetup = false
 
-    private var isFailed: Bool = false
+    /// Accessed only on `sessionQueue`.
+    private var isSessionReady = false
+    private var isVisible = false
+    private var sessionRun = 0
+
+    /// Accessed only on the main queue.
+    private var isViewVisible = false
+
+    /// Accessed only on `metadataOutputQueue`.
+    private var didHandleScan = false
+    private var scannedSessionRun = 0
 
     // MARK: - Dependencies
 
@@ -169,14 +188,22 @@ private extension ScannerViewModelImplementation {
     }
 
     func setupScanner() {
-        Task {
+        sessionQueue.async { [weak self] in
+            guard let self else { return }
             do {
-                try setupSession()
-                await MainActor.run {
-                    setupPreview()
-                }
+                try configureSession()
             } catch {
                 handlePermissionDenied()
+                return
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                setupPreview()
+                sessionQueue.async { [weak self] in
+                    guard let self else { return }
+                    isSessionReady = true
+                    startSessionIfNeeded()
+                }
             }
         }
     }
@@ -200,7 +227,7 @@ private extension ScannerViewModelImplementation {
         }
     }
 
-    func setupSession() throws {
+    func configureSession() throws {
         guard let device = AVCaptureDevice.default(for: .video) else {
             throw ScannerError.device(.videoUnavailable)
         }
@@ -222,9 +249,6 @@ private extension ScannerViewModelImplementation {
         metadataOutput.setMetadataObjectsDelegate(self, queue: metadataOutputQueue)
         metadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
         self.captureSession.commitConfiguration()
-
-        self.didSetup = true
-        startRunning()
     }
 
     func setupPreview() {
@@ -233,18 +257,31 @@ private extension ScannerViewModelImplementation {
         didUpdateState?(.video(layer: previewLayer))
     }
 
-    func startRunning() {
-        guard !captureSession.isRunning,
-              AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
-        metadataOutputQueue.async { [weak self] in
-            self?.captureSession.startRunning()
+    func startSessionIfNeeded() {
+        guard isSessionReady,
+              isVisible,
+              !captureSession.isRunning,
+              AVCaptureDevice.authorizationStatus(for: .video) == .authorized
+        else { return }
+        sessionRun += 1
+        let run = sessionRun
+        metadataOutputQueue.sync {
+            didHandleScan = false
+            scannedSessionRun = run
         }
+        captureSession.startRunning()
     }
 
-    func stopRunning() {
-        guard captureSession.isRunning else { return }
-        metadataOutputQueue.async { [weak self] in
-            self?.captureSession.stopRunning()
+    func finishScan(run: Int, deliver: @escaping () -> Void) {
+        sessionQueue.async { [weak self] in
+            guard let self, run == sessionRun, isVisible else { return }
+            if captureSession.isRunning {
+                captureSession.stopRunning()
+            }
+            DispatchQueue.main.async { [weak self] in
+                guard let self, isViewVisible else { return }
+                deliver()
+            }
         }
     }
 }
@@ -255,7 +292,7 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
         didOutput metadataObjects: [AVMetadataObject],
         from connection: AVCaptureConnection
     ) {
-        guard !isFailed,
+        guard !didHandleScan,
               !metadataObjects.isEmpty,
               let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
               metadataObject.type == .qr,
@@ -264,26 +301,28 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
         do {
             if didScanDeeplink != nil {
                 let deeplink = try scannerController.handleScannedQRCode(stringValue)
-                captureSession.stopRunning()
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                DispatchQueue.main.async {
-                    self.didScanDeeplink?(deeplink)
+                didHandleScan = true
+                finishScan(run: scannedSessionRun) { [weak self] in
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                    self?.didScanDeeplink?(deeplink)
                 }
             } else if didScanUR != nil {
                 let ur = try scannerController.handleScannedQRCodeUR(stringValue)
-                captureSession.stopRunning()
-                UINotificationFeedbackGenerator().notificationOccurred(.warning)
-                DispatchQueue.main.async {
+                didHandleScan = true
+                finishScan(run: scannedSessionRun) { [weak self] in
+                    UINotificationFeedbackGenerator().notificationOccurred(.warning)
                     do {
-                        try self.didScanUR?(ur)
+                        try self?.didScanUR?(ur)
                     } catch {}
                 }
             }
             return
+        } catch KeeperCore.URError.noResult {
+            return
         } catch {
-            DispatchQueue.main.async {
-                self.isFailed = true
-                self.didFailScan?(error.localizedDescription, true)
+            didHandleScan = true
+            finishScan(run: scannedSessionRun) { [weak self] in
+                self?.didFailScan?(error.localizedDescription, true)
             }
             return
         }

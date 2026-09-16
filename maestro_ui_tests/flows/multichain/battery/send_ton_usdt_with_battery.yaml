@@ -1,0 +1,23 @@
+# Multichain Battery: TON-chain jetton (USD₮) self-transfer paid with Tonkeeper Battery.
+# Native GRAM/TON transfers cannot use Battery. Requires Battery Settings → Token transfers ON
+# and enough charges (picker must list Tonkeeper Battery without Deposit).
+appId: com.jbig.tonkeeper
+---
+- runFlow: "../../../steps/launch_app_ensure_multichain_wallet.yaml"
+- runFlow:
+    file: "../../../steps/recieve_modal/copy_network_address.yaml"
+    env:
+      NETWORK_NAME: "TON"
+      ADDRESS_TITLE: "Your TON address"
+- runFlow:
+    file: "../../../steps/send/send_with_battery_fee.yaml"
+    env:
+      # The send picker filters locally on name/symbol/assetId, and the TON jetton is
+      # "USD₮" — "USDT" matches nothing. "USD" matches the symbol, and the TON tab keeps
+      # the TRON USDT out of the list.
+      SEARCH_QUERY: "USD"
+      CHAIN_ID: "token_picker_chain_ton"
+      ASSET_ID: "token_picker_asset_ton_usd_"
+      TOKEN_SYMBOL: "USD₮"
+      AMOUNT: "0.1"
+      RECIPIENT: ${output.fullAddr}

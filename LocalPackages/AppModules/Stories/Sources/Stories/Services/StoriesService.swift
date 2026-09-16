@@ -3,7 +3,8 @@ import KeeperCore
 import TKCore
 
 public protocol StoriesService {
-    func loadStory(storyID: String) async throws -> Story
+    func loadStory(storyID: String, walletId: String?) async throws -> Story
+    func loadStories(storyIDs: [String], walletId: String?) async throws -> [Story]
     func isNeedToShow(storyID: String) -> Bool
     func markStoryShown(storyID: String)
     func resetShownStories()
@@ -21,9 +22,14 @@ final class StoriesServiceImplementation: StoriesService {
         self.shownStoriesRepository = shownStoriesRepository
     }
 
-    func loadStory(storyID: String) async throws -> Story {
-        let story = try await api.loadStory(storyId: storyID)
+    func loadStory(storyID: String, walletId: String?) async throws -> Story {
+        let story = try await api.loadStory(storyId: storyID, walletId: walletId)
         return Story(id: storyID, story: story)
+    }
+
+    func loadStories(storyIDs: [String], walletId: String?) async throws -> [Story] {
+        try await api.loadStories(storyIds: storyIDs, walletId: walletId)
+            .map { Story(id: $0.story_id, story: $0) }
     }
 
     func isNeedToShow(storyID: String) -> Bool {

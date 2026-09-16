@@ -11,7 +11,6 @@ protocol SendAssetViewModelProtocol: AnyObject {
     var didTapGoToMain: (() -> Void)? { get set }
     var didUpdateState: ((SendAssetState) -> Void)? { get set }
     var didUpdateTitle: ((String) -> Void)? { get set }
-    var didTapQRCode: ((PaymentQRCodeData) -> Void)? { get set }
     var didTapCopy: ((String) -> Void)? { get set }
     var didShowError: ((String) -> Void)? { get set }
 
@@ -141,8 +140,7 @@ final class SendAssetViewModel: SendAssetViewModelProtocol {
         didTapQRCode?(
             PaymentQRCodeData(
                 address: state.payinAddress,
-                iconURL: state.fromImageUrl,
-                networkIconURL: state.fromNetworkImageUrl
+                iconURL: state.fromImageUrl
             )
         )
     }

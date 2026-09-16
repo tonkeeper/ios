@@ -1,0 +1,33 @@
+# Selects send + receive assets in Multichain Swap via token picker search.
+# Env: SEND_QUERY, SEND_ASSET_ID, RECEIVE_QUERY, RECEIVE_ASSET_ID
+appId: com.jbig.tonkeeper
+---
+- tapOn:
+    id: swap_send_token
+- waitForAnimationToEnd:
+    timeout: 600
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 6000
+- runFlow:
+    file: ../token_picker/select_asset.yaml
+    env:
+      SEARCH_QUERY: ${SEND_QUERY}
+      ASSET_ID: ${SEND_ASSET_ID}
+
+- extendedWaitUntil:
+    visible:
+      id: swap_receive_token
+    timeout: 3000
+- tapOn:
+    id: swap_receive_token
+- waitForAnimationToEnd:
+    timeout: 600
+- extendedWaitUntil:
+    visible: Choose asset
+    timeout: 6000
+- runFlow:
+    file: ../token_picker/select_asset.yaml
+    env:
+      SEARCH_QUERY: ${RECEIVE_QUERY}
+      ASSET_ID: ${RECEIVE_ASSET_ID}

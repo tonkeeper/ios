@@ -1,15 +1,16 @@
 import BigInt
 import Foundation
 
-public enum BatteryState {
+public enum BatteryState: Equatable {
     case fill(percents: CGFloat)
     case empty
+    case negative
 
     public var percents: CGFloat {
         switch self {
         case let .fill(percents):
             return percents
-        case .empty:
+        case .empty, .negative:
             return 0
         }
     }
@@ -29,6 +30,10 @@ public extension BatteryBalance {
 
         if balance > empty {
             return .fill(percents: balance / max)
+        }
+
+        if balance < empty {
+            return .negative
         }
 
         return .empty
